@@ -17,8 +17,7 @@ class SearchResult(TypedDict, total=False):
     """Represents a single search result item."""
     title: str
     href: str
-    body: str  # The SERP snippet
-    content: str  # The full scraped content (optional)
+    description: str  # The SERP snippet
 
 class QueryResult(TypedDict):
     """Represents the results for a single search query."""
@@ -35,8 +34,7 @@ class WebSearchResults(TypedDict):
 ### `SearchResult` TypedDict
 -   `title: str`: The title of the search result page.
 -   `href: str`: The full URL of the search result.
--   `body: str`: A snippet or body text from the search result page (SERP snippet).
--   `content: str`: (Optional) The full scraped Markdown content of the result page.
+-   `description: str`: A snippet or body text from the search result page (SERP snippet).
 
 ### `QueryResult` TypedDict
 -   `query: str`: The original search query string.

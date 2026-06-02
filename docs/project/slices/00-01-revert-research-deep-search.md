@@ -1,6 +1,6 @@
 # Slice: Revert Research Deep Search
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Refactor
 - **Milestone:** N/A
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
@@ -25,9 +25,9 @@ And no full "Content" blocks should be present in the report
 - [x] **Contract** - Rename `body` field to `description` in `SearchResult` DTO.
 - [x] **Logic** - Remove `IWebScraper` dependency and scraping loop from `WebSearcherAdapter`.
 - [x] **Logic** - Update `WebSearcherAdapter` to populate `description` instead of `body`.
-- [▶] **Wiring** - Remove `IWebScraper` injection from `src/teddy_executor/registries/infrastructure.py` for the `WebSearcherAdapter`.
-- [ ] **Wiring** - Update `src/teddy_executor/core/services/templates/execution_report.md.j2` to use `description` and change codeblock extension from snippet to description but **keep** the "Use READ on the URLs above" hint.
-- [ ] **Cleanup** - Align tests in `tests/suites/integration/adapters/outbound/test_web_searcher_adapter.py` and `tests/suites/integration/core/services/test_research_parsing_integration.py`.
+- [x] **Wiring** - Remove IWebScraper injection from `src/teddy_executor/registries/infrastructure.py` for the `WebSearcherAdapter`.
+- [x] **Wiring** - Update `src/teddy_executor/core/services/templates/execution_report.md.j2` to use `description` and change codeblock extension from snippet to description but **keep** the "Use READ on the URLs above" hint.
+- [x] **Cleanup** - Align tests in `tests/suites/integration/adapters/outbound/test_web_searcher_adapter.py` and `tests/suites/integration/core/services/test_research_parsing_integration.py`.
 - [x] **Logic** - Update `RESEARCH` action description in all system prompts (`src/teddy_executor/resources/prompts/*.xml`).
 - [x] **Wiring** - Update documentation (specs, standards, and roadmap) to align with the revert and ad-hoc slice rules.
 
@@ -44,3 +44,4 @@ And no full "Content" blocks should be present in the report
 - **Contract Renaming**: Renamed `body` to `description` in `SearchResult` DTO. Verified via `get_type_hints`.
 - **Global Alignment**: Performed a bulk `sed` replacement of dictionary keys in `tests/` to align the test harness with the new DTO contract.
 - **Template Cleanup**: Removed `content` block from `execution_report.md.j2` and renamed `Snippet` codeblock label to `description` to match the DTO field name and the "revert" business goal.
+- **Cleanup Verification**: Verified that integration and unit tests are correctly aligned with the `description` field and no longer reference `content`. Verified `test_formatter_action_logs.py` renders `description` block.
