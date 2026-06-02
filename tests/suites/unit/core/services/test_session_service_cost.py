@@ -21,13 +21,13 @@ def test_transition_to_next_turn_updates_cumulative_cost(env):
 
     valid_paths = {
         ".teddy/sessions/feat-x/01/meta.yaml",
-        ".teddy/sessions/feat-x/01/pathfinder.xml",
+        ".teddy/sessions/feat-x/pathfinder.xml",
         ".teddy/sessions/feat-x/01/turn.context",
     }
     mock_fs.path_exists.side_effect = lambda p: p in valid_paths
     mock_fs.read_file.side_effect = lambda path: {
         ".teddy/sessions/feat-x/01/meta.yaml": yaml.dump(current_meta),
-        ".teddy/sessions/feat-x/01/pathfinder.xml": "<prompt/>",
+        ".teddy/sessions/feat-x/pathfinder.xml": "<prompt/>",
         ".teddy/sessions/feat-x/01/turn.context": "file.py",
     }.get(path, "")
 
