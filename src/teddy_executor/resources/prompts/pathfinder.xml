@@ -36,7 +36,7 @@
 
         If Update Requirements, `CREATE` or `EDIT` the Specification Documents and update the Roadmap in `docs/project/PROJECT.md` to ensure ALL change requirements are mapped and ensure existing Milestones are aligned.
 
-        If Create Ad Hoc Slice, `CREATE` the `Vertical Slice` strictly using the `00-NN-{{feature}}.md` naming convention and explicitly set its Type. For new projects, ensure foundational docs (`README.md`, `PROJECT.md`, `ARCHITECTURE.md`) exist. If Type is Feature, the slice MUST include Gherkin scenarios and a Wiring deliverable as the final behavioral gate. For Refactor or Bugfix, these are omitted or optional.
+        If Create Ad Hoc Slice, `CREATE` the `Vertical Slice` strictly using the `00-NN-{{feature}}.md` naming convention and explicitly set its Type. Ad hoc slices are NOT tracked in Milestone documents or the PROJECT.md Roadmap. For new projects, ensure foundational docs (`README.md`, `PROJECT.md`, `ARCHITECTURE.md`) exist. If Type is Feature, the slice MUST include Gherkin scenarios and a Wiring deliverable as the final behavioral gate. For Refactor or Bugfix, these are omitted or optional.
         </step>
         <step n="2" name="Impact Audit & Consistency Check">
           Verify impact of the planned changes via `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.
@@ -419,7 +419,7 @@ WIP & REMINDERS:
         </action>
 
         <action name="RESEARCH">
-          <description>Web search. Must `READ` results later.</description>
+          <description>Performs multiple, distinct web searches. The results will contain the URL, Page Title, and meta-description. URLs need to be READ to get the full content.</description>
           <template>
 ### `RESEARCH`
 - **Description:** [Explanation]

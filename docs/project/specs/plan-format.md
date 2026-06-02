@@ -186,7 +186,7 @@ For all actions, the parser must ignore and clean up unforeseen codeblocks or th
 
 ### 5.5. `RESEARCH`
 
--   **Purpose:** Performs multiple, distinct web searches.
+-   **Purpose:** Performs multiple, distinct web searches. The results contain the URL, Page Title, and meta-description. `READ` must be used on individual URLs to retrieve full content.
 -   **Format:**
     `````markdown
     ### `RESEARCH`

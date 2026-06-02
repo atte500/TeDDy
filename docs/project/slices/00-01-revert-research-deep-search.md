@@ -1,0 +1,39 @@
+# Slice: Revert Research Deep Search
+
+- **Status:** Planned
+- **Type:** Refactor
+- **Milestone:** N/A
+- **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
+
+## Business Goal
+Revert the `RESEARCH` action behavior to return only the URL, Page Title, and Meta Description (Snippet) without attempting to scrape the full content of each result. This restores the previous performance profile and reduces the volume of the execution report.
+
+## Scenarios
+> As an agent performing research, I want to see only search results so that I get a concise overview of the search landscape.
+```gherkin
+Given a set of search queries
+When I execute a RESEARCH action
+Then the results should contain ONLY the title, URL, and snippet (body)
+And no full "Content" blocks should be present in the report
+```
+
+## Edge Cases
+- **Scraper Persistence**: Ensure the `WebScraperAdapter` itself remains unchanged, as its 403-bypassing and GitHub raw fixes are still required for `READ` actions.
+
+## Deliverables
+- [ ] **Logic** - Remove `IWebScraper` dependency and scraping loop from `WebSearcherAdapter`.
+- [ ] **Logic** - Remove `content` field from `SearchResult` DTO in `src/teddy_executor/core/domain/models/web_search_results.py`.
+- [ ] **Wiring** - Update `src/teddy_executor/core/services/templates/execution_report.md.j2` to remove the `sr.get('content')` conditional block and the "Use READ on the URLs above" hint.
+- [ ] **Cleanup** - Update or remove the following tests:
+    - `tests/suites/integration/adapters/outbound/test_web_searcher_adapter.py`
+    - `tests/suites/integration/core/services/test_research_parsing_integration.py`
+- [ ] **Wiring** - Remove `IWebScraper` injection from `src/teddy_executor/registries/infrastructure.py` for the `WebSearcherAdapter`.
+- [x] **Logic** - Update `RESEARCH` action description in all system prompts (`src/teddy_executor/resources/prompts/*.xml`).
+- [x] **Wiring** - Update documentation (specs, standards, and roadmap) to align with the revert and ad-hoc slice rules.
+
+## Implementation Plan
+1. **DTO Cleanup**: Remove the `content` field from the `SearchResult` TypedDict.
+2. **Adapter Refactor**: Remove the `_scraper` from the constructor and the logic in `_execute_single_query` that calls it.
+3. **Template Update**: Simplify the `RESEARCH` section of the Jinja2 template to only render titles, links, and snippets.
+4. **Registry Update**: Remove the scraper from the dependency injection container setup for the searcher.
+5. **Test Alignment**: Run the test suite and remove/refactor tests that now fail due to the missing `content` field.

@@ -20,7 +20,7 @@ TeDDy's mission is to apply the **UNIX philosophy** to AI development and create
 This section defines the conventions for our project management artifacts.
 
 - **Artifact Lifecycle:** Work flows from `Spec` -> `Milestone` -> `Slice`.
-- **Numbering:** Artifacts are numbered sequentially using an `MM-NN-name.md` format, where `MM` represents the target Milestone number and `NN` represents the specific Slice or Case File number. For ad-hoc tasks not tied to an active milestone, `00` is used as the Milestone prefix (e.g., `00-01-ad-hoc-feature.md`).
+- **Numbering:** Artifacts are numbered sequentially using an `MM-NN-name.md` format, where `MM` represents the target Milestone number and `NN` represents the specific Slice or Case File number. For ad-hoc tasks not tied to an active milestone, `00` is used as the Milestone prefix (e.g., `00-01-ad-hoc-feature.md`). Ad-hoc slices are NOT tracked in Milestone documents or the Roadmap.
 - **Archiving Policy:** Once a feature slice or milestone is fully implemented and merged, its active planning artifacts can be deleted. The Git history serves as the official, permanent archive.
 
 ## Roadmap
@@ -63,5 +63,4 @@ This section defines the conventions for our project management artifacts.
     - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels.
     - **UX Hints:** Append reminder to user request messages: "Update reference documents accordingly if needed."
     - **Validation Logging:** Include concise versions of encountered errors in "Validation failed replanning" logs; remove the empty line before the message.
-    - **RESEARCH Enhancement:** Scrape and return full contents/excerpts instead of just SERP snippets. Update instructions for all agents accordingly.
     - **CLI Polish:** Support `-a`, `-m`, and `-c` flags for the `start` command.

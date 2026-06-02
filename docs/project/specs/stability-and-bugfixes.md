@@ -6,7 +6,6 @@
 - **Safety Limits:** Implement `max-turns` (99) and `max-cost` ($5.00) limits in `config.yaml`, enforced strictly in `--yolo` (`-y`) mode.
 - **Web Scraper (403 Bypassing):** The `WebScraperAdapter` must attempt to bypass 403 Forbidden errors (Reproduce via: `https://www.pnas.org/doi/10.1073/pnas.2416294121`) by rotating User-Agents or using common headers.
 - **GitHub Raw Compatibility:** Fix the issue where `raw.githubusercontent.com` links return `SUCCESS` but with empty content (Reproduce via: `https://raw.githubusercontent.com/lllyasviel/LayerDiffuse/main/README.md`).
-- **RESEARCH Full Scrape:** The `RESEARCH` action should attempt to scrape and return full contents (or at least significant excerpts) instead of just SERP snippets.
 
 ## 2. Context Service & Session Management
 - **Recursive Expansion:** If a path in a `.context` file or `-c` flag is a directory, the `ContextService` must recursively expand it and include all files, respecting `.gitignore` and `.teddyignore`.

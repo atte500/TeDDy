@@ -375,7 +375,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
         </action>
 
         <action name="RESEARCH">
-          <description>Web search. Must `READ` results later.</description>
+          <description>Performs multiple, distinct web searches. The results will contain the URL, Page Title, and meta-description. URLs need to be READ to get the full content.</description>
           <template>
 ### `RESEARCH`
 - **Description:** [Explanation]
