@@ -156,7 +156,7 @@ class ShellAdapter(IShellExecutor):
             stdout, stderr = "", ""
 
         sanitized_stderr = self._sanitize_output(stderr) or ""
-        if self._detect_interactive_prompt(sanitized_stderr):
+        if self._detect_interactive_prompt(sanitized_stderr, stdout):
             return {
                 "stdout": self.INTERACTIVE_PROMPT_MESSAGE,
                 "stderr": sanitized_stderr,
@@ -204,7 +204,14 @@ class ShellAdapter(IShellExecutor):
                     output["failed_command"] = failed_cmd
                     break
 
-        if return_code != 0 and self._detect_interactive_prompt(stderr):
+        # Dual-channel interactive detection (post-execution)
+        if return_code != 0 and self._detect_interactive_prompt(stderr, stdout):
+            output["stdout"] = self.INTERACTIVE_PROMPT_MESSAGE
+            output["stderr"] = ""
+            return output
+
+        # Heuristic: Windows silent exit with code 1 and empty output => likely interactive
+        if sys.platform == "win32" and return_code == 1 and not stdout and not stderr:
             output["stdout"] = self.INTERACTIVE_PROMPT_MESSAGE
             output["stderr"] = ""
             return output
@@ -212,10 +219,10 @@ class ShellAdapter(IShellExecutor):
         return output
 
     @staticmethod
-    def _detect_interactive_prompt(stderr: str) -> bool:
+    def _detect_interactive_prompt(stderr: str, stdout: str = "") -> bool:
         """
         Detect if a command failure was due to an interactive prompt
-        by checking stderr for common patterns.
+        by checking both stderr and stdout for common patterns.
         """
         patterns = [
             "EOFError",
@@ -223,19 +230,15 @@ class ShellAdapter(IShellExecutor):
             "is not a TTY",
             "not a tty",
             "stdin is not a terminal",
-            # Shell read -p with DEVNULL triggers "read error"
             "read error",
-            # getpass opens /dev/tty directly; fails with EIO or ENOTTY
             "Input/output error",
             "Inappropriate ioctl",
-            # Windows: cmd /set /p produces "Input required from terminal"
             "Input required",
-            # Windows: EOF on redirected stdin
             "Unexpected EOF",
-            # General: cannot read input on redirected stdin
             "cannot read input",
         ]
-        return any(p in stderr for p in patterns)
+        combined = f"{stdout}\n{stderr}"
+        return any(p in combined for p in patterns)
 
     def _run_subprocess(  # noqa: PLR0913
         self,

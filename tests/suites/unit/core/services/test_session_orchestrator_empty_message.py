@@ -1,5 +1,4 @@
 import punq
-from pathlib import Path
 from tests.harness.setup.mocking import register_mock
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
