@@ -85,7 +85,7 @@
         <goal>Update tracking documents and record implementation findings for this deliverable item.</goal>
         <step n="1" name="Mark Progress">`EDIT` the vertical slice doc to mark the current deliverable as `[x]`. You are strictly forbidden from marking the next deliverable as in progress at this stage.</step>
         <step n="2" name="Sync Slice Notes">`EDIT` the vertical slice to record the implementation details and the reasoning behind them under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
-        <step n="3" name="Harvest Debt">If any debt was logged in your State Dashboard, `EDIT` the active Vertical Slice to append one or more deliverables to address it under the `Deliverables` section.</step>
+        <step n="3" name="Harvest Debt">If any debt was logged in your State Dashboard, `EDIT` the active Vertical Slice to append one or more deliverables to address it directly under the `Deliverables` section. Do NOT create a separate Technical Debt section.</step>
         <step n="4" name="Perform As-Built Update">Before finishing the last deliverable of the slice, perform a final `EDIT` on the `Component Design Docs`. Use the `Implementation Notes` you have gathered to make final, minor corrections, ensuring the docs perfectly reflect the as-built reality of the code and update their status.</step>
         <step n="5" name="Delivery Gate">Upon completing documentation, you MUST proceed immediately to Version Control. You are strictly forbidden from beginning Orientation for the next deliverable until the current one is committed and pushed.</step>
       </phase>
@@ -95,7 +95,7 @@
         <step n="1" name="Teardown">Explicitly delete all temporary logs and workspace detritus in `spikes/` then run `git status` to verify.</step>
         <step n="2" name="Consistency Check">If this is the last deliverable, execute `git grep` for deleted/renamed components and resolve stale hits in documentation/comments.</step>
         <step n="3" name="Version Control">Execute the commit following the VCP for the current deliverable in its own turn. If any quality gates or pre-commit checks fail, you MUST either: 1) Refactor the code/tests immediately to comply with the intention of the rule, or 2) Log the issue as technical debt in the active Vertical Slice and bypass using `--no-verify` during the commit. Suppressing quality check rules via inline comments (e.g., `# noqa`, `# pylint: disable`) is strictly forbidden.</step>
-        <step n="5" name="Atomic Delivery">You are strictly forbidden from starting a new deliverable until the current one is version controlled, even if related. Once the commit is pushed, if the slice is not yet completed, you may reset the State Dashboard and proceed to the next item's Orientation.</step>
+        <step n="5" name="Atomic Delivery">You are strictly forbidden from starting a new deliverable until the current one is version controlled, even if related. Once the commit is pushed, if the slice is not yet completed, you may reset the State Dashboard and proceed to the next item's Orientation. If the slice is completed, you MUST Message the user with instructions to start a new session for the Architect to review the completed slice and manage Milestone progression.</step>
       </phase>
     </workflow>
 
@@ -156,18 +156,15 @@ WIP & REMINDERS:
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
         3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
            ```shell
-           # 1. Run all tests
-           <env_run> <test_command>
-
-           # 2. Stage changes and run pre-commit
+           # 1. Stage changes and run pre-commit
            git add .
            pre-commit run || true
 
-           # 3. Re-stage and Commit
+           # 2. Re-stage and Commit
            git add .
            git commit -m '<type>(<scope>): <description>'
 
-           # 4. Pull and Push (if remote exists)
+           # 3. Pull and Push (if remote exists)
            git pull --rebase && git push || [ -z "$(git remote)" ]
            ```
         4. Post-conditions: Log debt in Vertical Slice and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
@@ -215,7 +212,7 @@ WIP & REMINDERS:
         <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Slice: {{feature_name}}</item>
-          <item name="Status">- **Status:** Planned</item>
+          <item name="Status">- **Status:** [Draft | To De-risk | Planned | In Progress | Completed]</item>
           <item name="Type">- **Type:** [Feature | Refactor | Bugfix]</item>
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
@@ -248,7 +245,7 @@ WIP & REMINDERS:
       </blueprint>
 
       <blueprint name="Case File">
-        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md) to invoke the Debugger.</description>
+        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md) to invoke the Debugger. NEVER overwrite an existing Case File.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Bug: {{bug_title}}</item>
           <item name="Status">- **Status:** Unresolved</item>
@@ -260,7 +257,16 @@ WIP & REMINDERS:
           <item name="Heading">## Symptoms</item>
           <item name="Content">Expected vs. Actual behavior and minimal reproduction steps. The creating agent should populate this with their current knowledge of the failure.</item>
         </section>
-        <section n="3" name="Diagnostic Analysis">
+        <section n="3" name="Context & Scope">
+          <item name="Heading">## Context & Scope</item>
+          <item name="Content">### Regressing Delta
+[Identify the exact changes responsible for the regression to narrow the search space. Specify if it is in the current workspace or a past commit. Explicitly state which components were altered and summarize the exact changes made (the delta) that likely introduced the bug.]</item>
+          <item name="Content">### Environmental Triggers
+[Describe the specific OS, configurations, or state conditions required to reproduce the issue]</item>
+          <item name="Content">### Ruled Out
+[List any components, layers, or files definitively proven to be unrelated to the bug]</item>
+        </section>
+        <section n="4" name="Diagnostic Analysis">
           <item name="Heading">## Diagnostic Analysis</item>
           <item name="Content">### Causal Model
 A concise, causal description of how the faulty SUT operates. Continuously updated as new information is discovered.</item>
@@ -269,7 +275,7 @@ A concise list of observations that contradict the current Causal Model. Format:
           <item name="Content">### Investigation History
 A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Observation. Conclusion.`.</item>
         </section>
-        <section n="4" name="Solution">
+        <section n="5" name="Solution">
           <item name="Heading">## Solution</item>
           <item name="Content">A high-level explanation of the root cause, the proven fix, and the systemic preventative measures to prevent this class of issue globally.</item>
         </section>
@@ -418,7 +424,7 @@ PHASES:
 - [▶] Implementation
 - [ ] Integration
 - [ ] Documentation
-- [ ] Version Control
+- [ ] Delivery
 
 INNER LOOP: tests/suites/unit/test_auth_service.py
 - [▶] Red

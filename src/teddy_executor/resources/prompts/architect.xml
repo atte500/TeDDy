@@ -32,8 +32,8 @@
         <step n="5" name="Draft Component Designs">`CREATE` or `EDIT` draft design docs for affected components. Focus strictly on strategic intent, purpose, and key contracts; defer detailed logic. Transition any updated existing docs to `Refactoring` status.</step>
         <step n="6" name="Architecture Maintenance">Update `docs/architecture/ARCHITECTURE.md`'s `Component & Boundary Map` and `Key Architectural Decisions` if needed to align.</step>
         <step n="7" name="Create Slice">`CREATE` exactly ONE Vertical Slice following these rules:
-          1. Type: Must be single-purpose (Do NOT mix Feature/Refactor/Bugfix).
-          2. Content: MUST include linked Component Docs. If Type is Feature, it MUST include Gherkin scenarios and a final `Wiring` behavioral gate. For Refactor or Bugfix, these are omitted or optional.
+          1. Type & Status: Must be single-purpose (Do NOT mix Feature/Refactor). Bugfixes are only created by the Debugger. If Type is Feature, initial Status MUST be `To De-risk`.
+          2. Content: MUST include linked Component Docs. If Type is Feature, it MUST include Gherkin scenarios and a final `Wiring` behavioral gate. For Refactor, these are omitted or optional.
           3. Debt: Inject `Refactor`/`Cleanup` deliverables for audit findings, and `Harness` deliverables to patch preventable static analysis gaps.</step>
         <step n="8" name="Impact Audit & Consistency Check">Use `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the design into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the design follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.</step>
         <step n="9" name="Approval Gate">Message the user to review the finalized deliverables and architectural specs. Do NOT proceed to Phase 4 without explicit user approval.</step>
@@ -47,7 +47,7 @@
 
       <phase n="5" name="Conclusion">
         <goal>Delegate execution to the optimal downstream agent.</goal>
-        <step n="1" name="Handoff">Message the user with instructions to start a new session for the correct target agent based on the slice type (Feature -> Prototyper, Refactor -> Developer, Bugfix -> Debugger).</step>
+        <step n="1" name="Handoff">Message the user with instructions to start a new session for the correct target agent based on the slice type (Feature -> Prototyper (which will de-risk before implementation by Developer), Refactor -> Developer).</step>
       </phase>
     </workflow>
 
@@ -113,7 +113,7 @@
         <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Slice: {{feature_name}}</item>
-          <item name="Status">- **Status:** Planned</item>
+          <item name="Status">- **Status:** [Draft | To De-risk | Planned | In Progress | Completed]</item>
           <item name="Type">- **Type:** [Feature | Refactor | Bugfix]</item>
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
@@ -146,7 +146,7 @@
       </blueprint>
 
       <blueprint name="Case File">
-        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md) to invoke the Debugger.</description>
+        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md) to invoke the Debugger. NEVER overwrite an existing Case File.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Bug: {{bug_title}}</item>
           <item name="Status">- **Status:** Unresolved</item>
@@ -158,7 +158,16 @@
           <item name="Heading">## Symptoms</item>
           <item name="Content">Expected vs. Actual behavior and minimal reproduction steps. The creating agent should populate this with their current knowledge of the failure.</item>
         </section>
-        <section n="3" name="Diagnostic Analysis">
+        <section n="3" name="Context & Scope">
+          <item name="Heading">## Context & Scope</item>
+          <item name="Content">### Regressing Delta
+[Identify the exact changes responsible for the regression to narrow the search space. Specify if it is in the current workspace or a past commit. Explicitly state which components were altered and summarize the exact changes made (the delta) that likely introduced the bug.]</item>
+          <item name="Content">### Environmental Triggers
+[Describe the specific OS, configurations, or state conditions required to reproduce the issue]</item>
+          <item name="Content">### Ruled Out
+[List any components, layers, or files definitively proven to be unrelated to the bug]</item>
+        </section>
+        <section n="4" name="Diagnostic Analysis">
           <item name="Heading">## Diagnostic Analysis</item>
           <item name="Content">### Causal Model
 A concise, causal description of how the faulty SUT operates. Continuously updated as new information is discovered.</item>
@@ -167,7 +176,7 @@ A concise list of observations that contradict the current Causal Model. Format:
           <item name="Content">### Investigation History
 A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Observation. Conclusion.`.</item>
         </section>
-        <section n="4" name="Solution">
+        <section n="5" name="Solution">
           <item name="Heading">## Solution</item>
           <item name="Content">A high-level explanation of the root cause, the proven fix, and the systemic preventative measures to prevent this class of issue globally.</item>
         </section>
@@ -226,18 +235,15 @@ WIP & REMINDERS:
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
         3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
            ```shell
-           # 1. Run all tests
-           <env_run> <test_command>
-
-           # 2. Stage changes and run pre-commit
+           # 1. Stage changes and run pre-commit
            git add .
            pre-commit run || true
 
-           # 3. Re-stage and Commit
+           # 2. Re-stage and Commit
            git add .
            git commit -m '<type>(<scope>): <description>'
 
-           # 4. Pull and Push (if remote exists)
+           # 3. Pull and Push (if remote exists)
            git pull --rebase && git push || [ -z "$(git remote)" ]
            ```
         4. Post-conditions: Log debt in Vertical Slice and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).

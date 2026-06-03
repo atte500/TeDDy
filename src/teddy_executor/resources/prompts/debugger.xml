@@ -12,7 +12,7 @@
       <phase n="1" name="Reproduction">
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If a Case File was not provided in the initial context, you MUST CREATE one following the Case File Blueprint.</step>
-        <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and historical CI failures before forming a hypothesis. For historical CI failures, do NOT try to read the entire log. You MUST first use `gh run view [ID]` to see the execution tree and identify the exact name of the failed step. Then, extract ONLY that step's logs (stripping ANSI and boilerplate) by executing: `gh run view [ID] --log | awk -F'\t' '$2=="[FAILED_STEP_NAME]" { if(j!=$1){j=$1; print "\n["j"]"} l=$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/, "", l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/, "", l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/, "Error: ", l); print l }'`.</step>
+        <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and identify the last known green CI run or commit. For historical CI failures, do NOT try to read the entire log. You MUST first use `gh run view [ID]` to see the execution tree and identify the exact name of the failed step. Then, extract ONLY that step's logs (stripping ANSI and boilerplate) by executing: `gh run view [ID] --log | awk -F'\t' '$2=="[FAILED_STEP_NAME]" { if(j!=$1){j=$1; print "\n["j"]"} l=$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/, "", l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/, "", l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/, "Error: ", l); print l }'`.</step>
         <step n="3" name="Diagnostic MRE & Platform Check">CREATE a self-contained MRE script (`spikes/debug/{{NN}}-{{bug_title}}-mre.{{ext}}`) that imports the target components directly from `src/` to reproduce the symptom of the bug. It MUST fail currently. Immediately after execution, `EDIT` the Case File to establish the causal baseline. If the bug is platform-specific (e.g., fails in CI but passes locally), immediately pivot to the Remote Probing Protocol (RPP) and skip local reproduction. If you determine the bug is platform-specific after a local attempt, you MUST NOT continue local work; transition to Remote Probing for all subsequent checks.</step>
       </phase>
 
@@ -127,18 +127,15 @@ WIP & REMINDERS:
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
         3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
            ```shell
-           # 1. Run all tests
-           <env_run> <test_command>
-
-           # 2. Stage changes and run pre-commit
+           # 1. Stage changes and run pre-commit
            git add .
            pre-commit run || true
 
-           # 3. Re-stage and Commit
+           # 2. Re-stage and Commit
            git add .
            git commit -m '<type>(<scope>): <description>'
 
-           # 4. Pull and Push (if remote exists)
+           # 3. Pull and Push (if remote exists)
            git pull --rebase && git push || [ -z "$(git remote)" ]
            ```
         4. Post-conditions: Log debt in Vertical Slice and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
@@ -202,7 +199,7 @@ WIP & REMINDERS:
         <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Slice: {{feature_name}}</item>
-          <item name="Status">- **Status:** Planned</item>
+          <item name="Status">- **Status:** [Draft | To De-risk | Planned | In Progress | Completed]</item>
           <item name="Type">- **Type:** [Feature | Refactor | Bugfix]</item>
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>

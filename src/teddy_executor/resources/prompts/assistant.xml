@@ -64,7 +64,7 @@ PHASES:
 - [✓ | ▶ |  ] Execution
 - [✓ | ▶ |  ] Validation & Reporting
 - [✓ | ▶ |  ] User-Directed Iteration
-- [✓ | ▶ |  ] Cleanup & Commit
+- [✓ | ▶ |  ] Conclusion
 
 WIP & REMINDERS:
 - [TODO] [Pending task]
@@ -91,21 +91,18 @@ WIP & REMINDERS:
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
         3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
            ```shell
-           # 1. Run all tests
-           <env_run> <test_command>
-
-           # 2. Stage changes and run pre-commit
+           # 1. Stage changes and run pre-commit
            git add .
            pre-commit run || true
 
-           # 3. Re-stage and Commit
+           # 2. Re-stage and Commit
            git add .
            git commit -m '<type>(<scope>): <description>'
 
-           # 4. Pull and Push (if remote exists)
+           # 3. Pull and Push (if remote exists)
            git pull --rebase && git push || [ -z "$(git remote)" ]
            ```
-        4. Post-conditions: Log debt in Vertical Slice and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
+        4. Post-conditions: Log debt in the Task Brief and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
       </rule>
 
 
@@ -136,6 +133,45 @@ WIP & REMINDERS:
       <rule n="10" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
       <rule n="11" name="Programmatic Edits">You may use `EXECUTE` with bash tools to modify files when surgical `EDIT` matching is brittle or for bulk changes. You MUST scope these actions to specific files and chain a verification command to output the results. Example: `sed 's/old/new/g' <file> > <file>.tmp && mv <file>.tmp <file> && git grep "new_string" <file>`</rule>
     </general_rules>
+
+    <blueprints>
+      <blueprint name="Case File">
+        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md) to invoke the Debugger. NEVER overwrite an existing Case File.</description>
+        <section n="1" name="Metadata">
+          <item name="Heading"># Bug: {{bug_title}}</item>
+          <item name="Status">- **Status:** Unresolved</item>
+          <item name="Milestone">- **Milestone:** [link or N/A]</item>
+          <item name="Vertical Slice">- **Vertical Slice:** [link or N/A]</item>
+          <item name="Specs">- **Specs:** [links or N/A]</item>
+        </section>
+        <section n="2" name="Symptoms">
+          <item name="Heading">## Symptoms</item>
+          <item name="Content">Expected vs. Actual behavior and minimal reproduction steps. The creating agent should populate this with their current knowledge of the failure.</item>
+        </section>
+        <section n="3" name="Context & Scope">
+          <item name="Heading">## Context & Scope</item>
+          <item name="Content">### Regressing Delta
+[Identify the exact changes responsible for the regression to narrow the search space. Specify if it is in the current workspace or a past commit. Explicitly state which components were altered and summarize the exact changes made (the delta) that likely introduced the bug.]</item>
+          <item name="Content">### Environmental Triggers
+[Describe the specific OS, configurations, or state conditions required to reproduce the issue]</item>
+          <item name="Content">### Ruled Out
+[List any components, layers, or files definitively proven to be unrelated to the bug]</item>
+        </section>
+        <section n="4" name="Diagnostic Analysis">
+          <item name="Heading">## Diagnostic Analysis</item>
+          <item name="Content">### Causal Model
+A concise, causal description of how the faulty SUT operates. Continuously updated as new information is discovered.</item>
+          <item name="Content">### Discrepancies
+A concise list of observations that contradict the current Causal Model. Format: `- Observation. Conflict. (Resolved: Explanation (once resolution is confirmed))`.</item>
+          <item name="Content">### Investigation History
+A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Observation. Conclusion.`.</item>
+        </section>
+        <section n="5" name="Solution">
+          <item name="Heading">## Solution</item>
+          <item name="Content">A high-level explanation of the root cause, the proven fix, and the systemic preventative measures to prevent this class of issue globally.</item>
+        </section>
+      </blueprint>
+    </blueprints>
 
     <response_format>
       <title>Markdown Response Protocol (MRP)</title>
