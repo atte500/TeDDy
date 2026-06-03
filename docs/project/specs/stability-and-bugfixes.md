@@ -4,6 +4,7 @@
 - **LiteLLM Warnings:** Suppress `LiteLLM:WARNING` regarding missing `botocore` dependency in production environments (e.g., PyPI installs).
 - **SSL/API Resilience:** Implement a retry mechanism (3 attempts) for LLM completion failures involving `SSLV3_ALERT_BAD_RECORD_MAC` errors or OpenRouter timeouts.
 - **Safety Limits:** Implement `max-turns` (99) and `max-cost` ($5.00) limits in `config.yaml`, enforced strictly in `--yolo` (`-y`) mode.
+- **Pruning Logic:** The `global_context_threshold` calculation MUST only sum the token counts of files residing in the `Turn` scope (originating from `turn.context`). Files from the `Session` scope (`session.context`) and the `System` scope (system prompts) are excluded from the threshold check, although they remain part of the final payload.
 - **Web Scraper (403 Bypassing):** The `WebScraperAdapter` must attempt to bypass 403 Forbidden errors (Reproduce via: `https://www.pnas.org/doi/10.1073/pnas.2416294121`) by rotating User-Agents or using common headers.
 - **GitHub Raw Compatibility:** Fix the issue where `raw.githubusercontent.com` links return `SUCCESS` but with empty content (Reproduce via: `https://raw.githubusercontent.com/lllyasviel/LayerDiffuse/main/README.md`).
 
