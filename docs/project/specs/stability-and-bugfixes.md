@@ -27,3 +27,4 @@
 - **EXECUTE Fail-Fast:** Detect interactive prompts to fail early; on timeout, identify the specific failing command in a chain.
 - **Relaxed Context Validation:** Do not throw validation errors for `READ`-ing files already in context or `EDIT`-ing files not in context; rely on matching logic for enforcement.
 - **Redundant Edits:** Do not throw validation errors for `EDIT` actions where the `FIND` and `REPLACE` blocks are identical; treat them as successful no-ops.
+- **Post-Execution Logging:** The `ExecutionOrchestrator` (or `SessionOrchestrator`) must detect if an additional user message was provided during the review phase (via TUI 'm' key or message reply) and log it to the console *after* all actions have executed. Format: `User Message: [content]`.

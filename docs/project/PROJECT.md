@@ -65,3 +65,4 @@ This section defines the conventions for our project management artifacts.
     - **UX Hints:** Append reminder to user request messages: "Update reference documents accordingly if needed."
     - **Validation Logging:** Include concise versions of encountered errors in "Validation failed replanning" logs; remove the empty line before the message.
     - **CLI Polish:** Support `-a`, `-m`, and `-c` flags for the `start` command.
+    - **Message Visibility:** Log the user message (from TUI 'm' key or message replies) to the console after execution in the format `User Message: [content]`.
