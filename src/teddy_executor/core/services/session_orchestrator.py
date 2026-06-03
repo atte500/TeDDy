@@ -74,6 +74,10 @@ class SessionOrchestrator(IRunPlanUseCase):
         message: Optional[str] = None,
         project_context: Optional[Any] = None,
     ) -> ExecutionReport:
+        # Empty message signals session termination (no report.md created).
+        if message is not None and not message.strip():
+            return None  # type: ignore
+
         # 0. Detect Session Mode (requires plan_path and meta.yaml)
         is_session = self._is_session_mode(plan_path)
 
