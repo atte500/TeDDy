@@ -50,6 +50,7 @@ This section defines the conventions for our project management artifacts.
     - **Fail-Fast & Hardening:** Implement `EXECUTE` fail-fast on interactive prompts (UNIX: Signal-based; Windows: Exit-code based) with consistent "Interactive prompt detected" messaging; mid-execution consistency for `EDIT`.
     - **Relaxed Validation:** Allow `READ` of existing context and `EDIT` of non-context files; rely on matching logic for enforcement.
     - **Parser Resilience:** For all actions, ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within both `~~~~~~` and ` `````` ` delimiters without triggering validation errors.
+    - **Diagnostic Reporting:** Ensure `is_session` flag persists during validation failures to suppress redundant "Resource Contents" while preserving "Closest Match Diffs".
 
 ### Milestone 3: TUI & UX Enhancements [PLANNED]
 - **Core Goal:** Improve the interactive experience and provide better visibility into session state.
