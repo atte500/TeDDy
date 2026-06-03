@@ -26,6 +26,13 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 ```
 
 ## Deliverables
+- [ ] **Contract** - Add `is_session: bool = False` parameter to `SessionReplanner.build_failure_report` signature.
+- [ ] **Contract** - Add `is_session: bool = False` parameter to `SessionReplanner.gather_failed_resources` signature.
+- [ ] **Contract** - Add `is_session: bool = False` parameter to `SessionLifecycleManager.trigger_replan` signature.
+- [ ] **Migration** - Update `SessionOrchestrator._handle_logical_validation_errors` to pass `is_session` to both `gather_failed_resources` and `trigger_replan`.
+- [ ] **Logic** - In `SessionReplanner.gather_failed_resources`, return `{}` immediately when `is_session=True` to skip unnecessary I/O.
+- [ ] **Logic** - In `SessionReplanner.build_failure_report`, forward `is_session` to the `ExecutionReport` constructor.
+- [ ] **Refactor** - Ensure all existing callers of modified methods continue to work with default `is_session=False`.
 - [x] **Harness** - Unit tests for `ShellAdapter` UNIX interactive prompt detection (SIGTTIN scenario).
 - [x] **Logic** - Implement interactive prompt detection in `ShellAdapter` to return `FAILURE: Interactive prompt detected`.
 - [x] **Harness** - Unit tests for `ShellAdapter` Windows interactive prompt detection (`cmd /c` wrapper, timeout logic).

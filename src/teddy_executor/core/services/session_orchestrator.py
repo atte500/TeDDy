@@ -65,7 +65,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             project_context=project_context,
         )
 
-    def execute(  # noqa: PLR0913
+    def execute(  # noqa: PLR0913, C901
         self,
         plan: Optional[Plan] = None,
         plan_content: Optional[str] = None,
@@ -337,7 +337,9 @@ class SessionOrchestrator(IRunPlanUseCase):
         )
         error_messages = [e.message for e in errors]
 
-        failed_resources = self._replanner.gather_failed_resources(errors)
+        failed_resources = self._replanner.gather_failed_resources(
+            errors, is_session=is_session
+        )
 
         if is_session and plan_path:
             return self._lifecycle_manager.trigger_replan(
@@ -350,6 +352,7 @@ class SessionOrchestrator(IRunPlanUseCase):
                 validation_ast=rich_ast,
                 original_actions=plan.actions,
                 plan=plan,
+                is_session=is_session,
             )
 
         return self._replanner.build_failure_report(

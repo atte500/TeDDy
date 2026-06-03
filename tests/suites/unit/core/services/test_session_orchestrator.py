@@ -249,6 +249,7 @@ def test_session_orchestrator_passes_plan_to_trigger_replan_on_validation_failur
         validation_ast=ANY,
         original_actions=[],
         plan=mock_plan,  # This is what we are adding
+        is_session=True,  # Added by bugfix: propagate is_session flag
     )
 
 

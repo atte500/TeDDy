@@ -96,6 +96,7 @@ class SessionLifecycleManager:
         title: str = "Unknown Plan",
         rationale: str = "Structural Error",
         failed_resources: Optional[dict[str, str]] = None,
+        is_session: bool = False,
         validation_ast: Optional[str] = None,
         original_actions: Optional[Sequence[Any]] = None,
         plan: Optional["Plan"] = None,
@@ -111,6 +112,7 @@ class SessionLifecycleManager:
             failed_resources or {},
             validation_ast=validation_ast,
             original_actions=original_actions,
+            is_session=is_session,
         )
         next_turn_dir = self.finalize_turn(
             plan_path, report, is_validation_failure=True, plan=plan

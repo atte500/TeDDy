@@ -25,6 +25,7 @@ class SessionReplanner:
         failed_resources: dict[str, str],
         validation_ast: str | None = None,
         original_actions: Sequence[Any] | None = None,
+        is_session: bool = False,
     ) -> ExecutionReport:
         """Creates a validation failure report."""
         now = datetime.now(timezone.utc)
@@ -43,6 +44,7 @@ class SessionReplanner:
             validation_result=errors,
             validation_ast=validation_ast,
             failed_resources=failed_resources,
+            is_session=is_session,
         )
 
     def trigger_replan_turn(
@@ -79,8 +81,14 @@ class SessionReplanner:
             f"````````````markdown\n{original_content}\n````````````"
         )
 
-    def gather_failed_resources(self, errors: list) -> dict[str, str]:
-        """Collects the contents of files that caused validation errors."""
+    def gather_failed_resources(
+        self, errors: list, is_session: bool = False
+    ) -> dict[str, str]:
+        """Collects the contents of files that caused validation errors.
+        If is_session is True, skip I/O since resource contents are already in input.md.
+        """
+        if is_session:
+            return {}
         resources = {}
         for error in errors:
             path = getattr(error, "file_path", None)
