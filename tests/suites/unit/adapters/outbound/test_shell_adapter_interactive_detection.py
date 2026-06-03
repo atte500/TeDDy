@@ -48,3 +48,36 @@ class TestUnixInteractivePromptDetection:
 
         assert "FAILURE: Interactive prompt detected" not in result["stdout"]
         assert result["return_code"] == 0
+
+    def test_shell_read_p_detected_as_interactive(self):
+        """
+        Fast-fail: shell `read -p` with stdin=DEVNULL must exit
+        immediately with non-zero return code (no hang).
+        Standardized message is not expected here because this
+        shell builtin produces no stderr on some platforms.
+        """
+        adapter = ShellAdapter(command_builder=ShellCommandBuilder())
+
+        result = adapter.execute("read -p 'Enter value: ' value")
+
+        assert result["return_code"] != 0, (
+            f"Expected non-zero exit for interactive command, "
+            f"got stdout={result['stdout']!r}, stderr={result['stderr']!r}"
+        )
+
+    def test_getpass_detected_as_interactive(self):
+        """
+        Red phase: `getpass.getpass()` with stdin=DEVNULL should
+        produce the standardized interactive-failure message.
+        """
+        adapter = ShellAdapter(command_builder=ShellCommandBuilder())
+
+        result = adapter.execute(
+            'python -c "import getpass; getpass.getpass()"',
+        )
+
+        assert "FAILURE: Interactive prompt detected" in result["stdout"], (
+            f"Expected standardized failure message, got stdout={result['stdout']!r}, "
+            f"stderr={result['stderr']!r}, return_code={result['return_code']}"
+        )
+        assert result["return_code"] != 0

@@ -119,7 +119,12 @@ class ShellAdapter(IShellExecutor):
             # suspension when running in a new process group.
 
             def preexec_fn():
-                os.setpgrp()
+                # Create a new session to detach from controlling terminal.
+                # This causes /dev/tty access (e.g. getpass.getpass) to fail fast.
+                if hasattr(os, "setsid"):
+                    os.setsid()
+                else:
+                    os.setpgrp()
                 # Prevent OS from suspending background process group when querying TTY
                 signal.signal(signal.SIGTTOU, signal.SIG_IGN)
                 signal.signal(signal.SIGTTIN, signal.SIG_IGN)
@@ -209,6 +214,11 @@ class ShellAdapter(IShellExecutor):
             "is not a TTY",
             "not a tty",
             "stdin is not a terminal",
+            # Shell read -p with DEVNULL triggers "read error"
+            "read error",
+            # getpass opens /dev/tty directly; fails with EIO or ENOTTY
+            "Input/output error",
+            "Inappropriate ioctl",
         ]
         return any(p in stderr for p in patterns)
 
