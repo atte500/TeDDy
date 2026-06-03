@@ -26,7 +26,7 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 ```
 
 ## Deliverables
-- [ ] **Contract** - Add `is_session: bool = False` parameter to `SessionReplanner.build_failure_report` signature.
+- [x] **Contract** - Add `is_session: bool = False` parameter to `SessionReplanner.build_failure_report` signature.
 - [ ] **Contract** - Add `is_session: bool = False` parameter to `SessionReplanner.gather_failed_resources` signature.
 - [ ] **Contract** - Add `is_session: bool = False` parameter to `SessionLifecycleManager.trigger_replan` signature.
 - [ ] **Migration** - Update `SessionOrchestrator._handle_logical_validation_errors` to pass `is_session` to both `gather_failed_resources` and `trigger_replan`.
@@ -59,6 +59,11 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - **Edge Case Findings:** Shell `read -p` with `stdin=DEVNULL` on macOS produces empty stderr and exit code 1, making pattern-based detection impossible. Test adjusted to assert fast-fail (non-zero exit) rather than standardized message.
 - **Test Results:** 4 unit tests pass (2 original + 2 edge case); full suite 746 passed, 2 skipped.
 - **Key Design Decision:** `os.setsid()` is preferred over stacking `os.setpgrp()` + `os.setsid()` because POSIX forbids a process group leader from creating a new session. Using `os.setsid()` alone achieves both session creation and process group isolation.
+
+### Deliverable 1: Contract — `build_failure_report` `is_session` Parameter
+- **Status:** Code was already implemented with `is_session: bool = False` parameter. Created `test_session_replanner.py` with 3 passing unit tests verifying (1) default value is `False`, (2) `True` is forwarded to `ExecutionReport`, (3) `False` is forwarded correctly.
+- **Architecture Note:** The `ExecutionReport` dataclass already had `is_session: bool = False` field at time of implementation, so no changes were needed to the domain model.
+- **Test Strategy:** Used Dummy (not Mock) test doubles for `FileSystemManager` and `PlanningService` to keep tests isolated and fast. The `DummyFileSystemManager` returns `False`/`""` for all I/O operations.
 
 ### Deliverable 3+4: Windows Interactive Prompt Detection (Harness + Logic)
 - **Approach:** Extended `_detect_interactive_prompt` pattern list with `"Input required"`, `"Unexpected EOF"`, and `"cannot read input"` to cover Windows `cmd /set /p` and redirected-stdin scenarios. Fixed `_handle_timeout` to call `_detect_interactive_prompt` on sanitized stderr before returning, because timeout results bypass `_process_execution_results`. This ensures that timed-out Windows interactive commands return the standardized `FAILURE: Interactive prompt detected` message instead of the raw timeout error.
