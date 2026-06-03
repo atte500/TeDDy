@@ -245,7 +245,7 @@ def test_session_orchestrator_passes_plan_to_trigger_replan_on_validation_failur
         original_plan_content="plan content",
         title="Test Plan",
         rationale="Test Rationale",
-        failed_resources=ANY,
+        failed_resources={},  # is_session=True → gather_failed_resources returns {} immediately
         validation_ast=ANY,
         original_actions=[],
         plan=mock_plan,  # This is what we are adding

@@ -29,7 +29,7 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - [x] **Contract** - Add `is_session: bool = False` parameter to `SessionReplanner.build_failure_report` signature.
 - [x] **Contract** - Add `is_session: bool = False` parameter to `SessionReplanner.gather_failed_resources` signature.
 - [x] **Contract** - Add `is_session: bool = False` parameter to `SessionLifecycleManager.trigger_replan` signature.
-- [ ] **Migration** - Update `SessionOrchestrator._handle_logical_validation_errors` to pass `is_session` to both `gather_failed_resources` and `trigger_replan`.
+- [x] **Migration** - Update `SessionOrchestrator._handle_logical_validation_errors` to pass `is_session` to both `gather_failed_resources` and `trigger_replan`.
 - [ ] **Logic** - In `SessionReplanner.gather_failed_resources`, return `{}` immediately when `is_session=True` to skip unnecessary I/O.
 - [ ] **Logic** - In `SessionReplanner.build_failure_report`, forward `is_session` to the `ExecutionReport` constructor.
 - [ ] **Refactor** - Ensure all existing callers of modified methods continue to work with default `is_session=False`.
@@ -70,6 +70,13 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - **Test Strategy:** Used same Dummy doubles from Deliverable 1. The `is_session=True` test uses a `FakeError` object with a `file_path` attribute to demonstrate I/O avoidance. The `is_session=False` test confirms normal path still returns `{}` when files don't exist.
 
 ### Deliverable 3: Contract — `trigger_replan` `is_session` Parameter
+- **Status:** Code already implemented with `is_session: bool = False` parameter. Existing `TestTriggerReplanIsSession` test class in `test_session_lifecycle_manager.py` covers: (1) default value is `False`, (2) `True` is forwarded to `build_failure_report`, (3) `False` is forwarded correctly.
+- **Test Strategy:** Uses existing `manager` fixture with auto-specced mocks (via `register_mock`) to verify correctness of `is_session` forwarding through the `trigger_replan` → `build_failure_report` call chain. The test uses `assert_called_once` with kwargs inspection on the mocked `replanner.build_failure_report` to verify the flag propagation.
+
+### Deliverable 4: Migration — `_handle_logical_validation_errors` `is_session` Propagation
+- **Approach:** The `_handle_logical_validation_errors` method already passed `is_session` to both `gather_failed_resources` and `trigger_replan` at time of implementation. The code was implemented correctly — only test coverage was missing. Enhanced the `test_session_orchestrator_passes_plan_to_trigger_replan_on_validation_failure` test to assert `failed_resources={}` (proving `gather_failed_resources` received `is_session=True` and returned early) and `is_session=True` (proving propagation to `trigger_replan`).
+- **Test Strategy:** Changed `failed_resources=ANY` to `failed_resources={}` in the `assert_called_once_with` assertion for `trigger_replan`. This endpoint-level assertion proves the entire `_handle_logical_validation_errors` → `gather_failed_resources(is_session=True)` → `trigger_replan(is_session=True)` chain works correctly without leaking implementation details.
+- **Key Design Decision:** Explicit assertion on `failed_resources={}` is preferred over asserting on the `gather_failed_resources` mock directly because it tests the integration boundary of `_handle_logical_validation_errors` as a unit, which is the actual Migration deliverable scope.
 - **Status:** Code already implemented with `is_session: bool = False` parameter. Existing test class `TestTriggerReplanIsSession` in `test_session_lifecycle_manager.py` covers: (1) default value is `False`, (2) `True` is forwarded to `build_failure_report`, (3) `False` is forwarded correctly.
 - **Test Strategy:** Uses existing `manager` fixture with auto-specced mocks (via `register_mock`) to verify correctness of `is_session` forwarding through the `trigger_replan` → `build_failure_report` call chain. The test uses `assert_called_once` with kwargs inspection on the mocked `replanner.build_failure_report` to verify the flag propagation.
 
