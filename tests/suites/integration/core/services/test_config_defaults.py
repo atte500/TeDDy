@@ -72,6 +72,7 @@ def test_edit_action_uses_hardcoded_similarity_fallback_when_config_is_missing(
     orchestrator_no_config = container.resolve(IRunPlanUseCase)
 
     mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = "original content"
     mock_fs.read_raw_file.return_value = "original content"
 
     plan = Plan(
