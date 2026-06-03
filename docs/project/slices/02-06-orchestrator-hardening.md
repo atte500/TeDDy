@@ -38,7 +38,7 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - [x] **Harness** - Unit tests for `ShellAdapter` Windows interactive prompt detection (`cmd /c` wrapper, timeout logic).
 - [x] **Logic** - Implement Windows interactive prompt detection in `ShellAdapter`.
 - [x] **Harness** - Unit tests for `MarkdownPlanParser` trailing-text cleanup within fences and thematic breaks.
-- [ ] **Logic** - Implement trailing-text and thematic-break cleanup in `MarkdownPlanParser`.
+- [x] **Logic** - Implement trailing-text and thematic-break cleanup in `MarkdownPlanParser`.
 - [ ] **Harness** - Unit tests for mid-execution `EDIT` consistency (file hash tracking and modification detection).
 - [ ] **Logic** - Implement mid-execution `EDIT` consistency: hash tracking after each successful edit and verification against external modifications.
 - [ ] **Wiring** - Acceptance test for `EXECUTE` fail-fast scenario (interactive prompt detected → `FAILURE`).
@@ -99,6 +99,11 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - **Approach:** Extended `_detect_interactive_prompt` pattern list with `"Input required"`, `"Unexpected EOF"`, and `"cannot read input"` to cover Windows `cmd /set /p` and redirected-stdin scenarios. Fixed `_handle_timeout` to call `_detect_interactive_prompt` on sanitized stderr before returning, because timeout results bypass `_process_execution_results`. This ensures that timed-out Windows interactive commands return the standardized `FAILURE: Interactive prompt detected` message instead of the raw timeout error.
 - **Test Strategy:** 6 unit tests in `test_shell_adapter_windows_interactive.py` (3 mock-based pattern detection + 1 non-interactive sanity check + 2 Windows-only skipped). All mock-based tests use `subprocess.Popen` patching with `TimeoutExpired` side effects to simulate Windows timeout behavior on any platform.
 - **Key Design Decision:** Windows patterns are added to the global pattern list without a platform guard. These exact strings are practically invisible on UNIX and adding them unconditionally simplifies the code while maintaining cross-platform correctness.
+
+### Deliverable 8+9: Harness + Logic — Trailing-text and thematic-break cleanup (same code change)
+- **Approach:** The same code change satisfies both Deliverable 8 (Harness) and Deliverable 9 (Logic). The parser was modified to skip `ThematicBreak` and `CodeFence` nodes between action blocks in `_parse_actions`, and `CodeFence` was added to the `isinstance` check alongside `BlockCode`. No Logic-specific code changes were needed beyond what was implemented for Harness.
+- **Commit:** `feat(parser): skip CodeFence and ThematicBreak between action blocks` (Turn 58 VCP)
+- **Test Results:** Both tests pass (`test_parser_handles_thematic_break_between_actions`, `test_parser_ignores_trailing_text_on_fence_opener`); full suite 770 passed, 3 skipped.
 
 ### Deliverable 8: Harness — Unit tests for trailing-text cleanup within fences and thematic breaks
 - **Approach:** Added `ThematicBreak` and `CodeFence` to the skip list in `_parse_actions` to ignore thematic breaks (`---`) and unexpected code blocks (e.g., trailing fence language text) between action blocks, preventing `InvalidPlanError` for these benign tokens.
