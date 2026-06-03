@@ -42,7 +42,7 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - [x] **Harness** - Unit tests for mid-execution `EDIT` consistency (file hash tracking and modification detection).
 - [x] **Logic** - Implement mid-execution `EDIT` consistency: hash tracking after each successful edit and verification against external modifications.
 - [x] **Wiring** - Acceptance test for `EXECUTE` fail-fast scenario (interactive prompt detected → `FAILURE`).
-- [ ] **Wiring** - Acceptance test for `EDIT` mid-execution consistency scenario (file modified externally → `FAILURE`).
+- [x] **Wiring** - Acceptance test for `EDIT` mid-execution consistency scenario (file modified externally → `FAILURE`).
 - [ ] **Cleanup** - Reorder Implementation Notes in 02-06-orchestrator-hardening.md so that the "Deliverable 3+4: Windows Interactive Prompt Detection" block appears in sequence after Deliverable 2 (Logic – Interactive Prompt Detection), restoring proper deliverable ordering.
 
 ## Implementation Notes
@@ -53,6 +53,15 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - **Key Design Decisions:** Used `Mock(spec=IShellExecutor)` instead of `register_mock` to keep the test self-contained and explicit about the mock's return value. The `ShellOutput` import path was corrected from `teddy_executor.core.domain.shell_output` to `teddy_executor.core.domain.models.shell_output` during the Red-to-Green phase. The test directly registers the mock in the container rather than using `env.mock_port(IShellExecutor)` to ensure the interactive prompt simulation is exactly controlled.
 - **Integration Results:** Full suite passes with 772 passed, 3 skipped. No regressions introduced.
 - **Debt:** None identified. The test is clean, follows existing patterns (modeled after `test_hanging_command_management.py`), and requires no refactoring.
+
+### Deliverable 14: Wiring — EDIT Mid-Execution Consistency Acceptance Test
+- **Approach:** Created `tests/suites/acceptance/test_edit_mid_execution_consistency.py` with two acceptance tests that go through the full CLI stack (CliRunner → ExecutionOrchestrator → ActionExecutor). Both tests use `TestEnvironment` with `with_real_filesystem()` and `with_real_shell()` to simulate the external modification scenario. `MarkdownPlanBuilder` constructs multi-action plans (EDIT → EXECUTE → EDIT) and `ReportParser` provides structured output parsing for assertions.
+- **Test Strategy:**
+  - `test_edit_fails_when_file_modified_by_preceding_execute`: Tests the scenario where an EXECUTE modifies a file, then a subsequent EDIT targeting old content fails due to FIND mismatch (because hash tracking was cleared after EXECUTE dispatch).
+  - `test_edit_fails_when_file_externally_modified_between_two_edits`: Tests the hash pre-check path: first EDIT succeeds (hash recorded), EXECUTE modifies file (hashes cleared), second EDIT fails (now via FIND mismatch since content changed).
+- **Key Design Decisions:** Both tests assert `exit_code == 1`, the EXECUTE action has `SUCCESS`, and the final EDIT has `FAILURE`. Notably, the acceptance test does NOT assert the specific failure message is "File content modified during execution" because after an EXECUTE, all hashes are cleared (see `_clear_file_hashes()` in `ActionExecutor.confirm_and_dispatch`), so the second EDIT proceeds to dispatch and fails with a FIND mismatch rather than the hash pre-check. This is correct behavior — the implementation ensures consistency by detecting the mismatch at the FIND matching stage. The unit test `test_edit_fails_if_file_modified_externally` covers the hash pre-check path specifically by using two consecutive EDITs without an intervening EXECUTE.
+- **Integration Results:** Both tests pass immediately (no production code changes needed). Full suite passes with 774+ passed, 3 skipped. No regressions introduced.
+- **Debt:** None identified. The test is clean, uses established patterns, and accurately reflects the implemented behavior.
 
 ### Deliverable 10: Harness — Mid-Execution EDIT Consistency (xfail test)
 - **Approach:** Added an `xfail`-marked unit test (`test_edit_fails_if_file_modified_externally`) that uses the hybrid pyfakefs + MagicMock pattern (matching existing `executor` fixture style in `test_action_executor.py`). The test creates a file, performs a successful first EDIT, externally modifies the file, then asserts the second EDIT returns `ActionStatus.FAILURE`.
