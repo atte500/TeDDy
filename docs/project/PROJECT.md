@@ -46,10 +46,10 @@ This section defines the conventions for our project management artifacts.
     - **Pruning Threshold:** Refine `global_context_threshold` logic to sum ONLY files from `turn.context` (scope: Turn). Exclude `session.context` and system prompts from the threshold calculation.
     - **Session Migration:** Cap turns at 99 (2-digit padding); at turn 100, automatically migrate to a new continuation session (e.g., `name-2`) by cloning `session.context` and the active prompt and transition the `turn.context` exactly as a normal turn transition would to preserve the working context.
     - **Action Side-effects:** `CREATE` and `EDIT` actions automatically add the target file path to the turn's context (provided the file exists).
-    - **Architecture Polish:** Relocate `system_prompt.xml` to session root; improve session efficiency; prevent "Message Turns" from being pruned.
-    - **Fail-Fast & Consistency:** Synchronous `EXECUTE` fail-fast on interactive prompts; mid-execution consistency for `EDIT` (gracefully return `FAILURE`).
+    - **Architecture Polish:** Relocate agent prompts (e.g., `pathfinder.xml`) to session root; strictly deprecate turn-local prompts; implement session termination on empty message (no `report.md` created); prevent "Message Turns" from being pruned.
+    - **Fail-Fast & Hardening:** Implement `EXECUTE` fail-fast on interactive prompts (UNIX: Signal-based; Windows: Exit-code based) with consistent "Interactive prompt detected" messaging; mid-execution consistency for `EDIT`.
     - **Relaxed Validation:** Allow `READ` of existing context and `EDIT` of non-context files; rely on matching logic for enforcement.
-    - **Parser Resilience:** For all actions, ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within delimiters (e.g., `~~~~~~ trailing text`) without triggering validation errors. (Note: Other unforeseen text outside delimiters must still raise validation error).
+    - **Parser Resilience:** For all actions, ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within both `~~~~~~` and ` `````` ` delimiters without triggering validation errors.
 
 ### Milestone 3: TUI & UX Enhancements [PLANNED]
 - **Core Goal:** Improve the interactive experience and provide better visibility into session state.

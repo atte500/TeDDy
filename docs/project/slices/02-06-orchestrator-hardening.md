@@ -1,7 +1,7 @@
 # Slice: 02-06-Orchestrator Hardening
 
 - **Status:** Planned
-- **Type:** Feature
+- **Type:** Refactor
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
 
@@ -26,9 +26,10 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 ```
 
 ## Deliverables
-- [ ] **Seam** - Add `get_file_hash` to `IFileSystemManager`.
-- [ ] **Logic** - Update `ActionExecutor` to snapshot file hashes before plan start and verify them before every `EDIT` dispatch.
-- [ ] **Logic** - Update `ShellAdapter` to detect signs of interactive prompts (TTY requests or specific stdout patterns) and fail-fast.
-- [ ] **Logic** - Update `MarkdownPlanParser` and `ActionParserStrategies` to ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within codeblock delimiters (e.g., `~~~~~~ trailing text`) without triggering validation errors.
-- [ ] **Harness** - Create integration test involving a shell command that modifies a file followed by an `EDIT` in the same plan.
-- [ ] **Harness** - Create unit tests in `test_parser_resilience.py` specifically for thematic breaks and trailing delimiter text between actions.
+- [ ] **Hardening (UNIX)** - Refactor `ShellAdapter` to detect `SIGTTIN` in child processes and return `FAILURE: Interactive prompt detected`.
+- [ ] **Hardening (Windows)** - Refine `cmd /c` wrapper and timeout logic to return `FAILURE: Interactive prompt detected` for hangs.
+- [ ] **Resilience** - Update `MarkdownPlanParser` to ignore and clean up trailing text (e.g., `~~~~~~ trailing text`) within both `~~~~~~` and ` `````` ` delimiters.
+- [ ] **Logic** - Implement mid-execution consistency for `EDIT`: verify file hasn't been modified externally since plan start.
+- [ ] **Logic** - Update internal plan state (file hashes) after each successful `EDIT` to support sequential changes to the same file.
+- [ ] **Hardening (Windows)** - Probe `WaitForInputIdle` in `ShellAdapter` for proactive interactive detection.
+- [ ] **Harness** - Create unit tests for parser resilience covering both fence types and thematic breaks.

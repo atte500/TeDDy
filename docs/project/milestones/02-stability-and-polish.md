@@ -24,9 +24,9 @@ Implement resilient infrastructure patterns (retries, User-Agent rotation), enfo
 - **Web Scraping:** Bypass 403 Forbidden errors via User-Agent rotation (Reproduce via: `https://www.pnas.org/doi/10.1073/pnas.2416294121`); fix GitHub raw content extraction (Reproduce via: `https://raw.githubusercontent.com/lllyasviel/LayerDiffuse/main/README.md`).
 - **Migration:** Cap turns at 99 with 2-digit padding; automate session continuation (e.g., `original-name-2`) by cloning `session.context` and transitioning `turn.context`.
 - **Parser Resilience:** Ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within delimiters (e.g., `~~~~~~ trailing text`) without validation errors (Note: Preserve trailing text outside delimiters).
-- **Efficiency:** Store `system_prompt.xml` at session root; prevent pruning of "Message Turns".
-- **Fail-Fast:** Synchronous `EXECUTE` must fail-fast on interactive prompts; `EDIT` must gracefully return `FAILURE` if file modified during execution.
-- **Validation:** Relax context rules for `READ`/`EDIT` to rely on matching logic rather than throwing validation errors for context presence; ignore redundant edits (identical FIND and REPLACE blocks) without triggering validation errors.
+- **Architecture Polish:** Store agent-specific prompts (e.g., `pathfinder.xml`) at session root; strictly deprecate turn-local prompt cloning; implement session termination on empty message without creating `report.md`; prevent pruning of "Message Turns".
+- **Fail-Fast & Hardening:** Synchronous `EXECUTE` must fail-fast on interactive prompts (UNIX signals/Windows exit codes) with a shared error message; `EDIT` must gracefully return `FAILURE` if file modified during execution.
+- **Validation:** Relax context rules for `READ`/`EDIT` to rely on matching logic; ignore redundant edits (identical FIND and REPLACE blocks); ensure parser ignores trailing text in `~~~~~~` and ` `````` ` fences.
 
 ## Vertical Slices
 - [x] **02-01-Resilient Infrastructure**: LLM retries and recursive context expansion.

@@ -13,11 +13,21 @@
 - **Deduplication & Cleanliness:** Ensure context items are deduplicated. In session mode, NEVER include resource contents in `report.md` (since contents are already gathered in `input.md`).
 - **Auto-Addition:** `CREATE` and `EDIT` actions must automatically add the target file path to the turn's context (provided the file exists).
 - **Session Migration:** Cap turns at 99 using 2-digit padding (01, ..., 99). At turn 100, automatically migrate to a new continuation session (e.g., `original-name-2`) by cloning `session.context` and the active prompt, transitioning the `turn.context` to preserve the working state.
-- **Architecture Polish:** Store `system_prompt.xml` at the session root rather than copying it into every turn directory.
+- **Architecture Polish:** Store agent-specific prompts (e.g., `pathfinder.xml`) at the session root rather than copying or cloning them into turn directories.
 - **Efficiency:** Add configuration to prevent "Message Turns" from being pruned.
-- **Mid-Execution Consistency:** Gracefully return `FAILURE` for `EDIT` actions if a file is modified during execution (e.g., by a preceding `EXECUTE`).
+- **Mid-Execution Consistency:** Gracefully return `FAILURE` for `EDIT` actions if a file is modified externally during execution (e.g., by a preceding `EXECUTE`).
+- **Sequential Edits:** The execution state (e.g., file hashes) MUST be updated immediately after every successful `EDIT` action within a single plan. This ensures that a chain of multiple `EDIT` actions on the same file does not trigger a consistency error.
+- **Windows TTY Probe:** Investigate using `WaitForInputIdle` as a proactive "fast-fail" mechanism for Windows child processes to complement the timeout-based detection.
 
-## 3. TUI & CLI UX
+## 3. Execution Hardening & TTY Detection
+- **Standardized Fail-Fast:** The `ShellAdapter` must detect interactive prompts and fail-fast with the standardized message: `FAILURE: Interactive prompt detected`.
+- **UNIX Strategy:** Leverage signal handling to detect `SIGTTIN` (attempting to read from TTY when in background/orphaned).
+- **Windows Strategy:**
+    - **Proactive Probe:** Investigate using `WaitForInputIdle` (via `ctypes`) as a "fast-fail" probe for console/GUI processes.
+    - **EOF Mapping:** Detect and map "Unexpected EOF" or "Input required" error patterns in `stderr` (triggered when `stdin` is redirected to `NUL`) to the standardized error message.
+- **Sequential Edits:** To support chaining multiple `EDIT` actions on the same file in one plan, the execution state (file hashes/metadata) MUST be updated immediately after every successful `EDIT`. This prevents subsequent edits in the same plan from triggering "External Modification" consistency errors.
+
+## 4. TUI & CLI UX
 - **Editor Precision:** Ensure the `(e)` key in the TUI strictly respects the `editor` configuration in `config.yaml` as the highest priority.
 - **Explicit Fallbacks:** Remove all implicit "code" (VS Code) fallbacks in the adapter layer. The system must strictly follow Config -> Env -> Terminal Fallback.
 - **Validation Visibility:** "Validation failed replanning" logs must include the concise version of the encountered errors and remove redundant empty lines.
