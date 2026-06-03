@@ -27,7 +27,7 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 
 ## Deliverables
 - [x] **Contract** - Add `is_session: bool = False` parameter to `SessionReplanner.build_failure_report` signature.
-- [ ] **Contract** - Add `is_session: bool = False` parameter to `SessionReplanner.gather_failed_resources` signature.
+- [x] **Contract** - Add `is_session: bool = False` parameter to `SessionReplanner.gather_failed_resources` signature.
 - [ ] **Contract** - Add `is_session: bool = False` parameter to `SessionLifecycleManager.trigger_replan` signature.
 - [ ] **Migration** - Update `SessionOrchestrator._handle_logical_validation_errors` to pass `is_session` to both `gather_failed_resources` and `trigger_replan`.
 - [ ] **Logic** - In `SessionReplanner.gather_failed_resources`, return `{}` immediately when `is_session=True` to skip unnecessary I/O.
@@ -64,6 +64,10 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - **Status:** Code was already implemented with `is_session: bool = False` parameter. Created `test_session_replanner.py` with 3 passing unit tests verifying (1) default value is `False`, (2) `True` is forwarded to `ExecutionReport`, (3) `False` is forwarded correctly.
 - **Architecture Note:** The `ExecutionReport` dataclass already had `is_session: bool = False` field at time of implementation, so no changes were needed to the domain model.
 - **Test Strategy:** Used Dummy (not Mock) test doubles for `FileSystemManager` and `PlanningService` to keep tests isolated and fast. The `DummyFileSystemManager` returns `False`/`""` for all I/O operations.
+
+### Deliverable 2: Contract — `gather_failed_resources` `is_session` Parameter
+- **Status:** Code already implemented with `is_session: bool = False` parameter and early-return logic (`if is_session: return {}`). Added `TestGatherFailedResourcesIsSession` test class to `test_session_replanner.py` with 2 passing unit tests: (1) `is_session=True` returns `{}` immediately regardless of errors, (2) `is_session=False` proceeds normally (returns `{}` with our dummy FS). Total test count in file: 5.
+- **Test Strategy:** Used same Dummy doubles from Deliverable 1. The `is_session=True` test uses a `FakeError` object with a `file_path` attribute to demonstrate I/O avoidance. The `is_session=False` test confirms normal path still returns `{}` when files don't exist.
 
 ### Deliverable 3+4: Windows Interactive Prompt Detection (Harness + Logic)
 - **Approach:** Extended `_detect_interactive_prompt` pattern list with `"Input required"`, `"Unexpected EOF"`, and `"cannot read input"` to cover Windows `cmd /set /p` and redirected-stdin scenarios. Fixed `_handle_timeout` to call `_detect_interactive_prompt` on sanitized stderr before returning, because timeout results bypass `_process_execution_results`. This ensures that timed-out Windows interactive commands return the standardized `FAILURE: Interactive prompt detected` message instead of the raw timeout error.

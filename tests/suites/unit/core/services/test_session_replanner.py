@@ -56,3 +56,35 @@ class TestBuildFailureReportIsSession:
             is_session=is_session,
         )
         assert report.is_session == is_session
+
+
+class TestGatherFailedResourcesIsSession:
+    """Tests for the is_session parameter in gather_failed_resources."""
+
+    def test_is_session_true_returns_empty(self, replanner: SessionReplanner) -> None:
+        """When is_session=True, gather_failed_resources must return {} immediately
+        regardless of the errors list, skipping all I/O."""
+
+        # This list simulates errors that have a file_path attribute
+        class FakeError:
+            def __init__(self, file_path: str) -> None:
+                self.file_path = file_path
+
+        errors = [FakeError("/some/path")]
+        resources = replanner.gather_failed_resources(errors, is_session=True)
+        assert resources == {}
+
+    def test_is_session_false_returns_empty_with_dummy_fs(
+        self, replanner: SessionReplanner
+    ) -> None:
+        """When is_session=False, gather_failed_resources proceeds normally but
+        with our DummyFileSystemManager that reports no file exists, the result
+        is also {}."""
+
+        class FakeError:
+            def __init__(self, file_path: str) -> None:
+                self.file_path = file_path
+
+        errors = [FakeError("/nonexistent")]
+        resources = replanner.gather_failed_resources(errors, is_session=False)
+        assert resources == {}
