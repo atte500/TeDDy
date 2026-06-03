@@ -19,19 +19,17 @@ def test_parser_raises_error_on_unknown_action(parser: IPlanParser):
         parser.parse(plan_content)
 
 
-def test_parser_raises_error_on_thematic_break_between_actions(parser: IPlanParser):
-    """Verify error on thematic break (---) between actions."""
-    plan_content = (
-        _b()
-        .add_create("f1.txt", "c1")
-        .build()
-        .replace("\n### `CREATE`", "---\n### `CREATE`", 1)  # Insert break
+def test_parser_handles_thematic_break_between_actions(parser: IPlanParser):
+    """Thematic breaks between actions should be ignored (cleaned up)."""
+    builder = _b().add_create("f1.txt", "c1").add_create("f2.txt", "c2")
+    raw = builder.build()
+    # Insert --- before the second CREATE to put the break between the two actions
+    plan_content = raw.replace(
+        "### `CREATE`\n- **File Path:** [f2.txt](/f2.txt)",
+        "---\n### `CREATE`\n- **File Path:** [f2.txt](/f2.txt)",
     )
-    with pytest.raises(InvalidPlanError) as excinfo:
-        parser.parse(plan_content)
-    assert "ThematicBreak (Error: Expected a Level 3 Action Heading)" in str(
-        excinfo.value
-    )
+    plan = parser.parse(plan_content)
+    assert len(plan.actions) == 2
 
 
 def test_parser_raises_error_on_malformed_structure_between_actions(

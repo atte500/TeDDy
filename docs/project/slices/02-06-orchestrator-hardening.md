@@ -37,12 +37,13 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - [x] **Logic** - Implement interactive prompt detection in `ShellAdapter` to return `FAILURE: Interactive prompt detected`.
 - [x] **Harness** - Unit tests for `ShellAdapter` Windows interactive prompt detection (`cmd /c` wrapper, timeout logic).
 - [x] **Logic** - Implement Windows interactive prompt detection in `ShellAdapter`.
-- [ ] **Harness** - Unit tests for `MarkdownPlanParser` trailing-text cleanup within fences and thematic breaks.
+- [x] **Harness** - Unit tests for `MarkdownPlanParser` trailing-text cleanup within fences and thematic breaks.
 - [ ] **Logic** - Implement trailing-text and thematic-break cleanup in `MarkdownPlanParser`.
 - [ ] **Harness** - Unit tests for mid-execution `EDIT` consistency (file hash tracking and modification detection).
 - [ ] **Logic** - Implement mid-execution `EDIT` consistency: hash tracking after each successful edit and verification against external modifications.
 - [ ] **Wiring** - Acceptance test for `EXECUTE` fail-fast scenario (interactive prompt detected → `FAILURE`).
 - [ ] **Wiring** - Acceptance test for `EDIT` mid-execution consistency scenario (file modified externally → `FAILURE`).
+- [ ] **Cleanup** - Reorder Implementation Notes in 02-06-orchestrator-hardening.md so that the "Deliverable 3+4: Windows Interactive Prompt Detection" block appears in sequence after Deliverable 2 (Logic – Interactive Prompt Detection), restoring proper deliverable ordering.
 
 ## Implementation Notes
 - **Plan Audit (Orientation):** Deliverables reordered into Dependency Sequence (Harness → Logic → Wiring). Combined "Hardening" deliverables split into Harness/Logic pairs. Added two Wiring deliverables for the Gherkin scenarios. No breaking changes identified — all port signatures remain unchanged.
@@ -98,3 +99,9 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - **Approach:** Extended `_detect_interactive_prompt` pattern list with `"Input required"`, `"Unexpected EOF"`, and `"cannot read input"` to cover Windows `cmd /set /p` and redirected-stdin scenarios. Fixed `_handle_timeout` to call `_detect_interactive_prompt` on sanitized stderr before returning, because timeout results bypass `_process_execution_results`. This ensures that timed-out Windows interactive commands return the standardized `FAILURE: Interactive prompt detected` message instead of the raw timeout error.
 - **Test Strategy:** 6 unit tests in `test_shell_adapter_windows_interactive.py` (3 mock-based pattern detection + 1 non-interactive sanity check + 2 Windows-only skipped). All mock-based tests use `subprocess.Popen` patching with `TimeoutExpired` side effects to simulate Windows timeout behavior on any platform.
 - **Key Design Decision:** Windows patterns are added to the global pattern list without a platform guard. These exact strings are practically invisible on UNIX and adding them unconditionally simplifies the code while maintaining cross-platform correctness.
+
+### Deliverable 8: Harness — Unit tests for trailing-text cleanup within fences and thematic breaks
+- **Approach:** Added `ThematicBreak` and `CodeFence` to the skip list in `_parse_actions` to ignore thematic breaks (`---`) and unexpected code blocks (e.g., trailing fence language text) between action blocks, preventing `InvalidPlanError` for these benign tokens.
+- **Test Strategy:** Two unit tests: `test_parser_handles_thematic_break_between_actions` (thematic break between two CREATE actions → 2 actions parsed) and `test_parser_ignores_trailing_text_on_fence_opener` (`~~~~~~text trailing extra` fence opener → 1 READ action parsed). Thematic break test uses `MarkdownPlanBuilder` with a `---` inserted via string replacement. Fence cleanup test uses raw plan string.
+- **Key Design Decision:** Explicitly added `CodeFence` to the `isinstance` check alongside `BlockCode` because the mistletoe `CodeFence` subclass relationship did not trigger the existing `BlockCode` check reliably. `ThematicBreak` was added to the same skip block for consistency.
+- **Integration Note:** Both `Harness` (8) and `Logic` (9) deliverables are satisfied by the identical parser change. The Logic deliverable will be marked as completed in a subsequent VCP.

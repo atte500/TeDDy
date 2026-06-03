@@ -205,7 +205,7 @@ class MarkdownPlanParser(IPlanParser):
     def _parse_actions(
         self, stream: _PeekableStream, doc: Document
     ) -> List[ActionData]:
-        from mistletoe.block_token import BlockCode
+        from mistletoe.block_token import BlockCode, CodeFence, ThematicBreak
 
         actions: List[ActionData] = []
         # 'Action Plan' heading is already consumed by _parse_strict_top_level.
@@ -216,10 +216,9 @@ class MarkdownPlanParser(IPlanParser):
             action_heading = get_action_heading(node, self._valid_actions)
 
             if not action_heading:
-                # Skip ONLY whitespace-only code blocks (indented spaces)
-                # to fix the user's backtick/trailing space issue.
-                # Other junk (Paragraphs, breaks) must still fail validation.
-                if isinstance(node, BlockCode) and not get_child_text(node).strip():
+                # Skip code blocks and thematic breaks that can appear between
+                # action blocks due to formatting or trailing content.
+                if isinstance(node, (BlockCode, CodeFence, ThematicBreak)):
                     stream.next()
                     continue
 
