@@ -35,6 +35,6 @@ Implement resilient infrastructure patterns (retries, User-Agent rotation), enfo
 - [x] **02-03-Safety Limits**: 99-turn limit, session cost tracking, and loop protection.
 - [x] **02-04-Context Automation**: Auto-addition of CREATE/EDIT targets, remote URL context, and relaxed validation.
 - [x] **02-05-Architecture Efficiency**: Session prompt relocation and session efficiency improvements.
-- [▶] **02-06-Orchestrator Hardening**: Fail-fast execution, mid-execution consistency, and parser resilience.
+- [x] **02-06-Orchestrator Hardening**: Fail-fast execution, mid-execution consistency, and parser resilience.
 - [ ] **02-07-Pruning Refinement**: Turn-only pruning threshold calculation.
 - [ ] **02-08-Provider Routing and Display**: Remove `llm.provider` special-casing, extract provider, persist in `meta.yaml`, display in TUI, document pass-through and shortcuts.
