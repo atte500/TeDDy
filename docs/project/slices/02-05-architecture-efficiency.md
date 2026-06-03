@@ -11,10 +11,11 @@ Optimize session storage and prompt management to reduce redundancy and improve 
 ## Deliverables
 - [x] **Contract** - Ensure `preserve_message_turns: true` is supported in `config.yaml`.
 - [ ] **Logic** - Refactor `SessionService` and `SessionOrchestrator` to use dynamic agent naming (e.g., `pathfinder.xml`) at the session root.
-- [ ] **Logic** - Strictly deprecate prompt cloning; `SessionService._clone_session_artifacts` MUST NOT copy prompts into turn directories.
+- [x] **Logic** - Strictly deprecate prompt cloning; `SessionService._clone_session_artifacts` MUST NOT copy prompts into turn directories.
 - [ ] **Logic** - Implement session termination in `SessionOrchestrator` main loop if user message is empty; ensure NO `report.md` is created to allow clean resume.
 - [ ] **Logic** - Ensure `SessionPruningService` strictly respects `preserve_message_turns`.
 - [ ] **Cleanup** - Update all stale session tests to verify that turn directories only contain `input.md`, `plan.md`, `report.md`, and `meta.yaml`.
 
 ## Implementation Notes
 - **Discovery (Prompt Relocation)**: Audited `SessionService` and confirmed standard transitions (01->02) and migrations (99->01) are already targeting the session root for agent prompts. However, identified several stale tests in `tests/suites/unit/core/services/` that still assert turn-local prompt existence.
+- **Verification (Contract Test)**: Created `test_session_service_prompt_contract.py` to formally enforce the session-root prompt placement rule. The test passes immediately, confirming the architecture integrity. The cloning logic exclusively writes `.xml` files to `dest_session` without referencing `dest_turn`.
