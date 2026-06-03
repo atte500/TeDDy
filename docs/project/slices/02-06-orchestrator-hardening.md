@@ -32,7 +32,7 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - [x] **Migration** - Update `SessionOrchestrator._handle_logical_validation_errors` to pass `is_session` to both `gather_failed_resources` and `trigger_replan`.
 - [x] **Logic** - In `SessionReplanner.gather_failed_resources`, return `{}` immediately when `is_session=True` to skip unnecessary I/O.
 - [x] **Logic** - In `SessionReplanner.build_failure_report`, forward `is_session` to the `ExecutionReport` constructor.
-- [ ] **Refactor** - Ensure all existing callers of modified methods continue to work with default `is_session=False`.
+- [x] **Refactor** - Ensure all existing callers of modified methods continue to work with default `is_session=False`.
 - [x] **Harness** - Unit tests for `ShellAdapter` UNIX interactive prompt detection (SIGTTIN scenario).
 - [x] **Logic** - Implement interactive prompt detection in `ShellAdapter` to return `FAILURE: Interactive prompt detected`.
 - [x] **Harness** - Unit tests for `ShellAdapter` Windows interactive prompt detection (`cmd /c` wrapper, timeout logic).
@@ -89,6 +89,10 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - **Status:** Code already forwards `is_session=is_session` to `ExecutionReport` constructor in `build_failure_report`. Verified via `sed -n '20,50p' src/teddy_executor/core/services/session_replanner.py` showing `is_session=is_session` in the `ExecutionReport(...)` call.
 - **Test Strategy:** 3 unit tests in `TestBuildFailureReportIsSession` (committed in Turn 6's VCP) verify: (1) default `is_session=False`, (2) `True` forwarded, (3) `False` forwarded.
 - **No Code Changes Required:** This deliverable was already satisfied by prior architectural work. Only documentation tracking was needed.
+
+### Deliverable 7: Refactor — Ensure backward compatibility with default `is_session=False`
+- **Status:** All three modified methods (`build_failure_report`, `gather_failed_resources`, `trigger_replan`) have `is_session: bool = False` as default. Full test suite passes (769+ confirmed) prove no regressions. Grep audit of production callers (`session_orchestrator.py`, `session_lifecycle_manager.py`) confirms no explicit `is_session` passing — all rely on default `False`. The only explicit `is_session=True` usage in production callers is in `_handle_logical_validation_errors`, which is the intended Migration deliverable.
+- **No Code Changes Required:** Default parameter values handle backward compatibility automatically. Full suite passes confirm this.
 
 ### Deliverable 3+4: Windows Interactive Prompt Detection (Harness + Logic)
 - **Approach:** Extended `_detect_interactive_prompt` pattern list with `"Input required"`, `"Unexpected EOF"`, and `"cannot read input"` to cover Windows `cmd /set /p` and redirected-stdin scenarios. Fixed `_handle_timeout` to call `_detect_interactive_prompt` on sanitized stderr before returning, because timeout results bypass `_process_execution_results`. This ensures that timed-out Windows interactive commands return the standardized `FAILURE: Interactive prompt detected` message instead of the raw timeout error.
