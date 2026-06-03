@@ -1,5 +1,5 @@
 import subprocess
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock  # noqa: TID251
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 
 
@@ -11,8 +11,7 @@ def test_execute_background_starts_popen_and_returns_pid(container):
     mock_process = MagicMock()
     mock_process.pid = 12345
 
-    with patch("subprocess.Popen", return_value=mock_process) as mock_popen:
-        # This will fail initially because 'background' is not an accepted argument
+    with patch.object(adapter, "_popen", return_value=mock_process) as mock_popen:
         result = adapter.execute("sleep 10", background=True)
 
     mock_popen.assert_called_once()
@@ -30,7 +29,7 @@ def test_execute_background_isolates_stdin(container):
     mock_process = MagicMock()
     mock_process.pid = 9999
 
-    with patch("subprocess.Popen", return_value=mock_process) as mock_popen:
+    with patch.object(adapter, "_popen", return_value=mock_process) as mock_popen:
         adapter.execute("sleep 10", background=True)
 
     mock_popen.assert_called_once()

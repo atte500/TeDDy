@@ -52,15 +52,15 @@ class TestHandleTimeout:
 
     def _make_timeout_process(
         self,
-        communicate_side_effect: list,
+        return_value: tuple[str, str],
         returncode: int = 1,
         pid: int = 999999,
     ) -> subprocess.Popen:
-        """Create an auto-specced Popen that simulates timeout behavior."""
+        """Create an auto-specced Popen that simulates post-timeout output."""
         proc = create_autospec(subprocess.Popen, instance=True)
         proc.pid = pid
         proc.returncode = returncode
-        proc.communicate.side_effect = communicate_side_effect
+        proc.communicate.return_value = return_value
         return proc
 
     def test_timeout_with_input_required_detected(self):
@@ -70,10 +70,7 @@ class TestHandleTimeout:
         """
         adapter = ShellAdapter(command_builder=ShellCommandBuilder(platform="win32"))
         process = self._make_timeout_process(
-            communicate_side_effect=[
-                subprocess.TimeoutExpired(cmd="test", timeout=0.5),
-                ("partial stdout", "Input required\nMore stderr"),
-            ],
+            return_value=("partial stdout", "Input required\nMore stderr"),
         )
 
         result = adapter._handle_timeout(process, 0.5)
@@ -90,10 +87,7 @@ class TestHandleTimeout:
         """
         adapter = ShellAdapter(command_builder=ShellCommandBuilder(platform="win32"))
         process = self._make_timeout_process(
-            communicate_side_effect=[
-                subprocess.TimeoutExpired(cmd="test", timeout=0.5),
-                ("", "Unexpected EOF while reading input"),
-            ],
+            return_value=("", "Unexpected EOF while reading input"),
         )
 
         result = adapter._handle_timeout(process, 0.5)
@@ -109,10 +103,7 @@ class TestHandleTimeout:
         """
         adapter = ShellAdapter(command_builder=ShellCommandBuilder(platform="win32"))
         process = self._make_timeout_process(
-            communicate_side_effect=[
-                subprocess.TimeoutExpired(cmd="test", timeout=0.5),
-                ("some stdout content", "regular error: file not found"),
-            ],
+            return_value=("some stdout content", "regular error: file not found"),
         )
 
         result = adapter._handle_timeout(process, 0.5)
@@ -132,10 +123,7 @@ class TestHandleTimeout:
         """
         adapter = ShellAdapter(command_builder=ShellCommandBuilder(platform="win32"))
         process = self._make_timeout_process(
-            communicate_side_effect=[
-                subprocess.TimeoutExpired(cmd="test", timeout=0.5),
-                ("", "Input required from terminal"),
-            ],
+            return_value=("", "Input required from terminal"),
         )
 
         result = adapter._handle_timeout(process, 0.5)

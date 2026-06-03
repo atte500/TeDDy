@@ -1,7 +1,7 @@
 import subprocess
 import sys
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch  # noqa: TID251
 from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 
@@ -81,21 +81,20 @@ def test_execute_handles_timeout_with_partial_output(container):
 
     adapter = container.resolve(IShellExecutor)
 
-    with patch("subprocess.Popen") as mock_popen:
-        mock_process = MagicMock()
-        mock_process.pid = 999999
+    mock_process = MagicMock()
+    mock_process.pid = 999999
 
-        mock_process.communicate.side_effect = [
-            subprocess.TimeoutExpired(cmd="sleep 10", timeout=0.1),
-            ("partial stdout", "partial stderr"),
-        ]
-        mock_popen.return_value = mock_process
+    mock_process.communicate.side_effect = [
+        subprocess.TimeoutExpired(cmd="sleep 10", timeout=0.1),
+        ("partial stdout", "partial stderr"),
+    ]
 
-        with (
-            patch("os.killpg", create=True),
-            patch.object(adapter, "_restore_terminal_state") as mock_restore,
-        ):
-            result = adapter.execute("sleep 10", timeout=0.1)
+    with (
+        patch.object(adapter, "_popen", return_value=mock_process),
+        patch("os.killpg", create=True),
+        patch.object(adapter, "_restore_terminal_state") as mock_restore,
+    ):
+        result = adapter.execute("sleep 10", timeout=0.1)
 
     assert result["return_code"] == ShellAdapter.TIMEOUT_EXIT_CODE
     assert "partial stdout" in result["stdout"]
@@ -112,20 +111,19 @@ def test_execute_handles_timeout_without_output(container):
 
     adapter = container.resolve(IShellExecutor)
 
-    with patch("subprocess.Popen") as mock_popen:
-        mock_process = MagicMock()
-        mock_process.pid = 999999
-        mock_process.communicate.side_effect = [
-            subprocess.TimeoutExpired(cmd="sleep 10", timeout=0.5),
-            ("", ""),
-        ]
-        mock_popen.return_value = mock_process
+    mock_process = MagicMock()
+    mock_process.pid = 999999
+    mock_process.communicate.side_effect = [
+        subprocess.TimeoutExpired(cmd="sleep 10", timeout=0.5),
+        ("", ""),
+    ]
 
-        with (
-            patch("os.killpg", create=True),
-            patch.object(adapter, "_restore_terminal_state"),
-        ):
-            result = adapter.execute("sleep 10", timeout=0.5)
+    with (
+        patch.object(adapter, "_popen", return_value=mock_process),
+        patch("os.killpg", create=True),
+        patch.object(adapter, "_restore_terminal_state"),
+    ):
+        result = adapter.execute("sleep 10", timeout=0.5)
 
     assert result["return_code"] == ShellAdapter.TIMEOUT_EXIT_CODE
     assert result["stdout"] == "[ERROR: Command timed out after 0.5 seconds]"
