@@ -13,7 +13,7 @@ Optimize session storage and prompt management to reduce redundancy and improve 
 - [x] **Logic** - Refactor `SessionService` and `SessionOrchestrator` to use dynamic agent naming (e.g., `pathfinder.xml`) at the session root.
 - [x] **Logic** - Strictly deprecate prompt cloning; `SessionService._clone_session_artifacts` MUST NOT copy prompts into turn directories.
 - [x] **Logic** - Implement session termination in `SessionOrchestrator` main loop if user message is empty; ensure NO `report.md` is created to allow clean resume.
-- [ ] **Logic** - Ensure `SessionPruningService` strictly respects `preserve_message_turns`.
+- [x] **Logic** - Ensure `SessionPruningService` strictly respects `preserve_message_turns`.
 - [ ] **Cleanup** - Update all stale session tests to verify that turn directories only contain `input.md`, `plan.md`, `report.md`, and `meta.yaml`.
 
 ## Implementation Notes
@@ -21,3 +21,4 @@ Optimize session storage and prompt management to reduce redundancy and improve 
 - **Verification (Contract Test)**: Created `test_session_service_prompt_contract.py` to formally enforce the session-root prompt placement rule. The test passes immediately, confirming the architecture integrity. The cloning logic exclusively writes `.xml` files to `dest_session` without referencing `dest_turn`.
 - **Verification (Dynamic Agent Naming)**: Created `test_session_service_dynamic_agent_naming.py` to assert that `create_session` writes the agent prompt to the session root using the dynamic agent name (e.g., `architect.xml`) rather than a hardcoded filename or turn-local path. The test passes immediately, confirming the architecture already satisfies the requirement.
 - **Empty Message Termination**: Implemented early-return guard in `SessionOrchestrator.execute()` (after docstring, before any logic) that returns `None` if `message` is not None but whitespace-only. Created unit test `test_session_orchestrator_empty_message.py` verifying that no `report.md` is written and `None` is returned. This ensures clean session termination per the spec (handoff-protocol.md: "If the user provides an empty response, the session terminates.").
+- **Global Budget Message Turn Exemption**: Updated `SessionPruningService._apply_global_budget()` to accept `spared_ids: Optional[set[int]]` parameter. The method now skips items belonging to spared turns (identified by `_extract_turn_id`) when pruning to fit the global token budget. The call site in `prune()` passes the `spared_turns` set collected during turn metadata scanning. Created unit test `test_session_pruning_preserve_messages_budget.py` verifying that message turn items survive the budget pruning while regular turn items are deselcted.

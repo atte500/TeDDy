@@ -53,7 +53,9 @@ class SessionPruningService:
             # 3. Heuristic 2: Global Budget
             system_prompt_tokens = context.system_prompt_tokens or 0
             items = self._apply_global_budget(
-                items, system_prompt_tokens=system_prompt_tokens
+                items,
+                system_prompt_tokens=system_prompt_tokens,
+                spared_ids=spared_turns,
             )
 
             return replace(context, items=items)
@@ -370,7 +372,12 @@ class SessionPruningService:
                     continue
         return turn_id_map, max_id
 
-    def _apply_global_budget(self, items, system_prompt_tokens: int = 0):
+    def _apply_global_budget(
+        self,
+        items,
+        system_prompt_tokens: int = 0,
+        spared_ids: Optional[set[int]] = None,
+    ):
         """Prunes turn and history context items to fit within a global token budget."""
         try:
             setting = self._config_service.get_setting(
@@ -401,9 +408,19 @@ class SessionPruningService:
                 # Sort by token count descending to prune largest files first
                 prune_candidates.sort(key=lambda x: x[1].token_count, reverse=True)
 
+                spared = spared_ids or set()
+
                 for idx, item in prune_candidates:
                     if total_tokens <= threshold:
                         break
+                    # Skip items belonging to spared turns (e.g., preserved message turns)
+                    turn_id_str = self._extract_turn_id(item.path)
+                    if turn_id_str:
+                        try:
+                            if int(turn_id_str) in spared:
+                                continue
+                        except ValueError:
+                            pass
                     items[idx] = replace(
                         item,
                         selected=False,
