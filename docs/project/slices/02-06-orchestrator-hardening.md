@@ -39,13 +39,19 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - [x] **Logic** - Implement Windows interactive prompt detection in `ShellAdapter`.
 - [x] **Harness** - Unit tests for `MarkdownPlanParser` trailing-text cleanup within fences and thematic breaks.
 - [x] **Logic** - Implement trailing-text and thematic-break cleanup in `MarkdownPlanParser`.
-- [ ] **Harness** - Unit tests for mid-execution `EDIT` consistency (file hash tracking and modification detection).
+- [x] **Harness** - Unit tests for mid-execution `EDIT` consistency (file hash tracking and modification detection).
 - [ ] **Logic** - Implement mid-execution `EDIT` consistency: hash tracking after each successful edit and verification against external modifications.
 - [ ] **Wiring** - Acceptance test for `EXECUTE` fail-fast scenario (interactive prompt detected → `FAILURE`).
 - [ ] **Wiring** - Acceptance test for `EDIT` mid-execution consistency scenario (file modified externally → `FAILURE`).
 - [ ] **Cleanup** - Reorder Implementation Notes in 02-06-orchestrator-hardening.md so that the "Deliverable 3+4: Windows Interactive Prompt Detection" block appears in sequence after Deliverable 2 (Logic – Interactive Prompt Detection), restoring proper deliverable ordering.
 
 ## Implementation Notes
+
+### Deliverable 10: Harness — Mid-Execution EDIT Consistency (xfail test)
+- **Approach:** Added an `xfail`-marked unit test (`test_edit_fails_if_file_modified_externally`) that uses the hybrid pyfakefs + MagicMock pattern (matching existing `executor` fixture style in `test_action_executor.py`). The test creates a file, performs a successful first EDIT, externally modifies the file, then asserts the second EDIT returns `ActionStatus.FAILURE`.
+- **xfail Strategy:** The `@pytest.mark.xfail(reason="Hash tracking not yet implemented (Logic deliverable)")` marker keeps the suite Green-to-Green while documenting the expected behavior. The test was verified to report as `XFAIL` (expected failure) in the Red phase.
+- **Refactored to `register_mock`:** The test originally used `MagicMock(spec=...)` (Turn 67) but was refactored in Turn 71 to comply with project standards by using `register_mock(container, ...)` for `ActionDispatcher`, `IUserInteractor`, and `IConfigService`. The xfail marker remains on the test until hash tracking is implemented in the Logic deliverable.
+- **Integration Verified:** Full suite passes with 770 passed, 3 skipped, 1 xfailed. No regressions.
 - **Plan Audit (Orientation):** Deliverables reordered into Dependency Sequence (Harness → Logic → Wiring). Combined "Hardening" deliverables split into Harness/Logic pairs. Added two Wiring deliverables for the Gherkin scenarios. No breaking changes identified — all port signatures remain unchanged.
 
 ### Deliverable 1: ShellAdapter UNIX Interactive Prompt Detection
