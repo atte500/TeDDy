@@ -13,6 +13,7 @@ import re
 
 class ShellAdapter(IShellExecutor):
     TIMEOUT_EXIT_CODE = 124
+    INTERACTIVE_PROMPT_MESSAGE = "FAILURE: Interactive prompt detected"
 
     def __init__(
         self,
@@ -188,7 +189,28 @@ class ShellAdapter(IShellExecutor):
                         failed_cmd = failed_cmd.replace("^^", "^")
                     output["failed_command"] = failed_cmd
                     break
+
+        if return_code != 0 and self._detect_interactive_prompt(stderr):
+            output["stdout"] = self.INTERACTIVE_PROMPT_MESSAGE
+            output["stderr"] = ""
+            return output
+
         return output
+
+    @staticmethod
+    def _detect_interactive_prompt(stderr: str) -> bool:
+        """
+        Detect if a command failure was due to an interactive prompt
+        by checking stderr for common patterns.
+        """
+        patterns = [
+            "EOFError",
+            "input(",
+            "is not a TTY",
+            "not a tty",
+            "stdin is not a terminal",
+        ]
+        return any(p in stderr for p in patterns)
 
     def _run_subprocess(  # noqa: PLR0913
         self,

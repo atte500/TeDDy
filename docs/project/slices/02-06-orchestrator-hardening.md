@@ -26,7 +26,7 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 ```
 
 ## Deliverables
-- [ ] **Harness** - Unit tests for `ShellAdapter` UNIX interactive prompt detection (SIGTTIN scenario).
+- [x] **Harness** - Unit tests for `ShellAdapter` UNIX interactive prompt detection (SIGTTIN scenario).
 - [ ] **Logic** - Implement SIGTTIN detection in `ShellAdapter` to return `FAILURE: Interactive prompt detected`.
 - [ ] **Harness** - Unit tests for `ShellAdapter` Windows interactive prompt detection (`cmd /c` wrapper, timeout logic).
 - [ ] **Logic** - Implement Windows interactive prompt detection in `ShellAdapter`.
@@ -39,3 +39,9 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 
 ## Implementation Notes
 - **Plan Audit (Orientation):** Deliverables reordered into Dependency Sequence (Harness → Logic → Wiring). Combined "Hardening" deliverables split into Harness/Logic pairs. Added two Wiring deliverables for the Gherkin scenarios. No breaking changes identified — all port signatures remain unchanged.
+
+### Deliverable 1: ShellAdapter UNIX Interactive Prompt Detection
+- **Approach:** Used pattern-based detection via `_detect_interactive_prompt` static method checking stderr for EOFError/input patterns. Integration happens in `_process_execution_results` after the `FAILED_COMMAND:` marker block, overriding stdout with `"FAILURE: Interactive prompt detected"` when patterns match and `return_code != 0`.
+- **Test Strategy:** Two unit tests: (1) positive case using `python -c "input('> ')"` with stdin=DEVNULL (triggers EOFError), (2) negative sanity check with `echo hello`. Both tests pass green.
+- **Key Design Decision:** Exposed `INTERACTIVE_PROMPT_MESSAGE` as a class constant (`ShellAdapter.INTERACTIVE_PROMPT_MESSAGE`) for reuse by downstream consumers (e.g., Windows detection adapter or Wiring acceptance tests).
+- **Scope Heuristic:** No refactoring needed; DI purity maintained (direct constructor injection), no magic numbers, no global patching.
