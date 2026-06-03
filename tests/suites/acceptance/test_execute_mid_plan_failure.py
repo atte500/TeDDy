@@ -22,7 +22,7 @@ async def test_execute_mid_plan_failure_produces_report(real_env, monkeypatch):
         plan_builder.with_rationale("Reproduction of crash")
         .add_execute(
             description="Change content",
-            command=f'echo "modified content" > {test_file}',
+            command=f'echo "modified content" > "{test_file}"',
         )
         .add_edit(
             description="Failing edit",
