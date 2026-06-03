@@ -41,11 +41,18 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - [x] **Logic** - Implement trailing-text and thematic-break cleanup in `MarkdownPlanParser`.
 - [x] **Harness** - Unit tests for mid-execution `EDIT` consistency (file hash tracking and modification detection).
 - [x] **Logic** - Implement mid-execution `EDIT` consistency: hash tracking after each successful edit and verification against external modifications.
-- [ ] **Wiring** - Acceptance test for `EXECUTE` fail-fast scenario (interactive prompt detected → `FAILURE`).
+- [x] **Wiring** - Acceptance test for `EXECUTE` fail-fast scenario (interactive prompt detected → `FAILURE`).
 - [ ] **Wiring** - Acceptance test for `EDIT` mid-execution consistency scenario (file modified externally → `FAILURE`).
 - [ ] **Cleanup** - Reorder Implementation Notes in 02-06-orchestrator-hardening.md so that the "Deliverable 3+4: Windows Interactive Prompt Detection" block appears in sequence after Deliverable 2 (Logic – Interactive Prompt Detection), restoring proper deliverable ordering.
 
 ## Implementation Notes
+
+### Deliverable 13: Wiring — EXECUTE Fail-Fast Acceptance Test
+- **Approach:** Created `tests/suites/acceptance/test_execute_fail_fast.py` with a subcutaneous acceptance test that mocks `IShellExecutor` to simulate the interactive prompt detection path. The test uses `TestEnvironment` with a `Mock(spec=IShellExecutor)` that returns a `ShellOutput` with `return_code=1` and `stdout="FAILURE: Interactive prompt detected"`. The mock is registered in the container via `env.container.register(IShellExecutor, lambda: mock_shell)` to override the default mock. This tests the full CLI wiring (CliRunner → ExecutionOrchestrator → ActionExecutor → ShellAdapter) without real shell execution.
+- **Test Strategy:** One test function (`test_execute_fails_with_interactive_prompt_message`) covers the happy-path failure scenario: interactive prompt → FAILURE with standardized message. Uses `MarkdownPlanBuilder` for plan generation and `ReportParser` for structured output parsing. Assertions check: `exit_code == 1`, `Overall Status == "FAILURE"`, action status `FAILURE`, and the presence of "FAILURE: Interactive prompt detected" in stdout details.
+- **Key Design Decisions:** Used `Mock(spec=IShellExecutor)` instead of `register_mock` to keep the test self-contained and explicit about the mock's return value. The `ShellOutput` import path was corrected from `teddy_executor.core.domain.shell_output` to `teddy_executor.core.domain.models.shell_output` during the Red-to-Green phase. The test directly registers the mock in the container rather than using `env.mock_port(IShellExecutor)` to ensure the interactive prompt simulation is exactly controlled.
+- **Integration Results:** Full suite passes with 772 passed, 3 skipped. No regressions introduced.
+- **Debt:** None identified. The test is clean, follows existing patterns (modeled after `test_hanging_command_management.py`), and requires no refactoring.
 
 ### Deliverable 10: Harness — Mid-Execution EDIT Consistency (xfail test)
 - **Approach:** Added an `xfail`-marked unit test (`test_edit_fails_if_file_modified_externally`) that uses the hybrid pyfakefs + MagicMock pattern (matching existing `executor` fixture style in `test_action_executor.py`). The test creates a file, performs a successful first EDIT, externally modifies the file, then asserts the second EDIT returns `ActionStatus.FAILURE`.
