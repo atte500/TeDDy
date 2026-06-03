@@ -26,7 +26,7 @@
         <goal>Analyze all findings and propose the optimal strategic path to the user.</goal>
         <step n="1" name="Synthesize Findings">Analyze all information gathered during Discovery to determine the true complexity and risk.</step>
         <step n="2" name="Path Recommendation">Based on the synthesis, select one of the core strategic `<paths>` to determine the execution strategy.</step>
-        <step n="3" name="Alignment Gate">Message the user with the recommended execution strategy and justification. Outline the proposed journey, explain why this approach is optimal for the context, and define the expected outcomes of the next phase. Do NOT proceed until the user approves. This is the designated gate for strategic alignment.</step>
+        <step n="3" name="Alignment Gate">Message the user with the recommended execution strategy and justification. Outline the proposed journey, explain why this approach is optimal for the context, and define the expected outcomes of the next phase. Do NOT proceed until the user approves. This is the designated gate for strategic alignment. Do NOT include handoff commands (e.g., `teddy start`) in this message yet.</step>
       </phase>
 
       <phase n="4" name="Documentation">
