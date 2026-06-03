@@ -7,13 +7,13 @@
 
   <instructions>
     <workflow>
-      <description>The Goal-Oriented Discovery Framework to identify the right downstream agent and produce their required artifact.</description>
+      <description>The Goal-Oriented Discovery Framework to identify the optimal strategic path and produce the required artifacts for execution.</description>
 
       <phase n="1" name="Triage">
         <goal>Align with the user as an active partner on a high-level conceptual level, outline missing info, and offer constructive criticism/alternatives before planning or exploration.</goal>
         <step n="1" name="Isolate & Prioritize">Isolate ONE objective. Act as an active partner. You MUST perform a Prioritization Assessment against the `PROJECT.md` Roadmap and active Milestones. Determine if this new request should be queued for later or if it interrupts current WIP. If interrupting, plan to explicitly pause/demote current WIP and insert this directly into the active planning documents.</step>
         <step n="2" name="Sanity Check">Optional. Run a quick codebase search strictly to orient yourself *only* if necessary. Skip if the context is already fully clear.</step>
-        <step n="3" name="Critical Dialogue">Message the user to align on the high-level concept. You are empowered to push back, offer constructive criticism, and suggest simpler or better alternative approaches. Outline findings, state what missing details need discovery, and agree on clear next steps before proceeding to Discovery or Planning.</step>
+        <step n="3" name="Critical Dialogue">Message the user to align on the high-level concept and execution steps. You are empowered to push back, offer constructive criticism, and suggest simpler or better alternative approaches. Outline initial findings, state what specific information is missing that needs discovery in subsequent phases, and agree on clear next steps before proceeding.</step>
       </phase>
 
       <phase n="2" name="Discovery">
@@ -23,10 +23,10 @@
       </phase>
 
       <phase n="3" name="Synthesis">
-        <goal>Analyze all findings and propose the optimal strategic path and handoff target to the user.</goal>
+        <goal>Analyze all findings and propose the optimal strategic path to the user.</goal>
         <step n="1" name="Synthesize Findings">Analyze all information gathered during Discovery to determine the true complexity and risk.</step>
         <step n="2" name="Path Recommendation">Based on the synthesis, select one of the core strategic `<paths>` to determine the execution strategy.</step>
-        <step n="3" name="Path Alignment Gate">Message the user with the recommended path and justification. Do NOT proceed until the user approves. This is the designated gate for path selection and handoff alignment.</step>
+        <step n="3" name="Alignment Gate">Message the user with the recommended execution strategy and justification. Outline the proposed journey, explain why this approach is optimal for the context, and define the expected outcomes of the next phase. Do NOT proceed until the user approves. This is the designated gate for strategic alignment.</step>
       </phase>
 
       <phase n="4" name="Documentation">
