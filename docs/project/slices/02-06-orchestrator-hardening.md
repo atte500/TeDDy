@@ -31,7 +31,7 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - [x] **Contract** - Add `is_session: bool = False` parameter to `SessionLifecycleManager.trigger_replan` signature.
 - [x] **Migration** - Update `SessionOrchestrator._handle_logical_validation_errors` to pass `is_session` to both `gather_failed_resources` and `trigger_replan`.
 - [x] **Logic** - In `SessionReplanner.gather_failed_resources`, return `{}` immediately when `is_session=True` to skip unnecessary I/O.
-- [ ] **Logic** - In `SessionReplanner.build_failure_report`, forward `is_session` to the `ExecutionReport` constructor.
+- [x] **Logic** - In `SessionReplanner.build_failure_report`, forward `is_session` to the `ExecutionReport` constructor.
 - [ ] **Refactor** - Ensure all existing callers of modified methods continue to work with default `is_session=False`.
 - [x] **Harness** - Unit tests for `ShellAdapter` UNIX interactive prompt detection (SIGTTIN scenario).
 - [x] **Logic** - Implement interactive prompt detection in `ShellAdapter` to return `FAILURE: Interactive prompt detected`.
@@ -84,6 +84,11 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - **Status:** Code already implemented with `if is_session: return {}` guard. The early return was confirmed in Turn 22 via `TestGatherFailedResourcesIsSession` which verifies: (1) `is_session=True` returns `{}` immediately regardless of errors, (2) `is_session=False` proceeds normally. No additional code changes were needed.
 - **Test Strategy:** 2 unit tests in `test_session_replanner.py` using Dummy test doubles. The `is_session=True` test uses a `FakeError` object with a `file_path` attribute to demonstrate I/O avoidance. The `is_session=False` test confirms normal path returns `{}` when no files exist.
 - **Key Integration:** This deliverable is end-to-end proven via the Migration deliverable (4) where `_handle_logical_validation_errors` passes `is_session=True` and receives `failed_resources={}` from `gather_failed_resources` — verified in `test_session_orchestrator.py` with `assert_called_once_with(failed_resources={})`.
+
+### Deliverable 6: Logic — `build_failure_report` Forward `is_session`
+- **Status:** Code already forwards `is_session=is_session` to `ExecutionReport` constructor in `build_failure_report`. Verified via `sed -n '20,50p' src/teddy_executor/core/services/session_replanner.py` showing `is_session=is_session` in the `ExecutionReport(...)` call.
+- **Test Strategy:** 3 unit tests in `TestBuildFailureReportIsSession` (committed in Turn 6's VCP) verify: (1) default `is_session=False`, (2) `True` forwarded, (3) `False` forwarded.
+- **No Code Changes Required:** This deliverable was already satisfied by prior architectural work. Only documentation tracking was needed.
 
 ### Deliverable 3+4: Windows Interactive Prompt Detection (Harness + Logic)
 - **Approach:** Extended `_detect_interactive_prompt` pattern list with `"Input required"`, `"Unexpected EOF"`, and `"cannot read input"` to cover Windows `cmd /set /p` and redirected-stdin scenarios. Fixed `_handle_timeout` to call `_detect_interactive_prompt` on sanitized stderr before returning, because timeout results bypass `_process_execution_results`. This ensures that timed-out Windows interactive commands return the standardized `FAILURE: Interactive prompt detected` message instead of the raw timeout error.
