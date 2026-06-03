@@ -28,8 +28,8 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 ## Deliverables
 - [x] **Harness** - Unit tests for `ShellAdapter` UNIX interactive prompt detection (SIGTTIN scenario).
 - [x] **Logic** - Implement interactive prompt detection in `ShellAdapter` to return `FAILURE: Interactive prompt detected`.
-- [ ] **Harness** - Unit tests for `ShellAdapter` Windows interactive prompt detection (`cmd /c` wrapper, timeout logic).
-- [ ] **Logic** - Implement Windows interactive prompt detection in `ShellAdapter`.
+- [x] **Harness** - Unit tests for `ShellAdapter` Windows interactive prompt detection (`cmd /c` wrapper, timeout logic).
+- [x] **Logic** - Implement Windows interactive prompt detection in `ShellAdapter`.
 - [ ] **Harness** - Unit tests for `MarkdownPlanParser` trailing-text cleanup within fences and thematic breaks.
 - [ ] **Logic** - Implement trailing-text and thematic-break cleanup in `MarkdownPlanParser`.
 - [ ] **Harness** - Unit tests for mid-execution `EDIT` consistency (file hash tracking and modification detection).
@@ -52,3 +52,8 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - **Edge Case Findings:** Shell `read -p` with `stdin=DEVNULL` on macOS produces empty stderr and exit code 1, making pattern-based detection impossible. Test adjusted to assert fast-fail (non-zero exit) rather than standardized message.
 - **Test Results:** 4 unit tests pass (2 original + 2 edge case); full suite 746 passed, 2 skipped.
 - **Key Design Decision:** `os.setsid()` is preferred over stacking `os.setpgrp()` + `os.setsid()` because POSIX forbids a process group leader from creating a new session. Using `os.setsid()` alone achieves both session creation and process group isolation.
+
+### Deliverable 3+4: Windows Interactive Prompt Detection (Harness + Logic)
+- **Approach:** Extended `_detect_interactive_prompt` pattern list with `"Input required"`, `"Unexpected EOF"`, and `"cannot read input"` to cover Windows `cmd /set /p` and redirected-stdin scenarios. Fixed `_handle_timeout` to call `_detect_interactive_prompt` on sanitized stderr before returning, because timeout results bypass `_process_execution_results`. This ensures that timed-out Windows interactive commands return the standardized `FAILURE: Interactive prompt detected` message instead of the raw timeout error.
+- **Test Strategy:** 6 unit tests in `test_shell_adapter_windows_interactive.py` (3 mock-based pattern detection + 1 non-interactive sanity check + 2 Windows-only skipped). All mock-based tests use `subprocess.Popen` patching with `TimeoutExpired` side effects to simulate Windows timeout behavior on any platform.
+- **Key Design Decision:** Windows patterns are added to the global pattern list without a platform guard. These exact strings are practically invisible on UNIX and adding them unconditionally simplifies the code while maintaining cross-platform correctness.

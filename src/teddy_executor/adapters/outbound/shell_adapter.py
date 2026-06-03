@@ -22,6 +22,7 @@ class ShellAdapter(IShellExecutor):
     ):
         self._command_builder = command_builder or ShellCommandBuilder()
         self.max_execute_lines = max_execute_lines
+        self._popen = subprocess.Popen
 
     def _sanitize_output(self, text: str) -> str:
         """Strips ALL ANSI escape sequences to prevent playback corruption and garbled reports."""
@@ -154,13 +155,21 @@ class ShellAdapter(IShellExecutor):
         except subprocess.TimeoutExpired:
             stdout, stderr = "", ""
 
+        sanitized_stderr = self._sanitize_output(stderr) or ""
+        if self._detect_interactive_prompt(sanitized_stderr):
+            return {
+                "stdout": self.INTERACTIVE_PROMPT_MESSAGE,
+                "stderr": sanitized_stderr,
+                "return_code": self.TIMEOUT_EXIT_CODE,
+            }
+
         self._log_debug_error(Exception(f"TimeoutExpired: {timeout} seconds"))
         warning = f"[ERROR: Command timed out after {timeout} seconds]"
         return {
             "stdout": f"{warning}\n{self._sanitize_output(stdout)}".strip()
             if stdout
             else warning,
-            "stderr": self._sanitize_output(stderr) or "",
+            "stderr": sanitized_stderr,
             "return_code": self.TIMEOUT_EXIT_CODE,
         }
 
@@ -219,6 +228,12 @@ class ShellAdapter(IShellExecutor):
             # getpass opens /dev/tty directly; fails with EIO or ENOTTY
             "Input/output error",
             "Inappropriate ioctl",
+            # Windows: cmd /set /p produces "Input required from terminal"
+            "Input required",
+            # Windows: EOF on redirected stdin
+            "Unexpected EOF",
+            # General: cannot read input on redirected stdin
+            "cannot read input",
         ]
         return any(p in stderr for p in patterns)
 
@@ -234,7 +249,7 @@ class ShellAdapter(IShellExecutor):
         """Executes the command in a subprocess and handles errors."""
         try:
             if background:
-                process = subprocess.Popen(  # nosec B602
+                process = self._popen(  # nosec B602
                     command_args,
                     shell=use_shell,
                     cwd=cwd,
@@ -251,7 +266,7 @@ class ShellAdapter(IShellExecutor):
                 }
 
             kwargs = self._prepare_subprocess_kwargs(use_shell, cwd, env)
-            process = subprocess.Popen(command_args, **kwargs)  # nosec
+            process = self._popen(command_args, **kwargs)  # nosec
 
             try:
                 # Type cast is required because Mypy cannot infer str types when
