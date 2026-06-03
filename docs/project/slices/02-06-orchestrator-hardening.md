@@ -1,6 +1,6 @@
 # Slice: 02-06-Orchestrator Hardening
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Type:** Refactor
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
@@ -26,10 +26,16 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 ```
 
 ## Deliverables
-- [ ] **Hardening (UNIX)** - Refactor `ShellAdapter` to detect `SIGTTIN` in child processes and return `FAILURE: Interactive prompt detected`.
-- [ ] **Hardening (Windows)** - Refine `cmd /c` wrapper and timeout logic to return `FAILURE: Interactive prompt detected` for hangs.
-- [ ] **Resilience** - Update `MarkdownPlanParser` to ignore and clean up trailing text (e.g., `~~~~~~ trailing text`) within both `~~~~~~` and ` `````` ` delimiters.
-- [ ] **Logic** - Implement mid-execution consistency for `EDIT`: verify file hasn't been modified externally since plan start.
-- [ ] **Logic** - Update internal plan state (file hashes) after each successful `EDIT` to support sequential changes to the same file.
-- [ ] **Hardening (Windows)** - Probe `WaitForInputIdle` in `ShellAdapter` for proactive interactive detection.
-- [ ] **Harness** - Create unit tests for parser resilience covering both fence types and thematic breaks.
+- [ ] **Harness** - Unit tests for `ShellAdapter` UNIX interactive prompt detection (SIGTTIN scenario).
+- [ ] **Logic** - Implement SIGTTIN detection in `ShellAdapter` to return `FAILURE: Interactive prompt detected`.
+- [ ] **Harness** - Unit tests for `ShellAdapter` Windows interactive prompt detection (`cmd /c` wrapper, timeout logic).
+- [ ] **Logic** - Implement Windows interactive prompt detection in `ShellAdapter`.
+- [ ] **Harness** - Unit tests for `MarkdownPlanParser` trailing-text cleanup within fences and thematic breaks.
+- [ ] **Logic** - Implement trailing-text and thematic-break cleanup in `MarkdownPlanParser`.
+- [ ] **Harness** - Unit tests for mid-execution `EDIT` consistency (file hash tracking and modification detection).
+- [ ] **Logic** - Implement mid-execution `EDIT` consistency: hash tracking after each successful edit and verification against external modifications.
+- [ ] **Wiring** - Acceptance test for `EXECUTE` fail-fast scenario (interactive prompt detected → `FAILURE`).
+- [ ] **Wiring** - Acceptance test for `EDIT` mid-execution consistency scenario (file modified externally → `FAILURE`).
+
+## Implementation Notes
+- **Plan Audit (Orientation):** Deliverables reordered into Dependency Sequence (Harness → Logic → Wiring). Combined "Hardening" deliverables split into Harness/Logic pairs. Added two Wiring deliverables for the Gherkin scenarios. No breaking changes identified — all port signatures remain unchanged.
