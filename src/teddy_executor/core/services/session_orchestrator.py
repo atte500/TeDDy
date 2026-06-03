@@ -226,6 +226,23 @@ class SessionOrchestrator(IRunPlanUseCase):
         if plan:
             plan.is_session = is_session
 
+        # Defensive check for missing plan file
+        if plan_path and not plan_content:
+            if not self._file_system_manager.path_exists(plan_path):
+                error_msg = f"Plan file not found: {plan_path}"
+                if is_session:
+                    return self._lifecycle_manager.trigger_replan(
+                        plan_path=plan_path,
+                        errors=[error_msg],
+                        original_plan_content="",
+                    )
+                return self._replanner.build_failure_report(
+                    errors=[error_msg],
+                    title="Missing Plan",
+                    rationale="The plan file could not be found on disk.",
+                    failed_resources={},
+                )
+
         content = plan_content or (
             self._file_system_manager.read_file(plan_path) if plan_path else ""
         )

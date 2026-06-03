@@ -246,6 +246,8 @@ def handle_resume_session(
     import re
 
     try:
+        # 1. Pre-flight checks
+        typer.echo("Checking configurations...", err=True)
         _run_cli_preflight_check(container)
         # For resume, the agent is determined by the session metadata
         _echo_config_success(container)
