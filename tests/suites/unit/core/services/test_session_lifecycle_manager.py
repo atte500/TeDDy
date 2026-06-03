@@ -68,3 +68,32 @@ def test_trigger_replan_propagates_plan_to_finalize_turn(manager, container):
     assert kwargs.get("pruned_paths") == ["file_a.txt"], (
         "Pruned paths from plan were not propagated"
     )
+
+
+class TestTriggerReplanIsSession:
+    """Tests for the is_session parameter in trigger_replan."""
+
+    def test_default_is_session_false(self, manager, container) -> None:
+        """When is_session is not provided, it must default to False."""
+        manager.trigger_replan(
+            plan_path="session/turn_1/plan.md",
+            errors=["Error 1"],
+            original_plan_content="# Plan",
+        )
+        manager._replanner.build_failure_report.assert_called_once()
+        call_kwargs = manager._replanner.build_failure_report.call_args.kwargs
+        assert "is_session" in call_kwargs
+        assert call_kwargs["is_session"] is False
+
+    @pytest.mark.parametrize("is_session", [True, False])
+    def test_is_session_forwarded(self, manager, container, is_session: bool) -> None:
+        """is_session must be forwarded to build_failure_report."""
+        manager.trigger_replan(
+            plan_path="session/turn_1/plan.md",
+            errors=["Error 1"],
+            original_plan_content="# Plan",
+            is_session=is_session,
+        )
+        manager._replanner.build_failure_report.assert_called_once()
+        call_kwargs = manager._replanner.build_failure_report.call_args.kwargs
+        assert call_kwargs["is_session"] == is_session
