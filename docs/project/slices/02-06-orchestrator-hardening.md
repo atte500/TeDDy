@@ -40,7 +40,7 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - [x] **Harness** - Unit tests for `MarkdownPlanParser` trailing-text cleanup within fences and thematic breaks.
 - [x] **Logic** - Implement trailing-text and thematic-break cleanup in `MarkdownPlanParser`.
 - [x] **Harness** - Unit tests for mid-execution `EDIT` consistency (file hash tracking and modification detection).
-- [ ] **Logic** - Implement mid-execution `EDIT` consistency: hash tracking after each successful edit and verification against external modifications.
+- [x] **Logic** - Implement mid-execution `EDIT` consistency: hash tracking after each successful edit and verification against external modifications.
 - [ ] **Wiring** - Acceptance test for `EXECUTE` fail-fast scenario (interactive prompt detected → `FAILURE`).
 - [ ] **Wiring** - Acceptance test for `EDIT` mid-execution consistency scenario (file modified externally → `FAILURE`).
 - [ ] **Cleanup** - Reorder Implementation Notes in 02-06-orchestrator-hardening.md so that the "Deliverable 3+4: Windows Interactive Prompt Detection" block appears in sequence after Deliverable 2 (Logic – Interactive Prompt Detection), restoring proper deliverable ordering.
@@ -116,3 +116,13 @@ Then execution should fail immediately with an "Interactive prompt detected" err
 - **Test Strategy:** Two unit tests: `test_parser_handles_thematic_break_between_actions` (thematic break between two CREATE actions → 2 actions parsed) and `test_parser_ignores_trailing_text_on_fence_opener` (`~~~~~~text trailing extra` fence opener → 1 READ action parsed). Thematic break test uses `MarkdownPlanBuilder` with a `---` inserted via string replacement. Fence cleanup test uses raw plan string.
 - **Key Design Decision:** Explicitly added `CodeFence` to the `isinstance` check alongside `BlockCode` because the mistletoe `CodeFence` subclass relationship did not trigger the existing `BlockCode` check reliably. `ThematicBreak` was added to the same skip block for consistency.
 - **Integration Note:** Both `Harness` (8) and `Logic` (9) deliverables are satisfied by the identical parser change. The Logic deliverable will be marked as completed in a subsequent VCP.
+
+### Deliverable 11: Logic — Mid-Execution EDIT Consistency (Hash Tracking)
+- **Approach:** Added SHA256 hash tracking to `ActionExecutor` to detect external file modifications between EDIT actions. The implementation:
+  1. **Storage**: `_file_hashes: dict[str, str]` maps file paths to their last-known SHA256 digest.
+  2. **Pre-check**: Before dispatching an EDIT action, if a hash exists for the target path, the file is re-read and hashed. A mismatch returns `FAILURE` with `"File content modified during execution"` before delegating to the dispatcher.
+  3. **Post-update**: After a successful EDIT dispatch, the file's hash is recomputed and stored.
+  4. **EXECUTE invalidation**: After an EXECUTE dispatch, all hashes are cleared since shell commands can modify any file without notice.
+- **Seam Location**: The hash logic lives in `ActionExecutor.confirm_and_dispatch`, the orchestration method, not in `ActionDispatcher`, to centralize consistency checks and minimize diff impact. The helper `_compute_file_hash(path)` uses `hashlib.sha256` and reads via the injected `IFileSystemManager`.
+- **Test Strategy**: The existing `test_edit_fails_if_file_modified_externally` test (previously `xfail`) now actively passes. It uses pyfakefs + `LocalFileSystemAdapter` for realistic file I/O and `register_mock` for the dispatcher, interactor, and config service.
+- **Key Decision**: On pre-check failure, we create an inline `ActionLog` rather than calling `_create_intercepted_log`, because that helper is designed for pre-dispatch skips (like user skip) while this is a pre-dispatch FAILURE caused by state mismatch.

@@ -26,7 +26,6 @@ def test_executor_can_be_initialized(executor):
     assert isinstance(executor, ActionExecutor)
 
 
-@pytest.mark.xfail(reason="Hash tracking not yet implemented (Logic deliverable)")
 def test_edit_fails_if_file_modified_externally(fs, container):
     """
     Mid-execution EDIT consistency: if a file is externally modified between
@@ -51,10 +50,10 @@ def test_edit_fails_if_file_modified_externally(fs, container):
     fs.create_file("target.py", contents="original content")
 
     # Set up dependencies with auto-specced mocks via register_mock
-    file_system = LocalFileSystemAdapter()
+    edit_sim = EditSimulator()
+    file_system = LocalFileSystemAdapter(edit_simulator=edit_sim)
     action_dispatcher = register_mock(container, ActionDispatcher)
     user_interactor = register_mock(container, IUserInteractor)
-    edit_sim = EditSimulator()
     config_service = register_mock(container, IConfigService)
 
     executor = ActionExecutor(

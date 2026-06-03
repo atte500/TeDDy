@@ -1,3 +1,4 @@
+import hashlib
 import logging
 from typing import Optional
 
@@ -42,6 +43,7 @@ class ActionExecutor:
         self._changeset_builder = ActionChangeSetBuilder(
             file_system_manager, config_service, edit_simulator
         )
+        self._file_hashes: dict[str, str] = {}
 
     def _create_intercepted_log(
         self, action, status: ActionStatus, details: str
@@ -58,6 +60,11 @@ class ActionExecutor:
             modified=action.modified,
             modified_fields=action.modified_fields,
         )
+
+    def _compute_file_hash(self, path: str) -> str:
+        """Computes SHA256 hash of file content for mid-execution consistency checks."""
+        content = self._file_system_manager.read_file(path)
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
     def _handle_skipped_action(self, action, reason: str) -> ActionLog:
         """Creates an ActionLog for a skipped action."""
@@ -108,7 +115,7 @@ class ActionExecutor:
             action=action, action_prompt=prompt, change_set=change_set
         )
 
-    def confirm_and_dispatch(  # noqa: PLR0913
+    def confirm_and_dispatch(  # noqa: PLR0913  # noqa: C901
         self,
         action,
         interactive: bool,
@@ -137,12 +144,40 @@ class ActionExecutor:
                 "",
             )
 
+        # Mid-execution consistency: pre-check hash for EDIT actions
+        path = action.params.get("path")
+        if action.type.upper() == "EDIT" and path and path in self._file_hashes:
+            try:
+                current_hash = self._compute_file_hash(path)
+                if current_hash != self._file_hashes[path]:
+                    return (
+                        ActionLog(
+                            status=ActionStatus.FAILURE,
+                            action_type="EDIT",
+                            params=action.params.copy(),
+                            details="File content modified during execution",
+                        ),
+                        reason,
+                    )
+            except OSError:  # safe to ignore
+                # If we can't read the file, proceed with normal dispatch
+                pass
+
         action_log = self._action_dispatcher.dispatch_and_execute(
             action, agent_name=agent_name
         )
 
         if action_log.status == ActionStatus.FAILURE:
             return self._enrich_failed_log(action, action_log), reason
+
+        # Post-dispatch: update hash for EDIT, clear for EXECUTE
+        if action.type.upper() == "EDIT" and path:
+            try:
+                self._file_hashes[path] = self._compute_file_hash(path)
+            except OSError:  # safe to ignore
+                pass
+        elif action.type.upper() == "EXECUTE":
+            self._file_hashes.clear()
 
         # For success, we still want to return the message captured via 'm'
         return (
