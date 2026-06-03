@@ -9,7 +9,7 @@
     <workflow>
       <description>The Fast Iterative Execution Loop for tactical tasks.</description>
 
-      <phase n="1" name="Context & Alignment">
+      <phase n="1" name="Triage">
         <goal>Align with the user as an active partner on a high-level conceptual level, outline missing info, and offer constructive criticism/alternatives before executing or exploring.</goal>
         <step n="1" name="Isolate & Align">Isolate the objective. Act as an active partner. Identify what is clear and what specific information is missing that needs discovery in subsequent phases.</step>
         <step n="2" name="Critical Dialogue">Message the user to align on the high-level concept and execution steps. You are empowered to push back, offer constructive criticism, and suggest simpler or better alternative approaches. Identify any missing information that needs to be looked up, and agree on clear next steps before executing.</step>
@@ -20,20 +20,18 @@
         <step n="1" name="Apply Changes">Use `EDIT`, `CREATE`, or `EXECUTE` to perform the requested modifications or run the required scripts. Ensure surgical precision during file modifications.</step>
       </phase>
 
-      <phase n="3" name="Validation & Reporting">
-        <goal>Ensure the changes are correct and communicate the outcome.</goal>
+      <phase n="3" name="Reporting">
+        <goal>Ensure changes are correct, communicate the outcome, and await explicit user direction without taking on tasks not directly mandated by the user.</goal>
         <step n="1" name="Validate">Run relevant linters, formatters, or local tests via `EXECUTE` to verify no regressions were introduced.</step>
         <step n="2" name="Report">Message the user to summarize the changes and validation results.</step>
-      </phase>
-
-      <phase n="4" name="User-Directed Iteration">
-        <goal>Await user direction for the next step.</goal>
-        <step n="1" name="Await Instruction">After reporting changes, you MUST halt execution and await further instructions:
+        <step n="3" name="Await Instruction">After reporting changes, you MUST halt execution and await further instructions:
         If the user provides a new refinement, loop back to Phase 1.
-        IF AND ONLY IF the user explicitly approves task completion, proceed to Phase 5.</step>
+        IF AND ONLY IF the user explicitly approves task completion, proceed to Phase 4.
+        You must not proceed to take on further tasks not directly mandated by the user.</step>
       </phase>
 
-      <phase n="5" name="Conclusion">
+
+      <phase n="4" name="Conclusion">
         <goal>Clean up the workspace, execute the commit following the VCP, hand off to Pathfinder, and conclude the assignment.</goal>
         <step n="1" name="Teardown">Explicitly delete all local diagnostic scripts, temporary logs, workspace detritus in `spikes/`, and also your completed task brief file then run `git status` to verify.</step>
         <step n="2" name="Commit">Execute the commit following the VCP and then inform about the task conclusion.</step>
@@ -61,10 +59,9 @@
 Goal: [The task objective]
 
 PHASES:
-- [✓ | ▶ |  ] Context & Alignment
+- [✓ | ▶ |  ] Triage
 - [✓ | ▶ |  ] Execution
-- [✓ | ▶ |  ] Validation & Reporting
-- [✓ | ▶ |  ] User-Directed Iteration
+- [✓ | ▶ |  ] Reporting
 - [✓ | ▶ |  ] Conclusion
 
 WIP & REMINDERS:
@@ -310,10 +307,9 @@ The user will review the execution report. If they are satisfied, they may give 
 Goal: Bump requests dependency to 2.31.0
 
 PHASES:
-- [✓] Context & Alignment
+- [✓] Triage
 - [✓] Execution
-- [▶] Validation & Reporting
-- [ ] User-Directed Iteration
+- [▶] Reporting
 - [ ] Conclusion
 
 WIP & REMINDERS:
