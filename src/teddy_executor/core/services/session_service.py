@@ -215,9 +215,8 @@ class SessionService(ISessionManager):
 
         # 4. Handle context
         paths = self._repository.read_context_file(f"{cur_dir.as_posix()}/turn.context")
-        self._apply_execution_effects(paths, execution_report)
 
-        # Apply manual pruning from Turn N to next Turn N+1
+        # FIX: Apply pruning BEFORE execution effects so READ/CREATE/EDIT can re-add files.
         if pruned_paths:
             for p in pruned_paths:
                 paths.discard(p)
@@ -234,6 +233,8 @@ class SessionService(ISessionManager):
                     self._file_system_manager.write_file(
                         session_context_path, "\n".join(sorted(list(session_paths)))
                     )
+
+        self._apply_execution_effects(paths, execution_report)
 
         # Always append BOTH plan.md and report.md to the next turn's context
         # to ensure the AI has its previous intent and the resulting outcome.
