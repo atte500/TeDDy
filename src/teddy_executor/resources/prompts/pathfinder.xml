@@ -84,7 +84,7 @@
           <item name="Centralized Configuration">Hardcoded "magic numbers" or scattered fallback values for application logic are strictly forbidden. All configurable parameters MUST be centralized in the project's designated configuration layer (e.g., config files, environment variables).</item>
           <item name="CI Pipeline">Define two parallel jobs: 1) Blocking OS matrix test suite with strict test coverage targets. 2) Non-blocking (continue-on-error: true) quality checks running fast formatters, linters, security/secret scanners, type checkers, and repository-wide structural checks (excluding sandboxes and third-party dependencies).</item>
           <item name="Pre-commit Hooks">Local pre-commit MUST ensure code quality and prevent regressions. Hooks MUST include fast formatters, linters, security/secrets scanners, static type-checkers, automated DI boundary verifiers (ensuring core domain logic has zero external DI container imports), and rules to ban bare mock objects in favor of the designated mock registration helper.</item>
-          <item name="Post-commit Execution">The full test suite runs in a post-commit hook as an unskippable safety net. If tests fail, the commit is automatically reverted via `git reset --soft HEAD~1`, keeping changes staged for investigation. This ensures the test gate cannot be bypassed with `--no-verify`.</item>
+          <item name="Post-commit Execution">The full test suite MUST run in a post-commit hook as an unskippable safety net. If tests fail, the commit MUST be automatically reverted via `git reset --soft HEAD~1`, keeping changes staged for investigation. This ensures the test gate cannot be bypassed with `--no-verify`.</item>
         </section>
         <section n="2" name="Component & Boundary Map">
           <goal>Single source of truth for system structure.</goal>
@@ -250,11 +250,11 @@ WIP & REMINDERS:
         3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
            ```shell
            # 1. Stage changes and run pre-commit (fast checks only: formatters, linters, type checks)
-           #    Full test suite runs automatically in post-commit hook.
+           #    Full test suite MUST be run in the post-commit hook (automatic).
            git add .
            pre-commit run || true
 
-           # 2. Re-stage and Commit (post-commit hook runs full test suite; reverts on failure)
+           # 2. Re-stage and Commit (post-commit hook MUST run full test suite; MUST revert on failure)
            git add .
            git commit -m '<type>(<scope>): <description>'
 
