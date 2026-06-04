@@ -44,8 +44,8 @@ And the old global_context_threshold key should NOT be read
 - [x] **Contract** - Remove `system_prompt_tokens: int = 0` parameter from `_apply_global_budget` signature.
 - [x] **Seam** - Add backward compatibility in pruning service: fallback to `global_context_threshold` if `turn_context_threshold` is not set, with a deprecation log.
 - [x] **Harness** - Update all test fixtures and test files that reference `global_context_threshold` to use `turn_context_threshold`.
-- [ ] **Harness** - Update all test callers of `_apply_global_budget` to remove `system_prompt_tokens` argument.
-- [ ] **Logic** - Refactor `_apply_global_budget` to:
+- [x] **Harness** - Update all test callers of `_apply_global_budget` to remove `system_prompt_tokens` argument.
+- [x] **Logic** - Refactor `_apply_global_budget` to:
   1. Read `turn_context_threshold` (with backward compatibility fallback).
   2. Sum only items with `scope == "Turn"` for the threshold check.
   3. Remove `system_prompt_tokens` usage from the sum.
@@ -62,6 +62,13 @@ And the old global_context_threshold key should NOT be read
   - `docs/architecture/core/services/session_pruning_service.md`
 
 ## Implementation Notes
+
+### Deliverable Logic: Turn-Scope-Only Budget Filter
+- **Status**: Completed.
+- Added `and item.scope == "Turn"` to the filter condition in `_apply_global_budget`'s token sum. This ensures only items from `turn.context` (Turn scope) are counted against the budget threshold.
+- **Test Impact**: `test_global_budget_strictly_protects_initial_request` failed after the change because its fixture included an 8000-token Session-scope item that no longer contributed to the sum. Fixed by overriding the per-test threshold to 3000 (since the only Turn-scope item has 4000 tokens, 4000 > 3000 triggers pruning). This matches the existing pattern used in `test_global_budget_includes_all_selected_tokens_and_system_prompt`.
+- **Refactor (C901 Complexity)**: Extracted the threshold reading logic (try/except with backward-compatible config fallback) into a dedicated `_get_turn_context_threshold() -> int` helper method placed before `_apply_global_budget`. This reduces `_apply_global_budget`'s cyclomatic complexity from 11 to below the 9-threshold, satisfying pre-commit C901 enforcement.
+- Full suite passes: 781 passed, 3 skipped.
 
 ### Deliverable 3: Harness — Rename Test Fixtures
 - **Status**: Completed.

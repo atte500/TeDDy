@@ -209,6 +209,16 @@ def test_global_budget_strictly_protects_initial_request(service, mock_config):
     # Turn file = 4000 tokens. (Eligible to prune!)
     # System prompt = 1000 tokens.
     # Total selected = 8000 + 4000 + 1000 = 13000 > 10000 threshold.
+    # Override threshold to 3000 to ensure Turn-scope-only sum (4000) exceeds budget.
+    # Session-scope and system prompt tokens are excluded from the sum.
+    mock_config.get_setting.side_effect = lambda key, default=None: {
+        "auto_pruning.enabled": True,
+        "auto_pruning.turn_context_threshold": 3000,
+        "auto_pruning.prune_failure_history": True,
+        "auto_pruning.prune_validation_failures": True,
+        "auto_pruning.max_turns_retention": 25,
+    }.get(key, default)
+
     items = [
         ContextItem(
             path=".teddy/sessions/S/initial_request.md",
@@ -232,7 +242,8 @@ def test_global_budget_strictly_protects_initial_request(service, mock_config):
     init_req_item = next(i for i in result.items if "initial_request.md" in i.path)
     turn_item = next(i for i in result.items if "02/plan.md" in i.path)
 
-    # Turn item is pruned to bring total selected to 13000 - 4000 = 9000 <= 10000
+    # Turn item is pruned because Turn-scope-only sum (4000) > threshold (3000).
+    # Session scope items and system prompt tokens are excluded from the budget calculation.
     assert init_req_item.selected is True
     assert turn_item.selected is False
     assert turn_item.auto_prune_reason == "Pruned to fit context budget"

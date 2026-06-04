@@ -371,38 +371,47 @@ class SessionPruningService:
                     continue
         return turn_id_map, max_id
 
+    def _get_turn_context_threshold(self) -> int:
+        """Reads the turn context threshold from config with backward compatibility.
+
+        Attempts to read ``auto_pruning.turn_context_threshold`` first.
+        Falls back to the deprecated ``auto_pruning.global_context_threshold``
+        with a deprecation warning if the new key is not set.
+        Returns 0 if neither key is set or on parse errors (skips budget heuristic).
+        """
+        try:
+            threshold = self._config_service.get_setting(
+                "auto_pruning.turn_context_threshold"
+            )
+            if threshold is not None:
+                return int(threshold)
+            threshold = self._config_service.get_setting(
+                "auto_pruning.global_context_threshold", 0
+            )
+            if threshold is not None and threshold:
+                logging.warning(
+                    "global_context_threshold is deprecated, use turn_context_threshold instead"
+                )
+            return int(threshold) if threshold is not None else 0
+        except (TypeError, ValueError):
+            return 0
+
     def _apply_global_budget(
         self,
         items,
         spared_ids: Optional[set[int]] = None,
     ):
         """Prunes turn and history context items to fit within a global token budget."""
-        try:
-            # Attempt to read the new config key first
-            threshold = self._config_service.get_setting(
-                "auto_pruning.turn_context_threshold"
-            )
-            if threshold is not None:
-                threshold = int(threshold)
-            else:
-                # Fallback to deprecated config key with warning
-                threshold = self._config_service.get_setting(
-                    "auto_pruning.global_context_threshold", 0
-                )
-                if threshold is not None and threshold:
-                    logging.warning(
-                        "global_context_threshold is deprecated, use turn_context_threshold instead"
-                    )
-                threshold = int(threshold) if threshold is not None else 0
-        except (TypeError, ValueError):
-            threshold = 0
+        threshold = self._get_turn_context_threshold()
 
         if threshold > 0:
             # Sum selected items to reflect Turn-scope (system_prompt_tokens excluded per spec)
             total_tokens = sum(
                 item.token_count
                 for item in items
-                if item.selected and isinstance(item.token_count, (int, float))
+                if item.selected
+                and item.scope == "Turn"
+                and isinstance(item.token_count, (int, float))
             )
 
             if total_tokens > threshold:
