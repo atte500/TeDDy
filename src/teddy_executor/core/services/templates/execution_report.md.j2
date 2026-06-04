@@ -21,7 +21,21 @@
 {% endmacro %}
 
 {% macro render_action_details(log) %}
-{% if log.details -%}
+{# Handle MESSAGE actions first: render content in a fenced codeblock #}
+{% if log.action_type.upper() == 'MESSAGE' and log.details %}
+{% if log.details is mapping and log.details.get('content') %}
+- **User Reply:**
+{{ log.details.content | trim | fence }}
+{{ log.details.content | trim }}
+{{ log.details.content | trim | fence }}
+{% else %}
+- **User Reply:**
+{{ log.details | trim | fence }}
+{{ log.details | trim }}
+{{ log.details | trim | fence }}
+{% endif %}
+
+{% elif log.details -%}
 {% if log.details is mapping -%}
 {% if log.details.get("error") -%}
 - **Error:** {{ log.details.error }}
@@ -75,13 +89,6 @@
 {% else -%}
 - **Details:** `{{ log.details }}`
 {% endif -%}
-{% endif %}
-{% if log.action_type.upper() == 'MESSAGE' and log.details and log.details is mapping and log.details.get('content') %}
-- **User Reply:**
-{{ log.details.content | trim | fence }}
-{{ log.details.content | trim }}
-{{ log.details.content | trim | fence }}
-
 {% endif %}
 {% endmacro -%}
 

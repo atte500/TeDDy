@@ -115,3 +115,38 @@ def test_message_action_with_backticks_in_content_uses_safe_fence(formatter):
     assert "Use `code` and ```fenced``` blocks here" in markdown
     # The fence surrounding the content should be longer than the longest internal backtick sequence (3)
     assert "````\nUse `code` and ```fenced``` blocks here\n````" in markdown
+
+
+def test_message_action_with_string_details_shows_in_fenced_codeblock(formatter):
+    """
+    Ensures that a MESSAGE action with string details (production path via
+    ask_question) renders content in a fenced code block under User Reply.
+    """
+    from teddy_executor.core.domain.models import ActionLog, ActionStatus
+
+    summary = RunSummary(
+        status=RunStatus.SUCCESS, start_time=datetime.now(), end_time=datetime.now()
+    )
+    action_log = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type="MESSAGE",
+        params={"Description": "Production message"},
+        details="reply text from ask_question",
+    )
+    report = ExecutionReport(
+        plan_title="Test Plan",
+        run_summary=summary,
+        user_request=None,
+        action_logs=[action_log],
+    )
+
+    markdown = formatter.format(report)
+
+    # Check the Action Log section contains the expected elements
+    assert "### `MESSAGE`:" in markdown
+    assert "**User Reply:**" in markdown
+    assert "reply text from ask_question" in markdown
+    # Should NOT show raw - **Details:** `reply text...`
+    assert "**Details:**" not in markdown
+    # Check it's inside a code fence
+    assert "```\nreply text from ask_question\n```" in markdown
