@@ -91,7 +91,7 @@ def test_formatter_smart_fencing_resource_content():
     """
     Given an ExecutionReport with a failed EDIT action where the file content has backticks,
     When format() is called,
-    Then the Resource Contents section should use a smart fence.
+    Then the Resource Contents (latest) section should use a smart fence.
     """
     # GIVEN
     formatter = MarkdownReportFormatter()
@@ -118,7 +118,7 @@ def test_formatter_smart_fencing_resource_content():
     result = formatter.format(report)
 
     # THEN
-    # We expect the Resource Contents section to be fenced correctly
+    # We expect the Resource Contents (latest) section to be fenced correctly
     assert (
         "````text" in result or "````python" in result
     )  # Depending on if language detection works

@@ -118,21 +118,21 @@ def test_formatter_hides_resource_contents_in_session_mode():
         details={"content": "print('hello')"},
     )
 
-    # 1. Non-session mode: Should show Resource Contents
+    # 1. Non-session mode: Should show Resource Contents (latest)
     report_normal = ExecutionReport(
         run_summary=summary, action_logs=[log], is_session=False
     )
     output_normal = formatter.format(report_normal)
-    assert "## Resource Contents" in output_normal
+    assert "## Resource Contents (latest)" in output_normal
     assert "test.py" in output_normal
     assert "print('hello')" in output_normal
 
-    # 2. Session mode: Should HIDE Resource Contents
+    # 2. Session mode: Should HIDE Resource Contents (latest)
     report_session = ExecutionReport(
         run_summary=summary, action_logs=[log], is_session=True
     )
     output_session = formatter.format(report_session)
-    assert "## Resource Contents" not in output_session
+    assert "## Resource Contents (latest)" not in output_session
     assert "print('hello')" not in output_session
     # The action log entry should still exist
     assert "### `READ`: [test.py](/test.py)" in output_session

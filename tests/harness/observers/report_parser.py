@@ -54,7 +54,7 @@ class ReportParser:
         for section in sections[1:]:
             if section.startswith("Action Log"):
                 self._parse_action_logs(section)
-            elif section.startswith("Resource Contents"):
+            elif section.startswith("Resource Contents (latest)"):
                 self._parse_resource_contents(section)
 
     def _parse_action_logs(self, section: str):
@@ -87,7 +87,7 @@ class ReportParser:
                     self.resource_contents[path] = content_match.group(2).strip()
 
     def extract_resource_contents(self) -> Dict[str, str]:
-        """Returns the dictionary of resource contents found in the report."""
+        """Returns the dictionary of Resource Contents (latest) found in the report."""
         return self.resource_contents
 
     def _parse_action_chunk(self, chunk: str) -> Optional[ActionLogEntry]:

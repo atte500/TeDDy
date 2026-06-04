@@ -106,7 +106,7 @@
 {% endif -%}
 {% if report.failed_resources and not is_session %}
 
-## Resource Contents
+## Resource Contents (latest)
 {% for path, content in report.failed_resources.items() %}
 {{ render_resource(path, content) }}
 {% endfor %}
@@ -135,7 +135,7 @@
 {% endfor -%}
 
 {% if report_ns.content_logs and not is_session %}
-## Resource Contents
+## Resource Contents (latest)
 {% for log in report_ns.content_logs %}
 {% set res_path = log.params.get('File Path') or log.params.get('Resource') or log.params.get('resource') or log.params.get('path') %}
 {{ render_resource(res_path, log.details.content) }}
