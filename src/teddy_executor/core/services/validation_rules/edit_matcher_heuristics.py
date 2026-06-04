@@ -6,8 +6,6 @@ import difflib
 from collections import defaultdict
 from typing import List, Set
 
-SMALL_FILE_LINE_LIMIT = 100
-
 
 def gather_candidate_starts(
     file_lines: List[str], find_lines: List[str], threshold: float
@@ -31,8 +29,8 @@ def gather_candidate_starts(
             if find_text in line:
                 candidate_starts.add(i)
 
-    # Tier 4: Exhaustive Fallback for Small Files
-    if not candidate_starts and len(file_lines) < SMALL_FILE_LINE_LIMIT:
+    # Tier 4: Exhaustive Fallback
+    if not candidate_starts:
         candidate_starts = set(range(len(file_lines) - num_find_lines + 1))
 
     return candidate_starts
@@ -79,8 +77,8 @@ def _find_starts_by_fuzzy_cascade(
         f_line_stripped = f_line.strip()
         # Pre-filter with real_quick_ratio which is O(N+M) and very fast
         matcher = difflib.SequenceMatcher(None, f_line_stripped, first_find_line)
-        if matcher.real_quick_ratio() > threshold:
-            if matcher.quick_ratio() > threshold:
+        if matcher.real_quick_ratio() >= threshold:
+            if matcher.quick_ratio() >= threshold:
                 if 0 <= i <= len(file_lines) - num_find_lines:
                     candidate_starts.add(i)
     return candidate_starts
