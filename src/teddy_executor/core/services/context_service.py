@@ -65,15 +65,6 @@ class ContextService(IGetContextUseCase):
             except Exception:
                 file_contents[url] = None
 
-        system_prompt_tokens = 0
-        if include_tokens and agent_name != "Unknown":
-            # Heuristic: Find prompt content from common locations if not provided
-            # This is a bit of a stretch as ContextService doesn't know about PromptManager
-            # But we can try to get the prompt from the inspector if it was cached
-            # Or just accept that system_prompt_tokens might be passed in.
-            # The orchestrator should probably handle this calculation or pass the prompt.
-            pass
-
         return ProjectContext(
             header=self._format_header(system_info),
             content=self._format_content(
@@ -86,7 +77,7 @@ class ContextService(IGetContextUseCase):
             ),
             agent_name=agent_name,
             total_window=total_window,
-            system_prompt_tokens=system_prompt_tokens,
+            system_prompt_tokens=0,
         )
 
     def _resolve_scoped_paths(

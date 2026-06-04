@@ -102,16 +102,6 @@ class SessionOrchestrator(IRunPlanUseCase):
             )
             total_window = self._llm_client.get_context_window()
 
-            system_prompt_tokens = 0
-            turn_path = Path(plan_path).parent
-            prompt_content = self._prompt_manager.fetch_system_prompt(
-                agent_name.lower(), turn_path
-            )
-            if prompt_content:
-                system_prompt_tokens = self._llm_client.get_text_token_count(
-                    prompt_content
-                )
-
             project_context = self._context_service.get_context(
                 context_files=context_files,
                 agent_name=agent_name,
@@ -123,7 +113,7 @@ class SessionOrchestrator(IRunPlanUseCase):
                 project_context = replace(
                     cast(Any, project_context),
                     agent_name=agent_name,
-                    system_prompt_tokens=system_prompt_tokens,
+                    system_prompt_tokens=0,
                 )
             if self._pruning_service:
                 status = plan.metadata.get("Status") if plan else None
