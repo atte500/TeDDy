@@ -1,10 +1,12 @@
 # Application Service: `ContextService`
 
-**Status:** Implemented
+**Status:** Refactoring
 
 ## 1. Purpose
 
 The `ContextService` is the application service responsible for orchestrating the gathering of project context. It implements the `IGetContextUseCase` inbound port and acts as the central coordinator, using various outbound ports to collect information and assemble it into a `ProjectContext` data transfer object.
+
+It also provides session-aware web content caching to avoid redundant fetches for URLs in repeated context files across turns.
 
 ## 2. Used Outbound Ports
 
@@ -38,11 +40,12 @@ When the `get_context` method is called, the `ContextService` performs the follo
 
 ## 5. Data Contracts / Methods
 
-### `get_context(context_files: Optional[Sequence[str]] = None) -> ProjectContext`
+### `get_context(context_files: Optional[Sequence[str]] = None, cache_dir: Optional[str] = None) -> ProjectContext`
 
--   **Description:** Gathers project context information.
+-   **Description:** Gathers project context information. Optionally uses a session-level web content cache to avoid redundant URL fetches.
 -   **Arguments:**
     -   `context_files`: (Optional) A list of specific `.context` files to read paths from. If `None`, the service defaults to reading all `.context` files in the `.teddy/` root (Standard/Manual mode).
+    -   `cache_dir`: (Optional) The path to a session directory where `.web_cache.json` is stored. When provided, web content is cached and reused across turns within the same session.
 -   **Returns:** A `ProjectContext` DTO containing the system info, repo tree, and resolved file contents.
 
 ## 6. Implementation Notes

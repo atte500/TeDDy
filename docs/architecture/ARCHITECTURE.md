@@ -134,6 +134,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 - **Performance:** Optimize core logic and plan validation for performance on large inputs to ensure low-latency feedback loops.
 - **Pre-commit Workflow:** Scope local checks strictly to staged files. (Ensures fast feedback loops while delegating global checks to CI.)
 - **Transient Resilience:** Outbound adapters for unreliable remote services (LLM, Web) MUST implement stateful retry logic (default 3 attempts) for known transient failure modes (SSL, Timeout, 5xx).
+- **Web Content Cache:** Session-level web content is cached in a JSON file at `<session_root>/.web_cache.json`. The cache is a flat dict mapping URL → content string. The cache file is read once per context assembly, updated atomically (write to temp file, rename) on each successful fetch. Missing or corrupt cache files are treated as empty cache. No TTL is applied; caching is intra-session only.
 
 
 ---

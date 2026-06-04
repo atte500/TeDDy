@@ -43,8 +43,8 @@ Implement resilient infrastructure patterns (retries, User-Agent rotation), enfo
 - [x] **02-06-Orchestrator Hardening**: Fail-fast execution, mid-execution consistency, and parser resilience.
 - [ ] **02-07-Pruning Refinement**: Turn-only pruning threshold calculation.
 - [ ] **02-08-Provider Routing and Display** (WIP): Remove `llm.provider` special-casing, extract provider from `_hidden_params["provider"]`, persist in `meta.yaml`, display in CLI telemetry `• Model:` line, document pass-through and shortcuts.
-- [ ] **02-09-Context Awareness**: Session web content caching (file-based cache for context URLs).
-- [ ] **02-10-Preserve User-Message Turns** (WIP): Protect action turns with user messages from auto-pruning by checking report metadata.
+- [x] **02-09-Context Awareness**: Session web content caching (file-based cache for context URLs). (feat(docs): design session web content caching (slice 02-09))
+- [ ] **02-10-Preserve User-Message Turns**: Protect action turns with user messages from auto-pruning by checking report metadata.
 - [ ] **02-11-AST Parser Resilience**: Extend parser to ignore unexpected codeblocks in the AST during plan parsing.
 - [ ] **02-12-Config Validation & Transient Retry**: Validate LLM config upfront; retry on any error during completion.
 - [ ] **02-13-Validation Failure Pruning Timing**: Modify Heuristic 4 to prune only when a subsequent valid plan exists.

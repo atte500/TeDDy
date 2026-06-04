@@ -3,7 +3,7 @@
 
 ## 1. Purpose / Responsibility
 
-The `SessionOrchestrator` is a decorator-style service that wraps the stateless `ExecutionOrchestrator` to provide stateful session behavior. It implements the `IRunPlanUseCase` but adds side-effects required for the interactive session workflow, such as persisting the execution report and triggering turn transitions.
+The `SessionOrchestrator` is a decorator-style service that wraps the stateless `ExecutionOrchestrator` to provide stateful session behavior. It is responsible for passing the session's cache directory to `ContextService.get_context()` to enable web content caching. It implements the `IRunPlanUseCase` but adds side-effects required for the interactive session workflow, such as persisting the execution report and triggering turn transitions.
 
 ## 2. Ports
 
@@ -20,9 +20,11 @@ The `SessionOrchestrator` is a decorator-style service that wraps the stateless 
 2.  **Session Mode Detection:** If a `plan_path` is provided, the orchestrator enters "Session Mode".
 3.  **Validation Phase (Session Mode):**
     -   Resolves context paths from `session.context` and `turn.context`.
+    -   Derives the session cache directory from `plan_path` (parent of turn directory → session root → cache file at `<session_root>/.web_cache.json`).
     -   **Context Harvesting**: Before validation, identifies unselected (pruned) context items and records them in `plan.metadata["pruned_context"]`. This ensures persistence even if the turn fails validation.
     -   Calls `PlanValidator.validate(plan, context_paths)`.
     -   If errors exist, triggers the **Automated Re-plan Loop**.
+4.  **Context Assembly (with Cache):** When calling `ContextService.get_context()`, the `cache_dir` (session root path) is passed as `cache_dir` parameter to enable web content caching.
 4.  **Automated Re-plan Loop:**
     -   Generates a `report.md` in the current turn containing the validation errors.
     -   Triggers the replan via `SessionLifecycleManager.trigger_replan`, propagating the current `Plan` object.
