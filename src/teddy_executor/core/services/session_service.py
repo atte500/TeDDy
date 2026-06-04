@@ -164,13 +164,22 @@ class SessionService(ISessionManager):
     def _extract_resource_path(self, resource_str: str) -> str:
         """
         Extracts the path from a Markdown link or returns the string if not a link.
-        Normalizes all slashes to forward slashes and strips relative prefixes.
+        Normalizes all slashes to forward slashes.
+        Only strips the exact "./" prefix if present, preserving leading dots.
         """
         match = re.search(r"\[.*\]\((.*)\)", resource_str)
         if match:
             path = match.group(1)
-            return path.replace("\\", "/").lstrip("./").lstrip("/")
-        return resource_str.strip().replace("\\", "/").lstrip("./").lstrip("/")
+            normalized = path.replace("\\", "/")
+            # Only strip the exact "./" prefix if present (preserves leading dots)
+            if normalized.startswith("./"):
+                normalized = normalized.removeprefix("./")
+            return normalized.lstrip("/")
+        normalized = resource_str.strip().replace("\\", "/")
+        # Only strip the exact "./" prefix if present (preserves leading dots)
+        if normalized.startswith("./"):
+            normalized = normalized.removeprefix("./")
+        return normalized.lstrip("/")
 
     def transition_to_next_turn(
         self,
