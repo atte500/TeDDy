@@ -191,6 +191,9 @@
 {% endif -%}
 {% set log_status = log.status.value | default(log.status) -%}
 - **Status:** {{ log_status }}
+{% if action_type == 'READ' %}
+- **Note:** Up-to-date contents are provided under `Resource Contents`.
+{% endif %}
 {% if action_type in ['CREATE', 'EDIT'] -%}
   {% set path_val = params.get('File Path') or params.get('file_path') or params.get('path') -%}
   {% if path_val -%}
