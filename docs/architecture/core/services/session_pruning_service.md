@@ -17,34 +17,23 @@ Reduces context size by deselecting irrelevant or failed turns from `turn.contex
 
 ## Ports
 - **Inbound**: Called by `prune()` method during `SessionPlanner`/`SessionOrchestrator` context preparation flow.
-- **Outbound**: Reads `auto_pruning.turn_context_threshold` (with `global_context_threshold` fallback) from `IConfigService`.
+- **Outbound**: Reads `auto_pruning.turn_context_threshold` (primary key, with `auto_pruning.global_context_threshold` fallback) from `IConfigService`.
 
 ## Implementation Details / Logic
 ### Global Budget Heuristic (`_apply_global_budget`)
 The `_apply_global_budget` method enforces a total token budget for the Turn-scope working set. It is called as Heuristic 2 in the prune pipeline (after Retention Limit).
 
-#### Current Behavior (Incorrect)
-```python
-total_tokens = system_prompt_tokens + sum(item.tokens for item in items if item.selected)
-```
-This sums ALL selected items (Session, System, and Turn scopes) plus system prompt tokens.
-
-#### Required Behavior (Per Spec)
+#### Current Behavior (Per Slice 02-07)
 ```python
 total_tokens = sum(item.tokens for item in items if item.selected and item.scope == "Turn")
 ```
-This sums ONLY Turn-scope items. Session-scope and System-scope items are excluded from the budget calculation, though they remain in the final payload.
+This sums ONLY Turn-scope items. Session-scope and System-scope items are excluded from the budget calculation, though they remain in the final payload. The `system_prompt_tokens` parameter has been removed.
 
 #### Backward Compatibility
 - Primary key: `auto_pruning.turn_context_threshold`
 - Fallback key: `auto_pruning.global_context_threshold` (with deprecation warning via `logging.warning`)
 - If neither key is set, threshold defaults to 0 (budget heuristic skipped)
-
-### Successful Message-Turn Exception
-When scanning turns for pruning:
-1. Read the `plan.md` for each turn.
-2. If the plan contains a `## Message` section AND the `status` is Green (no 🔴/🟡 in status line):
-3. **EXCEPTION**: This turn is immune to pruning based on retention limits or context budget. This preserves conversational thread continuity.
+- If neither key is set, threshold defaults to 0 (budget heuristic skipped)
 
 ## Data Contracts / Methods
 ### `prune(context: ProjectContext, current_status: Optional[str]) -> ProjectContext`

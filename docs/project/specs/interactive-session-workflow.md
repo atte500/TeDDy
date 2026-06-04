@@ -315,7 +315,7 @@ User-specific behavior for the `teddy` tool can be defined in an optional `.tedd
     -   *Example for Neovim:* `preview_command: "nvim -R"`
     -   *Example for VS Code:* `preview_command: "code"` # Note: Use without `--wait` for a non-blocking preview.
 
--   **`global_context_threshold`**: (Optional) An integer defining the token limit for the active working set (`turn.context`) before auto-pruning is triggered. Note: This threshold applies ONLY to the sum of files in the `Turn` scope; it excludes `session.context` and system prompts. Defaults to `50000`.
+-   **`turn_context_threshold`**: (Optional) An integer defining the token budget for the active working set (`turn.context`) before auto-pruning is triggered. This threshold applies ONLY to the sum of files in the `Turn` scope; it excludes `session.context` (Session scope) and system prompts (System scope). Defaults to `50000`.
 
 - **Editor & Diff Logic:** When the user triggers an edit (`e`), the tool will use the following logic:
     1.  **Explicit Tool:** If `diff_tool` is set in `config.yaml`, it will be used for comparisons.

@@ -43,7 +43,7 @@ This section defines the conventions for our project management artifacts.
     - **GitHub Compatibility:** Fix content extraction for `raw.githubusercontent.com` links that currently return SUCCESS but empty content (Reproduce via: `https://raw.githubusercontent.com/lllyasviel/LayerDiffuse/main/README.md`).
     - **Safety Limits:** Implement `max-turns` (99) and `max-cost` ($5) limits in `config.yaml`, enforced strictly in `--yolo` (`-y`) mode.
     - **Context Robustness:** Recursive directory expansion for context paths; support remote URLs in `.context` files; strictly enforce deduplication.
-    - **Pruning Threshold:** Refine `global_context_threshold` logic to sum ONLY files from `turn.context` (scope: Turn). Exclude `session.context` and system prompts from the threshold calculation.
+    - **Pruning Threshold:** Refine `turn_context_threshold` logic to sum ONLY files from `turn.context` (scope: Turn). Exclude `session.context` and system prompts from the threshold calculation.
     - **Session Migration:** Cap turns at 99 (2-digit padding); at turn 100, automatically migrate to a new continuation session (e.g., `name-2`) by cloning `session.context` and the active prompt and transition the `turn.context` exactly as a normal turn transition would to preserve the working context.
     - **Action Side-effects:** `CREATE` and `EDIT` actions automatically add the target file path to the turn's context (provided the file exists).
     - **Architecture Polish:** Relocate agent prompts (e.g., `pathfinder.xml`) to session root; strictly deprecate turn-local prompts; implement session termination on empty message (no `report.md` created); prevent "Message Turns" from being pruned.

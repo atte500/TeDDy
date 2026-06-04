@@ -33,7 +33,7 @@ Implement resilient infrastructure patterns (retries, User-Agent rotation), enfo
 - **Validation:** Relax context rules for `READ`/`EDIT` to rely on matching logic; ignore redundant edits (identical FIND and REPLACE blocks); ensure parser ignores trailing text in `~~~~~~` and ` `````` ` fences.
 
 ## Vertical Slices
-> **Note:** The rename of `global_context_threshold` to `turn_context_threshold` is deferred until slice 02-07 (Pruning Refinement) is implemented, as the scoping logic is not yet in place.
+> **Note:** The rename of `global_context_threshold` to `turn_context_threshold` is completed in slice 02-07 (Pruning Refinement). The new key `turn_context_threshold` is the primary key, with backward compatibility fallback to `global_context_threshold`.
 
 - [x] **02-01-Resilient Infrastructure**: LLM retries and recursive context expansion.
 - [x] **02-02-Web Scraping Resilience**: User-Agent rotation and GitHub raw fixes.

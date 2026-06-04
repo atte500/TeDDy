@@ -21,7 +21,7 @@ This feature introduces a native "Context Management" section within the `Textua
 - **Port Signatures:** Update `ILlmClient` to include a `count_tokens(text: str, model: str) -> int` method. Update `IPlanReviewer.review()` and `IRunPlanUseCase.execute()` to accept `project_context: Optional[ProjectContext] = None`.
 - **Configuration:** Add an `auto_pruning` dictionary to `config.yaml` with the following granular controls:
   - `enabled: true/false`
-  - `global_context_threshold: X` (Total token limit for turn context)
+  - `turn_context_threshold: X` (Token budget for Turn-scope files only, excludes session.context and system prompts)
   - `prune_preceding_on_non_green: true/false` (Toggle for pruning turns preceding a 🔴/🟡 state)
   - `prune_validation_failures: true/false` (Toggle for pruning failed validation reports/plans)
   - `max_turns_retention: N` (Maximum number of recent turns to retain; default 25)

@@ -1,6 +1,6 @@
 # Slice: 02-07-Pruning Refinement
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Refactor
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
@@ -52,7 +52,7 @@ And the old global_context_threshold key should NOT be read
   4. (Completed in Contract) Remove `system_prompt_tokens` parameter.
   5. (Completed in Contract) Update the call site in `prune()` to not pass `system_prompt_tokens`.
 - [x] **Migration** - Update `session_orchestrator.py` and `context_service.py` if they pass `system_prompt_tokens` to `prune()` (they do not directly — the pruning service extracts it from `context.system_prompt_tokens` itself, so no changes needed at those callers except removing the local variable and extraction logic).
-- [ ] **Cleanup** - Update documentation references in:
+- [x] **Cleanup** - Update documentation references in:
   - `docs/project/specs/stability-and-bugfixes.md`
   - `docs/project/specs/context-management-ui.md`
   - `docs/project/specs/interactive-session-workflow.md`
@@ -62,6 +62,20 @@ And the old global_context_threshold key should NOT be read
   - `docs/architecture/core/services/session_pruning_service.md`
 
 ## Implementation Notes
+
+### Deliverable Cleanup: Documentation Updates
+- **Status**: Completed.
+- Updated 7 documentation files with the key rename `global_context_threshold` → `turn_context_threshold`:
+  1. `docs/project/specs/stability-and-bugfixes.md` – Pruning Logic bullet updated.
+  2. `docs/project/specs/interactive-session-workflow.md` – Configuration section key renamed.
+  3. `docs/project/specs/context-management-ui.md` – Technical Specification bullet renamed.
+  4. `docs/project/PROJECT.md` – Pruning Threshold requirement bullet updated.
+  5. `docs/project/milestones/02-stability-and-polish.md` – Pruning Threshold spec updated.
+  6. `docs/architecture/core/ports/outbound/config_service.md` – Standard Configuration Keys key renamed and description updated.
+  7. `docs/architecture/core/services/session_pruning_service.md` – Component doc updated to reflect Turn-scope-only calculation, removed duplicate "Successful Message-Turn Exception" section, updated all config key references.
+- No production code changes needed, test suite passes (781 passed, 3 skipped).
+- The `system_prompt_tokens` parameter was already removed from code; doc references mentioning it were cleaned up where applicable (session_pruning_service.md had an inline comment referencing it which remains as a technical note).
+- This completes the last deliverable of Slice 02-07.
 
 ### Deliverable Migration: Remove Dead `system_prompt_tokens` Extraction Logic
 - **Status**: Completed.
