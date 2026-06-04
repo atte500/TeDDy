@@ -232,6 +232,13 @@ def resume(  # noqa: PLR0913
     non_interactive: bool = typer.Option(False, "--non-interactive", hidden=True),
     no_copy: bool = OPT_NO_COPY,
     ui_mode: Optional[bool] = OPT_UI_MODE,
+    model: Optional[str] = typer.Option(None, "--model", help="LLM model override."),
+    provider: Optional[str] = typer.Option(
+        None, "--provider", help="LLM provider override."
+    ),
+    api_key: Optional[str] = typer.Option(
+        None, "--api-key", help="LLM API key override."
+    ),
 ):
     """
     Intelligently resumes the last turn of a session or starts a new one.
@@ -251,6 +258,9 @@ def resume(  # noqa: PLR0913
         path=path,
         interactive=not (yolo or yes or no_interactive or non_interactive),
         no_copy=no_copy,
+        model=model,
+        provider=provider,
+        api_key=api_key,
     )
 
 

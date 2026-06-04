@@ -11,6 +11,7 @@ from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.domain.models.session import SessionOptions
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
+from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 from teddy_executor.core.utils.string import slugify
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.adapters.inbound.cli_helpers import (
@@ -236,11 +237,14 @@ def handle_context_gathering(container: Container, no_copy: bool):
     echo_and_copy(formatted_context, no_copy=no_copy)
 
 
-def handle_resume_session(
+def handle_resume_session(  # noqa: PLR0913
     container: Container,
     path: Optional[str] = None,
     interactive: bool = True,
     no_copy: bool = False,
+    model: Optional[str] = None,
+    provider: Optional[str] = None,
+    api_key: Optional[str] = None,
 ):
     """Logic for the 'resume' command."""
     import re
@@ -269,6 +273,19 @@ def handle_resume_session(
         # Natural Name for display
         display_name = re.sub(r"^\d{8}_\d{6}-", "", session_name)
         typer.echo(f"Resuming session: {display_name}")
+
+        # Update meta.yaml with model/provider/api_key overrides before the turn loop.
+        if model or provider or api_key:
+            repository: ISessionRepository = container.resolve(ISessionRepository)
+            latest_turn_path = session_manager.get_latest_turn(session_name)
+            meta = repository.load_meta(latest_turn_path)
+            if model:
+                meta["model"] = model
+            if provider:
+                meta["provider"] = provider
+            if api_key:
+                meta["api_key"] = api_key
+            repository.save_meta(f"{latest_turn_path}/meta.yaml", meta)
 
         _orchestrate_session_loop(
             container=container,
