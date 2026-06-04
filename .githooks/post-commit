@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+# Post-commit hook: Mandatory full test suite gate
+#
+# Runs after every `git commit`. If tests fail, the commit is reverted
+# while preserving all staged changes. This hook is NOT affected by
+# `--no-verify`, making it the only truly unskippable test gate.
+#
+# Dependencies: poetry run pytest (project's test runner)
+#
+
+set -e
+
+# Run the full test suite
+poetry run pytest --tb=short -q 2>&1
+
+# Capture exit code
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "============================================"
+    echo " TESTS FAILED — Reverting commit"
+    echo "============================================"
+    echo "The commit has been undone to prevent red state."
+    echo "Your changes remain staged. Fix the tests and re-commit."
+    echo "============================================"
+    echo ""
+    git reset --soft HEAD~1
+    exit 1
+fi
+
+exit 0
