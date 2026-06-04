@@ -19,10 +19,40 @@ It also provides session-aware web content caching to avoid redundant fetches fo
 
 *   [`IGetContextUseCase`](../ports/inbound/get_context_use_case.md)
 
-## 4. Failure Modes
+## 4. Web Content Caching (Session)
+
+The `ContextService` provides intra-session web content caching to avoid redundant HTTP fetches for URLs listed in `session.context` or `turn.context`.
+
+### 4.1 Lifecycle
+- **Cache Location:** `<session_root>/.web_cache.json`
+- **Format:** Standard JSON dictionary mapping URL (string) to content (string).
+- **Load:** Cache is loaded from disk at the start of each `get_context()` call. Missing or corrupt files result in an empty cache (no exception).
+- **Write:** After each successful `IWebScraper.get_content()` call, the cache dictionary is updated and persisted atomically (write to `.web_cache.json.tmp`, then `Path.replace()` to `.web_cache.json`).
+- **No TTL:** Caching is intra-session only. A new session always starts with an empty cache.
+- **Failures NOT Cached:** Network errors or exceptions during `get_content()` are never cached, ensuring retries always re-fetch.
+
+### 4.2 Private Methods
+
+#### `_load_web_cache(cache_dir: Optional[str]) -> dict[str, str]`
+- Reads and parses the `.web_cache.json` file. Returns an empty dict if the file is missing, contains invalid JSON, or has an incorrect structure.
+
+#### `_save_web_cache(cache_dir: str, cache: dict[str, str]) -> None`
+- Writes the cache dictionary to disk atomically. Creates the `cache_dir` if it does not exist. Writes to a `.tmp` file first, then atomically renames to `.web_cache.json` using `Path.replace()`.
+
+### 4.3 Cache Integration in `get_context()`
+The cache is integrated into the existing URL-fetching loop inside `get_context()`:
+1. Load cache into a local dictionary.
+2. For each URL, check the cache dictionary first.
+3. If cache hit -> use cached content.
+4. If cache miss -> call `IWebScraper.get_content()`, store result in cache dict, persist atomically.
+5. If `get_content()` raises -> store `None` in the result dict (failure is NOT cached).
+
+## 5. Failure Modes
 
 - **Missing Directories:** Handled gracefully via `IFileSystemManager` checks.
 - **Permission Errors:** Propagated from the adapter layer.
+- **Cache Corruption:** Invalid `.web_cache.json` is silently treated as an empty cache. No exception is raised.
+- **Backward Compatibility:** When `cache_dir` is `None` (default), no caching occurs, preserving existing behavior for `PlanningService` and `session_cli_handlers` callers.
 
 ## 5. Orchestration Logic
 
