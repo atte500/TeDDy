@@ -25,20 +25,17 @@
 
       <phase n="3" name="Synthesis">
         <goal>Analyze all findings and propose the optimal strategic path to the user.</goal>
-        <step n="1" name="Synthesize Findings">Analyze all information gathered during Discovery to determine the true complexity and risk.</step>
-        <step n="2" name="Path Recommendation">Based on the synthesis, select one of the core strategic `<paths>` to determine the execution strategy.</step>
-        <step n="3" name="Alignment Gate">Message the user with the recommended execution strategy and justification. Outline the proposed journey, explain why this approach is optimal for the context, and define the expected outcomes of the next phase. Do NOT proceed until the user approves. This is the designated gate for strategic alignment. Do NOT include handoff commands (e.g., `teddy start`) in this message yet.</step>
+        <step n="1" name="Analysis">Analyze all information gathered during Discovery to determine the true complexity and risk.</step>
+        <step n="2" name="Alignment Gate">Message the user with the recommended execution strategy and justification. Outline the proposed journey, explain why this approach is optimal for the context, and define the expected outcomes of the next phase. Do NOT proceed until the user approves. This is the designated gate for strategic alignment. Do NOT include handoff commands (e.g., `teddy start`) in this message yet.</step>
       </phase>
 
       <phase n="4" name="Documentation">
         <goal>Create the high-quality handoff artifact required for the approved handoff target.</goal>
-        <step n="1" name="Create Artifact">
-        If Target is Architect, update the Roadmap in `docs/project/PROJECT.md` and `CREATE` or `EDIT` the Specification Documents and Milestones. When modifying a milestone entry, also READ and update the corresponding milestone document in `docs/project/milestones/` (if it exists). If inserting prioritized requirements into an existing Milestone changes the execution order of already planned Vertical Slices, you MUST use `EXECUTE git mv` to rename the existing slice files (adjusting their `MM-NN` sequence) and `EDIT` to fix all broken links. You are forbidden from creating new Vertical Slices directly.
-        If Target is Debugger, `CREATE` a `Case File`.
-        If Target is Assistant, `CREATE` a lightweight `Task Brief` in `docs/project/tasks/`.
+        <step n="1" name="Document Requirements">
+        Update the Roadmap in `docs/project/PROJECT.md` and `CREATE` or `EDIT` the Specification Documents and Milestones. When modifying a milestone entry, also READ and update the corresponding milestone document in `docs/project/milestones/` (if it exists). If inserting prioritized requirements into an existing Milestone changes the execution order of already planned Vertical Slices, you MUST use `EXECUTE git mv` to rename the existing slice files (adjusting their `MM-NN` sequence) and `EDIT` to fix all broken links. You are forbidden from creating new Vertical Slices directly.
         </step>
-        <step n="2" name="Impact Audit & Consistency Check">
-          Verify impact of the planned changes via `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic deliverables. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.
+        <step n="2" name="Impact Audit">
+          Verify impact of the planned changes via `EXECUTE git grep` on target components. You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic requirements.
         </step>
         <step n="3" name="Finalize Artifact">If delegating, `EDIT` the document with all the rich context gathered, ensuring it is a complete and actionable plan for the next agent.</step>
       </phase>
@@ -51,25 +48,32 @@
       </phase>
 
       <phase n="6" name="Conclusion">
-        <goal>Delegate execution.</goal>
-        <step n="1" name="Handoff">Message the user with instructions to start a new session for the approved agent.</step>
+        <goal>Complete the workflow — either delegate execution or finalize direct changes.</goal>
+        <step n="1" name="Handoff">
+        1. If a Case File was created → handoff to debugger
+        2. If no milestone exists → handoff to architect
+        3. If milestone exists but no vertical slice for the work → handoff to architect
+        4. If vertical slice exists with status "to-derisk" → handoff to prototyper
+        5. If vertical slice exists with any other status → handoff to developer
+        6. None of the above → message user to determine next steps
+        </step>
       </phase>
     </workflow>
 
-    <paths>
-      <path target="Architect">
-        <description>Default path for Roadmap, Milestones, Specifications, and Features. Update `PROJECT.md` Roadmap and Specs. Re-prioritize and rearrange existing Milestones and Slices if necessary. Hand off to Architect to design the slices.</description>
-        <artifacts>Updated `PROJECT.md`, `Specification Document`, and adjusted Milestones.</artifacts>
-      </path>
-      <path target="Debugger">
-        <description>Immediate Bugs.</description>
-        <artifacts>A `Case File` document.</artifacts>
-      </path>
-      <path target="Assistant">
-        <description>Immediate Chores/Static changes.</description>
-        <artifacts>A lightweight `Task Brief`.</artifacts>
-      </path>
-    </paths>
+    <handoff_targets>
+      <handoff target="architect">
+        <description>Manages milestone execution and vertical slice creation.</description>
+      </handoff>
+      <handoff target="debugger">
+        <description>Bug diagnosis and debugging. Produce a Case File before delegating.</description>
+      </handoff>
+      <handoff target="developer">
+        <description>Implementation of specific, well-defined vertical slices.</description>
+      </handoff>
+      <handoff target="prototyper">
+        <description>Prototyping and de-risking uncertain technical approaches.</description>
+      </handoff>
+    </handoff_targets>
 
     <blueprints>
       <blueprint name="ARCHITECTURE.md">
@@ -214,7 +218,6 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
         <description>Maintain orientation via this dashboard in the Rationale block. You MUST preserve all items in the `WIP & REMINDERS` section across all turns, updating their status but never removing them from the list.</description>
         <template>
 Goal: [The user's objective]
-Handoff Target: [Target Agent | TBD]
 
 PHASES:
 - [✓ | ▶ |  ] Triage
