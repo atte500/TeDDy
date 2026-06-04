@@ -1,6 +1,7 @@
 - **Status:** Refactoring
 
 ## Purpose / Responsibility
+The `SessionPruningService` is responsible for applying configurable auto-pruning heuristics to session context items. It prunes or deselects context items based on failure status, retention limits, and token budgets, while sparing certain turns (e.g., user-message turns and successful message turns) from pruning.
 Reduces context size by deselecting irrelevant or failed turns from `turn.context`.
 
 ## Implementation Details / Logic
