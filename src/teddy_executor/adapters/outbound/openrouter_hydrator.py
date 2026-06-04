@@ -48,6 +48,10 @@ class OpenRouterMetadataHydrator(IOpenRouterHydrator):
         # Strip openrouter/ prefix if present to match catalog IDs
         clean_id = model_id.removeprefix("openrouter/")
 
+        # Strip colon-based routing shortcuts (e.g., :nitro, :floor)
+        # OpenRouter appends these to route requests; they must be removed before ID lookup.
+        clean_id = re.sub(r":[^/:]+$", "", clean_id)
+
         # 1. Try exact match
         metadata = self._find_model(models, clean_id)
         if metadata:
