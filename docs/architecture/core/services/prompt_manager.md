@@ -9,7 +9,10 @@ In the "Pure Context" model, `PromptManager` does NOT provide instructions for t
 - **Goal Persistence:** It manages the retrieval of the immutable session goal (`initial_request.md`) from the session root.
 
 ## 1. Purpose / Responsibility
-The `PromptManager` provides a centralized service for all prompt and metadata resolution. It abstracts the filesystem and internal resources to provide a clean API for other services to retrieve agent-specific logic and user-provided instructions.
+The `PromptManager` provides a centralized service for all prompt and metadata resolution. It abstracts the filesystem and internal resources to provide a clean API for other services to retrieve agent-specific logic and user-provided instructions. It is also responsible for extracting telemetry metadata (model, provider, turn cost) from LLM responses and persisting it to the session's `meta.yaml` via the `update_meta` method.
+
+### Provider Extraction
+After each LLM completion, `update_meta` extracts the resolved downstream provider from `response._hidden_params["provider"]` (populated by litellm). This reflects the actual provider that served the request (e.g., `"deepseek"`, `"together"`, `"openai"`), as opposed to the user-configured provider hint. The extraction uses `getattr(response, "_hidden_params", {}).get("provider", "unknown")` for graceful degradation when `_hidden_params` is absent (e.g., local models).
 
 ## 2. Ports
 - **Implements Outbound Port:** `IPromptManager`

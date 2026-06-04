@@ -28,6 +28,8 @@ The `LiteLLMAdapter` is responsible for interacting with various Large Language 
 -   **Remote Check Timeouts:** All remote connectivity and configuration checks (e.g., `litellm.check_valid_key`) are capped at a 10.0-second timeout via a background executor to accommodate library initialization and network latency.
 -   **Ultra-Lazy Validation:** Local configuration checks (existence of API key and model) are performed before importing the heavy `litellm` library, ensuring sub-second response times for common errors.
 -   **Error Handling:** Wraps all `litellm` operations to re-raise specific failures as `LlmApiError` or `ConfigurationError`, ensuring transparent CLI feedback.
+-   **Provider Resolution:** After each successful `litellm.completion()`, the actual downstream provider that served the request is available in `response._hidden_params["provider"]` (e.g., `"deepseek"`, `"together"`, `"openai"`). This value is extracted by `PromptManager.update_meta` for display in the CLI telemetry. The adapter does NOT special-case the `llm.provider` config value — the entire `llm` config section passes through transparently to litellm via `params.update(llm_config)`, allowing any litellm-supported parameter (including OpenRouter's `extra_body.providers.order`) to be set directly in `config.yaml`.
+-   **`:nitro` / `:floor` Shortcuts:** The `openrouter_hydrator` strips `:nitro` and `:floor` suffixes from model names to derive the base model ID for metadata fetching. These suffixes are TeDDy-specific conventions for selecting performance/cost tiers and are transparent to litellm.
 
 ## 4. Data Contracts / Methods
 

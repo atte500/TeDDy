@@ -28,8 +28,12 @@ The `PlanningService` is responsible for generating an AI plan based on a user m
 3.  **Contextual Hints:** If operating in Turn 01, it injects an alignment hint into the user message to encourage the agent to clarify goals.
 4.  **LLM Call:** Passes the formatted context, system prompt, and user message to `ILlmClient.get_completion()`.
 5.  **Retry Loop (Application Level):** Implements a retry loop (configured via `llm.max_retries`, default 3) specifically for "empty content" responses. This handles edge cases where the LLM returns successfully but with empty message content.
-6.  **Persistence:** Saves the resulting Markdown response to the turn's `plan.md`. Updates `meta.yaml` with telemetry (model name, token usage, USD cost). Writes the full context used for the generation to `input.md`.
+6.  **Persistence:** Saves the resulting Markdown response to the turn's `plan.md`. Updates `meta.yaml` with telemetry (model name, provider, token usage, USD cost). Writes the full context used for the generation to `input.md`.
 7.  **Hardening:** Ensures all metadata is cast to primitive types (str, int, float, bool) before serialization to prevent `yaml.dump` from entering infinite recursion hangs when encountering `MagicMock` objects in unit tests.
+8.  **Telemetry Display (`_display_telemetry`):** After the LLM call and `PromptManager.update_meta()`, the service renders a metadata block to the console via `IUserInteractor.display_message()`. The block includes:
+    - **Model & Provider:** `• Model: {model} | {provider}` — where `provider` is the resolved downstream provider extracted from `response._hidden_params["provider"]` by `PromptManager.update_meta()`. Falls back to model-only display (no `| unknown`) when provider is `"unknown"`.
+    - **Context Usage:** `• Context: {used}k / {total}k tokens` — derived from the response's usage data and the model's context window.
+    - **Session Cost:** `• Session Cost: ${cost}` — cumulative cost from `meta["cumulative_cost"]`, formatted to 4 decimal places. Displays `$???` if pricing is not supported for the model.
 
 ## 4. Data Contracts / Methods
 
