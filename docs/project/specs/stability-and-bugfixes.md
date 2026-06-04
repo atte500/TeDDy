@@ -34,8 +34,13 @@
 - **Layout Consistency:** Ensure padding for Rationale items and Message sections matches the padding of the right-hand panel across all views.
 - **Tier 2 Editing:** If a parameter is multiline or exceeds 100 characters, automatically open the external editor for that parameter instead of an inline prompt.
 - **UX Hints:** In the hint appended to user request messages, remind the user to "update reference documents accordingly if needed."
-- **Parser Resilience:** For all actions (e.g., `READ`, `MESSAGE`), ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within codeblock delimiters (e.g., `~~~~~~ trailing text`) following the action block without triggering validation errors. **Note:** Other unforeseen text outside delimiters must still raise a validation error.
+- **Parser Resilience:** For all actions (e.g., `READ`, `MESSAGE`), ignore and clean up unforeseen codeblocks, thematic breaks (`---`), trailing text within codeblock delimiters (e.g., `~~~~~~ trailing text`), and unexpected codeblocks in the AST during parsing without triggering validation errors. **Note:** Other unforeseen text outside delimiters must still raise a validation error.
 - **EXECUTE Fail-Fast:** Detect interactive prompts to fail early; on timeout, identify the specific failing command in a chain.
 - **Relaxed Context Validation:** Do not throw validation errors for `READ`-ing files already in context or `EDIT`-ing files not in context; rely on matching logic for enforcement.
 - **Redundant Edits:** Do not throw validation errors for `EDIT` actions where the `FIND` and `REPLACE` blocks are identical; treat them as successful no-ops.
 - **Post-Execution Logging:** The `ExecutionOrchestrator` (or `SessionOrchestrator`) must detect if an additional user message was provided during the review phase (via TUI 'm' key or message reply) and log it to the console *after* all actions have executed. Format: `User Message: [content]`.
+
+## 5. Config Validation & Transient Retry
+- **Startup Validation:** Validate LLM configuration (API key format, model availability, provider capabilities) before any completion call. If config is invalid, immediately abort with a fatal error (no retry).
+- **Transient Retry:** During the LLM completion call, retry on any error (not just SSL/Timeout) using the existing 3-attempt loop, because by this point config validation has passed so the error must be transient.
+- **Configurable Timeout:** Support a configurable timeout (default 5 minutes) for LLM completion, after which the call is retried.

@@ -23,13 +23,16 @@ Implement resilient infrastructure patterns (retries, User-Agent rotation), enfo
 - **Safety Bounds:** Implement `max-turns` (99) and `max-cost` ($5.00) limits in `config.yaml`, enforced strictly in `--yolo` (`-y`) mode.
 - **Web Scraping:** Bypass 403 Forbidden errors via User-Agent rotation (Reproduce via: `https://www.pnas.org/doi/10.1073/pnas.2416294121`); fix GitHub raw content extraction (Reproduce via: `https://raw.githubusercontent.com/lllyasviel/LayerDiffuse/main/README.md`).
 - **Migration:** Cap turns at 99 with 2-digit padding; automate session continuation (e.g., `original-name-2`) by cloning `session.context` and transitioning `turn.context`.
-- **Parser Resilience:** Ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within delimiters (e.g., `~~~~~~ trailing text`) without validation errors (Note: Preserve trailing text outside delimiters).
+- **Parser Resilience:** Ignore and clean up unforeseen codeblocks, thematic breaks (`---`), trailing text within delimiters (e.g., `~~~~~~ trailing text`), and unexpected codeblocks in the AST during parsing without validation errors (Note: Preserve trailing text outside delimiters).
+- **Config Validation & Transient Retry:** Validate LLM configuration (API key, model) at startup, then retry on any error during LLM completion (default 3 attempts, configurable timeout).
 - **Provider Routing & Display:** Remove `llm.provider` special-casing in `litellm_adapter._prepare_completion_params`; extract actual provider from `_hidden_params["provider"]` after completion; persist provider in `meta.yaml`; display `model / provider` in TUI right panel metadata; document pass-through behavior of `llm` config section and `:nitro`/`:floor` shortcuts.
 - **Architecture Polish:** Store agent-specific prompts (e.g., `pathfinder.xml`) at session root; strictly deprecate turn-local prompt cloning; implement session termination on empty message without creating `report.md`; prevent pruning of "Message Turns".
 - **Fail-Fast & Hardening:** Synchronous `EXECUTE` must fail-fast on interactive prompts (UNIX signals/Windows exit codes) with a shared error message; `EDIT` must gracefully return `FAILURE` if file modified during execution.
 - **Validation:** Relax context rules for `READ`/`EDIT` to rely on matching logic; ignore redundant edits (identical FIND and REPLACE blocks); ensure parser ignores trailing text in `~~~~~~` and ` `````` ` fences.
 
 ## Vertical Slices
+> **Note:** The rename of `global_context_threshold` to `turn_context_threshold` is deferred until slice 02-07 (Pruning Refinement) is implemented, as the scoping logic is not yet in place.
+
 - [x] **02-01-Resilient Infrastructure**: LLM retries and recursive context expansion.
 - [x] **02-02-Web Scraping Resilience**: User-Agent rotation and GitHub raw fixes.
 - [x] **02-03-Safety Limits**: 99-turn limit, session cost tracking, and loop protection.
@@ -38,5 +41,7 @@ Implement resilient infrastructure patterns (retries, User-Agent rotation), enfo
 - [x] **02-06-Orchestrator Hardening**: Fail-fast execution, mid-execution consistency, and parser resilience.
 - [ ] **02-07-Pruning Refinement**: Turn-only pruning threshold calculation.
 - [ ] **02-08-Provider Routing and Display**: Remove `llm.provider` special-casing, extract provider, persist in `meta.yaml`, display in TUI, document pass-through and shortcuts.
-- [ ] **02-09-Context Awareness**: Context change warning (hash-based flag in `input.md`) and session web content caching (file-based cache for context URLs).
+- [ ] **02-09-Context Awareness**: Session web content caching (file-based cache for context URLs).
 - [ ] **02-10-Preserve User-Message Turns**: Protect action turns with user messages from auto-pruning by checking report metadata.
+- [ ] **02-11-AST Parser Resilience**: Extend parser to ignore unexpected codeblocks in the AST during plan parsing.
+- [ ] **02-12-Config Validation & Transient Retry**: Validate LLM config upfront; retry on any error during completion.

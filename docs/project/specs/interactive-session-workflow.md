@@ -210,8 +210,7 @@ This phase provides a unified TUI experience for reviewing and modifying plans b
     - The `Context Root` displays the current model name and cumulative session cost (rounded up to the nearest cent) in the right panel. Ensure consistent rounding across all displays.
     - File paths in the context section are project-root relative without the `./` prefix.
     - **Layout Consistency:** All panels (Rationale items, Message sections, left panel, and right panel) MUST use consistent padding.
-    - `Rationale` and `Message` content is rendered as Markdown in the right panel instead of a parameter list.
-- **Tier 2 Parameter Editing:** If a parameter is multiline or exceeds 100 characters, the TUI must automatically open the external editor for that parameter instead of an inline prompt to prevent UI breakup.
+    - **Tier 2 Parameter Editing:** If a parameter is multiline or exceeds 100 characters, the TUI must automatically open the external editor for that parameter instead of an inline prompt to prevent UI breakup.
 - **UX Hints:** The hint appended to user request messages must also remind the user to "update reference documents accordingly if needed."
 
 ### 7.2. Unified Plan Review

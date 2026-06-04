@@ -49,10 +49,10 @@ This section defines the conventions for our project management artifacts.
     - **Architecture Polish:** Relocate agent prompts (e.g., `pathfinder.xml`) to session root; strictly deprecate turn-local prompts; implement session termination on empty message (no `report.md` created); prevent "Message Turns" from being pruned.
     - **Fail-Fast & Hardening:** Implement `EXECUTE` fail-fast on interactive prompts (UNIX: Signal-based; Windows: Exit-code based) with consistent "Interactive prompt detected" messaging; mid-execution consistency for `EDIT`.
     - **Relaxed Validation:** Allow `READ` of existing context and `EDIT` of non-context files; rely on matching logic for enforcement.
-    - **Parser Resilience:** For all actions, ignore and clean up unforeseen codeblocks, thematic breaks (`---`), or trailing text within both `~~~~~~` and ` `````` ` delimiters without triggering validation errors.
+    - **Parser Resilience:** For all actions, ignore and clean up unforeseen codeblocks, thematic breaks (`---`), trailing text within both `~~~~~~` and ` `````` ` delimiters, and ALL unexpected codeblocks in the AST during parsing without triggering validation errors.
+    - **Config Validation & Transient Retry:** Validate LLM configuration (API key, model) at startup, then retry on any error during LLM completion (default 3 attempts) or after configurable timeout without LLM response.
     - **Diagnostic Reporting:** Ensure `is_session` flag persists during validation failures to suppress redundant "Resource Contents" while preserving "Closest Match Diffs".
     - **Provider Routing & Display:** Remove `llm.provider` special-casing in `litellm_adapter`; extract actual provider from `_hidden_params["provider"]` after completion; persist provider in `meta.yaml`; display `model / provider` in TUI right panel metadata; document pass-through behavior of `llm` config section and `:nitro`/`:floor` shortcuts.
-    - **Context Change Warning:** Detect in-context file modifications between turns using SHA256 hashes and flag changed files in `input.md` with a concise warning (no action suggestions).
     - **Preserve User-Message Turns:** Protect action turns where the user provided an additional message during review from auto-pruning by checking report metadata.
     - **Web Content Caching (Session):** Cache web content from URLs in `session.context` and `turn.context` within a session to avoid redundant fetches; stored as a session-level cache file.
 
