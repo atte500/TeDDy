@@ -51,10 +51,8 @@ class SessionPruningService:
             items = self._apply_retention_limit(items, spared_turns=spared_turns)
 
             # 3. Heuristic 2: Global Budget
-            system_prompt_tokens = context.system_prompt_tokens or 0
             items = self._apply_global_budget(
                 items,
-                system_prompt_tokens=system_prompt_tokens,
                 spared_ids=spared_turns,
             )
 
@@ -375,7 +373,6 @@ class SessionPruningService:
     def _apply_global_budget(
         self,
         items,
-        system_prompt_tokens: int = 0,
         spared_ids: Optional[set[int]] = None,
     ):
         """Prunes turn and history context items to fit within a global token budget."""
@@ -388,8 +385,8 @@ class SessionPruningService:
             threshold = 0
 
         if threshold > 0:
-            # Sum ALL selected items plus system prompt tokens to reflect true context size
-            total_tokens = system_prompt_tokens + sum(
+            # Sum selected items to reflect Turn-scope (system_prompt_tokens excluded per spec)
+            total_tokens = sum(
                 item.token_count
                 for item in items
                 if item.selected and isinstance(item.token_count, (int, float))

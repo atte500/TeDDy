@@ -148,7 +148,6 @@ def handle_new_session(  # noqa: PLR0913
 
 def _echo_config_success(container: Container, agent: Optional[str] = None) -> None:
     """Retrieves and echoes the active model and agent configuration on success."""
-    from teddy_executor.core.ports.outbound.config_service import IConfigService
 
     config_service = container.resolve(IConfigService)
     model = config_service.get_setting("llm.model", "unknown")
@@ -249,9 +248,6 @@ def handle_resume_session(  # noqa: PLR0913
 ):
     """Logic for the 'resume' command."""
     import re
-    from teddy_executor.core.ports.outbound.session_repository import (
-        ISessionRepository,
-    )
     from teddy_executor.core.ports.outbound.config_service import IConfigService
 
     try:

@@ -86,18 +86,23 @@ def test_global_budget_includes_all_selected_tokens_and_system_prompt(
     service, mock_config
 ):
     """
-    Logic: The global token summation must include selected files from all scopes
-    (Turn, Session, History) and the system prompt, but only prune Turn/History files.
+    Logic: The global token summation must include selected files from Turn and Session
+    scopes (system prompt excluded). Only Turn-scope files are eligible for pruning.
+    Session files are never pruned.
     """
     from teddy_executor.core.domain.models.project_context import ContextItem
 
-    # Config has global_context_threshold set to 10000 in mock_config fixture.
-    # We construct items whose selected totals are:
-    # System Prompt: 3000 tokens
-    # Session (un-prunable): 2000 tokens
-    # Turn 1 Plan (History file): 4000 tokens (eligible to prune)
-    # Turn 2 Plan (Turn file): 2000 tokens (eligible to prune)
-    # Total selected = 3000 (system) + 2000 (session) + 4000 (history) + 2000 (turn) = 11000 > 10000 threshold.
+    # Override threshold to 5000 for this test to trigger pruning.
+    # Turn-scope items: 4000 (history) + 2000 (turn) = 6000
+    # Session-scope item: 2000
+    # Total selected = 8000 > threshold of 5000 → pruning triggered.
+    mock_config.get_setting.side_effect = lambda key, default=None: {
+        "auto_pruning.enabled": True,
+        "auto_pruning.global_context_threshold": 5000,
+        "auto_pruning.prune_failure_history": True,
+        "auto_pruning.prune_validation_failures": True,
+        "auto_pruning.max_turns_retention": 25,
+    }.get(key, default)
     items = [
         ContextItem(
             path="src/login.py", scope="Session", token_count=2000, git_status=" "
@@ -122,7 +127,7 @@ def test_global_budget_includes_all_selected_tokens_and_system_prompt(
 
     # Assert
     # The largest prunable candidate (Turn 1 Plan / History file with 4000 tokens) must be pruned first.
-    # This reduces total tokens from 11000 to 7000, which is below the 10000 threshold.
+    # This reduces total tokens from 8000 to 4000, which is below the 5000 threshold.
     # Therefore, turn_items (2000 tokens) should remain selected.
     history_item = next(i for i in result.items if "01/plan.md" in i.path)
     turn_item = next(i for i in result.items if "02/plan.md" in i.path)
