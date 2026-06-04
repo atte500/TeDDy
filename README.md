@@ -81,4 +81,3 @@ Here's a look at our development priorities.
 | Completed | **Agent Prompts v1**              | Core prompts for Pathfinder, Architect, Developer, and Debugger are defined and functional.                                                                  |
 | Completed | **Core Action & Utility Support** | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.       |
 |    WIP    | **Interactive Session Workflow**  | A local-first, file-based workflow that eliminates chat UIs. Manages conversation history, context, and state snapshots directly on the filesystem with Git. |
-# test hook
