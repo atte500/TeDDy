@@ -54,19 +54,13 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             return reviewed_plan
         return plan
 
-    def _process_plan_actions(
-        self, plan: Plan, interactive: bool, project_context: Optional[Any] = None
-    ) -> list[ActionLog]:
+    def _process_plan_actions(self, plan: Plan, interactive: bool) -> list[ActionLog]:
         """Iterates through actions and dispatches them."""
         action_logs = []
         halt_execution = False
         for action in plan.actions:
             action_log, should_halt = self._handle_action_in_loop(
-                action,
-                plan,
-                interactive,
-                halt_execution,
-                project_context=project_context,
+                action, plan, interactive, halt_execution
             )
             action_logs.append(action_log)
             if should_halt:
@@ -74,12 +68,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         return action_logs
 
     def _handle_action_in_loop(
-        self,
-        action: ActionData,
-        plan: Plan,
-        interactive: bool,
-        halt_execution: bool,
-        project_context: Optional[Any] = None,
+        self, action: ActionData, plan: Plan, interactive: bool, halt_execution: bool
     ) -> tuple[ActionLog, bool]:
         """Logic for processing a single action within the execution loop."""
         if halt_execution:
@@ -104,31 +93,6 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 self._action_executor.handle_skipped_action(action, reason),
                 False,
             )
-
-        # READ skip: if file is already in context (turn or session), skip the read
-        if (
-            plan.is_session
-            and action.type.upper() == "READ"
-            and project_context
-            and hasattr(project_context, "items")
-            and project_context.items
-        ):
-            target_path = (
-                action.params.get("File Path")
-                or action.params.get("path")
-                or action.params.get("Resource")
-                or ""
-            )
-            if target_path and any(
-                item.path == target_path for item in project_context.items
-            ):
-                return (
-                    self._action_executor.handle_skipped_action(
-                        action,
-                        "Latest content is already in session context.",
-                    ),
-                    False,
-                )
 
         try:
             action_log, captured_message = self._dispatch_single_action(
@@ -294,9 +258,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             if reviewed_plan is None:
                 return self._handle_aborted_execution(plan, start_time, message)
 
-            action_logs = self._process_plan_actions(
-                reviewed_plan, interactive, project_context=project_context
-            )
+            action_logs = self._process_plan_actions(reviewed_plan, interactive)
             return self._report_assembler.assemble(
                 ReportAssemblyData(
                     plan=reviewed_plan,
