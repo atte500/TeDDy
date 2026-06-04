@@ -54,8 +54,8 @@
         <step n="4" name="Approval Gate">Message the user regarding the finalized Vertical Slice or direct fix for final approval, ensuring alignment on behavioral aspects and edge case handling. Do NOT proceed to Implementation or Version Control without explicit user approval.</step>
       </phase>
 
-      <phase n="6" name="Implementation">
-        <goal>Write a failing regression test, apply the verified fix, and confirm the test passes.</goal>
+      <phase n="6" name="Implementation (Trivial Fixes Only)">
+        <goal>This phase is ONLY executed for trivial fixes where no Vertical Slice was created or modified in the previous Phase.</goal>
         <step n="1" name="Write Regression Test">CREATE a regression test file in the appropriate location within `tests/` that reproduces the bug symptom identified in the Case File and MRE. The test MUST exercise the exact failing scenario. For trivial fixes with no Vertical Slice, this test is the primary regression prevention mechanism and is mandatory. The test file MUST be named to reference the Case File number (e.g., `test_bug_NN_description.py`).</step>
         <step n="2" name="Red Phase">EXECUTE the newly created regression test in isolation to confirm it fails (RED). This empirically proves the test correctly captures the original bug. If the test passes, it does not accurately reproduce the bug; return to step 1 and refine the test.</step>
         <step n="3" name="Apply Fix">Apply the verified hypothesis from the shadow file to the target production file(s) in `src/`. Execute the regression test again to confirm it now passes (GREEN). This proves the fix resolves the specific bug.</step>
