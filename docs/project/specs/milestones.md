@@ -52,5 +52,4 @@ Error: LLM Completion failed: litellm.APIError: APIError: OpenrouterException - 
 2. when editing long param prevent multi line breakup for long text or multiline text -> if long text or multiline is detected make it edit in editor instead of directly in TUI
 3. have same padding as right panel for rationale items has for all right panel cases and also left panel as well
 4. In hint appended to user request message say to also update reference documents accordingly if needed
-5. "Validation failed replanning" log should also mention validation errors encountered (concise version) and also message should not have empty line before
-6. RESEARCH - scrape & return full contents instead of just snippets (remove hint to read results provided)
+5. RESEARCH - scrape & return full contents instead of just snippets (remove hint to read results provided)

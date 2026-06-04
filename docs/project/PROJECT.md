@@ -69,6 +69,5 @@ This section defines the conventions for our project management artifacts.
     - **Editor & Diff Mapping:** Strictly respect `editor` config; implement a translation table for diff flags (e.g., `nvim` -> `-d`); remove all implicit VS Code fallbacks.
     - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels.
     - **UX Hints:** Append reminder to user request messages: "Update reference documents accordingly if needed."
-    - **Validation Logging:** Include concise versions of encountered errors in "Validation failed replanning" logs; remove the empty line before the message.
     - **CLI Polish:** Support `-a`, `-m`, and `-c` flags for the `start` command.
     - **Message Visibility:** Log the user message (from TUI 'm' key or message replies) to the console after execution in the format `User Message: [content]`.

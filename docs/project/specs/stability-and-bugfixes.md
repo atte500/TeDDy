@@ -30,7 +30,6 @@
 ## 4. TUI & CLI UX
 - **Editor Precision:** Ensure the `(e)` key in the TUI strictly respects the `editor` configuration in `config.yaml` as the highest priority.
 - **Explicit Fallbacks:** Remove all implicit "code" (VS Code) fallbacks in the adapter layer. The system must strictly follow Config -> Env -> Terminal Fallback.
-- **Validation Visibility:** "Validation failed replanning" logs must include the concise version of the encountered errors and remove redundant empty lines.
 - **Layout Consistency:** Ensure padding for Rationale items and Message sections matches the padding of the right-hand panel across all views.
 - **Tier 2 Editing:** If a parameter is multiline or exceeds 100 characters, automatically open the external editor for that parameter instead of an inline prompt.
 - **UX Hints:** In the hint appended to user request messages, remind the user to "update reference documents accordingly if needed."
