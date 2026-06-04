@@ -1,6 +1,6 @@
 # Slice: 02-07-Pruning Refinement
 
-- **Status:** Draft
+- **Status:** In Progress
 - **Type:** Refactor
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
@@ -40,7 +40,7 @@ And the old global_context_threshold key should NOT be read
 - **system_prompt_tokens Still Passed**: After removing `system_prompt_tokens` from the method signature, callers that still pass it (e.g., tests) will break. Migration must update all callers.
 
 ## Deliverables
-- [ ] **Contract** - Rename `auto_pruning.global_context_threshold` to `auto_pruning.turn_context_threshold` in bundled `config.yaml`.
+- [x] **Contract** - Rename `auto_pruning.global_context_threshold` to `auto_pruning.turn_context_threshold` in bundled `config.yaml`.
 - [ ] **Contract** - Remove `system_prompt_tokens: int = 0` parameter from `_apply_global_budget` signature.
 - [ ] **Harness** - Update all test fixtures and test files that reference `global_context_threshold` to use `turn_context_threshold`.
 - [ ] **Harness** - Update all test callers of `_apply_global_budget` to remove `system_prompt_tokens` argument.
@@ -62,7 +62,12 @@ And the old global_context_threshold key should NOT be read
   - `docs/architecture/core/services/session_pruning_service.md`
 
 ## Implementation Notes
-*(To be filled by the Developer during implementation.)*
+
+### Deliverable 1: Contract – Rename Config Key
+- Renamed `auto_pruning.global_context_threshold` to `auto_pruning.turn_context_threshold` in bundled `config.yaml`. Updated comment to reflect Turn-scope-only behavior.
+- Fixed `test_yaml_config_adapter.py::test_auto_pruning_defaults_are_present` to assert the new key name (was asserting old key name, causing a Local Flaw during integration).
+- Production code (`_apply_global_budget`) still reads `global_context_threshold` – backward compatibility will be handled in the Seam deliverable.
+- No other changes needed; the `config_service.get_setting()` API is key-based and unaffected by semantics of the key name.
 
 ## Implementation Plan
 ### Summary of Changes
