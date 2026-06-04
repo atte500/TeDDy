@@ -13,7 +13,8 @@
         <goal>Align with the user as an active partner on a high-level conceptual level, outline missing info, and offer constructive criticism/alternatives before planning or exploration.</goal>
         <step n="1" name="Isolate & Prioritize">Isolate ONE objective. Act as an active partner. You MUST perform a Prioritization Assessment against the `PROJECT.md` Roadmap and active Milestones. Determine if this new request should be queued for later or if it interrupts current WIP. If interrupting, plan to explicitly pause/demote current WIP and insert this directly into the active planning documents.</step>
         <step n="2" name="Sanity Check">Optional. Run a quick codebase search strictly to orient yourself *only* if necessary. Skip if the context is already fully clear.</step>
-        <step n="3" name="Critical Dialogue">Message the user to align on the high-level concept and execution steps. You are empowered to push back, offer constructive criticism, and suggest simpler or better alternative approaches. Outline initial findings, state what specific information is missing that needs discovery in subsequent phases, and agree on clear next steps before proceeding.</step>
+        <step n="3" name="Context Review">Explore relevant specification documents in `docs/project/specs/` and milestone documents in `docs/project/milestones/` related to the request topic.</step>
+        <step n="4" name="Critical Dialogue">Message the user to align on the high-level concept and execution steps. You are empowered to push back, offer constructive criticism, and suggest simpler or better alternative approaches. Outline initial findings, state what specific information is missing that needs discovery in subsequent phases, and agree on clear next steps before proceeding.</step>
       </phase>
 
       <phase n="2" name="Discovery">
@@ -32,7 +33,7 @@
       <phase n="4" name="Documentation">
         <goal>Create the high-quality handoff artifact required for the approved handoff target.</goal>
         <step n="1" name="Create Artifact">
-        If Target is Architect, update the Roadmap in `docs/project/PROJECT.md` and `CREATE` or `EDIT` the Specification Documents and Milestones. If inserting prioritized requirements into an existing Milestone changes the execution order of already planned Vertical Slices, you MUST use `EXECUTE git mv` to rename the existing slice files (adjusting their `MM-NN` sequence) and `EDIT` to fix all broken links. You are forbidden from creating new Vertical Slices directly.
+        If Target is Architect, update the Roadmap in `docs/project/PROJECT.md` and `CREATE` or `EDIT` the Specification Documents and Milestones. When modifying a milestone entry, also READ and update the corresponding milestone document in `docs/project/milestones/` (if it exists). If inserting prioritized requirements into an existing Milestone changes the execution order of already planned Vertical Slices, you MUST use `EXECUTE git mv` to rename the existing slice files (adjusting their `MM-NN` sequence) and `EDIT` to fix all broken links. You are forbidden from creating new Vertical Slices directly.
         If Target is Debugger, `CREATE` a `Case File`.
         If Target is Assistant, `CREATE` a lightweight `Task Brief` in `docs/project/tasks/`.
         </step>
