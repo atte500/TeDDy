@@ -11,7 +11,7 @@ def mock_config():
     service = create_autospec(IConfigService, instance=True)
     service.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.global_context_threshold": 10000,
+        "auto_pruning.turn_context_threshold": 10000,
         "auto_pruning.prune_failure_history": True,
         "auto_pruning.prune_validation_failures": True,
         "auto_pruning.max_turns_retention": 25,
@@ -98,7 +98,7 @@ def test_global_budget_includes_all_selected_tokens_and_system_prompt(
     # Total selected = 8000 > threshold of 5000 → pruning triggered.
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.global_context_threshold": 5000,
+        "auto_pruning.turn_context_threshold": 5000,
         "auto_pruning.prune_failure_history": True,
         "auto_pruning.prune_validation_failures": True,
         "auto_pruning.max_turns_retention": 25,
@@ -143,7 +143,7 @@ def test_backward_compatibility_global_context_threshold_still_works(
     service, mock_config, caplog
 ):
     """
-    Seam: When only the old global_context_threshold config key is set,
+    Seam: When only the old turn_context_threshold config key is set,
     the pruning service must still use it and log a deprecation warning.
     """
     import logging

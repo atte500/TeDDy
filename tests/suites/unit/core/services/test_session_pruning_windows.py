@@ -20,7 +20,7 @@ def pruning_service():
         "auto_pruning.enabled": True,
         "auto_pruning.prune_failure_history": True,
         "auto_pruning.prune_validation_failures": True,
-        "auto_pruning.global_context_threshold": 0,
+        "auto_pruning.turn_context_threshold": 0,
     }.get(k, d)
     fs = create_autospec(IFileSystemManager, instance=True)
     return SessionPruningService(config, fs)

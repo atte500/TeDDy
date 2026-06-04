@@ -28,7 +28,7 @@ def mock_config():
     # Default config for auto-pruning
     service.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.global_context_threshold": 10000,
+        "auto_pruning.turn_context_threshold": 10000,
         "auto_pruning.prune_preceding_on_non_green": True,
         "auto_pruning.prune_validation_failures": True,
     }.get(key, default)
@@ -118,7 +118,7 @@ def test_execute_prunes_global_budget_heuristic(orchestrator, mock_context_servi
     orchestrator._file_system_manager.path_exists.return_value = True
     orchestrator._config_service.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.global_context_threshold": 1000,
+        "auto_pruning.turn_context_threshold": 1000,
     }.get(key, default)
 
     items = [

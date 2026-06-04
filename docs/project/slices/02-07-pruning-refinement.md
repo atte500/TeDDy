@@ -43,7 +43,7 @@ And the old global_context_threshold key should NOT be read
 - [x] **Contract** - Rename `auto_pruning.global_context_threshold` to `auto_pruning.turn_context_threshold` in bundled `config.yaml`.
 - [x] **Contract** - Remove `system_prompt_tokens: int = 0` parameter from `_apply_global_budget` signature.
 - [x] **Seam** - Add backward compatibility in pruning service: fallback to `global_context_threshold` if `turn_context_threshold` is not set, with a deprecation log.
-- [ ] **Harness** - Update all test fixtures and test files that reference `global_context_threshold` to use `turn_context_threshold`.
+- [x] **Harness** - Update all test fixtures and test files that reference `global_context_threshold` to use `turn_context_threshold`.
 - [ ] **Harness** - Update all test callers of `_apply_global_budget` to remove `system_prompt_tokens` argument.
 - [ ] **Logic** - Refactor `_apply_global_budget` to:
   1. Read `turn_context_threshold` (with backward compatibility fallback).
@@ -62,6 +62,19 @@ And the old global_context_threshold key should NOT be read
   - `docs/architecture/core/services/session_pruning_service.md`
 
 ## Implementation Notes
+
+### Deliverable 3: Harness — Rename Test Fixtures
+- **Status**: Completed.
+- Renamed `global_context_threshold` to `turn_context_threshold` in all 6 test files (10 occurrences) using Python one-liner for cross-platform safety (macOS BSD `sed` fails on some files with `illegal byte sequence`).
+- **Files updated**:
+  - `tests/suites/integration/core/services/test_session_pruning_persistence.py` (3 occurrences)
+  - `tests/suites/unit/core/services/test_session_orchestrator_pruning.py` (2 occurrences)
+  - `tests/suites/unit/core/services/test_session_pruning_preserve_messages_budget.py` (2 occurrences)
+  - `tests/suites/unit/core/services/test_session_pruning_service_refinement.py` (2 occurrences)
+  - `tests/suites/unit/core/services/test_session_pruning_windows.py` (1 occurrence)
+  - `tests/suites/unit/adapters/outbound/test_yaml_config_adapter.py` (already updated in Turn 2 Contract deliverable)
+- **Backward Compatibility Test Fix**: The bulk rename incorrectly renamed the backward compatibility test function name and assertion string. These were surgically reverted: function name `test_backward_compatibility_global_context_threshold_still_works` and assertion checking `"global_context_threshold is deprecated"` in the log message.
+- **Integration**: Full suite passes: 781 passed, 3 skipped.
 
 ### Debt: Pre-existing Ruff Complexity Issues
 - **File:** `src/teddy_executor/adapters/inbound/session_cli_handlers.py`

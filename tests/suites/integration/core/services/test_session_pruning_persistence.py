@@ -43,7 +43,7 @@ def test_pruning_persistence_in_interactive_execution(container, tmp_path):
     # Pruning service uses config_service for thresholds
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.global_context_threshold": 5,
+        "auto_pruning.turn_context_threshold": 5,
     }.get(key, default)
 
     mock_prompts = register_mock(container, IPromptManager)
@@ -99,7 +99,7 @@ def test_pruning_persistence_in_replan_loop(container, tmp_path):
     mock_config = register_mock(container, IConfigService)
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.global_context_threshold": 5,
+        "auto_pruning.turn_context_threshold": 5,
     }.get(key, default)
 
     mock_prompts = register_mock(container, IPromptManager)
@@ -150,7 +150,7 @@ def test_deduplication_prevents_aggressive_pruning(container, tmp_path):
     mock_config = register_mock(container, IConfigService)
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.global_context_threshold": 20,
+        "auto_pruning.turn_context_threshold": 20,
     }.get(key, default)
 
     mock_prompts = register_mock(container, IPromptManager)

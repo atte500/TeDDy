@@ -32,7 +32,7 @@ class TestPreserveMessageTurnsGlobalBudget:
         )
 
     def test_global_budget_respects_spared_message_turns(self):
-        """Set global_context_threshold low, expect non-message turn pruned, message turn spared."""
+        """Set turn_context_threshold low, expect non-message turn pruned, message turn spared."""
         container = punq.Container()
         config_svc = register_mock(container, IConfigService)
         fs_mock = register_mock(container, IFileSystemManager)
@@ -43,7 +43,7 @@ class TestPreserveMessageTurnsGlobalBudget:
             "auto_pruning.prune_failure_history": True,
             "auto_pruning.prune_validation_failures": True,
             "auto_pruning.preserve_message_turns": True,
-            "auto_pruning.global_context_threshold": 500,
+            "auto_pruning.turn_context_threshold": 500,
             "auto_pruning.max_turns_retention": 0,
         }.get(key, default)
 
