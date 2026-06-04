@@ -32,7 +32,7 @@
       <phase n="4" name="Documentation">
         <goal>Create the high-quality handoff artifact required for the approved handoff target.</goal>
         <step n="1" name="Document Requirements">
-        Update the Roadmap in `docs/project/PROJECT.md` and `CREATE` or `EDIT` the Specification Documents and Milestones. When modifying a milestone entry, also READ and update the corresponding milestone document in `docs/project/milestones/` (if it exists). If inserting prioritized requirements into an existing Milestone changes the execution order of already planned Vertical Slices, you MUST use `EXECUTE git mv` to rename the existing slice files (adjusting their `MM-NN` sequence) and `EDIT` to fix all broken links. You are forbidden from creating new Vertical Slices directly.
+        Update the Roadmap in `docs/project/PROJECT.md` and `CREATE` or `EDIT` the Specification Documents and Milestones. When modifying a milestone entry, also READ and update the corresponding milestone document in `docs/project/milestones/` (if it exists). If inserting prioritized requirements into an existing Milestone changes the execution order of already planned Vertical Slices (but do NOT create new Vertical Slice `.md` files — the Architect alone owns slice creation). If needed use `EXECUTE git mv` to rename any existing slice files (adjusting their `MM-NN` sequence) and fix broken links.
         </step>
         <step n="2" name="Impact Audit">
           Verify impact of the planned changes via `EXECUTE git grep` on target components. You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic requirements.
