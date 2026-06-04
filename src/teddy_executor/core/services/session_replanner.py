@@ -85,7 +85,7 @@ class SessionReplanner:
         self, errors: list, is_session: bool = False
     ) -> dict[str, str]:
         """Collects the contents of files that caused validation errors.
-        If is_session is True, skip I/O since Resource Contents (latest) are already in input.md.
+        If is_session is True, skip I/O since Resource Contents are already in input.md.
         """
         if is_session:
             return {}

@@ -28,7 +28,7 @@ def _get_report(action_logs=None, status=RunStatus.SUCCESS, validation_result=No
 
 
 def test_formats_read_action_with_resource_contents():
-    """Verify READ action with Resource Contents (latest) section."""
+    """Verify READ action with Resource Contents section."""
     formatter = MarkdownReportFormatter()
     content = "Hello from the file!"
     report = _get_report(
@@ -49,7 +49,7 @@ def test_formats_read_action_with_resource_contents():
 
 
 def test_formats_failed_edit_action_with_file_content():
-    """Verify failed EDIT action includes original file content in Resource Contents (latest)."""
+    """Verify failed EDIT action includes original file content in Resource Contents."""
     formatter = MarkdownReportFormatter()
     content = "Original content."
     report = _get_report(

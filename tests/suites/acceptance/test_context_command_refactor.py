@@ -52,7 +52,7 @@ def test_context_generates_standard_output_and_is_clean(tmp_path, monkeypatch):
     assert "## 1. System Information" in output
     assert "## 2. Git Status" in output
     assert "## 3. Project Structure" in output
-    assert "## 4. Resource Contents (latest)" in output
+    assert "## 4. Resource Contents" in output
     assert "# Test README" in output
     assert "non_existent_file.md" in output
 

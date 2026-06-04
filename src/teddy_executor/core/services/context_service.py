@@ -312,7 +312,7 @@ class ContextService(IGetContextUseCase):
         workspace_paths = [p for p in all_paths if not is_session_file_path(p)]
         session_paths = [p for p in all_paths if is_session_file_path(p)]
 
-        # 1. Format workspace files under ## 4. Resource Contents (latest)
+        # 1. Format workspace files under ## 4. Resource Contents
         content_parts.extend(
             self._format_workspace_contents(workspace_paths, file_contents)
         )
@@ -331,7 +331,7 @@ class ContextService(IGetContextUseCase):
         if not workspace_paths:
             return []
 
-        parts = ["\n## 4. Resource Contents (latest)"]
+        parts = ["\n## 4. Resource Contents"]
         for path in workspace_paths:
             parts.append("\n---")
             if self._is_url(path):

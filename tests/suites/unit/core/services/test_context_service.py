@@ -86,7 +86,7 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     assert "## 3. Project Structure" in result.content
     assert mock_repo_tree in result.content
     assert "## 4. Context Summary" not in result.content
-    assert "## 4. Resource Contents (latest)" in result.content
+    assert "## 4. Resource Contents" in result.content
 
     # Check resource formatting
     assert "[file1.txt](/file1.txt)" in result.content
@@ -129,7 +129,7 @@ def test_get_context_distinguishes_between_manifests_and_targets(
 def test_get_context_uses_dynamic_fences_for_safe_encapsulation(
     service, mock_fs, mock_tree_gen, mock_inspector
 ):
-    """Tests that Resource Contents (latest) are wrapped in dynamic fences to prevent collisions."""
+    """Tests that Resource Contents are wrapped in dynamic fences to prevent collisions."""
     # Arrange
     content_with_backticks = "Code with fence: ```python\nprint('hi')\n```"
     mock_fs.get_context_paths.return_value = ["tricky.md"]
@@ -269,7 +269,7 @@ def test_get_context_separates_and_formats_session_history(
     """
     Scenario 1: Formatting chronological session history for the context payload.
     Verifies that ContextService partitions session history files from workspace files,
-    excluding session files from '## 4. Resource Contents (latest)' and formatting them in
+    excluding session files from '## 4. Resource Contents' and formatting them in
     '## 5. Session History' at the end, sorted chronologically. Unrecognized session
     files (like meta.yaml) are completely omitted. If no session files exist,
     the section is omitted entirely.
@@ -307,17 +307,17 @@ def test_get_context_separates_and_formats_session_history(
     )
 
     # Assert
-    # 1. Standard workspace file MUST be in '## 4. Resource Contents (latest)'
-    assert "## 4. Resource Contents (latest)" in result.content
+    # 1. Standard workspace file MUST be in '## 4. Resource Contents'
+    assert "## 4. Resource Contents" in result.content
     assert "### [src/main.py]" in result.content
     assert "print('hello')" in result.content
 
-    # 2. Session files MUST NOT be in '## 4. Resource Contents (latest)'
+    # 2. Session files MUST NOT be in '## 4. Resource Contents'
     # We slice content to check within '## 4' block but before '## 5'
     assert "## 5. Session History" in result.content
-    resource_contents_block = result.content.split("## 4. Resource Contents (latest)")[
-        1
-    ].split("## 5. Session History")[0]
+    resource_contents_block = result.content.split("## 4. Resource Contents")[1].split(
+        "## 5. Session History"
+    )[0]
     assert "initial_request.md" not in resource_contents_block
     assert "plan.md" not in resource_contents_block
     assert "report.md" not in resource_contents_block
@@ -363,7 +363,7 @@ def test_get_context_omits_session_history_if_none_present(
     result = service.get_context(context_files={"Turn": ["src/main.py"]})
 
     # Assert
-    assert "## 4. Resource Contents (latest)" in result.content
+    assert "## 4. Resource Contents" in result.content
     assert "## 5. Session History" not in result.content
 
 
