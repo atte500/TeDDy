@@ -67,13 +67,13 @@ Replace `str.lstrip("./")` with `str.removeprefix("./")` — which only removes 
 - Absolute paths like `/absolute/path` still have their leading `/` stripped via `lstrip("/")`
 
 ### Preventative Measures
-The same `lstrip("./")` bug pattern appears in 4 other files. A systemic fix should track the remaining occurrences:
+The same `lstrip("./")` bug pattern appeared in 4 other files. This debt has been addressed for the two higher-risk locations:
 
-| File | Lines | Risk Level | Assessment |
-|------|-------|------------|------------|
-| `validation_rules/helpers.py` | 167, 173 | HIGH | Used for path normalization in validation rules — could affect validation of dot-file edits |
-| `session_pruning_service.py` | 80, 103 | MEDIUM | Used for normalizing paths during pruning — could affect pruning decisions for dot files |
-| `parser_infrastructure.py` | 72 | LOW | Strips leading `/` only, not `./` — safe |
-| `local_file_system_adapter.py` | 60 | LOW | Strips leading `/` only, not `./` — safe |
+| File | Lines | Risk Level | Status | Assessment |
+|------|-------|------------|--------|------------|
+| `validation_rules/helpers.py` | 167, 173 | HIGH | **FIXED** | Used for path normalization in validation rules — could affect validation of dot-file edits |
+| `session_pruning_service.py` | 80, 103 | MEDIUM | **FIXED** | Used for normalizing paths during pruning — could affect pruning decisions for dot files |
+| `parser_infrastructure.py` | 72 | LOW | Safe (skipped) | Strips leading `/` only, not `./` — no bug |
+| `local_file_system_adapter.py` | 60 | LOW | Safe (skipped) | Strips leading `/` only, not `./` — no bug |
 
-The deeper preventative measure is to replace all `str.lstrip(char_set)` calls used for prefix removal with `str.removeprefix(prefix)`, which is Python 3.9+ and unambiguous.
+The systemic fix replaces `str.lstrip(char_set)` with `str.removeprefix(prefix)` for `./` prefix removal only.

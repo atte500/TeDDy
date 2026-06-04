@@ -77,7 +77,7 @@ class SessionPruningService:
             )
 
         # Normalize path for consistent string matching
-        posix_path = item.path.replace("\\", "/").lstrip("./").lstrip("/")
+        posix_path = item.path.replace("\\", "/").removeprefix("./").lstrip("/")
 
         # Match numeric turn directories (e.g. '01', '02')
         turn_id = self._extract_turn_id(posix_path)
@@ -100,7 +100,7 @@ class SessionPruningService:
         if not isinstance(path, str):
             return None
         # Normalize to forward slashes and strip prefixes for consistent matching
-        normalized = path.replace("\\", "/").lstrip("./").lstrip("/")
+        normalized = path.replace("\\", "/").removeprefix("./").lstrip("/")
         # Turn IDs are typically 1-3 digits. 4+ digits usually represent years or other data.
         matches = re.findall(r"(?:^|/)(\d{1,3})(?=/|$)", normalized)
         return matches[-1] if matches else None
