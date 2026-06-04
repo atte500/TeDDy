@@ -76,6 +76,13 @@
 - **Details:** `{{ log.details }}`
 {% endif -%}
 {% endif %}
+{% if log.action_type.upper() == 'MESSAGE' and log.details and log.details is mapping and log.details.get('content') %}
+- **User Reply:**
+{{ log.details.content | trim | fence }}
+{{ log.details.content | trim }}
+{{ log.details.content | trim | fence }}
+
+{% endif %}
 {% endmacro -%}
 
 {% macro render_header(report) -%}
