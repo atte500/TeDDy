@@ -42,7 +42,7 @@ And the old global_context_threshold key should NOT be read
 ## Deliverables
 - [x] **Contract** - Rename `auto_pruning.global_context_threshold` to `auto_pruning.turn_context_threshold` in bundled `config.yaml`.
 - [x] **Contract** - Remove `system_prompt_tokens: int = 0` parameter from `_apply_global_budget` signature.
-- [ ] **Seam** - Add backward compatibility in pruning service: fallback to `global_context_threshold` if `turn_context_threshold` is not set, with a deprecation log.
+- [x] **Seam** - Add backward compatibility in pruning service: fallback to `global_context_threshold` if `turn_context_threshold` is not set, with a deprecation log.
 - [ ] **Harness** - Update all test fixtures and test files that reference `global_context_threshold` to use `turn_context_threshold`.
 - [ ] **Harness** - Update all test callers of `_apply_global_budget` to remove `system_prompt_tokens` argument.
 - [ ] **Logic** - Refactor `_apply_global_budget` to:
@@ -92,6 +92,19 @@ And the old global_context_threshold key should NOT be read
 - Fixed `test_yaml_config_adapter.py::test_auto_pruning_defaults_are_present` to assert the new key name (was asserting old key name, causing a Local Flaw during integration).
 - Production code (`_apply_global_budget`) still reads `global_context_threshold` – backward compatibility will be handled in the Seam deliverable.
 - No other changes needed; the `config_service.get_setting()` API is key-based and unaffected by semantics of the key name.
+
+### Deliverable 5: Seam – Backward Compatibility
+- **Status**: Completed.
+- Added `import logging` at the module level of `session_pruning_service.py`.
+- Refactored `_apply_global_budget` threshold reading logic to:
+  1. First attempt to read `auto_pruning.turn_context_threshold`.
+  2. If not set (`None`), fall back to `auto_pruning.global_context_threshold` and call `logging.warning("global_context_threshold is deprecated, use turn_context_threshold instead")`.
+  3. Parse both paths to `int` with `TypeError`/`ValueError` guard.
+- Added unit test `test_backward_compatibility_global_context_threshold_still_works` to `test_session_pruning_service_refinement.py` that verifies:
+  - Pruning still functions when only the old key is configured.
+  - A deprecation warning containing the expected message is logged via `caplog`.
+- Full suite: 781 passed, 3 skipped (Turn 18).
+- Red-Green-Refactor: Red test failed with `assert False` (no deprecation log), Green passed after production code change, Refactor was a no-op.
 
 ## Implementation Plan
 ### Summary of Changes
