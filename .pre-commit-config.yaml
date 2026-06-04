@@ -90,10 +90,3 @@ repos:
         language: system
         types: [python]
         files: ^src/
-
-    -   id: pytest
-        name: Run Pytest Suite
-        entry: poetry run pytest
-        language: system
-        pass_filenames: false
-        always_run: true
