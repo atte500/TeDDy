@@ -103,7 +103,7 @@ class SessionLifecycleManager:
     ) -> ExecutionReport:
         """Triggers the Automated Re-plan Loop."""
         self._user_interactor.display_message(
-            "\n[yellow]Validation failed... replanning[/yellow]"
+            "[yellow]Validation failed... replanning[/yellow]"
         )
         report = self._replanner.build_failure_report(
             errors,
