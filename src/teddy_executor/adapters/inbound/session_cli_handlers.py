@@ -11,6 +11,7 @@ from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.domain.models.session import SessionOptions
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
+from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 from teddy_executor.core.utils.string import slugify
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
@@ -248,6 +249,10 @@ def handle_resume_session(  # noqa: PLR0913
 ):
     """Logic for the 'resume' command."""
     import re
+    from teddy_executor.core.ports.outbound.session_repository import (
+        ISessionRepository,
+    )
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
 
     try:
         # 1. Pre-flight checks
@@ -274,17 +279,28 @@ def handle_resume_session(  # noqa: PLR0913
         display_name = re.sub(r"^\d{8}_\d{6}-", "", session_name)
         typer.echo(f"Resuming session: {display_name}")
 
-        # Update meta.yaml with model/provider/api_key overrides before the turn loop.
-        if model or provider or api_key:
-            repository: ISessionRepository = container.resolve(ISessionRepository)
-            latest_turn_path = session_manager.get_latest_turn(session_name)
-            meta = repository.load_meta(latest_turn_path)
-            if model:
-                meta["model"] = model
-            if provider:
-                meta["provider"] = provider
-            if api_key:
-                meta["api_key"] = api_key
+        # Sync latest turn's meta.yaml with current config model.
+        # This ensures telemetry display shows the correct model even when
+        # the user's active config model differs from the session's origin model.
+        repository: ISessionRepository = container.resolve(ISessionRepository)
+        config_service: IConfigService = container.resolve(IConfigService)
+        latest_turn_path = session_manager.get_latest_turn(session_name)
+        meta = repository.load_meta(latest_turn_path)
+        config_model = config_service.get_setting("llm.model", "unknown")
+        changed = False
+        if model:
+            meta["model"] = model
+            changed = True
+        elif config_model != "unknown" and meta.get("model") != config_model:
+            meta["model"] = config_model
+            changed = True
+        if provider:
+            meta["provider"] = provider
+            changed = True
+        if api_key:
+            meta["api_key"] = api_key
+            changed = True
+        if changed:
             repository.save_meta(f"{latest_turn_path}/meta.yaml", meta)
 
         _orchestrate_session_loop(

@@ -16,6 +16,7 @@ from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.adapters.inbound.session_cli_handlers import (
@@ -102,6 +103,13 @@ def test_handle_resume_session_loops_multiple_turns_when_non_interactive():
     container.register(IConfigService, instance=mock_config_service)
     container.register(ISessionLoopGuard, instance=mock_loop_guard)
     container.register(IMarkdownReportFormatter, MockFormatter)
+    mock_session_repo = Mock(spec=ISessionRepository)
+    mock_session_repo.load_meta.return_value = {}
+    container.register(
+        ISessionRepository,
+        instance=mock_session_repo,
+    )
+    mock_config_service.get_setting.return_value = "unknown"
 
     mock_llm_client.validate_config.return_value = []
     mock_session_manager.resolve_session_from_path.return_value = "my-session"

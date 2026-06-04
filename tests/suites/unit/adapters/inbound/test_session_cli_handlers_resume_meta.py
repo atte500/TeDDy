@@ -34,6 +34,17 @@ class TestResumeMetadataUpdate:
         mock_init = MagicMock()
         mock_formatter = MagicMock()
 
+        # Default config: get_setting returns "unknown" for unconfigured keys
+        mock_config.get_setting.side_effect = lambda key, default="unknown": default
+        # Default: get_latest_session_name raises ValueError (no path provided)
+        mock_session_manager.get_latest_session_name.side_effect = ValueError(
+            "No path provided"
+        )
+        # Default: get_cumulative_cost returns 0.0
+        mock_session_manager.get_cumulative_cost.return_value = 0.0
+        # Default: get_config_path returns a placeholder
+        mock_config.get_config_path.return_value = ".teddy/config.yaml"
+
         # Wire up the container to resolve these as needed
         container.resolve.side_effect = lambda cls, **kw: {
             ISessionManager: mock_session_manager,
@@ -159,13 +170,17 @@ class TestResumeMetadataUpdate:
                 api_key=None,
             )
 
-            # save_meta should still be called, but model should remain unchanged
+            # save_meta should be called with model auto-synced to config model
             if repo.save_meta.called:
                 call_args = repo.save_meta.call_args
                 saved_data = call_args[0][1] if len(call_args[0]) > 1 else call_args[1]
-                assert saved_data.get("model") == "preserved-model", (
-                    f"Expected model 'preserved-model' but got {saved_data.get('model')}"
+                # Model should be auto-synced to the config default
+                assert saved_data.get("model") == "unknown", (
+                    f"Expected model 'unknown' (from config) but got {saved_data.get('model')}"
                 )
+                # Other metadata should be preserved
+                assert saved_data.get("agent_name") == "developer"
+                assert saved_data.get("cumulative_cost") == 0.1
         finally:
             handlers._orchestrate_session_loop = original_loop
 
@@ -214,6 +229,10 @@ class TestResumeMetadataUpdate:
             call_args = repo.save_meta.call_args
             saved_data = call_args[0][1] if len(call_args[0]) > 1 else call_args[1]
             assert saved_data.get("provider") == "new-provider"
-            assert saved_data.get("model") == "some-model"
+            # When config_model is "unknown" (no real config), original meta model is preserved
+            assert saved_data.get("model") == "some-model", (
+                f"Expected model 'some-model' (preserved from meta) but got {saved_data.get('model')}"
+            )
+            assert saved_data.get("agent_name") == "developer"
         finally:
             handlers._orchestrate_session_loop = original_loop
