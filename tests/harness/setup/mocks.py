@@ -196,6 +196,22 @@ def mock_report_formatter(container):
 
 
 @pytest.fixture
+def mock_time_service(container):
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
+    mock = register_mock(container, ITimeService)
+    mock.sleep_calls = []
+    original_sleep = mock.sleep
+
+    def _track_sleep(duration: float) -> None:
+        mock.sleep_calls.append(duration)
+        original_sleep(duration)
+
+    mock.sleep.side_effect = _track_sleep
+    return mock
+
+
+@pytest.fixture
 def mock_llm_client(container):
     from teddy_executor.core.ports.outbound import ILlmClient
 

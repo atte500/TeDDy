@@ -96,7 +96,7 @@ Feature: Configurable Completion Timeout
 ## Deliverables
 
 - [x] **Contract** - Add `timeout: 300` to the `llm` section in `src/teddy_executor/resources/config/config.yaml` baseline, establishing the default timeout of 5 minutes for all LLM completion calls.
-- [ ] **Harness** - Create/update test harness utilities for simulating `validate_config` return values (empty list = pass, non-empty = fail) in unit tests. The existing `register_mock` pattern should be sufficient for ILlmClient mock setup.
+- [x] **Harness** - Create/update test harness utilities for simulating `validate_config` return values (empty list = pass, non-empty = fail) in unit tests. The existing `register_mock` pattern should be sufficient for ILlmClient mock setup.
 - [ ] **Logic** - Implement the lazy startup validation in `get_completion()`: add a `_validated` flag and call `validate_config()` on first invocation, raising `ConfigurationError` immediately if validation fails. Modify `_should_retry_completion()` to retry on ALL exceptions (not just SSL/Timeout) when config validation has passed. Bundle unit tests covering: validation pass/fail, retry-all-errors, successful retry recovery, and thread safety.
 - [ ] **Logic** - Update `_prepare_completion_params()` or the retry loop to ensure the `timeout` parameter from config is properly passed to litellm. If no timeout is configured, default to 300. Bundle unit tests covering timeout passthrough and timeout-triggers-retry.
 - [ ] **Wiring** - Integration test verifying the full validation-then-retry flow: mock config to pass validation, make litellm fail with a generic error, verify retries occur, then make it succeed on retry 2, verify successful response returned.
@@ -112,6 +112,12 @@ Feature: Configurable Completion Timeout
 - **Test**: Added `test_baseline_llm_timeout_default` in `tests/suites/unit/adapters/outbound/test_yaml_config_adapter_layering.py` asserting `get_setting("llm.timeout") == 300`.
 - **Rationale**: No production code change was needed in `_prepare_completion_params` because the config layering mechanism (`params.update(llm_config)`) automatically passes all `llm` section keys, including `timeout`, to `litellm.completion()`.
 - **Edge Cases Verified**: The `YamlConfigAdapter` correctly loads the key from the bundled baseline when no user config exists. User overrides in `.teddy/config.yaml` will automatically take precedence via the layering mechanism.
+- **Status**: All tests pass; committed.
+
+### Harness Deliverable (`mock_time_service` fixture) — Complete
+- **Change**: Added `mock_time_service` fixture to `tests/harness/setup/mocks.py`. The fixture registers a mock `ITimeService` in the DI container and adds a `sleep_calls` list that records all durations passed to `sleep()`.
+- **Test**: Existing `test_litellm_adapter_preflight.py` tests pass; the fixture integrates seamlessly into the established `register_mock` pattern.
+- **Validated**: The `validate_config` return value simulation is already supported by the `mock_llm_client` fixture – setting `mock_llm.validate_config.return_value = []` (pass) or `["error"]` (fail) works across 19 test files.
 - **Status**: All tests pass; committed.
 
 ## Implementation Plan
