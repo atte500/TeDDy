@@ -122,10 +122,8 @@ class SessionPruningService:
             )
         )
 
-        turn_statuses, validation_failures, successful_messages = (
-            self._collect_turn_metadata(
-                items, prune_non_green, prune_validation, preserve_messages
-            )
+        turn_statuses, validation_failures, spared_turns = self._collect_turn_metadata(
+            items, prune_non_green, prune_validation, preserve_messages
         )
 
         turns_to_prune = self._apply_pruning_heuristics(
@@ -134,10 +132,10 @@ class SessionPruningService:
 
         # Explicitly remove preserved message turns from the prune list
         if preserve_messages:
-            for tid in successful_messages:
+            for tid in spared_turns:
                 turns_to_prune.pop(str(tid), None)
 
-        return turns_to_prune, successful_messages if preserve_messages else set()
+        return turns_to_prune, spared_turns if preserve_messages else set()
 
     def _collect_turn_metadata(
         self,
@@ -149,7 +147,7 @@ class SessionPruningService:
         """Scans items to determine turn statuses and validation failures."""
         turn_statuses: Dict[int, bool] = {}
         validation_failures: set[int] = set()
-        successful_messages: set[int] = set()
+        spared_turns: set[int] = set()
         checked_paths = set()
 
         for item in items:
@@ -171,7 +169,7 @@ class SessionPruningService:
                 {
                     "statuses": turn_statuses,
                     "validation_fails": validation_failures,
-                    "messages": successful_messages,
+                    "messages": spared_turns,
                 },
                 {
                     "non_green": prune_non_green,
@@ -180,7 +178,7 @@ class SessionPruningService:
                 },
             )
 
-        return turn_statuses, validation_failures, successful_messages
+        return turn_statuses, validation_failures, spared_turns
 
     def _update_turn_metadata_from_item(
         self,
