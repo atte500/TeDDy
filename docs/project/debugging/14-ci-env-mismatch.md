@@ -47,6 +47,8 @@ Commit `fcfa37bb` ("feat(llm): add timeout default fallback (300s) to _prepare_c
 
 **Fix:** Add `timeout=300` to the `assert_called_once_with` call in `test_get_completion_calls_litellm_correctly` at `tests/suites/unit/adapters/outbound/test_litellm_adapter.py:61`.
 
+**Redundant Regression Test Removed:** A dedicated regression test file (`test_bug_14_timeout_mismatch.py`) was initially created but failed on Windows CI because it did not inherit the `reset_litellm_mock` autuse fixture from `test_litellm_adapter.py`. Since the original test now includes `timeout=300` in its assertion, the separate file was redundant and was removed. The original test file provides adequate coverage.
+
 **Preventative Measures:**
 1. **Test-Regression Pairing:** When adding default parameters to shared internal methods (`_prepare_completion_params`), all tests that assert on the merged parameter set must be updated as part of the same commit. This could be enforced via code review checklist or a pre-commit hook that checks for symmetry between `_prepare_completion_params` default assignments and test assertions.
 2. **Categorical Audit:** Search the test suite for `assert_called_once_with` patterns on methods that accept merged config parameters. Use `grep -rn "assert_called_once_with" tests/suites/unit/adapters/outbound/test_litellm_adapter.py` (already done — only one affected).
