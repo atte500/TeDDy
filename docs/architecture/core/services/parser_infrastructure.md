@@ -6,11 +6,31 @@ Provides low-level AST traversal utilities, stream management (_PeekableStream),
 
 ## Implementation Details / Logic
 
-### FencePreProcessor
+### _FencePreProcessor
 The `_FencePreProcessor` class is responsible for normalizing raw Markdown plan output before AST parsing. It currently handles two tasks:
 
 1. **Code Fence Normalization:** Adjusts fence lengths to ensure valid nested code blocks.
 2. **Closing Fence Trailing Text Stripping:** Scans each line of the plan string. If a line (after optional leading whitespace) consists of 6 or more consecutive backticks (`` ` ``) or tildes (`~`) followed by non-whitespace content, the trailing text is stripped. This prevents LLM artifacts like `~~~~~~ trailing text` from contaminating code block content.
+
+#### Implementation Details (Trailing Text Stripping)
+
+The stripping logic uses a single regex pattern and a guard condition:
+
+- **Regex:** `"^(\s*)(\~{6,}|\`{6,})(.*)$"` — Matches optional leading whitespace (group 1), then a pure sequence of 6+ tildes OR 6+ backticks (group 2), then any trailing content (group 3).
+- **Mixed-Fence Guard:** Before stripping, the implementation checks that group 3 does NOT contain any backtick or tilde characters. This prevents corrupting lines like `~~~~~~\` trailing` where fence characters appear in the trailing content (safe to keep such lines unchanged).
+- **Sub-Threshold Protection:** Lines where the fence character sequence is fewer than 6 characters (e.g., `~~~~`, ``````) are never modified.
+
+**Edge Cases Proven via Standalone Prototype:**
+  - `"~~~~~~ trailing text"` → `"~~~~~~"` (standard case)
+  - `"`````` trailing text"` → `"``````"` (backtick variant)
+  - `"~~~~"` → unchanged (below threshold, 4 tildes)
+  - `"~~~~~~python"` → `"~~~~~~"` (adjacent trailing text, no space)
+  - `"    ~~~~~~ trailing"` → `"    ~~~~~~"` (indentation preserved)
+  - `"~~~~~~"` → unchanged (fence only, no trailing text)
+  - `"~~~~~~   "` → unchanged (fence with trailing whitespace only)
+  - `"~~~~~~~~ text"` → `"~~~~~~~~"` (8-tilde fence, works for any length ≥6)
+  - `"~~~~~~\` trailing"` → unchanged (mixed fence characters in trailing content)
+  - `"Some text ~~~~~~ trailing"` → unchanged (fence chars mid-line, not at start)
 
 ### _PeekableStream
 A wrapper around an iterator that provides one-token lookahead (`peek()`) and consumption (`next()`). Used by the parser for single-pass AST traversal.

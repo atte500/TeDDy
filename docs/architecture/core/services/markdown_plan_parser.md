@@ -52,3 +52,13 @@ To maintain focus and adhere to file complexity limits, the parser delegates to 
 
 ### Tail-end Resilience in `_parse_actions`
 Modified to silently consume trailing `BlockCode` and `CodeFence` nodes after the last action in the action plan section. This is consistent with the between-action skip logic implemented in Slice 02-06 and uses the same approach: iterating the stream after the main action-consuming loop and discarding any remaining `BlockCode` or `CodeFence` nodes. `Paragraph` nodes at the tail-end are NOT ignored and will still raise a validation error.
+
+**Implementation Pattern (prototype-proven):**
+```python
+# Tail-end resilience: silently consume trailing code blocks
+from mistletoe.block_token import BlockCode, CodeFence
+while stream.has_next() and isinstance(stream.peek(), (BlockCode, CodeFence)):
+    stream.next()
+```
+
+This loop must be placed in `_parse_actions` after the main `while stream.has_next()` loop that consumes action blocks and before the `return actions` statement. It is intentionally scoped to only skip `BlockCode` and `CodeFence` nodes — any other node type (notably `Paragraph`) at the tail end will still raise a validation error, preserving strict parsing for non-code-block content.
