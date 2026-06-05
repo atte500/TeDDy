@@ -49,3 +49,22 @@ The `SessionOrchestrator.execute()` method has a termination guard for empty mes
    - Test 2 (Shadow/fixed): Communication turn + empty user reply → terminated correctly (PASS) confirming the fix.
    - Test 3 (Shadow/fixed): Communication turn + non-empty reply → did NOT terminate (PASS) confirming no regression.
    **Root cause confirmed:** `SessionOrchestrator.execute()` lacks a check for `plan.metadata["user_request"]` / `report.user_request` after the inner orchestrator completes.
+## Solution
+
+### Root Cause
+The `SessionOrchestrator.execute()` method had a guard that checked `plan.metadata.get("user_request") or report.user_request` to detect an empty reply after a `## Message` turn. However, the user's reply to a `## Message` turn is captured **inside the action handler** and stored in `ActionLog.details` for the MESSAGE action, **not** in `report.user_request` or `plan.metadata["user_request"]`. The guard was checking fields that were always `None`, so it never triggered.
+
+### The Fix
+Change the guard to scan `report.action_logs` for a MESSAGE action and read its `details` field:
+```python
+user_reply = next(
+    (log.details for log in report.action_logs if log.action_type == "MESSAGE"),
+    None,
+)
+if user_reply is not None and not user_reply.strip():
+    return None  # terminate without creating report.md
+```
+
+### Preventative Measures
+- **Lifecycle-affecting inputs should be traced to their actual data source.** The `ActionLog.details` is the canonical storage for the return value of `ask_question()` in action handlers. Any future guard that needs the user's reply to a communication turn must read from `action_logs`, not high-level report fields.
+- **Review all current guards in `SessionOrchestrator` and `ExecutionOrchestrator`** that inspect `report.user_request` or `plan.metadata["user_request"]` to verify they are actually populated in their specific scenario. If a field is never populated by the downstream code path, the guard is dead code.

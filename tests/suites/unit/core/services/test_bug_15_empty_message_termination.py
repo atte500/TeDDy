@@ -4,10 +4,12 @@ from unittest.mock import MagicMock
 import punq
 
 from teddy_executor.core.domain.models import (
-    ExecutionReport,
-    RunStatus,
-    Plan,
     ActionData,
+    ActionLog,
+    ActionStatus,
+    ExecutionReport,
+    Plan,
+    RunStatus,
     RunSummary,
 )
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
@@ -45,8 +47,8 @@ def _make_communication_plan(metadata: dict | None = None) -> Plan:
     return plan
 
 
-def _make_empty_user_request_report() -> ExecutionReport:
-    """Create an execution report with empty user_request (simulating empty reply)."""
+def _make_empty_reply_report() -> ExecutionReport:
+    """Create an execution report with a MESSAGE ActionLog with empty details (simulating empty reply)."""
     from datetime import datetime
 
     return ExecutionReport(
@@ -57,11 +59,18 @@ def _make_empty_user_request_report() -> ExecutionReport:
         ),
         plan_title="Test",
         rationale="test",
-        user_request="",
+        user_request=None,
         metadata={},
         is_session=True,
         original_actions=[],
-        action_logs=[],
+        action_logs=[
+            ActionLog(
+                status=ActionStatus.SUCCESS,
+                action_type="MESSAGE",
+                params={},
+                details="",
+            )
+        ],
     )
 
 
@@ -89,7 +98,7 @@ class TestBug15EmptyMessageTermination:
         validator.validate.return_value = []  # No validation errors
         plan = _make_communication_plan()
         parser.parse.return_value = plan
-        exec_orch.execute.return_value = _make_empty_user_request_report()
+        exec_orch.execute.return_value = _make_empty_reply_report()
 
         orchestrator = SessionOrchestrator(
             execution_orchestrator=exec_orch,
@@ -152,11 +161,18 @@ class TestBug15EmptyMessageTermination:
             ),
             plan_title="Test",
             rationale="test",
-            user_request="Let's continue",
+            user_request=None,
             metadata={},
             is_session=True,
             original_actions=[],
-            action_logs=[],
+            action_logs=[
+                ActionLog(
+                    status=ActionStatus.SUCCESS,
+                    action_type="MESSAGE",
+                    params={},
+                    details="Let's continue",
+                )
+            ],
         )
         exec_orch.execute.return_value = non_empty_report
         # Stub finalize_turn to return a path

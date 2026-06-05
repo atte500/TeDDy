@@ -148,7 +148,10 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         # 4a. Empty user reply after communication turn → terminate session immediately (no report.md)
         if report and plan.is_communication_turn():
-            user_reply = plan.metadata.get("user_request") or report.user_request
+            user_reply = next(
+                (log.details for log in report.action_logs if log.action_type == "MESSAGE"),
+                None,
+            )
             if user_reply is not None and not user_reply.strip():
                 import typer
 
