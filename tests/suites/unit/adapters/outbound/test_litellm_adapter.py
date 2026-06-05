@@ -34,7 +34,12 @@ def test_get_completion_calls_litellm_correctly(mock_config):
     mock_response.choices = [mock_choice]
     litellm.completion.return_value = mock_response
 
-    mock_config.get_setting.return_value = {}
+    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+
+    def _valid_llm(key: str, default=None):
+        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+
+    mock_config.get_setting.side_effect = _valid_llm
 
     adapter = LiteLLMAdapter(mock_config)
     messages = [{"role": "user", "content": "Hello"}]
@@ -52,7 +57,12 @@ def test_get_completion_calls_litellm_correctly(mock_config):
 
 def test_get_completion_wraps_errors_in_llm_api_error(mock_config):
     # Arrange
-    mock_config.get_setting.return_value = {}
+    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+
+    def _valid_llm(key: str, default=None):
+        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+
+    mock_config.get_setting.side_effect = _valid_llm
     litellm.completion.side_effect = RuntimeError("API Failure")
 
     adapter = LiteLLMAdapter(mock_config)
@@ -70,7 +80,12 @@ def test_get_completion_returns_empty_string_for_empty_choices(mock_config):
     mock_response.choices = []
     litellm.completion.return_value = mock_response
 
-    mock_config.get_setting.return_value = {}
+    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+
+    def _valid_llm(key: str, default=None):
+        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+
+    mock_config.get_setting.side_effect = _valid_llm
 
     adapter = LiteLLMAdapter(mock_config)
 
@@ -198,7 +213,12 @@ def test_get_completion_hydrates_and_retries_on_not_found_error(mock_config, con
     import litellm
     from tests.harness.setup.mocking import register_mock
 
-    mock_config.get_setting.return_value = {}
+    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+
+    def _valid_llm(key: str, default=None):
+        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+
+    mock_config.get_setting.side_effect = _valid_llm
     mock_hydrator = register_mock(container, IOpenRouterHydrator)
     mock_hydrator.get_metadata.return_value = {
         "context_window": 100000,
@@ -240,7 +260,12 @@ def test_get_completion_uses_zero_fallback_when_hydrator_omits_window(
     import litellm
     from tests.harness.setup.mocking import register_mock
 
-    mock_config.get_setting.return_value = {}
+    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+
+    def _valid_llm(key: str, default=None):
+        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+
+    mock_config.get_setting.side_effect = _valid_llm
     mock_hydrator = register_mock(container, IOpenRouterHydrator)
     # Return metadata but missing context_window
     mock_hydrator.get_metadata.return_value = {"pricing": {}}
@@ -271,7 +296,12 @@ def test_get_completion_parses_actual_model_from_error_message(mock_config, cont
     import litellm
     from tests.harness.setup.mocking import register_mock
 
-    mock_config.get_setting.return_value = {}
+    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+
+    def _valid_llm(key: str, default=None):
+        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+
+    mock_config.get_setting.side_effect = _valid_llm
     mock_hydrator = register_mock(container, IOpenRouterHydrator)
     mock_hydrator.get_metadata.return_value = {
         "context_window": 64000,
@@ -317,7 +347,12 @@ def test_get_completion_broadcasts_metadata_to_all_candidates(mock_config, conta
     import litellm
     from tests.harness.setup.mocking import register_mock
 
-    mock_config.get_setting.return_value = {}
+    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+
+    def _valid_llm(key: str, default=None):
+        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+
+    mock_config.get_setting.side_effect = _valid_llm
     mock_hydrator = register_mock(container, IOpenRouterHydrator)
 
     requested_id = "openrouter/model-alias"

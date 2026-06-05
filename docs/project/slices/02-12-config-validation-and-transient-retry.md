@@ -97,7 +97,7 @@ Feature: Configurable Completion Timeout
 
 - [x] **Contract** - Add `timeout: 300` to the `llm` section in `src/teddy_executor/resources/config/config.yaml` baseline, establishing the default timeout of 5 minutes for all LLM completion calls.
 - [x] **Harness** - Create/update test harness utilities for simulating `validate_config` return values (empty list = pass, non-empty = fail) in unit tests. The existing `register_mock` pattern should be sufficient for ILlmClient mock setup.
-- [ ] **Logic** - Implement the lazy startup validation in `get_completion()`: add a `_validated` flag and call `validate_config()` on first invocation, raising `ConfigurationError` immediately if validation fails. Modify `_should_retry_completion()` to retry on ALL exceptions (not just SSL/Timeout) when config validation has passed. Bundle unit tests covering: validation pass/fail, retry-all-errors, successful retry recovery, and thread safety.
+- [x] **Logic** - Implement the lazy startup validation in `get_completion()`: add a `_validated` flag and call `validate_config()` on first invocation, raising `ConfigurationError` immediately if validation fails. Modify `_should_retry_completion()` to retry on ALL exceptions (not just SSL/Timeout) when config validation has passed. Bundle unit tests covering: validation pass/fail, retry-all-errors, successful retry recovery, and thread safety.
 - [ ] **Logic** - Update `_prepare_completion_params()` or the retry loop to ensure the `timeout` parameter from config is properly passed to litellm. If no timeout is configured, default to 300. Bundle unit tests covering timeout passthrough and timeout-triggers-retry.
 - [ ] **Wiring** - Integration test verifying the full validation-then-retry flow: mock config to pass validation, make litellm fail with a generic error, verify retries occur, then make it succeed on retry 2, verify successful response returned.
 
@@ -119,6 +119,17 @@ Feature: Configurable Completion Timeout
 - **Test**: Existing `test_litellm_adapter_preflight.py` tests pass; the fixture integrates seamlessly into the established `register_mock` pattern.
 - **Validated**: The `validate_config` return value simulation is already supported by the `mock_llm_client` fixture – setting `mock_llm.validate_config.return_value = []` (pass) or `["error"]` (fail) works across 19 test files.
 - **Status**: All tests pass; committed.
+
+### Logic Deliverable (Lazy Validation & Retry-All-Errors) — Complete
+- **Changes to `litellm_adapter.py`**:
+  - Added `self._validated: bool = False` in `__init__` for lazy validation tracking.
+  - Added top-level `ConfigurationError` import from `teddy_executor.core.domain.models.exceptions`.
+  - Moved validation guard before `_prepare_completion_params` to ensure config errors are caught before parameter preparation.
+  - Simplified `_should_retry_completion()` to retry on ALL exceptions with exponential backoff, removing the SSL/Timeout-only filter.
+- **Test File**: `tests/suites/unit/adapters/outbound/test_litellm_adapter_retries.py` with 7 tests total (1 existing, 6 new).
+- **Test Coverage**: Validation pass/fail (3 tests), retry-all-errors with backoff verification (2 tests), thread safety via `_init_lock` (1 test).
+- **Key Design Decision**: Validation guard uses double-checked locking via `_init_lock` for thread safety. Validation runs exactly once, even under concurrent access.
+- **Status**: All unit + integration tests pass; committed.
 
 ## Implementation Plan
 

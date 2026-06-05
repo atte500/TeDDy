@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional, Protocol
 from teddy_executor.core.ports.outbound.config_service import IConfigService
+from teddy_executor.core.domain.models.exceptions import ConfigurationError
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient, LlmApiError
 from teddy_executor.core.ports.outbound.time_service import ITimeService
 
@@ -37,6 +38,7 @@ class LiteLLMAdapter(ILlmClient):
         self._encoding: Any = None
         self._encoding_model: Optional[str] = None
         self._executor: Any = None
+        self._validated: bool = False
         from threading import Lock
 
         self._init_lock = Lock()
@@ -111,6 +113,16 @@ class LiteLLMAdapter(ILlmClient):
         Values in the 'llm' section of the config are passed directly to LiteLLM.
         """
         litellm = self._get_litellm()
+
+        # Lazy validation guard: validate config on first invocation
+        if not self._validated:
+            with self._init_lock:
+                if not self._validated:
+                    errors = self.validate_config()
+                    if errors:
+                        raise ConfigurationError(errors[0])
+                    self._validated = True
+
         final_params = self._prepare_completion_params(model, **kwargs)
 
         max_attempts_val = final_params.get("max_retries")
@@ -166,13 +178,8 @@ class LiteLLMAdapter(ILlmClient):
     def _should_retry_completion(
         self, error: Exception, attempt: int, max_attempts: int
     ) -> bool:
-        """Determines if a completion error is transient and performs backoff."""
-        msg = str(error)
-        is_transient = any(
-            err in msg for err in ["SSLV3_ALERT_BAD_RECORD_MAC", "TimeoutError"]
-        )
-
-        if is_transient and attempt < max_attempts - 1:
+        """Retries any completion error with exponential backoff."""
+        if attempt < max_attempts - 1:
             delay = 0.5 * (2**attempt)
             if self._time_service:
                 self._time_service.sleep(delay)
@@ -185,8 +192,6 @@ class LiteLLMAdapter(ILlmClient):
 
     def _raise_specific_completion_errors(self, error: Exception) -> None:
         """Identifies and raises specific errors based on exception signature."""
-        from teddy_executor.core.domain.models.exceptions import ConfigurationError
-
         msg = str(error)
         hints = ["API key expired", "API_KEY_INVALID", "invalid_api_key"]
         if any(hint in msg for hint in hints):
