@@ -1,6 +1,5 @@
 import re
 from dataclasses import is_dataclass, replace
-import logging
 from typing import Any, Dict, Optional
 
 from teddy_executor.core.domain.models import ProjectContext
@@ -391,26 +390,15 @@ class SessionPruningService:
         return turn_id_map, max_id
 
     def _get_turn_context_threshold(self) -> int:
-        """Reads the turn context threshold from config with backward compatibility.
+        """Reads the turn context threshold from config.
 
-        Attempts to read ``auto_pruning.turn_context_threshold`` first.
-        Falls back to the deprecated ``auto_pruning.global_context_threshold``
-        with a deprecation warning if the new key is not set.
-        Returns 0 if neither key is set or on parse errors (skips budget heuristic).
+        Reads ``auto_pruning.turn_context_threshold`` from config.
+        Returns 0 if not set or on parse errors (skips budget heuristic).
         """
         try:
             threshold = self._config_service.get_setting(
                 "auto_pruning.turn_context_threshold"
             )
-            if threshold is not None:
-                return int(threshold)
-            threshold = self._config_service.get_setting(
-                "auto_pruning.global_context_threshold", 0
-            )
-            if threshold is not None and threshold:
-                logging.warning(
-                    "global_context_threshold is deprecated, use turn_context_threshold instead"
-                )
             return int(threshold) if threshold is not None else 0
         except (TypeError, ValueError):
             return 0

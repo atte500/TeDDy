@@ -139,15 +139,12 @@ def test_global_budget_includes_all_selected_tokens_and_system_prompt(
     assert session_item.selected is True
 
 
-def test_backward_compatibility_global_context_threshold_still_works(
-    service, mock_config, caplog
-):
+def test_turn_context_threshold_no_longer_falls_back(service, mock_config):
     """
-    Seam: When only the old turn_context_threshold config key is set,
-    the pruning service must still use it and log a deprecation warning.
+    Seam: When only the old global_context_threshold config key is set,
+    the pruning service must NOT fall back to it. The threshold must be 0
+    (skip pruning) because turn_context_threshold is not configured.
     """
-    import logging
-
     from teddy_executor.core.domain.models.project_context import ContextItem
 
     # Configure mock to return None for new key, but value for old key
@@ -155,7 +152,7 @@ def test_backward_compatibility_global_context_threshold_still_works(
         config_map = {
             "auto_pruning.enabled": True,
             "auto_pruning.turn_context_threshold": None,  # new key NOT set
-            "auto_pruning.global_context_threshold": 5000,  # old key IS set
+            "auto_pruning.global_context_threshold": 5000,  # old key IS set (must be ignored)
             "auto_pruning.prune_failure_history": True,
             "auto_pruning.prune_validation_failures": True,
             "auto_pruning.max_turns_retention": 25,
@@ -172,29 +169,21 @@ def test_backward_compatibility_global_context_threshold_still_works(
             token_count=10000,
             git_status=" ",
         ),
-        ContextItem(
-            path="session.md",
-            scope="Session",
-            token_count=500,
-            git_status=" ",
-        ),
     ]
     context = ProjectContext(items=items, header="", content="")
 
     # Act
-    with caplog.at_level(logging.WARNING):
-        result = service.prune(context)
+    result = service.prune(context)
 
-    # Assert: The large turn file should be pruned
+    # Assert: Since turn_context_threshold is None (treated as 0),
+    # the global budget heuristic is skipped. The large file should NOT be pruned.
     turn_item = next(i for i in result.items if "plan.md" in i.path)
-    assert turn_item.selected is False
-    assert turn_item.auto_prune_reason == "Pruned to fit context budget"
-
-    # Assert: A deprecation warning was logged
-    assert any(
-        "global_context_threshold is deprecated" in record.message
-        for record in caplog.records
+    assert turn_item.selected is True, (
+        "Expected large turn file to remain selected when "
+        "turn_context_threshold is None (budget heuristic skipped), "
+        "but it was pruned. Falls back to global_context_threshold still works."
     )
+    assert turn_item.auto_prune_reason is None
 
 
 def test_global_budget_strictly_protects_initial_request(service, mock_config):
