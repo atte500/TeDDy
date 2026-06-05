@@ -98,7 +98,7 @@ Feature: Configurable Completion Timeout
 - [x] **Contract** - Add `timeout: 300` to the `llm` section in `src/teddy_executor/resources/config/config.yaml` baseline, establishing the default timeout of 5 minutes for all LLM completion calls.
 - [x] **Harness** - Create/update test harness utilities for simulating `validate_config` return values (empty list = pass, non-empty = fail) in unit tests. The existing `register_mock` pattern should be sufficient for ILlmClient mock setup.
 - [x] **Logic** - Implement the lazy startup validation in `get_completion()`: add a `_validated` flag and call `validate_config()` on first invocation, raising `ConfigurationError` immediately if validation fails. Modify `_should_retry_completion()` to retry on ALL exceptions (not just SSL/Timeout) when config validation has passed. Bundle unit tests covering: validation pass/fail, retry-all-errors, successful retry recovery, and thread safety.
-- [ ] **Logic** - Update `_prepare_completion_params()` or the retry loop to ensure the `timeout` parameter from config is properly passed to litellm. If no timeout is configured, default to 300. Bundle unit tests covering timeout passthrough and timeout-triggers-retry.
+- [x] **Logic** - Update `_prepare_completion_params()` or the retry loop to ensure the `timeout` parameter from config is properly passed to litellm. If no timeout is configured, default to 300. Bundle unit tests covering timeout passthrough and timeout-triggers-retry.
 - [ ] **Wiring** - Integration test verifying the full validation-then-retry flow: mock config to pass validation, make litellm fail with a generic error, verify retries occur, then make it succeed on retry 2, verify successful response returned.
 
 ## Implementation Notes
@@ -130,6 +130,15 @@ Feature: Configurable Completion Timeout
 - **Test Coverage**: Validation pass/fail (3 tests), retry-all-errors with backoff verification (2 tests), thread safety via `_init_lock` (1 test).
 - **Key Design Decision**: Validation guard uses double-checked locking via `_init_lock` for thread safety. Validation runs exactly once, even under concurrent access.
 - **Status**: All unit + integration tests pass; committed.
+
+### Logic Deliverable (Timeout Passthrough & Default Fallback) — Complete
+- **Changes to `litellm_adapter.py`**:
+  - Added default timeout fallback in `_prepare_completion_params`: `if "timeout" not in params: params["timeout"] = 300` after `params.update(llm_config)`.
+- **Test File**: `tests/suites/unit/adapters/outbound/test_litellm_adapter_retries.py` — added 3 new tests.
+- **Test Coverage**: Custom timeout from config (600s) → passed to litellm; no timeout in config → default 300 passed; TimeoutError triggers retry with exponential backoff.
+- **Key Design Decision**: Fallback is placed after `params.update(llm_config)` so explicit user config takes precedence. This follows the config layering principle.
+- **Rationale**: `_prepare_completion_params` already passed all `llm` config keys to litellm via `params.update(llm_config)`. The only missing piece was the default fallback for when no timeout is configured anywhere.
+- **Status**: All unit + integration tests pass; ready to commit.
 
 ## Implementation Plan
 

@@ -233,3 +233,114 @@ def test_thread_safety_concurrent_calls(container: Any) -> None:
     assert mock_litellm.completion.call_count == 5, (
         f"Expected 5 litellm calls but got {mock_litellm.completion.call_count}"
     )
+
+
+# =========== Test 4: Timeout Passthrough ===========
+
+
+def test_custom_timeout_from_config_passed_to_litellm(container: Any) -> None:
+    """
+    Given a config with timeout=600,
+    When get_completion is called,
+    Then litellm receives timeout=600 in its kwargs.
+    """
+    # Arrange: Override timeout to 600
+    adapter, mock_litellm, _ = _create_adapter(container, {"timeout": 600})
+
+    # Act
+    adapter.get_completion(messages=[{"role": "user", "content": "test"}])
+
+    # Assert
+    call_kwargs = mock_litellm.completion.call_args.kwargs
+    assert call_kwargs.get("timeout") == 600, (
+        f"Expected timeout=600 but got timeout={call_kwargs.get('timeout')}"
+    )
+
+
+def _create_adapter_no_timeout(container: Any) -> tuple[LiteLLMAdapter, Any, Any]:
+    """Creates an adapter with a valid llm config that has NO 'timeout' key."""
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+    config = {
+        "llm": {
+            "api_key": "sk-test-key",  # pragma: allowlist secret
+            "model": "openrouter/test-model",
+            "max_retries": 3,
+        },
+    }
+    mock_config = register_mock(container, IConfigService)
+
+    def mock_get_setting(key: str, default: Any = None) -> Any:
+        parts = key.split(".", 1)
+        if len(parts) == 2:
+            section = config.get(parts[0].lower(), {})
+            return section.get(parts[1], default)
+        return config.get(key, default)
+
+    mock_config.get_setting.side_effect = mock_get_setting
+
+    mock_time = register_mock(container, ITimeService)
+    mock_litellm = POSIXPathMock()
+    mock_time.sleep_calls = []
+
+    def _track_sleep(duration: float) -> None:
+        mock_time.sleep_calls.append(duration)
+
+    mock_time.sleep.side_effect = _track_sleep
+
+    adapter = LiteLLMAdapter(
+        config_service=mock_config,
+        time_service=mock_time,
+        _litellm_provider=mock_litellm,
+    )
+    return adapter, mock_litellm, mock_time
+
+
+def test_default_timeout_is_300_when_not_configured(container: Any) -> None:
+    """
+    When the llm config does not contain a 'timeout' key,
+    the adapter should default to timeout=300 seconds.
+    """
+    # Arrange: Config without timeout
+    adapter, mock_litellm, _ = _create_adapter_no_timeout(container)
+
+    # Act
+    adapter.get_completion(messages=[{"role": "user", "content": "test"}])
+
+    # Assert
+    call_kwargs = mock_litellm.completion.call_args.kwargs
+    assert call_kwargs.get("timeout") == 300, (
+        f"Expected default timeout=300 but got timeout={call_kwargs.get('timeout')}"
+    )
+
+
+def test_timeout_exception_triggers_retry(container: Any) -> None:
+    """
+    Given a config without timeout,
+    When litellm raises a TimeoutError on the first attempt,
+    Then the adapter retries and succeeds on the second attempt.
+    """
+    # Arrange: Config without timeout
+    adapter, mock_litellm, mock_time = _create_adapter_no_timeout(container)
+
+    # Simulate: attempt 1 fails with TimeoutError, attempt 2 succeeds
+    success_response = POSIXPathMock()
+    success_response.choices = [POSIXPathMock()]
+    success_response.choices[0].message.content = "Hello!"
+    mock_litellm.completion.side_effect = [
+        TimeoutError("Request timed out"),  # Attempt 1
+        success_response,  # Attempt 2 (success)
+    ]
+
+    # Act
+    result = adapter.get_completion(messages=[{"role": "user", "content": "test"}])
+
+    # Assert
+    assert mock_litellm.completion.call_count == 2, (
+        f"Expected 2 litellm calls but got {mock_litellm.completion.call_count}"
+    )
+    # Verify backoff delay
+    assert mock_time.sleep_calls == [0.5], (
+        f"Expected backoff delay [0.5] but got {mock_time.sleep_calls}"
+    )
+    assert result is success_response, "Returned response is not the successful mock"

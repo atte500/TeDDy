@@ -160,6 +160,10 @@ class LiteLLMAdapter(ILlmClient):
         llm_config = cast(Dict[str, Any], self._config_service.get_setting("llm", {}))
         params.update(llm_config)
 
+        # Default timeout of 300 seconds if not configured
+        if "timeout" not in params:
+            params["timeout"] = 300
+
         if "model" not in params:
             raise LlmApiError(
                 "No LLM model specified. Please set 'llm.model' in your config."
