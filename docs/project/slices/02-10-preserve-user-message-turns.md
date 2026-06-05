@@ -1,5 +1,5 @@
 # Slice: 02-10-Preserve User-Message Turns
-- **Status:** Planned
+- **Status:** In Progress
 - **Type:** Feature
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
@@ -37,7 +37,7 @@ And its files should remain selected in the project context
 - **Multiple Pruning Heuristics**: A turn spared by this rule must be exempted from ALL pruning heuristics (retention limit, global budget, non-green recovery, validation failure) to be consistent with existing message turn sparing.
 
 ## Deliverables
-- [ ] **Harness** - Unit tests for `_check_report_has_user_request` helper (positive: report with user_request; negative: report without; edge: missing file, empty value).
+- [x] **Harness** - Unit tests for `_check_report_has_user_request` helper (positive: report with user_request; negative: report without; edge: missing file, empty value).
 - [ ] **Harness** - Unit tests for spared turn integration (turns with user_request are not pruned by retention limit or global budget).
 - [ ] **Logic** - Implement `_check_report_has_user_request(path: str) -> bool` in `SessionPruningService` to detect `- **User Request:**` pattern in report files.
 - [ ] **Logic** - Extend `_update_turn_metadata_from_item` to collect turn IDs where the report has a user request and add them to the spared set.
@@ -45,6 +45,26 @@ And its files should remain selected in the project context
 - [ ] **Refactor** - Rename `successful_messages` variable (and all related parameter names via the call chain: `_collect_turn_metadata`, `_identify_turns_to_prune`, `_apply_retention_limit`, `_apply_global_budget`) to `spared_turns` to reflect the broader sparing logic. Single-file change in `session_pruning_service.py`. No shared seam impact — 6 occurrences all within the same class.
 
 ## Implementation Notes
+
+### Deliverable 1: Harness — Unit tests for `_check_report_has_user_request`
+- **Test File:** [`tests/suites/unit/core/services/test_session_pruning_preserve_user_requests.py`](/tests/suites/unit/core/services/test_session_pruning_preserve_user_requests.py)
+- **Status:** Completed (7 tests, all passing)
+- **Test Coverage:**
+  1. `test_detects_user_request_header_in_report`: Positive — detects `- **User Request:**` with value → True
+  2. `test_detects_user_request_header_without_content`: Positive — detects empty `- **User Request:**` → True
+  3. `test_returns_false_when_no_user_request`: Negative — report without user_request → False
+  4. `test_returns_false_for_missing_report_file`: Edge — missing file → False (no crash)
+  5. `test_returns_false_for_unreadable_report_file`: Edge — read_file raises OSError → False
+  6. `test_matches_user_request_header_inside_code_block`: Positive — pattern matches anywhere on its own line (by design, the header always indicates user interaction regardless of code block context) → True
+  7. `test_returns_false_when_read_file_returns_empty_string`: Edge — empty file → False
+- **Key Design Decisions:**
+  - Uses `create_autospec` (bound mocks) for both `IConfigService` and `IFileSystemManager` to prevent signature drift
+  - The regex `r"^- \*\*User Request:\*\*"` with `re.MULTILINE` correctly matches the header on its own line, even when inside a code block — the presence of the key itself indicates user interaction
+  - Empty user_request value (key present but no content) still spares the turn, matching the Implementation Plan's edge case specification
+  - The production code already had `_check_report_has_user_request` implemented (Logic deliverable was pre-satisfied), so this Harness deliverable validates existing behavior
+- **Production Code:** `SessionPruningService._check_report_has_user_request` at [`src/teddy_executor/core/services/session_pruning_service.py`](/src/teddy_executor/core/services/session_pruning_service.py)
+- **No Refactoring Needed:** Test file is clean — uses constructor injection, no global `mock.patch`, no magic numbers, no shadow logic
+- **Integration:** Full suite passes with 788 passed, 3 skipped — no regressions
 
 ### Turn 1: Exploration
 - Read `SessionPruningService`, `ExecutionReport`, `SessionOrchestrator`, `ExecutionReportAssembler`, and specs.

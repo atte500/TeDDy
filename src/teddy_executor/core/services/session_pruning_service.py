@@ -228,6 +228,19 @@ class SessionPruningService:
             return bool(re.search(r"^## Message", content, re.MULTILINE))
         return False
 
+    def _check_report_has_user_request(self, path: str) -> bool:
+        """Detect the ``- **User Request:**`` pattern in report metadata.
+
+        Returns True if the report file contains the user_request header,
+        indicating the user provided an additional message during review.
+        Returns False if the file is missing, unreadable, or the pattern
+        is absent.
+        """
+        content = self._safe_read(path)
+        if content:
+            return bool(re.search(r"^- \*\*User Request:\*\*", content, re.MULTILINE))
+        return False
+
     def _check_plan_failed(self, path: str) -> bool:
         """Checks if a plan file contains a failure status emoji on the status line."""
         content = self._safe_read(path)
