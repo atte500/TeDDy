@@ -9,9 +9,7 @@
 # Dependencies: poetry run pytest (project's test runner)
 #
 
-set -e
-
-# Run the full test suite
+# Run the full test suite (do NOT use set -e; capture exit code explicitly)
 poetry run pytest --tb=short -q 2>&1
 
 # Capture exit code
