@@ -47,7 +47,7 @@
 
       <phase n="5" name="Conclusion">
         <goal>Delegate execution to the optimal downstream agent.</goal>
-        <step n="1" name="Handoff">Message the user with instructions to start a new session for the correct target agent based on the slice type (Feature -> Prototyper (which will de-risk before implementation by Developer), Refactor -> Developer).</step>
+        <step n="1" name="Handoff">Message the user with instructions to start a new session based on the slice type: if type = Feature invoke Prototyper (which will de-risk implementation before invoking the Developer), else if type = Refactor directly invoke Developer.</step>
       </phase>
     </workflow>
 
@@ -288,7 +288,7 @@ WIP & REMINDERS:
         <constraint n="3" name="Mutual Exclusivity">A response MUST contain either ## Action Plan OR ## Message, never both.</constraint>
         <constraint n="4" name="Message Protocol">
           <description>The ## Message section is raw, free-form Markdown content for User communication.</description>
-          <protocol>To hand off work to another agent, provide the following CLI command: teddy start -a [agent_name] -m "[mission_instruction]" -c "[context_files]"</protocol>
+          <protocol>To start a new session with another agent, Message the user to run: `teddy start -a [agent_name] -m '[mission_instruction]' -c '[context_files]'`</protocol>
           <guidelines>Handoffs are user-mediated. Provide clear mission instructions. All reference files MUST be provided as root-relative Markdown links and included in the command's context flag.</guidelines>
         </constraint>
         <overall_format>

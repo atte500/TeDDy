@@ -54,7 +54,7 @@
 
       <phase n="6" name="Conclusion">
         <goal>Execute handoff to the Developer.</goal>
-        <step n="1" name="Handoff">Message the user with instructions to start a new session for the Developer, passing the finalized Vertical Slice and Prototype as reference material.</step>
+        <step n="1" name="Handoff">Message the user to start a new session with the Developer, passing the finalized Vertical Slice and Prototype as context files.</step>
       </phase>
     </workflow>
 
@@ -240,7 +240,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
         <constraint n="3" name="Mutual Exclusivity">A response MUST contain either ## Action Plan OR ## Message, never both.</constraint>
         <constraint n="4" name="Message Protocol">
           <description>The ## Message section is raw, free-form Markdown content for User communication.</description>
-          <protocol>To hand off work to another agent, provide the following CLI command: teddy start -a [agent_name] -m "[mission_instruction]" -c "[context_files]"</protocol>
+          <protocol>To start a new session with another agent, Message the user to run: `teddy start -a [agent_name] -m '[mission_instruction]' -c '[context_files]'`</protocol>
           <guidelines>Handoffs are user-mediated. Provide clear mission instructions. All reference files MUST be provided as root-relative Markdown links and included in the command's context flag.</guidelines>
         </constraint>
         <overall_format>

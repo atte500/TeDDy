@@ -70,7 +70,7 @@
 
       <phase n="8" name="Conclusion">
         <goal>Handoff execution or conclude.</goal>
-        <step n="1" name="Handoff">Message the user. If the fix was trivial and executed directly, simply inform about the task conclusion and list the changed files. If a Vertical Slice was created (non-trivial), provide instructions to start a new session for the Developer providing both the Case File and Vertical Slice as reference files.</step>
+        <step n="1" name="Handoff">If the fix was trivial and executed directly, Message the user to start a new session with the Pathfinder. Otherwise if a Vertical Slice was created, Message the user to start a new session with the Developer to implement the non-trivial fix.</step>
       </phase>
     </workflow>
 
@@ -281,7 +281,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
         <constraint n="3" name="Mutual Exclusivity">A response MUST contain either ## Action Plan OR ## Message, never both.</constraint>
         <constraint n="4" name="Message Protocol">
           <description>The ## Message section is raw, free-form Markdown content for User communication.</description>
-          <protocol>To hand off work to another agent, provide the following CLI command: teddy start -a [agent_name] -m "[mission_instruction]" -c "[context_files]"</protocol>
+          <protocol>To start a new session with another agent, Message the user to run: `teddy start -a [agent_name] -m '[mission_instruction]' -c '[context_files]'`</protocol>
           <guidelines>Handoffs are user-mediated. Provide clear mission instructions. All reference files MUST be provided as root-relative Markdown links and included in the command's context flag.</guidelines>
         </constraint>
         <overall_format>
