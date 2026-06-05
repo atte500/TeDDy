@@ -27,11 +27,12 @@ And it should NOT fall back to any deprecated key
 - **Cleanup (02-15-002)**: The backward compatibility test `test_backward_compatibility_global_context_threshold_still_works` was removed during Integration Local Recovery (the test expected the old fallback behavior that was intentionally removed). Absorbed into the Seam deliverable.
 - **New Test**: Added `test_turn_context_threshold_no_longer_falls_back` to assert that when only `global_context_threshold` is set (old key) and `turn_context_threshold` is None, the pruning service treats it as unset (threshold 0 → no pruning). This test passes.
 - **Integration**: Full suite (804 tests) passes with 0 failures after the changes.
+- **Cleanup (02-15-003)**: Updated `config_service.md` to remove the two deprecated `global_context_threshold` references: stripped the "Falls back to `auto_pruning.global_context_threshold`" suffix from the `turn_context_threshold` entry and deleted the entire `global_context_threshold` entry. Full suite (815 tests) passes with 0 failures after the changes.
 
 ## Deliverables
 - [x] **Seam** - Remove backward compatibility fallback from `_get_turn_context_threshold()` in `session_pruning_service.py`: remove the try/except fallback to `global_context_threshold`, simplify to read only `turn_context_threshold`.
 - [x] **Cleanup** - Remove backward compatibility test `test_backward_compatibility_global_context_threshold_still_works` from `test_session_pruning_service_refinement.py` (absorbed into Seam deliverable during Integration Local Recovery).
-- [ ] **Cleanup** - Update `config_service.md` architecture doc to remove the deprecated key reference.
+- [x] **Cleanup** - Update `config_service.md` architecture doc to remove the deprecated key reference.
 - [ ] **Cleanup** - Update `session_pruning_service.md` architecture doc to remove fallback key references.
 - [ ] **Cleanup** - Update `02-stability-and-polish.md` milestone doc to remove the backward compatibility note.
 - [ ] **Wiring** - Run full test suite to confirm no regressions.
