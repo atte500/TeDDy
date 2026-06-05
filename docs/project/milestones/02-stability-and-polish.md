@@ -45,7 +45,7 @@ Implement resilient infrastructure patterns (retries, User-Agent rotation), enfo
 - ~~[ ] **02-08-Provider Routing and Display** (WIP): Remove `llm.provider` special-casing, extract provider from `_hidden_params["provider"]`, persist in `meta.yaml`, display in CLI telemetry `• Model:` line, document pass-through and shortcuts.~~
 - [x] **02-09-Context Awareness**: Session web content caching (file-based cache for context URLs). (feat(docs): design session web content caching (slice 02-09))
 - [x] **02-10-Preserve User-Message Turns**: Protect action turns with user messages from auto-pruning by checking report metadata.
-- [ ] **02-11-AST Parser Resilience**: Extend parser to ignore unexpected codeblocks in the AST during plan parsing.
+- [x] **02-11-AST Parser Resilience**: Extend parser to ignore unexpected codeblocks in the AST during plan parsing.
 - [x] **02-12-Config Validation & Transient Retry**: Validate LLM config upfront; retry on any error during completion.
 - [ ] **02-13-Validation Failure Pruning Timing**: Modify Heuristic 4 to prune only when a subsequent valid plan exists.
 - [ ] **02-14-Session Context Write-Time Dedup**: Add deduplication in `_prepare_session_context()` before writing to `session.context`.
