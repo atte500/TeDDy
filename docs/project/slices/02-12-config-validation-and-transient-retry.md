@@ -99,7 +99,7 @@ Feature: Configurable Completion Timeout
 - [x] **Harness** - Create/update test harness utilities for simulating `validate_config` return values (empty list = pass, non-empty = fail) in unit tests. The existing `register_mock` pattern should be sufficient for ILlmClient mock setup.
 - [x] **Logic** - Implement the lazy startup validation in `get_completion()`: add a `_validated` flag and call `validate_config()` on first invocation, raising `ConfigurationError` immediately if validation fails. Modify `_should_retry_completion()` to retry on ALL exceptions (not just SSL/Timeout) when config validation has passed. Bundle unit tests covering: validation pass/fail, retry-all-errors, successful retry recovery, and thread safety.
 - [x] **Logic** - Update `_prepare_completion_params()` or the retry loop to ensure the `timeout` parameter from config is properly passed to litellm. If no timeout is configured, default to 300. Bundle unit tests covering timeout passthrough and timeout-triggers-retry.
-- [ ] **Wiring** - Integration test verifying the full validation-then-retry flow: mock config to pass validation, make litellm fail with a generic error, verify retries occur, then make it succeed on retry 2, verify successful response returned.
+- [x] **Wiring** - Integration test verifying the full validation-then-retry flow: mock config to pass validation, make litellm fail with a generic error, verify retries occur, then make it succeed on retry 2, verify successful response returned.
 
 ## Implementation Notes
 
@@ -139,6 +139,12 @@ Feature: Configurable Completion Timeout
 - **Key Design Decision**: Fallback is placed after `params.update(llm_config)` so explicit user config takes precedence. This follows the config layering principle.
 - **Rationale**: `_prepare_completion_params` already passed all `llm` config keys to litellm via `params.update(llm_config)`. The only missing piece was the default fallback for when no timeout is configured anywhere.
 - **Status**: All unit + integration tests pass; ready to commit.
+
+### Wiring Deliverable (Integration Test) — Complete
+- **Change**: Added `test_validation_then_retry_wiring` in `tests/suites/integration/adapters/outbound/test_llm_wiring.py`.
+- **Test Coverage**: Integration test validates the full validation-then-retry flow through the DI container: mock config passes validation, generic RuntimeError on attempt 1 triggers retry, attempt 2 succeeds, and the successful response is returned. No production code changes needed.
+- **Rationale**: The unit tests in `test_litellm_adapter_retries.py` already cover isolated logic. This integration test ensures the container wiring works correctly: the resolved `LiteLLMAdapter` uses the registered `IConfigService` and the global `litellm` module to retry on any error after validation passes.
+- **Status**: All tests pass; ready to commit.
 
 ## Implementation Plan
 
