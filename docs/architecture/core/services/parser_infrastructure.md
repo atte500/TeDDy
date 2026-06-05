@@ -8,6 +8,8 @@ Provides low-level AST traversal utilities, stream management (_PeekableStream),
 
 ### _FencePreProcessor
 The `_FencePreProcessor` class is responsible for normalizing raw Markdown plan output before AST parsing. It currently handles two tasks:
+-
+- **Edge Cases Verified (as-built):** 6-tilde/backtick trailing text → stripped; indented fences preserve whitespace; fences below 6-char threshold (e.g., `~~~~`) are NOT modified; mixed tilde/backtick content preserved; mid-line fence sequences NOT modified; empty plan strings handled gracefully.
 
 1. **Code Fence Normalization:** Adjusts fence lengths to ensure valid nested code blocks.
 2. **Closing Fence Trailing Text Stripping:** Scans each line of the plan string. If a line (after optional leading whitespace) consists of 6 or more consecutive backticks (`` ` ``) or tildes (`~`) followed by non-whitespace content, the trailing text is stripped. This prevents LLM artifacts like `~~~~~~ trailing text` from contaminating code block content.

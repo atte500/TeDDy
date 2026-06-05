@@ -1,6 +1,6 @@
 # Slice: 02-11-AST Parser Resilience
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Feature
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
@@ -41,10 +41,17 @@ And the correct actions from the valid part of the plan are returned
 - [x] **Harness** - Unit test: 6-tilde closing fence with same-line trailing text → stripped.
 - [x] **Harness** - Unit test: trailing unexpected CodeFence at end of plan → silently ignored (existing BlockCode/CodeFence skip extended for tail-end).
 - [x] **Logic** - Implement `_FencePreProcessor.process()` to strip same-line trailing text on fence lines of 6+ backticks or tildes (strip trailing non-whitespace content after the fence characters on that line). (Code committed in D1: `feat(parser): strip trailing text on closing fence lines (6+ backticks/tildes)` — commit `55de517e`.)
-- [ ] **Logic** - Add tail-end skip in `_parse_actions` for trailing BlockCode/CodeFence nodes after the last action (consistent with 02-06's between-action skip pattern).
-- [ ] **Wiring** - Acceptance test: plan with both same-line trailing text on closing fence AND trailing codeblock → SUCCESS with correct action content.
+- [x] **Logic** - Add tail-end skip in `_parse_actions` for trailing BlockCode/CodeFence nodes after the last action (consistent with 02-06's between-action skip pattern). (Already handled by existing between-action skip in `_parse_actions` — the main `while stream.has_next()` loop skips any non-action nodes, including trailing code blocks. No production code changes needed.)
+- [x] **Wiring** - Acceptance test: plan with both same-line trailing text on closing fence AND trailing codeblock → SUCCESS with correct action content.
 
 ## Implementation Notes
+
+### Deliverable 6: Wiring — Acceptance Test (Completed)
+- **Status:** Created and committed. Test passes Green (all Logic already implemented in prior deliverables).
+- **Test:** `tests/suites/acceptance/test_ast_parser_resilience_wiring.py::test_parser_resilience_handles_both_artifacts`
+- **Approach:** Uses `TestEnvironment` with a mocked `IShellExecutor` to simulate a successful `EXECUTE` command. The plan contains both an `EXECUTE` action whose tilde-fenced code block has trailing text on the closing fence (`~~~~~~ trailing extra text`) AND a trailing unexpected code block after the action plan. The test asserts `exit_code == 0` and the presence of `"SUCCESS"` in the output.
+- **Key Finding:** No production code changes were needed for this deliverable — the `_FencePreProcessor` (D4) handles trailing text stripping, and the existing between-action skip in `_parse_actions` (D5, originally from Slice 02-06) handles trailing code blocks. The Wiring test validates the full CLI stack works end-to-end.
+- **Test Results:** Single test passes in ~1.25s. Full suite verified with 819+ passed (excluding known litellm regression).
 
 ### Deliverable 1: Harness — 6-Backtick Fence Trailing Text (Completed)
 - **Status:** Implemented and committed.
@@ -77,6 +84,17 @@ And the correct actions from the valid part of the plan are returned
 - **Logic:** Replaced the pass-through body with line-by-line regex-based trailing-text stripping. The regex `r"^(\s*)(\~{6,}|\`{6,})(.*)$"` matches lines with 6+ consecutive pure tildes or backticks. Trailing content is stripped only if it does NOT contain backtick or tilde characters (mixed-fence guard) to prevent corrupting lines like `~~~~~~\` trailing`.
 - **Edge Cases Verified:** 6-tilde/backtick trailing text → stripped; indented fences preserve whitespace; fences below 6-char threshold (e.g., `~~~~`) are NOT modified; mixed tilde/backtick content preserved; mid-line fence sequences NOT modified.
 - **Test Results:** Covered by D1's harness test (`test_backtick_closing_fence_trailing_text_stripped`) and D2's harness test (`test_tilde_closing_fence_trailing_text_stripped`). Both pass.
+
+### Deliverable 5: Logic — Tail-End Skip in `_parse_actions` (Completed)
+- **Status:** Already satisfied by existing production code — no changes needed.
+- **Production Code:** `src/teddy_executor/core/services/markdown_plan_parser.py::_parse_actions` — the main `while stream.has_next()` loop already skips non-action nodes until the stream is exhausted, making a separate tail-end skip loop redundant.
+- **Verification:** The unit test `test_trailing_code_block_after_actions_silently_ignored` (D3) passes with the existing code, confirming the behavior is correct without any tail-end skip addition.
+- **Key Finding:** The Implementation Plan's suggestion to add a tail-end loop in `_parse_actions` was based on an assumption that the main loop stops consuming after the last action. In reality, the main loop continues iterating and skips trailing `BlockCode`/`CodeFence` nodes through the existing `isinstance(node, (BlockCode, CodeFence, ThematicBreak))` check.
+- **Test Results:** Covered by D3's harness test — 812+ passed, 3 skipped (pre-existing regression excluded).
+
+### Deliverable 6: Wiring — Acceptance Test (Remaining)
+
+- [ ] **Wiring** - Acceptance test: plan with both same-line trailing text on closing fence AND trailing codeblock → SUCCESS with correct action content.
 
 ## Implementation Plan
 ### Changes Required
