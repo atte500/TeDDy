@@ -102,10 +102,12 @@ class SessionOrchestrator(IRunPlanUseCase):
             )
             total_window = self._llm_client.get_context_window()
 
+            cache_dir = str(Path(plan_path).parent.parent)
             project_context = self._context_service.get_context(
                 context_files=context_files,
                 agent_name=agent_name,
                 total_window=total_window,
+                cache_dir=cache_dir,
             )
             from dataclasses import is_dataclass, replace
 
