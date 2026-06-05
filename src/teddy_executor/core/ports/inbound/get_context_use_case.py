@@ -13,6 +13,7 @@ class IGetContextUseCase(Protocol):
         context_files: Optional[Dict[str, Sequence[str]]] = None,
         include_tokens: bool = True,
         agent_name: str = "Unknown",
+        cache_dir: Optional[str] = None,
     ) -> ProjectContext:
         """
         Gathers all project context information.

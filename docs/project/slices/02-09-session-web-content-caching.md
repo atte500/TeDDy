@@ -1,6 +1,6 @@
 # Slice: 02-09 Session Web Content Caching
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Type:** Feature
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
@@ -37,7 +37,8 @@ Then the system treats the cache as empty and fetches content from the web
 
 ## Deliverables
 
-- [ ] **Contract** – Add `cache_dir: Optional[str] = None` parameter to `IGetContextUseCase.get_context()` Protocol and `ContextService.get_context()` implementation.
+- [x] **Contract** – Add `cache_dir: Optional[str] = None` parameter to `IGetContextUseCase.get_context()` Protocol and `ContextService.get_context()` implementation.
+- [ ] **[DEBT]** **Refactor** – `IGetContextUseCase.get_context()` Protocol is missing the `total_window` parameter that `ContextService.get_context()` already has. This pre-existing signature mismatch causes Mypy errors (uncovered during Contract VCP). Needs Protocol alignment — likely adding `total_window` parameter to the Protocol with a default.
 - [ ] **Harness** – Unit tests for `_load_web_cache` corruption handling, `_save_web_cache` atomic write, cache hit/miss in `get_context` URL loop.
 - [ ] **Logic** – Add `_load_web_cache(cache_dir) -> dict` and `_save_web_cache(cache_dir, cache)` private methods to `ContextService`.
 - [ ] **Logic** – Inject cache check into `get_context` URL-fetching loop: load cache once, check before each `IWebScraper.get_content()` call, save after each successful fetch. Do NOT cache failures.
@@ -47,6 +48,17 @@ Then the system treats the cache as empty and fetches content from the web
 - [ ] **Documentation** – Update `SessionOrchestrator` component doc with cache_dir derivation.
 
 ## Implementation Notes
+
+### Contract Deliverable
+- **Status:** Completed
+- **Changes:**
+  - Added `cache_dir: Optional[str] = None` parameter to `IGetContextUseCase.get_context()` Protocol.
+  - Added matching parameter to `ContextService.get_context()` implementation.
+- **Test Strategy:** Two protocol-signature inspection tests in `tests/suites/unit/core/ports/inbound/test_get_context_use_case_contract.py`:
+  1. `test_get_context_accepts_cache_dir_parameter` — verifies the parameter exists in the Protocol signature.
+  2. `test_cache_dir_defaults_to_none` — verifies default is `None` for backward compatibility.
+- **Backward Compatibility:** Confirmed by `git grep` audit of all `get_context` callers (PlanningService, session_cli_handlers, etc.) — none pass `cache_dir`, all default to `None`.
+- **Integration:** Full suite 783 passed, 3 skipped. No regressions.
 
 ### Prototype Findings (Validated)
 - **Cache file location:** `<session_root>/.web_cache.json` — confirmed via `Path(plan_path).parent.parent` derivation.

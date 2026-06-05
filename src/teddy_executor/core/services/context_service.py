@@ -43,6 +43,7 @@ class ContextService(IGetContextUseCase):
         include_tokens: bool = True,
         agent_name: str = "Unknown",
         total_window: int = 0,
+        cache_dir: Optional[str] = None,
     ) -> ProjectContext:
         """
         Gathers all project context information by orchestrating its dependencies.
