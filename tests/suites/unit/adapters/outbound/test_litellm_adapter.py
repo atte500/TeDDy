@@ -34,10 +34,18 @@ def test_get_completion_calls_litellm_correctly(mock_config):
     mock_response.choices = [mock_choice]
     litellm.completion.return_value = mock_response
 
-    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+    config = {
+        "api_key": "sk-test",  # pragma: allowlist secret
+        "model": "test-model",
+        "max_retries": 3,
+    }  # pragma: allowlist secret
 
     def _valid_llm(key: str, default=None):
-        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+        return (
+            config.get(key.split(".", 1)[1] if "." in key else key, default)
+            if key.startswith("llm")
+            else default
+        )
 
     mock_config.get_setting.side_effect = _valid_llm
 
@@ -51,16 +59,24 @@ def test_get_completion_calls_litellm_correctly(mock_config):
     # Assert
     assert result.choices[0].message.content == "AI response text"
     litellm.completion.assert_called_once_with(
-        model=model, messages=messages, temperature=0.7
+        model=model, messages=messages, temperature=0.7, timeout=300
     )
 
 
 def test_get_completion_wraps_errors_in_llm_api_error(mock_config):
     # Arrange
-    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+    config = {
+        "api_key": "sk-test",  # pragma: allowlist secret
+        "model": "test-model",
+        "max_retries": 3,
+    }  # pragma: allowlist secret
 
     def _valid_llm(key: str, default=None):
-        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+        return (
+            config.get(key.split(".", 1)[1] if "." in key else key, default)
+            if key.startswith("llm")
+            else default
+        )
 
     mock_config.get_setting.side_effect = _valid_llm
     litellm.completion.side_effect = RuntimeError("API Failure")
@@ -80,10 +96,18 @@ def test_get_completion_returns_empty_string_for_empty_choices(mock_config):
     mock_response.choices = []
     litellm.completion.return_value = mock_response
 
-    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+    config = {
+        "api_key": "sk-test",  # pragma: allowlist secret
+        "model": "test-model",
+        "max_retries": 3,
+    }  # pragma: allowlist secret
 
     def _valid_llm(key: str, default=None):
-        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+        return (
+            config.get(key.split(".", 1)[1] if "." in key else key, default)
+            if key.startswith("llm")
+            else default
+        )
 
     mock_config.get_setting.side_effect = _valid_llm
 
@@ -213,10 +237,18 @@ def test_get_completion_hydrates_and_retries_on_not_found_error(mock_config, con
     import litellm
     from tests.harness.setup.mocking import register_mock
 
-    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+    config = {
+        "api_key": "sk-test",  # pragma: allowlist secret
+        "model": "test-model",
+        "max_retries": 3,
+    }  # pragma: allowlist secret
 
     def _valid_llm(key: str, default=None):
-        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+        return (
+            config.get(key.split(".", 1)[1] if "." in key else key, default)
+            if key.startswith("llm")
+            else default
+        )
 
     mock_config.get_setting.side_effect = _valid_llm
     mock_hydrator = register_mock(container, IOpenRouterHydrator)
@@ -260,10 +292,18 @@ def test_get_completion_uses_zero_fallback_when_hydrator_omits_window(
     import litellm
     from tests.harness.setup.mocking import register_mock
 
-    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+    config = {
+        "api_key": "sk-test",  # pragma: allowlist secret
+        "model": "test-model",
+        "max_retries": 3,
+    }  # pragma: allowlist secret
 
     def _valid_llm(key: str, default=None):
-        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+        return (
+            config.get(key.split(".", 1)[1] if "." in key else key, default)
+            if key.startswith("llm")
+            else default
+        )
 
     mock_config.get_setting.side_effect = _valid_llm
     mock_hydrator = register_mock(container, IOpenRouterHydrator)
@@ -296,10 +336,18 @@ def test_get_completion_parses_actual_model_from_error_message(mock_config, cont
     import litellm
     from tests.harness.setup.mocking import register_mock
 
-    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+    config = {
+        "api_key": "sk-test",  # pragma: allowlist secret
+        "model": "test-model",
+        "max_retries": 3,
+    }  # pragma: allowlist secret
 
     def _valid_llm(key: str, default=None):
-        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+        return (
+            config.get(key.split(".", 1)[1] if "." in key else key, default)
+            if key.startswith("llm")
+            else default
+        )
 
     mock_config.get_setting.side_effect = _valid_llm
     mock_hydrator = register_mock(container, IOpenRouterHydrator)
@@ -347,10 +395,18 @@ def test_get_completion_broadcasts_metadata_to_all_candidates(mock_config, conta
     import litellm
     from tests.harness.setup.mocking import register_mock
 
-    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+    config = {
+        "api_key": "sk-test",  # pragma: allowlist secret
+        "model": "test-model",
+        "max_retries": 3,
+    }  # pragma: allowlist secret
 
     def _valid_llm(key: str, default=None):
-        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+        return (
+            config.get(key.split(".", 1)[1] if "." in key else key, default)
+            if key.startswith("llm")
+            else default
+        )
 
     mock_config.get_setting.side_effect = _valid_llm
     mock_hydrator = register_mock(container, IOpenRouterHydrator)
