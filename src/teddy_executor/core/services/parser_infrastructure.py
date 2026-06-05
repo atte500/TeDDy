@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Any, List, Optional, Iterator, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -20,8 +21,34 @@ class _FencePreProcessor:
     """
 
     def process(self, content: str) -> str:
-        # Placeholder for future implementation. For now, it's a pass-through.
-        return content
+        """
+        Pre-process raw Markdown content to normalize code fences.
+
+        Currently handles:
+        - Stripping trailing non-whitespace content on fence lines with 6+
+          consecutive backticks or tildes (e.g., ``~~~~~~ trailing text`` → ``~~~~~~``).
+        """
+        lines = content.split("\n")
+        result = []
+        # Pattern: optional leading whitespace, then 6+ consecutive pure tildes
+        # OR 6+ consecutive pure backticks, then any trailing content.
+        pattern = re.compile(r"^(\s*)(\~{6,}|\`{6,})(.*)$")
+
+        for line in lines:
+            match = pattern.match(line)
+            if match:
+                trailing = match.group(3)
+                # Only strip trailing content if it does NOT contain any backtick
+                # or tilde.  This prevents corrupting lines like
+                # "~~~~~~` trailing" where fence characters appear in content.
+                if trailing is not None and trailing.strip():
+                    if not any(c in trailing for c in ("`", "~")):
+                        line = match.group(1) + match.group(2)
+                # If trailing is empty/whitespace or contains fence chars,
+                # keep original line unchanged.
+            result.append(line)
+
+        return "\n".join(result)
 
 
 class _PeekableStream:
