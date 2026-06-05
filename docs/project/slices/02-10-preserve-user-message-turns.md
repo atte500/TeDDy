@@ -1,5 +1,5 @@
 # Slice: 02-10-Preserve User-Message Turns
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Feature
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
@@ -45,6 +45,21 @@ And its files should remain selected in the project context
 - [x] **Refactor** - Rename `successful_messages` variable (and all related parameter names via the call chain: `_collect_turn_metadata`, `_identify_turns_to_prune`, `_apply_retention_limit`, `_apply_global_budget`) to `spared_turns` to reflect the broader sparing logic. Single-file change in `session_pruning_service.py`. No shared seam impact — 6 occurrences all within the same class.
 
 ## Implementation Notes
+
+### Deliverable 6: Refactor — Rename `successful_messages` to `spared_turns`
+- **Status:** Code was already implemented with `spared_turns` at time of documentation update. The rename was completed in prior work. Verified via `grep -rn "successful_messages" src/teddy_executor/core/services/session_pruning_service.py tests/suites/unit/core/services/` — zero occurrences found.
+- **Verification:** `grep -n "spared_turns" src/teddy_executor/core/services/session_pruning_service.py` confirms 12 occurrences across the class, including variable assignments, parameter names, and return statements.
+- **Test Suite:** Full suite passes with 803 passed, 3 skipped — no regressions.
+- **No Code Changes Required:** This deliverable was already satisfied by prior architectural work. Documentation-only update.
+
+### Slice Completion Summary
+All 6 deliverables for Slice 02-10 are complete:
+1. [x] **Harness** — Unit tests for `_check_report_has_user_request` (7 tests)
+2. [x] **Harness** — Integration tests for spared turn behavior (2 tests)
+3. [x] **Logic** — `_check_report_has_user_request` implementation (pre-satisfied)
+4. [x] **Logic** — Extend `_update_turn_metadata_from_item` (pre-satisfied)
+5. [x] **Wiring** — Integration test (pre-satisfied by Harness deliverable 2)
+6. [x] **Refactor** — Rename `successful_messages` to `spared_turns` (pre-satisfied)
 
 ### Deliverable 1: Harness — Unit tests for `_check_report_has_user_request`
 - **Test File:** [`tests/suites/unit/core/services/test_session_pruning_preserve_user_requests.py`](/tests/suites/unit/core/services/test_session_pruning_preserve_user_requests.py)
