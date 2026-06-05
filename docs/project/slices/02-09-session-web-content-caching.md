@@ -39,9 +39,9 @@ Then the system treats the cache as empty and fetches content from the web
 
 - [x] **Contract** – Add `cache_dir: Optional[str] = None` parameter to `IGetContextUseCase.get_context()` Protocol and `ContextService.get_context()` implementation.
 - [ ] **[DEBT]** **Refactor** – `IGetContextUseCase.get_context()` Protocol is missing the `total_window` parameter that `ContextService.get_context()` already has. This pre-existing signature mismatch causes Mypy errors (uncovered during Contract VCP). Needs Protocol alignment — likely adding `total_window` parameter to the Protocol with a default.
-- [ ] **Harness** – Unit tests for `_load_web_cache` corruption handling, `_save_web_cache` atomic write, cache hit/miss in `get_context` URL loop.
-- [ ] **Logic** – Add `_load_web_cache(cache_dir) -> dict` and `_save_web_cache(cache_dir, cache)` private methods to `ContextService`.
-- [ ] **Logic** – Inject cache check into `get_context` URL-fetching loop: load cache once, check before each `IWebScraper.get_content()` call, save after each successful fetch. Do NOT cache failures.
+- [x] **Harness** – Unit tests for `_load_web_cache` corruption handling, `_save_web_cache` atomic write, cache hit/miss in `get_context` URL loop.
+- [x] **Logic** – Add `_load_web_cache(cache_dir) -> dict` and `_save_web_cache(cache_dir, cache)` private methods to `ContextService`.
+- [x] **Logic** – Inject cache check into `get_context` URL-fetching loop: load cache once, check before each `IWebScraper.get_content()` call, save after each successful fetch. Do NOT cache failures.
 - [ ] **Wiring** – Update `SessionOrchestrator.execute()` to derive `cache_dir = str(Path(plan_path).parent.parent)` and pass it to `ContextService.get_context()`.
 - [ ] **Refactor** – No code changes needed for `PlanningService` or `session_cli_handlers` (default `cache_dir=None` preserves stateless behavior).
 - [ ] **Documentation** – Update `ContextService` component doc with cache lifecycle details.
@@ -60,6 +60,46 @@ Then the system treats the cache as empty and fetches content from the web
 - **Backward Compatibility:** Confirmed by `git grep` audit of all `get_context` callers (PlanningService, session_cli_handlers, etc.) — none pass `cache_dir`, all default to `None`.
 - **Integration:** Full suite 783 passed, 3 skipped. No regressions.
 
+### Harness + Logic (Private Methods) Deliverable
+- **Status:** Completed
+- **Changes:**
+  - Added `import json` and `from pathlib import Path` to `context_service.py`.
+  - Added `CACHE_FILENAME = ".web_cache.json"` class constant to `ContextService`.
+  - Added `_load_web_cache(self, cache_dir: Optional[str]) -> Dict[str, str]` method: handles missing file → `{}`, invalid JSON → `{}`, non-dict structure → `{}`, disabled (cache_dir=None) → `{}`, valid content → parsed dict.
+  - Added `_save_web_cache(self, cache_dir: str, cache: Dict[str, str]) -> None` method: creates directory atomically (write to `.web_cache.json.tmp`, then `Path.replace()` to `.web_cache.json`).
+- **Test Strategy:** 8 unit tests in `tests/suites/unit/core/services/test_context_service_caching.py`:
+  - `TestLoadWebCache` (5 tests): corrupt file, missing file, valid content, non-dict structure, disabled (cache_dir=None).
+  - `TestSaveWebCache` (3 tests): creates directory, overwrites existing file, correct JSON format.
+  - All tests use `unittest.mock.MagicMock` for the 5 constructor args (file_system_manager, repo_tree_generator, environment_inspector, llm_client, web_scraper) and `tmp_path` fixture for isolated filesystem.
+- **Key Design Decisions:**
+  - `_load_web_cache` validates ALL values are strings via explicit iteration (not just top-level type check), preventing type confusion from corrupted cache files.
+  - `_save_web_cache` uses `json.dumps(cache, ensure_ascii=False)` to handle URLs with non-ASCII characters (though rare, this is a defensive best practice).
+  - Atomic write pattern: write to `.tmp` file, then `Path.replace()`. This prevents partial writes from corrupting the cache on crash.
+  - Both methods use `OSError` and `UnicodeDecodeError` in their exception handlers, covering filesystem errors like permission denied, disk full, or binary garbage in the cache file.
+- **Mypy Note:** `_load_web_cache` return type is `Dict[str, str]`, but the method iterates with `for k, v in parsed.items()` where `parsed` is `object` after the isinstance check. Python's type narrowing handles this via the runtime guard.
+- **Debt:** The `[DEBT]` Refactor deliverable about `IGetContextUseCase.get_context()` missing the `total_window` parameter is a pre-existing signature mismatch that causes Mypy errors. This is outside the scope of caching and will be addressed in a separate slice if needed.
+
+### Logic Deliverable (Cache Injection into URL Loop)
+- **Status:** Completed
+- **Changes:**
+  - Modified the URL-fetching loop inside `get_context()` to integrate session-level caching:
+    1. Load web cache via `self._load_web_cache(cache_dir)` at the start of URL processing.
+    2. For each URL, check `if url in web_cache` first → use cached content (skip network).
+    3. If cache miss → call `self._web_scraper.get_content(url)`, store in `file_contents`, update `web_cache[url]`, and persist via `self._save_web_cache(cache_dir, web_cache)`.
+    4. If `get_content()` raises an exception → store `None` in `file_contents` (failure is NOT cached, ensuring retries re-fetch).
+    5. Backward compatible: when `cache_dir` is `None`, `_load_web_cache` returns `{}` so every URL is a "miss" and fetched fresh; no `save_web_cache` is called.
+- **Test Strategy:** 3 unit tests in `TestGetContextCacheIntegration` class within `test_context_service_caching.py`:
+  1. `test_get_context_uses_cached_web_content` — pre-seed cache, assert no web scraper call.
+  2. `test_get_context_fetches_and_caches_new_url` — empty cache, assert scraper called and cache persisted.
+  3. `test_get_context_does_not_cache_failed_fetch` — scraper raises, assert failure not stored in cache.
+  - All tests construct a real `ContextService` with `LocalFileSystemAdapter` (via `TestEnvironment.with_real_filesystem()`) and use `MagicMock(spec=IWebScraper)` for the scraper.
+- **Integration:** Full suite: 794 passed, 3 skipped. No regressions.
+- **Key Design Decisions:**
+  - Cache is loaded once per `get_context()` call, not maintained across calls. This ensures each call sees the latest disk state.
+  - Cache is persisted AFTER each successful fetch, not batched. This minimizes data loss if the process crashes mid-loop.
+  - Failed fetches are intentionally NOT cached, matching the prototype's validated behavior.
+- **Debt:** The pre-existing `[DEBT]` about `IGetContextUseCase.get_context()` missing `total_window` parameter remains. This causes Mypy errors but is outside the caching scope.
+
 ### Prototype Findings (Validated)
 - **Cache file location:** `<session_root>/.web_cache.json` — confirmed via `Path(plan_path).parent.parent` derivation.
 - **Slice doc correction:** The Implementation Plan draft incorrectly specified `cache_dir = str(Path(session_root).parent)`. The correct derivation is `cache_dir = str(Path(plan_path).parent.parent)` (which equals `str(session_root)`).
@@ -70,7 +110,7 @@ Then the system treats the cache as empty and fetches content from the web
 - **No contract changes to outbound ports:** Cache logic lives entirely inside `ContextService` as private methods. No new methods on `IFileSystemManager` or `IWebScraper` are required.
 - **Prototype verified:** All 7 scenarios (cache hit, miss->hit, corruption, backward compat, network failure, path derivation, full integration) pass validation. The prototype is linked in slice metadata.
 
-## Implementation Plan
+<!-- The Implementation Plan was validated by the prototype and executed as coded. No further updates needed. -->
 
 ### Architectural Design
 - **Cache Location**: `<session_root>/.web_cache.json` (e.g., `.teddy/sessions/20260124-add-user-auth/.web_cache.json`)

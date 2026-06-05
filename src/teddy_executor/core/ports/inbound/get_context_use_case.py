@@ -13,6 +13,7 @@ class IGetContextUseCase(Protocol):
         context_files: Optional[Dict[str, Sequence[str]]] = None,
         include_tokens: bool = True,
         agent_name: str = "Unknown",
+        total_window: int = 0,
         cache_dir: Optional[str] = None,
     ) -> ProjectContext:
         """

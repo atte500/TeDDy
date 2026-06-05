@@ -1,4 +1,6 @@
 import concurrent.futures
+import json
+from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 from teddy_executor.core.domain.models import ProjectContext, ContextItem
 from teddy_executor.core.utils.markdown import (
@@ -59,12 +61,20 @@ class ContextService(IGetContextUseCase):
 
         file_contents = self._file_system_manager.read_files_in_vault(local_paths)
 
-        # Fetch remote content
+        # Fetch remote content with session-level caching
+        web_cache = self._load_web_cache(cache_dir)
         for url in urls:
-            try:
-                file_contents[url] = self._web_scraper.get_content(url)
-            except Exception:
-                file_contents[url] = None
+            if url in web_cache:
+                file_contents[url] = web_cache[url]
+            else:
+                try:
+                    content = self._web_scraper.get_content(url)
+                    file_contents[url] = content
+                    web_cache[url] = content
+                    if cache_dir:
+                        self._save_web_cache(cache_dir, web_cache)
+                except Exception:
+                    file_contents[url] = None
 
         return ProjectContext(
             header=self._format_header(system_info),
@@ -338,6 +348,51 @@ class ContextService(IGetContextUseCase):
             else:
                 parts.append("```\n--- FILE NOT FOUND ---\n```")
         return parts
+
+    CACHE_FILENAME = ".web_cache.json"
+
+    def _load_web_cache(self, cache_dir: Optional[str]) -> Dict[str, str]:
+        """Load the web content cache from disk.
+
+        Returns an empty dict if:
+        - cache_dir is None (caching disabled)
+        - Cache file does not exist
+        - Cache file contains invalid JSON
+        - Cache file contains non-dict structure
+        - Cache file contains non-string values
+        """
+        if not cache_dir:
+            return {}
+        cache_path = Path(cache_dir) / self.CACHE_FILENAME
+        if not cache_path.exists():
+            return {}
+        try:
+            raw = cache_path.read_text(encoding="utf-8")
+            parsed = json.loads(raw)
+            if not isinstance(parsed, dict):
+                return {}
+            # Validate all values are strings
+            for k, v in parsed.items():
+                if not isinstance(k, str) or not isinstance(v, str):
+                    return {}
+            return parsed
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+            return {}
+
+    def _save_web_cache(self, cache_dir: str, cache: Dict[str, str]) -> None:
+        """Write the cache to disk atomically.
+
+        Creates cache_dir if it does not exist.
+        Writes to a .tmp file first, then atomically renames to .web_cache.json
+        using Path.replace(). This prevents partial writes from corrupting
+        the cache if the process crashes mid-write.
+        """
+        cache_dir_path = Path(cache_dir)
+        cache_dir_path.mkdir(parents=True, exist_ok=True)
+        target = cache_dir_path / self.CACHE_FILENAME
+        tmp = cache_dir_path / f"{self.CACHE_FILENAME}.tmp"
+        tmp.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(target)
 
     def _format_session_history(
         self,
