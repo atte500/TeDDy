@@ -33,8 +33,6 @@ Implement resilient infrastructure patterns (retries, User-Agent rotation), enfo
 - **Validation:** Relax context rules for `READ`/`EDIT` to rely on matching logic; ignore redundant edits (identical FIND and REPLACE blocks); ensure parser ignores trailing text in `~~~~~~` and ` `````` ` fences.
 
 ## Vertical Slices
-> **Note:** The rename of `global_context_threshold` to `turn_context_threshold` is completed in slice 02-07 (Pruning Refinement). The new key `turn_context_threshold` is the primary key, with backward compatibility fallback to `global_context_threshold`.
-
 > **Note:** Slice 02-08 (Provider Routing and Display) was cancelled after prototype validation proved `response._hidden_params["provider"]` does not exist in real OpenRouter responses. See the [Vertical Slice](/docs/project/slices/02-08-provider-routing-and-display.md) for the full cancellation rationale.
 
 - [x] **02-01-Resilient Infrastructure**: LLM retries and recursive context expansion.
