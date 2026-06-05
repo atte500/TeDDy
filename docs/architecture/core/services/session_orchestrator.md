@@ -18,11 +18,12 @@ The `SessionOrchestrator` is a decorator-style service that wraps the stateless 
 
 1.  **Stateless Execution:** Delegated to the wrapped `ExecutionOrchestrator`.
 2.  **Session Mode Detection:** If a `plan_path` is provided, the orchestrator enters "Session Mode".
-3.  **Cache Directory Derivation:** Before calling `ContextService`, the orchestrator derives the session's web content cache directory from `plan_path`:
+### 3. Cache Directory Derivation: Before calling `ContextService`, the orchestrator derives the session's web content cache directory from `plan_path`:
     - `plan_path` = full path to the turn's `plan.md` (e.g., `.../mysession/01/plan.md`)
     - `cache_dir` = `str(Path(plan_path).parent.parent)` -> `.../mysession` (session root)
-    - The cache file lives at `<cache_dir>/.web_cache.json`
-    - `cache_dir` is passed to `ContextService.get_context(cache_dir=cache_dir)`
+    - The cache file lives at `<session_root>/.web_cache.json`
+    - `cache_dir` is passed as the final keyword argument to `ContextService.get_context(cache_dir=cache_dir)`
+    - The `Path` import (`from pathlib import Path`) is already present in `session_orchestrator.py`; no additional imports required.
 4.  **Validation Phase (Session Mode):**
     -   Resolves context paths from `session.context` and `turn.context`.
     -   **Context Harvesting**: Before validation, identifies unselected (pruned) context items and records them in `plan.metadata["pruned_context"]`. This ensures persistence even if the turn fails validation.

@@ -1,6 +1,6 @@
 # Application Service: `ContextService`
 
-**Status:** Refactoring
+**Status:** Updated
 
 ## 1. Purpose
 
@@ -25,11 +25,12 @@ The `ContextService` provides intra-session web content caching to avoid redunda
 
 ### 4.1 Lifecycle
 - **Cache Location:** `<session_root>/.web_cache.json`
-- **Format:** Standard JSON dictionary mapping URL (string) to content (string).
-- **Load:** Cache is loaded from disk at the start of each `get_context()` call. Missing or corrupt files result in an empty cache (no exception).
-- **Write:** After each successful `IWebScraper.get_content()` call, the cache dictionary is updated and persisted atomically (write to `.web_cache.json.tmp`, then `Path.replace()` to `.web_cache.json`).
+- **Format:** Standard JSON dictionary mapping URL (string) to content (string). Written with `ensure_ascii=False` for non-ASCII URLs.
+- **Load:** Cache is loaded from disk at the start of each `get_context()` call via `_load_web_cache()`. Missing or corrupt files (invalid JSON, non-dict structure) result in an empty cache (no exception). Handles `OSError` and `json.JSONDecodeError` gracefully.
+- **Write:** After each successful `IWebScraper.get_content()` call, the cache dictionary is updated and persisted atomically via `_save_web_cache()`: write to `.web_cache.json.tmp`, then `Path.replace()` to `.web_cache.json`. Creates the cache directory if it does not exist (using `Path.mkdir(parents=True, exist_ok=True)`).
 - **No TTL:** Caching is intra-session only. A new session always starts with an empty cache.
-- **Failures NOT Cached:** Network errors or exceptions during `get_content()` are never cached, ensuring retries always re-fetch.
+- **Failures NOT Cached:** Network errors or exceptions during `get_content()` are never cached, ensuring retries always re-fetch. The error is stored as `None` in `file_contents` but is NOT added to the cache dictionary.
+- **Per-Fetch Persistence:** Cache is persisted after EACH successful fetch, not batched at the end, minimizing data loss if the process crashes mid-loop.
 
 ### 4.2 Private Methods
 
