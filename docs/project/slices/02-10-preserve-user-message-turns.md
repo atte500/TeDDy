@@ -1,8 +1,9 @@
 # Slice: 02-10-Preserve User-Message Turns
-- **Status:** To De-risk
+- **Status:** Planned
 - **Type:** Feature
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
+- **Prototype:** [spikes/prototypes/10-preserve-user-message-turns.py](/spikes/prototypes/10-preserve-user-message-turns.py)
 - **Component Docs:** [docs/architecture/core/services/session_pruning_service.md](/docs/architecture/core/services/session_pruning_service.md)
 
 ## Business Goal
@@ -41,7 +42,7 @@ And its files should remain selected in the project context
 - [ ] **Logic** - Implement `_check_report_has_user_request(path: str) -> bool` in `SessionPruningService` to detect `- **User Request:**` pattern in report files.
 - [ ] **Logic** - Extend `_update_turn_metadata_from_item` to collect turn IDs where the report has a user request and add them to the spared set.
 - [ ] **Wiring** - Integration test verifying full pruning flow: session with user-request turn is not pruned.
-- [ ] **Cleanup** - Rename `successful_messages` variable (and related parameter names) to `spared_turns` to reflect the broader sparing logic.
+- [ ] **Refactor** - Rename `successful_messages` variable (and all related parameter names via the call chain: `_collect_turn_metadata`, `_identify_turns_to_prune`, `_apply_retention_limit`, `_apply_global_budget`) to `spared_turns` to reflect the broader sparing logic. Single-file change in `session_pruning_service.py`. No shared seam impact — 6 occurrences all within the same class.
 
 ## Implementation Notes
 
@@ -56,12 +57,83 @@ And its files should remain selected in the project context
 - Identified debt: `successful_messages` variable name is semantically misleading after this change; rename to `spared_turns` in cleanup.
 
 ## Implementation Plan
-No new ports or domain models needed. All changes are confined to `SessionPruningService`:
 
-1. Add `_check_report_has_user_request(self, path: str) -> bool` — reads report file, checks for `- **User Request:**` pattern.
-2. In `_update_turn_metadata_from_item`, add a new metadata collection path: if the report has a user request, add the turn ID to the spared set (alongside existing message turn sparing).
-3. Rename `successful_messages` to `spared_turns` everywhere (variable name, parameter name, docstrings).
+### Summary of Changes
+No new ports or domain models needed. All changes are confined to a single file: `SessionPruningService` in [`src/teddy_executor/core/services/session_pruning_service.py`](/src/teddy_executor/core/services/session_pruning_service.py).
 
+### Delta Analysis (Prototype-Validated)
+
+#### 1. New Method: `_check_report_has_user_request(self, path: str) -> bool`
+- **What:** Reads a report file and checks for the `- **User Request:**` pattern using regex.
+- **Regex pattern (prototype-validated):** `r"^- \*\*User Request:\*\*"` with `re.MULTILINE`
+- **Behavior:** Returns `True` if the pattern is found, `False` if the file is missing, unreadable, or the pattern is absent. No caching concern — `_safe_read` already handles caching within a single `prune()` call.
+- **Edge case: empty value**: If the line is `- **User Request:**` with no content, the regex still matches (the line exists). This correctly spares turns where the user_request metadata was written with an empty value — the presence of the key itself indicates user interaction occurred.
+
+#### 2. Modify `_update_turn_metadata_from_item`
+- **Location:** Add a new metadata collection path after the existing Heuristic 4 (validation failure) and Heuristic 3 (non-green) checks, alongside the existing message-turn sparing.
+- **Logic (prototype-validated):**
+  ```python
+  # NEW: Sparing via user_request metadata
+  if posix_path.endswith("report.md"):
+      if self._check_report_has_user_request(item.path):
+          state["spared"].add(turn_id)
+  ```
+- **Key design decision:** The user_request check is done on the `report.md` file (not the `plan.md` file) because the `user_request` metadata is written to the report during execution. This is consistent with the existing message-turn sparing which checks the plan for `## Message` and the report for `SUCCESS`.
+- **Why NOT on plan.md:** The `plan.metadata["user_request"]` is captured during execution in `execution_orchestrator.py` and `session_orchestrator.py`, then rendered into the report via `execution_report.md.j2`. By the time pruning runs, the report is the canonical source of truth.
+
+#### 3. Rename `successful_messages` → `spared_turns`
+- **Scope:** Single file (`session_pruning_service.py`), 6 occurrences:
+  1. Line 125: variable assignment in `_identify_turns_to_prune`
+  2. Line 137: `for tid in successful_messages` loop
+  3. Line 140: return statement
+  4. Line 152: local variable initialization in `_collect_turn_metadata`
+  5. Line 174: dictionary value assignment
+  6. Line 183: return statement
+- **Renaming also affects:** The `spared_turns` set flows through `_apply_retention_limit` and `_apply_global_budget` parameter names. Both methods already use parameter name `spared_turns` in the production code (verified by reading source). The return tuple from `_collect_turn_metadata` needs updating from `successful_messages` to `spared_turns`.
+- **No shared seam impact:** No other files import or reference `successful_messages`. The rename is purely internal to `SessionPruningService`.
+
+### Existing `user_request` Infrastructure (Prototype-Discovered)
+The prototype revealed that extensive infrastructure for `user_request` already exists across the codebase. This confirms the approach is well-supported:
+
+| Component | File | How `user_request` is used |
+|---|---|---|
+| **ExecutionReport** | `execution_report.py:58` | `user_request: str \| None = None` field |
+| **ExecutionReportAssembler** | `execution_report_assembler.py:38` | Reads from plan metadata |
+| **ExecutionOrchestrator** | `execution_orchestrator.py:106,203` | Captures from user message and resolves |
+| **SessionOrchestrator** | `session_orchestrator.py:203-208` | Updates report/plan metadata |
+| **SessionService** | `session_service.py:311-312` | Carries over in metadata across turns |
+| **Report Template** | `execution_report.md.j2:128-133` | Renders `- **User Request:**` header in report output |
+| **TUI App** | `textual_plan_reviewer_app.py:367` | Sets metadata from TUI input |
+| **TUI Previews** | `textual_plan_reviewer_previews.py:222` | Reads for display |
+
+### Report Format (Template-Validated)
+The Jinja2 template (`execution_report.md.j2`) renders the user_request as:
+```markdown
+{% if report.user_request %}
+- **User Request:**
+{{ report.user_request | fence }}text
+{{ report.user_request }}
+{{ report.user_request | fence }}
+{% endif %}
+```
+This produces a header line `- **User Request:**` followed by the user's message in a fenced code block. The prototype's regex `r"^- \*\*User Request:\*\*"` correctly matches this header on its own line, regardless of whether the content block follows.
+
+### Prototype-Validated Scenarios
+The prototype at [`spikes/prototypes/10-preserve-user-message-turns.py`](/spikes/prototypes/10-preserve-user-message-turns.py) empirically verified:
+
+| Scenario | Expected | Result |
+|---|---|---|
+| Turn with `user_request` — spared from retention limit | Spared ✓ | ✓ |
+| Turn with `user_request` — spared from global budget | Spared ✓ | ✓ |
+| Pure `## Message` turn — spared (regression check) | Spared ✓ | ✓ |
+| Normal turn without sparing — pruned | Pruned ✓ | ✓ |
+
+### Impact Audit
+- **Shared Seams:** None. `SessionPruningService` has no consumers beyond the `SessionOrchestrator`/`SessionPlanner` context preparation flow (internal to the session boundary).
+- **Test File:** [`tests/suites/unit/core/services/test_session_pruning_service_refinement.py`](/tests/suites/unit/core/services/test_session_pruning_service_refinement.py) exists. The developer should add the new unit tests there or create a dedicated [`test_session_pruning_service.py`](/tests/suites/unit/core/services/test_session_pruning_service.py) file.
+- **DI Alignment:** The `SessionPruningService` constructor takes `IConfigService` and `IFileSystemManager` — both are already injected. No new dependencies needed.
+
+### Flow Diagram
 ```
 flowchart TD
     A[SessionPruningService.prune] --> B[_identify_turns_to_prune]

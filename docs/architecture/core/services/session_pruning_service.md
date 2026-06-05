@@ -5,16 +5,30 @@ The `SessionPruningService` is responsible for applying configurable auto-prunin
 Reduces context size by deselecting irrelevant or failed turns from `turn.context`.
 
 ## Implementation Details / Logic
-### Successful Message-Turn Exception
-1. When scanning turns for pruning:
-2. Read the `plan.md` for each turn.
-3. If the plan contains a `## Message` section AND the `status` is Green (no 🔴/🟡 in status line):
-4. **EXCEPTION**: This turn is immune to pruning based on retention limits or context budget. This preserves conversational thread continuity.
+### Sparing Logic (Preserved Turns)
+
+The pruning service spares two categories of turns from ALL pruning heuristics (retention limit, global budget, non-green recovery, validation failure):
+
+#### 1. User-Request Turns (Slice 02-10)
+Turns where the user provided an additional message during the review phase (via TUI 'm' key or message reply). These are identified by the `- **User Request:**` metadata line in the turn's `report.md` file.
+- **Detection method**: `_check_report_has_user_request(path)` — reads the report file and matches `r"^- \*\*User Request:\*\*"` with `re.MULTILINE`.
+- **Why on report not plan**: The `user_request` metadata is captured during execution (`execution_orchestrator.py`, `session_orchestrator.py`) and rendered into the report via `execution_report.md.j2`. The report is the canonical source of truth at pruning time.
+- **Edge cases**: Empty value after `- **User Request:**` still spares the turn (the presence of the key itself indicates user interaction).
+
+#### 2. Successful Message Turns (Pre-existing)
+Turns with a `## Message` plan section AND a `SUCCESS` report status. Identified by `_check_plan_is_message(path)` + `_check_report_is_success(path)`.
+- **Status**: Pre-existing behavior, preserved by Slice 02-10.
+- **Detection**: Checks the `plan.md` for `^## Message` and the `report.md` for `- **Overall Status:** SUCCESS`.
+
+#### Integration
+Both sparing checks are performed in `_update_turn_metadata_from_item`, which collects turn IDs into a single `spared_turns` set. This set is then passed to `_apply_retention_limit` and `_apply_global_budget` to exempt those turns from pruning. Additionally, spared turns are explicitly removed from the `turns_to_prune` dictionary in `_identify_turns_to_prune` to prevent Heuristics 3 & 4 from pruning them.
 
 ## Failure Modes
 - **Mis-scoped Threshold Summation**: If `_apply_global_budget` sums items from ALL scopes (Session, System, Turn) instead of ONLY Turn-scope items, Session-scope files (from `session.context`) and System prompts can inflate the total token count, triggering premature pruning of the working set.
 - **Stale Config Key**: If the config key `global_context_threshold` is read instead of `turn_context_threshold`, users with updated configs may silently fall back to an incorrect key. Backward compatibility fallback mitigates this.
 - **Zero/Negative Threshold**: If the threshold is set to 0 or negative, the method must be a no-op. Current implementation already handles this via the early return guard.
+- **Missing Report File**: If a turn has a plan but no `report.md` (e.g., execution was aborted), `_check_report_has_user_request` returns `False` gracefully via `_safe_read` path existence check — no crash. Edge case validated in prototype.
+- **Empty User Request Value**: If the `user_request` metadata line is present but the value is empty, the turn is still spared (the presence of the header itself indicates user interaction). This is the correct behavior — an empty user_request still represents a user action (e.g., a blank message submission).
 
 ## Ports
 - **Inbound**: Called by `prune()` method during `SessionPlanner`/`SessionOrchestrator` context preparation flow.
@@ -37,6 +51,12 @@ This sums ONLY Turn-scope items. Session-scope and System-scope items are exclud
 - If neither key is set, threshold defaults to 0 (budget heuristic skipped)
 
 ## Data Contracts / Methods
+### `_check_report_has_user_request(path: str) -> bool`
+Detects whether a report file contains user-interaction metadata.
+- **Input**: Root-relative path to a `report.md` file.
+- **Output**: `True` if the file contains `- **User Request:**` on its own line (via regex `r"^- \*\*User Request:\*\*"`, multiline mode); `False` if the file is missing, unreadable, or the pattern is absent.
+- **Caching**: Uses `_safe_read` which is cached within a single `prune()` call.
+
 ### `prune(context: ProjectContext, current_status: Optional[str]) -> ProjectContext`
 Applies heuristics to deselect items.
 
