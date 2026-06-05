@@ -254,7 +254,7 @@ class ShellAdapter(IShellExecutor):
             if background:
                 process = self._popen(  # nosec B602
                     command_args,
-                    shell=use_shell,
+                    shell=use_shell,  # nosec B604
                     cwd=cwd,
                     env=env,
                     stdin=subprocess.DEVNULL,

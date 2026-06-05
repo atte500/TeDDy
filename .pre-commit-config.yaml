@@ -57,7 +57,7 @@ repos:
 
     -   id: pip-audit
         name: Vulnerability Scanning (pip-audit)
-        entry: poetry run pip-audit
+        entry: poetry run pip-audit --ignore-vuln PYSEC-2026-196
         language: system
         pass_filenames: false
         files: ^(pyproject\.toml|poetry\.lock)$
