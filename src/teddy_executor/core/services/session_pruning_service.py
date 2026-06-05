@@ -193,10 +193,18 @@ class SessionPruningService:
         """Processes a single item to update turn-level metadata."""
         # --- 1. Identify Metadata for Pruning ---
 
-        # Heuristic 4: Validation failure (Check report)
-        if config["validation"] and posix_path.endswith("report.md"):
-            if self._check_report_failed_validation(item.path):
+        if posix_path.endswith("report.md"):
+            # Heuristic 4: Validation failure
+            if config.get("validation") and self._check_report_failed_validation(
+                item.path
+            ):
                 state["validation_fails"].add(turn_id)
+
+            # Sparing via user_request metadata
+            # Check is done on report.md because the user_request metadata is
+            # written to the report during execution, not the plan.
+            if self._check_report_has_user_request(item.path):
+                state["messages"].add(turn_id)
 
         # Heuristic 3: Non-green state (Check plan)
         if posix_path.endswith("plan.md"):

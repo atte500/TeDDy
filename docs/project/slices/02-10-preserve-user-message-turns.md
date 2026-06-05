@@ -38,13 +38,26 @@ And its files should remain selected in the project context
 
 ## Deliverables
 - [x] **Harness** - Unit tests for `_check_report_has_user_request` helper (positive: report with user_request; negative: report without; edge: missing file, empty value).
-- [ ] **Harness** - Unit tests for spared turn integration (turns with user_request are not pruned by retention limit or global budget).
+- [x] **Harness** - Unit tests for spared turn integration (turns with user_request are not pruned by retention limit or global budget).
 - [ ] **Logic** - Implement `_check_report_has_user_request(path: str) -> bool` in `SessionPruningService` to detect `- **User Request:**` pattern in report files.
 - [ ] **Logic** - Extend `_update_turn_metadata_from_item` to collect turn IDs where the report has a user request and add them to the spared set.
 - [ ] **Wiring** - Integration test verifying full pruning flow: session with user-request turn is not pruned.
 - [ ] **Refactor** - Rename `successful_messages` variable (and all related parameter names via the call chain: `_collect_turn_metadata`, `_identify_turns_to_prune`, `_apply_retention_limit`, `_apply_global_budget`) to `spared_turns` to reflect the broader sparing logic. Single-file change in `session_pruning_service.py`. No shared seam impact — 6 occurrences all within the same class.
 
 ## Implementation Notes
+
+### Deliverable 2: Harness — Spared Turn Integration Tests
+- **Test File:** [`tests/suites/unit/core/services/test_session_pruning_preserve_user_requests.py`](/tests/suites/unit/core/services/test_session_pruning_preserve_user_requests.py)
+- **Status:** Completed (2 integration tests, both passing)
+- **Test Coverage:**
+  1. `test_user_request_turn_not_pruned_by_retention_limit`: Creates 5 turns with varying retention limits — verifies that turns with user_request metadata (turn 01) are NOT pruned even when below the retention threshold.
+  2. `test_user_request_turn_not_pruned_by_global_budget`: Creates turns with large token counts — verifies that turns with user_request metadata are NOT pruned by the global budget heuristic.
+- **Key Findings:**
+  - The production code already had user_request sparing logic fully wired in `_update_turn_metadata_from_item` (the `# NEW: Sparing via user_request metadata` code block was present at the time the tests were written). The Harness tests validate existing behavior rather than driving new implementation.
+  - The `ContextItem` import from `teddy_executor.core.domain.models.project_context` is required for type hints in the test file.
+  - The `_collect_turn_metadata` private method is accessed directly in the tests, which is acceptable for unit testing within the same package.
+- **No Refactoring Needed:** Test file uses constructor injection, register_mock for config service, and `create_autospec` for the file system manager. No global `mock.patch`, no magic numbers, no shadow logic.
+- **Integration:** Full suite passes with 803 passed, 3 skipped — no regressions.
 
 ### Deliverable 1: Harness — Unit tests for `_check_report_has_user_request`
 - **Test File:** [`tests/suites/unit/core/services/test_session_pruning_preserve_user_requests.py`](/tests/suites/unit/core/services/test_session_pruning_preserve_user_requests.py)
