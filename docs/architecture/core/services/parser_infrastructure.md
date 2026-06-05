@@ -1,5 +1,23 @@
 # Component: Parser Infrastructure
 
+## Purpose / Responsibility
+
+Provides low-level AST traversal utilities, stream management (_PeekableStream), and path normalization used by the MarkdownPlanParser during plan parsing. Also houses the _FencePreProcessor which normalizes raw plan Markdown before AST parsing.
+
+## Implementation Details / Logic
+
+### FencePreProcessor
+The `_FencePreProcessor` class is responsible for normalizing raw Markdown plan output before AST parsing. It currently handles two tasks:
+
+1. **Code Fence Normalization:** Adjusts fence lengths to ensure valid nested code blocks.
+2. **Closing Fence Trailing Text Stripping:** Scans each line of the plan string. If a line (after optional leading whitespace) consists of 6 or more consecutive backticks (`` ` ``) or tildes (`~`) followed by non-whitespace content, the trailing text is stripped. This prevents LLM artifacts like `~~~~~~ trailing text` from contaminating code block content.
+
+### _PeekableStream
+A wrapper around an iterator that provides one-token lookahead (`peek()`) and consumption (`next()`). Used by the parser for single-pass AST traversal.
+
+### Tail-end Resilience in _parse_actions
+Modified in `markdown_plan_parser.py` to silently consume trailing `BlockCode` and `CodeFence` nodes after the last action. This is consistent with the between-action skip logic implemented in Slice 02-06.
+
 ## 1. Responsibility
 The `parser_infrastructure` module provides low-level utilities and helper classes used by the `MarkdownPlanParser` and its associated strategies. It encapsulates the mechanics of AST traversal and stream handling, keeping the high-level parsing logic clean and focused on business rules.
 
