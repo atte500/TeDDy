@@ -69,3 +69,39 @@ content
     assert len(result.actions) == 1
     assert result.actions[0].type == "READ"
     assert result.actions[0].params.get("resource") == "file.md"
+
+
+def test_tilde_closing_fence_trailing_text_stripped():
+    """
+    Given a plan whose CREATE action has a 6-tilde closing fence with trailing text,
+    When the plan is parsed,
+    Then the trailing text should be stripped so the code block content is clean.
+    """
+    parser = MarkdownPlanParser()
+    # The CREATE action uses a 6-tilde fence with trailing text.
+    # Without preprocessing, "~~~~~~ trailing extra text" is an invalid closing
+    # fence per CommonMark (trailing non-space content disallowed).
+    # After _FencePreProcessor strips it, "~~~~~~" becomes valid.
+    plan = """# Test Plan
+- **Agent:** Dev
+- **Plan Type:** Test
+- **Status:** Pending
+
+## Rationale
+````text
+test rationale
+````
+
+## Action Plan
+
+### `CREATE`
+- **File Path:** [/test.txt](/test.txt)
+- **Description:** Create a test file.
+~~~~~~
+Hello, 6-tilde World!
+~~~~~~ trailing extra text
+"""
+    result = parser.parse(plan)
+    assert len(result.actions) == 1
+    assert result.actions[0].type == "CREATE"
+    assert result.actions[0].params["content"] == "Hello, 6-tilde World!"
