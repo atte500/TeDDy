@@ -25,14 +25,13 @@ Both sparing checks are performed in `_update_turn_metadata_from_item`, which co
 
 ## Failure Modes
 - **Mis-scoped Threshold Summation**: If `_apply_global_budget` sums items from ALL scopes (Session, System, Turn) instead of ONLY Turn-scope items, Session-scope files (from `session.context`) and System prompts can inflate the total token count, triggering premature pruning of the working set.
-- **Stale Config Key**: If the config key `global_context_threshold` is read instead of `turn_context_threshold`, users with updated configs may silently fall back to an incorrect key. Backward compatibility fallback mitigates this.
 - **Zero/Negative Threshold**: If the threshold is set to 0 or negative, the method must be a no-op. Current implementation already handles this via the early return guard.
 - **Missing Report File**: If a turn has a plan but no `report.md` (e.g., execution was aborted), `_check_report_has_user_request` returns `False` gracefully via `_safe_read` path existence check — no crash. Edge case validated in prototype.
 - **Empty User Request Value**: If the `user_request` metadata line is present but the value is empty, the turn is still spared (the presence of the header itself indicates user interaction). This is the correct behavior — an empty user_request still represents a user action (e.g., a blank message submission).
 
 ## Ports
 - **Inbound**: Called by `prune()` method during `SessionPlanner`/`SessionOrchestrator` context preparation flow.
-- **Outbound**: Reads `auto_pruning.turn_context_threshold` (primary key, with `auto_pruning.global_context_threshold` fallback) from `IConfigService`.
+- **Outbound**: Reads `auto_pruning.turn_context_threshold` from `IConfigService`.
 
 ## Implementation Details / Logic
 ### Global Budget Heuristic (`_apply_global_budget`)
@@ -45,10 +44,7 @@ total_tokens = sum(item.tokens for item in items if item.selected and item.scope
 This sums ONLY Turn-scope items. Session-scope and System-scope items are excluded from the budget calculation, though they remain in the final payload. The `system_prompt_tokens` parameter has been removed.
 
 #### Backward Compatibility
-- Primary key: `auto_pruning.turn_context_threshold`
-- Fallback key: `auto_pruning.global_context_threshold` (with deprecation warning via `logging.warning`)
-- If neither key is set, threshold defaults to 0 (budget heuristic skipped)
-- If neither key is set, threshold defaults to 0 (budget heuristic skipped)
+- `auto_pruning.turn_context_threshold` is the sole key. If not set, threshold defaults to 0 (budget heuristic skipped).
 
 ## Data Contracts / Methods
 ### `_check_report_has_user_request(path: str) -> bool`

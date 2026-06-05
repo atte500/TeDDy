@@ -28,11 +28,12 @@ And it should NOT fall back to any deprecated key
 - **New Test**: Added `test_turn_context_threshold_no_longer_falls_back` to assert that when only `global_context_threshold` is set (old key) and `turn_context_threshold` is None, the pruning service treats it as unset (threshold 0 → no pruning). This test passes.
 - **Integration**: Full suite (804 tests) passes with 0 failures after the changes.
 - **Cleanup (02-15-003)**: Updated `config_service.md` to remove the two deprecated `global_context_threshold` references: stripped the "Falls back to `auto_pruning.global_context_threshold`" suffix from the `turn_context_threshold` entry and deleted the entire `global_context_threshold` entry. Full suite (815 tests) passes with 0 failures after the changes.
+- **Cleanup (02-15-004)**: Updated `session_pruning_service.md` to remove three deprecated references: (1) deleted the "Stale Config Key" failure mode bullet entirely, (2) removed the fallback reference from the Outbound port description, (3) simplified the Backward Compatibility section to only mention the sole key `turn_context_threshold`. Fixed a duplicate line bug in the Backward Compatibility section. Full suite (815 tests) passes with 0 failures after the changes.
 
 ## Deliverables
 - [x] **Seam** - Remove backward compatibility fallback from `_get_turn_context_threshold()` in `session_pruning_service.py`: remove the try/except fallback to `global_context_threshold`, simplify to read only `turn_context_threshold`.
 - [x] **Cleanup** - Remove backward compatibility test `test_backward_compatibility_global_context_threshold_still_works` from `test_session_pruning_service_refinement.py` (absorbed into Seam deliverable during Integration Local Recovery).
 - [x] **Cleanup** - Update `config_service.md` architecture doc to remove the deprecated key reference.
-- [ ] **Cleanup** - Update `session_pruning_service.md` architecture doc to remove fallback key references.
+- [x] **Cleanup** - Update `session_pruning_service.md` architecture doc to remove fallback key references.
 - [ ] **Cleanup** - Update `02-stability-and-polish.md` milestone doc to remove the backward compatibility note.
 - [ ] **Wiring** - Run full test suite to confirm no regressions.
