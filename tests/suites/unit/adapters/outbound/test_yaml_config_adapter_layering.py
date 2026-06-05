@@ -15,6 +15,20 @@ def test_config_loads_baseline_when_user_config_missing(tmp_path):
     assert isinstance(val, int)
 
 
+def test_baseline_llm_timeout_default(tmp_path):
+    """Baseline config should provide timeout=300 under the llm section."""
+    # Given: No user config at .teddy/config.yaml
+    adapter = YamlConfigAdapter(
+        config_path=".teddy/config.yaml", root_dir=str(tmp_path)
+    )
+
+    # When: We retrieve llm.timeout
+    timeout = adapter.get_setting("llm.timeout")
+
+    # Then: It should equal 300 (the default for LLM completion calls)
+    assert timeout == 300, f"Expected 300 but got {timeout}"
+
+
 def test_user_config_overrides_baseline(tmp_path):
     # Given: A user config that overrides a baseline value
     teddy_dir = tmp_path / ".teddy"

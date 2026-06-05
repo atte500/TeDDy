@@ -47,3 +47,4 @@ llm:
   model: "openrouter/deepseek/deepseek-v4-flash:nitro"
   api_key: ""
   max_retries: 3
+  timeout: 300

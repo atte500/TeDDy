@@ -1,5 +1,5 @@
 # Slice: Config Validation & Transient Retry
-- **Status:** Planned
+- **Status:** In Progress
 - **Prototype:** [spikes/prototypes/12-config-validation-retry.py](/spikes/prototypes/12-config-validation-retry.py)
 - **Type:** Feature
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
@@ -95,7 +95,7 @@ Feature: Configurable Completion Timeout
 
 ## Deliverables
 
-- [ ] **Contract** - Add `timeout: 300` to the `llm` section in `src/teddy_executor/resources/config/config.yaml` baseline, establishing the default timeout of 5 minutes for all LLM completion calls.
+- [x] **Contract** - Add `timeout: 300` to the `llm` section in `src/teddy_executor/resources/config/config.yaml` baseline, establishing the default timeout of 5 minutes for all LLM completion calls.
 - [ ] **Harness** - Create/update test harness utilities for simulating `validate_config` return values (empty list = pass, non-empty = fail) in unit tests. The existing `register_mock` pattern should be sufficient for ILlmClient mock setup.
 - [ ] **Logic** - Implement the lazy startup validation in `get_completion()`: add a `_validated` flag and call `validate_config()` on first invocation, raising `ConfigurationError` immediately if validation fails. Modify `_should_retry_completion()` to retry on ALL exceptions (not just SSL/Timeout) when config validation has passed. Bundle unit tests covering: validation pass/fail, retry-all-errors, successful retry recovery, and thread safety.
 - [ ] **Logic** - Update `_prepare_completion_params()` or the retry loop to ensure the `timeout` parameter from config is properly passed to litellm. If no timeout is configured, default to 300. Bundle unit tests covering timeout passthrough and timeout-triggers-retry.
@@ -104,6 +104,15 @@ Feature: Configurable Completion Timeout
 ## Implementation Notes
 
 *(To be filled by Developer during implementation.)*
+
+## Implementation Notes
+
+### Contract Deliverable (`timeout: 300` in config.yaml) — Complete
+- **Change**: Added `timeout: 300` under the `llm` section in `src/teddy_executor/resources/config/config.yaml`.
+- **Test**: Added `test_baseline_llm_timeout_default` in `tests/suites/unit/adapters/outbound/test_yaml_config_adapter_layering.py` asserting `get_setting("llm.timeout") == 300`.
+- **Rationale**: No production code change was needed in `_prepare_completion_params` because the config layering mechanism (`params.update(llm_config)`) automatically passes all `llm` section keys, including `timeout`, to `litellm.completion()`.
+- **Edge Cases Verified**: The `YamlConfigAdapter` correctly loads the key from the bundled baseline when no user config exists. User overrides in `.teddy/config.yaml` will automatically take precedence via the layering mechanism.
+- **Status**: All tests pass; committed.
 
 ## Implementation Plan
 
