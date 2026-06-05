@@ -1,6 +1,9 @@
+from typing import Any
+
 import pytest
 from unittest.mock import Mock
 from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
 
 @pytest.fixture
@@ -92,3 +95,34 @@ def test_validate_config_remote_check_timeout(adapter, mock_config, monkeypatch)
     # Assert: Verify that result() was called with EXACTLY 10 seconds
     mock_future.result.assert_called_with(timeout=10.0)
     assert any("timed out after 10 seconds" in error.lower() for error in errors)
+
+
+class TestLazyValidationGuard:
+    """Tests for the _validated flag in get_completion, preventing redundant validation."""
+
+    def test_lazy_validation_raises_configuration_error_on_invalid_config(
+        self, mock_config: Any
+    ) -> None:
+        """get_completion raises ConfigurationError when validate_config fails, without calling litellm."""
+        # Arrange: Config missing API key
+        from unittest.mock import Mock
+
+        mock_config.get_setting.side_effect = lambda key, default=None: {
+            "llm.model": "gpt-4o",
+            "llm.api_key": "",
+        }.get(key, default)
+
+        mock_litellm = Mock()
+        adapter = LiteLLMAdapter(
+            config_service=mock_config,
+            _litellm_provider=mock_litellm,
+        )
+
+        # Act & Assert
+        with pytest.raises(ConfigurationError, match="empty"):
+            adapter.get_completion(
+                messages=[{"role": "user", "content": "hi"}], model="gpt-4o"
+            )
+
+        # Assert that no litellm.completion call was made (validation guard fired first)
+        mock_litellm.completion.assert_not_called()

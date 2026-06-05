@@ -8,7 +8,13 @@ from tests.harness.setup.mocking import POSIXPathMock, register_mock
 def mock_config(container):
     from teddy_executor.core.ports.outbound import IConfigService
 
-    return register_mock(container, IConfigService)
+    mock = register_mock(container, IConfigService)
+    mock.get_setting.side_effect = lambda key, default=None: {
+        "llm.api_key": "sk-test-key",  # pragma: allowlist secret
+        "llm.model": "gpt-4o",
+        "llm": {},
+    }.get(key, default)
+    return mock
 
 
 @pytest.fixture

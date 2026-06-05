@@ -17,10 +17,9 @@ _default_completion_mock.model = "mock-model"
 
 mock_litellm.completion.return_value = _default_completion_mock
 mock_litellm.token_counter.return_value = 100
+
 mock_litellm.completion_cost.return_value = 0.01
 mock_litellm.validate_environment.return_value = {"missing_keys": []}
-mock_litellm.validate_environment.return_value = {"missing_keys": []}
-
 sys.modules["litellm"] = mock_litellm
 
 # Re-export mocks for standard fixtures

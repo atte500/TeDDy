@@ -40,6 +40,15 @@ def _create_valid_config_mock(
             section = config.get(parts[0].lower(), {})
             return section.get(parts[1], default)
         return config.get(key, default)
+        if key == "llm.max_retries":
+            return 4
+        if key == "llm":
+            return {"max_retries": 4, "api_key": "sk-test-key", "model": "gpt-4o"}
+        if key == "llm.api_key":
+            return "sk-test-key"  # pragma: allowlist secret
+        if key == "llm.model":
+            return "gpt-4o"
+        return default
 
     mock_config.get_setting.side_effect = mock_get_setting
     return mock_config

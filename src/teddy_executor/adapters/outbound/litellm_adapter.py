@@ -125,6 +125,19 @@ class LiteLLMAdapter(ILlmClient):
 
         final_params = self._prepare_completion_params(model, **kwargs)
 
+        # Lazy startup validation: check config on first call only
+        if not self._validated:
+            with self._init_lock:
+                if not self._validated:
+                    from teddy_executor.core.domain.models.exceptions import (
+                        ConfigurationError as _ConfigError,
+                    )
+
+                    errors = self.validate_config()
+                    if errors:
+                        raise _ConfigError(errors[0])
+                    self._validated = True
+
         max_attempts_val = final_params.get("max_retries")
         max_attempts = int(max_attempts_val) if max_attempts_val is not None else 3
         last_exception: Optional[Exception] = None
@@ -183,6 +196,8 @@ class LiteLLMAdapter(ILlmClient):
         self, error: Exception, attempt: int, max_attempts: int
     ) -> bool:
         """Retries any completion error with exponential backoff."""
+        """Retries on ALL exceptions with exponential backoff, since config
+        validation has already passed (so the error must be transient)."""
         if attempt < max_attempts - 1:
             delay = 0.5 * (2**attempt)
             if self._time_service:

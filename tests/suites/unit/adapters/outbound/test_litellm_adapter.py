@@ -124,7 +124,11 @@ def test_get_completion_returns_empty_string_for_empty_choices(mock_config):
 
 def test_config_model_overrides_caller_model(mock_config):
     # Arrange
-    mock_config.get_setting.return_value = {"model": "config-model-name"}
+    mock_config.get_setting.side_effect = lambda key, default=None: {
+        "llm.model": "config-model-name",
+        "llm.api_key": "sk-test-key",  # pragma: allowlist secret
+        "llm": {"model": "config-model-name"},
+    }.get(key, default)
     adapter = LiteLLMAdapter(mock_config)
 
     # Act
@@ -138,7 +142,11 @@ def test_config_model_overrides_caller_model(mock_config):
 
 def test_config_api_key_overrides_caller_kwargs(mock_config):
     # Arrange
-    mock_config.get_setting.return_value = {"api_key": "sk-config-key"}
+    mock_config.get_setting.side_effect = lambda key, default=None: {
+        "llm.api_key": "sk-test-key",  # pragma: allowlist secret
+        "llm.model": "gpt-4o",
+        "llm": {"api_key": "sk-config-key"},
+    }.get(key, default)
     adapter = LiteLLMAdapter(mock_config)
 
     # Act
@@ -216,7 +224,11 @@ def test_get_text_token_count_calls_tiktoken(mock_config, monkeypatch):
 
 def test_get_text_token_count_uses_config_model_fallback(mock_config, monkeypatch):
     # Arrange
-    mock_config.get_setting.return_value = "config-model"
+    mock_config.get_setting.side_effect = lambda key, default=None: {
+        "llm.model": "config-model",
+        "llm.api_key": "sk-test-key",  # pragma: allowlist secret
+        "llm": {},
+    }.get(key, default)
     mock_enc = Mock()
     mock_enc.encode.return_value = range(10)
     mock_encoding = Mock(return_value=mock_enc)
