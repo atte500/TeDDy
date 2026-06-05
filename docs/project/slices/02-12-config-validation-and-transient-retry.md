@@ -1,5 +1,6 @@
 # Slice: Config Validation & Transient Retry
-- **Status:** To De-risk
+- **Status:** Planned
+- **Prototype:** [spikes/prototypes/12-config-validation-retry.py](/spikes/prototypes/12-config-validation-retry.py)
 - **Type:** Feature
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
@@ -85,7 +86,12 @@ Feature: Configurable Completion Timeout
 - **Max retries is 1**: If max_retries is explicitly set to 1, only one attempt is made. This should not cause infinite loops or division by zero in backoff calculation.
 - **Zero timeout means no timeout**: If timeout is explicitly set to 0 or None, litellm uses its own default (no timeout). The configuration should not force a timeout of 0 which would immediately fail.
 - **Concurrent calls to get_completion**: If two threads call get_completion simultaneously, the validation flag check must be thread-safe. Use a lock around the validation check (similar to existing `_init_lock` pattern).
-- **validate_config already exists as dead code**: The method `validate_config()` is implemented in LiteLLMAdapter but never called. The slice must add the call to it, not reimplement it. However, the current implementation should be reviewed — it already handles empty API key, missing model, and missing env vars.
+- **validate_config is NOT dead code**: The method `validate_config()` is implemented in LiteLLMAdapter (line 243) and called by two production consumers: `session_cli_handlers.py` (line 169) and `planning_service.py` (line 169). The `_validated` flag in `get_completion()` is a **defense-in-depth** layer — it ensures that even if a new code path calls `get_completion()` directly without prior validation, the config is checked. Prototype validated this works correctly with thread safety via `_init_lock`.
+- **Retry-all-errors replaces SSL/Timeout-only retry**: The current `_should_retry_completion()` only retries on `SSLV3_ALERT_BAD_RECORD_MAC` and `TimeoutError`. After config validation passes, ALL errors are transient. Prototype validated that generic errors (e.g., `RuntimeError("Connection refused")`) are correctly retried with exponential backoff [0.5s, 1.0s, ...].
+- **Timeout passthrough via config layering**: `_prepare_completion_params()` calls `params.update(llm_config)`, which automatically passes any `timeout` key from the `llm` config section to litellm. The slice must add `timeout: 300` to `config.yaml` as the default. No code change needed in `_prepare_completion_params` — just the config key.
+- **Thread safety via _init_lock**: The existing `_init_lock` pattern (used for lazy litellm import and encoding cache) is sufficient for the `_validated` flag. Prototype validated 5 concurrent calls all succeed with validation running only once.
+- **Max retries must be >= 1**: If `max_retries` is explicitly set to 1, the loop must still execute once. Prototype validated that the `attempt < max_attempts - 1` guard prevents infinite loops.
+- **Zero or None timeout means no timeout**: litellm uses its own default when timeout is not passed. The config should not force `timeout: 0` which would immediately time out.
 
 ## Deliverables
 
@@ -104,21 +110,68 @@ Feature: Configurable Completion Timeout
 ### Strategy
 The changes are tightly scoped to `LiteLLMAdapter` and `config.yaml`. No port or contract changes are needed — `ILlmClient` already defines `validate_config()` and the config layering mechanism already passes all `llm` keys to litellm.
 
-**Key Finding (Impact Audit):** `validate_config()` is NOT dead code. It is already called by two production consumers:
-- `session_cli_handlers.py:169` — during session startup/init
-- `planning_service.py:169` — before plan generation
-
-This means the primary validation gate already exists at the caller level. The `_validated` flag in `get_completion()` is a **defense-in-depth** layer — it ensures that even if a new code path calls `get_completion()` directly without prior validation, the config is checked. The core behavioral change is: **after config validation has passed (either by external callers or by the internal guard), retry on ALL errors**, not just SSL/Timeout.
+**Prototype Validation (Completed):** The standalone prototype at `spikes/prototypes/12-config-validation-retry.py` validated all three behaviors:
+1. **Lazy Validation Guard**: On first `get_completion()` with invalid API key → `ConfigurationError` raised, zero litellm calls.
+2. **Retry-All-Errors**: After validation passes, generic `RuntimeError` on attempts 1-2 → retried with exponential backoff [0.5s, 1.0s]; success on attempt 3 → correct response returned.
+3. **Timeout Passthrough**: Custom `timeout: 600` in config → passed to litellm. No timeout in config → default `timeout: 300` passed.
+4. **Thread Safety**: 5 concurrent calls to `get_completion()` → all succeed, validation runs exactly once.
 
 ### Test Harness Triad Strategy
-- **Setup:** Use `register_mock(container, IConfigService)` to control config values. Use `POSIXPathMock` for the internal litellm provider (existing pattern in `test_litellm_adapter_retries.py`). Set side_effect on `mock_config.get_setting` to control validation outcomes.
-- **Driver:** Call `LiteLLMAdapter.get_completion()` directly with the mocked dependencies.
-- **Observer:** Assert on: (a) `mock_litellm.completion.call_count` for retry counts, (b) raised exceptions for validation failures, (c) call args for timeout passthrough.
+- **Setup:** Use `register_mock(container, IConfigService)` to control config values. Use `MockLitellm` (with `completion_side_effect` list pattern from prototype) to simulate generic failures and successes. Set `mock_config.get_setting` side_effect for validation outcomes.
+- **Driver:** Call `LiteLLMAdapter.get_completion()` directly with mocked dependencies. For thread safety tests, use `concurrent.futures.ThreadPoolExecutor` to fire 5 concurrent calls.
+- **Observer:** Assert on: (a) `mock_litellm.completion.call_count` for retry counts, (b) raised `ConfigurationError` for validation failures, (c) call args for `timeout` passthrough, (d) 5 successful results for thread safety test.
 
-### Key Implementation Details
-1. **Validation Guard (Defense-in-Depth):** Add a `_validated: bool = False` flag (with `_init_lock` for thread safety) to `LiteLLMAdapter.__init__`. In `get_completion()`, before the retry loop, check and set this flag. If `validate_config()` returns errors, raise `ConfigurationError` immediately. This ensures safety even if `get_completion()` is called directly without external validation.
-2. **Retry Logic Change:** The core behavioral change. In `get_completion()`, after config validation has passed (either via the internal guard or because external callers already validated), retry on ALL errors. Modify `_should_retry_completion()` to remove the `is_transient` filter — since validation has passed, any error during completion is assumed transient. Use `attempt < max_attempts - 1` as the sole condition, keeping the exponential backoff.
-3. **Timeout Passthrough:** In `_prepare_completion_params()`, ensure `timeout` from config is resolved with a fallback to 300. Currently, `params.update(llm_config)` handles this automatically — just verify the default exists in config.yaml.
+### Delta Analysis (Codebase Changes)
+
+#### 1. `src/teddy_executor/adapters/outbound/litellm_adapter.py`
+- **Line 38 (in `__init__`):** Add `self._validated: bool = False` after `self._init_lock = Lock()`.
+- **Line 100 (`get_completion`):** Before the retry loop, add the lazy validation guard:
+  ```python
+  if not self._validated:
+      with self._init_lock:
+          if not self._validated:
+              errors = self.validate_config()
+              if errors:
+                  raise ConfigurationError(errors[0])
+              self._validated = True
+  ```
+- **Line 166 (`_should_retry_completion`):** Simplify to retry on ALL exceptions when validation has passed. Remove `is_transient` filter. The method still handles backoff and returns True/False.
+  ```python
+  def _should_retry_completion(
+      self, error: Exception, attempt: int, max_attempts: int
+  ) -> bool:
+      if attempt < max_attempts - 1:
+          delay = 0.5 * (2**attempt)
+          if self._time_service:
+              self._time_service.sleep(delay)
+          else:
+              import time
+              time.sleep(delay)
+          return True
+      return False
+  ```
+  Note: The `_raise_specific_completion_errors` call after the retry loop (line 131-132 in current code) must be preserved to catch `ConfigurationError` for invalid API keys that survive the loop (e.g., if `max_retries=1`).
+- **Line 95 (`_prepare_completion_params`):** No code change needed. `params.update(llm_config)` will pass `timeout` through automatically. Ensure the `timeout` key is in `llm` section of `config.yaml`.
+
+#### 2. `src/teddy_executor/resources/config/config.yaml`
+- **Under `llm:` section (line 31):** Add new key:
+  ```yaml
+  timeout: 300
+  ```
+
+#### 3. Existing Test Files (No changes needed)
+- Tests for `validate_config` in `test_litellm_adapter_preflight.py` and `test_litellm_adapter_laziness.py` remain valid — they test the method directly.
+- Tests for retry logic in `test_litellm_adapter_retries.py` need updates to reflect the simplified `_should_retry_completion`. No existing tests assert that non-SSL/Timeout errors are NOT retried — so changing to retry-all-errors should not break any existing test.
+- New unit tests needed (see Deliverables).
+
+### Shared Seam Impact Audit
+| Method | Change | Consumers | Impact |
+|--------|--------|-----------|--------|
+| `_should_retry_completion` | Private method; remove `is_transient` filter | 1 (self, line 129) | Low — no external consumers |
+| `_validated` flag | New private attribute | 1 (self) | Low — no external consumers |
+| `validate_config` | No change to contract or behavior | 2 (session_cli_handlers, planning_service) + tests | None |
+| `_prepare_completion_params` | No code change | 1 (self) | None — `timeout` passes through automatically |
+| `config.yaml` `llm.timeout` | New key with default 300 | All config consumers read `llm` section | None — additive change, no existing consumers look for `timeout` |
 
 ### Mermaid Flow
 ```mermaid
