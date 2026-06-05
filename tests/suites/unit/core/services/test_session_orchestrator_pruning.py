@@ -282,6 +282,7 @@ def test_execute_respects_manually_pruned_files_during_transition(
     orchestrator._file_system_manager.path_exists.return_value = True  # Is session mode
 
     plan = MagicMock(spec=Plan)
+    plan.is_communication_turn.return_value = False
     plan.metadata = {"pruned_context": "docs/stale.md,tests/temp.py"}
 
     orchestrator._plan_parser.parse.return_value = plan
