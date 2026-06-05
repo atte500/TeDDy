@@ -39,7 +39,7 @@ And the correct actions from the valid part of the plan are returned
 ## Deliverables
 - [x] **Harness** - Unit test: 6-backtick closing fence with same-line trailing text → stripped from CodeFence content.
 - [x] **Harness** - Unit test: 6-tilde closing fence with same-line trailing text → stripped.
-- [ ] **Harness** - Unit test: trailing unexpected CodeFence at end of plan → silently ignored (existing BlockCode/CodeFence skip extended for tail-end).
+- [x] **Harness** - Unit test: trailing unexpected CodeFence at end of plan → silently ignored (existing BlockCode/CodeFence skip extended for tail-end).
 - [ ] **Logic** - Implement `_FencePreProcessor.process()` to strip same-line trailing text on fence lines of 6+ backticks or tildes (strip trailing non-whitespace content after the fence characters on that line).
 - [ ] **Logic** - Add tail-end skip in `_parse_actions` for trailing BlockCode/CodeFence nodes after the last action (consistent with 02-06's between-action skip pattern).
 - [ ] **Wiring** - Acceptance test: plan with both same-line trailing text on closing fence AND trailing codeblock → SUCCESS with correct action content.
@@ -62,6 +62,13 @@ And the correct actions from the valid part of the plan are returned
 - **Logic:** The test uses 6-tilde fences (`~~~~~~`) with a trailing text artifact. The existing preprocessing strips it correctly.
 - **Note:** This completement of the symmetry: D1 tested with tilde fences (despite "backtick" name), D2 explicitly targets tilde coverage.
 - **Test Results:** 806 passed, 3 skipped — no regressions.
+
+### Deliverable 3: Harness — Trailing Code Block at End of Plan (Completed)
+- **Status:** Implemented and committed.
+- **Test:** `tests/suites/unit/core/services/test_parser_fence_cleanup.py::test_trailing_code_block_after_actions_silently_ignored`
+- **Production Code Change:** None required — the existing skip logic in `_parse_actions` (Slice 02-06) already handles trailing `BlockCode`/`CodeFence` nodes after the last action. The main `while stream.has_next()` loop skips any non-action nodes until the stream is exhausted, making a separate tail-end skip loop redundant.
+- **Key Finding:** The Implementation Plan's suggestion to add a tail-end loop in `_parse_actions` is unnecessary. This deliverable validates that the existing between-action skip implicitly covers the tail-end scenario. No production code changes were needed.
+- **Test Results:** 812+ passed, 3 skipped — no regressions.
 
 ## Implementation Plan
 ### Changes Required

@@ -105,3 +105,35 @@ Hello, 6-tilde World!
     assert len(result.actions) == 1
     assert result.actions[0].type == "CREATE"
     assert result.actions[0].params["content"] == "Hello, 6-tilde World!"
+
+
+def test_trailing_code_block_after_actions_silently_ignored():
+    """
+    Given a plan with a valid action followed by an unexpected trailing code block,
+    When the plan is parsed,
+    Then the trailing code block is silently ignored and the action is returned.
+    """
+    parser = MarkdownPlanParser()
+    plan = """# Test Plan
+- **Agent:** Dev
+- **Plan Type:** Implementation
+- **Status:** Pending
+
+## Rationale
+````text
+test rationale
+````
+
+## Action Plan
+
+### `READ`
+- **Resource:** file.md
+- **Description:** Read a file.
+
+````text
+This is an unexpected trailing code block after the last action.
+````
+"""
+    result = parser.parse(plan)
+    assert len(result.actions) == 1
+    assert result.actions[0].type == "READ"
