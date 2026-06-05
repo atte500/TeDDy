@@ -35,6 +35,8 @@ Implement resilient infrastructure patterns (retries, User-Agent rotation), enfo
 ## Vertical Slices
 > **Note:** The rename of `global_context_threshold` to `turn_context_threshold` is completed in slice 02-07 (Pruning Refinement). The new key `turn_context_threshold` is the primary key, with backward compatibility fallback to `global_context_threshold`.
 
+> **Note:** Slice 02-08 (Provider Routing and Display) was cancelled after prototype validation proved `response._hidden_params["provider"]` does not exist in real OpenRouter responses. See the [Vertical Slice](/docs/project/slices/02-08-provider-routing-and-display.md) for the full cancellation rationale.
+
 - [x] **02-01-Resilient Infrastructure**: LLM retries and recursive context expansion.
 - [x] **02-02-Web Scraping Resilience**: User-Agent rotation and GitHub raw fixes.
 - [x] **02-03-Safety Limits**: 99-turn limit, session cost tracking, and loop protection.
@@ -42,7 +44,7 @@ Implement resilient infrastructure patterns (retries, User-Agent rotation), enfo
 - [x] **02-05-Architecture Efficiency**: Session prompt relocation and session efficiency improvements.
 - [x] **02-06-Orchestrator Hardening**: Fail-fast execution, mid-execution consistency, and parser resilience.
 - [ ] **02-07-Pruning Refinement**: Turn-only pruning threshold calculation.
-- [ ] **02-08-Provider Routing and Display** (WIP): Remove `llm.provider` special-casing, extract provider from `_hidden_params["provider"]`, persist in `meta.yaml`, display in CLI telemetry `• Model:` line, document pass-through and shortcuts.
+- ~~[ ] **02-08-Provider Routing and Display** (WIP): Remove `llm.provider` special-casing, extract provider from `_hidden_params["provider"]`, persist in `meta.yaml`, display in CLI telemetry `• Model:` line, document pass-through and shortcuts.~~
 - [x] **02-09-Context Awareness**: Session web content caching (file-based cache for context URLs). (feat(docs): design session web content caching (slice 02-09))
 - [ ] **02-10-Preserve User-Message Turns**: Protect action turns with user messages from auto-pruning by checking report metadata.
 - [ ] **02-11-AST Parser Resilience**: Extend parser to ignore unexpected codeblocks in the AST during plan parsing.

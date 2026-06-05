@@ -1,6 +1,6 @@
 # Slice: 02-08 Provider Routing and Display
 
-- **Status:** To De-risk
+- **Status:** Cancelled
 - **Type:** Feature
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
@@ -70,6 +70,26 @@ Then I see documented: `llm` config section passes through to litellm params, an
 ## Implementation Notes
 
 *(To be filled by Developer during implementation.)*
+
+## Cancellation Rationale
+
+This slice was cancelled after the Prototyper validated the core assumption against a real OpenRouter API call.
+
+**The Assumption:** `response._hidden_params["provider"]` is populated by litellm with the downstream provider name (e.g., `"deepseek"`, `"together"`, `"openai"`).
+
+**The Reality:** A real OpenRouter call to `openrouter/deepseek/deepseek-v4-flash:nitro` (with valid API key from `.teddy/config.yaml`) returned a response where `_hidden_params` contained **no `provider` key**. The available keys were: `custom_llm_provider`, `region_name`, `headers`, `additional_headers`, `optional_params`, `litellm_call_id`, `api_base`, `model_id`, `response_cost`, `litellm_model_name`, `_response_ms`, `callback_duration_ms`. The `custom_llm_provider` value was `"openrouter"` (the gateway, not the downstream server).
+
+**Three alternative approaches were considered but rejected:**
+
+| Path | Approach | Verdict |
+|------|----------|---------|
+| **A** | Use `custom_llm_provider` (shows `openrouter` as gateway) | Rejected — doesn't show downstream provider |
+| **B** | Parse provider from resolved model name (e.g., `deepseek/...` → `deepseek`) | Rejected — fragile, depends on naming conventions |
+| **C** | Separate API call to OpenRouter status endpoint | Rejected — adds latency and complexity, scope creep |
+
+**Decision:** The feature is cancelled because the downstream provider data is not exposed by litellm for OpenRouter routes. Any implementation would either show the gateway (`openrouter`) rather than the downstream provider, or require a separate OpenRouter API integration that is beyond the scope of this slice.
+
+**Prototype evidence:** The standalone prototype at [spikes/prototypes/02-08-provider-routing.py](/spikes/prototypes/02-08-provider-routing.py) contains the full diagnostic code and is preserved as documentation of the investigation.
 
 ## Implementation Plan
 
