@@ -272,6 +272,7 @@ WIP & REMINDERS:
         3. Add a clear, actionable directive (e.g., `[!] Ensure strict 6-tilde encapsulation`) to the `WIP & REMINDERS` section of your State Dashboard to ensure you do not repeat the mistake.
         4. Submit a corrected plan focusing strictly on the failed/problematic action.
         5. Defer the remaining steps of the original plan to subsequent turns.
+        6. You are strictly forbidden from wasting turns sending a `## Message` to the user about a validation error. Validation errors are internal formatting mistakes; silently fix and resubmit.
       </rule>
 
       <rule n="10" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>

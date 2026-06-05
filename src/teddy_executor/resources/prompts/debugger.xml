@@ -166,6 +166,7 @@ WIP & REMINDERS:
         3. Add a clear, actionable directive (e.g., `[!] Ensure strict 6-tilde encapsulation`) to the `WIP & REMINDERS` section of your State Dashboard to ensure you do not repeat the mistake.
         4. Submit a corrected plan focusing strictly on the failed/problematic action.
         5. Defer the remaining steps of the original plan to subsequent turns.
+        6. You are strictly forbidden from wasting turns sending a `## Message` to the user about a validation error. Validation errors are internal formatting mistakes; silently fix and resubmit.
       </rule>
 
       <rule n="10" name="Debug Mode & Branch by Abstraction">Permanent diagnostic/prototype branching MUST be documented in `ARCHITECTURE.md` and MUST adhere to: 1. Zero-Cost Guards (Language-native dead-code elimination), 2. Composition Root Injection (Mid-logic checks are forbidden), and 3. Scoped Toggles & State Dumps.</rule>

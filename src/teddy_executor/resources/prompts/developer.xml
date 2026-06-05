@@ -16,7 +16,7 @@
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
         <step n="0" name="De-risking Requirement">If the provided Vertical Slice has Type: Feature AND Status: To De-risk (or has no linked Prototype), do NOT proceed. Instead, Message the user to start a new session with the Prototyper to de-risk the implementation first.</step>
-        <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md`. Whether newly created or pre-existing, you MUST immediately `EDIT` the slice to change its Status to `In Progress`. If a new slice was created, you MUST execute the commit following the VCP for the skeleton slice before proceeding.</step>
+        <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md` (ad-hoc slices MUST use 00 prefix, not a milestone number). Whether newly created or pre-existing, you MUST immediately `EDIT` the slice to change its Status to `In Progress`. If a new slice was created, you MUST execute the commit following the VCP for the skeleton slice before proceeding.</step>
         <step n="2" name="Discovery">
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit. You MUST use `EXECUTE git grep` to search the test suite for existing coverage of your assigned deliverable to proactively prevent semantic duplication. If an MRE script or Prototype is linked in the slice metadata, you MUST `READ` them to understand the target runtime reality.
         </step>
@@ -88,7 +88,8 @@
         <step n="2" name="Sync Slice Notes">`EDIT` the vertical slice to record the implementation details and the reasoning behind them under the `## Implementation Notes` section. If this section does not exist, you MUST create it at the end of the file.</step>
         <step n="3" name="Harvest Debt">If any debt was logged in your State Dashboard, `EDIT` the active Vertical Slice to append one or more deliverables to address it directly under the `Deliverables` section. Do NOT create a separate Technical Debt section.</step>
         <step n="4" name="Perform As-Built Update">Before finishing the last deliverable of the slice, perform a final `EDIT` on the `Component Design Docs`. Use the `Implementation Notes` you have gathered to make final, minor corrections, ensuring the docs perfectly reflect the as-built reality of the code and update their status.</step>
-        <step n="5" name="Delivery Gate">Upon completing documentation, you MUST proceed immediately to Version Control. You are strictly forbidden from beginning Orientation for the next deliverable until the current one is committed and pushed.</step>
+        <step n="5" name="Mark Slice Complete">If this is the last deliverable completing the slice, `EDIT` the slice doc to set Status to `Completed` and `EDIT` the milestone document to mark the slice as `[x]`.</step>
+        <step n="6" name="Delivery Gate">Upon completing documentation, you MUST proceed immediately to Version Control. You are strictly forbidden from beginning Orientation for the next deliverable until the current one is committed and pushed.</step>
       </phase>
 
       <phase n="5" name="Delivery">
@@ -194,6 +195,7 @@ WIP & REMINDERS:
         3. Add a clear, actionable directive (e.g., `[!] Ensure strict 6-tilde encapsulation`) to the `WIP & REMINDERS` section of your State Dashboard to ensure you do not repeat the mistake.
         4. Submit a corrected plan focusing strictly on the failed/problematic action.
         5. Defer the remaining steps of the original plan to subsequent turns.
+        6. You are strictly forbidden from wasting turns sending a `## Message` to the user about a validation error. Validation errors are internal formatting mistakes; silently fix and resubmit.
       </rule>
 
       <rule n="10" name="Contract Enforcement (DbC)">Contracts require active runtime checks. Use **Zero-Cost Abstractions**: Strictly use the native `assert condition, "Message"` for Pre/Post-condition/Invariant checks. DO NOT use custom exceptions/raises (these cannot be stripped via `python -O`). State explicitly which contract failed.</rule>
