@@ -1,5 +1,5 @@
 # Slice: Config Validation & Transient Retry
-- **Status:** In Progress
+- **Status:** Completed
 - **Prototype:** [spikes/prototypes/12-config-validation-retry.py](/spikes/prototypes/12-config-validation-retry.py)
 - **Type:** Feature
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
@@ -106,6 +106,8 @@ Feature: Configurable Completion Timeout
 *(To be filled by Developer during implementation.)*
 
 ## Implementation Notes
+
+**Slice Summary:** All five deliverables completed and version-controlled. The `LiteLLMAdapter` now performs lazy config validation on first `get_completion()` call (raising `ConfigurationError` if invalid), retries ALL exceptions with exponential backoff after validation passes, and defaults `timeout` to 300 seconds if not configured. Three new test files were created/updated: `test_litellm_adapter_retries.py` (unit tests for validation guard, retry-all-errors, thread safety, timeout passthrough), `test_yaml_config_adapter_layering.py` (baseline timeout default), `test_llm_wiring.py` (integration test for validation-then-retry flow). The `mock_time_service` fixture was added to `tests/harness/setup/mocks.py`. All 816 tests pass.
 
 ### Contract Deliverable (`timeout: 300` in config.yaml) — Complete
 - **Change**: Added `timeout: 300` under the `llm` section in `src/teddy_executor/resources/config/config.yaml`.
