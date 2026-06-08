@@ -1,38 +1,41 @@
-# Task: Correct Double Newlines Injection Point
+# Task: Fix Message Content Blank Lines by Replacing Blind double_newlines with Raw Text Extraction
 
 ## Business Goal
-Apply `double_newlines()` transformation only to AI agent `## Message` content, not to all terminal output.
+Replace the harmful `double_newlines()` transformation (which blindly doubled all single newlines, breaking tables/lists/code blocks) with raw text extraction that preserves the LLM's original formatting exactly.
 
-## Context
-The current implementation calls `double_newlines()` inside `ConsoleInteractorAdapter.display_message()`, which affects ALL output (status messages, errors, telemetry). However, agent `## Message` content is displayed via `IUserInteractor.ask_question()` → `typer.echo()`, not through `display_message()`.
+## Root Cause
+The LLM outputs proper Markdown with blank lines between paragraphs. However, `parse_message_action()` in `action_parser_complex.py` rendered each AST child node individually using `MarkdownRenderer` and joined them with an empty string `""`. This lost blank lines between block-level elements:
 
-The fix must:
-1. Remove the transformation from `display_message()`.
-2. Apply it inside `ActionFactory._handle_message_protocol()` before calling `ask_question()`.
-
-## Implementation Steps
-
-### Step 1: Remove double_newlines from display_message
-- **File:** `src/teddy_executor/adapters/outbound/console_interactor.py`
-- **Change:** Remove the `from teddy_executor.core.utils.string import double_newlines` import and the `double_newlines(message)` call inside `display_message()`. The method becomes a transparent pass-through: `self._console.print(message)`.
-
-### Step 2: Add double_newlines to message protocol handler
-- **File:** `src/teddy_executor/core/services/action_factory.py`
-- **Change:** In `_handle_message_protocol()`, import `double_newlines` and apply it to the `prompt` argument before passing to `method()`. Example:
-```python
-from teddy_executor.core.utils.string import double_newlines
-prompt = double_newlines(kwargs.get("prompt", kwargs.get("content")))
+```
+LLM writes:  "Para1.\n\nPara2.\n\n- List items"
+Reconstructed: "Para1.\nPara2.\n- List items"  (blank lines lost!)
 ```
 
-### Step 3: Update display_message test
-- **File:** `tests/suites/unit/adapters/outbound/test_console_interactor.py`
-- **Change:** Update `test_display_message_doubles_newlines` to verify that `display_message` does NOT transform newlines (i.e., `"line1\nline2"` is printed as-is).
+The `double_newlines()` function was a band-aid that tried to compensate by doubling every `\n`. This was too aggressive and broke tables, lists, and code blocks.
 
-### Step 4: Add message protocol transformation test
-- **File:** `tests/suites/unit/core/services/test_action_factory_message.py`
-- **Change:** Add a test case verifying that `_handle_message_protocol` applies `double_newlines` to the message content before calling `ask_question`.
+## Fix
+Replace the lossy AST-rendering approach with raw text extraction. Mistletoe tokens expose a `line_number` attribute (1-indexed start line). When parsing a `## Message` section, we extract all text from that heading's line onward directly from the original plan content, preserving every newline exactly as the LLM wrote them.
+
+### Changes Made
+
+#### 1. action_parser_complex.py
+- Modified `parse_message_action()` to accept an optional `raw_content` parameter.
+- If `raw_content` is provided, use it directly (preserving blank lines).
+- Fall back to legacy MarkdownRenderer for backwards compatibility.
+
+#### 2. markdown_plan_parser.py
+- In `parse()`, when a `## Message` section is detected, extract raw content from `clean_content` using the heading's `line_number`.
+- Pass `raw_content` to `parse_message_action()`.
+
+#### 3. action_factory.py
+- Removed `double_newlines` import and call from `_handle_message_protocol()`.
+- Message content now passes through as-is.
+
+#### 4. string.py
+- Removed `double_newlines()` function entirely. It was harmful and no longer used in production.
 
 ## Verification
 1. Run `poetry run pytest` – all tests pass.
-2. Confirm no regressions in `planning_service`, `session_orchestrator`, or `session_lifecycle_manager` tests.
-3. Manually verify agent `## Message` content shows doubled newlines while status messages remain unchanged.
+2. Tables, lists, and code blocks in agent messages display correctly (internal `\n` preserved).
+3. Paragraphs separated by blank lines in agent messages display with correct spacing.
+4. `double_newlines` no longer referenced anywhere in production code or tests.

@@ -182,22 +182,30 @@ def parse_research_action(
 
 
 def parse_message_action(
-    stream: _PeekableStream, node: Optional[Any] = None
+    stream: _PeekableStream,
+    node: Optional[Any] = None,
+    raw_content: Optional[str] = None,
 ) -> ActionData:
     """
-    Parses a MESSAGE action by consuming all remaining nodes in the stream.
+    Parses a MESSAGE action. If raw_content is provided (extracted directly
+    from the original plan text via heading line_number), use it as-is to
+    preserve blank lines and internal structure. Otherwise, fall back to
+    rendering AST nodes.
     """
-    from mistletoe.markdown_renderer import MarkdownRenderer
-
-    nodes = []
-    while stream.has_next():
-        nodes.append(stream.next())
-
     content = ""
-    if nodes:
-        with MarkdownRenderer() as renderer:
-            rendered_parts = [renderer.render(node) for node in nodes]
-            content = "".join(rendered_parts).strip()
+    if raw_content is not None:
+        content = raw_content.rstrip("\n")
+    elif stream.has_next():
+        from mistletoe.markdown_renderer import MarkdownRenderer
+
+        nodes = []
+        while stream.has_next():
+            nodes.append(stream.next())
+
+        if nodes:
+            with MarkdownRenderer() as renderer:
+                rendered_parts = [renderer.render(node) for node in nodes]
+                content = "".join(rendered_parts).strip()
 
     return ActionData(
         type=ActionType.MESSAGE,

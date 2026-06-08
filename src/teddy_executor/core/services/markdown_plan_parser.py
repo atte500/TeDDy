@@ -104,7 +104,17 @@ class MarkdownPlanParser(IPlanParser):
 
             section_name = get_child_text(section_heading).strip()
             if "Message" in section_name:
-                actions = [parse_message_action(stream, node=section_heading)]
+                raw_content = None
+                start_line = getattr(section_heading, "line_number", None)
+                if start_line is not None and start_line > 0:
+                    lines = clean_content.splitlines(keepends=True)
+                    if start_line < len(lines):
+                        raw_content = "".join(lines[start_line:]).lstrip("\n")
+                actions = [
+                    parse_message_action(
+                        stream, node=section_heading, raw_content=raw_content
+                    )
+                ]
             else:
                 actions = self._parse_actions(stream, doc)
 

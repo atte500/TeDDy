@@ -38,8 +38,8 @@ def test_action_factory_resolves_message_action():
     )
 
 
-def test_message_action_applies_double_newlines():
-    """Test that _handle_message_protocol applies double_newlines to message content."""
+def test_message_action_passes_content_as_is():
+    """Test that _handle_message_protocol passes message content as-is (no transformation)."""
     # Arrange
     mock_interactor = create_autospec(IUserInteractor, instance=True)
     ports = ActionPorts(
@@ -59,7 +59,7 @@ def test_message_action_applies_double_newlines():
     action.execute(**params)
 
     # Assert
-    # The content with single newlines should be doubled before passing to ask_question
+    # Content should be passed unchanged (no double_newlines applied)
     mock_interactor.ask_question.assert_called_once_with(
-        "line1\n\nline2", resources=None, agent_name=None
+        "line1\nline2", resources=None, agent_name=None
     )

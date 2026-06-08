@@ -182,7 +182,7 @@ class TestConsoleInteractorAdapter:
     def test_display_message_preserves_newlines(
         self, adapter: ConsoleInteractorAdapter, monkeypatch
     ):
-        """Test that display_message preserves newlines as-is (double_newlines is applied at action_factory level)."""
+        """Test that display_message preserves newlines as-is (no transformation anywhere in pipeline)."""
         from tests.harness.setup.mocking import POSIXPathMock
 
         # Arrange

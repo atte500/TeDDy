@@ -121,9 +121,7 @@ class ActionFactory(IActionFactory):
 
     def _handle_message_protocol(self, method: Any, kwargs: dict) -> Any:
         """Handles the positional argument mapping for the MESSAGE action."""
-        from teddy_executor.core.utils.string import double_newlines
-
-        prompt = double_newlines(kwargs.get("prompt", kwargs.get("content", "")) or "")
+        prompt = kwargs.get("prompt", kwargs.get("content", "")) or ""
         return method(
             prompt,
             resources=kwargs.get("handoff_resources"),
