@@ -275,7 +275,7 @@ class ContextService(IGetContextUseCase):
         """Formats the header section of the context report."""
         header_parts = [
             "# Project Context",
-            "\n## 1. System Information",
+            "\n## System Information",
             f"- **Current Date:** {system_info.get('current_date', 'N/A')}",
             f"- **Current Time:** {system_info.get('current_time', 'N/A')}",
             f"- **CWD:** {system_info.get('cwd', 'N/A')}",
@@ -296,13 +296,6 @@ class ContextService(IGetContextUseCase):
         if git_status == "":
             display_status = "nothing to commit, working tree clean"
 
-        content_parts = [
-            "\n## 2. Git Status",
-            display_status if display_status is not None else "",
-            "\n## 3. Project Structure",
-            f"```\n{repo_tree}\n```",
-        ]
-
         # Gather all unique paths
         all_paths: List[str] = []
         for paths in scoped_paths.values():
@@ -314,13 +307,24 @@ class ContextService(IGetContextUseCase):
         workspace_paths = [p for p in all_paths if not is_session_file_path(p)]
         session_paths = [p for p in all_paths if is_session_file_path(p)]
 
-        # 1. Format workspace files under ## 4. Resource Contents
+        content_parts = [
+            "\n## Git Status",
+            display_status if display_status is not None else "",
+            "\n## Project Structure",
+            f"```\n{repo_tree}\n```",
+        ]
+
+        # Format workspace files under ## Resource Contents
         content_parts.extend(
             self._format_workspace_contents(workspace_paths, file_contents)
         )
 
-        # 2. Format recognized session history files chronologically in ## 5. Session History
-        content_parts.extend(self._format_session_history(session_paths, file_contents))
+        # Prepend Session History section first (after header's System Information)
+        session_history_parts = self._format_session_history(
+            session_paths, file_contents
+        )
+        if session_history_parts:
+            content_parts = session_history_parts + content_parts
 
         return "\n".join(content_parts)
 
@@ -333,7 +337,7 @@ class ContextService(IGetContextUseCase):
         if not workspace_paths:
             return []
 
-        parts = ["\n## 4. Resource Contents"]
+        parts = ["\n## Resource Contents"]
         for path in workspace_paths:
             parts.append("\n---")
             if self._is_url(path):
@@ -410,7 +414,7 @@ class ContextService(IGetContextUseCase):
             return []
 
         recognized_session_paths.sort(key=get_session_history_sort_key)
-        parts = ["\n## 5. Session History"]
+        parts = ["\n## Session History"]
         for path in recognized_session_paths:
             disp_name = get_session_history_display_name(path)
             content = file_contents.get(path) or ""

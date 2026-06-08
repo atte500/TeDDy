@@ -49,10 +49,10 @@ def test_context_generates_standard_output_and_is_clean(tmp_path, monkeypatch):
 
     assert result.exit_code == 0
     assert "# Project Context" in output
-    assert "## 1. System Information" in output
-    assert "## 2. Git Status" in output
-    assert "## 3. Project Structure" in output
-    assert "## 4. Resource Contents" in output
+    assert "## System Information" in output
+    assert "## Git Status" in output
+    assert "## Project Structure" in output
+    assert "## Resource Contents" in output
     assert "# Test README" in output
     assert "non_existent_file.md" in output
 
@@ -91,6 +91,6 @@ def test_context_includes_git_status_when_present(tmp_path, monkeypatch):
     result = adapter.run_cli_command(["context"], tmp_path)
 
     assert result.exit_code == 0
-    assert "## 2. Git Status" in result.stdout
+    assert "## Git Status" in result.stdout
     assert " M modified_file.py" in result.stdout
     assert "?? untracked_file.txt" in result.stdout

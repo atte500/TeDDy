@@ -71,7 +71,7 @@ def test_get_context_orchestrates_and_returns_correct_dto(
 
     # Check header content (now part of the unified markdown)
     assert "# Project Context" in result.header
-    assert "## 1. System Information" in result.header
+    assert "## System Information" in result.header
     assert "- **CWD:** /test/dir" in result.header
     assert "- **OS:** test_os" in result.header
     assert "- **Current Date:** 2026-03-26" in result.header
@@ -79,14 +79,13 @@ def test_get_context_orchestrates_and_returns_correct_dto(
 
     # Check git status section
     assert result.git_status == mock_git_status
-    assert "## 2. Git Status" in result.content
+    assert "## Git Status" in result.content
     assert mock_git_status in result.content
 
     # Check main content sections
-    assert "## 3. Project Structure" in result.content
+    assert "## Project Structure" in result.content
     assert mock_repo_tree in result.content
-    assert "## 4. Context Summary" not in result.content
-    assert "## 4. Resource Contents" in result.content
+    assert "## Resource Contents" in result.content
 
     # Check resource formatting
     assert "[file1.txt](/file1.txt)" in result.content
@@ -163,7 +162,7 @@ def test_get_context_always_includes_git_status_even_if_empty(
     result = service.get_context()
 
     # Assert
-    assert "## 2. Git Status" in result.content
+    assert "## Git Status" in result.content
     assert "nothing to commit, working tree clean" in result.content
 
 
@@ -269,8 +268,8 @@ def test_get_context_separates_and_formats_session_history(
     """
     Scenario 1: Formatting chronological session history for the context payload.
     Verifies that ContextService partitions session history files from workspace files,
-    excluding session files from '## 4. Resource Contents' and formatting them in
-    '## 5. Session History' at the end, sorted chronologically. Unrecognized session
+    excluding session files from '## Resource Contents' and formatting them in
+    '## Session History' at the end, sorted chronologically. Unrecognized session
     files (like meta.yaml) are completely omitted. If no session files exist,
     the section is omitted entirely.
     """
@@ -307,26 +306,33 @@ def test_get_context_separates_and_formats_session_history(
     )
 
     # Assert
-    # 1. Standard workspace file MUST be in '## 4. Resource Contents'
-    assert "## 4. Resource Contents" in result.content
+    # 1. Standard workspace file MUST be in '## Resource Contents'
+    assert "## Resource Contents" in result.content
     assert "### [src/main.py]" in result.content
     assert "print('hello')" in result.content
 
-    # 2. Session files MUST NOT be in '## 4. Resource Contents'
-    # We slice content to check within '## 4' block but before '## 5'
-    assert "## 5. Session History" in result.content
-    resource_contents_block = result.content.split("## 4. Resource Contents")[1].split(
-        "## 5. Session History"
+    # 2. Session files MUST be in '## Session History' (prepended now)
+    assert "## Session History" in result.content
+    # Split: Session History comes before Resource Contents
+    session_history_block = result.content.split("## Session History")[1].split(
+        "## Resource Contents"
     )[0]
-    assert "initial_request.md" not in resource_contents_block
-    assert "plan.md" not in resource_contents_block
-    assert "report.md" not in resource_contents_block
+    assert "initial_request.md" not in session_history_block
+    assert "plan.md" not in session_history_block
+    assert "report.md" not in session_history_block
     assert (
         "meta.yaml" not in result.content
     )  # Unrecognized session file completely omitted
 
-    # 3. '## 5. Session History' at the end in correct order with formatted headers and no raw directory paths
-    history_block = result.content.split("## 5. Session History")[1]
+    # 3. '## Session History' appears before '## Resource Contents' (reordered)
+    assert result.content.index("## Session History") < result.content.index(
+        "## Resource Contents"
+    )
+
+    # 4. Correct order with formatted headers and no raw directory paths
+    history_block = result.content.split("## Session History")[1].split(
+        "## Resource Contents"
+    )[0]
     assert "### Initial Request" in history_block
     assert "Implement user login" in history_block
     assert "### Turn 1: Plan" in history_block
@@ -363,8 +369,8 @@ def test_get_context_omits_session_history_if_none_present(
     result = service.get_context(context_files={"Turn": ["src/main.py"]})
 
     # Assert
-    assert "## 4. Resource Contents" in result.content
-    assert "## 5. Session History" not in result.content
+    assert "## Resource Contents" in result.content
+    assert "## Session History" not in result.content
 
 
 def test_get_context_deduplicates_overlapping_paths_prioritizing_non_turn_scope(
