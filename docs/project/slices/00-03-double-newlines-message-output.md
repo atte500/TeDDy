@@ -1,5 +1,5 @@
 # Slice: Double Newlines in Message Output
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Feature
 - **Milestone:** N/A (ad-hoc)
 - **Component Docs:** [ConsoleInteractor](/docs/architecture/adapters/outbound/console_interactor.md)
@@ -25,7 +25,7 @@ Then each single newline in the message content is replaced with a double newlin
 
 ## Deliverables
 - [x] **Logic** - Implement `double_newlines()` pure utility function with comprehensive unit tests for edge cases.
-- [ ] **Wiring** - Inject the newline doubling preprocessing call into `ConsoleInteractorAdapter.display_message()`.
+- [x] **Wiring** - Inject the newline doubling preprocessing call into `ConsoleInteractorAdapter.display_message()`.
 
 ## Implementation Notes
 
@@ -36,7 +36,14 @@ Then each single newline in the message content is replaced with a double newlin
   2. `\r\n(?!\r\n)` → `\r\n\r\n` handles Windows-style line endings.
 - **Test Coverage:** 9 unit tests covering: basic doubling, already-doubled, mixed, empty, no newlines, multiple lines, trailing/leading newlines, carriage returns.
 - **Design Decision:** Pure function with zero side effects; no dependencies on external state or configuration.
-- **Integration Status:** Ready for Wiring (injection into `ConsoleInteractorAdapter.display_message()`).
+- **Integration Status:** Applied in Wiring deliverable.
+
+### Wiring Deliverable
+- **Target:** `ConsoleInteractorAdapter.display_message()` in `src/teddy_executor/adapters/outbound/console_interactor.py`
+- **Change:** Added inline import of `double_newlines` from `string.py` and called it on the message before passing to `self._console.print()`.
+- **Test:** `test_display_message_doubles_newlines` in `tests/suites/unit/adapters/outbound/test_console_interactor.py` — verifies that `display_message` transforms `"line1\nline2"` to `"line1\n\nline2"`.
+- **Design Decision:** Single injection point at the outbound port implementation. All 8 call sites (`planning_service`, `session_orchestrator`, `session_lifecycle_manager`) automatically benefit without modification.
+- **Edge Cases Preserved:** `double_newlines()` handles empty strings, already-doubled newlines, `\r\n`, trailing/leading newlines — no regressions in callers.
 
 ## Implementation Plan
 The feature requires two atomic deliverables:

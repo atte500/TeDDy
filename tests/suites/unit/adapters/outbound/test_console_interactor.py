@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from tests.harness.setup.mocking import POSIXPathMock
 
 from teddy_executor.adapters.outbound.console_interactor import (
     ConsoleInteractorAdapter,
@@ -14,7 +14,7 @@ class TestConsoleInteractorAdapter:
         mock_env.create_temp_file.side_effect = lambda suffix="": str(
             tmp_path / f"temp_file{suffix}"
         )
-        mock_config = MagicMock()
+        mock_config = POSIXPathMock()
         mock_config.get_setting.return_value = None
         return ConsoleInteractorAdapter(system_env=mock_env, config_service=mock_config)
 
@@ -163,9 +163,9 @@ class TestConsoleInteractorAdapter:
     ):
         """Test that a skipped action prints a warning to stderr."""
         import typer
-        from unittest.mock import MagicMock
+        from tests.harness.setup.mocking import POSIXPathMock
 
-        mock_secho = MagicMock()
+        mock_secho = POSIXPathMock()
         monkeypatch.setattr(typer, "secho", mock_secho)
 
         dummy_action = ActionData(type="TEST_ACTION", params={})
@@ -178,3 +178,19 @@ class TestConsoleInteractorAdapter:
             fg=typer.colors.YELLOW,
             err=True,
         )
+
+    def test_display_message_doubles_newlines(
+        self, adapter: ConsoleInteractorAdapter, monkeypatch
+    ):
+        """Test that display_message applies double_newlines to the message content before printing."""
+        from tests.harness.setup.mocking import POSIXPathMock
+
+        # Arrange
+        mock_print = POSIXPathMock()
+        monkeypatch.setattr(adapter._console, "print", mock_print)
+
+        # Act
+        adapter.display_message("line1\nline2")
+
+        # Assert — currently fails because no transformation is applied
+        mock_print.assert_called_once_with("line1\n\nline2")
