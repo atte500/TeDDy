@@ -277,3 +277,23 @@ def get_truncation_hint(action_type: str, max_lines: int, total_lines: int) -> s
         )
 
     return f"[Content truncated: Showing {max_lines} of {total_lines} lines.]"
+
+
+def double_newlines(text: str) -> str:
+    """
+    Replaces single newline characters (\\n) with double newlines (\\n\\n)
+    while preserving already-doubled newlines and carriage return + newline (\\r\\n) sequences.
+
+    Uses a two-regex approach:
+    1. Handle bare \\n (not preceded by \\r, not already part of \\n\\n)
+    2. Handle \\r\\n (not already part of \\r\\n\\r\\n)
+    """
+    import re
+
+    # 1. Double single newlines that are NOT preceded by \r or \n and NOT already doubled
+    result = re.sub(r"(?<!\r|\n)\n(?!\n)", "\n\n", text)
+
+    # 2. Double \r\n sequences that are NOT already doubled
+    result = re.sub(r"\r\n(?!\r\n)", "\r\n\r\n", result)
+
+    return result

@@ -1,4 +1,5 @@
 from teddy_executor.core.utils.string import (
+    double_newlines,
     slugify,
     truncate_lines,
     get_truncation_hint,
@@ -126,3 +127,49 @@ def test_slugify_handles_apostrophes_and_new_stopwords():
     assert slugify("It's a beautiful day") == "beautiful-day"
     assert slugify("I'm going to fix it already") == "fix"
     assert slugify("We'll surely check it") == "check"
+
+
+def test_double_newlines_basic():
+    """It should replace single newlines with double newlines."""
+    assert double_newlines("line1\nline2") == "line1\n\nline2"
+
+
+def test_double_newlines_already_doubled():
+    """It should not double newlines that are already doubled."""
+    assert double_newlines("line1\n\nline2") == "line1\n\nline2"
+
+
+def test_double_newlines_mixed():
+    """It should handle a mix of single and already-doubled newlines."""
+    assert double_newlines("line1\nline2\n\nline3") == "line1\n\nline2\n\nline3"
+
+
+def test_double_newlines_empty():
+    """It should return an empty string unchanged."""
+    assert double_newlines("") == ""
+
+
+def test_double_newlines_no_newlines():
+    """It should return the string unchanged if there are no newlines."""
+    assert double_newlines("hello world") == "hello world"
+
+
+def test_double_newlines_multiple_lines():
+    """It should double each single newline in a multi-line string."""
+    assert double_newlines("a\nb\nc") == "a\n\nb\n\nc"
+
+
+def test_double_newlines_trailing_newline():
+    """It should double a trailing single newline."""
+    assert double_newlines("hello\n") == "hello\n\n"
+
+
+def test_double_newlines_leading_newline():
+    """It should double a leading single newline."""
+    assert double_newlines("\nhello") == "\n\nhello"
+
+
+def test_double_newlines_carriage_return():
+    """It should double \r\n sequences to \r\n\r\n but leave bare \r unchanged."""
+    assert double_newlines("line1\r\nline2") == "line1\r\n\r\nline2"
+    assert double_newlines("line1\r") == "line1\r"

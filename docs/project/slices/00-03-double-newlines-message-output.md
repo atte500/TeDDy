@@ -24,11 +24,19 @@ Then each single newline in the message content is replaced with a double newlin
 - **Mixed content**: Messages with code blocks, Markdown formatting, or other special characters should only have their newlines doubled, not other transformations applied.
 
 ## Deliverables
-- [ ] **Logic** - Implement `double_newlines()` pure utility function with comprehensive unit tests for edge cases.
+- [x] **Logic** - Implement `double_newlines()` pure utility function with comprehensive unit tests for edge cases.
 - [ ] **Wiring** - Inject the newline doubling preprocessing call into `ConsoleInteractorAdapter.display_message()`.
 
 ## Implementation Notes
-(TBD during implementation.)
+
+### Logic Deliverable
+- **Function:** `double_newlines(text: str) -> str` in `src/teddy_executor/core/utils/string.py`
+- **Algorithm:** Two-regex approach to handle all edge cases:
+  1. `(?<!\r|\n)\n(?!\n)` → `\n\n` handles bare newlines not part of already-doubled pairs.
+  2. `\r\n(?!\r\n)` → `\r\n\r\n` handles Windows-style line endings.
+- **Test Coverage:** 9 unit tests covering: basic doubling, already-doubled, mixed, empty, no newlines, multiple lines, trailing/leading newlines, carriage returns.
+- **Design Decision:** Pure function with zero side effects; no dependencies on external state or configuration.
+- **Integration Status:** Ready for Wiring (injection into `ConsoleInteractorAdapter.display_message()`).
 
 ## Implementation Plan
 The feature requires two atomic deliverables:
