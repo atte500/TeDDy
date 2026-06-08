@@ -67,7 +67,6 @@ This section defines the conventions for our project management artifacts.
     - **Context Interactions:** Pressing `e` on context nodes opens the corresponding file/context file in the external editor.
     - **Metadata Visibility:** Display model name and session cost (rounded to nearest cent) in the right panel when the Context Root is selected.
     - **Tier 2 Editing:** Automatically open external editor for parameters that are multiline or >100 characters.
-    - **Truncation Hints:** If `EXECUTE` or `READ` output is truncated, provide specific instructions (e.g., "output to file and/or use sed with line counts").
     - **Editor & Diff Mapping:** Strictly respect `editor` config; implement a translation table for diff flags (e.g., `nvim` -> `-d`); remove all implicit VS Code fallbacks.
     - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels.
     - **Message Visibility:** Log the user message (from TUI 'm' key or message replies) to the console after execution in the format `User Message: [content]`.

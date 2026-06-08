@@ -56,16 +56,16 @@ def test_truncate_lines_invalid_direction():
 
 def test_get_truncation_hint_execute():
     expected = (
-        "[Output truncated: Showing LAST 10 of 100 lines. "
-        "Use 'command > file.txt', 'grep', or 'sed' to capture or filter results.]"
+        "[Output truncated: Showing last 10 of 100 lines. "
+        "Pipe output to a file or use grep/sed to filter results.]"
     )
     assert get_truncation_hint("execute", 10, 100) == expected
 
 
 def test_get_truncation_hint_read():
     expected = (
-        "[Content truncated: Showing FIRST 50 of 500 lines. "
-        "Use 'grep' or 'sed' via EXECUTE to read specific sections.]"
+        "[Content truncated: Showing first 50 of 500 lines. "
+        "Use grep or sed via EXECUTE to read specific sections.]"
     )
     assert get_truncation_hint("read", 50, 500) == expected
 
