@@ -74,11 +74,16 @@ class OpenRouterMetadataHydrator(IOpenRouterHydrator):
         for m in models:
             if m.get("id") == model_id:
                 pricing = m.get("pricing", {})
+                try:
+                    input_cost = float(pricing.get("prompt", 0))
+                    output_cost = float(pricing.get("completion", 0))
+                except (ValueError, TypeError):
+                    return None
                 return {
                     "context_window": m.get("context_length", 0),
                     "pricing": {
-                        "input_cost_per_token": float(pricing.get("prompt", 0)),
-                        "output_cost_per_token": float(pricing.get("completion", 0)),
+                        "input_cost_per_token": input_cost,
+                        "output_cost_per_token": output_cost,
                     },
                 }
         return None

@@ -62,3 +62,42 @@ def test_hydrator_handles_api_failure(httpserver: Any):
 
     # Assert
     assert metadata is None
+
+
+def test_hydrator_handles_string_typed_pricing(httpserver: Any):
+    """Should gracefully handle non-convertible string-typed pricing values.
+
+    Regression test for: "unsupported operand type(s) for +: 'float' and 'str'"
+    crash that occurs when the OpenRouter API returns pricing values in
+    unexpected formats (e.g., "$0.000001" with currency prefix) that causes
+    float() to raise ValueError. The hydrator should return None gracefully
+    rather than crashing.
+    """
+    # Arrange
+    url = httpserver.url_for("/api/v1/models")
+    httpserver.expect_request("/api/v1/models").respond_with_json(
+        {
+            "data": [
+                {
+                    "id": "test/model-with-currency-pricing",
+                    "context_length": 64000,
+                    "pricing": {
+                        "prompt": "$0.000001",
+                        "completion": "$0.000002",
+                    },
+                }
+            ]
+        },
+        status=200,
+    )
+    hydrator = OpenRouterMetadataHydrator()
+    hydrator.API_URL = url
+
+    # Act
+    metadata = hydrator.get_metadata("test/model-with-currency-pricing")
+
+    # Assert
+    # The hydrator should return None when pricing values cannot be converted
+    # to float, preventing downstream crashes in LiteLLM's internal cost
+    # calculation logic.
+    assert metadata is None

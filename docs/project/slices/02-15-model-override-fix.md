@@ -47,12 +47,18 @@ And the context window and cost should reflect the actual serving model
 - **Provider fallback**: If OpenRouter maps an invalid model to a real one, the display should update to show the real model after the first completion.
 
 ## Deliverables
-- [▶] **Refactor (Hydrator) & Harness (Test)** - Fix type-mismatch crash in `OpenRouterMetadataHydrator` when processing real API responses; return `None` gracefully. Create test with mocked API response containing string-typed pricing values.
+- [x] **Refactor (Hydrator) & Harness (Test)** - Fix type-mismatch crash in `OpenRouterMetadataHydrator` when processing real API responses; return `None` gracefully. Create test with mocked API response containing string-typed pricing values.
 - [ ] **Logic (Fix) & Harness (Test)** - Fix param layering in `_prepare_completion_params`: merge `llm_config` first, then apply explicit `model` on top. Write regression test `test_model_override_takes_precedence` in `tests/suites/unit/adapters/outbound/test_litellm_adapter.py` verifying the override model takes precedence over config model.
 - [ ] **Logic (Validation) & Harness (Test)** - Add startup model validation that checks the model name against `litellm.model_cost` keys. Create test that verifies unknown models are rejected gracefully.
 - [ ] **Logic (Display Update) & Harness (Test)** - After first LLM completion, update telemetry display to reflect `response.model` or `_hidden_params["litellm_model_name"]`. Create test verifying the display updates correctly.
 
 ## Implementation Notes
+
+### Deliverable 1: Hydrator Fix
+- **Change:** Wrapped `float()` conversions in `_find_model` with `try/except (ValueError, TypeError)`, returning `None` when pricing values cannot be converted. This prevents the `unsupported operand type(s) for +: 'float' and 'str'` crash in LiteLLM's internal cost calculation when the OpenRouter API returns non-convertible string-typed pricing (e.g., `"$0.000001"`).
+- **Tests Added:**
+  - `test_hydrator_handles_string_typed_pricing`: Regression test with mocked API response containing currency-prefixed pricing values (e.g., `"$0.000001"`), verifying the hydrator returns `None` gracefully.
+- **Debt:** No debt introduced. Existing tests using convertible string values (`"0.000001"`) remain passing (5/5 hydrator tests green).
 
 ### Re-Prioritization (Work in Progress)
 The hydrator bug was discovered to be a blocking prerequisite during Integration Phase: the param layering fix (original Deliverable 1) caused the global test suite to fail with the hydrator's `float + str` type error. The slice deliverables have been re-ordered to fix the hydrator first, ensuring Green-to-Green integrity.
