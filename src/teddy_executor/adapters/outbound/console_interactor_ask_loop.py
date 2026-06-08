@@ -96,7 +96,6 @@ class ConsoleAskLoop:
             self._system_env.run_command(cmd, background=True)
             self._active_editor_path = temp_path
             self._active_editor_marker = marker
-            typer.echo("Editor opened in background.", err=True)
         except Exception as e:
             typer.echo(f"Error: Editor launch failed: {e}", err=True)
             self._system_env.delete_file(temp_path)
