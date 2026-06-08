@@ -344,6 +344,25 @@ class LiteLLMAdapter(ILlmClient):
             model_info.get("max_input_tokens") or model_info.get("max_tokens") or 0
         )
 
+    def validate_model(self, model: Optional[str]) -> bool:
+        """Check if a model exists in LiteLLM's registry.
+
+        Returns True if the model is known or if no override is given
+        (the config model will be used instead of an override).
+        """
+        if model is None:
+            return True  # No override; config model will be used
+        if not model:
+            return False
+        litellm = self._get_litellm()
+        clean = model.removeprefix("openrouter/")
+        if clean in litellm.model_cost:
+            return True
+        if model in litellm.model_cost:
+            return True
+        return False
+
+    
     def supports_pricing(self, model: Optional[str] = None) -> bool:
         """
         Returns True if the model has known pricing metadata in the registry.
