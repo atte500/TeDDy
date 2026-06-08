@@ -1,5 +1,5 @@
 # Slice: 02-13-Validation Failure Pruning Timing
-- **Status:** Planned
+- **Status:** In Progress
 - **Type:** Feature
 - **Milestone:** [02-stability-and-polish](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [stability-and-bugfixes](/docs/project/specs/stability-and-bugfixes.md#4-validation-failure-pruning-timing)
@@ -49,13 +49,11 @@ Feature: Validation Failure Pruning Timing (Report-Based Anchor)
 - **Non-VF report before VF turn**: If a non-VF report exists on turn 01 and VF on turn 02, the VF should NOT be pruned because the non-VF report is earlier. Only VF turns *before* the latest non-VF report are pruned.
 
 ## Deliverables
-- [ ] **Harness** - Update `test_prune_targets_anchored_validation_failure` if needed (existing test uses SUCCESS status, so it's already compatible). Add new tests for:
+- [▶] **Logic** - Modify `_apply_pruning_heuristics` in `session_pruning_service.py` to guard Heuristic 4 by the existence of a non-VF report (a later turn with a report.md whose overall status is not "Validation Failed"). Accept a set of `non_vf_reports` and compute `is_currently_non_vf`. For each validation failure turn, prune only if there exists a non-VF report (on disk or current turn) with a turn ID greater than the VF turn's ID. Also update `_collect_turn_metadata` to collect `non_vf_reports`. Add unit tests for the new behavior:
   - Validation failure without non-VF report is preserved.
   - Validation failure with non-VF report is pruned.
   - Non-VF report before VF turn does not trigger pruning.
-- [ ] **Logic** - Modify `_apply_pruning_heuristics` in `session_pruning_service.py` to: (1) Accept a set of `non_vf_reports` (turn IDs with non-VF reports on disk). (2) Compute `is_currently_non_vf = current_status is not None and "Validation Failed" not in current_status`. (3) For each validation failure turn, prune it only if there exists a non-VF report (on disk or current) with a turn ID greater than the VF turn's ID.
 - [ ] **Wiring** - Add an integration test in `test_session_pruning_persistence.py` or a new test file to verify end-to-end behavioral change.
-- [ ] **Cleanup** - Remove `spikes/validate_heuristic_4_behavior.py` if exists.
 
 ## Implementation Notes
 *(To be filled by Developer as implementation proceeds)*
