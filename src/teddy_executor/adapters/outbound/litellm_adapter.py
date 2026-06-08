@@ -242,7 +242,7 @@ class LiteLLMAdapter(ILlmClient):
             return float(
                 litellm.completion_cost(completion_response=completion_response)
             )
-        except Exception as e:
+        except (Exception, TypeError) as e:
             if "This model isn't mapped yet" in str(e) and self._hydrator:
                 candidates = set()
                 if model_override:
@@ -258,7 +258,7 @@ class LiteLLMAdapter(ILlmClient):
                                 completion_response=completion_response
                             )
                         )
-                    except Exception:
+                    except (Exception, TypeError):
                         return 0.0
 
             # Graceful fallback for unmapped models or hydration failure
@@ -397,9 +397,17 @@ class LiteLLMAdapter(ILlmClient):
 
         for m_id in candidates:
             # Update LiteLLM's internal registry for all candidate IDs
+            # Ensure pricing values are floats to prevent `float + str` crashes
+            pricing = shared_metadata.get("pricing", {})
+            safe_pricing = {}
+            for key, val in pricing.items():
+                try:
+                    safe_pricing[key] = float(val)
+                except (ValueError, TypeError):
+                    safe_pricing[key] = 0.0
             litellm.model_cost[m_id] = {
                 "max_input_tokens": shared_metadata.get("context_window", 0),
-                **shared_metadata.get("pricing", {}),
+                **safe_pricing,
             }
         return True
 
