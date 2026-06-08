@@ -1,5 +1,5 @@
 # Slice: 02-13-Validation Failure Pruning Timing
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Feature
 - **Milestone:** [02-stability-and-polish](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [stability-and-bugfixes](/docs/project/specs/stability-and-bugfixes.md#4-validation-failure-pruning-timing)
@@ -53,11 +53,24 @@ Feature: Validation Failure Pruning Timing (Report-Based Anchor)
   - Validation failure without non-VF report is preserved.
   - Validation failure with non-VF report is pruned.
   - Non-VF report before VF turn does not trigger pruning.
-- [ ] **Wiring** - Add an integration test in `test_session_pruning_persistence.py` or a new test file to verify end-to-end behavioral change.
+- [x] **Wiring** - Add an integration test in a new file `test_validation_failure_pruning_timing_integration.py` to verify end-to-end behavioral change.
 
 ## Implementation Notes
 
 ### Logic Deliverable (Completed 2026-06-08)
+
+### Wiring Deliverable (Completed 2026-06-08)
+New integration test file `test_validation_failure_pruning_timing_integration.py` was created with three tests:
+1. `test_validation_failure_pruned_based_on_non_vf_report_anchor`: Two scenarios in one test:
+   - VF without non-VF anchor → preserved
+   - VF with non-VF current_status → pruned
+2. `test_validation_failure_pruned_by_disk_non_vf_report`: VF turn 01 + non-VF turn 02 → VF pruned
+3. `test_vf_chain_without_anchor_all_preserved`: Three consecutive VF turns without anchor → all preserved
+
+The tests use the `container` fixture from `conftest.py` to resolve `SessionPruningService` through DI, mocking both `IConfigService` and `IFileSystemManager` via `create_autospec`. The tests verify the wiring between the pruning service, config, and file system manager.
+
+#### Prototype Validation
+The existing prototype at `spikes/prototypes/02-13-validation-failure-timing.py` was used as a behavioral reference. Its non-interactive assertion mode runs all the same scenarios as the unit and integration tests, providing cross-validation.
 
 #### Changes to `session_pruning_service.py`:
 1. **New helper `_check_report_is_non_vf_report`**: Checks if a report file exists and does NOT have "Validation Failed" overall status. Mirrors `_check_report_failed_validation` structure but inverts the check. Returns `False` if the file doesn't exist (can't read) to avoid treating missing files as non-VF anchors.
