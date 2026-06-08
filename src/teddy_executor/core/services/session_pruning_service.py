@@ -121,12 +121,18 @@ class SessionPruningService:
             )
         )
 
-        turn_statuses, validation_failures, spared_turns = self._collect_turn_metadata(
-            items, prune_non_green, prune_validation, preserve_messages
+        turn_statuses, validation_failures, spared_turns, non_vf_reports = (
+            self._collect_turn_metadata(
+                items, prune_non_green, prune_validation, preserve_messages
+            )
         )
 
         turns_to_prune = self._apply_pruning_heuristics(
-            turn_statuses, validation_failures, prune_non_green, current_status
+            turn_statuses,
+            validation_failures,
+            prune_non_green,
+            current_status,
+            non_vf_reports,
         )
 
         # Explicitly remove preserved message turns from the prune list
@@ -142,10 +148,11 @@ class SessionPruningService:
         prune_non_green: bool,
         prune_validation: bool,
         preserve_messages: bool = False,
-    ) -> tuple[Dict[int, bool], set[int], set[int]]:
-        """Scans items to determine turn statuses and validation failures."""
+    ) -> tuple[Dict[int, bool], set[int], set[int], set[int]]:
+        """Scans items to determine turn statuses, validation failures, and non-VF reports."""
         turn_statuses: Dict[int, bool] = {}
         validation_failures: set[int] = set()
+        non_vf_reports: set[int] = set()
         spared_turns: set[int] = set()
         checked_paths = set()
 
@@ -169,6 +176,7 @@ class SessionPruningService:
                     "statuses": turn_statuses,
                     "validation_fails": validation_failures,
                     "messages": spared_turns,
+                    "non_vf_reports": non_vf_reports,
                 },
                 {
                     "non_green": prune_non_green,
@@ -177,7 +185,7 @@ class SessionPruningService:
                 },
             )
 
-        return turn_statuses, validation_failures, spared_turns
+        return turn_statuses, validation_failures, spared_turns, non_vf_reports
 
     def _update_turn_metadata_from_item(
         self,
@@ -188,43 +196,65 @@ class SessionPruningService:
         config: Dict[str, bool],
     ) -> None:
         """Processes a single item to update turn-level metadata."""
-        # --- 1. Identify Metadata for Pruning ---
+        self._update_metadata_from_report(item, posix_path, turn_id, state, config)
+        self._update_metadata_from_plan(item, posix_path, turn_id, state, config)
 
-        if posix_path.endswith("report.md"):
-            # Heuristic 4: Validation failure
-            if config.get("validation") and self._check_report_failed_validation(
-                item.path
-            ):
-                state["validation_fails"].add(turn_id)
+    def _update_metadata_from_report(
+        self,
+        item: Any,
+        posix_path: str,
+        turn_id: int,
+        state: Dict[str, Any],
+        config: Dict[str, bool],
+    ) -> None:
+        """Processes a report.md item for validation failure and sparing metadata."""
+        if not posix_path.endswith("report.md"):
+            return
 
-            # Sparing via user_request metadata
-            # Check is done on report.md because the user_request metadata is
-            # written to the report during execution, not the plan.
-            if self._check_report_has_user_request(item.path):
-                state["messages"].add(turn_id)
+        # Heuristic 4: Validation failure
+        if config.get("validation") and self._check_report_failed_validation(item.path):
+            state["validation_fails"].add(turn_id)
 
-        # Heuristic 3: Non-green state (Check plan)
-        if posix_path.endswith("plan.md"):
-            is_failed = self._check_plan_failed(item.path)
-            if config["non_green"]:
-                is_green = not is_failed
-                # If any file in turn is non-green, the whole turn is non-green
-                state["statuses"][turn_id] = (
-                    state["statuses"].get(turn_id, True) and is_green
-                )
+        # Non-VF reports for Heuristic 4 guard
+        if self._check_report_is_non_vf_report(item.path):
+            state["non_vf_reports"].add(turn_id)
 
-        # --- 2. Identify Metadata for Sparing ---
+        # Sparing via user_request metadata
+        # Check is done on report.md because the user_request metadata is
+        # written to the report during execution, not the plan.
+        if self._check_report_has_user_request(item.path):
+            state["messages"].add(turn_id)
+
+    def _update_metadata_from_plan(
+        self,
+        item: Any,
+        posix_path: str,
+        turn_id: int,
+        state: Dict[str, Any],
+        config: Dict[str, bool],
+    ) -> None:
+        """Processes a plan.md item for status and message sparing metadata."""
+        if not posix_path.endswith("plan.md"):
+            return
+
+        # Heuristic 3: Non-green state
+        is_failed = self._check_plan_failed(item.path)
+        if config["non_green"]:
+            is_green = not is_failed
+            # If any file in turn is non-green, the whole turn is non-green
+            state["statuses"][turn_id] = (
+                state["statuses"].get(turn_id, True) and is_green
+            )
 
         # Sparing Rule: Successful Message Turns
-        if config["messages"] and posix_path.endswith("plan.md"):
-            if self._check_plan_is_message(item.path):
-                # We only spare if the turn resulted in a SUCCESSFUL execution.
-                # We ignore the plan's internal status (is_failed)
-                # and the report's validation status (is_validation_fail) here,
-                # as a successful message is valuable regardless.
-                report_path = item.path.replace("plan.md", "report.md")
-                if self._check_report_is_success(report_path):
-                    state["messages"].add(turn_id)
+        if config["messages"] and self._check_plan_is_message(item.path):
+            # We only spare if the turn resulted in a SUCCESSFUL execution.
+            # We ignore the plan's internal status (is_failed)
+            # and the report's validation status (is_validation_fail) here,
+            # as a successful message is valuable regardless.
+            report_path = item.path.replace("plan.md", "report.md")
+            if self._check_report_is_success(report_path):
+                state["messages"].add(turn_id)
 
     def _check_plan_is_message(self, path: str) -> bool:
         """Checks if a plan file contains a ## Message section."""
@@ -260,6 +290,19 @@ class SessionPruningService:
         if content:
             # Anchored to target the standardized overall status line
             return bool(
+                re.search(
+                    r"^- \*\*Overall Status:\*\* Validation Failed",
+                    content,
+                    re.MULTILINE,
+                )
+            )
+        return False
+
+    def _check_report_is_non_vf_report(self, path: str) -> bool:
+        """Checks if a report file exists and does NOT have validation failure status."""
+        content = self._safe_read(path)
+        if content:
+            return not bool(
                 re.search(
                     r"^- \*\*Overall Status:\*\* Validation Failed",
                     content,
@@ -313,13 +356,23 @@ class SessionPruningService:
         validation_failures: set[int],
         prune_non_green: bool,
         current_status: Optional[str] = None,
+        non_vf_reports: Optional[set[int]] = None,
     ) -> Dict[str, str]:
         """Applies heuristics to the collected metadata."""
         turns_to_prune: Dict[str, str] = {}
 
-        # Heuristic 4: Validation Failure
-        for tid in validation_failures:
-            turns_to_prune[str(tid)] = "Plan failed validation"
+        # Heuristic 4: Validation Failure (guarded by non-VF report)
+        is_currently_non_vf = (
+            current_status is not None and "Validation Failed" not in current_status
+        )
+        latest_non_vf_turn = max(non_vf_reports) if non_vf_reports else -1
+
+        for tid in sorted(validation_failures):
+            prune_vf = tid < latest_non_vf_turn
+            if not prune_vf and is_currently_non_vf:
+                prune_vf = True
+            if prune_vf:
+                turns_to_prune[str(tid)] = "Plan failed validation"
 
         # Heuristic 3: Recovery Cleanup
         # If current_status is Green, OR if the latest turn on disk is Green, prune failures.

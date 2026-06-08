@@ -109,3 +109,89 @@ def test_prune_targets_anchored_validation_failure(service, mock_fs):
 
     # Assert
     assert result.items[0].selected is True
+
+
+def test_validation_failure_without_non_vf_report_is_preserved(service, mock_fs):
+    """
+    Heuristic 4: Validation failure without any non-VF report on disk
+    should be preserved (not pruned).
+    """
+    # Arrange
+    items = [
+        ContextItem(path="01/report.md", scope="Turn", token_count=100, git_status=" "),
+    ]
+    context = ProjectContext(items=items, header="", content="")
+
+    content = "- **Overall Status:** Validation Failed"
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = content
+
+    # Act: current_status is "Validation Failed" so no non-VF anchor
+    result = service.prune(context, current_status="Validation Failed")
+
+    # Assert: turn should be preserved because no non-VF report exists
+    assert result.items[0].selected is True
+
+
+def test_validation_failure_with_non_vf_report_is_pruned(service, mock_fs):
+    """
+    Heuristic 4: Validation failure with a subsequent non-VF report on disk
+    should be pruned.
+    """
+    # Arrange
+    items = [
+        ContextItem(path="01/report.md", scope="Turn", token_count=100, git_status=" "),
+        ContextItem(path="02/report.md", scope="Turn", token_count=100, git_status=" "),
+    ]
+    context = ProjectContext(items=items, header="", content="")
+
+    def read_file_side_effect(path: str) -> str:
+        if "01/report.md" in path:
+            return "- **Overall Status:** Validation Failed"
+        elif "02/report.md" in path:
+            return "- **Overall Status:** SUCCESS"
+        return ""
+
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.side_effect = read_file_side_effect
+
+    # Act: current_status is "Validation Failed" but disk has non-VF report on turn 02
+    result = service.prune(context, current_status="Validation Failed")
+
+    # Assert: turn 01 (VF) should be pruned; turn 02 (non-VF) preserved
+    assert result.items[0].selected is False
+    assert result.items[1].selected is True
+
+
+def test_non_vf_report_before_vf_turn_does_not_trigger_pruning(service, mock_fs):
+    """
+    Edge case: A non-VF report before a VF turn should NOT trigger pruning.
+    Only VF turns before the latest non-VF report are pruned.
+    """
+    # Arrange
+    items = [
+        ContextItem(path="01/report.md", scope="Turn", token_count=100, git_status=" "),
+        ContextItem(path="02/report.md", scope="Turn", token_count=100, git_status=" "),
+    ]
+    context = ProjectContext(items=items, header="", content="")
+
+    # Turn 01 has SUCCESS (non-VF), turn 02 has Validation Failed (VF)
+    def read_file_side_effect(path: str) -> str:
+        if "01/report.md" in path:
+            return "- **Overall Status:** SUCCESS"
+        elif "02/report.md" in path:
+            return "- **Overall Status:** Validation Failed"
+        return ""
+
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.side_effect = read_file_side_effect
+
+    # Act: current_status is "Validation Failed" (no current non-VF anchor)
+    result = service.prune(context, current_status="Validation Failed")
+
+    # Assert: both turns should be preserved.
+    # Turn 01 is not a VF, so Heuristic 4 ignores it.
+    # Turn 02 is a VF but the only non-VF report (turn 01) is before it,
+    # so the guard does not prune it.
+    assert result.items[0].selected is True
+    assert result.items[1].selected is True

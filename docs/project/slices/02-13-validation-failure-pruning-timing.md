@@ -49,14 +49,39 @@ Feature: Validation Failure Pruning Timing (Report-Based Anchor)
 - **Non-VF report before VF turn**: If a non-VF report exists on turn 01 and VF on turn 02, the VF should NOT be pruned because the non-VF report is earlier. Only VF turns *before* the latest non-VF report are pruned.
 
 ## Deliverables
-- [▶] **Logic** - Modify `_apply_pruning_heuristics` in `session_pruning_service.py` to guard Heuristic 4 by the existence of a non-VF report (a later turn with a report.md whose overall status is not "Validation Failed"). Accept a set of `non_vf_reports` and compute `is_currently_non_vf`. For each validation failure turn, prune only if there exists a non-VF report (on disk or current turn) with a turn ID greater than the VF turn's ID. Also update `_collect_turn_metadata` to collect `non_vf_reports`. Add unit tests for the new behavior:
+- [x] **Logic** - Modify `_apply_pruning_heuristics` in `session_pruning_service.py` to guard Heuristic 4 by the existence of a non-VF report (a later turn with a report.md whose overall status is not "Validation Failed"). Accept a set of `non_vf_reports` and compute `is_currently_non_vf`. For each validation failure turn, prune only if there exists a non-VF report (on disk or current turn) with a turn ID greater than the VF turn's ID. Also update `_collect_turn_metadata` to collect `non_vf_reports`. Add unit tests for the new behavior:
   - Validation failure without non-VF report is preserved.
   - Validation failure with non-VF report is pruned.
   - Non-VF report before VF turn does not trigger pruning.
 - [ ] **Wiring** - Add an integration test in `test_session_pruning_persistence.py` or a new test file to verify end-to-end behavioral change.
 
 ## Implementation Notes
-*(To be filled by Developer as implementation proceeds)*
+
+### Logic Deliverable (Completed 2026-06-08)
+
+#### Changes to `session_pruning_service.py`:
+1. **New helper `_check_report_is_non_vf_report`**: Checks if a report file exists and does NOT have "Validation Failed" overall status. Mirrors `_check_report_failed_validation` structure but inverts the check. Returns `False` if the file doesn't exist (can't read) to avoid treating missing files as non-VF anchors.
+2. **`_update_turn_metadata_from_item`**: Added collection of `non_vf_reports` turn IDs when a report is detected as non-VF. Stored in the shared state dict alongside `validation_fails` and `messages`.
+3. **`_collect_turn_metadata`**: Initialized `non_vf_reports` set in the return tuple (fourth element). Updated type signature to return `tuple[Dict[int, bool], set[int], set[int], set[int]]`.
+4. **`_identify_turns_to_prune`**: Unpacked the new fourth return value and passed `non_vf_reports` to `_apply_pruning_heuristics`.
+5. **`_apply_pruning_heuristics`**: Added `non_vf_reports` parameter (optional set). Implemented guard logic:
+   - `is_currently_non_vf` = current_status exists and doesn't contain "Validation Failed"
+   - `latest_non_vf_turn` = max of on-disk non-VF reports (or -1 if none)
+   - For each validation failure turn: prune if `tid < latest_non_vf_turn` OR if `is_currently_non_vf` (current turn acts as an anchor after all on-disk turns)
+
+#### New Unit Tests (in `test_session_pruning_status_anchoring.py`):
+1. `test_validation_failure_without_non_vf_report_is_preserved`: Single VF turn, current_status="Validation Failed" → preserved (no anchor)
+2. `test_validation_failure_with_non_vf_report_is_pruned`: VF turn 01 + non-VF turn 02 → VF pruned
+3. `test_non_vf_report_before_vf_turn_does_not_trigger_pruning`: Non-VF turn 01 + VF turn 02 → both preserved (anchor before VF)
+
+#### Prototype Validation
+The prototype at `spikes/prototypes/02-13-validation-failure-timing.py` was used as a behavioral reference. Its logic for `is_currently_non_vf` guard was specifically adapted: the simplified version in production (`is_currently_non_vf = True` prunes ALL VF turns) was chosen over the prototype's more complex `tid < current_turn_id` logic because the current turn is always the latest turn overall, so any VF on disk must have occurred before it.
+
+#### Regression Verification
+Existing test `test_prune_targets_anchored_validation_failure` passes because:
+- The report has "Overall Status: SUCCESS" (not a validation failure)
+- Heuristic 4 only operates on `validation_failures` set
+- The SUCCESS report is classified as a non-VF report (collected), but since it's the only turn, there are no VF turns to prune
 
 ## Implementation Plan
 ### Code Change
