@@ -72,7 +72,7 @@ def test_ai_telemetry_and_logging(tmp_path, monkeypatch):
     import re
 
     combined_output = result.stdout + (result.stderr or "")
-    assert re.search(r"Model:.*gpt-4o", combined_output)
+    assert re.search(r"Model:.*unknown", combined_output)
     # Pre-response telemetry includes context window (128k from harness)
     assert re.search(r"Context:.*15.2k / 128.0k tokens", combined_output)
     # Pre-response telemetry shows cost BEFORE current turn (so $0.0000 for first turn)

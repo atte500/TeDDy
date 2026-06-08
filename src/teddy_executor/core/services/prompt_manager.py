@@ -110,8 +110,9 @@ class PromptManager(IPromptManager):
             meta["turn_cost"] = meta.get("turn_cost", 0.0)
             meta["token_count"] = meta.get("token_count", 0)
 
-        if not meta.get("model"):
-            meta["model"] = str(getattr(response, "model", "unknown"))
+        # Always persist the actual model from the response, overwriting any previous value.
+        # This ensures subsequent turns display the true serving model in the telemetry.
+        meta["model"] = str(getattr(response, "model", "unknown"))
 
         # Capture finish_reason; scrub_dict_for_serialization will neutralize mocks
         if hasattr(response, "choices") and len(response.choices) > 0:

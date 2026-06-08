@@ -186,7 +186,7 @@ class PlanningService(IPlanningUseCase):
         model = str(
             meta.get("model")
             or self._config_service.get_setting("llm.model")
-            or "gpt-4o"
+            or "unknown"
         )
         context_window = self._safe_float(
             self._llm_client.get_context_window(model=model)
