@@ -98,7 +98,7 @@ def handle_new_session(  # noqa: PLR0913
         # 1. Pre-flight checks (Fail-fast before user interaction)
         typer.echo("Checking configurations...", err=True)
         _run_cli_preflight_check(container, agent=agent)
-        _echo_config_success(container, agent)
+        _echo_config_success(container, agent, model=model)
 
         session_manager: ISessionManager = container.resolve(ISessionManager)
         user_interactor: IUserInteractor = container.resolve(IUserInteractor)
@@ -146,12 +146,25 @@ def handle_new_session(  # noqa: PLR0913
         raise typer.Exit(code=1)
 
 
-def _echo_config_success(container: Container, agent: Optional[str] = None) -> None:
-    """Retrieves and echoes the active model and agent configuration on success."""
+def _echo_config_success(
+    container: Container,
+    agent: Optional[str] = None,
+    model: Optional[str] = None,
+) -> None:
+    """Retrieves and echoes the active model and agent configuration on success.
 
+    Args:
+        container: The DI container with resolved services.
+        agent: Optional agent name to display.
+        model: Optional model override from CLI. If provided, this takes
+               precedence over the config file value.
+    """
     config_service = container.resolve(IConfigService)
-    model = config_service.get_setting("llm.model", "unknown")
-    msg = f"API key valid! Model: {model}"
+    if model:
+        resolved_model = model
+    else:
+        resolved_model = config_service.get_setting("llm.model", "unknown")
+    msg = f"API key valid! Model: {resolved_model}"
     if agent:
         msg += f" | Agent: {agent}"
     typer.echo(msg, err=True)
@@ -254,7 +267,7 @@ def handle_resume_session(  # noqa: PLR0913
         typer.echo("Checking configurations...", err=True)
         _run_cli_preflight_check(container)
         # For resume, the agent is determined by the session metadata
-        _echo_config_success(container)
+        _echo_config_success(container, model=model)
 
         session_manager = container.resolve(ISessionManager)
 
