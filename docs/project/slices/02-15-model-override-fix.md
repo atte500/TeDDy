@@ -48,20 +48,34 @@ And the context window and cost should reflect the actual serving model
 
 ## Deliverables
 - [x] **Refactor (Hydrator) & Harness (Test)** - Fix type-mismatch crash in `OpenRouterMetadataHydrator` when processing real API responses; return `None` gracefully. Create test with mocked API response containing string-typed pricing values.
+- [▶] **Refactor (Adapter Hydration) & Harness (Test)** - Fix float+str type error in `_hydrate_all_candidates` by converting pricing values (input_cost_per_token, output_cost_per_token) to float before injection into `litellm.model_cost`. Write regression test that verifies `litellm.model_cost` contains float-typed pricing values after hydration, preventing LiteLLM's internal `completion_cost` from crashing.
 - [ ] **Logic (Fix) & Harness (Test)** - Fix param layering in `_prepare_completion_params`: merge `llm_config` first, then apply explicit `model` on top. Write regression test `test_model_override_takes_precedence` in `tests/suites/unit/adapters/outbound/test_litellm_adapter.py` verifying the override model takes precedence over config model.
 - [ ] **Logic (Validation) & Harness (Test)** - Add startup model validation that checks the model name against `litellm.model_cost` keys. Create test that verifies unknown models are rejected gracefully.
 - [ ] **Logic (Display Update) & Harness (Test)** - After first LLM completion, update telemetry display to reflect `response.model` or `_hidden_params["litellm_model_name"]`. Create test verifying the display updates correctly.
 
 ## Implementation Notes
 
-### Deliverable 1: Hydrator Fix
+### Deliverable 1: Hydrator Fix (Completed)
 - **Change:** Wrapped `float()` conversions in `_find_model` with `try/except (ValueError, TypeError)`, returning `None` when pricing values cannot be converted. This prevents the `unsupported operand type(s) for +: 'float' and 'str'` crash in LiteLLM's internal cost calculation when the OpenRouter API returns non-convertible string-typed pricing (e.g., `"$0.000001"`).
 - **Tests Added:**
   - `test_hydrator_handles_string_typed_pricing`: Regression test with mocked API response containing currency-prefixed pricing values (e.g., `"$0.000001"`), verifying the hydrator returns `None` gracefully.
 - **Debt:** No debt introduced. Existing tests using convertible string values (`"0.000001"`) remain passing (5/5 hydrator tests green).
 
-### Re-Prioritization (Work in Progress)
-The hydrator bug was discovered to be a blocking prerequisite during Integration Phase: the param layering fix (original Deliverable 1) caused the global test suite to fail with the hydrator's `float + str` type error. The slice deliverables have been re-ordered to fix the hydrator first, ensuring Green-to-Green integrity.
+### Re-Prioritization (Deliverable 2: Adapter Hydration Fix)
+The hydrator fix was insufficient. The global test suite still fails with `unsupported operand type(s) for +: 'float' and 'str'` after the param layering fix. The root cause is in `_hydrate_all_candidates` which injects pricing values into `litellm.model_cost` without ensuring they are floats. The hydrator returns metadata with float values for valid pricing, but the adapter passes them through as-is. In code paths where string-typed pricing values are still present (e.g., from mocked tests), LiteLLM's internal `completion_cost()` crashes. The fix must convert `input_cost_per_token` and `output_cost_per_token` to float before injection.
+
+### Root Cause (Param Layering) — Queue for Deliverable 3
+In `LiteLLMAdapter._prepare_completion_params()` (line ~152ff), the method sources and layers parameters in the order:
+```python
+params = {**kwargs}
+if model:
+    params["model"] = model
+params.update(llm_config)  # This overwrites model!
+```
+The fix swaps the last two steps. This fix will be applied in Deliverable 3.
+
+### Shadow Verification (Param Layering)
+The param layering fix was verified in isolation using `spikes/debug/shadow_litellm_adapter.py` and verified via `spikes/debug/17-verify-fix.py`. Both assertions passed.
 
 ### Root Cause (Param Layering)
 In `LiteLLMAdapter._prepare_completion_params()` (line ~152ff), the method sources and layers parameters in the order:
