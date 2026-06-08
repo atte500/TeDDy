@@ -5,7 +5,7 @@
 - **Specs:** [N/A]
 
 ## Symptoms
-**Expected:** When a file like `.pre-commit-config.yaml` is READ during a session, the path stored in `turn.context` (and displayed in the next turn's context under `## 4. Resource Contents`) preserves the leading dot: `.pre-commit-config.yaml`.
+**Expected:** When a file like `.pre-commit-config.yaml` is READ during a session, the path stored in `turn.context` (and displayed in the next turn's context under `## Resource Contents`) preserves the leading dot: `.pre-commit-config.yaml`.
 
 **Actual:** The path is stored as `pre-commit-config.yaml` (leading dot missing). On the next turn, the `read_files_in_vault` call tries to resolve this incorrect path and fails, producing `--- FILE NOT FOUND ---` placeholders.
 

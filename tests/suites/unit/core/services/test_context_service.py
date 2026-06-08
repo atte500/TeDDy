@@ -357,7 +357,7 @@ def test_get_context_omits_session_history_if_none_present(
     mock_inspector,
 ):
     """
-    Verifies that '## 5. Session History' is omitted entirely if there are no session files in the context.
+    Verifies that '## Session History' is omitted entirely if there are no session files in the context.
     """
     # Arrange
     mock_inspector.get_environment_info.return_value = {}
