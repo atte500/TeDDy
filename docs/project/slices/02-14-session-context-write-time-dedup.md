@@ -1,5 +1,5 @@
 # Slice: Session Context Write-Time Dedup
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Refactor
 - **Milestone:** [Milestone 02](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [Stability & Bugfixes](/docs/project/specs/stability-and-bugfixes.md)
@@ -58,7 +58,7 @@ Then `session.context` contains "initial_request.md" exactly once
   3. Add `initial_request.md` path to `seen`/`deduped` if not already present.
   4. Join with newline.
   - **Bundled Test**: Unit test verifying dedup behavior (multiple duplicate scenarios, order preservation, initial_request dedup).
-- [ ] **Harness** - Update any existing test fixtures that depend on the exact output of `session.context` (if any). Verify all related tests still pass.
+- [x] **Harness** - Update any existing test fixtures that depend on the exact output of `session.context` (if any). Verify all related tests still pass.
 
 ## Implementation Notes
 - **Logic Deliverable (Completed 2026-06-08):**
