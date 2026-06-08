@@ -1,5 +1,5 @@
 # Slice: Model Override Fix & Validation Enhancement
-- **Status:** Draft
+- **Status:** In Progress
 - **Type:** Bugfix
 - **Milestone:** [Milestone 2: Stability & Polish](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** N/A (ad-hoc bug fix)
@@ -47,18 +47,17 @@ And the context window and cost should reflect the actual serving model
 - **Provider fallback**: If OpenRouter maps an invalid model to a real one, the display should update to show the real model after the first completion.
 
 ## Deliverables
-- [ ] **Logic (Fix)** - `LiteLLMAdapter._prepare_completion_params`: Swap the order of merging so that `llm_config` is merged first, then the explicit `model` parameter is applied on top. [Verified via shadow file.]
-- [ ] **Harness (Test)** - Create regression test `test_model_override_takes_precedence` in `tests/suites/unit/adapters/outbound/test_litellm_adapter.py` that verifies `_prepare_completion_params` prioritizes explicit model over config model.
-- [ ] **Logic (Validation)** - Add startup model validation: before session creation, check the model name against the OpenRouter model list (or known `litellm.model_cost` keys). If unknown, display a clear error and abort session creation.
-- [ ] **Harness (Test)** - Create integration test for model validation that mocks the OpenRouter API to return a known model list, and verifies unknown models are rejected.
-- [ ] **Logic (Display Update)** - After the first LLM completion in a turn, update the telemetry display to reflect `response.model` (or `_hidden_params["litellm_model_name"]`) so the user sees the actual serving model.
-- [ ] **Harness (Test)** - Create test that verifies telemetry display is updated after first completion with the correct model from response.
-- [ ] **Refactor (Hydrator)** - Fix the type-mismatch crash in `OpenRouterMetadataHydrator._find_model` or `get_metadata` when processing real API responses. Ensure it returns `None` gracefully instead of crashing.
-- [ ] **Harness (Test)** - Create test for hydrator with mocked OpenRouter API response that contains string-typed pricing values, verifying it returns `None` (or metadata) without crashing.
+- [▶] **Refactor (Hydrator) & Harness (Test)** - Fix type-mismatch crash in `OpenRouterMetadataHydrator` when processing real API responses; return `None` gracefully. Create test with mocked API response containing string-typed pricing values.
+- [ ] **Logic (Fix) & Harness (Test)** - Fix param layering in `_prepare_completion_params`: merge `llm_config` first, then apply explicit `model` on top. Write regression test `test_model_override_takes_precedence` in `tests/suites/unit/adapters/outbound/test_litellm_adapter.py` verifying the override model takes precedence over config model.
+- [ ] **Logic (Validation) & Harness (Test)** - Add startup model validation that checks the model name against `litellm.model_cost` keys. Create test that verifies unknown models are rejected gracefully.
+- [ ] **Logic (Display Update) & Harness (Test)** - After first LLM completion, update telemetry display to reflect `response.model` or `_hidden_params["litellm_model_name"]`. Create test verifying the display updates correctly.
 
 ## Implementation Notes
 
-### Root Cause
+### Re-Prioritization (Work in Progress)
+The hydrator bug was discovered to be a blocking prerequisite during Integration Phase: the param layering fix (original Deliverable 1) caused the global test suite to fail with the hydrator's `float + str` type error. The slice deliverables have been re-ordered to fix the hydrator first, ensuring Green-to-Green integrity.
+
+### Root Cause (Param Layering)
 In `LiteLLMAdapter._prepare_completion_params()` (line ~152ff), the method sources and layers parameters in the order:
 ```python
 params = {**kwargs}
@@ -66,12 +65,12 @@ if model:
     params["model"] = model
 params.update(llm_config)  # This overwrites model!
 ```
-The fix swaps the last two steps.
+The fix swaps the last two steps. This fix will be applied in Deliverable 2.
 
-### Shadow Verification
-The fix was verified in isolation using `spikes/debug/shadow_litellm_adapter.py` and verified via `spikes/debug/17-verify-fix.py`. Both assertions passed: override model takes precedence when provided; config model is used as fallback when no override is given.
+### Shadow Verification (Param Layering)
+The param layering fix was verified in isolation using `spikes/debug/shadow_litellm_adapter.py` and verified via `spikes/debug/17-verify-fix.py`. Both assertions passed.
 
-### Hydrator Bug
+### Hydrator Bug (Deliverable 1)
 The hydrator crashes with `unsupported operand type(s) for +: 'float' and 'str'` when processing real OpenRouter API responses. This appears to be in the pricing normalization where the API returns string-typed values. The fix should cast both pricing values to `float` and handle any conversion errors gracefully.
 
 ## Implementation Plan
