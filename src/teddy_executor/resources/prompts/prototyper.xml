@@ -161,7 +161,7 @@ WIP & REMINDERS:
         <section n="1" name="Metadata">
           <item name="Heading"># Slice: {{feature_name}}</item>
           <item name="Status">- **Status:** [Draft | To De-risk | Planned | In Progress | Completed]</item>
-          <item name="Type">- **Type:** [Feature | Refactor | Bugfix]</item>
+          <item name="Type">- **Type:** [Feature | Tweak | Refactor | Bugfix]</item>
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
           <item name="Prototype">- **Prototype:** [link]</item>
