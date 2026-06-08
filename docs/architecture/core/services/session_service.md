@@ -1,5 +1,5 @@
 # Component: SessionService
-- **Status:** Refactoring
+- **Status:** Active
 
 ## 1. Purpose / Responsibility
 
@@ -20,6 +20,7 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
     -   Seeds `session.context` from `.teddy/init.context`, stripping comments.
     -   **Context Merging and Deduplication:** If `additional_context` is provided, it is merged into the `session.context` content after the `init.context` content. The merged list of paths is then deduplicated **preserving insertion order** using a `seen` set before joining with newlines. This ensures `session.context` never contains duplicate paths at creation time.
         -   **Critical Ordering:** The `initial_request.md` path is added to the merge list **before** deduplication occurs, so it is also deduplicated. Previously, it was appended after joining, which made it impossible to deduplicate.
+        -   **Type Safety:** The `to_root_relative()` helper may return non-string types (e.g., `POSIXPathMock` in test environments). The path is explicitly wrapped with `str()` before appending to `clean_lines` to ensure `"\n".join()` receives all strings.
     -   **Prompt Relocation:** Fetches and saves the agent's system prompt exclusively to the session root as `{session_root}/system_prompt.xml`.
     -   Initializes `01/meta.yaml` with `turn_id`, `creation_timestamp`, and any optional LLM overrides (`model`, `provider`, `api_key`).
 2.  **Turn Transition (`transition_to_next_turn`):**

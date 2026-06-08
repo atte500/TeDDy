@@ -95,15 +95,25 @@ class SessionService(ISessionManager):
             if path and path not in clean_lines:
                 clean_lines.append(path)
 
-        clean_context = "\n".join(clean_lines)
-
-        # Seed initial request
+        # Add initial_request path BEFORE dedup so it's also deduplicated
         if options.initial_request:
             req_path = f"{session_root}/initial_request.md"
             self._file_system_manager.write_file(req_path, options.initial_request)
-            rel_path = self.to_root_relative(Path(session_root), "initial_request.md")
-            clean_context += f"\n{rel_path}"
+            rel_path = str(
+                self.to_root_relative(Path(session_root), "initial_request.md")
+            )
+            if rel_path not in clean_lines:
+                clean_lines.append(rel_path)
 
+        # Deduplicate preserving insertion order
+        seen = set()
+        deduped = []
+        for line in clean_lines:
+            if line not in seen:
+                seen.add(line)
+                deduped.append(line)
+
+        clean_context = "\n".join(deduped)
         return clean_context
 
     def _initialize_meta_data(self, options: SessionOptions) -> Dict[str, Any]:

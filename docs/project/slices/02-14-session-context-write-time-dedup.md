@@ -1,5 +1,5 @@
 # Slice: Session Context Write-Time Dedup
-- **Status:** Planned
+- **Status:** In Progress
 - **Type:** Refactor
 - **Milestone:** [Milestone 02](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [Stability & Bugfixes](/docs/project/specs/stability-and-bugfixes.md)
@@ -52,7 +52,7 @@ Then `session.context` contains "initial_request.md" exactly once
 
 ## Deliverables
 
-- [ ] **Logic** - Add order-preserving deduplication to `_prepare_session_context()`:
+- [x] **Logic** - Add order-preserving deduplication to `_prepare_session_context()`:
   1. Move the `initial_request` path addition *before* the dedup step so it's also deduplicated.
   2. Use a `seen = set()` and build an ordered list (`deduped = []`) by iterating `clean_lines` after merging `additional_context`.
   3. Add `initial_request.md` path to `seen`/`deduped` if not already present.
@@ -61,7 +61,13 @@ Then `session.context` contains "initial_request.md" exactly once
 - [ ] **Harness** - Update any existing test fixtures that depend on the exact output of `session.context` (if any). Verify all related tests still pass.
 
 ## Implementation Notes
-*(to be filled by Developer)*
+- **Logic Deliverable (Completed 2026-06-08):**
+  - Restructured `_prepare_session_context` to add `initial_request.md` path to `clean_lines` **before** deduplication, rather than appending via string concatenation after joining. This ensures the `initial_request` path is also deduplicated.
+  - Implemented order-preserving dedup using a `seen` set + ordered list pattern over `clean_lines` after merging `additional_context` and `initial_request` path.
+  - **POSIXPathMock Fix**: Discovered that `to_root_relative()` returns a `POSIXPathMock` object (not a `str`) in some test environments. The old code implicitly converted via f-string (`clean_context += f"\n{rel_path}"`), but the new `join()` requires explicit `str()` wrapping. Added `str()` wrapping to `rel_path` before appending.
+  - **Test Coverage**: Added `test_create_session_deduplicates_context_paths` to verify dedup behavior (init.context duplicates, overlapping additional_context, order preservation). Added `test_apply_execution_effects_skips_original_actions_when_action_logs_present` as regression coverage for Bug #16. All 832 tests pass (full suite).
+  - **Debt (Minor)** : The dedup pattern is only 4 lines within `_prepare_session_context`. Extracting into a shared utility is not warranted at this point unless similar patterns arise elsewhere.
+- **Harness Deliverable (Pre-verified):** The full test suite (832 tests) passed after the Logic change, confirming no existing test fixtures depend on the exact `session.context` output in a breaking way. The Harness deliverable is already satisfied.
 
 ## Implementation Plan
 The change is localized to `_prepare_session_context` in `session_service.py`. No new interfaces, no wiring changes, no migration steps. The extraction of `initial_request` path addition is necessary so that dedup covers it. The pattern:

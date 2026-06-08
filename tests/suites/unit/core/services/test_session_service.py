@@ -280,6 +280,54 @@ def test_apply_execution_effects_adds_create_and_edit_targets(env):
     assert "existing.txt" in paths
 
 
+def test_create_session_deduplicates_context_paths(env):
+    """
+    Verify that create_session deduplicates overlapping paths in session.context,
+    preserving insertion order (init.context first, then additional_context).
+    """
+    from datetime import datetime
+
+    from teddy_executor.core.domain.models.session import SessionOptions
+    from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
+    # Arrange
+    mock_time = env.mock_port(ITimeService)
+    mock_prompts = env.mock_port(IPromptManager)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    session_name = "dedup-test"
+    agent_name = "pathfinder"
+    # init.context has a duplicate path and overlapping additional_context
+    # Order: path_a appears twice in init.context, path_b overlaps with additional_context
+    mock_fs.read_file.return_value = "path_a\npath_b\npath_a"
+    mock_fs.path_exists.return_value = True
+    mock_time.now.return_value = datetime(2026, 6, 8, 15, 0, 0)
+    mock_time.now_utc.return_value = datetime(2026, 6, 8, 15, 0, 0)
+    mock_prompts.get_prompt_content.return_value = "<prompt/>"
+
+    # Act
+    service.create_session(
+        SessionOptions(
+            name=session_name,
+            agent_name=agent_name,
+            additional_context=["path_b", "path_c"],
+        )
+    )
+
+    # Assert: session.context should contain each path once, order preserved
+    context_path = ".teddy/sessions/20260608_150000-dedup-test/session.context"
+    context_call = mock_fs.find_call_by_path("write_file", context_path)
+    written_content = context_call.args[1]
+    lines = written_content.splitlines()
+
+    # Expected: path_a (first occurrence preserved), path_b (from init.context, not additional_context), path_c
+    assert lines == ["path_a", "path_b", "path_c"], (
+        f"Expected deduped [path_a, path_b, path_c] but got {lines}"
+    )
+
+
 def test_get_cumulative_cost_returns_value_from_latest_meta(env):
     """
     Tests that get_cumulative_cost retrieves the cost from the latest turn's metadata.
