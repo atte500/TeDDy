@@ -63,6 +63,15 @@ class PlanValidator(IPlanValidator):
             ]:
                 # These actions have no validation rules currently
                 pass
+            elif action_type_lower == "message":
+                # MESSAGE under ## Action Plan is invalid; mutual exclusivity required
+                errors.append(
+                    ValidationError(
+                        message="MESSAGE action is not allowed under '## Action Plan'. "
+                        "Use '## Message' section instead. Mutual exclusivity is required.",
+                        file_path=None,
+                    )
+                )
             else:
                 errors.append(
                     ValidationError(

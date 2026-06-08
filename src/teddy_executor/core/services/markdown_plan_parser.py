@@ -246,6 +246,14 @@ class MarkdownPlanParser(IPlanParser):
             stream.next()  # Consume action heading
             action_type_str = get_child_text(action_heading).strip().replace("`", "")
 
+            # Guard: MESSAGE under ## Action Plan must produce a clear mutual exclusivity error
+            if action_type_str == "MESSAGE":
+                raise InvalidPlanError(
+                    "MESSAGE action is not allowed under '## Action Plan'. "
+                    "Use '## Message' section instead. Mutual exclusivity is required.",
+                    offending_nodes=[action_heading],
+                )
+
             if action_type_str not in self._dispatch_map:
                 raise InvalidPlanError(
                     f"Unknown action type: {action_type_str}",
