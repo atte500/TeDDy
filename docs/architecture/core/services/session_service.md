@@ -5,7 +5,7 @@
 
 The `SessionService` is responsible for managing the lifecycle of TeDDy sessions and turns on the local filesystem. It handles the creation of session directories, the management of `meta.yaml` and `turn.context` files, and the deterministic "Turn Transition Algorithm" that calculates the state for the next turn based on the current turn's outcome. It also manages execution side-effects, such as automatically adding created or modified files to the next turn's working context.
 
-## 2. Ports
+## 3. Ports
 
 -   **Implements Outbound Port:** `ISessionManager`
 -   **Uses Outbound Ports:**
@@ -13,12 +13,13 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
     -   `ISessionRepository`: For persistence and turn discovery.
     -   `IPromptManager`: For resolving agent prompts.
 
-## 3. Implementation Details / Logic
+## 4. Implementation Details / Logic
 
 1.  **Session Bootstrapping (`create_session`):**
     -   Creates the session root and Turn 01 directory.
     -   Seeds `session.context` from `.teddy/init.context`, stripping comments.
-    -   **Context Merging:** If `additional_context` is provided, it is merged into the `session.context` content after the `init.context` content.
+    -   **Context Merging and Deduplication:** If `additional_context` is provided, it is merged into the `session.context` content after the `init.context` content. The merged list of paths is then deduplicated **preserving insertion order** using a `seen` set before joining with newlines. This ensures `session.context` never contains duplicate paths at creation time.
+        -   **Critical Ordering:** The `initial_request.md` path is added to the merge list **before** deduplication occurs, so it is also deduplicated. Previously, it was appended after joining, which made it impossible to deduplicate.
     -   **Prompt Relocation:** Fetches and saves the agent's system prompt exclusively to the session root as `{session_root}/system_prompt.xml`.
     -   Initializes `01/meta.yaml` with `turn_id`, `creation_timestamp`, and any optional LLM overrides (`model`, `provider`, `api_key`).
 2.  **Turn Transition (`transition_to_next_turn`):**
@@ -36,7 +37,7 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
         -   Parses `READ` and `PRUNE` actions from the `ExecutionReport` to update the next context.
         -   Always appends the current `report.md` to the next context to ensure the AI has history.
 
-## 4. Data Contracts / Methods
+## 5. Data Contracts / Methods
 
 ### `create_session(name: str, agent_name: str, initial_request: Optional[str] = None, additional_context: Optional[list[str]] = None) -> str`
 -   **Description:** Bootstraps a new session directory, merging additional context if provided, and returns the root path.
@@ -62,7 +63,7 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
 -   **Description:** Resolves a session name from a given path (session root, turn dir, or file).
 -   **Exceptions:** `ValueError` if the path is not inside a session.
 
-## 5. Implementation Notes
+## 6. Implementation Notes
 
 -   **Dynamic Renaming:** The `rename_session` method is provided to safely move session directories. The `SessionOrchestrator` uses this to rename timestamped sessions to a slugified version of the first plan's title (H1) after generation.
 -   **Robust Context Reading:** Uses `_read_context_file` to handle missing or malformed `turn.context` files gracefully, treating them as empty.
