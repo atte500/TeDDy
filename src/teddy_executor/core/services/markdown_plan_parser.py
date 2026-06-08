@@ -87,20 +87,7 @@ class MarkdownPlanParser(IPlanParser):
                 stream, doc
             )
 
-            # Mutual Exclusivity Check
-            from mistletoe.block_token import Heading
-
-            doc_children = doc.children or []
-            h2_headings = [
-                n
-                for n in doc_children
-                if isinstance(n, Heading) and n.level == H2_LEVEL
-            ]
-            h2_texts = [get_child_text(h) for h in h2_headings]
-            if "Action Plan" in h2_texts and "Message" in h2_texts:
-                raise InvalidPlanError(
-                    "Plan cannot contain both '## Action Plan' and '## Message'. Mutual exclusivity is required."
-                )
+            self._validate_mutual_exclusivity(doc)
 
             section_name = get_child_text(section_heading).strip()
             if "Message" in section_name:
@@ -211,6 +198,20 @@ class MarkdownPlanParser(IPlanParser):
         section_heading = stream.next()  # H2 Action Plan or Message
 
         return title, rationale, metadata, section_heading
+
+    def _validate_mutual_exclusivity(self, doc: "Document") -> None:
+        """Validates that the document does not contain both ## Action Plan and ## Message."""
+        from mistletoe.block_token import Heading
+
+        doc_children = doc.children or []
+        h2_headings = [
+            n for n in doc_children if isinstance(n, Heading) and n.level == H2_LEVEL
+        ]
+        h2_texts = [get_child_text(h) for h in h2_headings]
+        if "Action Plan" in h2_texts and "Message" in h2_texts:
+            raise InvalidPlanError(
+                "Plan cannot contain both '## Action Plan' and '## Message'. Mutual exclusivity is required."
+            )
 
     def _parse_actions(
         self, stream: _PeekableStream, doc: Document

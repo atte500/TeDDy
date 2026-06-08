@@ -1,6 +1,6 @@
 # Slice: 02-16-Refactor Parser Complexity
 
-- **Status:** Draft
+- **Status:** In Progress
 - **Type:** Refactor
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
@@ -21,7 +21,7 @@ Reduce the C901 cyclomatic complexity of `MarkdownPlanParser.parse()` from 10 to
 
 This refactoring consists of three purely mechanical extractions that preserve all public contracts. Existing tests (e.g., `test_parser_message_protocol.py`, `test_bug_17_message_validation.py`, and all parser tests) already cover the extracted behavior, so no new harness deliverables are needed.
 
-1. [ ] **Logic** - Extract `_validate_mutual_exclusivity(self, doc: Document) -> None` from `parse` method (current lines 93-101). The extracted method scans `doc.children` for H2 headings, checks for both "Action Plan" and "Message", and raises `InvalidPlanError` if both are present.
+1. [▶] **Logic** - Extract `_validate_mutual_exclusivity(self, doc: Document) -> None` from `parse` method (current lines 93-101). The extracted method scans `doc.children` for H2 headings, checks for both "Action Plan" and "Message", and raises `InvalidPlanError` if both are present.
 2. [ ] **Logic** - Extract `_parse_section_content(self, stream: _PeekableStream, clean_content: str, section_heading: Heading, doc: Document) -> List[ActionData]` from `parse` method (current lines 103-132). The extracted method checks the section heading text: if "Message" calls `parse_message_action` (with raw content extracted from `clean_content`), otherwise calls `self._parse_actions(stream, doc)`.
 3. [ ] **Logic** - Refactor `parse` method: Call the two new helpers in place of the extracted code, ensuring the method complexity drops below 9.
 
