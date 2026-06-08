@@ -7,10 +7,18 @@ from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
 
 
 def test_get_completion_returns_raw_response(container, mock_config, monkeypatch):
-    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+    config = {
+        "api_key": "sk-test",
+        "model": "test-model",
+        "max_retries": 3,
+    }  # pragma: allowlist secret
 
     def _valid_llm(key: str, default=None):
-        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+        return (
+            config.get(key.split(".", 1)[1] if "." in key else key, default)
+            if key.startswith("llm")
+            else default
+        )
 
     mock_config.get_setting.side_effect = _valid_llm
     adapter = container.resolve(ILlmClient)
@@ -32,10 +40,18 @@ def test_get_completion_returns_raw_response(container, mock_config, monkeypatch
 
 
 def test_get_completion_passthrough_empty_choices(container, mock_config, monkeypatch):
-    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+    config = {
+        "api_key": "sk-test",
+        "model": "test-model",
+        "max_retries": 3,
+    }  # pragma: allowlist secret
 
     def _valid_llm(key: str, default=None):
-        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+        return (
+            config.get(key.split(".", 1)[1] if "." in key else key, default)
+            if key.startswith("llm")
+            else default
+        )
 
     mock_config.get_setting.side_effect = _valid_llm
     adapter = container.resolve(ILlmClient)
@@ -53,10 +69,18 @@ def test_get_completion_passthrough_empty_choices(container, mock_config, monkey
 
 
 def test_get_completion_passthrough_none_content(container, mock_config, monkeypatch):
-    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+    config = {
+        "api_key": "sk-test",
+        "model": "test-model",
+        "max_retries": 3,
+    }  # pragma: allowlist secret
 
     def _valid_llm(key: str, default=None):
-        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+        return (
+            config.get(key.split(".", 1)[1] if "." in key else key, default)
+            if key.startswith("llm")
+            else default
+        )
 
     mock_config.get_setting.side_effect = _valid_llm
     adapter = container.resolve(ILlmClient)
@@ -76,10 +100,18 @@ def test_get_completion_passthrough_none_content(container, mock_config, monkeyp
 
 
 def test_get_completion_error_handling(container, mock_config, monkeypatch):
-    config = {"api_key": "sk-test", "model": "test-model", "max_retries": 3}  # pragma: allowlist secret
+    config = {
+        "api_key": "sk-test",
+        "model": "test-model",
+        "max_retries": 3,
+    }  # pragma: allowlist secret
 
     def _valid_llm(key: str, default=None):
-        return config.get(key.split(".", 1)[1] if "." in key else key, default) if key.startswith("llm") else default
+        return (
+            config.get(key.split(".", 1)[1] if "." in key else key, default)
+            if key.startswith("llm")
+            else default
+        )
 
     mock_config.get_setting.side_effect = _valid_llm
     adapter = container.resolve(ILlmClient)

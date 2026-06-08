@@ -278,6 +278,36 @@ class SessionService(ISessionManager):
             if self._repository.is_valid_path(path):
                 paths.add(path)
 
+        # FIX: Also process original_actions for validation failure scenarios.
+        # When action_logs is empty (validation failure), the report still contains
+        # the original plan actions. Process CREATE/EDIT actions to ensure their
+        # file paths are auto-added to the context.
+        self._apply_original_actions_effects(paths, report)
+
+    def _apply_original_actions_effects(
+        self, paths: set[str], report: Optional[ExecutionReport]
+    ) -> None:
+        """
+        Processes original_actions from a validation failure report as a fallback
+        when action_logs is empty.
+        """
+        if not report or not report.original_actions:
+            return
+        if report.action_logs:
+            return  # Only fall back when action_logs is empty
+
+        for action in report.original_actions:
+            if action.type not in (ActionType.CREATE.value, ActionType.EDIT.value):
+                continue
+            resource_val = action.params.get("file_path") or action.params.get(
+                "File Path"
+            )
+            if not resource_val:
+                continue
+            path = self._extract_resource_path(resource_val)
+            if self._repository.is_valid_path(path):
+                paths.add(path)
+
     def _persist_next_meta(
         self,
         next_dir: str,

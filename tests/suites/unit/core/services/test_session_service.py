@@ -302,3 +302,106 @@ def test_get_cumulative_cost_returns_value_from_latest_meta(env):
     assert cost == 1.25
     repo.get_latest_turn.assert_called_once_with(session_name)
     repo.load_meta.assert_called_once_with(latest_turn_path)
+
+
+def test_apply_execution_effects_uses_original_actions_when_action_logs_empty(env):
+    """
+    Regression test for Bug #16: When action_logs is empty (validation failure),
+    the method should fall back to processing original_actions for CREATE/EDIT paths.
+    """
+    from teddy_executor.core.domain.models import (
+        ExecutionReport,
+        RunStatus,
+        RunSummary,
+    )
+    from teddy_executor.core.domain.models.plan import ActionData, ActionType
+    from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+
+    service = env.get_service(ISessionManager)
+    repo = env.mock_port(ISessionRepository)
+    repo.is_valid_path.return_value = True
+
+    paths = {"existing.txt"}
+
+    # Create two original actions (CREAT + EDIT) that should be picked up
+    create_action = ActionData(
+        type=ActionType.CREATE.value,
+        params={"file_path": "new_file_from_original.py"},
+    )
+    edit_action = ActionData(
+        type=ActionType.EDIT.value,
+        params={"file_path": "edited_file_from_original.py"},
+    )
+
+    # Build a validation-failure-style report: empty action_logs, populated original_actions
+    report = ExecutionReport(
+        run_summary=RunSummary(
+            status=RunStatus.VALIDATION_FAILED,
+            start_time=datetime.now(),
+            end_time=datetime.now(),
+            error="Plan validation failed.",
+        ),
+        original_actions=[create_action, edit_action],
+        action_logs=[],
+    )
+
+    # Act
+    service._apply_execution_effects(paths, report)
+
+    # Assert – both paths from original_actions should be added
+    assert "new_file_from_original.py" in paths
+    assert "edited_file_from_original.py" in paths
+    assert "existing.txt" in paths  # existing paths preserved
+
+
+def test_apply_execution_effects_skips_original_actions_when_action_logs_present(env):
+    """
+    Regression test for Bug #16: When action_logs is NOT empty (normal execution),
+    the original_actions fallback should NOT be used – only action_logs should be processed.
+    """
+    from teddy_executor.core.domain.models import (
+        ActionLog,
+        ActionStatus,
+        ExecutionReport,
+        RunStatus,
+        RunSummary,
+    )
+    from teddy_executor.core.domain.models.plan import ActionData, ActionType
+    from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+
+    service = env.get_service(ISessionManager)
+    repo = env.mock_port(ISessionRepository)
+    repo.is_valid_path.return_value = True
+
+    paths = {"existing.txt"}
+
+    # Populate both action_logs and original_actions
+    create_log = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type=ActionType.CREATE.value,
+        params={"file_path": "via_log.py"},
+    )
+    create_action = ActionData(
+        type=ActionType.CREATE.value,
+        params={"file_path": "via_original.py"},
+    )
+
+    report = ExecutionReport(
+        run_summary=RunSummary(
+            status=RunStatus.SUCCESS,
+            start_time=datetime.now(),
+            end_time=datetime.now(),
+        ),
+        original_actions=[create_action],
+        action_logs=[create_log],
+    )
+
+    # Act
+    service._apply_execution_effects(paths, report)
+
+    # Assert – only from action_logs should be added (original_actions skipped)
+    assert "via_log.py" in paths
+    assert "via_original.py" not in paths, (
+        "Original actions should not be processed when action_logs is non-empty"
+    )
+    assert "existing.txt" in paths
