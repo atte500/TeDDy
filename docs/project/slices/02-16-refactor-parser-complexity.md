@@ -22,12 +22,15 @@ Reduce the C901 cyclomatic complexity of `MarkdownPlanParser.parse()` from 10 to
 This refactoring consists of three purely mechanical extractions that preserve all public contracts. Existing tests (e.g., `test_parser_message_protocol.py`, `test_bug_17_message_validation.py`, and all parser tests) already cover the extracted behavior, so no new harness deliverables are needed.
 
 1. [▶] **Logic** - Extract `_validate_mutual_exclusivity(self, doc: Document) -> None` from `parse` method (current lines 93-101). The extracted method scans `doc.children` for H2 headings, checks for both "Action Plan" and "Message", and raises `InvalidPlanError` if both are present.
-2. [ ] **Logic** - Extract `_parse_section_content(self, stream: _PeekableStream, clean_content: str, section_heading: Heading, doc: Document) -> List[ActionData]` from `parse` method (current lines 103-132). The extracted method checks the section heading text: if "Message" calls `parse_message_action` (with raw content extracted from `clean_content`), otherwise calls `self._parse_actions(stream, doc)`.
+2. [x] **Logic** - Extract `_parse_section_content(self, stream: _PeekableStream, clean_content: str, section_heading: Heading, doc: Document) -> List[ActionData]` from `parse` method (current lines 103-132). The extracted method checks the section heading text: if "Message" calls `parse_message_action` (with raw content extracted from `clean_content`), otherwise calls `self._parse_actions(stream, doc)`.
 3. [ ] **Logic** - Refactor `parse` method: Call the two new helpers in place of the extracted code, ensuring the method complexity drops below 9.
 
 ## Implementation Notes
 
 No new tests required – existing parser tests already cover the extracted logic. The extraction is purely mechanical with zero behavioral change. Any outdated inline comments are removed as part of the extraction; no separate cleanup step is needed. The standard test suite is run by the developer during implementation to confirm no regressions.
+
+- **Deliverable 1 (Deliverable of `_validate_mutual_exclusivity`):** Completed in commit `6a348daf`.
+- **Deliverable 2 (Extraction of `_parse_section_content`):** The section routing logic (Message vs Action Plan branching) was extracted into a dedicated `_parse_section_content(self, stream, clean_content, section_heading, doc) -> List[ActionData]` method. The `parse` method now calls this helper, further reducing its cyclomatic complexity.
 
 ## Implementation Plan
 

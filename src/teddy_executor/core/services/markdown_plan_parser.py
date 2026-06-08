@@ -89,21 +89,9 @@ class MarkdownPlanParser(IPlanParser):
 
             self._validate_mutual_exclusivity(doc)
 
-            section_name = get_child_text(section_heading).strip()
-            if "Message" in section_name:
-                raw_content = None
-                start_line = getattr(section_heading, "line_number", None)
-                if start_line is not None and start_line > 0:
-                    lines = clean_content.splitlines(keepends=True)
-                    if start_line < len(lines):
-                        raw_content = "".join(lines[start_line:]).lstrip("\n")
-                actions = [
-                    parse_message_action(
-                        stream, node=section_heading, raw_content=raw_content
-                    )
-                ]
-            else:
-                actions = self._parse_actions(stream, doc)
+            actions = self._parse_section_content(
+                stream, clean_content, section_heading, doc
+            )
 
             is_session = False
             if plan_path:
@@ -212,6 +200,31 @@ class MarkdownPlanParser(IPlanParser):
             raise InvalidPlanError(
                 "Plan cannot contain both '## Action Plan' and '## Message'. Mutual exclusivity is required."
             )
+
+    def _parse_section_content(
+        self,
+        stream: _PeekableStream,
+        clean_content: str,
+        section_heading: Any,
+        doc: Document,
+    ) -> List[ActionData]:
+        """Parses the content of either a ## Message or ## Action Plan section."""
+        section_name = get_child_text(section_heading).strip()
+        if "Message" in section_name:
+            raw_content = None
+            start_line = getattr(section_heading, "line_number", None)
+            if start_line is not None and start_line > 0:
+                lines = clean_content.splitlines(keepends=True)
+                if start_line < len(lines):
+                    raw_content = "".join(lines[start_line:]).lstrip("\n")
+            actions = [
+                parse_message_action(
+                    stream, node=section_heading, raw_content=raw_content
+                )
+            ]
+        else:
+            actions = self._parse_actions(stream, doc)
+        return actions
 
     def _parse_actions(
         self, stream: _PeekableStream, doc: Document
