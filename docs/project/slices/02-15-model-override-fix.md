@@ -49,7 +49,7 @@ And the context window and cost should reflect the actual serving model
 ## Deliverables
 - [x] **Refactor (Hydrator) & Harness (Test)** - Fix type-mismatch crash in `OpenRouterMetadataHydrator` when processing real API responses; return `None` gracefully. Create test with mocked API response containing string-typed pricing values.
 - [x] **Refactor (Adapter Hydration) & Harness (Test)** - Fix float+str type error in `_hydrate_all_candidates` by converting pricing values to float before injection into `litellm.model_cost`. Also hardened `get_completion_cost` to catch `TypeError` gracefully. Existing test coverage (`test_get_completion_hydrates_and_retries_on_not_found_error`) validates the fix. A dedicated regression test was attempted but removed due to mocking incompatibility with the global litellm mock fixture.
-- [ ] **Logic (Fix) & Harness (Test)** - Fix param layering in `_prepare_completion_params`: merge `llm_config` first, then apply explicit `model` on top. Write regression test `test_model_override_takes_precedence` in `tests/suites/unit/adapters/outbound/test_litellm_adapter.py` verifying the override model takes precedence over config model.
+- [x] **Logic (Fix) & Harness (Test)** - Fix param layering in `_prepare_completion_params`: merge `llm_config` first, then apply explicit `model` on top. Updated `test_config_model_overrides_caller_model` to assert override precedence. Added regression test `test_model_override_takes_precedence`. Verified via targeted tests (2/2 Green) and full suite pass.
 - [ ] **Logic (Validation) & Harness (Test)** - Add startup model validation that checks the model name against `litellm.model_cost` keys. Create test that verifies unknown models are rejected gracefully.
 - [ ] **Logic (Display Update) & Harness (Test)** - After first LLM completion, update telemetry display to reflect `response.model` or `_hidden_params["litellm_model_name"]`. Create test verifying the display updates correctly.
 
@@ -66,6 +66,14 @@ And the context window and cost should reflect the actual serving model
   - `_hydrate_all_candidates`: Added `try/except` loop to convert each pricing value to `float`, with `ValueError`/`TypeError` falling back to `0.0`.
   - `get_completion_cost`: Added `TypeError` to the exception tuple to catch `float+str` arithmetic errors gracefully, returning `0.0`.
 - **Test Status:** The fix is validated by existing tests (all 833 pass). A dedicated regression test was attempted but removed because the global `litellm` mock fixture does not support item assignment on `model_cost`. The fix is already exercised by `test_get_completion_hydrates_and_retries_on_not_found_error`.
+- **Debt:** No debt introduced.
+
+### Deliverable 3: Param Layering Fix (Completed)
+- **Change:** In `_prepare_completion_params`, swapped the order of `model` assignment and `llm_config.update()`: merge config first, then apply explicit model override on top.
+- **Tests:**
+  - Updated `test_config_model_overrides_caller_model` assertion to expect `caller-suggested-model` (override) instead of `config-model-name`.
+  - Added `test_model_override_takes_precedence` to verify explicit model wins over config.
+- **Verification:** Targeted tests pass (2/2). Full suite passes (834+).
 - **Debt:** No debt introduced.
 
 ### Re-Prioritization (Deliverable 2: Adapter Hydration Fix)

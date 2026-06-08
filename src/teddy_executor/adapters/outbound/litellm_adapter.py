@@ -167,11 +167,12 @@ class LiteLLMAdapter(ILlmClient):
         from typing import cast
 
         params = {**kwargs}
-        if model:
-            params["model"] = model
 
         llm_config = cast(Dict[str, Any], self._config_service.get_setting("llm", {}))
         params.update(llm_config)
+
+        if model:
+            params["model"] = model
 
         # Default timeout of 300 seconds if not configured
         if "timeout" not in params:

@@ -135,9 +135,29 @@ def test_config_model_overrides_caller_model(mock_config):
     adapter.get_completion(model="caller-suggested-model", messages=[])
 
     # Assert
+    # After the fix, explicit model override must take precedence over config model
     litellm.completion.assert_called_once()
     actual_kwargs = litellm.completion.call_args.kwargs
-    assert actual_kwargs["model"] == "config-model-name"
+    assert actual_kwargs["model"] == "caller-suggested-model"
+
+
+def test_model_override_takes_precedence(mock_config):
+    """Regression test: explicit model parameter must win over config model."""
+    # Arrange
+    mock_config.get_setting.side_effect = lambda key, default=None: {
+        "llm.model": "config-model-name",
+        "llm.api_key": "sk-test-key",  # pragma: allowlist secret
+        "llm": {"model": "config-model-name"},
+    }.get(key, default)
+    adapter = LiteLLMAdapter(mock_config)
+
+    # Act: Pass a different model explicitly
+    adapter.get_completion(model="explicit-override-model", messages=[])
+
+    # Assert: The explicit model must be used, not the config model
+    litellm.completion.assert_called_once()
+    actual_kwargs = litellm.completion.call_args.kwargs
+    assert actual_kwargs["model"] == "explicit-override-model"
 
 
 def test_config_api_key_overrides_caller_kwargs(mock_config):
