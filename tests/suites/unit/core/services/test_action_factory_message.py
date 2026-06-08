@@ -36,3 +36,30 @@ def test_action_factory_resolves_message_action():
     mock_interactor.ask_question.assert_called_once_with(
         message_content, resources=None, agent_name=None
     )
+
+
+def test_message_action_applies_double_newlines():
+    """Test that _handle_message_protocol applies double_newlines to message content."""
+    # Arrange
+    mock_interactor = create_autospec(IUserInteractor, instance=True)
+    ports = ActionPorts(
+        shell_executor=POSIXPathMock(spec=IShellExecutor),
+        file_system_manager=POSIXPathMock(spec=IFileSystemManager),
+        user_interactor=mock_interactor,
+        web_scraper=POSIXPathMock(spec=WebScraper),
+        web_searcher=POSIXPathMock(spec=IWebSearcher),
+        config_service=POSIXPathMock(spec=IConfigService),
+    )
+    factory = ActionFactory(ports)
+    message_content = "line1\nline2"
+
+    # Act
+    params = {"content": message_content}
+    action = factory.create_action("MESSAGE", params)
+    action.execute(**params)
+
+    # Assert
+    # The content with single newlines should be doubled before passing to ask_question
+    mock_interactor.ask_question.assert_called_once_with(
+        "line1\n\nline2", resources=None, agent_name=None
+    )

@@ -179,10 +179,10 @@ class TestConsoleInteractorAdapter:
             err=True,
         )
 
-    def test_display_message_doubles_newlines(
+    def test_display_message_preserves_newlines(
         self, adapter: ConsoleInteractorAdapter, monkeypatch
     ):
-        """Test that display_message applies double_newlines to the message content before printing."""
+        """Test that display_message preserves newlines as-is (double_newlines is applied at action_factory level)."""
         from tests.harness.setup.mocking import POSIXPathMock
 
         # Arrange
@@ -192,5 +192,5 @@ class TestConsoleInteractorAdapter:
         # Act
         adapter.display_message("line1\nline2")
 
-        # Assert — currently fails because no transformation is applied
-        mock_print.assert_called_once_with("line1\n\nline2")
+        # Assert — display_message is a transparent pass-through
+        mock_print.assert_called_once_with("line1\nline2")

@@ -55,9 +55,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
 
     def display_message(self, message: str) -> None:
         """Displays a message using Rich console to ensure consistent coloring."""
-        from teddy_executor.core.utils.string import double_newlines
-
-        self._console.print(double_newlines(message))
+        self._console.print(message)
 
     def ask_question(
         self,
