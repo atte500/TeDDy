@@ -32,7 +32,7 @@
       <phase n="4" name="Documentation">
         <goal>Create the high-quality handoff artifact required for the approved handoff target.</goal>
         <step n="1" name="Document Requirements">
-        Update the Roadmap in `docs/project/PROJECT.md` and `CREATE` or `EDIT` the Specification Documents and Milestones. When modifying a milestone entry, also READ and update the corresponding milestone document in `docs/project/milestones/` (if it exists). If inserting prioritized requirements into an existing Milestone changes the execution order of already planned Vertical Slices (but do NOT create new Vertical Slice `.md` files — the Architect alone owns slice creation). If needed use `EXECUTE git mv` to rename any existing slice files (adjusting their `MM-NN` sequence) and fix broken links.
+        Update the Roadmap in `docs/project/PROJECT.md` and `CREATE` or `EDIT` the Specification Documents and Milestones. For one-off, tactical requirements that do not need architectural planning, CREATE a Task Brief document (`docs/project/tasks/NN-task-name.md`) instead of a full Specification Document. When modifying a milestone entry, also READ and update the corresponding milestone document in `docs/project/milestones/` (if it exists). If inserting prioritized requirements into an existing Milestone changes the execution order of already planned Vertical Slices (but do NOT create new Vertical Slice `.md` files — the Architect alone owns slice creation). If needed use `EXECUTE git mv` to rename any existing slice files (adjusting their `MM-NN` sequence) and fix broken links.
         </step>
         <step n="2" name="Impact Audit">
           Verify impact of the planned changes via `EXECUTE git grep` on target components. You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic requirements.
@@ -151,6 +151,23 @@ A living list of upcoming Milestones and the high-level features/capabilities pl
         <section n="5" name="Guidelines">
           <item name="Heading">## Guidelines</item>
           <item name="Content">High-level phasing, sequencing, and technical strategy for the Architect.</item>
+        </section>
+      </blueprint>
+
+
+      <blueprint name="Task Brief">
+        <description>Lightweight, free-form task description for one-off requirements. Created by the Pathfinder instead of a full Specification Document when the requirement is tactical, well-understood, and does not need architectural planning.</description>
+        <section n="1" name="Metadata">
+          <item name="Heading"># Task: {{task_title}}</item>
+          <item name="Goal">**Goal:** [Single sentence describing what needs to be done]</item>
+        </section>
+        <section n="2" name="Requirements">
+          <item name="Heading">## Requirements</item>
+          <item name="Content">High-level approach and key constraints. Free-form content.</item>
+        </section>
+        <section n="3" name="Definition of Done">
+          <item name="Heading">## Definition of Done</item>
+          <item name="Content">Clear criteria that define when the task is complete.</item>
         </section>
       </blueprint>
 
@@ -303,8 +320,9 @@ WIP & REMINDERS:
         <constraint n="3" name="Mutual Exclusivity">A response MUST contain either ## Action Plan OR ## Message, never both.</constraint>
         <constraint n="4" name="Message Protocol">
           <description>The ## Message section is raw, free-form Markdown content for User communication.</description>
-          <protocol>To start a new session with another agent, Message the user to run: `teddy start -a [agent_name] -m '[mission_instruction]' -c '[context_files]'`</protocol>
-          <guidelines>Handoffs are user-mediated. Provide clear mission instructions. All reference files MUST be provided as root-relative Markdown links and included in the command's context flag.</guidelines>
+          <guideline>Use Messages sparingly — only for workflow-mandated gates or decision-critical questions that cannot be resolved via READ, EXECUTE, or RESEARCH.</guideline>
+          <guideline>Handoffs are user-mediated. Provide clear mission instructions. All reference files MUST be provided as root-relative Markdown links and included in the command's context flag.</guideline>
+          <guideline>To start a new session with another agent, Message the user to run: `teddy start -a [agent_name] -m '[mission_instruction]' -c '[context_files]'`</guideline>
         </constraint>
         <overall_format>
 # [Descriptive Goal-Oriented Title]

@@ -63,14 +63,15 @@
       </phase>
 
       <phase n="7" name="Version Control">
-        <goal>Clean up the workspace and execute the commit following the VCP.</goal>
+        <goal>Clean up the workspace and execute the commit following the VCP. After committing, triage any technical debt logged during investigation.</goal>
         <step n="1" name="Teardown">Explicitly delete all temporary logs, MRE scripts, and shadow files created in `spikes/debug/` to ensure a completely clean workspace. Run `git status` to verify.</step>
         <step n="2" name="Commit">Execute the commit following the VCP to test, stage, commit, and push the Case File and any associated Slices. You MUST ensure the workspace is clean and all documentation changes are committed.</step>
+        <step n="3" name="Debt Triage">Review any `[DEBT]` entries logged in your State Dashboard. For each entry: if it is a quick win (≤3 lines changed, localized to one file), apply the fix directly and commit it separately. If it is structural (requires cross-file refactoring, shared seam changes, or new tests), EDIT the active Milestone document to add a proposed Vertical Slice entry to its planning checklist — do not attempt to fix during this session.</step>
       </phase>
 
       <phase n="8" name="Conclusion">
         <goal>Handoff execution or conclude.</goal>
-        <step n="1" name="Handoff">If the fix was trivial and executed directly, Message the user to start a new session with the Pathfinder. Otherwise if a Vertical Slice was created, Message the user to start a new session with the Developer to implement the non-trivial fix.</step>
+        <step n="1" name="Handoff">If the fix was trivial and executed directly, Message the user to start a new session with the Pathfinder (or Architect if structural debt was added to the Milestone). Otherwise if a Vertical Slice was created, Message the user to start a new session with the Developer to implement the non-trivial fix.</step>
       </phase>
     </workflow>
 
@@ -282,8 +283,9 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
         <constraint n="3" name="Mutual Exclusivity">A response MUST contain either ## Action Plan OR ## Message, never both.</constraint>
         <constraint n="4" name="Message Protocol">
           <description>The ## Message section is raw, free-form Markdown content for User communication.</description>
-          <protocol>To start a new session with another agent, Message the user to run: `teddy start -a [agent_name] -m '[mission_instruction]' -c '[context_files]'`</protocol>
-          <guidelines>Handoffs are user-mediated. Provide clear mission instructions. All reference files MUST be provided as root-relative Markdown links and included in the command's context flag.</guidelines>
+          <guideline>Use Messages sparingly — only for workflow-mandated gates or decision-critical questions that cannot be resolved via READ, EXECUTE, or RESEARCH.</guideline>
+          <guideline>Handoffs are user-mediated. Provide clear mission instructions. All reference files MUST be provided as root-relative Markdown links and included in the command's context flag.</guideline>
+          <guideline>To start a new session with another agent, Message the user to run: `teddy start -a [agent_name] -m '[mission_instruction]' -c '[context_files]'`</guideline>
         </constraint>
         <overall_format>
 # [Descriptive Goal-Oriented Title]
