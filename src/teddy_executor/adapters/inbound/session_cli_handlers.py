@@ -247,7 +247,6 @@ def handle_resume_session(  # noqa: PLR0913
     api_key: Optional[str] = None,
 ):
     """Logic for the 'resume' command."""
-    import re
     from teddy_executor.core.ports.outbound.config_service import IConfigService
 
     try:
@@ -271,9 +270,9 @@ def handle_resume_session(  # noqa: PLR0913
                 # If not inside a session, auto-detect the latest session
                 session_name = session_manager.get_latest_session_name()
 
-        # Natural Name for display
-        display_name = re.sub(r"^\d{8}_\d{6}-", "", session_name)
-        typer.echo(f"Resuming session: {display_name}")
+        # Session path relative to project root for display
+        session_relative_path = str(Path(".teddy") / "sessions" / session_name)
+        typer.echo(f"Resuming session: {session_relative_path}")
 
         # Sync latest turn's meta.yaml with current config model.
         # This ensures telemetry display shows the correct model even when
