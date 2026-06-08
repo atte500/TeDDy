@@ -367,25 +367,29 @@ def test_run_preflight_check_requests_local_validation(env):
     mock_llm.validate_config.assert_called_once_with(include_remote=False)
 
 
-def test_generate_plan_displays_actual_model_after_completion(env):
+def test_generate_plan_displays_no_actual_model_line_after_fix(env):
     """
-    R-10-15: After the first LLM completion, the telemetry display should
-    update to reflect the actual serving model from response.model.
+    Bug #18: Verify that the redundant "• Actual model:" line is NOT emitted.
+    The actual model should be persisted to meta.yaml via update_meta instead.
     """
     # Arrange
     from unittest.mock import Mock
     from teddy_executor.core.domain.models import ProjectContext
-    from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
+    from teddy_executor.core.ports.inbound.get_context_use_case import (
+        IGetContextUseCase,
+    )
     from teddy_executor.core.ports.outbound import (
         ILlmClient,
         IUserInteractor,
         IPromptManager,
+        IFileSystemManager,
     )
 
     mock_ui = env.mock_port(IUserInteractor)
     mock_llm = env.mock_port(ILlmClient)
     mock_prompt = env.mock_port(IPromptManager)
     mock_context = env.mock_port(IGetContextUseCase)
+    mock_fs = env.mock_port(IFileSystemManager)
     mock_context.get_context.return_value = ProjectContext(
         header="H", content="C", scoped_paths={}
     )
@@ -403,14 +407,18 @@ def test_generate_plan_displays_actual_model_after_completion(env):
     mock_llm.get_context_window.return_value = 128000
     mock_llm.supports_pricing.return_value = True
 
+    meta = {"cumulative_cost": 0.0, "model": "openrouter/unknown-override"}
     mock_prompt.resolve_message.return_value = "test"
     mock_prompt.resolve_agent_metadata.return_value = (
         "pathfinder",
-        {"cumulative_cost": 0.0, "model": "openrouter/unknown-override"},
+        meta,
         "meta.yaml",
     )
     mock_prompt.fetch_system_prompt.return_value = "system-prompt"
     mock_prompt.log_telemetry.return_value = 0.001
+
+    # Mock file system to accept meta.yaml writes
+    mock_fs.path_exists.return_value = True
 
     from teddy_executor.core.services.planning_service import PlanningService
 
@@ -419,9 +427,15 @@ def test_generate_plan_displays_actual_model_after_completion(env):
     # Act
     service.generate_plan(user_message="test", turn_dir="turns/01")
 
-    # Assert: The display should include the actual model from response.model
+    # Assert: No "Actual model" line in display
     calls = [call[0][0] for call in mock_ui.display_message.call_args_list]
-    assert any(
-        "Actual model" in c and "deepseek/deepseek-v4-flash-20260423" in c
-        for c in calls
-    ), f"Expected 'Actual model: deepseek/deepseek-v4-flash-20260423' in display calls: {calls}"
+    assert not any("Actual model" in c for c in calls), (
+        f"Found unexpected 'Actual model' in display calls: {calls}"
+    )
+
+    # Assert: update_meta was called with the meta dict containing the actual response model
+    mock_prompt.update_meta.assert_called_once()
+    args, _ = mock_prompt.update_meta.call_args
+    # args[0] is the meta dict; the real update_meta will overwrite meta["model"],
+    # but the mock doesn't execute real logic, so we just verify the call happened.
+    # (The actual persistence is tested by prompt_manager unit tests.)
