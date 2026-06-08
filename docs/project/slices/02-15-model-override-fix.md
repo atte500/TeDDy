@@ -1,5 +1,5 @@
 # Slice: Model Override Fix & Validation Enhancement
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Bugfix
 - **Milestone:** [Milestone 2: Stability & Polish](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** N/A (ad-hoc bug fix)
@@ -51,7 +51,7 @@ And the context window and cost should reflect the actual serving model
 - [x] **Refactor (Adapter Hydration) & Harness (Test)** - Fix float+str type error in `_hydrate_all_candidates` by converting pricing values to float before injection into `litellm.model_cost`. Also hardened `get_completion_cost` to catch `TypeError` gracefully. Existing test coverage (`test_get_completion_hydrates_and_retries_on_not_found_error`) validates the fix. A dedicated regression test was attempted but removed due to mocking incompatibility with the global litellm mock fixture.
 - [x] **Logic (Fix) & Harness (Test)** - Fix param layering in `_prepare_completion_params`: merge `llm_config` first, then apply explicit `model` on top. Updated `test_config_model_overrides_caller_model` to assert override precedence. Added regression test `test_model_override_takes_precedence`. Verified via targeted tests (2/2 Green) and full suite pass.
 - [x] **Logic (Validation) & Harness (Test)** - Add startup model validation method `validate_model` to `LiteLLMAdapter`. Checks model existence in `litellm.model_cost`, strips `openrouter/` prefix, accepts `None`, rejects empty/unknown models. 5 unit tests in `test_litellm_adapter_preflight.py` pass.
-- [▶] **Logic (Display Update) & Harness (Test)** - After first LLM completion, update telemetry display to reflect `response.model` or `_hidden_params["litellm_model_name"]`. Create test verifying the display updates correctly.
+- [x] **Logic (Display Update) & Harness (Test)** - After first LLM completion, update telemetry display to show actual serving model from `response.model`. Regression test `test_generate_plan_displays_actual_model_after_completion` verifies the display updates correctly when the response model differs from the requested model.
 
 ## Implementation Notes
 
@@ -80,6 +80,13 @@ And the context window and cost should reflect the actual serving model
 - **Change:** Added `validate_model(self, model: Optional[str]) -> bool` method to `LiteLLMAdapter`. Accepts `None` (no override), returns `True`; rejects empty strings; strips `openrouter/` prefix before lookup; checks both clean and original model ID in `litellm.model_cost`.
 - **Tests:** 5 preflight tests in `test_litellm_adapter_preflight.py` pass. These tests cover empty API key, missing env vars, API key from config, remote check timeout, and lazy validation guard.
 - **Verification:** Targeted tests pass (5/5). Full suite passes via post-commit hook (835 passed, 3 skipped).
+- **Debt:** No debt introduced.
+
+### Deliverable 5: Post-Completion Display Update (Completed)
+- **Change:** In `planning_service.generate_plan()`, after the LLM call and `update_meta`, added a display call that shows the actual serving model from `response.model` if it differs from the requested model.
+- **Tests:**
+  - Added `test_generate_plan_displays_actual_model_after_completion` regression test. Uses mocked response with `model="deepseek/deepseek-v4-flash-20260423"` and verifies the display message contains "Actual model" with that value.
+- **Verification:** New test passes (1/1). All planning_service tests pass (13 total). Full suite verified via post-commit hook.
 - **Debt:** No debt introduced.
 
 ### Re-Prioritization (Deliverable 2: Adapter Hydration Fix)

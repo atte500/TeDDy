@@ -365,3 +365,63 @@ def test_run_preflight_check_requests_local_validation(env):
     # We perform local validation only. Remote connectivity is checked lazily
     # by the LLM client during actual generation.
     mock_llm.validate_config.assert_called_once_with(include_remote=False)
+
+
+def test_generate_plan_displays_actual_model_after_completion(env):
+    """
+    R-10-15: After the first LLM completion, the telemetry display should
+    update to reflect the actual serving model from response.model.
+    """
+    # Arrange
+    from unittest.mock import Mock
+    from teddy_executor.core.domain.models import ProjectContext
+    from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
+    from teddy_executor.core.ports.outbound import (
+        ILlmClient,
+        IUserInteractor,
+        IPromptManager,
+    )
+
+    mock_ui = env.mock_port(IUserInteractor)
+    mock_llm = env.mock_port(ILlmClient)
+    mock_prompt = env.mock_port(IPromptManager)
+    mock_context = env.mock_port(IGetContextUseCase)
+    mock_context.get_context.return_value = ProjectContext(
+        header="H", content="C", scoped_paths={}
+    )
+
+    # Mock response with model different from the requested override
+    mock_response = Mock()
+    mock_response.model = "deepseek/deepseek-v4-flash-20260423"
+    choice = Mock()
+    choice.message.content = "# Plan title\nSome content"
+    mock_response.choices = [choice]
+
+    mock_llm.get_completion.return_value = mock_response
+    mock_llm.get_completion_cost.return_value = 0.001
+    mock_llm.get_token_count.return_value = 1000
+    mock_llm.get_context_window.return_value = 128000
+    mock_llm.supports_pricing.return_value = True
+
+    mock_prompt.resolve_message.return_value = "test"
+    mock_prompt.resolve_agent_metadata.return_value = (
+        "pathfinder",
+        {"cumulative_cost": 0.0, "model": "openrouter/unknown-override"},
+        "meta.yaml",
+    )
+    mock_prompt.fetch_system_prompt.return_value = "system-prompt"
+    mock_prompt.log_telemetry.return_value = 0.001
+
+    from teddy_executor.core.services.planning_service import PlanningService
+
+    service = env.get_service(PlanningService)
+
+    # Act
+    service.generate_plan(user_message="test", turn_dir="turns/01")
+
+    # Assert: The display should include the actual model from response.model
+    calls = [call[0][0] for call in mock_ui.display_message.call_args_list]
+    assert any(
+        "Actual model" in c and "deepseek/deepseek-v4-flash-20260423" in c
+        for c in calls
+    ), f"Expected 'Actual model: deepseek/deepseek-v4-flash-20260423' in display calls: {calls}"

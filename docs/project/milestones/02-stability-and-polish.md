@@ -49,5 +49,5 @@ Implement resilient infrastructure patterns (retries, User-Agent rotation), enfo
 - [x] **02-12-Config Validation & Transient Retry**: Validate LLM config upfront; retry on any error during completion.
 - [x] **02-13-Validation Failure Pruning Timing**: Modify Heuristic 4 to prune only when a subsequent valid plan exists.
 - [ ] **02-14-Session Context Write-Time Dedup**: Add deduplication in `_prepare_session_context()` before writing to `session.context`.
-- [ ] **02-15-Model Override Fix**: Fix the issue where model override is not correctly applied when using the `--model` flag with `teddy start`. Ensure the override is properly passed through to the LLM configuration for the session.
+- [x] **02-15-Model Override Fix**: Fix the issue where model override is not correctly applied when using the `--model` flag with `teddy start`. Ensure the override is properly passed through to the LLM configuration for the session.
 - [x] **02-16-Refactor Parser Complexity**: The `parse` method in `markdown_plan_parser.py` has a C901 complexity of 10 (threshold: 9). Refactor by extracting the mutual exclusivity check and section routing logic into smaller helper methods to reduce cognitive complexity below the threshold.

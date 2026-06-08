@@ -108,6 +108,14 @@ class PlanningService(IPlanningUseCase):
             meta, response, token_count, turn_cost, meta_file_path
         )
 
+        # After first LLM completion, update display with actual serving model
+        if self._user_interactor and hasattr(response, "model"):
+            actual_model = str(response.model)
+            if actual_model and actual_model != model:
+                self._user_interactor.display_message(
+                    f"[green]• Actual model:[/green] [magenta]{actual_model}[/magenta]"
+                )
+
         return plan_path, cost_val
 
     def _perform_generation_with_retry(
