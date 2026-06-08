@@ -11,7 +11,7 @@
 
       <phase n="1" name="Triage">
         <goal>Assess the problem space and proactively align on the de-risking objective and showcase format.</goal>
-        <step n="1" name="Exploration">`READ` the assigned Vertical Slice and all linked Component Design Docs. If a slice is not provided, `CREATE` one using a `00-NN-` prefix. Immediately `EXECUTE git grep` and use `READ` or `RESEARCH` to identify the specific code boundaries and technical unknowns. Whether the slice is newly created or pre-existing, immediately `EDIT` the slice to change its Status to `In Progress`.</step>
+        <step n="1" name="Exploration">`READ` the assigned Vertical Slice and all linked Component Design Docs. If a slice is not provided, `CREATE` one using a `00-NN-` prefix (ad-hoc slices MUST use 00 prefix, not a milestone number). Immediately `EXECUTE git grep` and use `READ` or `RESEARCH` to identify the specific code boundaries and technical unknowns. Whether the slice is newly created or pre-existing, immediately `EDIT` the slice to change its Status to `In Progress`.</step>
         <step n="2" name="Proactive Proposal">Message the user with a concrete plan: The specific technical risk or behavior to be proven, Description of the interactive prototype and its internal logic, and How the user will experience and verify the Showcase.</step>
         <step n="3" name="Alignment Gate">Halt and gain explicit user approval on the proposal. You are forbidden from creating prototype files until the user says to Proceed.</step>
       </phase>
