@@ -37,7 +37,7 @@ auto_pruning:
   prune_failure_history: true # Prune non-green turns once recovery is achieved.
   prune_validation_failures: true # Prune plans and reports that failed validation.
   preserve_message_turns: true # Ensure successful communicating turns are not pruned.
-  max_turns_retention: 25 # Max number of turns persisted in session history (excl. initial request & preserved message turns).
+  max_turns_retention: 10 # Max number of turns persisted in session history (excl. initial request & preserved message turns).
 
 # LLM Settings
 # LiteLLM Configuration Reference: https://docs.litellm.ai/docs/completion/input
