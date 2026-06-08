@@ -6,8 +6,8 @@ The `SessionPruningService` is responsible for applying configurable auto-prunin
 Reduces context size by deselecting irrelevant or failed turns from `turn.context`.
 
 ## Implementation Details / Logic
-### Heuristic 4: Validation Failure Pruning (Conditional)
-As of Slice 02-13, Heuristic 4 is guarded by the same green-state check as Heuristic 3 (Recovery Cleanup). Validation-failed turns are **only** pruned when a subsequent valid (green) plan exists, either on disk (`is_latest_green`) or as the current turn's status (`is_currently_green`). During chains of consecutive validation failures with no green anchor, all validation failure turns remain visible in context to preserve the audit trail.
+### Heuristic 4: Validation Failure Pruning (Guarded by Non-VF Report)
+As of Slice 02-13, Heuristic 4 is guarded by the existence of a report.md whose overall status is **not** "Validation Failed" (a "non-VF report"). Validation-failed turns are **only** pruned when a later non-VF report exists, either on disk (any turn's report.md with a status other than "Validation Failed") or as the current turn's status (`current_status` not containing "Validation Failed"). During chains of consecutive validation failures with no non-VF report, all validation failure turns remain visible in context to preserve the audit trail. This is distinct from Heuristic 3's guard, which checks for green plan status (emoji-based).
 
 ### Sparing Logic (Preserved Turns)
 
