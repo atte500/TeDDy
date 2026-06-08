@@ -1,10 +1,14 @@
 - **Status:** Refactoring
+- **Last Updated:** 2026-06-08
 
 ## Purpose / Responsibility
 The `SessionPruningService` is responsible for applying configurable auto-pruning heuristics to session context items. It prunes or deselects context items based on failure status, retention limits, and token budgets, while sparing certain turns (e.g., user-message turns and successful message turns) from pruning.
 Reduces context size by deselecting irrelevant or failed turns from `turn.context`.
 
 ## Implementation Details / Logic
+### Heuristic 4: Validation Failure Pruning (Conditional)
+As of Slice 02-13, Heuristic 4 is guarded by the same green-state check as Heuristic 3 (Recovery Cleanup). Validation-failed turns are **only** pruned when a subsequent valid (green) plan exists, either on disk (`is_latest_green`) or as the current turn's status (`is_currently_green`). During chains of consecutive validation failures with no green anchor, all validation failure turns remain visible in context to preserve the audit trail.
+
 ### Sparing Logic (Preserved Turns)
 
 The pruning service spares two categories of turns from ALL pruning heuristics (retention limit, global budget, non-green recovery, validation failure):
@@ -25,6 +29,7 @@ Both sparing checks are performed in `_update_turn_metadata_from_item`, which co
 
 ## Failure Modes
 - **Mis-scoped Threshold Summation**: If `_apply_global_budget` sums items from ALL scopes (Session, System, Turn) instead of ONLY Turn-scope items, Session-scope files (from `session.context`) and System prompts can inflate the total token count, triggering premature pruning of the working set.
+- **Green-State Guard Gap**: If the green-state guard (`is_currently_green or is_latest_green`) is accidentally removed or bypassed, Heuristic 4 will revert to unconditional pruning. All pruning callers must ensure `current_status` is passed and `turn_statuses` is populated.
 - **Zero/Negative Threshold**: If the threshold is set to 0 or negative, the method must be a no-op. Current implementation already handles this via the early return guard.
 - **Missing Report File**: If a turn has a plan but no `report.md` (e.g., execution was aborted), `_check_report_has_user_request` returns `False` gracefully via `_safe_read` path existence check — no crash. Edge case validated in prototype.
 - **Empty User Request Value**: If the `user_request` metadata line is present but the value is empty, the turn is still spared (the presence of the header itself indicates user interaction). This is the correct behavior — an empty user_request still represents a user action (e.g., a blank message submission).
