@@ -159,15 +159,28 @@ A living list of upcoming Milestones and the high-level features/capabilities pl
         <description>Lightweight, free-form task description for one-off requirements. Created by the Pathfinder instead of a full Specification Document when the requirement is tactical, well-understood, and does not need architectural planning.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Task: {{task_title}}</item>
-          <item name="Goal">**Goal:** [Single sentence describing what needs to be done]</item>
         </section>
-        <section n="2" name="Requirements">
-          <item name="Heading">## Requirements</item>
-          <item name="Content">High-level approach and key constraints. Free-form content.</item>
+        <section n="2" name="Business Goal">
+          <item name="Heading">## Business Goal</item>
+          <item name="Content">Single sentence describing the business value or why this work matters.</item>
         </section>
-        <section n="3" name="Definition of Done">
-          <item name="Heading">## Definition of Done</item>
-          <item name="Content">Clear criteria that define when the task is complete.</item>
+        <section n="3" name="Context">
+          <item name="Heading">## Context</item>
+          <item name="Content">Detailed background explaining the problem, current behavior, what needs to change, and any relevant technical constraints.</item>
+        </section>
+        <section n="4" name="Implementation Steps">
+          <item name="Heading">## Implementation Steps</item>
+          <item name="Content">Numbered step-by-step breakdown of what to change. Each step follows this format:
+
+### Step N: [Action Description]
+- **File:** [path/to/file.ext](/path/to/file.ext)
+- **Change:** [Description of the specific change to make]
+
+Use as many steps as needed. Each step should target a single file or logical change.</item>
+        </section>
+        <section n="5" name="Verification">
+          <item name="Heading">## Verification</item>
+          <item name="Content">Numbered checklist of criteria that define when the task is complete and working correctly. Examples: test commands to run, manual checks to perform, regressions to rule out.</item>
         </section>
       </blueprint>
 
