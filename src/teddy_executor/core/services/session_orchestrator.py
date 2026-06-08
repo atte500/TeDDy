@@ -149,15 +149,17 @@ class SessionOrchestrator(IRunPlanUseCase):
         # 4a. Empty user reply after communication turn → terminate session immediately (no report.md)
         if report and plan.is_communication_turn():
             user_reply = next(
-                (log.details for log in report.action_logs if log.action_type == "MESSAGE"),
+                (
+                    log.details
+                    for log in report.action_logs
+                    if log.action_type == "MESSAGE"
+                ),
                 None,
             )
             if user_reply is not None and not user_reply.strip():
                 import typer
 
-                typer.secho(
-                    "\nSession terminated (empty reply).", fg=typer.colors.RED, err=True
-                )
+                typer.secho("\nSession terminated.", fg=typer.colors.RED, err=True)
                 return None  # type: ignore
 
         # 4. Turn Transition
@@ -208,7 +210,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         # unless one was explicitly captured during the abort process itself
         # (e.g. via the 'm' key in TUI). Pre-existing turn messages are ignored.
         new_message = self._user_interactor.ask_question(
-            "Plan aborted. How do you want to proceed? (Empty response will quit session)"
+            "Plan aborted. How do you want to proceed?"
         )
 
         # If still empty after potential prompt, return None to signal session termination.
