@@ -54,8 +54,9 @@ Then no history.log is created in the session directory
 - [x] **Logic** - Add metadata header printing to stdout in SessionOrchestrator (required format: `[NN] <plan-title> | Waiting for <agent-name> to respond...`, plus model/context/cost bullets).
 - [x] **Wiring** - Install Tee at start of SessionOrchestrator.execute() when is_session is True, with try/finally for cleanup.
 - [x] **Harness** - Create test fixtures and helpers for Tee and history.log tests.
-- [x] **Wiring** - Add unit tests for Tee class (basic tee, flush propagation, isatty, context manager, exception safety).
+- [ ] **Wiring** - Add unit tests for Tee class (basic tee, flush propagation, isatty, context manager, exception safety).
 - [ ] **Wiring** - Add integration tests for history.log creation in SessionOrchestrator (format correctness, validation failure logging, non-session mode, append mode, stdout restoration, Tee failure isolation).
+- [ ] **Refactor** - Add explicit unit tests for `_TeeWriter.flush()` propagation and `isatty()` forwarding in `tests/suites/unit/core/utils/test_io.py`.
 - [ ] **Cleanup** - Refactor `SessionOrchestrator.execute()` to reduce statement count (<40) and branch count (<12) to satisfy PLR0915/PLR0912 linting rules.
 
 ## Implementation Notes
@@ -88,37 +89,6 @@ Then no history.log is created in the session directory
 - `test_wiring_history_log.py` updated to import these helpers instead of defining its own private copies.
 
 ### Wiring - Tee installation in SessionOrchestrator.execute() (DONE)
-- Tee installed after `is_session` detection (step 0) and before `# 1. Resolve Plan`.
-- Installation follows this pattern:
-  ```python
-  if is_session and plan_path:
-      session_dir = Path(plan_path).parent.parent
-      history_log_path = session_dir / "history.log"
-      tee = Tee(history_log_path)
-      tee.__enter__()
-  else:
-      tee = None
-
-  try:
-      # ... original execute() body (steps 1-4b) indented by 4 spaces ...
-  finally:
-      if tee is not None:
-          tee.__exit__(None, None, None)
-  ```
-- The try/finally ensures `sys.stdout` is always restored, even on exceptions.
-- The Tee only captures stdout in session mode; standalone execute calls skip Tee installation.
-- Implementation challenges: Multiple script attempts failed due to indentation mismatches. Final solution used a single Python script that replaced the entire block from `is_session = ...` through `return report` in one shot, avoiding double-indentation bugs.
-- Test: `test_history_log_created_in_session_mode` verifies `history.log` exists with header content, and non-session mode does not create `history.log`.
-- Test uses real `tmp_path` directory structure simulating a session turn.
-
-### Wiring - Tee unit tests (DONE)
-- Added 4 new tests to `tests/suites/unit/core/utils/test_io.py`:
-  1. `test_tee_writer_flush_propagates_to_both_outputs` — verifies `_TeeWriter.flush()` does not close or break either stream.
-  2. `test_tee_writer_isatty_returns_original_stdout_value` — verifies `isatty()` delegates to original stdout (StringIO returns False).
-  3. `test_tee_restores_stdout_on_exception` — verifies `sys.stdout` is restored even when an exception is raised inside the context.
-  4. `test_tee_handles_file_open_failure_gracefully` — verifies Tee skips when log file cannot be opened (e.g., permission error), stdout remains usable and restored on exit.
-- All 7 tests (3 existing + 4 new) pass. Full suite: 867 passed, 3 skipped.
-- The previously marked debt for explicit flush/isatty tests is now resolved by these tests.
 - Tee installed after `is_session` detection (step 0) and before `# 1. Resolve Plan`.
 - Installation follows this pattern:
   ```python
