@@ -104,6 +104,11 @@ class PlanningService(IPlanningUseCase):
         cost_val = self._prompt_manager.log_telemetry(token_count, turn_cost)
         plan_path = (turn_path / "plan.md").as_posix()
         self._file_system_manager.write_file(plan_path, plan_content)
+        # Pre-populate meta["model"] before update_meta to ensure the user-configured
+        # model (with routing prefix like openrouter/) is preserved.
+        # This prevents the bug where meta["model"] was missing on first turn (no --model flag)
+        # and update_meta overwrote it with the bare actual model.
+        meta.setdefault("model", model)
         self._prompt_manager.update_meta(
             meta, response, token_count, turn_cost, meta_file_path
         )
