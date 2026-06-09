@@ -100,9 +100,10 @@ def resolve_action_parameters(action: ActionData) -> dict[str, Any]:
             "allow_failure",
             "background",
             "timeout",
+            "tail",
             "description",
         ],
-        "READ": ["resource", "description"],
+        "READ": ["resource", "lines", "description"],
         "RESEARCH": ["queries", "description"],
     }
 

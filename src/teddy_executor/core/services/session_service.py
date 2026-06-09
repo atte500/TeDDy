@@ -333,6 +333,9 @@ class SessionService(ISessionManager):
             # Determine path based on action type
             resource_val = None
             if log.action_type == ActionType.READ.value:
+                # Skip adding READ path to context when Lines parameter is specified (line-range read)
+                if log.params.get("lines") or log.params.get("Lines"):
+                    continue
                 resource_val = log.params.get("resource") or log.params.get("Resource")
             elif log.action_type in (ActionType.CREATE.value, ActionType.EDIT.value):
                 resource_val = (

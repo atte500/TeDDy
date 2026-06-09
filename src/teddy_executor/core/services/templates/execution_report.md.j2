@@ -231,7 +231,7 @@
 {# Generic Params for CREATE, EDIT, READ, RESEARCH etc #}
 {% if params %}
   {# Use namespace for persistent ignored_keys across if-blocks #}
-  {% set param_ns = namespace(ignored=['content', 'find', 'replace', 'edits', 'similarity_scores', 'similarity_score', 'similarity threshold', 'similarity_threshold']) %}
+  {% set param_ns = namespace(ignored=['content', 'find', 'replace', 'edits', 'similarity_scores', 'similarity_score', 'similarity threshold', 'similarity_threshold', 'metadata used file path alias']) %}
 
   {% if action_type in ['EXECUTE', 'RESEARCH'] %}
     {% set param_ns.ignored = param_ns.ignored + ['description', 'Description'] %}
@@ -269,6 +269,12 @@
 {% endfor %}
 
 _**Hint:** NOW you MUST use READ on the most promising results)_
+{% endif %}
+
+{% if action_type == 'READ' and log.details and log.details is mapping and log.details.get('content') and params.get('lines') %}
+{{ log.details.content | trim | fence }}
+{{ log.details.content | trim }}
+{{ log.details.content | trim | fence }}
 {% endif %}
 
 {{ render_action_details(log) }}
