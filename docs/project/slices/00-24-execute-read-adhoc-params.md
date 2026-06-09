@@ -40,8 +40,8 @@ Then only lines 10-20 are returned in the execution report, without truncation h
 
 ## Deliverables
 - [x] **Logic** - Add `current_turn` parameter to `ContextService._format_header()` and `get_context()`, and propagate to callers (`session_orchestrator.py`, `execution_orchestrator.py`).
-- [ ] **Seam** - Add `Tail` optional parameter extraction in EXECUTE parsing (`parse_execute_action` in `action_parser_complex.py`).
-- [ ] **Logic** - Pass `Tail` parameter through `ActionExecutor` to `ShellAdapter` and apply in truncation logic.
+- [x] **Seam** - Add `Tail` optional parameter extraction in EXECUTE parsing (`parse_execute_action` in `action_parser_complex.py`).
+- [▶] **Logic** - Pass `Tail` parameter through `ActionExecutor` to `ShellAdapter` and apply in truncation logic.
 - [ ] **Seam** - Add `Lines` optional parameter extraction in READ parsing (`action_parser_strategies.py` or `action_parser_complex.py`).
 - [ ] **Logic** - Apply `Lines` range in READ execution within `ActionExecutor` (in `_handle_read`).
 - [ ] **Documentation** - Update all 6 agent prompt files with new parameter docs.
@@ -62,7 +62,14 @@ Then only lines 10-20 are returned in the execution report, without truncation h
 ### Technical Debt: PLR0913 Parameter Count
 - `get_context()` has 6 parameters (excluding self) vs ruff's PLR0913 threshold of 5. The function was already at the boundary (5 params) before adding `current_turn`. A proper fix would require bundling parameters into an options dataclass, which is a breaking change to the public interface. Logged as acceptable debt for now.
 
-### Deliverable 2 (Pending): Caller Propagation
+### Deliverable 2: Tail Parameter Extraction (Seam)
+- Added `"Tail": "tail"` to the `text_key_map` dictionary in `parse_execute_action()` within `action_parser_complex.py`.
+- The `Tail` parameter is extracted as a string value (e.g., `"5"`) stored in `action.params["tail"]`.
+- The `MarkdownPlanBuilder.add_execute` passes kwargs as-is, so test uses `Tail=5` (uppercase T) to match the spec format.
+- The parameter is optional and backward-compatible: existing tests that don't pass `Tail` continue to work unchanged.
+- Integer conversion of the tail value happens in the downstream Logic deliverable (Deliverable 3) when passing it to `ShellAdapter`.
+
+### Deliverable 3 (Pending): Caller Propagation
 - `session_orchestrator.py` should extract turn number from `Path(plan_path).parent.name` and pass it to `get_context()`.
 - `planning_service.py` should extract turn number from `turn_dir` (the turn directory name) and pass it to `get_context()`.
 - Both are additive and backward-compatible.

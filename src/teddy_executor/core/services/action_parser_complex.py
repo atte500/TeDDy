@@ -120,6 +120,7 @@ def parse_execute_action(
             "Allow Failure": "allow_failure",
             "Background": "background",
             "Timeout": "timeout",
+            "Tail": "tail",
         },
     )
 

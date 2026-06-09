@@ -83,3 +83,16 @@ def test_parse_read_action_with_absolute_path(parser):
     builder = MarkdownPlanBuilder("T").add_read(absolute_path)
     action = _p(parser, builder).actions[0]
     assert action.params["resource"] == absolute_path.replace("\\", "/")
+
+
+def test_parse_execute_action_with_tail(parser: IPlanParser):
+    """
+    Verifies that an EXECUTE action with a Tail parameter
+    is parsed correctly, extracting the value as a string.
+    """
+    builder = MarkdownPlanBuilder("T").add_execute("ls", Tail=5)
+    action = _p(parser, builder).actions[0]
+    assert action.params.get("tail") is not None, (
+        "Tail parameter should be extracted when present"
+    )
+    assert action.params["tail"] == "5"
