@@ -264,7 +264,7 @@ class SessionPruningService:
         return False
 
     def _check_report_has_user_request(self, path: str) -> bool:
-        """Detect the ``- **User Request:**`` pattern in report metadata.
+        """Detect the ``## User Request`` heading pattern in report metadata.
 
         Returns True if the report file contains the user_request header,
         indicating the user provided an additional message during review.
@@ -273,7 +273,7 @@ class SessionPruningService:
         """
         content = self._safe_read(path)
         if content:
-            return bool(re.search(r"^- \*\*User Request:\*\*", content, re.MULTILINE))
+            return bool(re.search(r"^## User Request", content, re.MULTILINE))
         return False
 
     def _check_plan_failed(self, path: str) -> bool:

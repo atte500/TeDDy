@@ -264,9 +264,7 @@ def _resolve_session_name(
     if path:
         return session_manager.resolve_session_from_path(path)
     try:
-        return session_manager.resolve_session_from_path(
-            str(Path.cwd().resolve())
-        )
+        return session_manager.resolve_session_from_path(str(Path.cwd().resolve()))
     except ValueError:
         return session_manager.get_latest_session_name()
 
@@ -288,9 +286,7 @@ def _sync_and_display_session_meta(
     latest_turn_path = session_manager.get_latest_turn(session_name)
     meta = repository.load_meta(latest_turn_path)
     # Show actual_model if available from previous turn, falling back to model
-    _echo_config_success(
-        container, model=model, actual_model=meta.get("actual_model")
-    )
+    _echo_config_success(container, model=model, actual_model=meta.get("actual_model"))
 
     # Sync latest turn's meta.yaml with current config model/overrides
     config_model = config_service.get_setting("llm.model", "unknown")

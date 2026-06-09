@@ -362,7 +362,6 @@ class LiteLLMAdapter(ILlmClient):
             return True
         return False
 
-    
     def supports_pricing(self, model: Optional[str] = None) -> bool:
         """
         Returns True if the model has known pricing metadata in the registry.

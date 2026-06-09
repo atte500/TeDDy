@@ -290,7 +290,7 @@ class SessionService(ISessionManager):
         report_path = (cur_dir / "report.md").as_posix()
         if self._file_system_manager.path_exists(report_path):
             content = self._file_system_manager.read_file(report_path)
-            if re.search(r"^- \*\*User Request:\*\*", content, re.MULTILINE):
+            if re.search(r"^## User Request", content, re.MULTILINE):
                 return True
 
         return False

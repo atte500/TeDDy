@@ -33,7 +33,7 @@ def service():
 
 
 class TestCheckReportHasUserRequest:
-    """A helper method that detects the ``- **User Request:**`` pattern in report files.
+    """A helper method that detects the ``## User Request`` heading pattern in report files.
 
     The method reads a report file and checks for the pattern using regex.
     It returns True if the pattern is found, False if the file is missing,
@@ -41,14 +41,18 @@ class TestCheckReportHasUserRequest:
     """
 
     def test_detects_user_request_header_in_report(self, service):
-        """Positive: Report containing '- **User Request:**' returns True."""
+        """Positive: Report containing '## User Request' returns True."""
         # Arrange
         mock_fs = service._file_system_manager
         mock_fs.path_exists.return_value = True
         mock_fs.read_file.return_value = (
             "# Execution Report\n"
             "- **Overall Status:** SUCCESS\n"
-            "- **User Request:** Add new feature\n"
+            "\n"
+            "## User Request\n"
+            "```text\n"
+            "Add new feature\n"
+            "```\n"
         )
 
         # Act
@@ -58,16 +62,16 @@ class TestCheckReportHasUserRequest:
         assert result is True
 
     def test_detects_user_request_header_without_content(self, service):
-        """Positive: Report with empty user_request header still returns True.
+        """Positive: Report with empty user_request heading still returns True.
 
-        The presence of the key itself indicates user interaction occurred,
-        even if the value is empty. The regex matches the line, not the value.
+        The presence of the heading itself indicates user interaction occurred,
+        even if the content is empty. The regex matches the heading line.
         """
         # Arrange
         mock_fs = service._file_system_manager
         mock_fs.path_exists.return_value = True
         mock_fs.read_file.return_value = (
-            "# Execution Report\n- **Overall Status:** SUCCESS\n- **User Request:**\n"
+            "# Execution Report\n- **Overall Status:** SUCCESS\n\n## User Request\n"
         )
 
         # Act
@@ -119,11 +123,11 @@ class TestCheckReportHasUserRequest:
     def test_matches_user_request_header_inside_code_block(self, service):
         r"""Positive: Pattern inside a code block still matches.
 
-        The regex r"^- \*\*User Request:\*\*" with re.MULTILINE matches
+        The regex r"^## User Request" with re.MULTILINE matches
         the pattern wherever it appears on its own line. This is by design —
         the presence of the header itself indicates user interaction, regardless
         of code block context. In production, the report template renders this
-        header on its own metadata line.
+        header as a Markdown heading on its own line.
         """
         # Arrange
         mock_fs = service._file_system_manager
@@ -132,7 +136,7 @@ class TestCheckReportHasUserRequest:
             "# Execution Report\n"
             "- **Overall Status:** SUCCESS\n"
             "```\n"
-            "- **User Request:** inside code block\n"
+            "## User Request\n"
             "```\n"
         )
 
@@ -210,7 +214,15 @@ class TestSparedTurnIntegration:
             _contents = {
                 "00/report.md": "# Report\n- **Overall Status:** SUCCESS\n",
                 "00/plan.md": "# Plan\n- **Status:** Green 🟢\n",
-                "01/report.md": "# Report\n- **Overall Status:** SUCCESS\n- **User Request:** fix the bug\n",
+                "01/report.md": (
+                    "# Report\n"
+                    "- **Overall Status:** SUCCESS\n"
+                    "\n"
+                    "## User Request\n"
+                    "```text\n"
+                    "fix the bug\n"
+                    "```\n"
+                ),
                 "01/plan.md": "# Plan\n- **Status:** Green 🟢\n",
                 "02/report.md": "# Report\n- **Overall Status:** SUCCESS\n",
                 "02/plan.md": "# Plan\n- **Status:** Green 🟢\n",
@@ -292,7 +304,11 @@ class TestSparedTurnIntegration:
                 return (
                     "# Report\n"
                     "- **Overall Status:** SUCCESS\n"
-                    "- **User Request:** add more tests\n"
+                    "\n"
+                    "## User Request\n"
+                    "```text\n"
+                    "add more tests\n"
+                    "```\n"
                 )
             if "01/plan.md" in str(path):
                 return "# Plan\n- **Status:** Green 🟢\n"
