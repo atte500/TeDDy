@@ -42,8 +42,8 @@ Then only lines 10-20 are returned in the execution report, without truncation h
 - [x] **Logic** - Add `current_turn` parameter to `ContextService._format_header()` and `get_context()`, and propagate to callers (`session_orchestrator.py`, `execution_orchestrator.py`).
 - [x] **Seam** - Add `Tail` optional parameter extraction in EXECUTE parsing (`parse_execute_action` in `action_parser_complex.py`).
 - [x] **Logic** - Pass `Tail` parameter through `ActionExecutor` to `ShellAdapter` and apply in truncation logic.
-- [▶] **Seam** - Add `Lines` optional parameter extraction in READ parsing (`action_parser_strategies.py` or `action_parser_complex.py`).
-- [ ] **Logic** - Apply `Lines` range in READ execution within `ActionExecutor` (in `_handle_read`).
+- [x] **Seam** - Add `Lines` optional parameter extraction in READ parsing (`action_parser_strategies.py` or `action_parser_complex.py`).
+- [▶] **Logic** - Apply `Lines` range in READ execution within `ActionExecutor` (in `_handle_read`).
 - [ ] **Documentation** - Update all 6 agent prompt files with new parameter docs.
 - [ ] **Wiring** - Update `session_orchestrator.py` to pass `current_turn` extracted from `Path(plan_path).parent.name` to `get_context()`.
 - [ ] **Wiring** - Update `planning_service.py` to pass `current_turn` extracted from `turn_dir` to `get_context()`.
@@ -77,10 +77,19 @@ Then only lines 10-20 are returned in the execution report, without truncation h
 - **Test:** Added `test_shell_adapter_process_execution_results_with_max_lines_override` in `test_shell_adapter_capping.py` — verifies that a `max_lines=3` override truncates to 3 lines + hint regardless of the adapter's `max_execute_lines=100`.
 - **Key insight:** The `tail` value from `action.params["tail"]` is a string (`"5"`). Conversion must happen at the dispatch layer (ActionFactory) before it reaches the protocol signature.
 
-### Deliverable 4 (Pending): READ Lines Parameter Extraction
-- Need to locate the READ parsing function (likely `action_parser_strategies.py`).
-- Add `"Lines": "lines"` to the relevant `text_key_map` or metadata extraction.
-- Add test(s) for `Lines` parameter extraction in READ parsing tests.
+### Deliverable 4: Lines Parameter Extraction (Seam)
+- Added `"Lines": "lines"` to the `text_key_map` parameter in `parse_resource_action()` within `action_parser_strategies.py`.
+- The `Lines` parameter is extracted as a string value (e.g., `"10-20"`) stored in `action.params["lines"]`.
+- Follows the exact same pattern as the `Tail` parameter extraction for EXECUTE.
+- The parameter is optional and backward-compatible: existing READ tests that don't pass `Lines` continue to work unchanged.
+- The test uses `add_action` directly (since `add_read` doesn't support kwargs) to render `Lines: 10-20` in the metadata.
+
+### Deliverable 5 (Pending): READ Lines Range Application
+- In `action_executor.py`, locate `_handle_read` method.
+- After reading file content, check `action.params.get("lines")` for a range string.
+- Parse range format (e.g., "10-50", "-20", "50-", "5") and extract specified lines.
+- When `Lines` is specified, skip content truncation.
+- Need to find how READ is dispatched through `action_dispatcher.py` and `action_executor.py`.
 
 ## Implementation Plan
 The changes are additive: add optional parameters to existing functions. No breaking changes. Each deliverable follows the Developer workflow: Red (write/update tests), Green (implement minimal code), Refactor. Integration tests and prompt file updates are handled as separate deliverables. The Wiring deliverable at the end will verify end-to-end behavior via a `CliRunner` acceptance test.

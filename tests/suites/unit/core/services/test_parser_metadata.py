@@ -96,3 +96,25 @@ def test_parse_execute_action_with_tail(parser: IPlanParser):
         "Tail parameter should be extracted when present"
     )
     assert action.params["tail"] == "5"
+
+
+def test_parse_read_action_with_lines(parser: IPlanParser):
+    """
+    Verifies that a READ action with a Lines parameter
+    is parsed correctly, extracting the value as a string.
+    Currently expected to fail because Lines is not yet extracted.
+    """
+    # Use add_action directly since add_read doesn't support **kwargs
+    builder = MarkdownPlanBuilder("T").add_action(
+        "READ",
+        params={
+            "Resource": "[file.txt](/file.txt)",
+            "Description": "Reading file",
+            "Lines": "10-20",
+        },
+    )
+    action = _p(parser, builder).actions[0]
+    assert action.params.get("lines") is not None, (
+        "Lines parameter should be extracted when present"
+    )
+    assert action.params["lines"] == "10-20"

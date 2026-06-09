@@ -66,6 +66,7 @@ def parse_resource_action(
     description, params = parse_action_metadata(
         metadata_list,
         link_key_map={"Resource": "resource", "File Path": "path_alias"},
+        text_key_map={"Lines": "lines"},
     )
 
     if "path_alias" in params:
