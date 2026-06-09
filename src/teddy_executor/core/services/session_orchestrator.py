@@ -85,13 +85,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         is_session = self._is_session_mode(plan_path)
 
         # Install Tee for session mode (wraps stdout to write history.log)
-        if is_session and plan_path:
-            session_dir = Path(plan_path).parent.parent
-            history_log_path = session_dir / "history.log"
-            tee = Tee(history_log_path)
-            tee.__enter__()
-        else:
-            tee = None
+        tee = self._install_tee(is_session, plan_path)
 
         try:
             # 1. Resolve Plan (Parse only)
@@ -104,41 +98,9 @@ class SessionOrchestrator(IRunPlanUseCase):
 
             # 2. Context Preparation (Gather, Prune, Harvest)
             # We must harvest context BEFORE validation so that pruned paths persist across replans
-            if is_session and plan_path and not project_context:
-                context_files = self._session_service.resolve_context_paths(plan_path)
-                agent_name = (
-                    plan.metadata.get("Agent")
-                    or plan.metadata.get("agent")
-                    or (
-                        self._lifecycle_manager.get_agent_name(plan_path)
-                        if hasattr(self._lifecycle_manager, "get_agent_name")
-                        else "Unknown"
-                    )
-                )
-                total_window = self._llm_client.get_context_window()
-
-                cache_dir = str(Path(plan_path).parent.parent)
-                project_context = self._context_service.get_context(
-                    context_files=context_files,
-                    agent_name=agent_name,
-                    total_window=total_window,
-                    cache_dir=cache_dir,
-                    current_turn=Path(plan_path).parent.name,
-                )
-                from dataclasses import is_dataclass, replace
-
-                if is_dataclass(project_context):
-                    project_context = replace(
-                        cast(Any, project_context),
-                        agent_name=agent_name,
-                        system_prompt_tokens=0,
-                    )
-                if self._pruning_service:
-                    status = plan.metadata.get("Status") if plan else None
-                    project_context = self._pruning_service.prune(
-                        project_context, current_status=status
-                    )
-
+            project_context = self._prepare_session_context(
+                is_session, plan_path, project_context, plan
+            )
             self._harvest_context(
                 is_session=is_session,
                 project_context=project_context,
@@ -166,22 +128,8 @@ class SessionOrchestrator(IRunPlanUseCase):
             )
 
             # 4a. Empty user reply after communication turn → terminate session immediately (no report.md)
-            if report and plan.is_communication_turn():
-                user_reply = next(
-                    (
-                        log.details
-                        for log in report.action_logs
-                        if log.action_type == "MESSAGE"
-                    ),
-                    None,
-                )
-                if user_reply is not None and not user_reply.strip():
-                    typer.secho("\nSession terminated.", fg=typer.colors.RED, err=True)
-                    typer.secho(
-                        "To continue the session, use `teddy resume [session_path]`.",
-                        err=True,
-                    )
-                    return None  # type: ignore
+            if self._is_empty_communication(report, plan):
+                return None  # type: ignore
 
             # 4. Turn Transition
             if is_session and plan_path:
@@ -199,8 +147,101 @@ class SessionOrchestrator(IRunPlanUseCase):
             return report
 
         finally:
-            if tee is not None:
-                tee.__exit__(None, None, None)
+            self._close_tee(tee)
+
+    # ------------------------------------------------------------------ #
+    #  Helpers extracted from execute() for PLR0912 branch count control
+    # ------------------------------------------------------------------ #
+
+    def _install_tee(self, is_session: bool, plan_path: Optional[str]) -> Optional[Any]:
+        """Install Tee to capture stdout into history.log if in session mode.
+
+        Returns a Tee instance if installed, None otherwise.
+        """
+        if is_session and plan_path:
+            session_dir = Path(plan_path).parent.parent
+            history_log_path = session_dir / "history.log"
+            tee = Tee(history_log_path)
+            tee.__enter__()
+            return tee
+        return None
+
+    def _close_tee(self, tee: Optional[Any]) -> None:
+        """Safely close the Tee and restore original stdout."""
+        if tee is not None:
+            tee.__exit__(None, None, None)
+
+    def _prepare_session_context(
+        self,
+        is_session: bool,
+        plan_path: Optional[str],
+        project_context: Optional[Any],
+        plan: Optional[Plan],
+    ) -> Optional[Any]:
+        """Gather, prune, and harvest context for a session turn.
+
+        Returns the (possibly updated) project_context.
+        """
+        if is_session and plan_path and not project_context:
+            context_files = self._session_service.resolve_context_paths(plan_path)
+            agent_name = (
+                plan.metadata.get("Agent")
+                or plan.metadata.get("agent")
+                or (
+                    self._lifecycle_manager.get_agent_name(plan_path)
+                    if hasattr(self._lifecycle_manager, "get_agent_name")
+                    else "Unknown"
+                )
+            )
+            total_window = self._llm_client.get_context_window()
+
+            cache_dir = str(Path(plan_path).parent.parent)
+            project_context = self._context_service.get_context(
+                context_files=context_files,
+                agent_name=agent_name,
+                total_window=total_window,
+                cache_dir=cache_dir,
+                current_turn=Path(plan_path).parent.name,
+            )
+            from dataclasses import is_dataclass, replace
+
+            if is_dataclass(project_context):
+                project_context = replace(
+                    cast(Any, project_context),
+                    agent_name=agent_name,
+                    system_prompt_tokens=0,
+                )
+            if self._pruning_service:
+                status = plan.metadata.get("Status") if plan else None
+                project_context = self._pruning_service.prune(
+                    project_context, current_status=status
+                )
+        return project_context
+
+    def _is_empty_communication(
+        self, report: Optional[ExecutionReport], plan: Plan
+    ) -> bool:
+        """Check if a communication turn has an empty user reply — terminates session.
+
+        Returns True if the session should be terminated.
+        """
+        if report and plan.is_communication_turn():
+            user_reply = next(
+                (
+                    log.details
+                    for log in report.action_logs
+                    if log.action_type == "MESSAGE"
+                ),
+                None,
+            )
+            if user_reply is not None and not user_reply.strip():
+                typer.secho("\nSession terminated.", fg=typer.colors.RED, err=True)
+                typer.secho(
+                    "To continue the session, use `teddy resume [session_path]`.",
+                    err=True,
+                )
+                return True
+        return False
 
     def _print_metadata_header(
         self,
