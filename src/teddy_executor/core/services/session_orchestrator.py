@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Any, Optional, cast
 
+import typer
+
 from teddy_executor.core.domain.models.execution_report import (
     ExecutionReport,
 )
@@ -136,6 +138,9 @@ class SessionOrchestrator(IRunPlanUseCase):
         if isinstance(result, ExecutionReport):
             return result
 
+        # 3.5 Print metadata header (session mode only)
+        self._print_metadata_header(is_session, plan_path, plan, project_context)
+
         # 4. Execution
         report = self._execution_orchestrator.execute(
             plan=plan,
@@ -157,8 +162,6 @@ class SessionOrchestrator(IRunPlanUseCase):
                 None,
             )
             if user_reply is not None and not user_reply.strip():
-                import typer
-
                 typer.secho("\nSession terminated.", fg=typer.colors.RED, err=True)
                 typer.secho(
                     "To continue the session, use `teddy resume [session_path]`.",
@@ -170,8 +173,6 @@ class SessionOrchestrator(IRunPlanUseCase):
         if is_session and plan_path:
             report = self._handle_aborted_session(report, plan)
             if report is None:
-                import typer
-
                 typer.secho("\nSession terminated.", fg=typer.colors.RED, err=True)
                 typer.secho(
                     "To continue the session, use `teddy resume [session_path]`.",
@@ -182,6 +183,43 @@ class SessionOrchestrator(IRunPlanUseCase):
             self._lifecycle_manager.finalize_turn(plan_path, report, plan=plan)
 
         return report
+
+    def _print_metadata_header(
+        self,
+        is_session: bool,
+        plan_path: Optional[str],
+        plan: Plan,
+        project_context: Optional[Any],
+    ) -> None:
+        """Print the metadata header to stdout for session mode."""
+        if not (is_session and plan_path):
+            return
+
+        turn_num = Path(plan_path).parent.name
+        plan_title = getattr(plan, "title", "Untitled")
+        agent_name = (
+            plan.metadata.get("Agent") or plan.metadata.get("agent") or "Unknown"
+        )
+        model = self._config_service.get_setting("llm.model", "unknown")
+        typer.echo(
+            f"[{turn_num}] {plan_title} | Waiting for {agent_name} to respond..."
+        )
+        typer.echo(f"• Model: {model}")
+
+        if project_context and hasattr(project_context, "total_tokens"):
+            max_context = self._llm_client.get_context_window()
+            typer.echo(
+                f"• Context: {project_context.total_tokens} / {max_context} tokens"
+            )
+        else:
+            typer.echo("• Context: ? / ? tokens")
+
+        try:
+            session_name = Path(plan_path).parent.parent.name
+            cost = self._session_service.get_cumulative_cost(session_name)
+            typer.echo(f"• Session Cost: ${cost:.4f}")
+        except Exception:
+            typer.echo("• Session Cost: $0.0000")
 
     def _harvest_context(
         self,
@@ -209,8 +247,6 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         if report.run_summary.status != RunStatus.ABORTED:
             return report
-
-        import typer
 
         typer.secho("Plan aborted by user.", fg=typer.colors.YELLOW, err=True)
 
