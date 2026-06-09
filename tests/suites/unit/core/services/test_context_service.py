@@ -76,6 +76,8 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     assert "- **OS:** test_os" in result.header
     assert "- **Current Date:** 2026-03-26" in result.header
     assert "- **Current Time:** 16:50:00" in result.header
+    # Default (no current_turn passed) should show "N/A"
+    assert "- **Current Turn:** N/A" in result.header
 
     # Check git status section
     assert result.git_status == mock_git_status
@@ -453,3 +455,27 @@ def test_get_context_fetches_remote_url_content_via_web_scraper(
     assert local_content in result.content
     assert f"### [{url}]" in result.content
     assert f"### [{local_file}]" in result.content
+
+
+def test_get_context_with_current_turn_parameter(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+):
+    """
+    Scenario: Current Turn in System Information
+    Tests that passing current_turn to get_context() results in the header
+    containing the correct turn number.
+    """
+    # Arrange
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_fs.get_context_paths.return_value = []
+
+    # Act
+    result = service.get_context(current_turn="01")
+
+    # Assert
+    assert "- **Current Turn:** 01" in result.header

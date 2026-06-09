@@ -46,6 +46,7 @@ class ContextService(IGetContextUseCase):
         agent_name: str = "Unknown",
         total_window: int = 0,
         cache_dir: Optional[str] = None,
+        current_turn: Optional[str] = None,
     ) -> ProjectContext:
         """
         Gathers all project context information by orchestrating its dependencies.
@@ -77,7 +78,7 @@ class ContextService(IGetContextUseCase):
                     file_contents[url] = None
 
         return ProjectContext(
-            header=self._format_header(system_info),
+            header=self._format_header(system_info, current_turn),
             content=self._format_content(
                 repo_tree, scoped_paths, file_contents, git_status
             ),
@@ -271,7 +272,9 @@ class ContextService(IGetContextUseCase):
 
         return status_map
 
-    def _format_header(self, system_info: Dict[str, str]) -> str:
+    def _format_header(
+        self, system_info: Dict[str, str], current_turn: Optional[str] = None
+    ) -> str:
         """Formats the header section of the context report."""
         header_parts = [
             "# Project Context",
@@ -281,6 +284,7 @@ class ContextService(IGetContextUseCase):
             f"- **CWD:** {system_info.get('cwd', 'N/A')}",
             f"- **OS:** {system_info.get('os_name', 'N/A')} {system_info.get('os_version', 'N/A')}".strip(),
             f"- **Shell:** {system_info.get('shell', 'N/A')}",
+            f"- **Current Turn:** {current_turn or 'N/A'}",
         ]
         return "\n".join(header_parts)
 

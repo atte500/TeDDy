@@ -15,12 +15,14 @@ class IGetContextUseCase(Protocol):
         agent_name: str = "Unknown",
         total_window: int = 0,
         cache_dir: Optional[str] = None,
+        current_turn: Optional[str] = None,
     ) -> ProjectContext:
         """
         Gathers all project context information.
 
         Args:
             context_files: Optional mapping of scope names to .context files.
+            current_turn: Optional 2-digit turn number to include in the header.
 
         Returns:
             ProjectContext: A data object containing the aggregated context.
