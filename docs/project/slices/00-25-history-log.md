@@ -56,7 +56,7 @@ Then no history.log is created in the session directory
 - [x] **Harness** - Create test fixtures and helpers for Tee and history.log tests.
 - [x] **Wiring** - Add unit tests for Tee class (basic tee, flush propagation, isatty, context manager, exception safety).
 - [x] **Wiring** - Add integration tests for history.log creation in SessionOrchestrator (format correctness, validation failure logging, non-session mode, append mode, stdout restoration, Tee failure isolation).
-- [▶] **Cleanup** - Refactor `SessionOrchestrator.execute()` to reduce statement count (<40) and branch count (<12) to satisfy PLR0915/PLR0912 linting rules.
+- [ ] **Cleanup** - Refactor `SessionOrchestrator.execute()` to reduce statement count (<40) and branch count (<12) to satisfy PLR0915/PLR0912 linting rules.
 
 ## Implementation Notes
 
