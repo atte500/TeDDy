@@ -53,11 +53,9 @@ Then no history.log is created in the session directory
 - [x] **Logic** - Implement Tee class in `src/teddy_executor/core/utils/io.py`.
 - [x] **Logic** - Add metadata header printing to stdout in SessionOrchestrator (required format: `[NN] <plan-title> | Waiting for <agent-name> to respond...`, plus model/context/cost bullets).
 - [x] **Wiring** - Install Tee at start of SessionOrchestrator.execute() when is_session is True, with try/finally for cleanup.
-- [x] **Harness** - Create test fixtures and helpers for Tee and history.log tests.
+- [ ] **Harness** - Create test fixtures and helpers for Tee and history.log tests.
 - [ ] **Wiring** - Add unit tests for Tee class (basic tee, flush propagation, isatty, context manager, exception safety).
 - [ ] **Wiring** - Add integration tests for history.log creation in SessionOrchestrator (format correctness, validation failure logging, non-session mode, append mode, stdout restoration, Tee failure isolation).
-- [ ] **Refactor** - Add explicit unit tests for `_TeeWriter.flush()` propagation and `isatty()` forwarding in `tests/suites/unit/core/utils/test_io.py`.
-- [ ] **Cleanup** - Refactor `SessionOrchestrator.execute()` to reduce statement count (<40) and branch count (<12) to satisfy PLR0915/PLR0912 linting rules.
 
 ## Implementation Notes
 
@@ -81,12 +79,6 @@ Then no history.log is created in the session directory
 - **Regression fix**: Used `getattr(plan, "title", "Untitled")` instead of `plan.title` to avoid `AttributeError` on mock Plan objects that lack the attribute (7 tests were failing).
 - **Import fix**: Moved `import typer` from local (inside methods) to module level to prevent `UnboundLocalError`.
 - Test: `test_session_orchestrator_prints_metadata_header_when_session` verifies all four lines in stdout using `capsys`.
-
-### Harness - Shared test fixtures and helpers (DONE)
-- Extracted `_build_mocked_orchestrator` from `test_wiring_history_log.py` into a public function `build_mocked_orchestrator` in `tests/harness/setup/orchestrator_helpers.py`.
-- Added `create_session_directory` helper that creates a standard session directory structure (turn dir + plan.md + meta.yaml) for reuse across multiple test files.
-- Both functions are exported from `tests.harness.setup.orchestrator_helpers` and follow the existing harness pattern (Setup/Arrange helpers in `tests/harness/setup/`).
-- `test_wiring_history_log.py` updated to import these helpers instead of defining its own private copies.
 
 ### Wiring - Tee installation in SessionOrchestrator.execute() (DONE)
 - Tee installed after `is_session` detection (step 0) and before `# 1. Resolve Plan`.
