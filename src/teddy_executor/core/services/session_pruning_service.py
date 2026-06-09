@@ -37,10 +37,7 @@ class SessionPruningService:
             items = list(context.items)
 
             # 1. Prune by status/validation failure (Heuristics 3 & 4)
-            # Returns turns_to_prune mapping and a set of turns that MUST be spared
-            turns_to_prune, spared_turns = self._identify_turns_to_prune(
-                items, current_status
-            )
+            turns_to_prune = self._identify_turns_to_prune(items, current_status)
 
             for i, item in enumerate(items):
                 new_item = self._process_context_item(item, turns_to_prune)
@@ -48,12 +45,11 @@ class SessionPruningService:
                     items[i] = new_item
 
             # 2. Heuristic 6: Retention Limit
-            items = self._apply_retention_limit(items, spared_turns=spared_turns)
+            items = self._apply_retention_limit(items)
 
             # 3. Heuristic 2: Global Budget
             items = self._apply_global_budget(
                 items,
-                spared_ids=spared_turns,
             )
 
             return replace(context, items=items)
@@ -105,7 +101,7 @@ class SessionPruningService:
 
     def _identify_turns_to_prune(
         self, items, current_status: Optional[str] = None
-    ) -> tuple[Dict[str, str], set[int]]:
+    ) -> Dict[str, str]:
         """Identifies turns that should be pruned based on failure status."""
         prune_non_green = bool(
             self._config_service.get_setting("auto_pruning.prune_failure_history", True)
@@ -115,16 +111,9 @@ class SessionPruningService:
                 "auto_pruning.prune_validation_failures", True
             )
         )
-        preserve_messages = bool(
-            self._config_service.get_setting(
-                "auto_pruning.preserve_message_turns", True
-            )
-        )
 
-        turn_statuses, validation_failures, spared_turns, non_vf_reports = (
-            self._collect_turn_metadata(
-                items, prune_non_green, prune_validation, preserve_messages
-            )
+        turn_statuses, validation_failures, non_vf_reports = (
+            self._collect_turn_metadata(items, prune_non_green, prune_validation)
         )
 
         turns_to_prune = self._apply_pruning_heuristics(
@@ -135,25 +124,18 @@ class SessionPruningService:
             non_vf_reports,
         )
 
-        # Explicitly remove preserved message turns from the prune list
-        if preserve_messages:
-            for tid in spared_turns:
-                turns_to_prune.pop(str(tid), None)
-
-        return turns_to_prune, spared_turns if preserve_messages else set()
+        return turns_to_prune
 
     def _collect_turn_metadata(
         self,
         items,
         prune_non_green: bool,
         prune_validation: bool,
-        preserve_messages: bool = False,
-    ) -> tuple[Dict[int, bool], set[int], set[int], set[int]]:
+    ) -> tuple[Dict[int, bool], set[int], set[int]]:
         """Scans items to determine turn statuses, validation failures, and non-VF reports."""
         turn_statuses: Dict[int, bool] = {}
         validation_failures: set[int] = set()
         non_vf_reports: set[int] = set()
-        spared_turns: set[int] = set()
         checked_paths = set()
 
         for item in items:
@@ -175,17 +157,15 @@ class SessionPruningService:
                 {
                     "statuses": turn_statuses,
                     "validation_fails": validation_failures,
-                    "messages": spared_turns,
                     "non_vf_reports": non_vf_reports,
                 },
                 {
                     "non_green": prune_non_green,
                     "validation": prune_validation,
-                    "messages": preserve_messages,
                 },
             )
 
-        return turn_statuses, validation_failures, spared_turns, non_vf_reports
+        return turn_statuses, validation_failures, non_vf_reports
 
     def _update_turn_metadata_from_item(
         self,
@@ -219,12 +199,6 @@ class SessionPruningService:
         if self._check_report_is_non_vf_report(item.path):
             state["non_vf_reports"].add(turn_id)
 
-        # Sparing via user_request metadata
-        # Check is done on report.md because the user_request metadata is
-        # written to the report during execution, not the plan.
-        if self._check_report_has_user_request(item.path):
-            state["messages"].add(turn_id)
-
     def _update_metadata_from_plan(
         self,
         item: Any,
@@ -245,36 +219,6 @@ class SessionPruningService:
             state["statuses"][turn_id] = (
                 state["statuses"].get(turn_id, True) and is_green
             )
-
-        # Sparing Rule: Successful Message Turns
-        if config["messages"] and self._check_plan_is_message(item.path):
-            # We only spare if the turn resulted in a SUCCESSFUL execution.
-            # We ignore the plan's internal status (is_failed)
-            # and the report's validation status (is_validation_fail) here,
-            # as a successful message is valuable regardless.
-            report_path = item.path.replace("plan.md", "report.md")
-            if self._check_report_is_success(report_path):
-                state["messages"].add(turn_id)
-
-    def _check_plan_is_message(self, path: str) -> bool:
-        """Checks if a plan file contains a ## Message section."""
-        content = self._safe_read(path)
-        if content:
-            return bool(re.search(r"^## Message", content, re.MULTILINE))
-        return False
-
-    def _check_report_has_user_request(self, path: str) -> bool:
-        """Detect the ``## User Request`` heading pattern in report metadata.
-
-        Returns True if the report file contains the user_request header,
-        indicating the user provided an additional message during review.
-        Returns False if the file is missing, unreadable, or the pattern
-        is absent.
-        """
-        content = self._safe_read(path)
-        if content:
-            return bool(re.search(r"^## User Request", content, re.MULTILINE))
-        return False
 
     def _check_plan_failed(self, path: str) -> bool:
         """Checks if a plan file contains a failure status emoji on the status line."""
@@ -391,7 +335,7 @@ class SessionPruningService:
 
         return turns_to_prune
 
-    def _apply_retention_limit(self, items, spared_turns: Optional[set[int]] = None):
+    def _apply_retention_limit(self, items):
         """Prunes turn context items that exceed the turn retention limit."""
         try:
             setting = self._config_service.get_setting(
@@ -411,10 +355,9 @@ class SessionPruningService:
         # Calculate threshold and prune
         threshold = max_id - limit
         reason = f"Turn exceeds retention limit of {limit}"
-        spared = spared_turns or set()
 
         for idx, tid in turn_id_map.items():
-            if tid <= threshold and tid not in spared:
+            if tid <= threshold:
                 items[idx] = replace(
                     items[idx],
                     selected=False,
@@ -456,11 +399,7 @@ class SessionPruningService:
         except (TypeError, ValueError):
             return 0
 
-    def _apply_global_budget(
-        self,
-        items,
-        spared_ids: Optional[set[int]] = None,
-    ):
+    def _apply_global_budget(self, items):
         """Prunes turn and history context items to fit within a global token budget."""
         threshold = self._get_turn_context_threshold()
 
@@ -487,19 +426,9 @@ class SessionPruningService:
                 # Sort by token count descending to prune largest files first
                 prune_candidates.sort(key=lambda x: x[1].token_count, reverse=True)
 
-                spared = spared_ids or set()
-
                 for idx, item in prune_candidates:
                     if total_tokens <= threshold:
                         break
-                    # Skip items belonging to spared turns (e.g., preserved message turns)
-                    turn_id_str = self._extract_turn_id(item.path)
-                    if turn_id_str:
-                        try:
-                            if int(turn_id_str) in spared:
-                                continue
-                        except ValueError:
-                            pass
                     items[idx] = replace(
                         item,
                         selected=False,
