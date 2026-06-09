@@ -160,6 +160,10 @@ class SessionOrchestrator(IRunPlanUseCase):
                 import typer
 
                 typer.secho("\nSession terminated.", fg=typer.colors.RED, err=True)
+                typer.secho(
+                    "To continue the session, use `teddy resume [session_path]`.",
+                    err=True,
+                )
                 return None  # type: ignore
 
         # 4. Turn Transition
@@ -169,6 +173,10 @@ class SessionOrchestrator(IRunPlanUseCase):
                 import typer
 
                 typer.secho("\nSession terminated.", fg=typer.colors.RED, err=True)
+                typer.secho(
+                    "To continue the session, use `teddy resume [session_path]`.",
+                    err=True,
+                )
                 return None  # type: ignore
 
             self._lifecycle_manager.finalize_turn(plan_path, report, plan=plan)
