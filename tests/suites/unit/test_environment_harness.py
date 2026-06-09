@@ -1,3 +1,4 @@
+from pathlib import Path
 from tests.harness.setup.test_environment import TestEnvironment
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
@@ -36,15 +37,24 @@ def test_environment_workspace_management(monkeypatch, tmp_path, container):
 def test_environment_automated_workspace_lifecycle(monkeypatch, container):
     """
     Scenario 4: TestEnvironment should create and cleanup its own workspace
-    under tests/.tmp/ if none is provided.
+    in the system temp directory if none is provided.
     """
+    import tempfile
+
     env = TestEnvironment(monkeypatch)
     env.setup()
 
     workspace = env.workspace
     assert workspace is not None
-    # Use as_posix() to ensure cross-platform string matching
-    assert "tests/.tmp" in workspace.as_posix()
+    # Verify workspace is inside the system temp directory (space-safe)
+    system_temp = Path(tempfile.gettempdir()).resolve()
+    workspace_resolved = workspace.resolve()
+    assert str(workspace_resolved).startswith(str(system_temp)), (
+        f"Expected workspace {workspace_resolved} to be under system temp {system_temp}"
+    )
+    assert workspace.name.startswith("teddy_test_"), (
+        f"Expected workspace name to start with 'teddy_test_', got {workspace.name}"
+    )
     assert workspace.exists()
     assert workspace.is_dir()
 

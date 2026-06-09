@@ -110,7 +110,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the prescriptive standards that all development work MUST follow.
 
 - **Test Harness:** Reside exclusively in `tests/`. (Ensures strict isolation between production and test code.)
-- **Temp Files:** Create in `tests/.tmp/` and clean up during teardown. (Prevents filesystem pollution and simplifies CI management.)
+- **Temp Files:** Use `tempfile.mkdtemp()` (system temp directory) for test workspace directories. (Prevents filesystem pollution and avoids space-in-path failures when the project directory contains spaces.)
 - **Global Config:** Unify in `tests/conftest.py` exporting from `tests/harness/setup/composition.py`. (Maintains a clean Primary Driving Adapter layer.)
 - **Architecture:** Use Hexagonal Architecture (Ports & Adapters). (Enables independent testing and technology swapping.)
 - **DI Implementation:** Use the `punq` library. (Decouples services from concrete implementations.)

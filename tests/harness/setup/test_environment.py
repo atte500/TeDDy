@@ -1,6 +1,6 @@
 import os
 import shutil
-import uuid
+import tempfile
 from pathlib import Path
 from typing import Any, Optional, TypeVar, cast
 from unittest.mock import Mock
@@ -40,10 +40,9 @@ class TestEnvironment(RealAdapterMixin):
     def setup(self) -> "TestEnvironment":
         """Initializes a fresh container and patches the global CLI container."""
         if self._is_managed_workspace:
-            base_tmp = Path(__file__).parent.parent.parent / ".tmp"
-            unique_name = f"test_{uuid.uuid4().hex}"
-            self.workspace = base_tmp / unique_name
-            self.workspace.mkdir(parents=True, exist_ok=True)
+            # Use system temp directory (e.g., /tmp/) to avoid spaces in the project path
+            tmp_dir = tempfile.mkdtemp(prefix="teddy_test_")
+            self.workspace = Path(tmp_dir)
 
         if self.container is None:
             self.container = create_container()

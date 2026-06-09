@@ -40,11 +40,11 @@ class ShellAdapter(IShellExecutor):
         if not cwd:
             return project_root
 
-        validated_cwd = (
-            os.path.realpath(cwd)
-            if os.path.isabs(cwd)
-            else os.path.realpath(os.path.join(project_root, cwd))
-        )
+        if os.path.isabs(cwd):
+            # Absolute paths are explicit user choices; skip project root check.
+            return os.path.realpath(cwd)
+
+        validated_cwd = os.path.realpath(os.path.join(project_root, cwd))
 
         if not validated_cwd.startswith(project_root):
             raise ValueError(
