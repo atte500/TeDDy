@@ -44,9 +44,9 @@ Then only lines 10-20 are returned in the execution report, without truncation h
 - [x] **Logic** - Pass `Tail` parameter through `ActionExecutor` to `ShellAdapter` and apply in truncation logic.
 - [x] **Seam** - Add `Lines` optional parameter extraction in READ parsing (`action_parser_strategies.py` or `action_parser_complex.py`).
 - [x] **Logic** - Apply `Lines` range in READ execution within `ActionExecutor` (in `_handle_read`).
-- [ ] **Documentation** - Update all 6 agent prompt files with new parameter docs.
-- [ ] **Wiring** - Update `session_orchestrator.py` to pass `current_turn` extracted from `Path(plan_path).parent.name` to `get_context()`.
-- [ ] **Wiring** - Update `planning_service.py` to pass `current_turn` extracted from `turn_dir` to `get_context()`.
+- [x] **Documentation** - Update all 6 agent prompt files with new parameter docs.
+- [x] **Wiring** - Update `session_orchestrator.py` to pass `current_turn` extracted from `Path(plan_path).parent.name` to `get_context()`.
+- [x] **Wiring** - Update `planning_service.py` to pass `current_turn` extracted from `turn_dir` to `get_context()`.
 - [ ] **Wiring** - Integration test verifying end-to-end flow for EXECUTE Tail override and READ Lines range.
 
 ## Implementation Notes

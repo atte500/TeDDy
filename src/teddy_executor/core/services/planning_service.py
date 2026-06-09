@@ -57,7 +57,9 @@ class PlanningService(IPlanningUseCase):
                 meta["user_request"] = resolved_message
 
         context = self._context_service.get_context(
-            context_files=resolved_context_files, agent_name=agent_name
+            context_files=resolved_context_files,
+            agent_name=agent_name,
+            current_turn=Path(turn_dir).name,
         )
         system_prompt = self._prompt_manager.fetch_system_prompt(agent_name, turn_path)
 
