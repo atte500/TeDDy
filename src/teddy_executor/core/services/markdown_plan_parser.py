@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
@@ -74,6 +75,17 @@ class MarkdownPlanParser(IPlanParser):
         if not clean_content:
             raise InvalidPlanError("Plan content cannot be empty.")
 
+        # Strip preamble (text before the first # heading at start of a line)
+        # Use regex to match # at line start (not ## which is H2, or inline #)
+        h1_match = re.search(r"(?:^|\n)# (?!#)", clean_content)
+        if h1_match:
+            first_h1 = h1_match.start()
+            # If match starts with \n, advance past it
+            if clean_content[first_h1] == "\n":
+                first_h1 += 1
+            if first_h1 > 0:
+                clean_content = clean_content[first_h1:]
+
         processed_content = self._preprocessor.process(clean_content)
         doc = Document(processed_content)
 
@@ -106,7 +118,7 @@ class MarkdownPlanParser(IPlanParser):
                 source_doc=doc,
                 is_session=is_session,
                 plan_path=plan_path,
-                raw_content=plan_content,
+                raw_content=clean_content,
             )
         except InvalidPlanError as e:
             if "### Expected Response Structure " in str(e):

@@ -14,6 +14,7 @@ The `MarkdownPlanParser` service is responsible for parsing a plan written in th
 - **Action Dispatching:** Iterates through the `## Action Plan` section and dispatches parsing control to specialized strategy functions based on the detected action type.
 - **Path Normalization:** Performs centralized normalization of project-relative paths, ensuring cross-platform compatibility.
 - **Error Reporting:** Generates high-fidelity error reports, including a full AST summary of the document's top-level nodes. This trace identifies node types and highlights multiple `offending_nodes` (deviations from schema) using status indicators (`[✓]`, `[✗]`, `[ ]`) and descriptive error messages (`(Error: ...)`) to provide precise, actionable feedback.
+- **Preamble Stripping:** Before AST construction, the parser strips any content before the first `# ` heading (H1) using a regex-based search (`(?:^|\n)# (?!#)`). This prevents preamble text from causing structural validation errors and ensures it does not appear in the parsed plan's `raw_content`.
 - **Pre-processing:** Employs a `FencePreProcessor` to normalize code fence lengths and ensure correct AST generation for nested code blocks.
 
 ## 3. Supported Actions

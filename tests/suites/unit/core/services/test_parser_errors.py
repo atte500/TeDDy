@@ -97,3 +97,49 @@ def test_parser_raises_error_with_indicator_on_structural_mismatch(parser: IPlan
     with pytest.raises(InvalidPlanError, match="Plan structure is invalid") as excinfo:
         parser.parse(plan_content)
     assert '[✗] [002] Heading (Level 2): "Action Plan"' in str(excinfo.value)
+
+
+def test_parser_strips_preamble_text_before_h1(parser: IPlanParser):
+    """Preamble text before # heading should be silently stripped."""
+    preamble = "Some text before the plan.\n\n"
+    raw = preamble + _b().add_read("r.md").build()
+    plan = parser.parse(raw)
+    # Should parse without errors
+    assert plan.title == "Test Plan"
+    # Preamble should not appear in raw_content
+    assert plan.raw_content is not None
+    assert "Some text before the plan" not in plan.raw_content
+
+
+def test_parser_strips_preamble_with_code_fence(parser: IPlanParser):
+    """Preamble containing code fences should be stripped."""
+    preamble = "```\ncode in preamble\n```\n\n"
+    raw = preamble + _b().add_read("r.md").build()
+    plan = parser.parse(raw)
+    assert plan.title == "Test Plan"
+
+
+def test_parser_strips_preamble_with_inline_hash(parser: IPlanParser):
+    """Preamble with # inside text (not a heading) should be stripped."""
+    preamble = "This has a # symbol but it's not a heading.\n\n"
+    raw = preamble + _b().add_read("r.md").build()
+    plan = parser.parse(raw)
+    assert plan.title == "Test Plan"
+
+
+def test_parser_handles_no_preamble_correctly(parser: IPlanParser):
+    """Plan with no preamble should parse normally."""
+    raw = _b().add_read("r.md").build()
+    plan = parser.parse(raw)
+    assert plan.title == "Test Plan"
+    # raw_content should not have any extra prefix
+    assert plan.raw_content is not None
+    assert plan.raw_content.startswith("# Test Plan")
+
+
+def test_parser_strips_preamble_with_only_whitespace(parser: IPlanParser):
+    """Whitespace-only preamble before H1 should not cause issues."""
+    preamble = "   \n\n  "
+    raw = preamble + _b().add_read("r.md").build()
+    plan = parser.parse(raw)
+    assert plan.title == "Test Plan"
