@@ -1,5 +1,5 @@
 # Slice: Execute READ Adhoc Params
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Feature
 - **Milestone:** [N/A - Ad-hoc](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [Task Brief](/docs/project/tasks/24-execute-read-adhoc-params.md)
@@ -47,7 +47,7 @@ Then only lines 10-20 are returned in the execution report, without truncation h
 - [x] **Documentation** - Update all 6 agent prompt files with new parameter docs.
 - [x] **Wiring** - Update `session_orchestrator.py` to pass `current_turn` extracted from `Path(plan_path).parent.name` to `get_context()`.
 - [x] **Wiring** - Update `planning_service.py` to pass `current_turn` extracted from `turn_dir` to `get_context()`.
-- [ ] **Wiring** - Integration test verifying end-to-end flow for EXECUTE Tail override and READ Lines range.
+- [x] **Wiring** - Integration test verifying end-to-end flow for EXECUTE Tail override and READ Lines range.
 
 ## Implementation Notes
 
@@ -91,9 +91,6 @@ Then only lines 10-20 are returned in the execution report, without truncation h
 - **ActionFactory integration:** Added unit test `test_read_action_with_lines_extracts_range` in `test_action_factory.py` that verifies `read_raw_file` is called (not `read_file`) and only the requested line range is returned.
 - **Bug fix:** During integration testing, discovered that `extract_lines_range` clamped out-of-range start values to within bounds instead of returning empty. Added a guard `if start > total: return ""` to return empty string when the requested start exceeds the file length.
 - **Key insight:** The `read_file` adapter method performs head truncation at `max_read_lines=1000`. When `Lines` is specified, the agent explicitly requests a range, so truncation is bypassed by using `read_raw_file`. The `LinesAwareReadAction` wrapper pattern keeps the change local to `ActionFactory` without modifying the adapter or port interfaces.
-
-## Implementation Plan
-The changes are additive: add optional parameters to existing functions. No breaking changes. Each deliverable follows the Developer workflow: Red (write/update tests), Green (implement minimal code), Refactor. Integration tests and prompt file updates are handled as separate deliverables. The Wiring deliverable at the end will verify end-to-end behavior via a `CliRunner` acceptance test.
 
 ## Implementation Plan
 The changes are additive: add optional parameters to existing functions. No breaking changes. Each deliverable follows the Developer workflow: Red (write/update tests), Green (implement minimal code), Refactor. Integration tests and prompt file updates are handled as separate deliverables. The Wiring deliverable at the end will verify end-to-end behavior via a `CliRunner` acceptance test.
