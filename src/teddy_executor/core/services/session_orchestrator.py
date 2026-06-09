@@ -123,7 +123,6 @@ class SessionOrchestrator(IRunPlanUseCase):
                     agent_name=agent_name,
                     total_window=total_window,
                     cache_dir=cache_dir,
-                    current_turn=Path(plan_path).parent.name,
                 )
                 from dataclasses import is_dataclass, replace
 
