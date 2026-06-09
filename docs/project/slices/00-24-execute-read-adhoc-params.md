@@ -41,8 +41,8 @@ Then only lines 10-20 are returned in the execution report, without truncation h
 ## Deliverables
 - [x] **Logic** - Add `current_turn` parameter to `ContextService._format_header()` and `get_context()`, and propagate to callers (`session_orchestrator.py`, `execution_orchestrator.py`).
 - [x] **Seam** - Add `Tail` optional parameter extraction in EXECUTE parsing (`parse_execute_action` in `action_parser_complex.py`).
-- [▶] **Logic** - Pass `Tail` parameter through `ActionExecutor` to `ShellAdapter` and apply in truncation logic.
-- [ ] **Seam** - Add `Lines` optional parameter extraction in READ parsing (`action_parser_strategies.py` or `action_parser_complex.py`).
+- [x] **Logic** - Pass `Tail` parameter through `ActionExecutor` to `ShellAdapter` and apply in truncation logic.
+- [▶] **Seam** - Add `Lines` optional parameter extraction in READ parsing (`action_parser_strategies.py` or `action_parser_complex.py`).
 - [ ] **Logic** - Apply `Lines` range in READ execution within `ActionExecutor` (in `_handle_read`).
 - [ ] **Documentation** - Update all 6 agent prompt files with new parameter docs.
 - [ ] **Wiring** - Update `session_orchestrator.py` to pass `current_turn` extracted from `Path(plan_path).parent.name` to `get_context()`.
@@ -69,10 +69,18 @@ Then only lines 10-20 are returned in the execution report, without truncation h
 - The parameter is optional and backward-compatible: existing tests that don't pass `Tail` continue to work unchanged.
 - Integer conversion of the tail value happens in the downstream Logic deliverable (Deliverable 3) when passing it to `ShellAdapter`.
 
-### Deliverable 3 (Pending): Caller Propagation
-- `session_orchestrator.py` should extract turn number from `Path(plan_path).parent.name` and pass it to `get_context()`.
-- `planning_service.py` should extract turn number from `turn_dir` (the turn directory name) and pass it to `get_context()`.
-- Both are additive and backward-compatible.
+### Deliverable 3: Tail Parameter Propagation (Logic)
+- **Contract (Protocol):** Added `max_lines: Optional[int] = None` to `IShellExecutor.execute()` in `shell_executor.py` — backward-compatible optional parameter.
+- **Adapter (Threading):** Threaded `max_lines` through `ShellAdapter.execute()` → `_run_subprocess()` → `_process_execution_results()`:
+  - `_process_execution_results()` now accepts `max_lines: Optional[int] = None` and uses `max_lines if max_lines is not None else self.max_execute_lines` as the effective limit.
+- **Dispatch (Conversion):** Updated `ActionFactory._handle_execute_protocol()` to extract `tail` from kwargs, convert to int via `int(tail)`, and pass as `max_lines` to the shell executor. Invalid/zero/negative values are silently ignored (falls back to default).
+- **Test:** Added `test_shell_adapter_process_execution_results_with_max_lines_override` in `test_shell_adapter_capping.py` — verifies that a `max_lines=3` override truncates to 3 lines + hint regardless of the adapter's `max_execute_lines=100`.
+- **Key insight:** The `tail` value from `action.params["tail"]` is a string (`"5"`). Conversion must happen at the dispatch layer (ActionFactory) before it reaches the protocol signature.
+
+### Deliverable 4 (Pending): READ Lines Parameter Extraction
+- Need to locate the READ parsing function (likely `action_parser_strategies.py`).
+- Add `"Lines": "lines"` to the relevant `text_key_map` or metadata extraction.
+- Add test(s) for `Lines` parameter extraction in READ parsing tests.
 
 ## Implementation Plan
 The changes are additive: add optional parameters to existing functions. No breaking changes. Each deliverable follows the Developer workflow: Red (write/update tests), Green (implement minimal code), Refactor. Integration tests and prompt file updates are handled as separate deliverables. The Wiring deliverable at the end will verify end-to-end behavior via a `CliRunner` acceptance test.

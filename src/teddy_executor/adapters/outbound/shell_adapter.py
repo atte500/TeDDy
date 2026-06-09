@@ -174,14 +174,21 @@ class ShellAdapter(IShellExecutor):
         }
 
     def _process_execution_results(
-        self, stdout: str, stderr: str, return_code: int
+        self,
+        stdout: str,
+        stderr: str,
+        return_code: int,
+        max_lines: Optional[int] = None,
     ) -> ShellOutput:
         """Processes the raw execution results into a structured ShellOutput."""
         sanitized_stdout = self._sanitize_output(stdout)
 
+        effective_max_lines = (
+            max_lines if max_lines is not None else self.max_execute_lines
+        )
         truncated_stdout = truncate_lines(
             sanitized_stdout,
-            max_lines=self.max_execute_lines,
+            max_lines=effective_max_lines,
             direction="tail",
             action_type="execute",
         )
@@ -248,6 +255,7 @@ class ShellAdapter(IShellExecutor):
         env: Dict[str, str],
         timeout: Optional[float] = None,
         background: bool = False,
+        max_lines: Optional[int] = None,
     ) -> ShellOutput:
         """Executes the command in a subprocess and handles errors."""
         try:
@@ -290,7 +298,9 @@ class ShellAdapter(IShellExecutor):
                 )
             )
 
-            return self._process_execution_results(stdout, stderr, process.returncode)
+            return self._process_execution_results(
+                stdout, stderr, process.returncode, max_lines=max_lines
+            )
         except (FileNotFoundError, OSError) as e:
             self._log_debug_error(e)
             return {
@@ -307,6 +317,7 @@ class ShellAdapter(IShellExecutor):
         env: Optional[Dict[str, str]] = None,
         timeout: Optional[float] = None,
         background: bool = False,
+        max_lines: Optional[int] = None,
     ) -> ShellOutput:
         # jscpd:ignore-end
         """Executes a command via subprocess, returning ShellOutput."""
@@ -327,6 +338,7 @@ class ShellAdapter(IShellExecutor):
             current_env,
             timeout=timeout,
             background=background,
+            max_lines=max_lines,
         )
 
         return result

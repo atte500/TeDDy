@@ -91,10 +91,21 @@ class ActionFactory(IActionFactory):
         execute_params = {
             k: v
             for k, v in kwargs.items()
-            if k in ("command", "cwd", "env", "background", "timeout") and v is not None
+            if k in ("command", "cwd", "env", "background", "timeout", "max_lines")
+            and v is not None
         }
         if "command" not in execute_params:
             raise ValueError("'command' parameter is required for the execute action.")
+
+        # Extract Tail override from action params and convert to max_lines
+        tail = kwargs.get("tail")
+        if tail is not None:
+            try:
+                tail_int = int(tail)
+                if tail_int > 0:
+                    execute_params["max_lines"] = tail_int
+            except (ValueError, TypeError):
+                pass  # Invalid tail value, fall back to default
 
         # Inject global timeout if not already specified in kwargs
         if "timeout" not in execute_params and self._config_service:
