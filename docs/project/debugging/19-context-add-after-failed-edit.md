@@ -3,6 +3,7 @@
 - **Milestone:** [02-stability-and-polish](/docs/project/milestones/02-stability-and-polish.md)
 - **Vertical Slice:** [N/A]
 - **Specs:** [Stability & Bug Fixes](/docs/project/specs/stability-and-bugfixes.md)
+- **Remaining Debt:** A proposed slice (02-17) has been added to Milestone 02 to address the edge case where `_apply_original_actions_effects` may skip valid paths when `action_logs` is non-empty but `original_actions` contains additional unlogged actions.
 
 ## Symptoms
 When an EDIT action fails (e.g., FIND block does not match), the target file path is NOT added to the next turn's `turn.context`. Expected behavior per the Turn Transition Algorithm: "For each READ, CREATE, and EDIT action, add its resource/file path to T_next/turn.context (provided the file exists)." The spec does not condition this on action success, so even failed EDIT actions should add the file to context.
@@ -63,3 +64,4 @@ There are two interacting issues:
 - Integration tests should use the real parser pipeline to ensure end-to-end key consistency.
 - Any future extraction methods must check both the human-readable key (with spaces/CamelCase) and the internal normalized key.
 - Grep for `params.get("File Path")` patterns to find all locations that need the `"path"` fallback.
+- **Remaining Debt:** The `_apply_original_actions_effects` guard `if report.action_logs: return` blocks the fallback when `action_logs` is non-empty but `original_actions` could contain additional paths not in `action_logs`. This occurs only if an execution report has both populated `action_logs` and `original_actions` that were not logged (e.g., due to future executor changes). The fix is to remove the early-return guard and always process `original_actions` for applicable action types. This is tracked as proposed slice 02-17 in Milestone 02.
