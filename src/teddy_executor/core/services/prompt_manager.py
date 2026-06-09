@@ -110,9 +110,12 @@ class PromptManager(IPromptManager):
             meta["turn_cost"] = meta.get("turn_cost", 0.0)
             meta["token_count"] = meta.get("token_count", 0)
 
-        # Always persist the actual model from the response, overwriting any previous value.
-        # This ensures subsequent turns display the true serving model in the telemetry.
-        meta["model"] = str(getattr(response, "model", "unknown"))
+        # Preserve the user-configured model (with routing prefix) for routing.
+        # Store the actual serving model separately for telemetry.
+        actual_model = str(getattr(response, "model", "unknown"))
+        if "model" not in meta or meta.get("model") == actual_model:
+            meta["model"] = actual_model
+        meta["actual_model"] = actual_model
 
         # Capture finish_reason; scrub_dict_for_serialization will neutralize mocks
         if hasattr(response, "choices") and len(response.choices) > 0:

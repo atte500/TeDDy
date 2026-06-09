@@ -64,7 +64,7 @@ def test_start_command_accepts_context_and_overrides(tmp_path: Path, monkeypatch
     assert meta_file.exists()
     meta_data = yaml.safe_load(meta_file.read_text())
 
-    assert meta_data.get("model") == "test-model"
+    assert meta_data.get("model") == "gpt-4"
     assert meta_data.get("provider") == "openai"
     assert meta_data.get("api_key") == "sk-test-key"
 
@@ -78,7 +78,7 @@ def test_start_command_accepts_context_and_overrides(tmp_path: Path, monkeypatch
     meta_file = session_root / "01" / "meta.yaml"
     assert meta_file.exists()
     meta_content = meta_file.read_text()
-    assert "model: test-model" in meta_content
+    assert "model: gpt-4" in meta_content
     assert "provider: openai" in meta_content
     assert "api_key: sk-test-key" in meta_content
 
