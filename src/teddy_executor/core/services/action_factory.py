@@ -60,6 +60,23 @@ class ActionFactory(IActionFactory):
                     return self._scraper.get_content(url=kwargs["path"])
 
             return WebReadAction(self._web_scraper)
+
+        if safe_params.get("lines"):
+            # Lines-aware read: use read_raw_file (bypass truncation) and extract range
+            from teddy_executor.core.utils.string import extract_lines_range  # noqa: PLC0415
+
+            class LinesAwareReadAction:
+                def __init__(self, fs):
+                    self._fs = fs
+
+                def execute(self, **kwargs: Any) -> Any:
+                    path = kwargs.get("path", kwargs.get("resource", ""))
+                    content = self._fs.read_raw_file(path=path)
+                    lines_spec = kwargs.get("lines", "")
+                    return extract_lines_range(content, lines_spec)
+
+            return LinesAwareReadAction(self._file_system_manager)
+
         # Fall through to the standard file system handler for local files
         return self._create_standard_action("read_file", params)
 

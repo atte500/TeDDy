@@ -279,6 +279,72 @@ def get_truncation_hint(action_type: str, max_lines: int, total_lines: int) -> s
     return f"[Content truncated: Showing {max_lines} of {total_lines} lines.]"
 
 
+def extract_lines_range(content: str, lines_spec: str) -> str:
+    """
+    Extracts a range of lines from multi-line content based on a lines specification.
+
+    Supported formats:
+        "10-20"  → inclusive range from line 10 to line 20 (1‑indexed)
+        "-20"    → first 20 lines (equivalent to "1-20")
+        "50-"    → from line 50 to the end
+        "5"      → single line (line 5)
+        anything else → returns full content unchanged (fallback)
+
+    Args:
+        content: The full file content as a single string.
+        lines_spec: The user‑supplied lines parameter (e.g., "10-20").
+
+    Returns:
+        The selected lines as a single string, or the full content if the spec
+        is invalid.
+    """
+    if not content:
+        return ""
+    if not lines_spec or not isinstance(lines_spec, str):
+        return content
+
+    lines = content.splitlines()
+    total = len(lines)
+
+    # Try to parse the specification
+    spec = lines_spec.strip()
+    try:
+        if "-" in spec:
+            # Range format: "start-end", "-end", or "start-"
+            parts = spec.split("-", 1)
+            if parts[0] == "" and parts[1] != "":
+                # "-end" → first `end` lines
+                end = int(parts[1])
+                start = 1
+            elif parts[1] == "" and parts[0] != "":
+                # "start-" → from `start` to end
+                start = int(parts[0])
+                end = total
+            else:
+                # "start-end"
+                start = int(parts[0]) if parts[0] else 1
+                end = int(parts[1]) if parts[1] else total
+        else:
+            # Single line number: "5"
+            line_num = int(spec)
+            start = line_num
+            end = line_num
+    except (ValueError, TypeError):
+        # Malformed spec → fall back to full content
+        return content
+
+    # If start line is beyond the file, return empty
+    if start > total:
+        return ""
+
+    # Clamp to valid range (1‑indexed)
+    start = max(1, min(start, total))
+    end = max(start, min(end, total))
+
+    extracted = lines[start - 1 : end]
+    return "\n".join(extracted)
+
+
 # double_newlines has been removed. It was a band-aid that became harmful:
 # blind \n → \n\n replacement broke tables, lists, and code blocks.
 # The correct fix is raw text extraction in parse_message_action, which preserves

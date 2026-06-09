@@ -103,3 +103,33 @@ def test_read_action_with_path_resolves_file_system_manager(
     # Assert
     assert result == "file content"
     mock_fs.read_file.assert_called_once_with(path="path/to/file.txt")
+
+
+def test_read_action_with_lines_extracts_range(
+    mock_fs,
+    mock_scraper,
+    factory: ActionFactory,
+):
+    """
+    Verifies that a READ action with a Lines parameter uses read_raw_file
+    (bypassing truncation) and extracts only the requested line range.
+    """
+    # Arrange
+    action_type = "READ"
+    file_path = "src/data.txt"
+    params = {"resource": file_path, "path": file_path, "lines": "2-4"}
+
+    multi_line_content = "line1\nline2\nline3\nline4\nline5"
+    mock_fs.read_raw_file.return_value = multi_line_content
+
+    # Act
+    handler = factory.create_action(action_type, params)
+    result = handler.execute(**params)
+
+    # Assert
+    # read_raw_file should be called (bypasses truncation)
+    mock_fs.read_raw_file.assert_called_once_with(path=file_path)
+    # read_file should NOT be called (it adds head truncation)
+    mock_fs.read_file.assert_not_called()
+    # Result should be only lines 2-4
+    assert result == "line2\nline3\nline4", f"Expected lines 2-4, got: {result}"

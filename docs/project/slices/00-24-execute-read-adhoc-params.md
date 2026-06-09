@@ -43,7 +43,7 @@ Then only lines 10-20 are returned in the execution report, without truncation h
 - [x] **Seam** - Add `Tail` optional parameter extraction in EXECUTE parsing (`parse_execute_action` in `action_parser_complex.py`).
 - [x] **Logic** - Pass `Tail` parameter through `ActionExecutor` to `ShellAdapter` and apply in truncation logic.
 - [x] **Seam** - Add `Lines` optional parameter extraction in READ parsing (`action_parser_strategies.py` or `action_parser_complex.py`).
-- [▶] **Logic** - Apply `Lines` range in READ execution within `ActionExecutor` (in `_handle_read`).
+- [x] **Logic** - Apply `Lines` range in READ execution within `ActionExecutor` (in `_handle_read`).
 - [ ] **Documentation** - Update all 6 agent prompt files with new parameter docs.
 - [ ] **Wiring** - Update `session_orchestrator.py` to pass `current_turn` extracted from `Path(plan_path).parent.name` to `get_context()`.
 - [ ] **Wiring** - Update `planning_service.py` to pass `current_turn` extracted from `turn_dir` to `get_context()`.
@@ -84,12 +84,13 @@ Then only lines 10-20 are returned in the execution report, without truncation h
 - The parameter is optional and backward-compatible: existing READ tests that don't pass `Lines` continue to work unchanged.
 - The test uses `add_action` directly (since `add_read` doesn't support kwargs) to render `Lines: 10-20` in the metadata.
 
-### Deliverable 5 (Pending): READ Lines Range Application
-- In `action_executor.py`, locate `_handle_read` method.
-- After reading file content, check `action.params.get("lines")` for a range string.
-- Parse range format (e.g., "10-50", "-20", "50-", "5") and extract specified lines.
-- When `Lines` is specified, skip content truncation.
-- Need to find how READ is dispatched through `action_dispatcher.py` and `action_executor.py`.
+### Deliverable 5: READ Lines Range Application (Logic)
+- **Core approach:** Added a `LinesAwareReadAction` wrapper inside `ActionFactory._create_read_action()` that intercepts when `lines` is present in action params. It calls `IFileSystemManager.read_raw_file()` (bypassing the head-truncation in `read_file()`) and applies `extract_lines_range()`.
+- **Utility function:** Added `extract_lines_range(content, lines_spec)` to `core/utils/string.py` as a pure function supporting formats: `"10-20"` (inclusive range), `"-20"` (first 20), `"50-"` (to end), `"5"` (single line). Invalid specs fall back to full content.
+- **Tests:** Created `tests/suites/unit/core/utils/test_extract_lines_range.py` with 7 tests covering all formats and edge cases (empty content, start > total, malformed spec).
+- **ActionFactory integration:** Added unit test `test_read_action_with_lines_extracts_range` in `test_action_factory.py` that verifies `read_raw_file` is called (not `read_file`) and only the requested line range is returned.
+- **Bug fix:** During integration testing, discovered that `extract_lines_range` clamped out-of-range start values to within bounds instead of returning empty. Added a guard `if start > total: return ""` to return empty string when the requested start exceeds the file length.
+- **Key insight:** The `read_file` adapter method performs head truncation at `max_read_lines=1000`. When `Lines` is specified, the agent explicitly requests a range, so truncation is bypassed by using `read_raw_file`. The `LinesAwareReadAction` wrapper pattern keeps the change local to `ActionFactory` without modifying the adapter or port interfaces.
 
 ## Implementation Plan
 The changes are additive: add optional parameters to existing functions. No breaking changes. Each deliverable follows the Developer workflow: Red (write/update tests), Green (implement minimal code), Refactor. Integration tests and prompt file updates are handled as separate deliverables. The Wiring deliverable at the end will verify end-to-end behavior via a `CliRunner` acceptance test.
