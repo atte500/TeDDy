@@ -60,7 +60,7 @@ This section defines the conventions for our project management artifacts.
 
 ### Milestone 3: TUI & UX Enhancements [PLANNED]
 - **Core Goal:** Improve the interactive experience and provide better visibility into session state.
-- **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md), [docs/project/specs/session-history-view.md](/docs/project/specs/session-history-view.md)
+- **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 - **Requirements:**
     - **Console Visibility:** In session mode, log the "Status Emoji + Plan Title" (e.g., `🟢 Title`) to the terminal after the metadata block and before the action logs.
     - **Navigation:** Alt+Up/Down for jumping between Context, Rationale, and Plan/Message sections.
@@ -70,4 +70,3 @@ This section defines the conventions for our project management artifacts.
     - **Editor & Diff Mapping:** Strictly respect `editor` config; implement a translation table for diff flags (e.g., `nvim` -> `-d`); remove all implicit VS Code fallbacks.
     - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels.
     - **Message Visibility:** Log the user message (from TUI 'm' key or message replies) to the console after execution in the format `User Message: [content]`.
-    - **Session History Log (`history.log`):** Generate a plain-text chronological log of all turn activity (turn header, metadata block, action descriptions/statuses) by tee'ing the existing console output to `<session>/history.log`. Must be generated identically in both `-y` and interactive modes. See [Session History Log Specification](/docs/project/specs/session-history-view.md).
