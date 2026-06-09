@@ -65,7 +65,7 @@
 
       <phase n="7" name="Version Control">
         <goal>Clean up the workspace and execute the commit following the VCP. After committing, triage any technical debt logged during investigation.</goal>
-        <step n="1" name="Teardown">Explicitly delete all temporary logs, MRE scripts, and shadow files created in `spikes/debug/` to ensure a completely clean workspace. Note: MRE scripts are intentionally preserved through Phase 6.4 (MRE Re-Verification) where they are re-run against the fixed code; by this teardown phase they are safe to delete. Run `git status` to verify.</step>
+        <step n="1" name="Teardown">Explicitly delete all temporary logs, MRE scripts, and shadow files created in `spikes/debug/` to ensure a completely clean workspace. Run `git status` to verify.</step>
         <step n="2" name="Commit">Execute the commit following the VCP to test, stage, commit, and push the Case File and any associated Slices. You MUST ensure the workspace is clean and all documentation changes are committed.</step>
         <step n="3" name="Debt Triage">Review any `[DEBT]` entries logged in your State Dashboard. For each entry: if it is a quick win (≤3 lines changed, localized to one file), apply the fix directly and commit it separately. If it is structural (requires cross-file refactoring, shared seam changes, or new tests), EDIT the active Milestone document to add a proposed Vertical Slice entry to its planning checklist — do not attempt to fix during this session.</step>
       </phase>
