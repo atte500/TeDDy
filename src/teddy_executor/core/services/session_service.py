@@ -269,7 +269,16 @@ class SessionService(ISessionManager):
         if not report:
             return
         for log in report.action_logs:
-            if log.status != ActionStatus.SUCCESS:
+            # Skip only actions that were never executed (SKIPPED/PENDING).
+            if log.status in (ActionStatus.SKIPPED, ActionStatus.PENDING):
+                continue
+
+            # FAILURE status only contributes paths for EDIT actions (per user requirement).
+            # For READ and CREATE actions, only SUCCESS status contributes.
+            if (
+                log.status != ActionStatus.SUCCESS
+                and log.action_type != ActionType.EDIT.value
+            ):
                 continue
 
             # Determine path based on action type
