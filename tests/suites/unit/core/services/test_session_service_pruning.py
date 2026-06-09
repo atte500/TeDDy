@@ -15,13 +15,20 @@ from teddy_executor.core.ports.inbound.init import IInitUseCase
 @pytest.fixture
 def mock_deps(container):
     from tests.harness.setup.mocking import register_mock
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+    fsm = register_mock(container, IFileSystemManager)
+    # Default read_file to a valid non-message plan so _is_preserved_turn()
+    # doesn't receive a MagicMock and can properly check patterns.
+    fsm.read_file.return_value = "# Test Plan\n## Action Plan\n\nSome actions\n"
 
     return {
-        "fsm": register_mock(container, IFileSystemManager),
+        "fsm": fsm,
         "repo": register_mock(container, ISessionRepository),
         "time": register_mock(container, ITimeService),
         "prompt": register_mock(container, IPromptManager),
         "init": register_mock(container, IInitUseCase),
+        "config": register_mock(container, IConfigService),
     }
 
 
@@ -33,6 +40,7 @@ def service(mock_deps):
         time_service=mock_deps["time"],
         prompt_manager=mock_deps["prompt"],
         init_service=mock_deps["init"],
+        config_service=mock_deps["config"],
     )
 
 

@@ -1,6 +1,7 @@
 from pathlib import Path
 import punq
 from tests.harness.setup.mocking import register_mock
+from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 from teddy_executor.core.ports.outbound.time_service import ITimeService
@@ -28,6 +29,7 @@ class TestCloneSessionArtifactsContract:
             time_service=register_mock(container, ITimeService),
             prompt_manager=register_mock(container, IPromptManager),
             init_service=register_mock(container, IInitUseCase),
+            config_service=register_mock(container, IConfigService),
         )
 
         src_session = Path(".teddy/sessions/test-session")

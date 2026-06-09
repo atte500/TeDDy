@@ -226,6 +226,7 @@ def _register_orchestration_services(container: punq.Container) -> None:
             time_service=container.resolve(ITimeService),
             prompt_manager=container.resolve(IPromptManager),
             init_service=container.resolve(IInitUseCase),
+            config_service=container.resolve(IConfigService),
         ),
         scope=punq.Scope.transient,
     )

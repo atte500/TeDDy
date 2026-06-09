@@ -21,6 +21,7 @@ from datetime import datetime
 
 @pytest.fixture
 def session_service():
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
     from teddy_executor.core.ports.outbound.file_system_manager import (
         IFileSystemManager,
     )
@@ -34,6 +35,7 @@ def session_service():
     time_svc = create_autospec(ITimeService)
     prompt_mgr = create_autospec(IPromptManager)
     init_svc = create_autospec(IInitUseCase)
+    config_svc = create_autospec(IConfigService)
     repo.is_valid_path.return_value = True
     return SessionService(
         file_system_manager=fs,
@@ -41,6 +43,7 @@ def session_service():
         time_service=time_svc,
         prompt_manager=prompt_mgr,
         init_service=init_svc,
+        config_service=config_svc,
     )
 
 

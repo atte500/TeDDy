@@ -5,6 +5,7 @@ from teddy_executor.core.domain.models.execution_report import ExecutionReport
 from teddy_executor.core.domain.models.session import SessionOptions
 from teddy_executor.core.domain.models.plan import ActionType
 from teddy_executor.core.ports.inbound.init import IInitUseCase
+from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.session_manager import (
     ISessionManager,
@@ -21,19 +22,21 @@ class SessionService(ISessionManager):
     Service for managing session directories and metadata.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         file_system_manager: IFileSystemManager,
         repository: ISessionRepository,
         time_service: ITimeService,
         prompt_manager: IPromptManager,
         init_service: IInitUseCase,
+        config_service: IConfigService,
     ):
         self._file_system_manager = file_system_manager
         self._repository = repository
         self._time_service = time_service
         self._prompt_manager = prompt_manager
         self._init_service = init_service
+        self._config_service = config_service
 
     def create_session(
         self,
@@ -246,15 +249,61 @@ class SessionService(ISessionManager):
 
         self._apply_execution_effects(paths, execution_report)
 
-        # Always append BOTH plan.md and report.md to the next turn's context
-        # to ensure the AI has its previous intent and the resulting outcome.
-        paths.add(self.to_root_relative(cur_dir, "plan.md"))
-        paths.add(self.to_root_relative(cur_dir, "report.md"))
+        # Check if this turn should be preserved in session.context instead of turn.context
+        preserve_messages = bool(
+            self._config_service.get_setting(
+                "auto_pruning.preserve_message_turns", True
+            )
+        )
+
+        plan_md_path = self.to_root_relative(cur_dir, "plan.md")
+        report_md_path = self.to_root_relative(cur_dir, "report.md")
+
+        if preserve_messages and self._is_preserved_turn(cur_dir):
+            # Append to session.context instead of turn.context
+            self._append_to_session_context(cur_dir, {plan_md_path, report_md_path})
+        else:
+            # Always append BOTH plan.md and report.md to the next turn's context
+            # to ensure the AI has its previous intent and the resulting outcome.
+            paths.add(plan_md_path)
+            paths.add(report_md_path)
 
         self._file_system_manager.write_file(
             f"{next_dir}/turn.context", "\n".join(sorted(list(paths)))
         )
         return next_dir
+
+    def _is_preserved_turn(self, cur_dir: Path) -> bool:
+        """Checks if the current turn should be preserved in session.context.
+
+        Returns True if the turn is a 'message turn' (plan contains ## Message)
+        or a 'user-request turn' (report contains - **User Request:**).
+        """
+        # Check plan.md for ## Message
+        plan_path = (cur_dir / "plan.md").as_posix()
+        if self._file_system_manager.path_exists(plan_path):
+            content = self._file_system_manager.read_file(plan_path)
+            if re.search(r"^## Message", content, re.MULTILINE):
+                return True
+
+        # Check report.md for - **User Request:**
+        report_path = (cur_dir / "report.md").as_posix()
+        if self._file_system_manager.path_exists(report_path):
+            content = self._file_system_manager.read_file(report_path)
+            if re.search(r"^- \*\*User Request:\*\*", content, re.MULTILINE):
+                return True
+
+        return False
+
+    def _append_to_session_context(self, cur_dir: Path, paths: set[str]) -> None:
+        """Appends paths to the session.context file."""
+        session_context_path = (cur_dir.parent / "session.context").as_posix()
+        existing = self._repository.read_context_file(session_context_path)
+        for p in paths:
+            existing.add(p)
+        self._file_system_manager.write_file(
+            session_context_path, "\n".join(sorted(list(existing)))
+        )
 
     def to_root_relative(self, turn_dir: Path, filename: str) -> str:
         """Calculates a root-relative path for a file within a turn directory."""
