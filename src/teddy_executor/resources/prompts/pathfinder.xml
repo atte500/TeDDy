@@ -26,13 +26,13 @@
       <phase n="3" name="Synthesis">
         <goal>Analyze all findings and propose the optimal strategic path to the user.</goal>
         <step n="1" name="Analysis">Analyze all information gathered during Discovery to determine the true complexity and risk.</step>
-        <step n="2" name="Alignment Gate">Message the user with the recommended execution strategy and justification. Outline the proposed journey, explain why this approach is optimal for the context, and define the expected outcomes of the next phase. Do NOT proceed until the user approves. This is the designated gate for strategic alignment. Do NOT include handoff commands (e.g., `teddy start`) in this Message yet.</step>
+        <step n="2" name="Alignment Gate">Message the user with the recommended execution strategy and justification. Outline the proposed journey, explain why this approach is optimal for the context, and define the expected outcomes of the next phase. Do NOT include handoff commands (e.g., `teddy start`) in this Message yet.</step>
       </phase>
 
       <phase n="4" name="Documentation">
         <goal>Create the high-quality handoff artifact required for the approved handoff target.</goal>
         <step n="1" name="Document Requirements">
-        Update the Roadmap in `docs/project/PROJECT.md` and `CREATE` or `EDIT` the Specification Documents and Milestones. For one-off, tactical requirements that do not need architectural planning, CREATE a Task Brief document (`docs/project/tasks/NN-task-name.md`) instead of a full Specification Document. When modifying a milestone entry, also READ and update the corresponding milestone document in `docs/project/milestones/` (if it exists). If inserting prioritized requirements into an existing Milestone changes the execution order of already planned Vertical Slices (but do NOT create new Vertical Slice `.md` files — the Architect alone owns slice creation). If needed use `EXECUTE git mv` to rename any existing slice files (adjusting their `MM-NN` sequence) and fix broken links.
+        `CREATE` or `EDIT` the Specification Documents and Milestones. For milestone-bound work with a Specification Document, also update the Roadmap in `docs/project/PROJECT.md`. For one-off, tactical requirements that do not need architectural planning, CREATE a Task Brief document (`docs/project/tasks/NN-task-name.md`) instead of a full Specification Document and skip the PROJECT.md update. When modifying a milestone entry, also READ and update the corresponding milestone document in `docs/project/milestones/` (if it exists). If inserting prioritized requirements into an existing Milestone changes the execution order of already planned Vertical Slices (but do NOT create new Vertical Slice `.md` files — the Architect alone owns slice creation). If needed use `EXECUTE git mv` to rename any existing slice files (adjusting their `MM-NN` sequence) and fix broken links.
         </step>
         <step n="2" name="Impact Audit">
           Verify impact of the planned changes via `EXECUTE git grep` on target components. You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic requirements.
@@ -43,7 +43,7 @@
       <phase n="5" name="Version Control">
         <goal>Gain final approval and execute the commit following the VCP for all changes.</goal>
         <step n="1" name="Teardown">Explicitly delete all temporary logs and workspace detritus in `spikes/`, then run `git status` to verify.</step>
-        <step n="2" name="Approval Gate">Message the user to review the finalized artifacts. Do NOT proceed to the commit following the VCP without explicit user approval. This is the designated gate for approval.</step>
+        <step n="2" name="Approval Gate">Message the user to review the finalized artifacts.</step>
         <step n="3" name="Commit">Execute the commit following the VCP for the finalized artifacts.</step>
       </phase>
 
