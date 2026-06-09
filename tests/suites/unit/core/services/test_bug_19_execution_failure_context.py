@@ -68,7 +68,7 @@ class TestBug19ExecutionFailureContext:
             ActionLog(
                 status=ActionStatus.FAILURE,
                 action_type=ActionType.EDIT.value,
-                params={"File Path": "src/some_file.py"},
+                params={"path": "src/some_file.py"},
                 details="FIND block mismatch at runtime",
             ),
         ]
@@ -85,7 +85,7 @@ class TestBug19ExecutionFailureContext:
             ActionLog(
                 status=ActionStatus.FAILURE,
                 action_type=ActionType.CREATE.value,
-                params={"File Path": "src/new_file.py"},
+                params={"path": "src/new_file.py"},
                 details="Write permission denied",
             ),
         ]
@@ -100,7 +100,7 @@ class TestBug19ExecutionFailureContext:
             ActionLog(
                 status=ActionStatus.SKIPPED,
                 action_type=ActionType.EDIT.value,
-                params={"File Path": "src/skipped_file.py"},
+                params={"path": "src/skipped_file.py"},
             ),
         ]
         report = make_report_with_action_logs(action_logs)
@@ -114,7 +114,7 @@ class TestBug19ExecutionFailureContext:
             ActionLog(
                 status=ActionStatus.PENDING,
                 action_type=ActionType.EDIT.value,
-                params={"File Path": "src/pending_file.py"},
+                params={"path": "src/pending_file.py"},
             ),
         ]
         report = make_report_with_action_logs(action_logs)
@@ -128,7 +128,7 @@ class TestBug19ExecutionFailureContext:
             ActionLog(
                 status=ActionStatus.SUCCESS,
                 action_type=ActionType.EDIT.value,
-                params={"File Path": "src/success_file.py"},
+                params={"path": "src/success_file.py"},
             ),
         ]
         report = make_report_with_action_logs(action_logs)

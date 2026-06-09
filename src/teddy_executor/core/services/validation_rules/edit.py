@@ -46,6 +46,7 @@ class EditActionValidator(BaseActionValidator):
             action.params.get("path")
             or action.params.get("file_path")
             or action.params.get("File Path")
+            or action.params.get("path")
         )
 
         if not isinstance(path_str, str):

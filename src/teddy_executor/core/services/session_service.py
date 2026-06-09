@@ -335,8 +335,10 @@ class SessionService(ISessionManager):
             if log.action_type == ActionType.READ.value:
                 resource_val = log.params.get("resource") or log.params.get("Resource")
             elif log.action_type in (ActionType.CREATE.value, ActionType.EDIT.value):
-                resource_val = log.params.get("file_path") or log.params.get(
-                    "File Path"
+                resource_val = (
+                    log.params.get("file_path")
+                    or log.params.get("File Path")
+                    or log.params.get("path")
                 )
 
             if not resource_val:
@@ -367,8 +369,10 @@ class SessionService(ISessionManager):
         for action in report.original_actions:
             if action.type not in (ActionType.CREATE.value, ActionType.EDIT.value):
                 continue
-            resource_val = action.params.get("file_path") or action.params.get(
-                "File Path"
+            resource_val = (
+                action.params.get("file_path")
+                or action.params.get("File Path")
+                or action.params.get("path")
             )
             if not resource_val:
                 continue
