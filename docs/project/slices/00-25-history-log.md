@@ -50,8 +50,8 @@ Then no history.log is created in the session directory
 
 ## Deliverables
 - [x] **Contract** - Define Tee class interface (takes Path, context manager, proxies write/flush/isatty to both stdout and log file).
-- [x] **Logic** - Implement Tee class in `src/teddy_executor/core/utils/io.py`.
-- [x] **Logic** - Add metadata header printing to stdout in SessionOrchestrator (required format: `[NN] <plan-title> | Waiting for <agent-name> to respond...`, plus model/context/cost bullets).
+- [ ] **Logic** - Implement Tee class in `src/teddy_executor/core/utils/io.py`.
+- [ ] **Logic** - Add metadata header printing to stdout in SessionOrchestrator (required format: `[NN] <plan-title> | Waiting for <agent-name> to respond...`, plus model/context/cost bullets).
 - [ ] **Wiring** - Install Tee at start of SessionOrchestrator.execute() when is_session is True, with try/finally for cleanup.
 - [ ] **Harness** - Create test fixtures and helpers for Tee and history.log tests.
 - [ ] **Wiring** - Add unit tests for Tee class (basic tee, flush propagation, isatty, context manager, exception safety).
@@ -67,18 +67,6 @@ Then no history.log is created in the session directory
 - `_TeeWriter.write()` flushes both handles after each write for crash safety.
 - Tests: 3 unit tests covering constructor, context manager protocol, and real write propagation via `tmp_path`.
 - Not tested yet: explicit flush propagation, isatty forwarding. Marked as debt.
-
-### Logic - Metadata header printing (DONE)
-- Added header printing in `SessionOrchestrator.execute()` after validation (step 3.5) and before execution (step 4), gated by `is_session and plan_path`.
-- Format: `[NN] <title> | Waiting for <agent> to respond...` plus Model, Context, Session Cost bullets.
-- Turn number extracted from `Path(plan_path).parent.name`.
-- Agent name retrieved from `plan.metadata["Agent"]`.
-- Model retrieved from `config_service.get_setting("llm.model", "unknown")`.
-- Context tokens from `project_context.total_tokens` and `llm_client.get_context_window()`.
-- Session cost from `session_service.get_cumulative_cost(session_name)`.
-- **Regression fix**: Used `getattr(plan, "title", "Untitled")` instead of `plan.title` to avoid `AttributeError` on mock Plan objects that lack the attribute (7 tests were failing).
-- **Import fix**: Moved `import typer` from local (inside methods) to module level to prevent `UnboundLocalError`.
-- Test: `test_session_orchestrator_prints_metadata_header_when_session` verifies all four lines in stdout using `capsys`.
 
 ## Implementation Plan
 The implementation follows the task brief steps:

@@ -17,9 +17,6 @@ from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 from tests.harness.setup.mocking import register_mock
-from teddy_executor.core.ports.outbound.config_service import IConfigService
-from teddy_executor.core.ports.outbound.llm_client import ILlmClient
-from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 
 
 @pytest.fixture
@@ -43,6 +40,11 @@ def orchestrator(  # noqa: PLR0913
         planning_service=container.resolve(IPlanningUseCase),
     )
 
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+    from teddy_executor.core.ports.inbound.get_context_use_case import (
+        IGetContextUseCase,
+    )
+    from teddy_executor.core.ports.outbound.llm_client import ILlmClient
     from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 
     from teddy_executor.core.services.session_pruning_service import (
@@ -296,85 +298,3 @@ def test_session_orchestrator_harvests_context_in_interactive_mode(  # noqa: PLR
 
     # Assert
     assert mock_plan.metadata.get("pruned_context") == "pruned.txt"
-
-
-def test_session_orchestrator_prints_metadata_header_when_session(  # noqa: PLR0913
-    orchestrator,
-    mock_run_plan,
-    mock_fs,
-    mock_plan_parser,
-    mock_plan_validator,
-    container,
-    capsys,
-):
-    """
-    In session mode, the orchestrator should print the metadata header to stdout
-    after validation passes and before execution.
-    """
-    # Arrange
-    from teddy_executor.core.domain.models import Plan
-
-    mock_plan = register_mock(container, Plan)
-    mock_plan.metadata = {"Agent": "developer", "Status": "SUCCESS 🟢"}
-    mock_plan.is_session = True
-    mock_plan.title = "Implement Feature X"
-
-    mock_plan_parser.parse.return_value = mock_plan
-    mock_plan_validator.validate.return_value = []
-    mock_fs.path_exists.return_value = True
-
-    # Mock successful execution
-    mock_run_plan.execute.return_value = ExecutionReport(
-        run_summary=RunSummary(
-            status=RunStatus.SUCCESS,
-            start_time=datetime.now(timezone.utc),
-            end_time=datetime.now(timezone.utc),
-        ),
-        plan_title="Implement Feature X",
-        rationale="Test Rationale",
-    )
-
-    # Setup context service to return a mock project context
-    project_context = MagicMock()
-    project_context.total_tokens = 1000
-    project_context.items = []
-    orchestrator._context_service.get_context.return_value = project_context
-
-    # Ensure pruning service is a no-op
-    orchestrator._pruning_service.prune.side_effect = lambda ctx, **kwargs: ctx
-
-    # Mock config service for model name
-    mock_config = MagicMock(spec=orchestrator._config_service)
-    mock_config.get_setting.side_effect = lambda key, default=None: (
-        "openrouter/deepseek/deepseek-v4-flash:nitro" if key == "llm.model" else default
-    )
-    orchestrator._config_service = mock_config
-
-    # Mock session service for cumulative cost and context paths
-    orchestrator._session_service.get_cumulative_cost.return_value = 0.0420
-    orchestrator._session_service.resolve_context_paths.return_value = {
-        "Session": [],
-        "Turn": [],
-    }
-
-    # Mock llm client for context window and token counting
-    orchestrator._llm_client.get_context_window.return_value = 128000
-    orchestrator._llm_client.get_text_token_count.return_value = 100
-
-    # Act
-    orchestrator.execute(plan_path="path/to/01/plan.md", interactive=True)
-
-    # Assert: header should be printed to stdout
-    captured = capsys.readouterr()
-    out = captured.out
-
-    assert "[01] Implement Feature X | Waiting for developer to respond..." in out, (
-        f"Expected header not found in stdout. Output: {out!r}"
-    )
-    assert "Model: openrouter/deepseek/deepseek-v4-flash:nitro" in out, (
-        f"Expected model line not found. Output: {out!r}"
-    )
-    assert "Context:" in out, f"Expected context line not found. Output: {out!r}"
-    assert "Session Cost:" in out, (
-        f"Expected session cost line not found. Output: {out!r}"
-    )
