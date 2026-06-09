@@ -233,7 +233,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 ### `READ`
 - **Resource:** [path/to/file.ext](/path/to/file.ext) or [URL]
 - **Description:** [Explanation]
-- **`Lines`** (Optional string, e.g., `10-50`): Read only the specified line range from the file. Supports formats: `start-end` (inclusive), `-end` (from beginning), `start-` (to end), or a single line number. When set, the file's truncation limit is bypassed.
+- **Lines:** [string] (Optional: Read line range from file, e.g., `2-25`. Bypasses truncation limit.)
           </template>
         </action>
 
@@ -265,7 +265,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 - **Allow Failure:** [true|false] (Optional: Continues the Action Plan even if the command returns a non-zero exit code)
 - **Background:** [true|false] (Optional: Runs the command in the background)
 - **Timeout:** [seconds] (Optional: Maximum execution time in seconds)
-- **`Tail`** (Optional integer, e.g., `20`): Override the default output line limit. Only the last N lines of output are returned. Useful for very verbose commands.
+- **Tail:** [integer] (Optional: Override default output line limit. Only last N lines returned.)
 ~~~~~~shell
 [Command]
 ~~~~~~
