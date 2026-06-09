@@ -51,6 +51,15 @@ Added `tests/suites/unit/core/services/test_bug_19_execution_failure_context.py`
 - Pending actions → path NOT added
 - Success actions → path added (baseline)
 
+### Clarification: Turn Transition is Already Handled
+The `trigger_replan()` method in `SessionLifecycleManager` already calls `finalize_turn()` (and thus `transition_to_next_turn()`) internally. No additional `finalize_turn` call is needed in `SessionOrchestrator.execute()` — adding one would create a duplicate transition that could corrupt the next turn's context.
+
+The correct execution flow for validation failures in session mode is:
+1. `SessionOrchestrator.execute()` → `_validate_plan_with_context()` → on failure → `_handle_logical_validation_errors()` → `trigger_replan()`
+2. `trigger_replan()` → `finalize_turn()` → `transition_to_next_turn()` → `_apply_execution_effects()` → since `action_logs` is empty, falls back to `_apply_original_actions_effects()` (Bug 16 fix)
+3. `_apply_original_actions_effects()` processes `original_actions` and adds failed EDIT paths to the next turn's context
+
 ### Preventative Measures
 - When filtering collections of execution outcomes, use inclusion lists (what to skip) rather than exclusion lists (what to process). This prevents future status values from being accidentally excluded.
 - Add unit tests that explicitly test each `ActionStatus` value to ensure the filter behaves correctly for all statuses.
+- Any `execute()` method with an early return for validation failures should be reviewed to ensure the turn transition still occurs in stateful modes.
