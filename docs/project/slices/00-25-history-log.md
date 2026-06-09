@@ -49,7 +49,7 @@ Then no history.log is created in the session directory
 - **Stdout restoration**: After Tee exits, sys.stdout is restored to original. Exception safety ensures this always happens.
 
 ## Deliverables
-- [x] **Contract** - Define Tee class interface (takes Path, context manager, proxies write/flush/isatty to both stdout and log file).
+- [ ] **Contract** - Define Tee class interface (takes Path, context manager, proxies write/flush/isatty to both stdout and log file).
 - [ ] **Logic** - Implement Tee class in `src/teddy_executor/core/utils/io.py`.
 - [ ] **Logic** - Add metadata header printing to stdout in SessionOrchestrator (required format: `[NN] <plan-title> | Waiting for <agent-name> to respond...`, plus model/context/cost bullets).
 - [ ] **Wiring** - Install Tee at start of SessionOrchestrator.execute() when is_session is True, with try/finally for cleanup.
@@ -58,15 +58,7 @@ Then no history.log is created in the session directory
 - [ ] **Wiring** - Add integration tests for history.log creation in SessionOrchestrator (format correctness, validation failure logging, non-session mode, append mode, stdout restoration, Tee failure isolation).
 
 ## Implementation Notes
-
-### Contract - Tee class interface (DONE)
-- Created `src/teddy_executor/core/utils/io.py` with `Tee` class and `_TeeWriter` proxy.
-- `Tee.__enter__` opens log file in append mode, saves original stdout, installs `_TeeWriter` as `sys.stdout`.
-- `Tee.__exit__` restores original stdout and closes log file.
-- Graceful file-open failure: logs debug warning and returns without modifying stdout.
-- `_TeeWriter.write()` flushes both handles after each write for crash safety.
-- Tests: 3 unit tests covering constructor, context manager protocol, and real write propagation via `tmp_path`.
-- Not tested yet: explicit flush propagation, isatty forwarding. Marked as debt.
+*(To be filled during implementation)*
 
 ## Implementation Plan
 The implementation follows the task brief steps:
