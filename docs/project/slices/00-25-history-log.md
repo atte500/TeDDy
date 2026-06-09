@@ -55,7 +55,7 @@ Then no history.log is created in the session directory
 - [x] **Wiring** - Install Tee at start of SessionOrchestrator.execute() when is_session is True, with try/finally for cleanup.
 - [x] **Harness** - Create test fixtures and helpers for Tee and history.log tests.
 - [x] **Wiring** - Add unit tests for Tee class (basic tee, flush propagation, isatty, context manager, exception safety).
-- [x] **Wiring** - Add integration tests for history.log creation in SessionOrchestrator (format correctness, validation failure logging, non-session mode, append mode, stdout restoration, Tee failure isolation).
+- [ ] **Wiring** - Add integration tests for history.log creation in SessionOrchestrator (format correctness, validation failure logging, non-session mode, append mode, stdout restoration, Tee failure isolation).
 - [ ] **Cleanup** - Refactor `SessionOrchestrator.execute()` to reduce statement count (<40) and branch count (<12) to satisfy PLR0915/PLR0912 linting rules.
 
 ## Implementation Notes
@@ -112,25 +112,6 @@ Then no history.log is created in the session directory
 - Test uses real `tmp_path` directory structure simulating a session turn.
 
 ### Wiring - Tee unit tests (DONE)
-- Added 4 new tests to `tests/suites/unit/core/utils/test_io.py`:
-  1. `test_tee_writer_flush_propagates_to_both_outputs` — verifies `_TeeWriter.flush()` does not close or break either stream.
-  2. `test_tee_writer_isatty_returns_original_stdout_value` — verifies `isatty()` delegates to original stdout (StringIO returns False).
-  3. `test_tee_restores_stdout_on_exception` — verifies `sys.stdout` is restored even when an exception is raised inside the context.
-  4. `test_tee_handles_file_open_failure_gracefully` — verifies Tee skips when log file cannot be opened (e.g., permission error), stdout remains usable and restored on exit.
-- All 7 tests (3 existing + 4 new) pass. Full suite: 867 passed, 3 skipped.
-- The previously marked debt for explicit flush/isatty tests is now resolved by these tests.
-
-### Wiring - Integration tests (DONE)
-- Created `tests/suites/integration/core/services/test_history_log_integration.py` with 6 integration tests:
-  1. `test_history_log_format_correctness` — verifies header format: `[NN] <title> | Waiting for <agent>...`, Model, Context, Session Cost lines.
-  2. `test_history_log_validation_failure_captured` — verifies history.log exists and contains header even with validation errors (but validation text is NOT printed to stdout — known gap).
-  3. `test_history_log_non_session_mode` — verifies no history.log when `plan_path=None`.
-  4. `test_history_log_append_content_across_turns` — verifies two sequential turns both appear in chronological order.
-  5. `test_history_log_stdout_restored_after_execution` — verifies `sys.stdout` is restored to original after execution.
-  6. `test_history_log_tee_failure_isolation` — verifies Tee gracefully handles file-open failures without crashing.
-- **Known gap**: Validation failure output is not captured in history.log because the orchestrator does not print validation errors to stdout before returning. This could be addressed as a future enhancement.
-- **Challenge**: ValidationError constructor does not accept `line` keyword (only `file_path` and `message`). The mock setup must create proper `ValidationError` instances.
-- All 6 tests pass. Full suite: 873 passed, 3 skipped.
 - Added 4 new tests to `tests/suites/unit/core/utils/test_io.py`:
   1. `test_tee_writer_flush_propagates_to_both_outputs` — verifies `_TeeWriter.flush()` does not close or break either stream.
   2. `test_tee_writer_isatty_returns_original_stdout_value` — verifies `isatty()` delegates to original stdout (StringIO returns False).
