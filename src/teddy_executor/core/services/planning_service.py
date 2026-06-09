@@ -189,7 +189,8 @@ class PlanningService(IPlanningUseCase):
     def _display_telemetry(self, meta: Dict[str, Any], token_count: int) -> None:
         """Displays real-time telemetry about the upcoming LLM call."""
         model = str(
-            meta.get("model")
+            meta.get("actual_model")
+            or meta.get("model")
             or self._config_service.get_setting("llm.model")
             or "unknown"
         )

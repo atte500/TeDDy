@@ -350,8 +350,8 @@ class SessionService(ISessionManager):
             "creation_timestamp": self._time_service.now_utc().isoformat(),
         }
 
-        # Carry over LLM overrides
-        for key in ["model", "provider", "api_key"]:
+        # Carry over LLM overrides and actual_model for display continuity
+        for key in ["model", "actual_model", "provider", "api_key"]:
             if key in current_meta:
                 meta[key] = current_meta[key]
 

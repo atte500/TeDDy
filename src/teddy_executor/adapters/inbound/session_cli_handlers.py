@@ -150,6 +150,7 @@ def _echo_config_success(
     container: Container,
     agent: Optional[str] = None,
     model: Optional[str] = None,
+    actual_model: Optional[str] = None,
 ) -> None:
     """Retrieves and echoes the active model and agent configuration on success.
 
@@ -158,9 +159,13 @@ def _echo_config_success(
         agent: Optional agent name to display.
         model: Optional model override from CLI. If provided, this takes
                precedence over the config file value.
+        actual_model: Optional actual serving model from meta.yaml. If provided,
+                      this takes precedence over the model parameter.
     """
     config_service = container.resolve(IConfigService)
-    if model:
+    if actual_model:
+        resolved_model = actual_model
+    elif model:
         resolved_model = model
     else:
         resolved_model = config_service.get_setting("llm.model", "unknown")
@@ -250,6 +255,62 @@ def handle_context_gathering(container: Container, no_copy: bool):
     echo_and_copy(formatted_context, no_copy=no_copy)
 
 
+def _resolve_session_name(
+    container: Container,
+    path: Optional[str] = None,
+) -> str:
+    """Resolves the session name from a path, CWD, or auto-detection."""
+    session_manager = container.resolve(ISessionManager)
+    if path:
+        return session_manager.resolve_session_from_path(path)
+    try:
+        return session_manager.resolve_session_from_path(
+            str(Path.cwd().resolve())
+        )
+    except ValueError:
+        return session_manager.get_latest_session_name()
+
+
+def _sync_and_display_session_meta(
+    container: Container,
+    session_name: str,
+    model: Optional[str] = None,
+    provider: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> None:
+    """Reads latest turn meta.yaml, displays actual_model, and syncs config overrides."""
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+    session_manager = container.resolve(ISessionManager)
+    repository: ISessionRepository = container.resolve(ISessionRepository)
+    config_service: IConfigService = container.resolve(IConfigService)
+
+    latest_turn_path = session_manager.get_latest_turn(session_name)
+    meta = repository.load_meta(latest_turn_path)
+    # Show actual_model if available from previous turn, falling back to model
+    _echo_config_success(
+        container, model=model, actual_model=meta.get("actual_model")
+    )
+
+    # Sync latest turn's meta.yaml with current config model/overrides
+    config_model = config_service.get_setting("llm.model", "unknown")
+    changed = False
+    if model:
+        meta["model"] = model
+        changed = True
+    elif config_model != "unknown" and meta.get("model") != config_model:
+        meta["model"] = config_model
+        changed = True
+    if provider:
+        meta["provider"] = provider
+        changed = True
+    if api_key:
+        meta["api_key"] = api_key
+        changed = True
+    if changed:
+        repository.save_meta(f"{latest_turn_path}/meta.yaml", meta)
+
+
 def handle_resume_session(  # noqa: PLR0913
     container: Container,
     path: Optional[str] = None,
@@ -260,57 +321,24 @@ def handle_resume_session(  # noqa: PLR0913
     api_key: Optional[str] = None,
 ):
     """Logic for the 'resume' command."""
-    from teddy_executor.core.ports.outbound.config_service import IConfigService
-
     try:
         # 1. Pre-flight checks
         typer.echo("Checking configurations...", err=True)
         _run_cli_preflight_check(container)
-        # For resume, the agent is determined by the session metadata
-        _echo_config_success(container, model=model)
 
-        session_manager = container.resolve(ISessionManager)
+        # 2. Resolve session name
+        session_name = _resolve_session_name(container, path)
 
-        if path:
-            session_name = session_manager.resolve_session_from_path(path)
-        else:
-            # If no path, first try to resolve from CWD (in case we are inside a session)
-            try:
-                session_name = session_manager.resolve_session_from_path(
-                    str(Path.cwd().resolve())
-                )
-            except ValueError:
-                # If not inside a session, auto-detect the latest session
-                session_name = session_manager.get_latest_session_name()
-
-        # Session path relative to project root for display
+        # 3. Display session path
         session_relative_path = str(Path(".teddy") / "sessions" / session_name)
         typer.echo(f"Resuming session: {session_relative_path}")
 
-        # Sync latest turn's meta.yaml with current config model.
-        # This ensures telemetry display shows the correct model even when
-        # the user's active config model differs from the session's origin model.
-        repository: ISessionRepository = container.resolve(ISessionRepository)
-        config_service: IConfigService = container.resolve(IConfigService)
-        latest_turn_path = session_manager.get_latest_turn(session_name)
-        meta = repository.load_meta(latest_turn_path)
-        config_model = config_service.get_setting("llm.model", "unknown")
-        changed = False
-        if model:
-            meta["model"] = model
-            changed = True
-        elif config_model != "unknown" and meta.get("model") != config_model:
-            meta["model"] = config_model
-            changed = True
-        if provider:
-            meta["provider"] = provider
-            changed = True
-        if api_key:
-            meta["api_key"] = api_key
-            changed = True
-        if changed:
-            repository.save_meta(f"{latest_turn_path}/meta.yaml", meta)
+        # 4. Display actual_model and sync config overrides
+        _sync_and_display_session_meta(
+            container, session_name, model=model, provider=provider, api_key=api_key
+        )
 
+        # 5. Enter the session loop
         _orchestrate_session_loop(
             container=container,
             session_name=session_name,
