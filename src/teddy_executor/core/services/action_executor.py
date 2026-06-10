@@ -115,7 +115,7 @@ class ActionExecutor:
             action=action, action_prompt=prompt, change_set=change_set
         )
 
-    def confirm_and_dispatch(  # noqa: PLR0913  # noqa: C901
+    def confirm_and_dispatch(  # noqa: PLR0913, C901
         self,
         action,
         interactive: bool,
@@ -150,6 +150,11 @@ class ActionExecutor:
             try:
                 current_hash = self._compute_file_hash(path)
                 if current_hash != self._file_hashes[path]:
+                    logger.error(
+                        "EDIT pre-check failed: file content modified during "
+                        "execution for %s",
+                        path,
+                    )
                     return (
                         ActionLog(
                             status=ActionStatus.FAILURE,
@@ -192,3 +197,10 @@ class ActionExecutor:
     def handle_failed_action(self, action, details: str) -> ActionLog:
         """Creates an ActionLog for an action that failed during preparation."""
         return self._create_intercepted_log(action, ActionStatus.FAILURE, details)
+
+    def reset_file_hashes(self) -> None:
+        """
+        Clears all stored file hashes. Called at the start of each plan execution
+        to prevent stale hashes from previous turns from causing false pre-check failures.
+        """
+        self._file_hashes.clear()

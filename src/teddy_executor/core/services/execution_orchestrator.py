@@ -56,6 +56,10 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
     def _process_plan_actions(self, plan: Plan, interactive: bool) -> list[ActionLog]:
         """Iterates through actions and dispatches them."""
+        # Reset file hashes at the start of each plan execution to prevent
+        # stale hashes from previous turns from causing false pre-check failures.
+        self._action_executor.reset_file_hashes()
+
         action_logs = []
         halt_execution = False
         for action in plan.actions:
