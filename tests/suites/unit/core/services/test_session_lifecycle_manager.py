@@ -152,3 +152,124 @@ class TestTeeActiveContract:
             "SessionLifecycleManager must expose a tee_active attribute"
         )
         assert manager.tee_active is False, "tee_active must default to False"
+
+
+class TestTeeTiming:
+    """Tests for Tee installation timing in _handle_planning_and_execution."""
+
+    def test_tee_installed_before_planning(self, manager, monkeypatch) -> None:
+        """Tee must be installed before trigger_new_plan is called."""
+        from unittest.mock import MagicMock
+        from teddy_executor.core.utils.io import Tee
+        from teddy_executor.core.ports.outbound.session_manager import SessionState
+
+        mock_tee = MagicMock(spec=Tee)
+        mock_tee.__enter__.return_value = mock_tee
+        monkeypatch.setattr(
+            "teddy_executor.core.services.session_lifecycle_manager._Tee",
+            lambda path: mock_tee,
+        )
+
+        turn_dir = "/root/session/turns/01"
+        mock_orch = MagicMock(spec=IRunPlanUseCase)
+        mock_orch.execute.return_value = None
+
+        # get_session_state is called after trigger_new_plan to resolve the
+        # actual turn path (needed for centennial migration support).
+        manager._session_service.get_session_state.return_value = (
+            SessionState.PENDING_PLAN,
+            turn_dir,
+        )
+
+        # Track call order using direct return values (NOT calling the mock
+        # from side_effect, which causes recursion when side_effect calls
+        # the mock that has itself as side_effect).
+        call_log = []
+
+        mock_tee.__enter__.side_effect = lambda: call_log.append("tee_enter") or mock_tee
+        manager._session_planner.trigger_new_plan.side_effect = (
+            lambda *a, **kw: call_log.append("trigger_new_plan") or "session-name"
+        )
+
+        manager._handle_planning_and_execution(
+            turn_dir, mock_orch, interactive=False
+        )
+
+        # tee_enter must come before trigger_new_plan
+        assert call_log.index("tee_enter") < call_log.index(
+            "trigger_new_plan"
+        ), "Tee must be installed before planning"
+
+    def test_tee_active_set_during_planning(self, manager, monkeypatch) -> None:
+        """During trigger_new_plan, tee_active must be True and reset after."""
+        from unittest.mock import MagicMock
+        from teddy_executor.core.utils.io import Tee
+        from teddy_executor.core.ports.outbound.session_manager import SessionState
+
+        mock_tee = MagicMock(spec=Tee)
+        mock_tee.__enter__.return_value = mock_tee
+        monkeypatch.setattr(
+            "teddy_executor.core.services.session_lifecycle_manager._Tee",
+            lambda path: mock_tee,
+        )
+
+        turn_dir = "/root/session/turns/01"
+        mock_orch = MagicMock(spec=IRunPlanUseCase)
+        mock_orch.execute.return_value = None
+
+        # get_session_state is called after trigger_new_plan to resolve the
+        # actual turn path (needed for centennial migration support).
+        manager._session_service.get_session_state.return_value = (
+            SessionState.PENDING_PLAN,
+            turn_dir,
+        )
+
+        captured_active = [None]
+        manager._session_planner.trigger_new_plan.side_effect = (
+            lambda *a, **kw: captured_active.__setitem__(0, manager.tee_active) or "session-name"
+        )
+
+        manager._handle_planning_and_execution(
+            turn_dir, mock_orch, interactive=False
+        )
+
+        # During planning, tee_active should be True
+        assert captured_active[0] is True, (
+            f"tee_active should be True during planning, got {captured_active[0]}"
+        )
+        # After method, tee_active must be False
+        assert manager.tee_active is False, (
+            "tee_active must be reset to False after execution"
+        )
+
+    def test_tee_cleaned_up_on_cancellation(self, manager, monkeypatch) -> None:
+        """If trigger_new_plan returns CANCELLED, Tee must be cleaned up."""
+        from unittest.mock import MagicMock
+        from teddy_executor.core.utils.io import Tee
+
+        mock_tee = MagicMock(spec=Tee)
+        mock_tee.__enter__.return_value = mock_tee
+        monkeypatch.setattr(
+            "teddy_executor.core.services.session_lifecycle_manager._Tee",
+            lambda path: mock_tee,
+        )
+
+        turn_dir = "/root/session/turns/01"
+        mock_orch = MagicMock(spec=IRunPlanUseCase)
+        manager._session_planner.trigger_new_plan.return_value = "CANCELLED"
+
+        result = manager._handle_planning_and_execution(
+            turn_dir, mock_orch, interactive=False
+        )
+
+        assert result == (
+            turn_dir,
+            None,
+        ), "Expected (turn_dir, None) when cancelled"
+        # Tee must be exited
+        assert mock_tee.__exit__.called, (
+            "Tee must be cleaned up when planning is cancelled"
+        )
+        assert manager.tee_active is False, (
+            "tee_active must be False after cancellation cleanup"
+        )

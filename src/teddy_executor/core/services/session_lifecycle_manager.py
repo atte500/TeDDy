@@ -127,7 +127,7 @@ class SessionLifecycleManager:
         try:
             new_name = self._session_planner.trigger_new_plan(turn_dir)
             if not new_name or new_name == "CANCELLED":
-                return (new_name or turn_dir, None)
+                return (turn_dir, None)
             _, actual_turn_path = self._session_service.get_session_state(new_name)
             report = orchestrator.execute(
                 plan_path=f"{actual_turn_path}/plan.md",

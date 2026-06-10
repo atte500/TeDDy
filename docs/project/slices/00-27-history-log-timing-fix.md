@@ -46,7 +46,7 @@ Then the second installation is skipped (no duplicate log entries)
 - [x] **Harness** - Create test fixtures for verifying Tee installation timing (writeable log path, Tee-active flag detection).
 - [x] **Logic** - Move Tee installation from `SessionOrchestrator.execute()` to `SessionLifecycleManager._handle_planning_and_execution()` before `trigger_new_plan()`, with `try/finally` cleanup and a contract flag for guard.
 - [x] **Logic** - Add a guard in `SessionOrchestrator.execute()` to check `SessionLifecycleManager.tee_active` before installing Tee and skip if already active.
-- [ ] **Wiring** - Add unit tests for the new timing and guard behavior in `test_session_lifecycle_manager.py` and `test_session_orchestrator.py`.
+- [x] **Wiring** - Add unit tests for the new timing and guard behavior in `test_session_lifecycle_manager.py` and `test_session_orchestrator.py`.
 - [ ] **Wiring** - Add integration tests for session execution verifying history.log contains planning output (turn header, metadata lines).
 
 ## Implementation Notes
@@ -68,6 +68,42 @@ Then the second installation is skipped (no duplicate log entries)
 - Full test suite: 877 passed, 3 skipped (no regressions).
 
 ### Completed: Logic - Move Tee installation to SessionLifecycleManager + Guard (2026-06-10)
+
+- **`session_lifecycle_manager.py`:**
+  - Added `tee_active = False` as class-level attribute (required for `POSIXPathMock` spec compatibility).
+  - Fixed import ordering (E402): moved `IRunPlanUseCase` and `SessionState` imports above `TYPE_CHECKING` block.
+  - Added `Tee as _Tee` import and a `logger` for cleanup failure logging.
+  - In `_handle_planning_and_execution()`, Tee is installed before `trigger_new_plan()` using `Path(turn_dir).parent / "history.log"` as the log path (session root).
+  - Defensive guard: if the resolved log path equals the project root, redirects to `.tmp/history.log`.
+  - `try/finally` guarantees Tee cleanup and `tee_active = False` reset, even on cancellation or exception.
+  - If planning is cancelled (`trigger_new_plan` returns `CANCELLED`), the `finally` block cleans up Tee.
+- **`session_orchestrator.py`:**
+  - Re-added `Tee as _Tee` import and `logger`.
+  - Tee installation in `execute()` is now guarded by `not self._lifecycle_manager.tee_active`.
+  - When the lifecycle manager has already installed Tee (during planning), the orchestrator skips installation entirely.
+  - Proper `try/finally` cleanup is retained for the orchestrator's own Tee installation.
+- **Regression fixes during implementation:**
+  - Fixed log path derivation: `.parent` (not `.parent.parent`) is the session root.
+  - Fixed indentation error when removing the orphaned `try` block from a previous edit.
+- **[DEBT]** Pre-existing Ruff violations in `session_orchestrator.py`:
+  - `PLR0915` (too many statements) in `execute()` – 56 statements exceed the 40 limit.
+  - `PLR0912` (too many branches) in `execute()` – 16 branches exceed the 12 limit.
+  - Both are structural issues in the orchestrator pattern. The function already suppresses `PLR0913` and `C901` via `# noqa`. These should be addressed in a future refactor.
+- Full test suite: 877 passed, 3 skipped (no regressions).
+
+### Completed: Wiring - Unit tests for timing and guard behavior (2026-06-10)
+
+- **`TestTeeTiming`** class in `test_session_lifecycle_manager.py`:
+  - `test_tee_installed_before_planning` – verifies that `tee.__enter__()` is called before `trigger_new_plan()`. Uses a call-order log with direct return values to avoid recursion.
+  - `test_tee_active_set_during_planning` – verifies that `tee_active` is `True` during planning and reset to `False` after execution. Captures `tee_active` inside the `trigger_new_plan` side-effect.
+  - `test_tee_cleaned_up_on_cancellation` – verifies that `tee.__exit__()` is called and `tee_active` is reset when planning returns `CANCELLED`.
+- **`TestTeeGuard`** class in `test_session_orchestrator.py`:
+  - `test_orchestrator_skips_tee_when_lifecycle_active` – sets `lifecycle_manager.tee_active = True` and confirms `_Tee` is never instantiated.
+  - `test_orchestrator_installs_tee_when_not_active` – sets `lifecycle_manager.tee_active = False` with a session plan path, and confirms `_Tee` is instantiated and entered.
+- **Regression fixes:**
+  - Fixed cancellation return value in `_handle_planning_and_execution` (was returning `"CANCELLED"` instead of `turn_dir`).
+  - Added `get_session_state` mock return value in the two timing tests that exercise the post-planning path.
+- Full test suite: 882 passed, 3 skipped (no regressions).
 
 - **`session_lifecycle_manager.py`:**
   - Added `tee_active = False` as class-level attribute (required for `POSIXPathMock` spec compatibility).

@@ -298,3 +298,136 @@ def test_session_orchestrator_harvests_context_in_interactive_mode(  # noqa: PLR
 
     # Assert
     assert mock_plan.metadata.get("pruned_context") == "pruned.txt"
+
+
+class TestTeeGuard:
+    """Tests for the Tee installation guard in SessionOrchestrator.execute()."""
+
+    def test_orchestrator_skips_tee_when_lifecycle_active(  # noqa: PLR0913
+        self,
+        orchestrator,
+        mock_run_plan,
+        mock_fs,
+        mock_plan_parser,
+        mock_plan_validator,
+        container,
+        monkeypatch,
+    ) -> None:
+        """When lifecycle_manager.tee_active is True, orchestrator must not install Tee."""
+        from unittest.mock import MagicMock
+        from teddy_executor.core.domain.models import Plan
+        from teddy_executor.core.domain.models.execution_report import (
+            ExecutionReport,
+            RunStatus,
+            RunSummary,
+        )
+        from datetime import datetime, timezone
+
+        mock_tee_class = MagicMock()
+        monkeypatch.setattr(
+            "teddy_executor.core.services.session_orchestrator._Tee",
+            mock_tee_class,
+        )
+
+        # Ensure execution returns a report
+        mock_run_plan.execute.return_value = ExecutionReport(
+            run_summary=RunSummary(
+                status=RunStatus.SUCCESS,
+                start_time=datetime.now(timezone.utc),
+                end_time=datetime.now(timezone.utc),
+            ),
+            plan_title="Test",
+            rationale="Test",
+        )
+
+        # Set lifecycle_manager.tee_active to True
+        orchestrator._lifecycle_manager.tee_active = True
+
+        # Set up session mode
+        mock_fs.path_exists.return_value = True
+        mock_fs.read_file.return_value = "plan content"
+
+        mock_plan = register_mock(container, Plan)
+        mock_plan.metadata = {}
+        mock_plan.is_session = True
+        mock_plan_parser.parse.return_value = mock_plan
+        mock_plan_validator.validate.return_value = []
+
+        # Mock context service
+        orchestrator._context_service.get_context.return_value = MagicMock()
+        orchestrator._pruning_service.prune.side_effect = (
+            lambda ctx, **kwargs: ctx
+        )
+
+        plan_content = MarkdownPlanBuilder("Test").build()
+        plan_path = "path/to/01/plan.md"
+
+        orchestrator.execute(
+            plan_content=plan_content, plan_path=plan_path
+        )
+
+        # _Tee must NOT be called since lifecycle_manager already installed it
+        mock_tee_class.assert_not_called()
+
+    def test_orchestrator_installs_tee_when_not_active(  # noqa: PLR0913
+        self,
+        orchestrator,
+        mock_run_plan,
+        mock_fs,
+        mock_plan_parser,
+        mock_plan_validator,
+        container,
+        monkeypatch,
+    ) -> None:
+        """When lifecycle_manager.tee_active is False, orchestrator must install Tee."""
+        from unittest.mock import MagicMock
+        from teddy_executor.core.domain.models import Plan
+        from teddy_executor.core.domain.models.execution_report import (
+            ExecutionReport,
+            RunStatus,
+            RunSummary,
+        )
+        from datetime import datetime, timezone
+
+        mock_tee_class = MagicMock()
+        monkeypatch.setattr(
+            "teddy_executor.core.services.session_orchestrator._Tee",
+            mock_tee_class,
+        )
+
+        mock_run_plan.execute.return_value = ExecutionReport(
+            run_summary=RunSummary(
+                status=RunStatus.SUCCESS,
+                start_time=datetime.now(timezone.utc),
+                end_time=datetime.now(timezone.utc),
+            ),
+            plan_title="Test",
+            rationale="Test",
+        )
+
+        # Ensure tee_active is False (default)
+        orchestrator._lifecycle_manager.tee_active = False
+
+        mock_fs.path_exists.return_value = True
+        mock_fs.read_file.return_value = "plan content"
+
+        mock_plan = register_mock(container, Plan)
+        mock_plan.metadata = {}
+        mock_plan.is_session = True
+        mock_plan_parser.parse.return_value = mock_plan
+        mock_plan_validator.validate.return_value = []
+
+        orchestrator._context_service.get_context.return_value = MagicMock()
+        orchestrator._pruning_service.prune.side_effect = (
+            lambda ctx, **kwargs: ctx
+        )
+
+        plan_content = MarkdownPlanBuilder("Test").build()
+        plan_path = "path/to/01/plan.md"
+
+        orchestrator.execute(
+            plan_content=plan_content, plan_path=plan_path
+        )
+
+        # _Tee must be called once (constructor call)
+        mock_tee_class.assert_called_once()
