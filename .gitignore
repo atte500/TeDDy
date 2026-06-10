@@ -105,6 +105,9 @@ test_data/
 hello.txt
 private/
 temp_*
+history.log
+path/
+session/
 
 # Archived Folders
 *archive
