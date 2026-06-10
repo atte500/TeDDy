@@ -44,8 +44,8 @@ Then the second installation is skipped (no duplicate log entries)
 ## Deliverables
 - [x] **Contract** - Expose `tee_active` property on `SessionLifecycleManager` to allow `SessionOrchestrator` to query Tee installation state.
 - [x] **Harness** - Create test fixtures for verifying Tee installation timing (writeable log path, Tee-active flag detection).
-- [ ] **Logic** - Move Tee installation from `SessionOrchestrator.execute()` to `SessionLifecycleManager._handle_planning_and_execution()` before `trigger_new_plan()`, with `try/finally` cleanup and a contract flag for guard.
-- [ ] **Logic** - Add a guard in `SessionOrchestrator.execute()` to check `SessionLifecycleManager.tee_active` before installing Tee and skip if already active.
+- [x] **Logic** - Move Tee installation from `SessionOrchestrator.execute()` to `SessionLifecycleManager._handle_planning_and_execution()` before `trigger_new_plan()`, with `try/finally` cleanup and a contract flag for guard.
+- [x] **Logic** - Add a guard in `SessionOrchestrator.execute()` to check `SessionLifecycleManager.tee_active` before installing Tee and skip if already active.
 - [ ] **Wiring** - Add unit tests for the new timing and guard behavior in `test_session_lifecycle_manager.py` and `test_session_orchestrator.py`.
 - [ ] **Wiring** - Add integration tests for session execution verifying history.log contains planning output (turn header, metadata lines).
 
@@ -65,13 +65,30 @@ Then the second installation is skipped (no duplicate log entries)
 - Added `tee_log_path` fixture that creates a temporary writeable `.log` file in the system temp directory and cleans it up after the test.
 - Added `installed_tee` fixture that installs Tee on the log path and ensures proper cleanup via `__exit__` even if the test fails.
 - Exported all three in `tests/conftest.py` for global availability.
-- These fixtures will be used by the Wiring deliverables (unit tests for timing/guard behavior and integration tests).
 - Full test suite: 877 passed, 3 skipped (no regressions).
 
-- Added `self.tee_active = False` to `SessionLifecycleManager.__init__()` in `session_lifecycle_manager.py`.
-- Created `TestTeeActiveContract` test class in `test_session_lifecycle_manager.py` with `test_tee_active_exists_and_defaults_to_false`.
-- The attribute is a plain boolean flag, defaulting to `False`, fulfilling the contract requirement for `SessionOrchestrator` to query Tee installation state.
-- No refactoring needed — the change is minimal and follows all DI purity rules (the `manager` test fixture uses proper Constructor Injection via `SessionPorts`).
+### Completed: Logic - Move Tee installation to SessionLifecycleManager + Guard (2026-06-10)
+
+- **`session_lifecycle_manager.py`:**
+  - Added `tee_active = False` as class-level attribute (required for `POSIXPathMock` spec compatibility).
+  - Fixed import ordering (E402): moved `IRunPlanUseCase` and `SessionState` imports above `TYPE_CHECKING` block.
+  - Added `Tee as _Tee` import and a `logger` for cleanup failure logging.
+  - In `_handle_planning_and_execution()`, Tee is installed before `trigger_new_plan()` using `Path(turn_dir).parent / "history.log"` as the log path (session root).
+  - Defensive guard: if the resolved log path equals the project root, redirects to `.tmp/history.log`.
+  - `try/finally` guarantees Tee cleanup and `tee_active = False` reset, even on cancellation or exception.
+  - If planning is cancelled (`trigger_new_plan` returns `CANCELLED`), the `finally` block cleans up Tee.
+- **`session_orchestrator.py`:**
+  - Re-added `Tee as _Tee` import and `logger`.
+  - Tee installation in `execute()` is now guarded by `not self._lifecycle_manager.tee_active`.
+  - When the lifecycle manager has already installed Tee (during planning), the orchestrator skips installation entirely.
+  - Proper `try/finally` cleanup is retained for the orchestrator's own Tee installation.
+- **Regression fixes during implementation:**
+  - Fixed log path derivation: `.parent` (not `.parent.parent`) is the session root.
+  - Fixed indentation error when removing the orphaned `try` block from a previous edit.
+- **[DEBT]** Pre-existing Ruff violations in `session_orchestrator.py`:
+  - `PLR0915` (too many statements) in `execute()` – 56 statements exceed the 40 limit.
+  - `PLR0912` (too many branches) in `execute()` – 16 branches exceed the 12 limit.
+  - Both are structural issues in the orchestrator pattern. The function already suppresses `PLR0913` and `C901` via `# noqa`. These should be addressed in a future refactor.
 - Full test suite: 877 passed, 3 skipped (no regressions).
 
 ## Implementation Plan

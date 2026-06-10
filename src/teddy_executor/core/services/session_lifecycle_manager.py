@@ -1,9 +1,17 @@
+import logging
 from pathlib import Path
 from typing import Any, Optional, TYPE_CHECKING
+
 import yaml
 from teddy_executor.core.domain.models.execution_report import ExecutionReport
 
 from typing import Sequence
+
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+from teddy_executor.core.ports.outbound.session_manager import SessionState
+from teddy_executor.core.utils.io import Tee as _Tee
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from teddy_executor.core.domain.models.planning_ports import (
@@ -13,15 +21,14 @@ if TYPE_CHECKING:
 
     _ = SessionPorts
 
-from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
-from teddy_executor.core.ports.outbound.session_manager import SessionState
-
 
 class SessionLifecycleManager:
     """
     Manages the lifecycle of session turns, including finalization,
     resume state machine, and automated re-plan coordination.
     """
+
+    tee_active = False  # Class-level default for mock spec compatibility
 
     def __init__(self, ports: "SessionPorts"):
         self._session_service = ports.session_service
@@ -88,22 +95,53 @@ class SessionLifecycleManager:
     ) -> tuple[str, Optional[ExecutionReport]]:
         """Triggers planning for a turn and then executes the resulting plan.
 
+        Tee is installed before planning to capture all output (turn headers,
+        metadata, planning logs) into history.log. The installation is guarded
+        by tee_active to prevent double installation.
+
         Returns:
             A tuple (actual_session_name, report). The actual_session_name
             is the session name returned by trigger_new_plan, which may
             differ from the original session name after a centennial
             migration.
         """
-        new_name = self._session_planner.trigger_new_plan(turn_dir)
-        if not new_name or new_name == "CANCELLED":
-            return (new_name or turn_dir, None)
-        _, actual_turn_path = self._session_service.get_session_state(new_name)
-        report = orchestrator.execute(
-            plan_path=f"{actual_turn_path}/plan.md",
-            interactive=interactive,
-            project_context=project_context,
-        )
-        return (new_name, report)
+        # Install Tee to capture planning output before trigger_new_plan
+        tee = None
+        if not self.tee_active:
+            try:
+                log_path = Path(turn_dir).parent / "history.log"
+                # Defensive guard: never write history.log to project root
+                resolved = str(log_path.resolve())
+                project_root = str(Path.cwd().resolve())
+                if resolved.rstrip("/") == project_root.rstrip("/"):
+                    safe_dir = Path(turn_dir).parent.parent / ".tmp"
+                    safe_dir.mkdir(parents=True, exist_ok=True)
+                    log_path = safe_dir / "history.log"
+                tee = _Tee(log_path)
+                tee.__enter__()
+                self.tee_active = True
+            except Exception:
+                logger.warning("Failed to install Tee in lifecycle manager")
+                tee = None
+
+        try:
+            new_name = self._session_planner.trigger_new_plan(turn_dir)
+            if not new_name or new_name == "CANCELLED":
+                return (new_name or turn_dir, None)
+            _, actual_turn_path = self._session_service.get_session_state(new_name)
+            report = orchestrator.execute(
+                plan_path=f"{actual_turn_path}/plan.md",
+                interactive=interactive,
+                project_context=project_context,
+            )
+            return (new_name, report)
+        finally:
+            self.tee_active = False
+            if tee is not None:
+                try:
+                    tee.__exit__(None, None, None)
+                except Exception:
+                    logger.exception("Failed to clean up Tee in lifecycle manager")
 
     def trigger_replan(  # noqa: PLR0913
         self,

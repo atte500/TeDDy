@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Any, Optional, cast
 
@@ -11,8 +12,9 @@ from teddy_executor.core.domain.models.plan import Plan
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.services.session_replanner import SessionReplanner
-
 from teddy_executor.core.utils.io import Tee as _Tee
+
+logger = logging.getLogger(__name__)
 
 
 class SessionOrchestrator(IRunPlanUseCase):
@@ -83,9 +85,9 @@ class SessionOrchestrator(IRunPlanUseCase):
         # 0. Detect Session Mode (requires plan_path and meta.yaml)
         is_session = self._is_session_mode(plan_path)
 
-        # Install Tee for history.log capture
+        # Install Tee for history.log capture (guarded: skip if lifecycle manager already installed)
         _tee = None
-        if is_session and plan_path:
+        if is_session and plan_path and not self._lifecycle_manager.tee_active:
             try:
                 _log_path = Path(plan_path).parent.parent / "history.log"
                 # Defensive guard: ensure history.log is never written to project root.
