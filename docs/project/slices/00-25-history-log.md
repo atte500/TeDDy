@@ -1,5 +1,5 @@
 # Slice: Session History Log (history.log)
-- **Status:** To De-risk
+- **Status:** In Progress
 - **Type:** Feature
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/session-history-view.md](/docs/project/specs/session-history-view.md)
@@ -57,10 +57,10 @@ Then the history.log contains those stderr lines interleaved with stdout lines
 - **Stdout/stderr restoration**: After Tee exits, sys.stdout and sys.stderr are restored to originals. Exception safety ensures this always happens.
 
 ## Deliverables
-- [ ] **Contract** - Define Tee class interface (takes Path, context manager, proxies write/flush/isatty to both original stdout/stderr and log file).
-- [ ] **Logic** - Implement Tee class in `src/teddy_executor/core/utils/io.py` (dual capture of stdout and stderr).
-- [ ] **Wiring** - Install Tee at start of SessionOrchestrator.execute() when is_session is True, with try/finally for cleanup of both streams.
-- [ ] **Harness** - Create test fixtures and helpers for Tee and history.log tests.
+- [x] **Contract** - Define Tee class interface (takes Path, context manager, proxies write/flush/isatty to both original stdout/stderr and log file).
+- [x] **Logic** - Implement Tee class in `src/teddy_executor/core/utils/io.py` (dual capture of stdout and stderr).
+- [x] **Wiring** - Install Tee at start of SessionOrchestrator.execute() when is_session is True, with try/finally for cleanup of both streams.
+- [▶] **Harness** - Create test fixtures and helpers for Tee and history.log tests.
 - [ ] **Wiring** - Add unit tests for Tee class (basic tee both streams, flush propagation, isatty forwarding, context manager restore, exception safety for file open failure).
 - [ ] **Wiring** - Add integration tests for history.log creation in SessionOrchestrator (stdout + stderr capture, validation failure logging, non-session mode, append mode, stream restoration on exception, Tee failure isolation).
 
