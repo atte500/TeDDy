@@ -50,7 +50,7 @@ And it does NOT fall back to internal bundled resources
 ## Deliverables
 - [x] **Seam** - Relocate bundled prompt files from `resources/prompts/` to `resources/config/prompts/`, delete old directory, update all import references and resource paths across the codebase.
 - [x] **Logic** - Add prompt XML copy logic to `InitService` that creates `.teddy/prompts/` and copies the 6 prompt XMLs from bundled resources during `teddy init`, using conditional copy (never overwrite existing).
-- [ ] **Logic** - Update `SessionService.create_session()` to read prompt content from `.teddy/prompts/<agent>.xml` using `IFileSystemManager` instead of bundled resources.
+- [x] **Logic** - Update `SessionService.create_session()` to read prompt content from `.teddy/prompts/<agent>.xml` using `IFileSystemManager` instead of bundled resources.
 - [ ] **Logic** - Update `PromptManager.fetch_system_prompt()` and `prompts.py:find_prompt_content()` to resolve from session root → `.teddy/prompts/` with no internal resource fallback.
 - [ ] **Wiring** - Update all test files to reflect new prompt resolution paths and verify cross-cutting behavior via acceptance tests (init → get-prompt → session start flow).
 
@@ -71,6 +71,17 @@ And it does NOT fall back to internal bundled resources
 - Updated existing test `test_ensure_initialized_creates_directory_and_files_if_missing` to expect the additional `create_directory(".teddy/prompts")` call.
 - The `test_ensure_initialized_does_not_overwrite_existing_files` test confirmed existing files and directories are never overwritten (path_exists returns True → no writes).
 - Full test suite confirmed no regressions.
+
+**Logic deliverable (Step 3):**
+- Changed `SessionService.create_session()` to read prompt content from `.teddy/prompts/<agent>.xml` via `IFileSystemManager.read_file()` instead of calling `self._prompt_manager.get_prompt_content()`.
+- If the prompt file doesn't exist, raises `ValueError` suggesting `teddy init`.
+- Added unit test `test_create_session_reads_prompt_from_teddy_prompts` verifying:
+  - Prompt content is written to session root with content from `.teddy/prompts/`
+  - `.teddy/prompts/<agent>.xml` is read via filesystem
+  - `get_prompt_content` is NOT called (enforced via `side_effect=AssertionError`)
+- Updated 4 existing tests (`test_create_session_orchestrates_filesystem_correctly`, `test_create_session_persists_initial_request`, `test_create_session_seeds_initial_request_into_session_context`, `test_create_session_deduplicates_context_paths`) to use `read_file.side_effect` with a dict mapping paths to content, replacing the `get_prompt_content` mock.
+- During Integration gate, discovered regression in `test_session_service_pruning.py::test_create_session_does_not_put_prompt_in_turn_directory` — it expected `write_file` with prompt content from `get_prompt_content` mock, but the new code reads from filesystem. Fixed by updating `read_file` setup and removing the `get_prompt_content` mock.
+- Full test suite confirmed 891 passed, 3 skipped (no regressions).
 
 ## Implementation Plan
 This slice implements a 5-step relocation of agent prompts from internal Python resources to the user-accessible `.teddy/prompts/` directory.

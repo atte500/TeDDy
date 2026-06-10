@@ -25,12 +25,19 @@ def test_create_session_orchestrates_filesystem_correctly(env):
     clean_context = "README.md\ndocs/project/PROJECT.md"
     agent_prompt = "<prompt>Pathfinder content</prompt>"
 
-    mock_fs.read_file.return_value = init_context
+    # read_file must return different content based on path
+    mock_fs.read_file.side_effect = lambda p: {
+        ".teddy/init.context": init_context,
+        f".teddy/prompts/{agent_name}.xml": agent_prompt,
+    }.get(p, "")
     mock_fs.path_exists.return_value = True
     mock_time.now.return_value = datetime(2026, 4, 17, 12, 0, 0)
     # Mock UTC time for metadata
     mock_time.now_utc.return_value = datetime(2026, 4, 17, 12, 0, 0)
-    mock_prompts.get_prompt_content.return_value = agent_prompt
+    # Ensure get_prompt_content is NOT called by the new code
+    mock_prompts.get_prompt_content.side_effect = AssertionError(
+        "create_session should not call get_prompt_content anymore"
+    )
 
     # Act
     service.create_session(
@@ -83,9 +90,15 @@ def test_create_session_persists_initial_request(env):
     initial_request = "# My Goal\nDo some coding."
     mock_time.now.return_value = datetime(2026, 5, 15, 10, 0, 0)
     mock_time.now_utc.return_value = datetime(2026, 5, 15, 10, 0, 0)
-    mock_prompts.get_prompt_content.return_value = "<prompt/>"
-    mock_fs.read_file.return_value = "README.md"
+    # read_file returns init.context by default, prompt path returns prompt content
+    mock_fs.read_file.side_effect = lambda p: {
+        ".teddy/init.context": "README.md",
+        f".teddy/prompts/{agent_name}.xml": "<prompt/>",
+    }.get(p, "")
     mock_fs.path_exists.return_value = True
+    mock_prompts.get_prompt_content.side_effect = AssertionError(
+        "create_session should not call get_prompt_content anymore"
+    )
 
     # Act
     service.create_session(
@@ -116,9 +129,14 @@ def test_create_session_seeds_initial_request_into_session_context(env):
     initial_request = "Goal"
     mock_time.now.return_value = datetime(2026, 5, 15, 10, 0, 0)
     mock_time.now_utc.return_value = datetime(2026, 5, 15, 10, 0, 0)
-    mock_prompts.get_prompt_content.return_value = "<prompt/>"
-    mock_fs.read_file.return_value = "README.md"
+    mock_fs.read_file.side_effect = lambda p: {
+        ".teddy/init.context": "README.md",
+        f".teddy/prompts/{agent_name}.xml": "<prompt/>",
+    }.get(p, "")
     mock_fs.path_exists.return_value = True
+    mock_prompts.get_prompt_content.side_effect = AssertionError(
+        "create_session should not call get_prompt_content anymore"
+    )
 
     # Act
     service.create_session(
@@ -301,11 +319,16 @@ def test_create_session_deduplicates_context_paths(env):
     agent_name = "pathfinder"
     # init.context has a duplicate path and overlapping additional_context
     # Order: path_a appears twice in init.context, path_b overlaps with additional_context
-    mock_fs.read_file.return_value = "path_a\npath_b\npath_a"
+    mock_fs.read_file.side_effect = lambda p: {
+        ".teddy/init.context": "path_a\npath_b\npath_a",
+        f".teddy/prompts/{agent_name}.xml": "<prompt/>",
+    }.get(p, "")
     mock_fs.path_exists.return_value = True
     mock_time.now.return_value = datetime(2026, 6, 8, 15, 0, 0)
     mock_time.now_utc.return_value = datetime(2026, 6, 8, 15, 0, 0)
-    mock_prompts.get_prompt_content.return_value = "<prompt/>"
+    mock_prompts.get_prompt_content.side_effect = AssertionError(
+        "create_session should not call get_prompt_content anymore"
+    )
 
     # Act
     service.create_session(
@@ -453,3 +476,64 @@ def test_apply_execution_effects_skips_original_actions_when_action_logs_present
         "Original actions should not be processed when action_logs is non-empty"
     )
     assert "existing.txt" in paths
+
+
+def test_create_session_reads_prompt_from_teddy_prompts(env):
+    """
+    Verifies that create_session reads prompt content from .teddy/prompts/<agent>.xml
+    using IFileSystemManager, not via prompt_manager.get_prompt_content.
+    """
+    # Arrange
+    from datetime import datetime
+
+    from teddy_executor.core.domain.models.session import SessionOptions
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
+    mock_time = env.mock_port(ITimeService)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    session_name = "prompt-source"
+    agent_name = "pathfinder"
+    prompt_content = "<prompt>From .teddy/prompts/</prompt>"
+
+    read_calls: list[str] = []
+
+    def mock_read(path: str) -> str:
+        read_calls.append(path)
+        if path.endswith("init.context"):
+            return "README.md"
+        if path.endswith(f"prompts/{agent_name}.xml"):
+            return prompt_content
+        return ""
+
+    mock_fs.read_file.side_effect = mock_read
+    mock_fs.path_exists.return_value = True
+    mock_time.now.return_value = datetime(2026, 6, 10, 16, 0, 0)
+    mock_time.now_utc.return_value = datetime(2026, 6, 10, 16, 0, 0)
+
+    # Do NOT mock prompt_manager.get_prompt_content — the new code should
+    # read from filesystem instead.
+
+    # Act
+    service.create_session(SessionOptions(name=session_name, agent_name=agent_name))
+
+    # Assert
+    session_root = ".teddy/sessions/20260610_160000-prompt-source"
+    expected_prompt_path = f"{session_root}/{agent_name}.xml"
+
+    # Verify prompt was written to session root with content from .teddy/prompts/
+    prompt_call = mock_fs.find_call_by_path("write_file", expected_prompt_path)
+    assert prompt_call is not None, f"Expected write to {expected_prompt_path}"
+    assert prompt_call.args[1] == prompt_content, (
+        f"Expected content '{prompt_content}', got '{prompt_call.args[1]}'"
+    )
+
+    # Verify .teddy/prompts/pathfinder.xml was read
+    teddy_prompt_read = any(
+        f"prompts/{agent_name}.xml" in str(call)
+        for call in mock_fs.read_file.call_args_list
+    )
+    assert teddy_prompt_read, (
+        f"Expected read_file to be called with .teddy/prompts/{agent_name}.xml"
+    )

@@ -47,9 +47,11 @@ def service(mock_deps):
 def test_create_session_does_not_put_prompt_in_turn_directory(service, mock_deps):
     # Arrange
     options = SessionOptions(name="test-session", agent_name="pathfinder")
-    mock_deps["prompt"].get_prompt_content.return_value = "<prompt>content</prompt>"
     mock_deps["fsm"].path_exists.return_value = True
-    mock_deps["fsm"].read_file.return_value = "README.md"
+    mock_deps["fsm"].read_file.side_effect = lambda p: {
+        ".teddy/init.context": "README.md",
+        f".teddy/prompts/{options.agent_name}.xml": "<prompt>content</prompt>",
+    }.get(p, "")
 
     # Act
     session_root = service.create_session(options)

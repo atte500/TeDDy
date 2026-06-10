@@ -1,7 +1,10 @@
 import re
 from pathlib import Path
 from typing import Any, Dict, Optional
-from teddy_executor.core.domain.models.execution_report import ExecutionReport
+from teddy_executor.core.domain.models.execution_report import (
+    ActionLog,
+    ExecutionReport,
+)
 from teddy_executor.core.domain.models.session import SessionOptions
 from teddy_executor.core.domain.models.plan import ActionType
 from teddy_executor.core.ports.inbound.init import IInitUseCase
@@ -59,10 +62,14 @@ class SessionService(ISessionManager):
             f"{session_root}/session.context", clean_context
         )
 
-        # 2. Prompt population
-        prompt_content = self._prompt_manager.get_prompt_content(options.agent_name)
-        if not prompt_content:
-            raise ValueError(f"Agent prompt '{options.agent_name}' not found.")
+        # 2. Prompt population — read from .teddy/prompts/ (canonical source)
+        prompt_path = f".teddy/prompts/{options.agent_name}.xml"
+        if not self._file_system_manager.path_exists(prompt_path):
+            raise ValueError(
+                f"Agent prompt '{options.agent_name}' not found in .teddy/prompts/. "
+                "Please run 'teddy init' to restore prompts."
+            )
+        prompt_content = self._file_system_manager.read_file(prompt_path)
         self._file_system_manager.write_file(
             f"{session_root}/{options.agent_name}.xml", prompt_content
         )
@@ -309,47 +316,51 @@ class SessionService(ISessionManager):
         """Calculates a root-relative path for a file within a turn directory."""
         return self._repository.to_root_relative(turn_dir, filename)
 
+    def _apply_single_log_effect(self, paths: set[str], log: ActionLog) -> None:
+        """Processes a single action log and adds its target path to the context set if applicable."""
+        from teddy_executor.core.domain.models import ActionStatus
+
+        # Skip only actions that were never executed (SKIPPED/PENDING).
+        if log.status in (ActionStatus.SKIPPED, ActionStatus.PENDING):
+            return
+
+        # FAILURE status only contributes paths for EDIT actions (per user requirement).
+        # For READ and CREATE actions, only SUCCESS status contributes.
+        if (
+            log.status != ActionStatus.SUCCESS
+            and log.action_type != ActionType.EDIT.value
+        ):
+            return
+
+        # Determine path based on action type
+        resource_val = None
+        if log.action_type == ActionType.READ.value:
+            # Skip adding READ path to context when Lines parameter is specified (line-range read)
+            if log.params.get("lines") or log.params.get("Lines"):
+                return
+            resource_val = log.params.get("resource") or log.params.get("Resource")
+        elif log.action_type in (ActionType.CREATE.value, ActionType.EDIT.value):
+            resource_val = (
+                log.params.get("file_path")
+                or log.params.get("File Path")
+                or log.params.get("path")
+            )
+
+        if not resource_val:
+            return
+
+        path = self._extract_resource_path(resource_val)
+        if self._repository.is_valid_path(path):
+            paths.add(path)
+
     def _apply_execution_effects(
         self, paths: set[str], report: Optional[ExecutionReport]
     ) -> None:
         """Applies side effects from READ, CREATE, and EDIT actions to the context set."""
-        from teddy_executor.core.domain.models import ActionStatus
-
         if not report:
             return
         for log in report.action_logs:
-            # Skip only actions that were never executed (SKIPPED/PENDING).
-            if log.status in (ActionStatus.SKIPPED, ActionStatus.PENDING):
-                continue
-
-            # FAILURE status only contributes paths for EDIT actions (per user requirement).
-            # For READ and CREATE actions, only SUCCESS status contributes.
-            if (
-                log.status != ActionStatus.SUCCESS
-                and log.action_type != ActionType.EDIT.value
-            ):
-                continue
-
-            # Determine path based on action type
-            resource_val = None
-            if log.action_type == ActionType.READ.value:
-                # Skip adding READ path to context when Lines parameter is specified (line-range read)
-                if log.params.get("lines") or log.params.get("Lines"):
-                    continue
-                resource_val = log.params.get("resource") or log.params.get("Resource")
-            elif log.action_type in (ActionType.CREATE.value, ActionType.EDIT.value):
-                resource_val = (
-                    log.params.get("file_path")
-                    or log.params.get("File Path")
-                    or log.params.get("path")
-                )
-
-            if not resource_val:
-                continue
-
-            path = self._extract_resource_path(resource_val)
-            if self._repository.is_valid_path(path):
-                paths.add(path)
+            self._apply_single_log_effect(paths, log)
 
         # FIX: Also process original_actions for validation failure scenarios.
         # When action_logs is empty (validation failure), the report still contains
