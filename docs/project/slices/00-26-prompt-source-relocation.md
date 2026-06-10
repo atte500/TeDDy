@@ -49,7 +49,7 @@ And it does NOT fall back to internal bundled resources
 
 ## Deliverables
 - [x] **Seam** - Relocate bundled prompt files from `resources/prompts/` to `resources/config/prompts/`, delete old directory, update all import references and resource paths across the codebase.
-- [ ] **Logic** - Add prompt XML copy logic to `InitService` that creates `.teddy/prompts/` and copies the 6 prompt XMLs from bundled resources during `teddy init`, using conditional copy (never overwrite existing).
+- [x] **Logic** - Add prompt XML copy logic to `InitService` that creates `.teddy/prompts/` and copies the 6 prompt XMLs from bundled resources during `teddy init`, using conditional copy (never overwrite existing).
 - [ ] **Logic** - Update `SessionService.create_session()` to read prompt content from `.teddy/prompts/<agent>.xml` using `IFileSystemManager` instead of bundled resources.
 - [ ] **Logic** - Update `PromptManager.fetch_system_prompt()` and `prompts.py:find_prompt_content()` to resolve from session root → `.teddy/prompts/` with no internal resource fallback.
 - [ ] **Wiring** - Update all test files to reflect new prompt resolution paths and verify cross-cutting behavior via acceptance tests (init → get-prompt → session start flow).
@@ -62,6 +62,14 @@ And it does NOT fall back to internal bundled resources
 - No other runtime Python code referenced the old import path (`resources.prompts`), only documentation.
 - Created unit test (`test_prompt_resource_relocation.py`) that asserts all 6 bundled prompt XMLs exist at the new location.
 - The `resources/__init__.py` had no import for `prompts`, so no change was needed there.
+- Full test suite confirmed no regressions.
+
+**Logic deliverable (Step 2):**
+- Extended `InitService.ensure_initialized()` to create `.teddy/prompts/` and copy 6 prompt XMLs from bundled `resources/config/prompts/` using conditional copy (only if not existing).
+- Followed the same `_get_default_content` pattern used for `.gitignore`, `config.yaml`, and `init.context`.
+- Added unit test `test_ensure_initialized_copies_prompts_to_teddy` verifying all 6 prompts are written with correct content.
+- Updated existing test `test_ensure_initialized_creates_directory_and_files_if_missing` to expect the additional `create_directory(".teddy/prompts")` call.
+- The `test_ensure_initialized_does_not_overwrite_existing_files` test confirmed existing files and directories are never overwritten (path_exists returns True → no writes).
 - Full test suite confirmed no regressions.
 
 ## Implementation Plan

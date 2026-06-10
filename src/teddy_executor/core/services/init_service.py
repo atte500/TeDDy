@@ -31,6 +31,27 @@ class InitService(IInitUseCase):
 
         return None
 
+    def _init_prompts(self) -> None:
+        """Copies bundled prompt XMLs to .teddy/prompts/ if missing."""
+        prompts_dir = ".teddy/prompts"
+        if not self._file_system.path_exists(prompts_dir):
+            self._file_system.create_directory(prompts_dir)
+
+        prompt_files = [
+            "architect.xml",
+            "assistant.xml",
+            "debugger.xml",
+            "developer.xml",
+            "pathfinder.xml",
+            "prototyper.xml",
+        ]
+        for fname in prompt_files:
+            target_path = f"{prompts_dir}/{fname}"
+            if not self._file_system.path_exists(target_path):
+                content = self._get_default_content(f"prompts/{fname}")
+                if content is not None:
+                    self._file_system.write_file(target_path, content)
+
     def ensure_initialized(self) -> None:
         """
         Checks for and creates the .teddy directory and default files.
@@ -55,3 +76,5 @@ class InitService(IInitUseCase):
             content = self._get_default_content("init.context")
             if content is not None:
                 self._file_system.write_file(init_context_path, content)
+
+        self._init_prompts()

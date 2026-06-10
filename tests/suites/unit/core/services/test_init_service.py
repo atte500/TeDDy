@@ -31,7 +31,8 @@ def test_ensure_initialized_creates_directory_and_files_if_missing(service, mock
     service.ensure_initialized()
 
     # Then
-    mock_fs.create_directory.assert_called_once_with(".teddy")
+    mock_fs.create_directory.assert_any_call(".teddy")
+    mock_fs.create_directory.assert_any_call(".teddy/prompts")
     # Ensure we use the exact content from side_effect for assertions
     mock_fs.write_file.assert_any_call(".teddy/.gitignore", SOURCE_GITIGNORE)
     mock_fs.write_file.assert_any_call(".teddy/config.yaml", SOURCE_CONFIG)
@@ -64,3 +65,55 @@ def test_init_service_default_path_resolution(mock_fs):
     assert "src/teddy_executor/resources/config" in service._config_dir.replace(
         "\\", "/"
     )
+
+
+PROMPT_FILES = [
+    "architect.xml",
+    "assistant.xml",
+    "debugger.xml",
+    "developer.xml",
+    "pathfinder.xml",
+    "prototyper.xml",
+]
+
+
+def test_ensure_initialized_copies_prompts_to_teddy(service, mock_fs):
+    """Verifies that ensure_initialized copies prompt XMLs to .teddy/prompts/."""
+
+    # Given
+    def mock_exists(p: str) -> bool:
+        # Bundled config resources exist
+        if p.startswith("/mock/config"):
+            return True
+        # .teddy does not exist (prompts copy should run)
+        return False
+
+    mock_fs.path_exists.side_effect = mock_exists
+
+    def mock_read(p: str) -> str:
+        return {
+            "/mock/config/.gitignore": "mock gitignore",
+            "/mock/config/config.yaml": "mock config",
+            "/mock/config/init.context": "mock context",
+            "/mock/config/prompts/architect.xml": "architect prompt",
+            "/mock/config/prompts/assistant.xml": "assistant prompt",
+            "/mock/config/prompts/debugger.xml": "debugger prompt",
+            "/mock/config/prompts/developer.xml": "developer prompt",
+            "/mock/config/prompts/pathfinder.xml": "pathfinder prompt",
+            "/mock/config/prompts/prototyper.xml": "prototyper prompt",
+        }.get(p, "")
+
+    mock_fs.read_file.side_effect = mock_read
+
+    # When
+    service.ensure_initialized()
+
+    # Then
+    mock_fs.create_directory.assert_any_call(".teddy")
+    mock_fs.write_file.assert_any_call(".teddy/.gitignore", "mock gitignore")
+    mock_fs.write_file.assert_any_call(".teddy/config.yaml", "mock config")
+    mock_fs.write_file.assert_any_call(".teddy/init.context", "mock context")
+    for fname in PROMPT_FILES:
+        prompt_name = fname.replace(".xml", "")
+        expected_content = f"{prompt_name} prompt"
+        mock_fs.write_file.assert_any_call(f".teddy/prompts/{fname}", expected_content)
