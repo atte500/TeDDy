@@ -145,6 +145,8 @@ def reset_formatter_singleton():
 def clean_test_env():
     """Defensive guard: ensure isolation of testing hooks and CWD state."""
     import os
+    import shutil
+    from pathlib import Path
     from teddy_executor.adapters.inbound.cli_helpers import find_project_root
 
     # Capture initial state
@@ -166,3 +168,17 @@ def clean_test_env():
         os.chdir(project_root)
     except Exception:
         pass
+
+    # Defensive cleanup: remove any test detritus at project root
+    # that may have been generated despite source fixes.
+    _detritus_patterns = ["history.log", "path", "session"]
+    for name in _detritus_patterns:
+        target = Path(project_root) / name
+        if target.exists():
+            try:
+                if target.is_dir():
+                    shutil.rmtree(str(target))
+                else:
+                    target.unlink()
+            except Exception:
+                pass
