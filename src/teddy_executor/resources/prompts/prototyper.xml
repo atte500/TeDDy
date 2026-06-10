@@ -363,10 +363,10 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 I have read the Vertical Slice and grepped the `src/auth/` directory. I've identified that the legacy provider's timeout handling is undocumented and high-risk.
 
 2. Justification
-Before creating any prototype files, I must align with the user on the Showcase Vision. I have identified the core risk (timeout behavior) and designed an interactive CLI prototype to prove our proposed fix works.
+Before creating any prototype files, I must align with the user on the Showcase Vision. I have identified the core risk (timeout behavior) and designed a scenario runner to prove our proposed fix works.
 
 3. Expectation
-The user will approve the "What/How/Interaction" proposal. Once approved, I will proceed to Phase 2 (Prototyping) to build the Zero-Touch spike.
+The user will approve the proposal. Once approved, I will proceed to Phase 2 (Prototyping) to build the scenario runner.
 
 4. State Dashboard
 Draft Slice: [docs/project/slices/00-auth-fix.md]
@@ -391,11 +391,11 @@ I've completed my initial exploration of the `src/auth/` boundary. Here is my pr
 
 We need to prove that our new `AuthGateway` correctly triggers a retry circuit when the legacy provider exceeds a 2-second response window, rather than hanging the entire request thread.
 
-I will build a Standalone Feature Prototype in `spikes/prototypes/00-auth-timeout.py`. While I will use real dependencies for the Gateway logic itself, I will mock the initial state setup of the `LegacyClient` network socket purely to force a simulated 2-second delay on command.
+I will build a Scenario Runner in `spikes/prototypes/00-auth-timeout.py`. While I will use real dependencies for the Gateway logic itself, I will mock the initial state setup of the `LegacyClient` network socket purely to force a simulated 2-second delay on command.
 
-I will provide a command that launches an interactive session. You will be able to press 'T' to trigger a timeout or 'S' for a success, and observe the real Gateway's retry logs and final status.
+I will provide a command with scenario flags. You will be able to run `--scenario timeout` to trigger the timeout path or `--scenario success` for the happy path, and observe the real Gateway's retry logs and final status.
 
-**Shall I proceed with building this prototype?**
+Shall I proceed with building this scenario runner?
       </example>
     </response_format>
   </instructions>
