@@ -1,5 +1,5 @@
 # Slice: Prompt Source Relocation to `.teddy/prompts/`
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Refactor
 - **Milestone:** N/A (Ad-hoc)
 - **Specs:** [Task: Prompt Source Relocation](/docs/project/tasks/26-prompt-source-relocation.md)
@@ -52,7 +52,7 @@ And it does NOT fall back to internal bundled resources
 - [x] **Logic** - Add prompt XML copy logic to `InitService` that creates `.teddy/prompts/` and copies the 6 prompt XMLs from bundled resources during `teddy init`, using conditional copy (never overwrite existing).
 - [x] **Logic** - Update `SessionService.create_session()` to read prompt content from `.teddy/prompts/<agent>.xml` using `IFileSystemManager` instead of bundled resources.
 - [x] **Logic** - Update `PromptManager.fetch_system_prompt()` and `prompts.py:find_prompt_content()` to resolve from session root → `.teddy/prompts/` with no internal resource fallback.
-- [▶] **Wiring** - Update all test files to reflect new prompt resolution paths and verify cross-cutting behavior via acceptance tests (init → get-prompt → session start flow).
+- [x] **Wiring** - Update all test files to reflect new prompt resolution paths and verify cross-cutting behavior via acceptance tests (init → get-prompt → session start flow).
 
 ## Implementation Notes
 **Seam deliverable (Step 1):**
@@ -95,6 +95,16 @@ And it does NOT fall back to internal bundled resources
   - No fallback to bundled resources.
 - Discovered path calculation bug in initial Green attempt: `parent.parent.parent` (3 levels up from turn path) lands at `.teddy/sessions`, not project root. Fixed to `parent.parent.parent.parent` (4 levels up) to reach project root.
 - Full test suite confirmed no regressions.
+
+**Wiring deliverable (Step 5):**
+- Fixed `tests/suites/acceptance/helpers.py:setup_project()` to create `.teddy/prompts/` instead of root `prompts/`.
+- Fixed `tests/suites/acceptance/test_streamlined_init.py:setup_init_env()` to create `.teddy/prompts/` instead of root `prompts/`.
+- Identified that all other test files are already correctly configured:
+  - Unit tests (`test_prompt_manager.py`, `test_prompts.py`, `test_session_service.py`, etc.) already updated in Steps 2-4.
+  - Integration tests already updated in Turn 33 (`test_session_orchestration_integration.py`).
+  - Acceptance tests pass (11 passed) after helper fixes.
+  - No remaining references to old `prompts/` path in test files.
+- Full test suite confirmed 893 passed, 3 skipped (no regressions).
 
 ## Implementation Plan
 This slice implements a 5-step relocation of agent prompts from internal Python resources to the user-accessible `.teddy/prompts/` directory.
