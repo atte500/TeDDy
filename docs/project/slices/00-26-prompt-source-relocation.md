@@ -1,0 +1,75 @@
+# Slice: Prompt Source Relocation to `.teddy/prompts/`
+- **Status:** In Progress
+- **Type:** Refactor
+- **Milestone:** N/A (Ad-hoc)
+- **Specs:** [Task: Prompt Source Relocation](/docs/project/tasks/26-prompt-source-relocation.md)
+- **Component Docs:** [PromptManager](/docs/architecture/core/services/prompt_manager.md), [InitService](/docs/architecture/core/services/init_service.md), [SessionService](/docs/architecture/core/services/session_service.md)
+- **Prototype:** N/A
+
+## Business Goal
+Move the canonical source of agent system prompts from bundled Python resources to the user-accessible `.teddy/prompts/` directory, enabling end-user customization and collocating all init templates under `resources/config/prompts/`.
+
+## Scenarios
+> As a user, I want to customize agent prompts in `.teddy/prompts/` so that my modifications are reflected in new sessions without editing Python package internals.
+
+```gherkin
+Given the project is initialized with `teddy init`
+When I edit `.teddy/prompts/pathfinder.xml`
+And I start a new session with `teddy start --session -a pathfinder`
+Then the session root contains the edited prompt content
+And `teddy get-prompt pathfinder` returns the edited content
+```
+
+> As a user, I want `teddy init` to restore missing prompts without overwriting my customizations.
+
+```gherkin
+Given `.teddy/prompts/` exists with `pathfinder.xml` containing custom content
+When I delete `.teddy/prompts/architect.xml`
+And I run `teddy init`
+Then `.teddy/prompts/architect.xml` is restored from bundled resources
+And `.teddy/prompts/pathfinder.xml` still contains my custom content
+```
+
+> As a user, I want `fetch_system_prompt` to resolve prompts from `.teddy/prompts/` when no session root override exists.
+
+```gherkin
+Given a session is active
+And no session-level prompt override exists
+When the system fetches the prompt for the `developer` agent
+Then it resolves from `.teddy/prompts/developer.xml`
+And it does NOT fall back to internal bundled resources
+```
+
+## Edge Cases
+- **Missing .teddy/prompts/**: If `.teddy/prompts/` is deleted (not just individual files), `teddy init` recreates the directory and restores all 6 prompts.
+- **Corrupt prompt file**: If a prompt XML in `.teddy/prompts/` is unreadable, `fetch_system_prompt` logs a warning and returns empty string rather than crashing.
+- **Prompt deleted mid-session**: If a prompt is deleted from `.teddy/prompts/` between init and session start, the session init raises a clear `ValueError` suggesting `teddy init`.
+- **Legacy session (pre-migration)**: Old sessions retain their prompt snapshot in the session root, so they remain unaffected by this change.
+- **Double init**: Running `teddy init` on an already-initialized project checks for prompt existence and only restores missing ones, never overwrites.
+
+## Deliverables
+- [ ] **Seam** - Relocate bundled prompt files from `resources/prompts/` to `resources/config/prompts/`, delete old directory, update all import references and resource paths across the codebase.
+- [ ] **Logic** - Add prompt XML copy logic to `InitService` that creates `.teddy/prompts/` and copies the 6 prompt XMLs from bundled resources during `teddy init`, using conditional copy (never overwrite existing).
+- [ ] **Logic** - Update `SessionService.create_session()` to read prompt content from `.teddy/prompts/<agent>.xml` using `IFileSystemManager` instead of bundled resources.
+- [ ] **Logic** - Update `PromptManager.fetch_system_prompt()` and `prompts.py:find_prompt_content()` to resolve from session root → `.teddy/prompts/` with no internal resource fallback.
+- [ ] **Wiring** - Update all test files to reflect new prompt resolution paths and verify cross-cutting behavior via acceptance tests (init → get-prompt → session start flow).
+
+## Implementation Notes
+*(To be filled as implementation progresses)*
+
+## Implementation Plan
+This slice implements a 5-step relocation of agent prompts from internal Python resources to the user-accessible `.teddy/prompts/` directory.
+
+**Key design decisions:**
+1. Bundled prompts stay as init templates under `resources/config/prompts/` (consistent with `config.yaml`, `.gitignore`, `init.context`)
+2. `.teddy/prompts/` becomes the single canonical source for runtime resolution
+3. Conditional copy ensures user customizations survive re-init
+4. Session root prompts remain as audit snapshots (first priority in resolution chain)
+5. Resolution order after migration: session root → `.teddy/prompts/` → empty string (no internal fallback)
+
+**Files affected per step:**
+- Step 1: Move 6 XMLs, delete `resources/prompts/`, update `prompts.py`
+- Step 2: `init_service.py` — add prompt copy logic
+- Step 3: `session_service.py` — change prompt source
+- Step 4: `prompt_manager.py`, `prompts.py` — change resolution order
+- Step 5: Test files — update paths, add new tests
