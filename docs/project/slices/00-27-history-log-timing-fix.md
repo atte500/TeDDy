@@ -1,5 +1,5 @@
 # Slice: History.log Timing Fix – Capture Planning Output
-- **Status:** Draft
+- **Status:** In Progress
 - **Type:** Bugfix
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/session-history-view.md](/docs/project/specs/session-history-view.md)
@@ -42,15 +42,22 @@ Then the second installation is skipped (no duplicate log entries)
 - **Cancel during planning:** If the user cancels planning (`trigger_new_plan` returns `CANCELLED`), Tee should be cleaned up.
 
 ## Deliverables
-- [ ] **Logic** - Move Tee installation from `SessionOrchestrator.execute()` to `SessionLifecycleManager._handle_planning_and_execution()` before `trigger_new_plan()`.
-- [ ] **Logic** - Add a guard in `SessionOrchestrator.execute()` to check if Tee is already installed (via a shared context or flag) and skip installation.
-- [ ] **Harness** - Create test fixtures for verifying Tee installation timing (e.g., a flag to detect whether Tee was installed by the lifecycle manager).
-- [ ] **Logic** - Ensure Tee is properly cleaned up if planning is cancelled or fails before execution.
-- [ ] **Wiring** - Add unit tests for the new timing behavior in `test_session_lifecycle_manager.py`.
-- [ ] **Wiring** - Add integration tests for session execution verifying history.log contains planning output.
+- [x] **Contract** - Expose `tee_active` property on `SessionLifecycleManager` to allow `SessionOrchestrator` to query Tee installation state.
+- [ ] **Harness** - Create test fixtures for verifying Tee installation timing (writeable log path, Tee-active flag detection).
+- [ ] **Logic** - Move Tee installation from `SessionOrchestrator.execute()` to `SessionLifecycleManager._handle_planning_and_execution()` before `trigger_new_plan()`, with `try/finally` cleanup and a contract flag for guard.
+- [ ] **Logic** - Add a guard in `SessionOrchestrator.execute()` to check `SessionLifecycleManager.tee_active` before installing Tee and skip if already active.
+- [ ] **Wiring** - Add unit tests for the new timing and guard behavior in `test_session_lifecycle_manager.py` and `test_session_orchestrator.py`.
+- [ ] **Wiring** - Add integration tests for session execution verifying history.log contains planning output (turn header, metadata lines).
 
 ## Implementation Notes
-(To be filled during implementation)
+
+### Completed: Contract - tee_active property (2026-06-10)
+
+- Added `self.tee_active = False` to `SessionLifecycleManager.__init__()` in `session_lifecycle_manager.py`.
+- Created `TestTeeActiveContract` test class in `test_session_lifecycle_manager.py` with `test_tee_active_exists_and_defaults_to_false`.
+- The attribute is a plain boolean flag, defaulting to `False`, fulfilling the contract requirement for `SessionOrchestrator` to query Tee installation state.
+- No refactoring needed — the change is minimal and follows all DI purity rules (the `manager` test fixture uses proper Constructor Injection via `SessionPorts`).
+- Full test suite: 877 passed, 3 skipped (no regressions).
 
 ## Implementation Plan
 The fix involves two primary changes:

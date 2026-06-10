@@ -30,6 +30,7 @@ class SessionLifecycleManager:
         self._user_interactor = ports.user_interactor
         self._session_planner = ports.session_planner
         self._replanner = ports.replanner
+        self.tee_active = False
 
     def resume(
         self,

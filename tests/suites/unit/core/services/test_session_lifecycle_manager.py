@@ -141,3 +141,14 @@ def test_resume_returns_tuple_with_session_name_and_report(manager):
         f"Expected session name 'my-session-2', got {actual_session_name}"
     )
     assert report is mock_report, "Report should be the one returned by orchestrator"
+
+
+class TestTeeActiveContract:
+    """Tests for the tee_active contract on SessionLifecycleManager."""
+
+    def test_tee_active_exists_and_defaults_to_false(self, manager) -> None:
+        """tee_active must be a boolean attribute defaulting to False."""
+        assert hasattr(manager, "tee_active"), (
+            "SessionLifecycleManager must expose a tee_active attribute"
+        )
+        assert manager.tee_active is False, "tee_active must default to False"
