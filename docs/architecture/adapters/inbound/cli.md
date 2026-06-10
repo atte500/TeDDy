@@ -102,7 +102,7 @@ Initializes a new session.
 
 ### Utility Command: `init`
 
-**Status:** To be implemented
+**Status:** Implemented
 
 Creates the `.teddy/` directory with default files (config, gitignore, init.context), pre-warms heavy imports, and auto-launches `teddy login` if no credentials exist.
 

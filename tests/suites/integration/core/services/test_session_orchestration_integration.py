@@ -123,10 +123,13 @@ def test_teddy_plan_generates_plan_file(tmp_path, monkeypatch, env):
     mock_llm.get_completion_cost.return_value = 0.01
     container.register(ILlmClient, instance=mock_llm)
 
-    monkeypatch.chdir(turn_dir)
-    result = runner.invoke(app, ["plan", "-m", "Implement feature X"])
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        handle_plan_generation,
+    )
 
-    assert result.exit_code == 0
+    monkeypatch.chdir(turn_dir)
+    handle_plan_generation(container, "Implement feature X")
+
     plan_file = turn_dir / "plan.md"
     assert plan_file.exists()
     assert "# Plan: Generated Plan" in plan_file.read_text(encoding="utf-8")

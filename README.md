@@ -66,6 +66,7 @@ To run commands, use `poetry run teddy <command>`.
 
 | Command      | Description                                                                                                                            |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `init`       | Initializes the `.teddy` directory with default files and pre-warms heavy imports for faster startup.                                  |
 | `execute`    | Executes a Markdown plan file. If no file is provided, it reads the plan from the clipboard.                                           |
 | `context`    | Gathers project context (file tree + selected file contents) and copies it to the clipboard. Respects `.gitignore` and `.teddyignore`. |
 | `get-prompt` | Retrieves a system prompt (e.g., `pathfinder`, `dev`). Searches in `.teddy/prompts/` for overrides before falling back to defaults.    |
