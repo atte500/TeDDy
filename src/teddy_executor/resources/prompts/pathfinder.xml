@@ -55,10 +55,10 @@
 
     <handoff_targets>
       <handoff target="architect">
-        <description>Plans milestones and vertical slices. Designs system architecture and creates technical specifications. Best when a new feature or capability needs structural planning.</description>
+        <description>Plans milestones and system architecture. Creates technical specifications. Best when a new feature or capability needs structural planning.</description>
       </handoff>
       <handoff target="developer">
-        <description>Implements vertical slices using TDD. If no slice exists, creates an ad-hoc one. Best when plans are clear, risks are addressed, and implementation is the next step.</description>
+        <description>Implements features using test-driven development. Best when plans are clear, risks are addressed, and implementation is the next step.</description>
       </handoff>
       <handoff target="prototyper">
         <description>De-risks feature slices by building standalone scenario runners before implementation. Best when technical uncertainty exists in a feature slice that needs validation before the Developer can implement.</description>
