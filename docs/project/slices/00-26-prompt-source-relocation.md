@@ -51,7 +51,7 @@ And it does NOT fall back to internal bundled resources
 - [x] **Seam** - Relocate bundled prompt files from `resources/prompts/` to `resources/config/prompts/`, delete old directory, update all import references and resource paths across the codebase.
 - [x] **Logic** - Add prompt XML copy logic to `InitService` that creates `.teddy/prompts/` and copies the 6 prompt XMLs from bundled resources during `teddy init`, using conditional copy (never overwrite existing).
 - [x] **Logic** - Update `SessionService.create_session()` to read prompt content from `.teddy/prompts/<agent>.xml` using `IFileSystemManager` instead of bundled resources.
-- [ ] **Logic** - Update `PromptManager.fetch_system_prompt()` and `prompts.py:find_prompt_content()` to resolve from session root → `.teddy/prompts/` with no internal resource fallback.
+- [x] **Logic** - Update `PromptManager.fetch_system_prompt()` and `prompts.py:find_prompt_content()` to resolve from session root → `.teddy/prompts/` with no internal resource fallback.
 - [ ] **Wiring** - Update all test files to reflect new prompt resolution paths and verify cross-cutting behavior via acceptance tests (init → get-prompt → session start flow).
 
 ## Implementation Notes
@@ -82,6 +82,19 @@ And it does NOT fall back to internal bundled resources
 - Updated 4 existing tests (`test_create_session_orchestrates_filesystem_correctly`, `test_create_session_persists_initial_request`, `test_create_session_seeds_initial_request_into_session_context`, `test_create_session_deduplicates_context_paths`) to use `read_file.side_effect` with a dict mapping paths to content, replacing the `get_prompt_content` mock.
 - During Integration gate, discovered regression in `test_session_service_pruning.py::test_create_session_does_not_put_prompt_in_turn_directory` — it expected `write_file` with prompt content from `get_prompt_content` mock, but the new code reads from filesystem. Fixed by updating `read_file` setup and removing the `get_prompt_content` mock.
 - Full test suite confirmed 891 passed, 3 skipped (no regressions).
+
+**Logic deliverable (Step 4):**
+- Changed `PromptManager.fetch_system_prompt()` to replace the internal resource fallback (`resources/prompts/<agent>.xml`) with `.teddy/prompts/<agent>.xml` resolved from project root via `turn_path.parent.parent.parent.parent / ".teddy" / "prompts" / ...`.
+- The session-root override (first priority) remains unchanged.
+- Changed `prompts.py:find_prompt_content()` to remove the bundled resources fallback entirely. Now only searches `.teddy/prompts/` upward from CWD; returns `None` if not found.
+- Added unit test `test_fetch_system_prompt_resolves_from_teddy_prompts` confirming:
+  - When session root is missing but `.teddy/prompts/` has the prompt, content is returned from `.teddy/prompts/`.
+  - No internal resource fallback exists.
+- Added unit test `test_find_prompt_content_does_not_fallback_to_bundled` confirming:
+  - When bundled resources exist but `.teddy/prompts/` is empty, returns `None`.
+  - No fallback to bundled resources.
+- Discovered path calculation bug in initial Green attempt: `parent.parent.parent` (3 levels up from turn path) lands at `.teddy/sessions`, not project root. Fixed to `parent.parent.parent.parent` (4 levels up) to reach project root.
+- Full test suite confirmed no regressions.
 
 ## Implementation Plan
 This slice implements a 5-step relocation of agent prompts from internal Python resources to the user-accessible `.teddy/prompts/` directory.

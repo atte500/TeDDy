@@ -66,15 +66,20 @@ class PromptManager(IPromptManager):
         if self._file_system_manager.path_exists(session_root_prompt):
             return self._file_system_manager.read_file(session_root_prompt)
 
-        # 2. Try Internal Resource Fallback
-        resource_path = (
-            Path(__file__).parent.parent.parent
-            / "resources"
+        # 2. Try .teddy/prompts/ (canonical source, user-editable)
+        # Navigate: turn_path = .teddy/sessions/<name>/<turn>
+        # .parent x1 = .teddy/sessions/<name>
+        # .parent x2 = .teddy/sessions
+        # .parent x3 = .teddy
+        # .parent x4 = project root
+        teddy_prompt_path = (
+            turn_path.parent.parent.parent.parent
+            / ".teddy"
             / "prompts"
             / f"{agent_name}.xml"
         ).as_posix()
-        if self._file_system_manager.path_exists(resource_path):
-            return self._file_system_manager.read_file(resource_path)
+        if self._file_system_manager.path_exists(teddy_prompt_path):
+            return self._file_system_manager.read_file(teddy_prompt_path)
 
         import logging
 
@@ -82,7 +87,7 @@ class PromptManager(IPromptManager):
             "PromptManager: Failed to resolve system prompt for agent '%s' (searched %s and %s)",
             agent_name,
             session_root_prompt,
-            resource_path,
+            teddy_prompt_path,
         )
         return ""
 

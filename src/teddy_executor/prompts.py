@@ -14,21 +14,15 @@ def _search_prompt_in_dir(directory: Path, prompt_name: str) -> Optional[str]:
 
 def find_prompt_content(prompt_name: str) -> Optional[str]:
     """
-    Finds prompt content by searching in two locations:
-    1. A local override directory (`.teddy/prompts/`) by searching upwards.
-    2. The bundled resources directory (`src/teddy_executor/resources/config/prompts/`).
+    Finds prompt content by searching in `.teddy/prompts/` (user-editable)
+    by traversing upwards from the current working directory.
     Returns the content as a string, or None if not found.
+    Bundled resources are no longer used as a fallback — only `.teddy/prompts/`.
     """
-    # 1. Search for local override (searching upwards for .teddy)
     current_path = Path.cwd().resolve()
     for path in [current_path] + list(current_path.parents):
         local_prompt_dir = path / ".teddy" / "prompts"
         if content := _search_prompt_in_dir(local_prompt_dir, prompt_name):
             return content
-
-    # 2. Fallback to bundled resources
-    bundled_prompt_dir = Path(__file__).parent / "resources" / "config" / "prompts"
-    if content := _search_prompt_in_dir(bundled_prompt_dir, prompt_name):
-        return content
 
     return None

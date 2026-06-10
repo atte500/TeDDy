@@ -524,6 +524,11 @@ def test_teddy_plan_generates_plan_file(tmp_path, monkeypatch, env):
     (turn_dir / "pathfinder.xml").write_text("system prompt", encoding="utf-8")
     (turn_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
 
+    # Create .teddy/prompts/pathfinder.xml so get_prompt_content succeeds
+    prompts_dir = tmp_path / ".teddy" / "prompts"
+    prompts_dir.mkdir(parents=True, exist_ok=True)
+    (prompts_dir / "pathfinder.xml").write_text("system prompt", encoding="utf-8")
+
     mock_llm = POSIXPathMock()
     mock_llm.validate_config.return_value = []
     mock_llm.get_completion.return_value = make_mock_response(
