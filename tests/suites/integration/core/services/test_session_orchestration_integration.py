@@ -133,3 +133,116 @@ def test_teddy_plan_generates_plan_file(tmp_path, monkeypatch, env):
     plan_file = turn_dir / "plan.md"
     assert plan_file.exists()
     assert "# Plan: Generated Plan" in plan_file.read_text(encoding="utf-8")
+
+
+def test_centennial_migration_resume_loop_continuation(tmp_path, monkeypatch, env):
+    """
+    Scenario: Resume loop correctly updates session_name after centennial migration.
+
+    Given a session with turn 99 completed,
+    When resume() is called with the original session name,
+    Then it returns (continuation_name, report) and creates the continuation session.
+    When resume() is called again with the continuation session name,
+    Then it processes the pending plan without triggering another migration.
+    """
+    env.workspace = tmp_path
+    env.with_real_filesystem()
+    monkeypatch.chdir(tmp_path)
+
+    # Mock the LLM to return a plan for the continuation turn's planning step
+    plan_content = """# Plan: Continuation Turn
+- Status: Green 🟢
+- Plan Type: TEST
+- Agent: developer
+
+## Rationale
+```
+Testing centennial migration resume loop.
+```
+
+## Action Plan
+### `EXECUTE`
+- **Command:** echo "migration-test-ok"
+"""
+    llm_client = env.get_service(ILlmClient)
+    llm_client.get_completion.return_value = make_mock_response(plan_content)
+
+    # Build a session with turn 99 completed (report.md exists)
+    session_name = "test-migration"
+    session_dir = tmp_path / ".teddy" / "sessions" / session_name
+    turn_99 = session_dir / "99"
+    turn_99.mkdir(parents=True)
+
+    (turn_99 / "report.md").write_text(
+        "# Report\n## Turn Summary\nSUCCESS\n", encoding="utf-8"
+    )
+    (turn_99 / "meta.yaml").write_text(
+        "turn_id: '99'\nagent_name: 'developer'\n", encoding="utf-8"
+    )
+    (turn_99 / "plan.md").write_text("# Plan: Previous\n", encoding="utf-8")
+    (turn_99 / "turn.context").write_text("", encoding="utf-8")
+    (session_dir / "session.context").write_text("", encoding="utf-8")
+
+    # Resolve the SessionOrchestrator
+    from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+
+    orchestrator = env.get_service(IRunPlanUseCase)
+
+    # ---- First resume call ----
+    # Should detect COMPLETE_TURN at turn 99, migrate to continuation session,
+    # plan and execute turn 01 of the continuation session.
+    actual_name, report = orchestrator.resume(
+        session_name=session_name,
+        interactive=False,
+    )
+
+    # Verify migration occurred
+    assert actual_name == "test-migration-2", (
+        f"Expected continuation name 'test-migration-2', got '{actual_name}'"
+    )
+    assert report is not None, "First resume call must return a report"
+
+    # Verify continuation session directory exists with a completed turn 01
+    cont_session_dir = session_dir.parent / "test-migration-2"
+    assert cont_session_dir.is_dir(), "Continuation session directory must exist"
+    turn_01 = cont_session_dir / "01"
+    assert turn_01.is_dir(), "Continuation session must have turn 01"
+    assert (turn_01 / "report.md").is_file(), (
+        "Turn 01 must have a report (plan was executed)"
+    )
+
+    # ---- Second resume call with UPDATED session name ----
+    # This simulates what _orchestrate_session_loop does after unpacking
+    # the tuple from the first resume() call.
+    second_name, second_report = orchestrator.resume(
+        session_name=actual_name,
+        interactive=False,
+    )
+
+    # Verify normal progression (no re-migration)
+    assert second_name == actual_name, (
+        f"Session name should remain '{actual_name}', got '{second_name}'"
+    )
+    assert second_report is not None, "Second resume call must return a report"
+
+    # Verify turn 02 exists (showing the continuation session progressed)
+    turn_02 = cont_session_dir / "02"
+    assert turn_02.is_dir(), "Continuation session must have progressed to turn 02"
+    assert (turn_02 / "report.md").is_file(), "Turn 02 must have a report"
+
+    # Verify the old session is unchanged (still at turn 99)
+    assert (session_dir / "99" / "report.md").is_file(), (
+        "Old session turn 99 must still have its report (unchanged)"
+    )
+    # No new turns should exist in the old session
+    old_turns = sorted(d.name for d in session_dir.iterdir() if d.name.isdigit())
+    assert old_turns == ["99"], f"Old session should only have turn 99, got {old_turns}"
+    # Only one continuation session should exist
+    cont_dirs = sorted(
+        d.name
+        for d in session_dir.parent.iterdir()
+        if d.name.startswith("test-migration") and d.name != "test-migration"
+    )
+    assert cont_dirs == ["test-migration-2"], (
+        f"Only one continuation session should exist, got {cont_dirs}"
+    )

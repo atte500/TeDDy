@@ -47,7 +47,7 @@ Feature: Centennial Turn Switch Session Name Propagation
 - [x] **Logic** - Update `SessionOrchestrator.resume() to return the updated session name from the lifecycle manager.
 - [x] **Logic** - Update `_orchestrate_session_loop` in `session_cli_handlers.py` to unpack the new return value and assign `session_name = actual_session_name` after each `orchestrator.resume()` call.
 - [x] **Migration** - Update all tests that mock `orchestrator.resume()` to return the tuple `(session_name, ExecutionReport)` instead of just the report.
-- [▶] **Logic** - Add a regression test in `tests/suites/integration/core/services/test_session_orchestration_integration.py` that exercises the full resume loop across the centennial boundary and verifies no redundant migration.
+- [x] **Logic** - Add a regression test in `tests/suites/integration/core/services/test_session_orchestration_integration.py` that exercises the full resume loop across the centennial boundary and verifies no redundant migration.
 - [ ] **Refactor** - Remove the now-unnecessary `current_name` variable reassignment pattern from the loop and ensure all guard conditions (loop_guard) still function correctly.
 
 ## Implementation Notes
@@ -75,3 +75,12 @@ Feature: Centennial Turn Switch Session Name Propagation
 ### Migration Deliverable
 - **Change**: Updated two test files that mock `orchestrator.resume()`: `test_session_replan_loop.py` (2 tests) and `test_session_start_resequencing.py` (2 tests). All mocks now return `("session_name", ...)` tuples.
 - **Verified**: Full test suite passes confirming all mock signatures are compatible with the new tuple return type.
+
+### Regression Test Deliverable
+- **Change**: Added `test_centennial_migration_resume_loop_continuation` to `test_session_orchestration_integration.py`. The test creates a session with turn 99 completed, calls `orchestrator.resume()` twice (simulating the loop): first call verifies migration to continuation session `test-migration-2`, second call verifies normal progression (turn 02) without re-migration.
+- **Key Assertions**:
+  - First resume returns `("test-migration-2", report)` and creates the continuation session directory.
+  - Second resume on the continuation session returns the same session name (no re-migration) and progresses to turn 02.
+  - Old session remains unchanged (only turn 99), no extra continuation sessions exist.
+- **Fixture**: Uses standard `tmp_path`, `monkeypatch`, `env` pattern with `with_real_filesystem()` and mocked LLM client.
+- **Verified**: Full test suite passes (863 passed, 3 skipped) after adding this test.
