@@ -60,7 +60,7 @@ def _orchestrate_session_loop(
     turn_count = 0
     while True:
         turn_count += 1
-        report = orchestrator.resume(
+        session_name, report = orchestrator.resume(
             session_name=session_name,
             interactive=interactive,
         )

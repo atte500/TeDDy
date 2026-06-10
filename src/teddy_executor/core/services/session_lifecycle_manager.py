@@ -37,17 +37,25 @@ class SessionLifecycleManager:
         orchestrator: IRunPlanUseCase,
         interactive: bool = True,
         project_context: Optional[Any] = None,
-    ) -> Optional[ExecutionReport]:
-        """Implements the 'resume' state machine."""
+    ) -> tuple[str, Optional[ExecutionReport]]:
+        """Implements the 'resume' state machine.
+
+        Returns:
+            A tuple (actual_session_name, report). The actual_session_name
+            may differ from the input session_name after a centennial
+            migration (when the session transitions to a continuation name
+            like 'my-session-2').
+        """
         state, turn_path = self._session_service.get_session_state(session_name)
 
         if state == SessionState.PENDING_PLAN:
             plan_path = f"{turn_path}/plan.md"
-            return orchestrator.execute(
+            report = orchestrator.execute(
                 plan_path=plan_path,
                 interactive=interactive,
                 project_context=project_context,
             )
+            return (session_name, report)
 
         if state == SessionState.EMPTY:
             return self._handle_planning_and_execution(
@@ -68,7 +76,7 @@ class SessionLifecycleManager:
                 project_context=project_context,
             )
 
-        return None
+        return (session_name, None)
 
     def _handle_planning_and_execution(
         self,
@@ -76,17 +84,25 @@ class SessionLifecycleManager:
         orchestrator: IRunPlanUseCase,
         interactive: bool,
         project_context: Optional[Any] = None,
-    ) -> Optional[ExecutionReport]:
-        """Triggers planning for a turn and then executes the resulting plan."""
+    ) -> tuple[str, Optional[ExecutionReport]]:
+        """Triggers planning for a turn and then executes the resulting plan.
+
+        Returns:
+            A tuple (actual_session_name, report). The actual_session_name
+            is the session name returned by trigger_new_plan, which may
+            differ from the original session name after a centennial
+            migration.
+        """
         new_name = self._session_planner.trigger_new_plan(turn_dir)
         if not new_name or new_name == "CANCELLED":
-            return None
+            return (new_name or turn_dir, None)
         _, actual_turn_path = self._session_service.get_session_state(new_name)
-        return orchestrator.execute(
+        report = orchestrator.execute(
             plan_path=f"{actual_turn_path}/plan.md",
             interactive=interactive,
             project_context=project_context,
         )
+        return (new_name, report)
 
     def trigger_replan(  # noqa: PLR0913
         self,

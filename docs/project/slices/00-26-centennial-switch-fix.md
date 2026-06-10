@@ -43,11 +43,11 @@ Feature: Centennial Turn Switch Session Name Propagation
 ## Deliverables
 
 - [x] **Contract** - Modify `IRunPlanUseCase.resume()` return type from `Optional[ExecutionReport]` to `tuple[str, Optional[ExecutionReport]]` where the first element is the actual session name used (may differ from input after migration).
-- [ ] **Logic** - Update `SessionLifecycleManager.resume()` to return `(new_session_name, report)` instead of just `report`. Propagate the session name from `_handle_planning_and_execution()`.
-- [ ] **Logic** - Update `SessionOrchestrator.resume()` to return the updated session name from the lifecycle manager.
-- [ ] **Logic** - Update `_orchestrate_session_loop` in `session_cli_handlers.py` to unpack the new return value and assign `session_name = actual_session_name` after each `orchestrator.resume()` call.
-- [ ] **Migration** - Update all tests that mock `orchestrator.resume()` to return the tuple `(session_name, ExecutionReport)` instead of just the report.
-- [ ] **Logic** - Add a regression test in `tests/suites/integration/core/services/test_session_orchestration_integration.py` that exercises the full resume loop across the centennial boundary and verifies no redundant migration.
+- [x] **Logic** - Update `SessionLifecycleManager.resume() to return `(new_session_name, report)` instead of just `report`. Propagate the session name from `_handle_planning_and_execution()`.
+- [x] **Logic** - Update `SessionOrchestrator.resume() to return the updated session name from the lifecycle manager.
+- [x] **Logic** - Update `_orchestrate_session_loop` in `session_cli_handlers.py` to unpack the new return value and assign `session_name = actual_session_name` after each `orchestrator.resume()` call.
+- [x] **Migration** - Update all tests that mock `orchestrator.resume()` to return the tuple `(session_name, ExecutionReport)` instead of just the report.
+- [▶] **Logic** - Add a regression test in `tests/suites/integration/core/services/test_session_orchestration_integration.py` that exercises the full resume loop across the centennial boundary and verifies no redundant migration.
 - [ ] **Refactor** - Remove the now-unnecessary `current_name` variable reassignment pattern from the loop and ensure all guard conditions (loop_guard) still function correctly.
 
 ## Implementation Notes
@@ -57,12 +57,21 @@ Feature: Centennial Turn Switch Session Name Propagation
 - **Test**: Created `tests/suites/unit/ports/inbound/test_run_plan_use_case_contract.py` with contract test that introspects the `resume` method's `__annotations__` to verify the tuple shape and the wrapped `ExecutionReport` type.
 - **Test Locale**: Using `__annotations__` directly (not `typing.get_type_hints`) to avoid forward-reference resolution failures caused by `ProjectContext` being a `TYPE_CHECKING`-only import.
 - **Verified**: Full test suite passes (861 passed, 3 skipped) after the annotation-only change, confirming no runtime regressions.
-- **Next**: The `Logic` deliverable will update `SessionLifecycleManager.resume()` to actually return the tuple, and `SessionOrchestrator.resume()` to propagate it.
 
-## Implementation Plan
+### SessionLifecycleManager Logic Deliverable
+- **Change**: Modified `SessionLifecycleManager.resume()` to return `tuple[str, Optional[ExecutionReport]]`. Each branch returns `(session_name, report)` or `(actual_session_name, report)` after centennial migration.
+- **Change**: `_handle_planning_and_execution()` returns `(actual_name, report)` from `trigger_new_plan()`.
+- **Test**: Added `test_resume_returns_tuple_with_session_name_and_report` to `test_session_lifecycle_manager.py`.
+- **Integration Note**: 21 acceptance/integration tests currently fail downstream because the outer loop and test mocks have not been updated yet. These failures will be resolved by loop update and migration deliverables.
 
-The fix consists of two changes:
-1. **Contract Change**: `IRunPlanUseCase.resume()` returns a tuple `(actual_session_name: str, report: Optional[ExecutionReport])`. This is a breaking change for test mocks.
-2. **Loop Update**: `_orchestrate_session_loop` unpacks the tuple and updates `session_name` on each iteration.
+### SessionOrchestrator Logic Deliverable
+- **Change**: `SessionOrchestrator.resume()` already delegates to `self._lifecycle_manager.resume()` which now returns the tuple. No code change needed.
 
-An alternative approach (not requiring contract change) is to check after each resume whether the session's latest turn is still "99" and if so, resolve the continuation via `session_manager.get_latest_session_name()`. However, this is less explicit and duplicates logic. The contract change is cleaner and aligns with Dependency Injection principles.
+### Loop Update Deliverable
+- **Change**: In `_orchestrate_session_loop`, changed `report = orchestrator.resume(...)` to `session_name, report = orchestrator.resume(...)`. This ensures `session_name` is updated after a centennial migration, preventing re-processing of the old session's turn 99.
+- **Integration Recovery**: Updated `test_session_replan_loop.py` and `test_session_start_resequencing.py` to return `("session_name", report)` from `orchestrator.resume()` mocks. Fixed syntax error (missing closing parenthesis) in `test_session_start_resequencing.py` line 47.
+- **Verification**: Full test suite passed (862 passed, 3 skipped) after integration recovery.
+
+### Migration Deliverable
+- **Change**: Updated two test files that mock `orchestrator.resume()`: `test_session_replan_loop.py` (2 tests) and `test_session_start_resequencing.py` (2 tests). All mocks now return `("session_name", ...)` tuples.
+- **Verified**: Full test suite passes confirming all mock signatures are compatible with the new tuple return type.

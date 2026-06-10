@@ -284,7 +284,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         session_name: str,
         interactive: bool = True,
         project_context: Optional[Any] = None,
-    ) -> Optional[ExecutionReport]:
+    ) -> tuple[str, Optional[ExecutionReport]]:
         """Stateless orchestrator does not support session resumption."""
         raise NotImplementedError(
             "Session operations are not supported in stateless ExecutionOrchestrator."

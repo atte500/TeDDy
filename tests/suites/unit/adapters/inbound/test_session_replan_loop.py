@@ -62,7 +62,7 @@ def test_handle_new_session_loops_multiple_turns_when_non_interactive():
         end_time=datetime.now(timezone.utc),
     )
     fake_report.metadata = {}
-    mock_orchestrator.resume.return_value = fake_report
+    mock_orchestrator.resume.return_value = ("session_name", fake_report)
 
     # Loop guard allows 2 turns:
     # turn_count=1: should_continue(1) -> True
@@ -121,7 +121,7 @@ def test_handle_resume_session_loops_multiple_turns_when_non_interactive():
         end_time=datetime.now(timezone.utc),
     )
     fake_report.metadata = {}
-    mock_orchestrator.resume.return_value = fake_report
+    mock_orchestrator.resume.return_value = ("session_name", fake_report)
 
     # turn_count=1: should_continue(1, cost, interact) -> True
     # turn_count=2: should_continue(2, cost, interact) -> False

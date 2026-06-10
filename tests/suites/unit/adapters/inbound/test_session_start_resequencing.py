@@ -44,7 +44,7 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
     mock_session_manager.create_session.return_value = (
         ".teddy/sessions/20260427_110000-build-a-rocket"
     )
-    mock_orchestrator.resume.return_value = None  # Stop loop
+    mock_orchestrator.resume.return_value = ("session_name", None)  # Stop loop
 
     # Act
     handle_new_session(
@@ -101,7 +101,7 @@ def test_handle_new_session_prompts_even_when_non_interactive():
     mock_llm_client.validate_config.return_value = []
     mock_user_interactor.ask_question.return_value = "Do something non-interactive"
     mock_session_manager.create_session.return_value = ".teddy/sessions/something"
-    mock_orchestrator.resume.return_value = None
+    mock_orchestrator.resume.return_value = ("session_name", None)
 
     # Act
     handle_new_session(
