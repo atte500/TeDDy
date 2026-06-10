@@ -52,6 +52,18 @@ Provide a comprehensive update system with:
       - If `auto_update: true` or `--yes` provided: Run `pip install --upgrade teddy-executor` via `sys.executable -m pip install --upgrade ...`. Echo *"Updated to vX.Y.Z."* Then pre-warm heavy imports.
       - If `auto_update: false` and no `--yes`: Echo *"A new version X.Y.Z is available. Run 'teddy update --yes' to upgrade."*
   5. Pre-warm heavy imports **only after a successful upgrade**.
+  6. **Prompt update notification:** After the version check (regardless of upgrade outcome), if `.teddy/prompts/` exists, print a styled notification directing the user to apply prompt updates. The notification MUST use colored output (e.g., `rich` or `typer.style()`) to draw attention. Example rendering:
+
+     ```
+     ═══════════════════════════════════════════════
+     💡 Prompt Update Notice:
+     To apply prompt updates from this release:
+     1. Delete `.teddy/prompts/`
+     2. Run `teddy init`
+     ═══════════════════════════════════════════════
+     ```
+
+     The exact styling (color, borders, icons) should be consistent with the existing CLI formatting patterns in the codebase (see `cli_formatter.py` for guidelines). This notification is intentionally unconditional — it appears on every `teddy update` invocation to ensure users are always aware of the manual update path for custom prompts.
 
 ### 3.3. Background Version Check (in `start`/`resume`/`execute`)
 
