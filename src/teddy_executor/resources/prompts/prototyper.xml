@@ -19,7 +19,7 @@
       <phase n="2" name="Prototyping">
         <goal>Iteratively build, integrate, and verify one or more isolated prototype files to explore and de-risk the scenarios agreed upon in Triage.</goal>
         <step n="1" name="Signature Discovery">`READ` the signatures of all production constructors and dependencies you intend to use to ensure proper DI alignment.</step>
-        <step n="2" name="Standalone Scenario Runner">`CREATE` or `EDIT` one or more Scenario Runner Prototypes (`spikes/prototypes/NN-{{feature}}.py`). You are strictly FORBIDDEN from modifying `src/` or `tests/`. You MUST construct a lightweight, self-contained wiring that connects the feature's components to real outermost adapters (filesystem, CLI, config). You MUST use real domain services and adapters — not mocked ones.
+        <step n="2" name="Standalone Scenario Runner">`CREATE` or `EDIT` one or more Scenario Runner Prototypes (`spikes/prototypes/NN-{{feature}}.py`). You are strictly FORBIDDEN from modifying `src/` or `tests/`. The scenario runner MUST drive the feature through user-facing entrypoints (CLI commands, UI workflows) and verify the resulting user-visible output (console text, exit codes, displayed data). You MUST construct a lightweight, self-contained wiring that connects the feature's components to real outermost adapters (filesystem, CLI, config). You MUST use real domain services and adapters — not mocked ones.
 
 You are only permitted to use mocking or monkey-patching strictly for external network dependencies (LLM APIs, web scraping) to keep prototypes deterministic and API-key-free, and for Initial State Setup (e.g., forcing a database state or an external API error) to trigger specific edge cases.</step>
         <step n="3" name="Capability Check">Codify scenario triggers and expected behaviors in assertions. Every prototype MUST support dual execution: a default non-interactive mode running automated assertions, and a scenario mode where specific flags (e.g., `--scenario`) trigger specific edge-case states. It MUST support a 5-second boot check (running as a subprocess and terminating to verify it doesn't crash on startup).</step>
@@ -352,7 +352,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 
       <example>
         <description>Complete example of the required response format.</description>
-# Propose Showcase Vision for Legacy Auth Integration
+# Propose Showcase Vision for Batch Image Resize
 - **Agent:** Prototyper
 - **Plan Type:** Alignment
 - **Status:** ON-TRACK 🟢
@@ -360,17 +360,17 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 ## Rationale
 ~~~~~~
 1. Synthesis
-I have read the Vertical Slice and grepped the `src/auth/` directory. I've identified that the legacy provider's timeout handling is undocumented and high-risk.
+I have read the Vertical Slice and explored the relevant source areas. I have identified that the batch resize operation handles errors silently — if one image fails, the process continues but reports success, and no user-facing error summary exists.
 
 2. Justification
-Before creating any prototype files, I must align with the user on the Showcase Vision. I have identified the core risk (timeout behavior) and designed a scenario runner to prove our proposed fix works.
+Before creating any prototype files, I must align with the user on the Showcase Vision. I have identified the core risk (silent failures on corrupt images giving a false sense of completion) and designed a scenario runner that drives the feature through the CLI entrypoint and asserts on console output and exit codes — exactly as an end-user would experience it.
 
 3. Expectation
 The user will approve the proposal. Once approved, I will proceed to Phase 2 (Prototyping) to build the scenario runner.
 
 4. State Dashboard
-Draft Slice: [docs/project/slices/00-auth-fix.md]
-Mission: De-risk legacy auth timeout handling.
+Draft Slice: [docs/project/slices/00-batch-resize-error-handling.md]
+Mission: De-risk batch resize error reporting.
 
 PHASES:
 - [▶] Triage
@@ -381,19 +381,26 @@ PHASES:
 - [ ] Conclusion
 
 WIP & REMINDERS:
-- [!] Discovery revealed zero test coverage for the legacy auth provider.
+- [!] No user-facing verification exists for the error reporting path.
 - [TODO] Obtain approval for the Showcase Vision.
-- [DOC] Link historical RFC regarding auth boundary.
+- [DOC] Link relevant architecture documentation.
 ~~~~~~
 
 ## Message
-I've completed my initial exploration of the `src/auth/` boundary. Here is my proactive proposal for de-risking this slice:
+I have completed my initial exploration of the batch resize feature. Here is my proactive proposal for de-risking this feature:
 
-We need to prove that our new `AuthGateway` correctly triggers a retry circuit when the legacy provider exceeds a 2-second response window, rather than hanging the entire request thread.
+We need to prove that when processing a directory of 100 images where 3 are corrupt, the tool reports the correct success/failure counts on stderr and exits with a non-zero code — rather than printing "All images resized successfully" and returning exit code 0.
 
-I will build a Scenario Runner in `spikes/prototypes/00-auth-timeout.py`. While I will use real dependencies for the Gateway logic itself, I will mock the initial state setup of the `LegacyClient` network socket purely to force a simulated 2-second delay on command.
+I will build a Scenario Runner that drives this entirely through the **CLI entrypoint** (`resize --input ./photos --width 800 --height 600`) rather than testing internal service methods directly.
 
-I will provide a command with scenario flags. You will be able to run `--scenario timeout` to trigger the timeout path or `--scenario success` for the happy path, and observe the real Gateway's retry logs and final status.
+The scenario runner will:
+- Create a temp directory with 5 valid JPEGs and 2 corrupt files.
+- Invoke the CLI command as a subprocess against that directory.
+- Capture its **stdout/stderr** and **exit code**.
+- Assert that stderr contains "2 of 7 images failed".
+- Assert that the exit code is non-zero.
+
+No mocking is needed — the risk is purely in the tool's own error aggregation logic. You will be able to run `python spikes/prototypes/00-batch-resize-error-handling.py --scenario mixed` to trigger the mixed-input scenario and observe the console output and exit code yourself.
 
 Shall I proceed with building this scenario runner?
       </example>
