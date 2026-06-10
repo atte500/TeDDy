@@ -1,6 +1,6 @@
 # Slice: Centennial Turn Switch – Session Name Propagation
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Bugfix
 - **Milestone:** [02-stability-and-polish](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [Session Migration Spec](/docs/project/specs/stability-and-bugfixes.md#session-migration) (if applicable)
@@ -48,7 +48,7 @@ Feature: Centennial Turn Switch Session Name Propagation
 - [x] **Logic** - Update `_orchestrate_session_loop` in `session_cli_handlers.py` to unpack the new return value and assign `session_name = actual_session_name` after each `orchestrator.resume()` call.
 - [x] **Migration** - Update all tests that mock `orchestrator.resume()` to return the tuple `(session_name, ExecutionReport)` instead of just the report.
 - [x] **Logic** - Add a regression test in `tests/suites/integration/core/services/test_session_orchestration_integration.py` that exercises the full resume loop across the centennial boundary and verifies no redundant migration.
-- [ ] **Refactor** - Remove the now-unnecessary `current_name` variable reassignment pattern from the loop and ensure all guard conditions (loop_guard) still function correctly.
+- [x] **Refactor** - Remove the now-unnecessary `current_name` variable reassignment pattern from the loop and ensure all guard conditions (loop_guard) still function correctly.
 
 ## Implementation Notes
 
@@ -84,3 +84,17 @@ Feature: Centennial Turn Switch Session Name Propagation
   - Old session remains unchanged (only turn 99), no extra continuation sessions exist.
 - **Fixture**: Uses standard `tmp_path`, `monkeypatch`, `env` pattern with `with_real_filesystem()` and mocked LLM client.
 - **Verified**: Full test suite passes (863 passed, 3 skipped) after adding this test.
+
+### Refactor Deliverable
+- **Finding**: Grep search for `current_name` in `session_cli_handlers.py` and all Python source files found zero occurrences in the loop code. The only `current_name` reference is the method parameter `_calculate_continuation_name(self, current_name: str)` in `session_service.py`, which is a legitimate private method for calculating continuation session names — not a loop variable reassignment pattern.
+- **Resolution**: The Refactor deliverable is trivially satisfied — the Loop Update deliverable already removed any `current_name` pattern when it changed `report = orchestrator.resume(...)` to `session_name, report = orchestrator.resume(...)` and eliminated the stale variable cache. No additional code changes were needed.
+- **Guard Conditions Verified**: `loop_guard.should_continue()` uses `turn_count` and `cumulative_cost` — neither depends on `current_name` or `session_name`. The guard conditions are unaffected by this refactor.
+
+### As-Built Summary
+- **Root Cause**: `_orchestrate_session_loop` cached `session_name` once and never updated it after centennial migration inside `SessionLifecycleManager.resume()`. On subsequent loop iterations, the old session name caused repeated migration to the same continuation session, reprocessing turn 01.
+- **Fix**: Changed `orchestrator.resume()` return type from `Optional[ExecutionReport]` to `tuple[str, Optional[ExecutionReport]]`. The loop now unpacks `session_name, report = orchestrator.resume(...)` and passes the updated `session_name` on the next iteration.
+- **Files Modified**: 8 files across 3 commits:
+  - Contract: `run_plan_use_case.py` (return type annotation)
+  - Logic: `session_lifecycle_manager.py`, `session_cli_handlers.py`, `execution_orchestrator.py`
+  - Tests: `test_run_plan_use_case_contract.py`, `test_session_lifecycle_manager.py`, `test_session_replan_loop.py`, `test_session_start_resequencing.py`, `test_session_orchestration_integration.py`
+- **Verification**: 869 tests pass, 3 skipped. Comprehensive integration test `test_centennial_migration_resume_loop_continuation` covers the full resume loop across the centennial boundary.
