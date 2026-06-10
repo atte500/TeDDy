@@ -135,6 +135,77 @@ def patch_socket_getfqdn():
     mp.undo()
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _assert_no_test_pollution():
+    """
+    Systemic Poka-Yoke: Snapshots `git status --porcelain` before the
+    test suite runs and asserts no new untracked, modified, or deleted
+    files exist after all tests complete.
+
+    This fixture acts as a safety net to detect tests that inadvertently
+    create or modify files in the project root (e.g., stray output files,
+    temp files, or session artifacts) instead of using the managed
+    workspace (tempfile.mkdtemp()). Because it runs at session scope,
+    overhead is negligible (~50ms) per pytest invocation.
+    """
+    import subprocess
+
+    project_root = Path(__file__).resolve().parent.parent
+
+    # Snapshot before the suite
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=10,
+        )
+        if result.returncode != 0:
+            # Not a git repo or git unavailable — skip
+            yield
+            return
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        yield
+        return
+
+    before_state = result.stdout.strip()
+    before_lines = set(before_state.splitlines()) if before_state else set()
+
+    yield  # All tests run here
+
+    # Check after the suite
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True,
+            text=True,
+            cwd=project_root,
+            timeout=10,
+        )
+        after_state = result.stdout.strip()
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return
+
+    after_lines = set(after_state.splitlines()) if after_state else set()
+
+    if before_lines != after_lines:
+        new_or_modified = after_lines - before_lines
+        resolved = before_lines - after_lines
+        parts = [
+            "Test suite left filesystem pollution!",
+            f"Before: {len(before_lines)} entries",
+            f"After: {len(after_lines)} entries",
+        ]
+        if new_or_modified:
+            parts.append("New/Modified/Untracked files:")
+            parts.extend(sorted(new_or_modified))
+        if resolved:
+            parts.append("Files that unexpectedly disappeared:")
+            parts.extend(sorted(resolved))
+        pytest.fail("\n".join(parts))
+
+
 @pytest.fixture(autouse=True)
 def reset_formatter_singleton():
     """Ensures test isolation for the report formatter singleton."""
