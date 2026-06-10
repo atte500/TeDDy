@@ -41,9 +41,15 @@ class IRunPlanUseCase(ABC):
         session_name: str,
         interactive: bool = True,
         project_context: Optional["ProjectContext"] = None,
-    ) -> Optional[ExecutionReport]:
+    ) -> tuple[str, Optional[ExecutionReport]]:
         """
         Intelligently resumes the session based on its state.
+
+        Returns:
+            A tuple (actual_session_name, report). The actual_session_name
+            may differ from the input session_name after a centennial
+            migration (when the session transitions to a continuation name
+            like 'my-session-2').
 
         Args:
             session_name: The name of the session to resume.

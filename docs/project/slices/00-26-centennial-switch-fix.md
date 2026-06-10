@@ -1,6 +1,6 @@
 # Slice: Centennial Turn Switch – Session Name Propagation
 
-- **Status:** Draft
+- **Status:** In Progress
 - **Type:** Bugfix
 - **Milestone:** [02-stability-and-polish](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [Session Migration Spec](/docs/project/specs/stability-and-bugfixes.md#session-migration) (if applicable)
@@ -42,7 +42,7 @@ Feature: Centennial Turn Switch Session Name Propagation
 
 ## Deliverables
 
-- [ ] **Contract** - Modify `IRunPlanUseCase.resume()` return type from `Optional[ExecutionReport]` to `tuple[str, Optional[ExecutionReport]]` where the first element is the actual session name used (may differ from input after migration).
+- [x] **Contract** - Modify `IRunPlanUseCase.resume()` return type from `Optional[ExecutionReport]` to `tuple[str, Optional[ExecutionReport]]` where the first element is the actual session name used (may differ from input after migration).
 - [ ] **Logic** - Update `SessionLifecycleManager.resume()` to return `(new_session_name, report)` instead of just `report`. Propagate the session name from `_handle_planning_and_execution()`.
 - [ ] **Logic** - Update `SessionOrchestrator.resume()` to return the updated session name from the lifecycle manager.
 - [ ] **Logic** - Update `_orchestrate_session_loop` in `session_cli_handlers.py` to unpack the new return value and assign `session_name = actual_session_name` after each `orchestrator.resume()` call.
@@ -52,7 +52,12 @@ Feature: Centennial Turn Switch Session Name Propagation
 
 ## Implementation Notes
 
-Filled by the Developer during implementation.
+### Contract Deliverable
+- **Change**: Modified `IRunPlanUseCase.resume()` return type annotation from `Optional[ExecutionReport]` to `tuple[str, Optional[ExecutionReport]]`.
+- **Test**: Created `tests/suites/unit/ports/inbound/test_run_plan_use_case_contract.py` with contract test that introspects the `resume` method's `__annotations__` to verify the tuple shape and the wrapped `ExecutionReport` type.
+- **Test Locale**: Using `__annotations__` directly (not `typing.get_type_hints`) to avoid forward-reference resolution failures caused by `ProjectContext` being a `TYPE_CHECKING`-only import.
+- **Verified**: Full test suite passes (861 passed, 3 skipped) after the annotation-only change, confirming no runtime regressions.
+- **Next**: The `Logic` deliverable will update `SessionLifecycleManager.resume()` to actually return the tuple, and `SessionOrchestrator.resume()` to propagate it.
 
 ## Implementation Plan
 
