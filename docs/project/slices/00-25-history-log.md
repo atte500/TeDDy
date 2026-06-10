@@ -60,12 +60,24 @@ Then the history.log contains those stderr lines interleaved with stdout lines
 - [x] **Contract** - Define Tee class interface (takes Path, context manager, proxies write/flush/isatty to both original stdout/stderr and log file).
 - [x] **Logic** - Implement Tee class in `src/teddy_executor/core/utils/io.py` (dual capture of stdout and stderr).
 - [x] **Wiring** - Install Tee at start of SessionOrchestrator.execute() when is_session is True, with try/finally for cleanup of both streams.
-- [▶] **Harness** - Create test fixtures and helpers for Tee and history.log tests.
-- [ ] **Wiring** - Add unit tests for Tee class (basic tee both streams, flush propagation, isatty forwarding, context manager restore, exception safety for file open failure).
+- [x] **Harness** - Create test fixtures and helpers for Tee and history.log tests.
+- [x] **Wiring** - Add unit tests for Tee class (basic tee both streams, flush propagation, isatty forwarding, context manager restore, exception safety for file open failure).
 - [ ] **Wiring** - Add integration tests for history.log creation in SessionOrchestrator (stdout + stderr capture, validation failure logging, non-session mode, append mode, stream restoration on exception, Tee failure isolation).
 
 ## Implementation Notes
-*(To be filled during implementation)*
+
+### Tee Unit Tests (Turn 7-9)
+- **Test approach:** All 6 Tee unit tests use `pytest`'s built-in `capsys` fixture instead of custom `captured_stdout`/`captured_stderr` fixtures. The custom fixtures caused failures under `xdist` (parallel execution) because the Tee replaces `sys.stdout` for the duration of the test, conflicting with pytest's capture layer. Using `capsys` ensures compatibility with parallel test execution.
+- **Flush test fix:** The `test_tee_flush_propagation` test initially attempted to access `tee._stdout_writer` which does not exist as an attribute on the `Tee` class. The fix uses `sys.stdout.flush()` directly, which delegates to the installed `_TeeWriter`.
+- **Code coverage:** Tests cover basic stdout/stderr capture, flush propagation, isatty() forwarding, context manager restore (both streams), and exception safety for file open failure (when the log file's parent is not a directory).
+- **[DEBT] Writer accessibility:** The `Tee` class stores writers by replacing `sys.stdout`/`sys.stderr` with `_TeeWriter` instances, rather than exposing attributes on the `Tee` instance. Tests must interact via `sys.stdout` directly, which is the intended API but limits direct access to internal state.
+
+### Discovery (Turn 3)
+- **io.py**: Tee class already implemented with full stdout/stderr dual capture, context manager, flush propagation, isatty forwarding, and exception safety. Interface: `Tee(log_path: Path)`, `__enter__()`, `__exit__(*args)`. Uses `_TeeWriter` inner class for the proxy.
+- **session_orchestrator.py**: Tee installed in `execute()` method at start when `is_session` is True. Uses `try/finally` for cleanup. `history_log_path` derived from `Path(plan_path).parent.parent / "history.log"`.
+- **Harness deliverable**: Test fixtures (`tee_log_path`, `captured_stdout`, `captured_stderr`) and helpers (`assert_log_contains`, `assert_log_does_not_contain`, `assert_tee_restores_streams`) created in `tests/suites/unit/core/utils/test_io.py`.
+- **No metadata header changes needed**: The Tee captures existing stdout; no new `typer.echo()` calls were added. The spec requirement to print a metadata header has been removed in favor of pure console fidelity.
+- **Test patterns**: Unit tests for utils use direct imports and standard pytest fixtures; no `conftest.py` in `core/utils/` directory. Fixtures are defined inline in test files.
 
 ## Implementation Plan
 The implementation follows the updated design:
