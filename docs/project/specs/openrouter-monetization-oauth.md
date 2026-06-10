@@ -42,6 +42,7 @@ Integrate **OpenRouter OAuth (PKCE)**. This allows users to:
   - **In Non-Interactive Mode (e.g. CI environments):** TeDDy will fail gracefully with a standard, non-zero return code and a clean explanation that credentials are required.
 - **Opt-In / Respect BYOK:** Bring Your Own Key (BYOK) remains a fully supported first-class citizen. If a user manually provides their own direct API keys, TeDDy works exactly as before with no markup.
 - **App Attribution:** All OpenRouter requests made via the OAuth key must include standard app attribution headers (`HTTP-Referer` and `X-Title`) to ensure OpenRouter recognizes the usage and credits the correct Developer App Fee.
+- **Init→Login Funnel:** Running `teddy init` automatically checks for existing credentials in `.teddy/credentials.yaml`. If no valid credentials are found, it echoes a message and auto-launches the `teddy login` OAuth browser flow without prompting. This funnels new users into OpenRouter monetization.
 - **Polite Support Prompting:** If a user chooses to use direct API keys (BYOK) instead of the OpenRouter OAuth key, TeDDy will display a clean, non-spammy unicode/color terminal message *only upon session start* thanking them and encouraging them to consider using `teddy login` to support development. No emojis are used.
 
 ---

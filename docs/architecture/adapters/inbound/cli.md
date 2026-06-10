@@ -100,6 +100,21 @@ Initializes a new session.
     3.  Automatically Renames: If created with a timestamped name, the session is renamed to a slugified version of the first generated plan's H1 title.
     4.  Triggers immediate planning and enters the interactive execution loop.
 
+### Utility Command: `init`
+
+**Status:** To be implemented
+
+Creates the `.teddy/` directory with default files (config, gitignore, init.context), pre-warms heavy imports, and auto-launches `teddy login` if no credentials exist.
+
+- **Signature:** `teddy init`
+- **No options** (kept simple).
+- **Behavior:**
+  1. Calls the existing `InitService.ensure_initialized()` to create `.teddy/` and seed default files.
+  2. Pre-warms heavy imports (`litellm`, `trafilatura`, `pyperclip`, `bs4`, `ddgs`) by importing them.
+  3. Echoes a success message: `"TeDDy initialized in .teddy folder."`
+  4. Checks `.teddy/credentials.yaml`. If missing or empty, echoes `"No credentials found. Launching login to OpenRouter..."` and auto-launches the OAuth login browser flow.
+  5. **Idempotent:** Safe to run multiple times.
+
 ### Main Command: `execute`
 **Status:** Implemented
 
