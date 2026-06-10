@@ -191,7 +191,7 @@
 {% endif -%}
 {% set log_status = log.status.value | default(log.status) -%}
 - **Status:** {{ log_status }}
-{% if action_type == 'READ' %}
+{% if action_type == 'READ' and not params.get('lines') %}
 - **Note:** Up-to-date contents are provided under `Resource Contents`.
 {% endif %}
 {% if action_type in ['CREATE', 'EDIT'] -%}
