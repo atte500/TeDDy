@@ -85,6 +85,49 @@ def guard_os_killpg(monkeypatch):
     yield
 
 
+def is_tee_active() -> bool:
+    """Returns True if Tee is currently installed (sys.stderr is a _TeeWriter proxy).
+
+    This helper is used by test fixtures to verify Tee installation timing
+    and guard conditions.
+    """
+    from teddy_executor.core.utils.io import _TeeWriter
+
+    return isinstance(sys.stderr, _TeeWriter)
+
+
+@pytest.fixture
+def tee_log_path():
+    """Provides a temporary writeable history.log path for Tee testing.
+
+    The fixture creates a temp file in the system temp directory, yields
+    its Path, and cleans up after the test.
+    """
+    import tempfile
+    from pathlib import Path
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".log", delete=False) as f:
+        path = Path(f.name)
+    yield path
+    path.unlink(missing_ok=True)
+
+
+@pytest.fixture
+def installed_tee(tee_log_path):
+    """Installs Tee on the given log path and ensures cleanup after the test.
+
+    Yields the Tee instance so tests can interact with it (e.g., check its
+    state or write through the Tee). The Tee is properly uninstalled even
+    if the test fails.
+    """
+    from teddy_executor.core.utils.io import Tee
+
+    tee = Tee(tee_log_path)
+    tee.__enter__()
+    yield tee
+    tee.__exit__(None, None, None)
+
+
 @pytest.fixture
 def container(monkeypatch):
     """

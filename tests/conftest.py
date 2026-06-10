@@ -40,6 +40,9 @@ from tests.harness.setup.composition import (
     openrouter_mock,
     env,
     real_env,
+    tee_log_path,
+    installed_tee,
+    is_tee_active,
 )
 
 
@@ -107,6 +110,9 @@ __all__ = [
     "openrouter_mock",
     "env",
     "real_env",
+    "tee_log_path",
+    "installed_tee",
+    "is_tee_active",
 ]
 
 

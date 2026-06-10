@@ -43,7 +43,7 @@ Then the second installation is skipped (no duplicate log entries)
 
 ## Deliverables
 - [x] **Contract** - Expose `tee_active` property on `SessionLifecycleManager` to allow `SessionOrchestrator` to query Tee installation state.
-- [ ] **Harness** - Create test fixtures for verifying Tee installation timing (writeable log path, Tee-active flag detection).
+- [x] **Harness** - Create test fixtures for verifying Tee installation timing (writeable log path, Tee-active flag detection).
 - [ ] **Logic** - Move Tee installation from `SessionOrchestrator.execute()` to `SessionLifecycleManager._handle_planning_and_execution()` before `trigger_new_plan()`, with `try/finally` cleanup and a contract flag for guard.
 - [ ] **Logic** - Add a guard in `SessionOrchestrator.execute()` to check `SessionLifecycleManager.tee_active` before installing Tee and skip if already active.
 - [ ] **Wiring** - Add unit tests for the new timing and guard behavior in `test_session_lifecycle_manager.py` and `test_session_orchestrator.py`.
@@ -52,6 +52,21 @@ Then the second installation is skipped (no duplicate log entries)
 ## Implementation Notes
 
 ### Completed: Contract - tee_active property (2026-06-10)
+
+- Added `self.tee_active = False` to `SessionLifecycleManager.__init__()` in `session_lifecycle_manager.py`.
+- Created `TestTeeActiveContract` test class in `test_session_lifecycle_manager.py` with `test_tee_active_exists_and_defaults_to_false`.
+- The attribute is a plain boolean flag, defaulting to `False`, fulfilling the contract requirement for `SessionOrchestrator` to query Tee installation state.
+- No refactoring needed — the change is minimal and follows all DI purity rules (the `manager` test fixture uses proper Constructor Injection via `SessionPorts`).
+- Full test suite: 877 passed, 3 skipped (no regressions).
+
+### Completed: Harness - Test fixtures for Tee installation timing (2026-06-10)
+
+- Added `is_tee_active()` helper function in `tests/harness/setup/composition.py` that checks if `sys.stderr` is a `_TeeWriter` instance.
+- Added `tee_log_path` fixture that creates a temporary writeable `.log` file in the system temp directory and cleans it up after the test.
+- Added `installed_tee` fixture that installs Tee on the log path and ensures proper cleanup via `__exit__` even if the test fails.
+- Exported all three in `tests/conftest.py` for global availability.
+- These fixtures will be used by the Wiring deliverables (unit tests for timing/guard behavior and integration tests).
+- Full test suite: 877 passed, 3 skipped (no regressions).
 
 - Added `self.tee_active = False` to `SessionLifecycleManager.__init__()` in `session_lifecycle_manager.py`.
 - Created `TestTeeActiveContract` test class in `test_session_lifecycle_manager.py` with `test_tee_active_exists_and_defaults_to_false`.
