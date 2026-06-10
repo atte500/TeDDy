@@ -26,7 +26,7 @@ def test_read_file_truncates_at_head_when_limit_exceeded(tmp_path, edit_simulato
 
     # Assert
     # Should contain first 3 lines and the hint
-    expected_hint = "[Content truncated: Showing first 3 of 5 lines. Use grep or sed via EXECUTE to read specific sections.]"
+    expected_hint = "[Content truncated: Showing first 3 of 5 lines. Use the 'Lines' parameter to read specific line ranges (e.g., '2-25').]"
     assert result.startswith("line1\nline2\nline3")
     assert expected_hint in result
     assert "line4" not in result

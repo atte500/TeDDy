@@ -268,12 +268,12 @@ def get_truncation_hint(action_type: str, max_lines: int, total_lines: int) -> s
     if action_type == "execute":
         return (
             f"[Output truncated: Showing last {max_lines} of {total_lines} lines. "
-            "Pipe output to a file or use grep/sed to filter results.]"
+            "Use the 'Tail' parameter to increase the output limit.]"
         )
     if action_type == "read":
         return (
             f"[Content truncated: Showing first {max_lines} of {total_lines} lines. "
-            "Use grep or sed via EXECUTE to read specific sections.]"
+            "Use the 'Lines' parameter to read specific line ranges (e.g., '2-25').]"
         )
 
     return f"[Content truncated: Showing {max_lines} of {total_lines} lines.]"
