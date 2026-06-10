@@ -1,4 +1,5 @@
 import logging
+import re
 import sys
 from pathlib import Path
 from typing import Optional, TextIO
@@ -9,10 +10,16 @@ class _TeeWriter:
         self._original = original
         self._log_file = log_file
 
+    # ANSI escape sequence pattern (e.g., \x1b[31m, \x1b[1;33m, \x1b[A)
+    _ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
+
     def write(self, text: str) -> None:
+        # Terminal always gets raw text (colours preserved)
         self._original.write(text)
         self._original.flush()
-        self._log_file.write(text)
+        # Log file gets cleaned text (ANSI stripped)
+        clean = self._ANSI_ESCAPE.sub("", text)
+        self._log_file.write(clean)
         self._log_file.flush()
 
     def flush(self) -> None:
