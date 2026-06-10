@@ -101,13 +101,6 @@ error_screenshot.png
 
 # Test detritus
 .tmp
-test_data/
-hello.txt
-private/
-temp_*
-history.log
-path/
-session/
 
 # Archived Folders
 *archive

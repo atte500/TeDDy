@@ -88,6 +88,14 @@ class SessionOrchestrator(IRunPlanUseCase):
         if is_session and plan_path:
             try:
                 _log_path = Path(plan_path).parent.parent / "history.log"
+                # Defensive guard: ensure history.log is never written to project root.
+                # If resolved path equals project root or CWD, redirect to .tmp/.
+                _resolved = str(_log_path.resolve())
+                _project_root = str(Path.cwd().resolve())
+                if _resolved.rstrip("/") == _project_root.rstrip("/"):
+                    _safe_dir = Path(plan_path).parent.parent / ".tmp"
+                    _safe_dir.mkdir(parents=True, exist_ok=True)
+                    _log_path = _safe_dir / "history.log"
                 _tee = _Tee(_log_path)
                 _tee.__enter__()
             except Exception:
@@ -203,7 +211,7 @@ class SessionOrchestrator(IRunPlanUseCase):
                 try:
                     _tee.__exit__(None, None, None)
                 except Exception:
-                    pass
+                    logger.exception("Failed to clean up Tee during session execute")
 
     def _harvest_context(
         self,

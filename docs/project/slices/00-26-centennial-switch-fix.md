@@ -98,3 +98,8 @@ Feature: Centennial Turn Switch Session Name Propagation
   - Logic: `session_lifecycle_manager.py`, `session_cli_handlers.py`, `execution_orchestrator.py`
   - Tests: `test_run_plan_use_case_contract.py`, `test_session_lifecycle_manager.py`, `test_session_replan_loop.py`, `test_session_start_resequencing.py`, `test_session_orchestration_integration.py`
 - **Verification**: 869 tests pass, 3 skipped. Comprehensive integration test `test_centennial_migration_resume_loop_continuation` covers the full resume loop across the centennial boundary.
+
+### Technical Debt
+- **Defensive guard fix in `session_orchestrator.execute()`** (handling `history.log` path resolution) added ~5 statements, pushing the method to 56 statements (PLR0915 limit: 40) and 16 branches (PLR0912 limit: 12). This is pre-existing complexity; the method already had high cyclomatic and statement counts. A refactor of `execute()` is warranted but out of scope for this fix.
+- **Bandit B110** (`try_except_pass` in Tee cleanup) was fixed during this VCP cycle by replacing `pass` with `logger.exception()`.
+- **Pre-existing Ruff PLR0915/PLR0912:** The `execute()` method in `session_orchestrator.py` was already near the complexity limit before the defensive guard fix. The additional ~5 lines pushed it over. A dedicated refactor of `execute()` is warranted to reduce cyclomatic complexity and statement count. This is tracked here as a known issue.
