@@ -24,8 +24,8 @@ def setup_init_env(tmp_path):
     teddy_dir.mkdir()
     (teddy_dir / "init.context").write_text("README.md", encoding="utf-8")
     (tmp_path / "README.md").write_text("# Test Project", encoding="utf-8")
-    prompts_dir = tmp_path / "prompts"
-    prompts_dir.mkdir()
+    prompts_dir = tmp_path / ".teddy" / "prompts"
+    prompts_dir.mkdir(parents=True)
     (prompts_dir / "pathfinder.xml").write_text("<prompt>PF</prompt>", encoding="utf-8")
 
 

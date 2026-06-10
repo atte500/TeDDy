@@ -241,8 +241,8 @@ def setup_project(tmp_path: Path):
     teddy.mkdir(exist_ok=True)
     (teddy / "init.context").write_text("README.md", encoding="utf-8")
     (tmp_path / "README.md").write_text("README", encoding="utf-8")
-    prompts = tmp_path / "prompts"
-    prompts.mkdir(exist_ok=True)
+    prompts = tmp_path / ".teddy" / "prompts"
+    prompts.mkdir(parents=True, exist_ok=True)
     (prompts / "pathfinder.xml").write_text(
         "<prompt>Pathfinder</prompt>", encoding="utf-8"
     )
