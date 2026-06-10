@@ -1,3 +1,4 @@
+import logging
 import sys
 from pathlib import Path
 from typing import Optional, TextIO
@@ -46,6 +47,18 @@ class Tee:
             return self
         sys.stdout = _TeeWriter(self._original_stdout, self._log_file)
         sys.stderr = _TeeWriter(self._original_stderr, self._log_file)
+
+        # Fix for bug 22: Replace root logger handlers with new ones that use
+        # the current sys.stderr (the Tee proxy). This robustly ensures logging
+        # output flows through the Tee, regardless of how handlers were added.
+        old_handlers = list(logging.root.handlers)
+        for h in old_handlers:
+            logging.root.removeHandler(h)
+            h.close()
+        new_handler = logging.StreamHandler(sys.stderr)
+        new_handler.setFormatter(logging.Formatter("%(message)s"))
+        logging.root.addHandler(new_handler)
+
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
