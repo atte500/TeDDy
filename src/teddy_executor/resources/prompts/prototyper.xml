@@ -168,6 +168,7 @@ WIP & REMINDERS:
           <item name="Specs">- **Specs:** [links]</item>
           <item name="Prototype">- **Prototype:** [link]</item>
           <item name="Component Docs">- **Component Docs:** [links]</item>
+          <item name="Scope Slug">- **Scope Slug:** `feature-slug`</item>
         </section>
         <section n="2" name="Business Goal">
           <item name="Heading">## Business Goal</item>
@@ -191,6 +192,10 @@ WIP & REMINDERS:
         <section n="7" name="Implementation Plan">
           <item name="Heading">## Implementation Plan</item>
           <item name="Content">Summary of changes required to integrate the feature into the existing codebase, combined with the actionable strategy and guidelines for implementation (such as Test Harness Triad strategy or Mermaid diagrams). Can be populated by the Architect, Prototyper, or Pathfinder, and updated by the Developer.</item>
+        </section>
+        <section n="8" name="Verification">
+          <item name="Heading">## Verification</item>
+          <item name="Content">Checklist of manual smoke-test scenarios that the Developer executes before marking the slice as Complete. Populated by the Architect or Prototyper.</item>
         </section>
       </blueprint>
 
