@@ -1,5 +1,5 @@
 # Slice: History.log Timing Fix – Capture Planning Output
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Bugfix
 - **Milestone:** [docs/project/milestones/02-stability-and-polish.md](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [docs/project/specs/session-history-view.md](/docs/project/specs/session-history-view.md)
@@ -47,7 +47,7 @@ Then the second installation is skipped (no duplicate log entries)
 - [x] **Logic** - Move Tee installation from `SessionOrchestrator.execute()` to `SessionLifecycleManager._handle_planning_and_execution()` before `trigger_new_plan()`, with `try/finally` cleanup and a contract flag for guard.
 - [x] **Logic** - Add a guard in `SessionOrchestrator.execute()` to check `SessionLifecycleManager.tee_active` before installing Tee and skip if already active.
 - [x] **Wiring** - Add unit tests for the new timing and guard behavior in `test_session_lifecycle_manager.py` and `test_session_orchestrator.py`.
-- [ ] **Wiring** - Add integration tests for session execution verifying history.log contains planning output (turn header, metadata lines).
+- [x] **Wiring** - Add integration tests for session execution verifying history.log contains planning output (turn header, metadata lines).
 
 ## Implementation Notes
 
@@ -105,27 +105,23 @@ Then the second installation is skipped (no duplicate log entries)
   - Added `get_session_state` mock return value in the two timing tests that exercise the post-planning path.
 - Full test suite: 882 passed, 3 skipped (no regressions).
 
-- **`session_lifecycle_manager.py`:**
-  - Added `tee_active = False` as class-level attribute (required for `POSIXPathMock` spec compatibility).
-  - Fixed import ordering (E402): moved `IRunPlanUseCase` and `SessionState` imports above `TYPE_CHECKING` block.
-  - Added `Tee as _Tee` import and a `logger` for cleanup failure logging.
-  - In `_handle_planning_and_execution()`, Tee is installed before `trigger_new_plan()` using `Path(turn_dir).parent / "history.log"` as the log path (session root).
-  - Defensive guard: if the resolved log path equals the project root, redirects to `.tmp/history.log`.
-  - `try/finally` guarantees Tee cleanup and `tee_active = False` reset, even on cancellation or exception.
-  - If planning is cancelled (`trigger_new_plan` returns `CANCELLED`), the `finally` block cleans up Tee.
-- **`session_orchestrator.py`:**
-  - Re-added `Tee as _Tee` import and `logger`.
-  - Tee installation in `execute()` is now guarded by `not self._lifecycle_manager.tee_active`.
-  - When the lifecycle manager has already installed Tee (during planning), the orchestrator skips installation entirely.
-  - Proper `try/finally` cleanup is retained for the orchestrator's own Tee installation.
-- **Regression fixes during implementation:**
-  - Fixed log path derivation: `.parent` (not `.parent.parent`) is the session root.
-  - Fixed indentation error when removing the orphaned `try` block from a previous edit.
-- **[DEBT]** Pre-existing Ruff violations in `session_orchestrator.py`:
-  - `PLR0915` (too many statements) in `execute()` – 56 statements exceed the 40 limit.
-  - `PLR0912` (too many branches) in `execute()` – 16 branches exceed the 12 limit.
-  - Both are structural issues in the orchestrator pattern. The function already suppresses `PLR0913` and `C901` via `# noqa`. These should be addressed in a future refactor.
-- Full test suite: 877 passed, 3 skipped (no regressions).
+### Completed: Wiring - Integration test for planning output capture (2026-06-10)
+
+- **`test_history_log_contains_planning_output`** in `test_session_orchestration_integration.py`:
+  - Verifies that after a session resume with planning, `history.log` contains:
+    - Turn header (`[01]`)
+    - Model metadata line (`• Model:`)
+    - Context metadata line (`• Context:`)
+    - Session Cost metadata line (`• Session Cost:`)
+  - Uses `real_env` with real filesystem/shell and a globally mocked LLM that returns a default plan.
+  - Patches `mock_interactor.display_message` to write to `sys.stderr` so that Tee captures the planning output printed by `PlanningService`.
+  - Creates a minimal session with `meta.yaml`, `session.context`, `turn.context`, `initial_request.md`, and `pathfinder.xml` for an EMPTY turn.
+- **Regression fixes during development:**
+  - Removed invalid `clear_workspace()` and `with_real_interactor()` calls (methods not on `TestEnvironment`).
+  - Replaced with `monkeypatch` on the mock interactor's `display_message` to write to stderr.
+  - Set `env.workspace` before `env.with_real_filesystem()` to ensure the adapter uses the correct base path.
+  - Created a dummy `README.md` in the workspace for the default LLM plan's READ action.
+- Full test suite: 883 passed, 3 skipped (no regressions).
 
 ## Implementation Plan
 The fix involves two primary changes:

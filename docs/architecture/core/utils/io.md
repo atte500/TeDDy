@@ -1,6 +1,6 @@
 # Component Design: I/O Utilities (Tee)
 
-- **Status:** Planned
+- **Status:** Implemented
 
 ## Purpose / Responsibility
 Provide a `Tee` context manager that duplicates output writes from `sys.stdout` and `sys.stderr` to a log file. Used by `SessionOrchestrator` to produce the session `history.log` by capturing existing console output without adding new log statements.

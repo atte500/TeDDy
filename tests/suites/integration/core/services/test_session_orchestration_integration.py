@@ -656,3 +656,102 @@ Testing centennial migration resume loop.
     assert cont_dirs == ["test-migration-2"], (
         f"Only one continuation session should exist, got {cont_dirs}"
     )
+
+
+# ---------------------------------------------------------------------------
+# History Log Planning Output Integration Tests
+# ---------------------------------------------------------------------------
+
+
+def test_history_log_contains_planning_output(tmp_path, monkeypatch, env):
+    """Verify that history.log captures planning output (turn headers, metadata).
+
+    When a session resumes and triggers planning, the Tee installed by the
+    lifecycle manager should capture all console output during planning,
+    including turn headers and metadata lines such as Model, Context, and
+    Session Cost. This is the core regression test for bug 23.
+    """
+    import sys
+    from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+    from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
+
+    # Use the standard mock environment with real filesystem/shell.
+    # Set workspace BEFORE enabling real filesystem to ensure the adapter
+    # uses the correct base path.
+    env.workspace = tmp_path
+    env.with_real_filesystem()
+    env.with_real_shell()
+    monkeypatch.chdir(tmp_path)
+
+    # The default LLM mock returns a plan referencing README.md.
+    # Create a dummy README.md at the workspace root so the action succeeds.
+    (tmp_path / "README.md").write_text("# Dummy Readme\n", encoding="utf-8")
+
+    # Ensure display_message writes to stderr for Tee capture.
+    # The mock interactor's display_message is a no-op by default; we
+    # replace it with a real write to stderr so the Tee captures output.
+    mock_interactor = env.get_service(IUserInteractor)
+    monkeypatch.setattr(
+        mock_interactor,
+        "display_message",
+        lambda msg: sys.stderr.write(str(msg) + "\n"),
+    )
+
+    # Create session directory structure for an EMPTY turn 01.
+    session_name = "test-history-planning"
+    session_dir = tmp_path / ".teddy" / "sessions" / session_name
+    turn_dir = session_dir / "01"
+    turn_dir.mkdir(parents=True)
+
+    # Required files for a session turn (EMPTY state = no plan.md)
+    (session_dir / "session.context").write_text("", encoding="utf-8")
+    (turn_dir / "turn.context").write_text("", encoding="utf-8")
+    (turn_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
+    (session_dir / "initial_request.md").write_text("My goal", encoding="utf-8")
+    (turn_dir / "pathfinder.xml").write_text(
+        "You are a Pathfinder agent.\n", encoding="utf-8"
+    )
+
+    # The LLM is globally mocked via litellm, which returns a default plan.
+    # That plan will be parsed and executed, producing planning output.
+
+    # Get the orchestrator
+    orchestrator = env.get_service(IRunPlanUseCase)
+
+    # Resume the session - this triggers planning (turn headers, metadata)
+    # and execution. The Tee is installed during _handle_planning_and_execution
+    # before trigger_new_plan, so all planning output should be captured.
+    actual_name, report = orchestrator.resume(
+        session_name=session_name,
+        interactive=False,
+    )
+
+    # After resume, the session should have completed turn 01
+    assert actual_name == session_name, (
+        f"Unexpected session name: {actual_name}"
+    )
+    assert report is not None, "Resume must return a report"
+
+    # history.log should exist in session root
+    history_log = session_dir / "history.log"
+    assert history_log.exists(), f"history.log not found at {history_log}"
+
+    # Read the log content
+    log_content = history_log.read_text(encoding="utf-8")
+
+    # The log should contain planning output:
+    # 1. Turn header line (e.g., "[01] test-history-planning | Waiting for ...")
+    assert "[01]" in log_content, (
+        f"Turn header '[01]' not found in history.log. Content:\n{log_content}"
+    )
+    # 2. Metadata lines (printed by PlanningService._display_telemetry)
+    assert "• Model:" in log_content, (
+        f"Model metadata line not found in history.log. Content:\n{log_content}"
+    )
+    assert "• Context:" in log_content, (
+        f"Context metadata line not found in history.log. Content:\n{log_content}"
+    )
+    assert "• Session Cost:" in log_content, (
+        f"Session Cost metadata line not found in history.log. Content:\n{log_content}"
+    )
+

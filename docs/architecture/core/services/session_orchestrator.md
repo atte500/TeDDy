@@ -5,6 +5,8 @@
 
 The `SessionOrchestrator` is a decorator-style service that wraps the stateless `ExecutionOrchestrator` to provide stateful session behavior. It is responsible for passing the session's cache directory to `ContextService.get_context()` to enable web content caching. It implements the `IRunPlanUseCase` but adds side-effects required for the interactive session workflow, such as persisting the execution report and triggering turn transitions.
 
+**Tee Installation Guard:** The orchestrator cooperates with `SessionLifecycleManager` for history.log capture. The lifecycle manager installs the Tee *before* triggering planning to capture turn headers and metadata. The orchestrator's `execute()` method checks `lifecycle_manager.tee_active` before installing its own Tee, skipping if already active. This prevents double installation and ensures planning output is captured.
+
 ## 2. Ports
 
 -   **Implements Inbound Port:** `IRunPlanUseCase`
