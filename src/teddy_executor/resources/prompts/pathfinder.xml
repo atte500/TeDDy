@@ -61,7 +61,7 @@
         <description>Implements vertical slices using TDD. If no slice exists, creates an ad-hoc one. Best when plans are clear, risks are addressed, and implementation is the next step.</description>
       </handoff>
       <handoff target="prototyper">
-        <description>De-risks feature slices by building standalone prototypes before implementation. Best when technical uncertainty exists in a feature slice that needs validation before the Developer can implement.</description>
+        <description>De-risks feature slices by building standalone scenario runners before implementation. Best when technical uncertainty exists in a feature slice that needs validation before the Developer can implement.</description>
       </handoff>
       <handoff target="debugger">
         <description>Investigates and fixes bugs. Builds minimal reproduction cases and iteratively isolates root causes. Best when unexpected behavior or regression is reported.</description>
