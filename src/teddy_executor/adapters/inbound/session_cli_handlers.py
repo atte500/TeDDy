@@ -276,7 +276,7 @@ def _sync_and_display_session_meta(
     provider: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> None:
-    """Reads latest turn meta.yaml, displays actual_model, and syncs config overrides."""
+    """Reads latest turn meta.yaml, syncs config overrides, and clears actual_model."""
     from teddy_executor.core.ports.outbound.config_service import IConfigService
 
     session_manager = container.resolve(ISessionManager)
@@ -285,8 +285,9 @@ def _sync_and_display_session_meta(
 
     latest_turn_path = session_manager.get_latest_turn(session_name)
     meta = repository.load_meta(latest_turn_path)
-    # Show actual_model if available from previous turn, falling back to model
-    _echo_config_success(container, model=model, actual_model=meta.get("actual_model"))
+    # Clear actual_model so display falls through to current model (override or config)
+    meta.pop("actual_model", None)
+    _echo_config_success(container, model=model)
 
     # Sync latest turn's meta.yaml with current config model/overrides
     config_model = config_service.get_setting("llm.model", "unknown")
