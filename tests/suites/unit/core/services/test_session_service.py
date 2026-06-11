@@ -1,3 +1,4 @@
+import pytest
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import ANY
@@ -537,3 +538,139 @@ def test_create_session_reads_prompt_from_teddy_prompts(env):
     assert teddy_prompt_read, (
         f"Expected read_file to be called with .teddy/prompts/{agent_name}.xml"
     )
+
+
+# ---------------------------------------------------------------------------
+# Agent validation error enrichment (Logic deliverable: create_session)
+# ---------------------------------------------------------------------------
+
+
+def test_create_session_raises_value_error_with_available_agents(env):
+    """
+    Verifies that create_session() includes available agents in the ValueError
+    when the prompt file does not exist and agents are available.
+    """
+    # Arrange
+    from datetime import datetime
+
+    from teddy_executor.core.domain.models.session import SessionOptions
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+    from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+    from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+
+    mock_time = env.mock_port(ITimeService)
+    mock_prompts = env.mock_port(IPromptManager)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    session_name = "test-agent-err"
+    agent_name = "nonexistent"
+
+    # Mock init.context to exist, prompt path to not exist
+    mock_fs.read_file.side_effect = lambda p: {
+        ".teddy/init.context": "README.md",
+        f".teddy/prompts/{agent_name}.xml": "UNUSED",
+    }.get(p, "")
+    mock_fs.path_exists.side_effect = lambda p: p == ".teddy/init.context"
+    # Set the prompt_manager's get_available_agents (not mock_fs.list_directory)
+    mock_prompts.get_available_agents.return_value = [
+        "architect",
+        "developer",
+        "pathfinder",
+    ]
+    mock_time.now.return_value = datetime(2026, 6, 11, 10, 0, 0)
+    mock_time.now_utc.return_value = datetime(2026, 6, 11, 10, 0, 0)
+
+    # Act / Assert
+    with pytest.raises(ValueError) as excinfo:
+        service.create_session(SessionOptions(name=session_name, agent_name=agent_name))
+    msg = str(excinfo.value)
+    assert "Agent prompt 'nonexistent' not found" in msg
+    assert "Available agents: architect, developer, pathfinder" in msg
+
+
+def test_create_session_raises_value_error_without_agents(env):
+    """
+    Verifies that create_session() raises ValueError without the agents list
+    when the prompt file does not exist and agents list is empty.
+    """
+    # Arrange
+    from datetime import datetime
+
+    from teddy_executor.core.domain.models.session import SessionOptions
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+    from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+    from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+
+    mock_time = env.mock_port(ITimeService)
+    mock_prompts = env.mock_port(IPromptManager)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    session_name = "test-no-agents"
+    agent_name = "nonexistent"
+
+    mock_fs.read_file.side_effect = lambda p: {
+        ".teddy/init.context": "README.md",
+    }.get(p, "")
+    mock_fs.path_exists.side_effect = lambda p: p == ".teddy/init.context"
+    # Empty agents list
+    mock_prompts.get_available_agents.return_value = []
+    mock_time.now.return_value = datetime(2026, 6, 11, 10, 0, 0)
+    mock_time.now_utc.return_value = datetime(2026, 6, 11, 10, 0, 0)
+
+    # Act / Assert
+    with pytest.raises(ValueError) as excinfo:
+        service.create_session(SessionOptions(name=session_name, agent_name=agent_name))
+    msg = str(excinfo.value)
+    assert "Agent prompt 'nonexistent' not found" in msg
+    assert "Available agents:" not in msg, (
+        "Should not include agent list when no agents available"
+    )
+
+
+def test_create_session_does_not_raise_when_prompt_exists(env):
+    """
+    Verifies that create_session() does not raise ValueError when the prompt file
+    exists in .teddy/prompts/.
+    """
+    # Arrange
+    from datetime import datetime
+
+    from teddy_executor.core.domain.models.session import SessionOptions
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+    from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+    from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+
+    mock_time = env.mock_port(ITimeService)
+    mock_prompts = env.mock_port(IPromptManager)  # noqa: F841
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    session_name = "test-valid-agent"
+    agent_name = "architect"
+
+    def mock_exists(path: str) -> bool:
+        if path == ".teddy/init.context":
+            return True
+        if path.endswith(f"prompts/{agent_name}.xml"):
+            return True
+        return False
+
+    mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.read_file.side_effect = lambda p: {
+        ".teddy/init.context": "README.md",
+        f".teddy/prompts/{agent_name}.xml": "<prompt/>",
+    }.get(p, "")
+    mock_time.now.return_value = datetime(2026, 6, 11, 10, 0, 0)
+    mock_time.now_utc.return_value = datetime(2026, 6, 11, 10, 0, 0)
+    # Note: create_session requires create_turn_directory and other write operations
+    # We'll mock write_file to accept any call (no side effect needed)
+    mock_fs.write_file.side_effect = None  # allow any write
+
+    # Act & Assert: should not raise
+    result = service.create_session(
+        SessionOptions(name=session_name, agent_name=agent_name)
+    )
+    assert result is not None  # session root returned
+    assert session_name in result  # session root contains the session name

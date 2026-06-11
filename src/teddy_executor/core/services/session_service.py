@@ -65,10 +65,18 @@ class SessionService(ISessionManager):
         # 2. Prompt population — read from .teddy/prompts/ (canonical source)
         prompt_path = f".teddy/prompts/{options.agent_name}.xml"
         if not self._file_system_manager.path_exists(prompt_path):
-            raise ValueError(
-                f"Agent prompt '{options.agent_name}' not found in .teddy/prompts/. "
-                "Please run 'teddy init' to restore prompts."
-            )
+            available = self._prompt_manager.get_available_agents()
+            if available:
+                msg = (
+                    f"Agent prompt '{options.agent_name}' not found in .teddy/prompts/. "
+                    f"Available agents: {', '.join(available)}"
+                )
+            else:
+                msg = (
+                    f"Agent prompt '{options.agent_name}' not found in .teddy/prompts/. "
+                    "Please run 'teddy init' to restore prompts."
+                )
+            raise ValueError(msg)
         prompt_content = self._file_system_manager.read_file(prompt_path)
         self._file_system_manager.write_file(
             f"{session_root}/{options.agent_name}.xml", prompt_content
