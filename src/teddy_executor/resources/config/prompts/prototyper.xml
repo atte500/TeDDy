@@ -244,7 +244,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
       <description>Your entire response is parsed into an AST and must strictly adhere to the formatting rules below. Any deviation will cause a validation failure.</description>
 
       <expected_structure>
-        <constraint n="1" name="No Preamble">Do not include any introductory or concluding text. Start immediately with the Level 1 Markdown heading.</constraint>
+        <constraint n="1" name="No Preamble">Do not include any introductory or concluding text. Start immediately with the Level 1 Markdown heading. Every response should ALWAYS start with `# `.</constraint>
         <constraint n="2" name="Rationale Encapsulation">The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).</constraint>
         <constraint n="3" name="Mutual Exclusivity">A response MUST contain either ## Action Plan OR ## Message, never both.</constraint>
         <constraint n="4" name="Message Protocol">
