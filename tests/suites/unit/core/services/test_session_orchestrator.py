@@ -355,16 +355,12 @@ class TestTeeGuard:
 
         # Mock context service
         orchestrator._context_service.get_context.return_value = MagicMock()
-        orchestrator._pruning_service.prune.side_effect = (
-            lambda ctx, **kwargs: ctx
-        )
+        orchestrator._pruning_service.prune.side_effect = lambda ctx, **kwargs: ctx
 
         plan_content = MarkdownPlanBuilder("Test").build()
         plan_path = "path/to/01/plan.md"
 
-        orchestrator.execute(
-            plan_content=plan_content, plan_path=plan_path
-        )
+        orchestrator.execute(plan_content=plan_content, plan_path=plan_path)
 
         # _Tee must NOT be called since lifecycle_manager already installed it
         mock_tee_class.assert_not_called()
@@ -418,16 +414,12 @@ class TestTeeGuard:
         mock_plan_validator.validate.return_value = []
 
         orchestrator._context_service.get_context.return_value = MagicMock()
-        orchestrator._pruning_service.prune.side_effect = (
-            lambda ctx, **kwargs: ctx
-        )
+        orchestrator._pruning_service.prune.side_effect = lambda ctx, **kwargs: ctx
 
         plan_content = MarkdownPlanBuilder("Test").build()
         plan_path = "path/to/01/plan.md"
 
-        orchestrator.execute(
-            plan_content=plan_content, plan_path=plan_path
-        )
+        orchestrator.execute(plan_content=plan_content, plan_path=plan_path)
 
         # _Tee must be called once (constructor call)
         mock_tee_class.assert_called_once()

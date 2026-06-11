@@ -732,9 +732,7 @@ def test_history_log_contains_planning_output(tmp_path, monkeypatch, env):
     )
 
     # After resume, the session should have completed turn 01
-    assert actual_name == session_name, (
-        f"Unexpected session name: {actual_name}"
-    )
+    assert actual_name == session_name, f"Unexpected session name: {actual_name}"
     assert report is not None, "Resume must return a report"
 
     # history.log should exist in session root
@@ -759,4 +757,3 @@ def test_history_log_contains_planning_output(tmp_path, monkeypatch, env):
     assert "• Session Cost:" in log_content, (
         f"Session Cost metadata line not found in history.log. Content:\n{log_content}"
     )
-

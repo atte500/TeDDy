@@ -19,6 +19,7 @@ from teddy_executor.core.services.parser_infrastructure import (
     get_child_text,
     get_action_heading,
     consume_content_until_next_action,
+    normalize_headings,
     print_ast,
 )
 from teddy_executor.core.services.parser_reporting import (
@@ -74,6 +75,9 @@ class MarkdownPlanParser(IPlanParser):
 
         if not clean_content:
             raise InvalidPlanError("Plan content cannot be empty.")
+
+        # Normalize H1 heading on first line (e.g., #Title -> # Title)
+        clean_content = normalize_headings(clean_content)
 
         # Strip preamble (text before the first # heading at start of a line)
         # Use regex to match # at line start (not ## which is H2, or inline #)

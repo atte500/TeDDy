@@ -2,6 +2,23 @@ import os
 import re
 from typing import Any, List, Optional, Iterator, TYPE_CHECKING
 
+
+# Insert a space after `#` on the first line if missing (e.g., `#Title` -> `# Title`)
+# Only normalizes the first line to avoid corrupting code fences or shebangs.
+def normalize_headings(content: str) -> str:
+    """Insert a space after `#` if missing on the first line (the H1 title)."""
+    first_newline = content.find("\n")
+    if first_newline == -1:
+        first_line = content
+        rest = ""
+    else:
+        first_line = content[:first_newline]
+        rest = content[first_newline:]
+    if re.match(r"^#[^ #\t\n]", first_line):
+        first_line = "# " + first_line[1:]
+    return first_line + rest
+
+
 if TYPE_CHECKING:
     from mistletoe.block_token import Heading
 

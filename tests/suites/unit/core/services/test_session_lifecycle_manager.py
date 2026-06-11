@@ -186,19 +186,19 @@ class TestTeeTiming:
         # the mock that has itself as side_effect).
         call_log = []
 
-        mock_tee.__enter__.side_effect = lambda: call_log.append("tee_enter") or mock_tee
-        manager._session_planner.trigger_new_plan.side_effect = (
-            lambda *a, **kw: call_log.append("trigger_new_plan") or "session-name"
+        mock_tee.__enter__.side_effect = lambda: (
+            call_log.append("tee_enter") or mock_tee
+        )
+        manager._session_planner.trigger_new_plan.side_effect = lambda *a, **kw: (
+            call_log.append("trigger_new_plan") or "session-name"
         )
 
-        manager._handle_planning_and_execution(
-            turn_dir, mock_orch, interactive=False
-        )
+        manager._handle_planning_and_execution(turn_dir, mock_orch, interactive=False)
 
         # tee_enter must come before trigger_new_plan
-        assert call_log.index("tee_enter") < call_log.index(
-            "trigger_new_plan"
-        ), "Tee must be installed before planning"
+        assert call_log.index("tee_enter") < call_log.index("trigger_new_plan"), (
+            "Tee must be installed before planning"
+        )
 
     def test_tee_active_set_during_planning(self, manager, monkeypatch) -> None:
         """During trigger_new_plan, tee_active must be True and reset after."""
@@ -225,13 +225,11 @@ class TestTeeTiming:
         )
 
         captured_active = [None]
-        manager._session_planner.trigger_new_plan.side_effect = (
-            lambda *a, **kw: captured_active.__setitem__(0, manager.tee_active) or "session-name"
+        manager._session_planner.trigger_new_plan.side_effect = lambda *a, **kw: (
+            captured_active.__setitem__(0, manager.tee_active) or "session-name"
         )
 
-        manager._handle_planning_and_execution(
-            turn_dir, mock_orch, interactive=False
-        )
+        manager._handle_planning_and_execution(turn_dir, mock_orch, interactive=False)
 
         # During planning, tee_active should be True
         assert captured_active[0] is True, (
