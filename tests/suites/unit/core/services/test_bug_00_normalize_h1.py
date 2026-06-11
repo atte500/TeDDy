@@ -118,3 +118,85 @@ class TestParserIntegration:
         plan = parser.parse(raw)
         assert plan.title == "My Plan Title"
         assert len(plan.actions) == 1
+
+    def test_parser_writes_corrected_content_to_file(self, parser, tmp_path):
+        """When plan_path points to a session file and heading is missing space, file is overwritten with corrected content."""
+        from pathlib import Path
+
+        # Simulate a session file path
+        session_dir = tmp_path / ".teddy" / "sessions" / "test-session"
+        turn_dir = session_dir / "01"
+        turn_dir.mkdir(parents=True)
+        plan_file = turn_dir / "plan.md"
+
+        original = (
+            "Some preamble text before the H1.\n\n"
+            "#My Plan Title\n"
+            "- **Status:** Green 🟢\n"
+            "- **Plan Type:** Implementation\n"
+            "- **Agent:** Debugger\n"
+            "\n"
+            "## Rationale\n"
+            "~~~~~~\n"
+            "1. Synthesis\n"
+            "just testing\n"
+            "~~~~~~\n"
+            "\n"
+            "## Action Plan\n"
+            "\n"
+            "### `EXECUTE`\n"
+            "- **Description:** Test\n"
+            "- **Expected Outcome:** success\n"
+            "~~~~~~shell\n"
+            "echo hello\n"
+            "~~~~~~\n"
+        )
+        plan_file.write_text(original, encoding="utf-8")
+
+        # Parse with plan_path set (simulates session mode)
+        plan = parser.parse(original, plan_path=str(plan_file))
+
+        # Read the file after parsing
+        corrected = plan_file.read_text(encoding="utf-8")
+        assert corrected.startswith("# My Plan Title"), "Heading should be corrected"
+        assert "Some preamble text" not in corrected, "Preamble should be stripped"
+        assert corrected == plan.raw_content, "File should match raw_content"
+
+    def test_parser_does_not_overwrite_if_content_unchanged(self, parser, tmp_path):
+        """When heading is already correct and no preamble, file should not be overwritten (idempotent)."""
+        from pathlib import Path
+
+        session_dir = tmp_path / ".teddy" / "sessions" / "test-session"
+        turn_dir = session_dir / "01"
+        turn_dir.mkdir(parents=True)
+        plan_file = turn_dir / "plan.md"
+
+        original = (
+            "# My Plan Title\n"
+            "- **Status:** Green 🟢\n"
+            "- **Plan Type:** Implementation\n"
+            "- **Agent:** Debugger\n"
+            "\n"
+            "## Rationale\n"
+            "~~~~~~\n"
+            "1. Synthesis\n"
+            "just testing\n"
+            "~~~~~~\n"
+            "\n"
+            "## Action Plan\n"
+            "\n"
+            "### `EXECUTE`\n"
+            "- **Description:** Test\n"
+            "- **Expected Outcome:** success\n"
+            "~~~~~~shell\n"
+            "echo hello\n"
+            "~~~~~~\n"
+        )
+        plan_file.write_text(original, encoding="utf-8")
+
+        # Parse with plan_path set
+        plan = parser.parse(original, plan_path=str(plan_file))
+
+        # File should remain the same (no write needed because content is already correct)
+        after = plan_file.read_text(encoding="utf-8")
+        assert after == original

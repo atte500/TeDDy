@@ -114,7 +114,7 @@ class MarkdownPlanParser(IPlanParser):
                 normalized_path = plan_path.replace("\\", "/").lower()
                 is_session = ".teddy/sessions/" in normalized_path
 
-            return Plan(
+            plan = Plan(
                 title=title,
                 rationale=rationale,
                 actions=actions,
@@ -124,6 +124,19 @@ class MarkdownPlanParser(IPlanParser):
                 plan_path=plan_path,
                 raw_content=clean_content,
             )
+
+            # Write corrected content back to source file if it came from a session file path
+            if plan_path and is_session:
+                from pathlib import Path
+                path_obj = Path(plan_path)
+                try:
+                    current_disk = path_obj.read_text(encoding="utf-8")
+                except Exception:
+                    current_disk = None
+                if current_disk is not None and current_disk != clean_content:
+                    path_obj.write_text(clean_content, encoding="utf-8")
+
+            return plan
         except InvalidPlanError as e:
             if "### Expected Response Structure (MRP) " in str(e):
                 raise e
