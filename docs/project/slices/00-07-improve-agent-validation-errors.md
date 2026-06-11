@@ -1,5 +1,5 @@
 # Slice: Improve Agent Validation Error Messages
-- **Status:** In Progress
+- **Status:** Planned
 - **Type:** Feature
 - **Milestone:** [Milestone 2](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [Improve Agent Validation Error Messages Task](/docs/project/tasks/improve-agent-validation-error-messages.md)
@@ -37,8 +37,7 @@ Then I see an error message that includes the list of available prompts
 - **Cross-extension prompt files:** Agent prompts may have `.xml` extension or other extensions; the method should strip only `.xml` extension or rely on the file system to determine what constitutes an agent.
 
 ## Deliverables
-- [▶] **Contract** - Add `get_available_agents() -> list[str]` to `IPromptManager` port interface
-- [ ] **Logic** - Implement `get_available_agents()` in `PromptManager` using `IFileSystemManager` to list `.xml` files in `.teddy/prompts/`
+- [ ] **Contract & Logic** - Add `get_available_agents() -> list[str]` to `IPromptManager` and implement in `PromptManager` using `IFileSystemManager` to list `.xml` files in `.teddy/prompts/`
 - [ ] **Wiring** - Update preflight check in `session_cli_handlers.py` to call `get_available_agents()` and enrich error message with available agents (differentiating single-agent errors from multi-config errors)
 - [ ] **Logic** - Fix `session_service.py` `create_session()` to include available agents in its `ValueError` message
 - [ ] **Logic** - Update `get-prompt` command in `__main__.py` and `prompts.py` to list available prompts on error
@@ -48,8 +47,7 @@ Then I see an error message that includes the list of available prompts
 
 ## Implementation Plan
 The implementation follows the deliverable dependency sequence:
-1. **Contract (Port):** Add `get_available_agents()` abstract method to `IPromptManager`. This is the interface contract.
-2. **Logic (Implementation):** Implement the method in `PromptManager` using `IFileSystemManager` to scan `.teddy/prompts/` directory for `.xml` files.
+1. **Contract & Logic (Port + Implementation):** Add `get_available_agents()` abstract method to `IPromptManager` AND implement it in `PromptManager` using `IFileSystemManager` to scan `.teddy/prompts/` directory for `.xml` files. These MUST be done together to keep the test suite green.
 3. **Wiring (Adapter):** Update `_run_cli_preflight_check()` in `session_cli_handlers.py` to use the new method and differentiate between single-agent errors (ValueError) and multi-config errors (ConfigurationError).
 4. **Logic (Service):** Update `create_session()` in `session_service.py` to include available agents in its error message.
 5. **Logic (Utility):** Create `list_prompt_names()` helper in `prompts.py` and update `get-prompt` command in `__main__.py`.
