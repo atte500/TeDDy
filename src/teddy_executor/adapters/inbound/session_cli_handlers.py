@@ -295,7 +295,7 @@ def _sync_and_display_session_meta(
     meta = repository.load_meta(latest_turn_path)
     # Clear actual_model so display falls through to current model (override or config)
     meta.pop("actual_model", None)
-    _echo_config_success(container, model=model)
+    _echo_config_success(container, agent=meta.get("agent_name"), model=model)
 
     # Sync latest turn's meta.yaml with current config model/overrides
     config_model = config_service.get_setting("llm.model", "unknown")
