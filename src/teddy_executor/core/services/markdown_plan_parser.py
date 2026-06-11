@@ -76,19 +76,16 @@ class MarkdownPlanParser(IPlanParser):
         if not clean_content:
             raise InvalidPlanError("Plan content cannot be empty.")
 
-        # Normalize H1 heading on first line (e.g., #Title -> # Title)
-        clean_content = normalize_headings(clean_content)
-
         # Strip preamble (text before the first # heading at start of a line)
-        # Use regex to match # at line start (not ## which is H2, or inline #)
-        h1_match = re.search(r"(?:^|\n)# (?!#)", clean_content)
-        if h1_match:
-            first_h1 = h1_match.start()
-            # If match starts with \n, advance past it
-            if clean_content[first_h1] == "\n":
-                first_h1 += 1
-            if first_h1 > 0:
-                clean_content = clean_content[first_h1:]
+        # Use MULTILINE so ^ matches start of any line. Allow optional leading whitespace
+        # before # because Markdown permits up to 3 spaces before heading markers.
+        h1_match = re.search(r"^[ \t]*#", clean_content, re.MULTILINE)
+        if h1_match and h1_match.start() > 0:
+            clean_content = clean_content[h1_match.start():]
+
+        # Normalize H1 heading on the first line (e.g., #Title -> # Title)
+        # This runs after preamble stripping so it always targets the heading line
+        clean_content = normalize_headings(clean_content)
 
         processed_content = self._preprocessor.process(clean_content)
         doc = Document(processed_content)
@@ -133,7 +130,7 @@ class MarkdownPlanParser(IPlanParser):
                     current_disk = path_obj.read_text(encoding="utf-8")
                 except Exception:
                     current_disk = None
-                if current_disk is not None and current_disk != clean_content:
+                if current_disk is not None and current_disk.rstrip() != clean_content:
                     path_obj.write_text(clean_content, encoding="utf-8")
 
             return plan
