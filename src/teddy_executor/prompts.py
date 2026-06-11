@@ -26,3 +26,19 @@ def find_prompt_content(prompt_name: str) -> Optional[str]:
             return content
 
     return None
+
+
+def list_prompt_names() -> list[str]:
+    """
+    Lists available prompt names by scanning `.teddy/prompts/` directories
+    upward from the current working directory.
+    Returns a sorted list of prompt names (stems without .xml extension),
+    or an empty list if no prompts directory is found.
+    """
+    current_path = Path.cwd().resolve()
+    for path in [current_path] + list(current_path.parents):
+        prompts_dir = path / ".teddy" / "prompts"
+        if prompts_dir.is_dir():
+            xml_files = sorted(prompts_dir.glob("*.xml"))
+            return [f.stem for f in xml_files]
+    return []

@@ -203,15 +203,19 @@ def get_prompt(
     Searches for root-relative overrides in ./.teddy/prompts/ before falling back to defaults.
     """
     from teddy_executor.adapters.inbound.cli_helpers import echo_and_copy
-    from teddy_executor.prompts import find_prompt_content
+    from teddy_executor.prompts import find_prompt_content, list_prompt_names
 
     prompt_content = find_prompt_content(prompt_name)
 
     if prompt_content:
         echo_and_copy(prompt_content, no_copy)
     else:
-        # This part will be tested in the next scenario
-        typer.echo(f"Error: Prompt '{prompt_name}' not found.", err=True)
+        available = list_prompt_names()
+        if available:
+            msg = f"Error: Prompt '{prompt_name}' not found. Available prompts: {', '.join(available)}"
+        else:
+            msg = f"Error: Prompt '{prompt_name}' not found."
+        typer.echo(msg, err=True)
         raise typer.Exit(code=1)
 
 

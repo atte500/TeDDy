@@ -51,9 +51,18 @@ def test_get_prompt_fails_for_non_existent_prompt(tmp_path, monkeypatch):
     env.setup()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
+    # Create .teddy/prompts/ with available prompts to test enriched error message
+    prompts_dir = tmp_path / ".teddy" / "prompts"
+    prompts_dir.mkdir(parents=True, exist_ok=True)
+    (prompts_dir / "architect.xml").write_text("<prompt/>")
+    (prompts_dir / "developer.xml").write_text("<prompt/>")
+
     result = adapter.run_cli_command(["get-prompt", "unknown"])
     assert result.exit_code != 0
-    assert "Prompt 'unknown' not found." in result.stdout + result.stderr
+    assert (
+        "Prompt 'unknown' not found. Available prompts: architect, developer"
+        in result.stdout + result.stderr
+    )
 
 
 def test_config_check_message_is_localized_to_start_command(tmp_path, monkeypatch):
