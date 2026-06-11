@@ -121,7 +121,7 @@ class MarkdownPlanParser(IPlanParser):
                 raw_content=clean_content,
             )
         except InvalidPlanError as e:
-            if "### Expected Response Structure " in str(e):
+            if "### Expected Response Structure (MRP) " in str(e):
                 raise e
 
             # Re-format the error using the shared infrastructure to always include AST

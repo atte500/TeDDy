@@ -51,7 +51,7 @@ def _format_expected_structure() -> str:
     ]
     content = "\n".join(lines) + "\n"
     fence = get_fence_for_content(content)
-    return f"### Expected Response Structure \n{fence}text\n{content}{fence}\n"
+    return f"### Expected Response Structure (MRP) \n{fence}text\n{content}{fence}\n"
 
 
 def format_node_name(node: Any) -> str:
