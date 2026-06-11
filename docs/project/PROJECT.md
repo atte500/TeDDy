@@ -27,16 +27,14 @@ This section defines the conventions for our project management artifacts.
 
 ### Milestone 1: Structural Protocol & Parser [COMPLETED]
 - **Core Goal:** Move from action-based communication (`INVOKE`, `RETURN`, `PROMPT`) to the structural `## Message` protocol.
-- **Specs:** [docs/project/specs/handoff-protocol.md](/docs/project/specs/handoff-protocol.md)
 - **Requirements:**
     - **CLI Polish:** Update `start` command to support `-a/--agent`, `-m/--message`, and `-c/--context` flags for fluid handoffs.
     - **Parser Cleanup:** Remove legacy `PROMPT`, `INVOKE`, and `RETURN` actions from `MarkdownPlanParser` and `PlanValidator`.
     - **Orchestrator:** Ensure `ExecutionOrchestrator` handles "Message Turns" (no actions) without side-effects.
     - **Prompt Migration:** Update all system prompts (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`, `prototyper`) to use `## Message` for all communication and handoffs.
 
-### Milestone 2: Stability & Infrastructure [IN PROGRESS]
+### Milestone 2: Stability & Infrastructure [COMPLETED]
 - **Core Goal:** Hardening the system against external failures, ensuring safety limits, and improving context/session management.
-- **Specs:** [docs/project/specs/stability-and-bugfixes.md](/docs/project/specs/stability-and-bugfixes.md)
 - **Requirements:**
     - **LLM Resilience:** Implement retry logic (3 attempts) for SSL and OpenRouter timeout errors (Reproduce via: `SSLV3_ALERT_BAD_RECORD_MAC`).
     - **Web Scraper (403 Bypassing):** Attempt to bypass 403 Forbidden errors via User-Agent rotation and common headers (Reproduce via: `https://www.pnas.org/doi/10.1073/pnas.2416294121`).
@@ -62,11 +60,9 @@ This section defines the conventions for our project management artifacts.
 - **Core Goal:** Improve the interactive experience and provide better visibility into session state.
 - **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 - **Requirements:**
-    - **Console Visibility:** In session mode, log the "Status Emoji + Plan Title" (e.g., `🟢 Title`) to the terminal after the metadata block and before the action logs.
     - **Navigation:** Alt+Up/Down for jumping between Context, Rationale, and Plan/Message sections.
     - **Context Interactions:** Pressing `e` on context nodes opens the corresponding file/context file in the external editor.
     - **Metadata Visibility:** Display model name and session cost (rounded to nearest cent) in the right panel when the Context Root is selected.
     - **Tier 2 Editing:** Automatically open external editor for parameters that are multiline or >100 characters.
     - **Editor & Diff Mapping:** Strictly respect `editor` config; implement a translation table for diff flags (e.g., `nvim` -> `-d`); remove all implicit VS Code fallbacks.
     - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels.
-    - **Message Visibility:** Log the user message (from TUI 'm' key or message replies) to the console after execution in the format `User Message: [content]`.

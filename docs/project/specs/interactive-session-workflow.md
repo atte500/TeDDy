@@ -196,10 +196,6 @@ This phase provides a unified TUI experience for reviewing and modifying plans b
 
 ### 7.1. Console & TUI Polish
 
-- **Console Output (Session Mode):**
-    - To provide semantic context in the terminal scrollback, the system must print a header line immediately following the metadata block (Model, Context, Cost) and before the action logs.
-    - **Format:** `{Emoji} {Title}` (e.g., `🟢 Implement safety limits`).
-    - **Implementation:** This line is injected in the `SessionOrchestrator.execute` phase after the plan is resolved and validated.
 - **Alt + Up/Down:**
     - Jumps between major sections: `Context Root`, `Rationale Root`, and `Action Plan/Message Root`.
     - Does not loop at boundaries; instead scrolls to the absolute top or bottom.
