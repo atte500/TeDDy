@@ -1,5 +1,5 @@
 # Bug: Autofix markdown title missing space after `#`
-- **Status:** Resolved
+- **Status:** Resolved (complete: heading normalization + preamble stripping + file write-back)
 - **Milestone:** N/A
 - **Vertical Slice:** N/A
 - **Specs:** [docs/project/specs/plan-format.md](/docs/project/specs/plan-format.md)
@@ -50,12 +50,42 @@ When a plan starts with `#Title\n`, the preamble stripping regex fails to find a
    - **BUG CONFIRMED: Production parser fails on '#Title' / FIX VERIFIED: Shadow parser handles '#Title' correctly**
 6. Alignment phase: Presented RCA to user. User raised valid concern about code fence overreach. Proposed code-fence-aware normalization. User suggested simpler approach: only normalize first line (the H1 title). Confirmed approach is safe because no code fences, shebangs, or other content can appear on the first line of a plan. User approved with additional requirement: "the resulting plan.md file should also be corrected not show original wrong title". This is satisfied because the normalized content is stored as `Plan.raw_content`.
 7. Systemic Audit: Searched codebase for other heading-dependent patterns (strip_preamble regex, H1 detection in validators). Found that `strip_preamble` regex `r"(?:^|\n)# (?!#)"` at `markdown_plan_parser.py:78` is the only raw-text heading detection. Normalization runs before this regex, so `#Title` becomes `# Title` and matches correctly. No other code paths independently parse `# ` at line start.
+8. Extended Scope – File Write-Back & Preamble Stripping: User requested the `plan.md` file on disk be overwritten with corrected content (normalized heading + stripped preamble). Implemented via `Path.write_text` in the parser's `parse()` method, guarded by `plan_path` and `is_session`. The preamble stripping regex was changed from `r"(?:^|\n)# (?!#)"` to `r"^[ \t]*#"` with `re.MULTILINE` to handle leading whitespace and `#Title` without space. Write-back is idempotent: compares `current_disk.rstrip()` with `clean_content` to avoid unnecessary writes. All tests pass: 9/9 regression, 916/3 full suite. Final commit made.
 
 ### Discrepancies
 - **Discrepancy 1**: The `normalize_headings` regex could modify content inside code fences (e.g., shebangs, Python comments). This was raised by the user during alignment. **(Resolved: We switched to first-line-only normalization, which is outside any code fences by definition since the plan's H1 title is always the first line.)**
-- **Discrepancy 2**: The normalized `raw_content` stored in the Plan object will differ from the original plan file on disk. The user requested "the resulting plan.md file should also be corrected not show original wrong title". **(Resolved: The `Plan` object's `raw_content` field is set to the normalized content, and all downstream consumers (reports, displays) use this field. The original file on disk remains unchanged, which is correct behavior to preserve user intent.)**
+- **Discrepancy 2**: The normalized `raw_content` stored in the Plan object will differ from the original plan file on disk. The user requested "the resulting plan.md file should also be corrected not show original wrong title". **(Resolved: The write‑back now overwrites the original `plan.md` file with the corrected content after successful parsing, ensuring the file on disk is always consistent with the in-memory representation.)**
+- **Discrepancy 3**: The preamble (text before the first `# heading`) is currently stripped from `raw_content`, but the file on disk still contains it. The user wants the preamble removed from the saved file. **(Resolved: The write‑back uses `raw_content` which already has preamble stripped, so the saved file will no longer contain preamble.)**
 
 ## Solution
+
+### Root Cause
+The **CommonMark specification** (used by the `mistletoe` library) strictly requires a space after `#` to interpret text as an ATX heading. When a plan starts with `#Title` (missing space), mistletoe parses it as a **Paragraph**, not a `Heading(level=1)`. Additionally, the original preamble stripping regex `r"(?:^|\n)# (?!#)"` required a space after `#`, so `#Title` did NOT match, causing preamble stripping to fail or skip the heading line.
+
+### The Fix (Three Parts)
+
+#### Part 1: Heading Normalization
+Added `normalize_headings()` in `parser_infrastructure.py` that inserts a space after `#` on the **first line only** before parsing. This is safe because code fences cannot appear on the first line.
+
+#### Part 2: Preamble Stripping (Relaxed Regex)
+Changed the preamble stripping regex from `r"(?:^|\n)# (?!#)"` to `r"^[ \t]*#"` with `re.MULTILINE` to match any line starting with `#` (including `#Title` without space, and with leading whitespace). Normalization is called **after** preamble stripping so it always targets the heading line.
+
+#### Part 3: File Write-Back
+After successful parsing, the corrected content (normalized heading + stripped preamble) is written back to the source file for **session plans** (plan_path contains `.teddy/sessions/`). The write is idempotent: it compares `current_disk.rstrip()` with `clean_content` to avoid unnecessary writes.
+
+### Files Changed
+| File | Change |
+|---|---|
+| `src/teddy_executor/core/services/parser_infrastructure.py` | Added `normalize_headings()` function |
+| `src/teddy_executor/core/services/markdown_plan_parser.py` | Added heading normalization call, relaxed preamble stripping regex, added file write-back logic |
+| `tests/suites/unit/core/services/test_bug_00_normalize_h1.py` | Added regression tests: 5 unit + 2 integration (heading normalization) + 2 integration (file write-back and idempotency) |
+| `docs/project/debugging/00-autofix-title-no-space.md` | Case File (this document) |
+
+### Preventative Measures
+- This class of bug (parser failing on semantically valid but syntactically malformed input) is mitigated by adding a pre-processing normalization layer before the strict parser.
+- The preamble stripping regex now accepts any `#` at line start, making it robust to `#Title` without space and leading whitespace.
+- File write‑back ensures the user's `plan.md` on disk is always consistent with the corrected in-memory representation.
+- Regression tests (9 total) cover heading normalization, preamble stripping, file write‑back, and idempotency.
 
 ### Root Cause
 The **CommonMark specification** (used by the `mistletoe` library) strictly requires a space after `#` to interpret text as an ATX heading. When a plan starts with `#Title` (missing space), mistletoe parses it as a **Paragraph**, not a `Heading(level=1)`. The `strip_preamble` regex `r"(?:^|\n)# (?!#)"` also requires a space after `#`, so `#Title` does NOT match. This causes the entire content (including `#Title`) to be treated as preamble, leading to a structural mismatch error in `_parse_strict_top_level` (expected `Heading(level=1)` but found `Paragraph`).
