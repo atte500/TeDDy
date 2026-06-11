@@ -38,12 +38,14 @@ Then I see an error message that includes the list of available prompts
 
 ## Deliverables
 - [x] **Contract & Logic** - Add `get_available_agents() -> list[str]` to `IPromptManager` and implement in `PromptManager` using `IFileSystemManager` to list `.xml` files in `.teddy/prompts/`
-- [ ] **Wiring** - Update preflight check in `session_cli_handlers.py` to call `get_available_agents()` and enrich error message with available agents (differentiating single-agent errors from multi-config errors)
+- [x] **Wiring** - Update preflight check in `session_cli_handlers.py` to call `get_available_agents()` and enrich error message with available agents (differentiating single-agent errors from multi-config errors)
 - [ ] **Logic** - Fix `session_service.py` `create_session()` to include available agents in its `ValueError` message
 - [ ] **Logic** - Update `get-prompt` command in `__main__.py` and `prompts.py` to list available prompts on error
 
 ## Implementation Notes
 - **Contract & Logic (get_available_agents):** Added abstract method `get_available_agents() -> list[str]` to `IPromptManager` (port) and implemented it in `PromptManager` (service). The implementation uses `IFileSystemManager.list_directory(".teddy/prompts/")` to list files, filters for `.xml` extension with `str.endswith()`, strips the suffix via `str.removesuffix()`, and returns a sorted list. If the directory does not exist (`path_exists` returns False), returns empty list. Three unit tests cover: normal XML listing, empty directory case, and non-XML file filtering. The abstract method and implementation were added simultaneously to keep the test suite green (296d76b had previously broken the suite when abstract method was added without implementation).
+
+- **Wiring (preflight check enhancement):** Updated `_run_cli_preflight_check()` in `session_cli_handlers.py` to call `prompt_manager.get_available_agents()` when an invalid agent is provided and construct an enriched error message. **Critical logic**: If the agent error is the *only* preflight error, a plain `ValueError` is raised (so `handle_new_session()`'s generic `except Exception` catches it without printing the config hint). If there are other config errors (e.g., invalid API key), the agent error is prepended to the list and a `ConfigurationError` is raised so the config hint remains valid for non-agent errors. Four unit tests cover: single agent error (ValueError), agent + other errors (ConfigurationError), valid agent (no error), and empty available agents (no agent list in message). Test file: `test_session_preflight_wiring.py`.
 
 ## Implementation Plan
 The implementation follows the deliverable dependency sequence:

@@ -189,7 +189,15 @@ def _run_cli_preflight_check(container: Container, agent: Optional[str] = None) 
     if agent:
         prompt_manager = container.resolve(IPromptManager)
         if not prompt_manager.get_prompt_content(agent):
-            errors.append(f"Agent prompt '{agent}' not found")
+            available = prompt_manager.get_available_agents()
+            agent_error = f"Agent prompt '{agent}' not found. Available agents: " + (
+                ", ".join(available) if available else ""
+            )
+            if not errors:
+                # Only an agent error -> plain ValueError (no config hint)
+                raise ValueError(agent_error)
+            # Prepend agent error before other errors
+            errors.insert(0, agent_error)
 
     if not errors:
         return
