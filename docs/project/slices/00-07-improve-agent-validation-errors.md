@@ -1,5 +1,5 @@
 # Slice: Improve Agent Validation Error Messages
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Feature
 - **Milestone:** [Milestone 2](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [Improve Agent Validation Error Messages Task](/docs/project/tasks/improve-agent-validation-error-messages.md)
@@ -61,6 +61,6 @@ The implementation follows the deliverable dependency sequence:
 All changes are additive (no breaking changes to existing contracts).
 
 ## Verification
-- [ ] Run `poetry run teddy start -a nonexistent` in a project with `.teddy/prompts/` directory to verify error lists available agents and lacks config hint.
-- [ ] Run `poetry run teddy get-prompt nonexistent` to verify it lists available prompts.
-- [ ] Run `poetry run pytest` to ensure all existing tests pass.
+- [x] Run `poetry run teddy start -a nonexistent` in a project with `.teddy/prompts/` directory to verify error lists available agents and lacks config hint.
+- [x] Run `poetry run teddy get-prompt nonexistent` to verify it lists available prompts.
+- [x] Run `poetry run pytest` to ensure all existing tests pass.
