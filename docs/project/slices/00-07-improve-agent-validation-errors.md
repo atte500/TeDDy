@@ -1,5 +1,5 @@
 # Slice: Improve Agent Validation Error Messages
-- **Status:** Planned
+- **Status:** In Progress
 - **Type:** Feature
 - **Milestone:** [Milestone 2](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [Improve Agent Validation Error Messages Task](/docs/project/tasks/improve-agent-validation-error-messages.md)
@@ -37,13 +37,13 @@ Then I see an error message that includes the list of available prompts
 - **Cross-extension prompt files:** Agent prompts may have `.xml` extension or other extensions; the method should strip only `.xml` extension or rely on the file system to determine what constitutes an agent.
 
 ## Deliverables
-- [ ] **Contract & Logic** - Add `get_available_agents() -> list[str]` to `IPromptManager` and implement in `PromptManager` using `IFileSystemManager` to list `.xml` files in `.teddy/prompts/`
+- [x] **Contract & Logic** - Add `get_available_agents() -> list[str]` to `IPromptManager` and implement in `PromptManager` using `IFileSystemManager` to list `.xml` files in `.teddy/prompts/`
 - [ ] **Wiring** - Update preflight check in `session_cli_handlers.py` to call `get_available_agents()` and enrich error message with available agents (differentiating single-agent errors from multi-config errors)
 - [ ] **Logic** - Fix `session_service.py` `create_session()` to include available agents in its `ValueError` message
 - [ ] **Logic** - Update `get-prompt` command in `__main__.py` and `prompts.py` to list available prompts on error
 
 ## Implementation Notes
-*(To be filled during implementation)*
+- **Contract & Logic (get_available_agents):** Added abstract method `get_available_agents() -> list[str]` to `IPromptManager` (port) and implemented it in `PromptManager` (service). The implementation uses `IFileSystemManager.list_directory(".teddy/prompts/")` to list files, filters for `.xml` extension with `str.endswith()`, strips the suffix via `str.removesuffix()`, and returns a sorted list. If the directory does not exist (`path_exists` returns False), returns empty list. Three unit tests cover: normal XML listing, empty directory case, and non-XML file filtering. The abstract method and implementation were added simultaneously to keep the test suite green (296d76b had previously broken the suite when abstract method was added without implementation).
 
 ## Implementation Plan
 The implementation follows the deliverable dependency sequence:

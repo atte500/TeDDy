@@ -26,6 +26,14 @@ class PromptManager(IPromptManager):
 
         return find_prompt_content(agent_name)
 
+    def get_available_agents(self) -> list[str]:
+        """Returns the list of available agent names from .teddy/prompts/."""
+        prompts_dir = ".teddy/prompts/"
+        if not self._file_system_manager.path_exists(prompts_dir):
+            return []
+        files = self._file_system_manager.list_directory(prompts_dir)
+        return sorted(f.removesuffix(".xml") for f in files if f.endswith(".xml"))
+
     def resolve_agent_metadata(
         self, turn_path: Path
     ) -> tuple[str, Dict[str, Any], str]:

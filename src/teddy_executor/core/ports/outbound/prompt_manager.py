@@ -9,6 +9,11 @@ class IPromptManager(ABC):
     """
 
     @abstractmethod
+    def get_available_agents(self) -> list[str]:
+        """Returns the list of available agent names (prompt files)."""
+        ...
+
+    @abstractmethod
     def get_prompt_content(self, _agent_name: str) -> Optional[str]:
         """Synchronously retrieves the raw content of an agent prompt."""
         ...

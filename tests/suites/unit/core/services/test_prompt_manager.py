@@ -53,3 +53,65 @@ def test_fetch_system_prompt_resolves_from_teddy_prompts(prompt_manager, mock_fs
 
     # Assert
     assert content == "<prompt>From .teddy/prompts/</prompt>"
+
+
+def test_get_available_agents_returns_xml_files(prompt_manager, mock_fs):
+    """
+    Verifies that get_available_agents() lists .xml files from .teddy/prompts/
+    and returns agent names stripped of the .xml extension.
+    """
+    # Arrange
+    mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.return_value = [
+        "architect.xml",
+        "developer.xml",
+        "pathfinder.xml",
+    ]
+
+    # Act
+    agents = prompt_manager.get_available_agents()
+
+    # Assert
+    assert agents == ["architect", "developer", "pathfinder"]
+    mock_fs.path_exists.assert_called_once_with(".teddy/prompts/")
+    mock_fs.list_directory.assert_called_once_with(".teddy/prompts/")
+
+
+def test_get_available_agents_returns_empty_when_directory_missing(
+    prompt_manager, mock_fs
+):
+    """
+    Verifies that get_available_agents() returns an empty list when
+    .teddy/prompts/ does not exist.
+    """
+    # Arrange
+    mock_fs.path_exists.return_value = False
+
+    # Act
+    agents = prompt_manager.get_available_agents()
+
+    # Assert
+    assert agents == []
+    mock_fs.path_exists.assert_called_once_with(".teddy/prompts/")
+
+
+def test_get_available_agents_filters_non_xml_files(prompt_manager, mock_fs):
+    """
+    Verifies that get_available_agents() only returns .xml files,
+    filtering out non-xml files like README.md and notes.txt.
+    """
+    # Arrange
+    mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.return_value = [
+        "architect.xml",
+        "README.md",
+        "debugger.xml",
+        "pathfinder.xml",
+        "notes.txt",
+    ]
+
+    # Act
+    agents = prompt_manager.get_available_agents()
+
+    # Assert
+    assert agents == ["architect", "debugger", "pathfinder"]
