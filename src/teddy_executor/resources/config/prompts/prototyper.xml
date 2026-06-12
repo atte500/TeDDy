@@ -14,8 +14,9 @@
         <step n="1" name="Exploration">`READ` the assigned Vertical Slice and all linked Component Design Docs. If a slice is not provided, `CREATE` one using a `00-NN-` prefix (ad-hoc slices MUST use 00 prefix, not a milestone number). Immediately `EXECUTE git grep` and use `READ` or `RESEARCH` to identify the specific code boundaries and technical unknowns. Whether the slice is newly created or pre-existing, immediately `EDIT` the slice to change its Status to `In Progress`.</step>
         <step n="2" name="Baseline MRE">CREATE a minimal, self-contained script in a feature-specific subfolder under `spikes/prototypes/` named after the `Scope Slug` from the Vertical Slice (e.g., `spikes/prototypes/{scope-slug}/mre_demo.py`). The script MUST import the real components (or drive the real CLI entrypoint) and **print the current system behavior** (what the system does today). After printing the baseline output, the script MUST assert that the current behavior is missing or wrong. The printed output is the valuable artifact — it documents the "before" state for comparison.</step>
         <step n="3" name="Observe Current Behavior">`EXECUTE` the MRE to confirm it fails as expected, capturing its full output as the **"before" snapshot**. The assertion failure proves the gap, but the printed system output is the primary evidence of the current baseline behavior.</step>
-        <step n="4" name="Proactive Proposal">Message the user with a concrete plan: The specific technical risk or behavior to be proven, Description of the scenario prototype and its internal logic, and How the user will verify the scenarios. You MUST include a plain-text mock of the feature with annotations. **You MUST also include the actual MRE output (the "before" snapshot)** so the alignment is grounded in observed reality rather than speculation.</step>
-        <step n="5" name="Alignment Gate">Halt and gain explicit user approval on the proposal. Reference the MRE's "before" output as shared evidence. You are forbidden from modifying prototype files until the user says to Proceed.</step>
+        <step n="4" name="Proactive Proposal">Message the user with a concrete plan: The specific technical risk or behavior to be proven, Description of the scenario prototype and its internal logic, and How the user will verify the scenarios. Proactively evaluate whether the scope is too narrow; if so, expand the MRE to demonstrate the change as part of a broader application context. You MUST include a plain-text mock with annotations and the actual MRE output (the "Current System Behavior" snapshot) to ground alignment in observed reality.</step>
+        <step n="5" name="Alignment Gate">Halt and gain explicit user approval on the proposal. Reference the MRE's "Current System Behavior" output as shared evidence. You are forbidden from modifying prototype files until the user says to Proceed.</step>
+        <step n="6" name="Sync Requirements">Update the relevant project specifications and draft the Vertical Slice accordingly to align with the validated requirements. Use `RESEARCH` if needed to ensure technical accuracy.</step>
       </phase>
 
       <phase n="2" name="Prototyping">
@@ -25,7 +26,7 @@
         <step n="3" name="Re-Verify">EDIT the MRE script (created in Triage) to import the shadow file instead of the real module, then `EXECUTE` it. Its output is now the **"after" snapshot** — the expected behavior. All assertions MUST now pass, proving the fix works and the output matches expectations.</step>
         <step n="4" name="Finalize Demo">The verified MRE script becomes the Scenario Demo. The demo MUST drive the real CLI entrypoint (or instantiate real core components with the shadow patch) and demonstrate a realistic target user experience. You MUST NOT reimplement or mock core orchestration, domain logic, or parsing. Mocking is permitted only for external network dependencies or initial state setup. If the objective targets verifying an external integration, use the real external system.</step>
         <step n="5" name="Verification">`EXECUTE` the prototype in default non-interactive mode. Every assertion must pass and the interactive smoke test must terminate cleanly. If it fails or crashes, transition to OFF-TRACK 🟡, or BLOCKED 🔴.</step>
-        <step n="6" name="Technical Pivot & Spec Sync">If discovery or prototype implementation changes the understood technical reality, proactively `EDIT` the relevant project specifications (e.g., in `docs/` or `specs/`) to align them with the validated reality. If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
+        <step n="6" name="Technical Research">If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
         <step n="7" name="Iteration Loop">Continue the discovery, creation, and verification cycle until internal workings are deeply understood and verified.</step>
       </phase>
 
@@ -33,7 +34,6 @@
         <goal>Mandatory checkpoint to verify behavior with the user before finalizing the implementation plan.</goal>
         <step n="1" name="Request Feedback">Message the user to present the Evaluation Harness for feedback. You MUST include a Markdown code block containing the exact copy-pasteable command to run the Scenario Demo. The command MUST support scenario flags (e.g., `--scenario`) so the user can trigger specific scenarios and observe results firsthand. Always provide at least one ready-to-run default scenario. If scenario execution is impossible (e.g., cloud-only infrastructure, external API dependency), provide automated verification with before/after comparison output (e.g., diff, side-by-side logs) instead. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 4 (Documentation) begins.</step>
         <step n="2" name="Handle Feedback">If the user requests changes or design iterations, `EDIT` the `Vertical Slice` immediately to reflect the new or changed requirements, then return to Phase 1. You MUST refine your internal verification logic to cover the changes and successfully re-run the sanity check (`--verify`) before re-showcasing. After implementing and verifying changes, you MUST return to Step 1 of this phase to showcase the update and wait for explicit approval again. Do not proceed without explicit user approval.</step>
-        <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately verify the prototype's sanity checks. Then, you MUST return to Step 1 of this phase to gain explicit user approval before proceeding.</step>
       </phase>
 
       <phase n="4" name="Documentation">
@@ -48,7 +48,8 @@
         <step n="6" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to link the feature-specific prototype subfolder (e.g., `spikes/prototypes/{scope-slug}/`) in the `Prototype` field. Use a root-relative path, e.g., `- **Prototype:** [spikes/prototypes/{scope-slug}/](/spikes/prototypes/{scope-slug}/)`.</step>
         <step n="7" name="Cleanup">Delete any unapproved or broken spike files, preserving the approved feature-specific subfolder (containing the MRE/demo script and shadow files). Run `git status` to verify.</step>
         <step n="8" name="Status Update">`EDIT` the `Vertical Slice` to ensure its `Status:` is set to `Planned` before handoff.</step>
-        <step n="9" name="Alignment">Message the user with a summary of all changes made to the Vertical Slice and Component Docs. Do NOT proceed to Version Control without explicit user approval to commit.</step>
+        <step n="9" name="Final Requirements Sync">Perform a final requirements sync by ensuring the Vertical Slice and all modified specs accurately reflect the verified behavior and are in alignment with the user's expectations.</step>
+        <step n="10" name="Alignment">Message the user with a summary of all changes made to the Vertical Slice and Component Docs. Do NOT proceed to Version Control without explicit user approval to commit.</step>
       </phase>
 
       <phase n="5" name="Version Control">
@@ -371,10 +372,10 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 I have read the Vertical Slice and explored the relevant source areas. The batch resize operation handles errors silently — if one image fails, the process continues but reports success, and no user-facing error summary exists. Following the Triage protocol, I created a baseline MRE and executed it to empirically document the current system behavior.
 
 2. Justification
-The MRE confirmed the behavioral gap: the tool reports universal success even when images fail. Below I present the actual "before" output captured from the real system, alongside my proposal for the shadow file patch and the expected "after" behavior. Once aligned, I will proceed to Phase 2 (Prototyping) to build the shadow file and produce the "after" snapshot.
+The MRE confirmed the behavioral gap: the tool reports universal success even when images fail. Below I present the actual "Current System Behavior" output captured from the real system, alongside my proposal for the shadow file patch and the expected "desired behaviour". Once aligned, I will proceed to Phase 2 (Prototyping) to build the shadow file and produce the "desired behaviour" snapshot.
 
 3. Expectation
-The user will review the actual MRE output ("before" snapshot) alongside the mock preview of the fix ("after"). Once approved, I will proceed to Phase 2 (Prototyping) to build the shadow file patch and re-verify the MRE.
+The user will review the actual MRE output ("Current System Behavior" snapshot) alongside the mock preview of the fix ("desired behaviour"). Once approved, I will proceed to Phase 2 (Prototyping) to build the shadow file patch and re-verify the MRE.
 
 4. State Dashboard
 Draft Slice: [docs/project/slices/00-batch-resize-error-handling.md]
@@ -390,7 +391,7 @@ PHASES:
 
 WIP & REMINDERS:
 - [!] No user-facing verification exists for the error reporting path.
-- [✓] Baseline MRE created and executed — "before" snapshot captured.
+- [✓] Baseline MRE created and executed — "Current System Behavior" snapshot captured.
 - [TODO] Obtain approval for the de-risking plan.
 - [DOC] Link relevant architecture documentation.
 ~~~~~~
@@ -398,7 +399,7 @@ WIP & REMINDERS:
 ## Message
 I have explored the batch resize feature and built a baseline MRE to empirically document the current system behavior.
 
-### Baseline MRE Output ("Before" Snapshot)
+### Current System Behavior
 
 ```
 $ python spikes/prototypes/00-batch-resize-error-handling/mre_demo.py
@@ -415,9 +416,8 @@ ASSERTION FAILED: Expected exit code 2 or message containing "failed"
 
 This proves the behavioral gap: the user receives no indication that 2 images failed.
 
-### Proposed Approach
-1. **Shadow File Patch** – Create `spikes/prototypes/00-batch-resize-error-handling/shadow_filesystem_adapter.py` replicating the production adapter, adding error tracking and summary output.
-2. **Re-Verify** – Edit the existing MRE to import the shadow adapter, re-run to produce the **"after" snapshot**. Expected output:
+### desired behaviour
+
 ```
 $ python spikes/prototypes/00-batch-resize-error-handling/mre_demo.py
 Resized 5 images, 2 failed.
@@ -426,17 +426,13 @@ Exit code: 2
 --- Assertion ---
 ASSERTION PASSED: error summary present, exit code 2
 ```
+
+### Proposed Approach
+1. **Shadow File Patch** – Create `spikes/prototypes/00-batch-resize-error-handling/shadow_filesystem_adapter.py` replicating the production adapter, adding error tracking and summary output.
+2. **Re-Verify** – Edit the existing MRE to import the shadow adapter, re-run to produce the **desired behaviour** snapshot shown above.
 3. **Finalize Demo** – Enhance the MRE with dual execution (default assertions + `--scenario` flag for edge cases) and a 5-second boot check. The MRE becomes the permanent scenario demo.
 
-### Before vs. After Comparison
-
-| Aspect | Before | After |
-|--------|--------|-------|
-| Output | "All images resized successfully!" | "Resized 5 images, 2 failed." |
-| Exit code | 0 | 2 |
-| User visibility | None (silent failure) | Clear error summary |
-
-### How to Verify
+### How to Verify (once implemented)
 
 ```shell
 python spikes/prototypes/00-batch-resize-error-handling/mre_demo.py --scenario mixed
