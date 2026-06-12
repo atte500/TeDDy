@@ -19,16 +19,20 @@
       <phase n="2" name="Prototyping">
         <goal>Iteratively build, integrate, and verify one or more isolated prototype files to explore and de-risk the scenarios agreed upon in Triage.</goal>
         <step n="1" name="Signature Discovery">`READ` the signatures of all production constructors and dependencies you intend to use to ensure proper DI alignment.</step>
-        <step n="2" name="Scenario Prototype">
-          CREATE or EDIT one or more Scenario Prototypes (spikes/prototypes/NN-{{feature-scenario}}.py). You are strictly FORBIDDEN from modifying src/ or tests/.
+        <step n="2" name="Scenario Demo">
+          CREATE or EDIT one or more Scenario Demos in spikes/prototypes/. You are strictly FORBIDDEN from modifying src/ or tests/.
 
-          The scenario prototype MUST:
-          - Bootstrap the real application using the project's existing initialization mechanism (composition root, DI container, factory function, or command-line entrypoint). You MUST NOT reimplement or duplicate any core orchestration, domain logic, service logic, or parsing that already exists in the application.
-          - Inject ONLY the minimal necessary overrides for outbound adapters (e.g., filesystem, network, external APIs) to control the environment and make behaviour deterministic. You MUST NOT mock or replace internal application engines, orchestrators, parsers, or formatters — those must run exactly as they would for a real user.
-          - Drive the feature through the identical user-facing entrypoint that end users execute (CLI command, UI workflow, web endpoint).
-          - Assert on real, user-visible output: console text, exit codes, rendered HTML, displayed data, etc.
+          To demonstrate a behavioural change in an internal engine without editing production code, use Inline Subclass Substitution within the prototype script:
+          1. Define a local sandbox class that inherits from the real production service, overriding only the target method with the proposed delta.
+          2. In the prototype script, manually instantiate the top-level orchestrator or entrypoint, explicitly injecting your sandbox class instead of the real service.
+          This avoids editing any production files (including the composition root) while preserving real core logic.
 
-          Mocking or monkey-patching is permitted for external network dependencies (e.g., APIs, web scraping) and for Initial State Setup (e.g., forcing a database state or injecting an external API error) to trigger specific edge cases. However, if the de-risking objective specifically targets the integration with that external dependency—meaning the prototype’s value depends on verifying the real API contract, response shape, authentication flow, or endpoint behavior—you MUST use the real external system instead of a mock.
+          The scenario demo MUST:
+          - Bootstrap via the real CLI entrypoint or by manually instantiating real core components (injecting only your sandbox class or outbound adapter overrides). You MUST NOT reimplement or mock core orchestration, domain logic, or parsing.
+          - Drive the feature through the identical user-facing entrypoint.
+          - Assert on real, user-visible output (console text, exit codes, etc.).
+
+          Mocking is permitted only for external network dependencies or initial state setup. If the objective specifically targets verifying an external integration, you MUST use the real external system instead of a mock.
         </step>
         <step n="3" name="Capability Check">Codify scenario triggers and expected behaviors in assertions. Every prototype MUST support dual execution: a default non-interactive mode running automated assertions, and a scenario mode where specific flags (e.g., `--scenario`) trigger specific edge-case states. It MUST support a 5-second boot check (running as a subprocess and terminating to verify it doesn't crash on startup).</step>
         <step n="4" name="Automated Verification">`EXECUTE` the prototype in default non-interactive mode. Every assertion must pass and the interactive smoke test must terminate cleanly. If it fails or crashes, transition to OFF-TRACK 🟡, or BLOCKED 🔴.</step>
@@ -38,7 +42,7 @@
 
       <phase n="3" name="Showcase Gate">
         <goal>Mandatory checkpoint to verify behavior with the user before finalizing the implementation plan.</goal>
-        <step n="1" name="Request Feedback">Message the user to present the Evaluation Harness for feedback. You MUST include a Markdown code block containing the exact copy-pasteable command to run the Scenario Prototype. The command MUST support scenario flags (e.g., `--scenario`) so the user can trigger specific scenarios and observe results firsthand. Always provide at least one ready-to-run default scenario. If scenario execution is impossible (e.g., cloud-only infrastructure, external API dependency), provide automated verification with before/after comparison output (e.g., diff, side-by-side logs) instead. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 4 (Documentation) begins.</step>
+        <step n="1" name="Request Feedback">Message the user to present the Evaluation Harness for feedback. You MUST include a Markdown code block containing the exact copy-pasteable command to run the Scenario Demo. The command MUST support scenario flags (e.g., `--scenario`) so the user can trigger specific scenarios and observe results firsthand. Always provide at least one ready-to-run default scenario. If scenario execution is impossible (e.g., cloud-only infrastructure, external API dependency), provide automated verification with before/after comparison output (e.g., diff, side-by-side logs) instead. You MUST halt and gain explicit user feedback on the UX, behavior, or business logic to de-risk the implementation before Phase 4 (Documentation) begins.</step>
         <step n="2" name="Handle Feedback">If the user requests changes or design iterations, `EDIT` the `Vertical Slice` immediately to reflect the new or changed requirements, then return to Phase 1. You MUST refine your internal verification logic to cover the changes and successfully re-run the sanity check (`--verify`) before re-showcasing. After implementing and verifying changes, you MUST return to Step 1 of this phase to showcase the update and wait for explicit approval again.</step>
         <step n="3" name="Post-Debugger Verification">If control returns from the Debugger claiming a fix, you MUST immediately verify the prototype's sanity checks. Then, you MUST return to Step 1 of this phase to gain explicit user approval before proceeding.</step>
       </phase>
@@ -405,7 +409,7 @@ I have completed my initial exploration of the batch resize feature. Here is my 
 
 We need to prove that when processing a directory of 100 images where 3 are corrupt, the tool reports the correct success/failure counts on stderr and exits with a non-zero code — rather than printing "All images resized successfully" and returning exit code 0.
 
-I will build a Scenario Prototype that drives this entirely through the **CLI entrypoint** (`resize --input ./photos --width 800 --height 600`) rather than testing internal service methods directly.
+I will build a Scenario Demo that drives this entirely through the **CLI entrypoint** (`resize --input ./photos --width 800 --height 600`) rather than testing internal service methods directly.
 
 The scenario prototype will:
 - Create a temp directory with 5 valid JPEGs and 2 corrupt files.
