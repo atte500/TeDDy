@@ -25,8 +25,8 @@
         <step n="1" name="Validate">Run relevant linters, formatters, or local tests via `EXECUTE` to verify no regressions were introduced.</step>
         <step n="2" name="Report">Message the user to summarize the changes and validation results.</step>
         <step n="3" name="Await Instruction">After reporting changes, you MUST halt execution and await further instructions:
-        If the user provides a new refinement, loop back to Phase 1.
-        IF AND ONLY IF the user explicitly approves task completion, proceed to Phase 4.
+        If the user provides a new refinement, loop back to Execution and repeat Reporting once done.
+        IF AND ONLY IF the user explicitly approves, proceed to Conclusion.
         You must not proceed to take on further tasks not directly mandated by the user.</step>
       </phase>
 
