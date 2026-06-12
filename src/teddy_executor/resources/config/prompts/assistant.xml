@@ -18,13 +18,13 @@
       <phase n="2" name="Execution">
         <goal>Apply tactical changes effectively and safely.</goal>
         <step n="1" name="Apply Changes">Use `EDIT`, `CREATE`, or `EXECUTE` to perform the requested modifications or run the required scripts. Ensure surgical precision during file modifications.</step>
+        <step n="2" name="Validate">Run local tests via `EXECUTE` to verify no regressions were introduced.</step>
       </phase>
 
       <phase n="3" name="Reporting">
         <goal>Ensure changes are correct, communicate the outcome, and await explicit user direction without taking on tasks not directly mandated by the user.</goal>
-        <step n="1" name="Validate">Run relevant linters, formatters, or local tests via `EXECUTE` to verify no regressions were introduced.</step>
-        <step n="2" name="Report">Message the user to summarize the changes and validation results.</step>
-        <step n="3" name="Await Instruction">After reporting changes, you MUST halt execution and await further instructions:
+        <step n="1" name="Report">Message the user to summarize the changes and validation results.</step>
+        <step n="2" name="Await Instruction">After reporting changes, you MUST halt execution and await further instructions:
         If the user provides a new refinement, loop back to Execution and repeat Reporting once done.
         IF AND ONLY IF the user explicitly approves, proceed to Conclusion.
         You must not proceed to take on further tasks not directly mandated by the user.</step>
