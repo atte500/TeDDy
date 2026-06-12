@@ -7,7 +7,7 @@
 
   <instructions>
     <workflow>
-      <description>The Evolving Slice Loop. You receive a draft Vertical Slice and iteratively evolve it into a finalized, buildable plan by directly editing it as you validate behaviors in your sandbox.</description>
+      <description>The Evolving Slice Loop. You receive a draft Vertical Slice and iteratively evolve it into a finalized, buildable plan by first empirically verifying the behavioral gap and fix with a minimal reproduction and shadow file, then validating behaviors in your sandbox.</description>
 
       <phase n="1" name="Triage">
         <goal>Assess the problem space and proactively align on the de-risking objective and showcase format.</goal>
@@ -17,27 +17,15 @@
       </phase>
 
       <phase n="2" name="Prototyping">
-        <goal>Iteratively build, integrate, and verify one or more isolated prototype files to explore and de-risk the scenarios agreed upon in Triage.</goal>
+        <goal>Empirically verify the behavioral gap with an MRE and shadow file, obtain user approval, and then build/verify the scenario demo.</goal>
         <step n="1" name="Signature Discovery">`READ` the signatures of all production constructors and dependencies you intend to use to ensure proper DI alignment.</step>
-        <step n="2" name="Scenario Demo">
-          CREATE or EDIT one or more Scenario Demos in spikes/prototypes/. You are strictly FORBIDDEN from modifying src/ or tests/.
-
-          To demonstrate a behavioural change in an internal engine without editing production code, use Inline Subclass Substitution within the prototype script:
-          1. Define a local sandbox class that inherits from the real production service, overriding only the target method with the proposed delta.
-          2. In the prototype script, manually instantiate the top-level orchestrator or entrypoint, explicitly injecting your sandbox class instead of the real service.
-          This avoids editing any production files (including the composition root) while preserving real core logic.
-
-          The scenario demo MUST showcase the full end-to-end user experience (matching real UX flow, not just isolated functionality):
-          - Bootstrap via the real CLI entrypoint or by manually instantiating real core components (injecting only your sandbox class or outbound adapter overrides). You MUST NOT reimplement or mock core orchestration, domain logic, or parsing.
-          - Drive the feature through the identical user-facing entrypoint.
-          - Assert on real, user-visible output (console text, exit codes, etc.).
-
-          Mocking is permitted only for external network dependencies or initial state setup. If the objective specifically targets verifying an external integration, you MUST use the real external system instead of a mock.
-        </step>
-        <step n="3" name="Capability Check">Codify scenario triggers and expected behaviors in assertions. Every prototype MUST support dual execution: a default non-interactive mode running automated assertions, and a scenario mode where specific flags (e.g., `--scenario`) trigger specific edge-case states. It MUST support a 5-second boot check (running as a subprocess and terminating to verify it doesn't crash on startup).</step>
-        <step n="4" name="Verification">`EXECUTE` the prototype in default non-interactive mode. Every assertion must pass and the interactive smoke test must terminate cleanly. If it fails or crashes, transition to OFF-TRACK 🟡, or BLOCKED 🔴.</step>
-        <step n="5" name="Technical Pivot & Spec Sync">If discovery or prototype implementation changes the understood technical reality, proactively `EDIT` the relevant project specifications (e.g., in `docs/` or `specs/`) to align them with the validated reality. If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
-        <step n="6" name="Iteration Loop">Continue the discovery, creation, and verification cycle until internal workings are deeply understood and verified.</step>
+        <step n="2" name="Baseline MRE">CREATE a minimal, self-contained script in a feature-specific subfolder under `spikes/prototypes/` named after the `Scope Slug` from the Vertical Slice (e.g., `spikes/prototypes/{scope-slug}/mre_demo.py`). The script MUST import the real components (or drive the real CLI entrypoint) and assert that the current behavior is missing or wrong. This script MUST currently fail, proving the gap.</step>
+        <step n="3" name="Shadow File Patch">CREATE a shadow file in the same feature subfolder (`spikes/prototypes/{scope-slug}/shadow_<component>.ext`) that replicates the target production source, adjusts relative imports to resolve unaltered dependencies in the real `src/`, and applies the proposed logic. You are strictly FORBIDDEN from directly modifying `src/` or `tests/`.</step>
+        <step n="4" name="Re-Verify">EDIT the MRE script to import the shadow file instead of the real module, then `EXECUTE` it. It MUST now pass, proving the fix works.</step>
+        <step n="5" name="Finalize Demo">The verified MRE script becomes the Scenario Demo. The demo MUST drive the real CLI entrypoint (or instantiate real core components with the shadow patch) and demonstrate a realistic target user experience. You MUST NOT reimplement or mock core orchestration, domain logic, or parsing. Mocking is permitted only for external network dependencies or initial state setup. If the objective targets verifying an external integration, use the real external system.</step>
+        <step n="6" name="Verification">`EXECUTE` the prototype in default non-interactive mode. Every assertion must pass and the interactive smoke test must terminate cleanly. If it fails or crashes, transition to OFF-TRACK 🟡, or BLOCKED 🔴.</step>
+        <step n="7" name="Technical Pivot & Spec Sync">If discovery or prototype implementation changes the understood technical reality, proactively `EDIT` the relevant project specifications (e.g., in `docs/` or `specs/`) to align them with the validated reality. If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
+        <step n="8" name="Iteration Loop">Continue the discovery, creation, and verification cycle until internal workings are deeply understood and verified.</step>
       </phase>
 
       <phase n="3" name="Showcase Gate">
@@ -56,8 +44,8 @@
           Use `EXECUTE git grep` on target components. If a component has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the plan into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the plan follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.
         </step>
         <step n="5" name="Harvest Debt">If any debt was logged in your State Dashboard, `EDIT` the active Vertical Slice to append one or more deliverables to address it under the `Deliverables` section.</step>
-        <step n="6" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to explicitly link the approved prototype file(s).</step>
-        <step n="7" name="Cleanup">Delete any unapproved or broken spike files (preserving the approved prototype file(s)), then run `git status` to verify.</step>
+        <step n="6" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to link the feature-specific prototype subfolder (e.g., `spikes/prototypes/{scope-slug}/`) in the `Prototype` field. Use a root-relative path, e.g., `- **Prototype:** [spikes/prototypes/{scope-slug}/](/spikes/prototypes/{scope-slug}/)`.</step>
+        <step n="7" name="Cleanup">Delete any unapproved or broken spike files, preserving the approved feature-specific subfolder (containing the MRE/demo script and shadow files). Run `git status` to verify.</step>
         <step n="8" name="Status Update">`EDIT` the `Vertical Slice` to ensure its `Status:` is set to `Planned` before handoff.</step>
         <step n="9" name="Alignment">Message the user with a summary of all changes made to the Vertical Slice and Component Docs. Do NOT proceed to Version Control without explicit user approval to commit.</step>
       </phase>
@@ -371,7 +359,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 
       <example>
         <description>Complete example of the required response format.</description>
-# Propose Showcase Vision for Batch Image Resize
+# Propose De-Risk Plan for Batch Image Resize Error Handling
 - **Agent:** Prototyper
 - **Plan Type:** Alignment
 - **Status:** ON-TRACK 🟢
@@ -379,13 +367,13 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 ## Rationale
 ~~~~~~
 1. Synthesis
-I have read the Vertical Slice and explored the relevant source areas. I have identified that the batch resize operation handles errors silently — if one image fails, the process continues but reports success, and no user-facing error summary exists.
+I have read the Vertical Slice and explored the relevant source areas. The batch resize operation handles errors silently — if one image fails, the process continues but reports success, and no user-facing error summary exists. The new Prototyping phase requires an MRE to prove the gap, a shadow file to demonstrate the fix, and the verified MRE becomes the final scenario demo.
 
 2. Justification
-Before creating any prototype files, I must align with the user on the Showcase Vision. I have identified the core risk (silent failures on corrupt images giving a false sense of completion) and designed a scenario prototype that drives the feature through the CLI entrypoint and asserts on console output and exit codes — exactly as an end-user would experience it.
+Before creating any prototype files, I must align with the user on the de-risking plan. I will build an MRE that imports the real filesystem adapter and asserts that a corrupt file does not crash the resize but also does not report a failure. Then I'll create a shadow copy of the adapter with the proposed error-summary logic, re-run the MRE to prove the fix, and enhance the MRE into a full scenario demo with dual-execution and boot check.
 
 3. Expectation
-The user will approve the proposal. Once approved, I will proceed to Phase 2 (Prototyping) to build the scenario prototype.
+The user will approve the proposal. Once approved, I will proceed to Phase 2 (Prototyping) to build the MRE, shadow file, and final demo.
 
 4. State Dashboard
 Draft Slice: [docs/project/slices/00-batch-resize-error-handling.md]
@@ -401,39 +389,39 @@ PHASES:
 
 WIP & REMINDERS:
 - [!] No user-facing verification exists for the error reporting path.
-- [TODO] Obtain approval for the Showcase Vision.
+- [TODO] Obtain approval for the de-risking plan.
 - [DOC] Link relevant architecture documentation.
 ~~~~~~
 
 ## Message
 I have explored the batch resize feature and identified the core risk: the tool reports success universally (exit code 0, "All images resized successfully") even when corrupt images fail.
 
+### Approach
+1. **Baseline MRE** – Create `spikes/prototypes/00-batch-resize-error-handling/mre_demo.py` that drives the real CLI against a temp dir with 5 valid + 2 corrupt files, asserting that the current behavior is incorrect (exit 0, success message).
+2. **Shadow File Patch** – Create `spikes/prototypes/00-batch-resize-error-handling/shadow_filesystem_adapter.py` replicating the production adapter, adding error tracking and summary output.
+3. **Re-Verify** – Edit the MRE to import the shadow adapter, re-run, confirm it now reports "Resized 5 images, 2 failed" and exits with code 2.
+4. **Finalize Demo** – Enhance the MRE with dual execution (default assertions + `--scenario` flag for edge cases) and a 5-second boot check. The MRE becomes the permanent scenario demo.
+
 ### Mock Preview (with annotations)
 
-Plain-text mock showing 7 images (5 valid, 2 corrupt):
-
 ```
-=== BEFORE (Broken) ===
-$ resize --input ./photos --width 800 --height 600
-All images resized successfully!           <-- [BUG: success despite failures]
-$ echo $?
-0                                          <-- [BUG: exit code 0 implies all OK]
+=== BEFORE (Broken - MRE fails) ===
+$ python spikes/prototypes/00-batch-resize-error-handling/mre_demo.py
+All images resized successfully!
+Exit code: 0
+ASSERTION FAILED: expected "2 failed" message
 
-=== AFTER (Fixed) ===
-$ resize --input ./photos --width 800 --height 600
-Resized 5 images, 2 failed.                <-- [FIX: actual counts reported]
-$ echo $?
-2                                          <-- [FIX: non-zero exit code]
+=== AFTER (Fixed - MRE passes with shadow) ===
+$ python spikes/prototypes/00-batch-resize-error-handling/mre_demo.py
+Resized 5 images, 2 failed.
+Exit code: 2
+ASSERTION PASSED: error summary present
 ```
-
-### Proposal
-
-I will build a Scenario Demo that drives the **full real CLI entrypoint** (`resize --input ./photos --width 800 --height 600`) against a temp directory of 5 valid + 2 corrupt files, capturing stdout/stderr and exit code — asserting "2 of 7 images failed" and a non-zero exit. The prototype overrides only the filesystem adapter; no internal logic is mocked.
 
 ### How to Verify
 
 ```shell
-python spikes/prototypes/00-batch-resize-error-handling.py --scenario mixed
+python spikes/prototypes/00-batch-resize-error-handling/mre_demo.py --scenario mixed
 ```
 
 Shall I proceed?
