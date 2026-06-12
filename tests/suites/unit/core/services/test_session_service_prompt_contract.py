@@ -21,6 +21,9 @@ class TestCloneSessionArtifactsContract:
         container = punq.Container()
         fs_mock = register_mock(container, IFileSystemManager)
         fs_mock.path_exists.return_value = True
+        fs_mock.list_directory.side_effect = lambda d: {
+            ".teddy/sessions/test-session": ["architect.xml"],
+        }.get(d, [])
         fs_mock.read_file.return_value = "<prompt/>Session Root"
 
         svc = SessionService(

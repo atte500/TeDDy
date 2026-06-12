@@ -48,6 +48,9 @@ def test_create_session_does_not_put_prompt_in_turn_directory(service, mock_deps
     # Arrange
     options = SessionOptions(name="test-session", agent_name="pathfinder")
     mock_deps["fsm"].path_exists.return_value = True
+    mock_deps["fsm"].list_directory.side_effect = lambda d: {
+        ".teddy/prompts": [f"{options.agent_name}.xml"],
+    }.get(d, [])
     mock_deps["fsm"].read_file.side_effect = lambda p: {
         ".teddy/init.context": "README.md",
         f".teddy/prompts/{options.agent_name}.xml": "<prompt>content</prompt>",
@@ -131,6 +134,10 @@ def test_migration_99_to_01_does_not_put_prompt_in_turn_directory(service, mock_
     mock_deps["repo"].read_context_file.return_value = set()
     mock_deps["repo"].to_root_relative.return_value = "99/plan.md"
     mock_deps["fsm"].path_exists.return_value = True
+    mock_deps["fsm"].list_directory.side_effect = lambda d: {
+        ".teddy/sessions/my-session": ["pathfinder.xml"],
+    }.get(d, [])
+    mock_deps["fsm"].read_file.side_effect = lambda p: "<prompt/>"  # noqa: ARG005
 
     # Act
     service.transition_to_next_turn(cur_plan_path)

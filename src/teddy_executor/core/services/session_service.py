@@ -63,8 +63,8 @@ class SessionService(ISessionManager):
         )
 
         # 2. Prompt population — read from .teddy/prompts/ (canonical source)
-        prompt_path = f".teddy/prompts/{options.agent_name}.xml"
-        if not self._file_system_manager.path_exists(prompt_path):
+        prompts_dir = ".teddy/prompts"
+        if not self._file_system_manager.path_exists(prompts_dir):
             available = self._prompt_manager.get_available_agents()
             if available:
                 msg = (
@@ -77,9 +77,29 @@ class SessionService(ISessionManager):
                     "Please run 'teddy init' to restore prompts."
                 )
             raise ValueError(msg)
+        # Find the prompt file with the agent name (any extension)
+        prompt_filename = None
+        for f in self._file_system_manager.list_directory(prompts_dir):
+            if Path(f).stem == options.agent_name:
+                prompt_filename = f
+                break
+        if prompt_filename is None:
+            available = self._prompt_manager.get_available_agents()
+            if available:
+                msg = (
+                    f"Agent prompt '{options.agent_name}' not found in .teddy/prompts/. "
+                    f"Available agents: {', '.join(available)}"
+                )
+            else:
+                msg = (
+                    f"Agent prompt '{options.agent_name}' not found in .teddy/prompts/. "
+                    "Please run 'teddy init' to restore prompts."
+                )
+            raise ValueError(msg)
+        prompt_path = f"{prompts_dir}/{prompt_filename}"
         prompt_content = self._file_system_manager.read_file(prompt_path)
         self._file_system_manager.write_file(
-            f"{session_root}/{options.agent_name}.xml", prompt_content
+            f"{session_root}/{prompt_filename}", prompt_content
         )
 
         # 3. Metadata persistence
@@ -494,9 +514,16 @@ class SessionService(ISessionManager):
 
         # 2. Agent Prompt (from Session to Session-N)
         agent_name = meta.get("agent_name", "pf")
-        old_prompt = src_session / f"{agent_name}.xml"
-        if self._file_system_manager.path_exists(old_prompt.as_posix()):
-            content = self._file_system_manager.read_file(old_prompt.as_posix())
-            self._file_system_manager.write_file(
-                (dest_session / f"{agent_name}.xml").as_posix(), content
-            )
+        # Find the prompt file in the source session (any extension)
+        src_prompt_path = None
+        src_session_str = src_session.as_posix()
+        if self._file_system_manager.path_exists(src_session_str):
+            for f in self._file_system_manager.list_directory(src_session_str):
+                if Path(f).stem == agent_name:
+                    src_prompt_path = (src_session / f).as_posix()
+                    break
+        if src_prompt_path and self._file_system_manager.path_exists(src_prompt_path):
+            content = self._file_system_manager.read_file(src_prompt_path)
+            # Preserve the original filename (including extension)
+            dest_prompt_path = (dest_session / Path(src_prompt_path).name).as_posix()
+            self._file_system_manager.write_file(dest_prompt_path, content)

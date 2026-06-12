@@ -32,6 +32,9 @@ def test_create_session_orchestrates_filesystem_correctly(env):
         f".teddy/prompts/{agent_name}.xml": agent_prompt,
     }.get(p, "")
     mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": [f"{agent_name}.xml"],
+    }.get(d, [])
     mock_time.now.return_value = datetime(2026, 4, 17, 12, 0, 0)
     # Mock UTC time for metadata
     mock_time.now_utc.return_value = datetime(2026, 4, 17, 12, 0, 0)
@@ -97,6 +100,9 @@ def test_create_session_persists_initial_request(env):
         f".teddy/prompts/{agent_name}.xml": "<prompt/>",
     }.get(p, "")
     mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": [f"{agent_name}.xml"],
+    }.get(d, [])
     mock_prompts.get_prompt_content.side_effect = AssertionError(
         "create_session should not call get_prompt_content anymore"
     )
@@ -135,6 +141,9 @@ def test_create_session_seeds_initial_request_into_session_context(env):
         f".teddy/prompts/{agent_name}.xml": "<prompt/>",
     }.get(p, "")
     mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": [f"{agent_name}.xml"],
+    }.get(d, [])
     mock_prompts.get_prompt_content.side_effect = AssertionError(
         "create_session should not call get_prompt_content anymore"
     )
@@ -325,6 +334,9 @@ def test_create_session_deduplicates_context_paths(env):
         f".teddy/prompts/{agent_name}.xml": "<prompt/>",
     }.get(p, "")
     mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": [f"{agent_name}.xml"],
+    }.get(d, [])
     mock_time.now.return_value = datetime(2026, 6, 8, 15, 0, 0)
     mock_time.now_utc.return_value = datetime(2026, 6, 8, 15, 0, 0)
     mock_prompts.get_prompt_content.side_effect = AssertionError(
@@ -510,6 +522,9 @@ def test_create_session_reads_prompt_from_teddy_prompts(env):
 
     mock_fs.read_file.side_effect = mock_read
     mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": [f"{agent_name}.xml"],
+    }.get(d, [])
     mock_time.now.return_value = datetime(2026, 6, 10, 16, 0, 0)
     mock_time.now_utc.return_value = datetime(2026, 6, 10, 16, 0, 0)
 
@@ -653,11 +668,16 @@ def test_create_session_does_not_raise_when_prompt_exists(env):
     def mock_exists(path: str) -> bool:
         if path == ".teddy/init.context":
             return True
+        if path == ".teddy/prompts":
+            return True
         if path.endswith(f"prompts/{agent_name}.xml"):
             return True
         return False
 
     mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": [f"{agent_name}.xml"],
+    }.get(d, [])
     mock_fs.read_file.side_effect = lambda p: {
         ".teddy/init.context": "README.md",
         f".teddy/prompts/{agent_name}.xml": "<prompt/>",

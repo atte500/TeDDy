@@ -32,7 +32,7 @@ class PromptManager(IPromptManager):
         if not self._file_system_manager.path_exists(prompts_dir):
             return []
         files = self._file_system_manager.list_directory(prompts_dir)
-        return sorted(f.removesuffix(".xml") for f in files if f.endswith(".xml"))
+        return sorted((Path(f).stem for f in files), key=str.casefold)
 
     def resolve_agent_metadata(
         self, turn_path: Path
@@ -68,25 +68,29 @@ class PromptManager(IPromptManager):
 
         return resolved
 
+    def _find_prompt_file(self, directory: str, agent_name: str) -> Optional[str]:
+        """Searches a directory for a file with the given agent name (any extension)."""
+        if not self._file_system_manager.path_exists(directory):
+            return None
+        for f in self._file_system_manager.list_directory(directory):
+            if Path(f).stem == agent_name:
+                return f"{directory}/{f}"
+        return None
+
     def fetch_system_prompt(self, agent_name: str, turn_path: Path) -> str:
         # 1. Try Session-Root override (Current standard)
-        session_root_prompt = (turn_path.parent / f"{agent_name}.xml").as_posix()
-        if self._file_system_manager.path_exists(session_root_prompt):
+        session_root_prompt = self._find_prompt_file(
+            turn_path.parent.as_posix(), agent_name
+        )
+        if session_root_prompt:
             return self._file_system_manager.read_file(session_root_prompt)
 
         # 2. Try .teddy/prompts/ (canonical source, user-editable)
-        # Navigate: turn_path = .teddy/sessions/<name>/<turn>
-        # .parent x1 = .teddy/sessions/<name>
-        # .parent x2 = .teddy/sessions
-        # .parent x3 = .teddy
-        # .parent x4 = project root
-        teddy_prompt_path = (
-            turn_path.parent.parent.parent.parent
-            / ".teddy"
-            / "prompts"
-            / f"{agent_name}.xml"
+        teddy_prompt_dir = (
+            turn_path.parent.parent.parent.parent / ".teddy" / "prompts"
         ).as_posix()
-        if self._file_system_manager.path_exists(teddy_prompt_path):
+        teddy_prompt_path = self._find_prompt_file(teddy_prompt_dir, agent_name)
+        if teddy_prompt_path:
             return self._file_system_manager.read_file(teddy_prompt_path)
 
         import logging

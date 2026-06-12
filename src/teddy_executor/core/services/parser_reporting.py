@@ -45,9 +45,8 @@ def _format_expected_structure() -> str:
         "[001] List (Metadata)",
         "[002] Heading (Level 2: Rationale)",
         "[003] Code Block (Rationale Content)",
-        "[004] Heading (Level 2: Action Plan)",
-        "[005...] Heading (Level 3: Action Type)",
-        "[006...] (Action-specific AST nodes)",
+        "[004] Heading (Level 2: Action Plan) —or— Heading (Level 2: Message)",
+        "[005...] (If Action Plan) Heading (Level 3: Action Type) and (Action-specific AST nodes)",
     ]
     content = "\n".join(lines) + "\n"
     fence = get_fence_for_content(content)

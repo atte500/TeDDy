@@ -133,10 +133,15 @@ class SessionRepository(ISessionRepository):
 
     def copy_prompt(self, src_dir: str, dest_dir: str, agent: str) -> None:
         """Copies an agent prompt file between turn directories."""
-        prompt_path = f"{src_dir}/{agent}.xml"
-        if self._file_system_manager.path_exists(prompt_path):
-            content = self._file_system_manager.read_file(prompt_path)
-            self._file_system_manager.write_file(f"{dest_dir}/{agent}.xml", content)
+        if not self._file_system_manager.path_exists(src_dir):
+            return
+        for f in self._file_system_manager.list_directory(src_dir):
+            if Path(f).stem == agent:
+                src_path = f"{src_dir}/{f}"
+                if self._file_system_manager.path_exists(src_path):
+                    content = self._file_system_manager.read_file(src_path)
+                    self._file_system_manager.write_file(f"{dest_dir}/{f}", content)
+                    return
 
     def get_latest_turn(self, session_name: str) -> str:
         """Identifies and returns the path to the latest turn in a session."""
