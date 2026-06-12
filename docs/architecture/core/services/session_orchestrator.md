@@ -48,9 +48,6 @@ The `SessionOrchestrator` is a decorator-style service that wraps the stateless 
 ### `execute(...) -> ExecutionReport`
 -   **Description:** Implements the `IRunPlanUseCase`. If `plan_path` is present, it layers stateful session side-effects over the core execution.
 -   **Cache Integration:** When in session mode (`plan_path` present), derives `cache_dir = str(Path(plan_path).parent.parent)` and passes it to `ContextService.get_context(cache_dir=cache_dir)` to enable web content caching.
--   **Console Visibility Enhancements (added in ad-hoc slice):**
-    - **Plan Status Console Line:** After validation passes and before action execution, prints `{emoji} {plan.title}` to stderr. This provides immediate semantic context in the terminal scrollback.
-    - **User Message Console Line:** After action execution completes and before turn transition, if a user-provided message exists (via `-m` CLI flag or `m` key in TUI), prints `User Message:\n{content}` to stderr. The message is stored in `plan.metadata["user_request"]` before the original execute call to ensure availability.
 
 ### `resume(session_name: str, interactive: bool = True)`
 -   **Description:** Implements the session state machine. Detects the state of the latest turn (EMPTY, PENDING_PLAN, COMPLETE_TURN) and triggers the appropriate action.
@@ -60,8 +57,3 @@ The `SessionOrchestrator` is a decorator-style service that wraps the stateless 
     3.  **PENDING_PLAN**: Call `execute(plan_path=...)`.
     4.  **COMPLETE_TURN**: Transition to next turn -> Prompt for instructions -> Generate Plan -> Resolve actual path via `SessionService` -> Call `execute`.
 -   **Recursion Safety:** To prevent recursion loops and handle dynamic renaming, the state machine resolves the current turn's path from the `SessionService` after planning/renaming and delegates directly to `execute`.
-
-### Internal Helpers (added in ad-hoc slice)
-- `_get_status_emoji(status: Optional[str]) -> str`: Maps plan status strings to emoji characters (🟢🟡🔴).
-- `_echo_visibility(plan: Plan) -> None`: Prints the emoji+title line to stderr.
-- `_echo_user_message(report: ExecutionReport, plan: Plan) -> None`: Prints the user message line to stderr if present.
