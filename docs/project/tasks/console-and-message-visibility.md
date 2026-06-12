@@ -8,29 +8,20 @@ Currently, session mode execution provides limited console feedback. Two feature
 1. **Console Visibility:** After the metadata block and before action logs, log the plan status emoji and title (e.g., `🟢 Implement safety limits`) to provide semantic context in terminal scrollback.
 2. **Message Visibility:** When a user provides an additional message during review (via TUI 'm' key or message replies), log it to the console after all actions have executed in the format `User Message: [content]`.
 
-Both features require changes to the `ExecutionOrchestrator.execute` flow (the `SessionOrchestrator` delegates to `ExecutionOrchestrator` for the actual action execution).
+Both features require changes to the `SessionOrchestrator.execute` flow.
 
 ## Implementation Steps
 
-### Step 1: Add emoji extraction helper
-- **File:** [src/teddy_executor/core/services/execution_orchestrator.py](/src/teddy_executor/core/services/execution_orchestrator.py)
-- **Change:** Add a private helper `_extract_status_emoji()` that extracts the status emoji (🟢, 🟡, 🔴) from `plan.metadata.get("Status", "")` using regex. This helper avoids importing from the textual reviewer adapter into the core service.
+### Step 1: Inject Console Visibility header
+- **File:** [src/teddy_executor/core/services/session_orchestrator.py](/src/teddy_executor/core/services/session_orchestrator.py)
+- **Change:** After the plan is resolved, validated, and the metadata block is printed, inject a single line: `{emoji} {title}` (e.g., `🟢 Implement safety limits`). The emoji comes from the plan status (Green=🟢, Yellow=🟡, Red=🔴). The title comes from the plan's H1 heading. This line must appear before any action execution logs but after the metadata block.
 
-### Step 2: Inject Console Visibility line
-- **File:** [src/teddy_executor/core/services/execution_orchestrator.py](/src/teddy_executor/core/services/execution_orchestrator.py)
-- **Change:** After `_perform_interactive_review()` returns and before `_process_plan_actions()` is called, inject: `typer.secho(f"{emoji} {plan.title}", fg=typer.colors.CYAN, err=True)`
+### Step 2: Log user messages after execution
+- **File:** [src/teddy_executor/core/services/session_orchestrator.py](/src/teddy_executor/core/services/session_orchestrator.py)
+- **Change:** During the execution phase, detect if an additional user message was provided (from TUI 'm' key or message reply during review). After all actions have executed, log: `User Message: [content]`. This ensures the message is visible in the terminal scrollback for audit purposes.
 
-### Step 3: Inject Message Visibility line
-- **File:** [src/teddy_executor/core/services/execution_orchestrator.py](/src/teddy_executor/core/services/execution_orchestrator.py)
-- **Change:** After `_process_plan_actions()` returns and before `_report_assembler.assemble()` is called, inject:
-  ```python
-  resolved_message = message or plan.metadata.get("user_request")
-  if resolved_message:
-      typer.secho(f"User Message: {resolved_message}", fg=typer.colors.YELLOW, err=True)
-  ```
-
-### Step 4: Update tests
-- **File:** [tests/suites/unit/core/services/test_execution_orchestrator.py](/tests/suites/unit/core/services/test_execution_orchestrator.py)
+### Step 3: Update tests
+- **File:** [tests/suites/unit/core/services/test_session_orchestrator.py](/tests/suites/unit/core/services/test_session_orchestrator.py)
 - **Change:** Add unit tests verifying:
   - Console Visibility line is printed with correct emoji mapping and title
   - Console Visibility line appears after metadata but before action logs
