@@ -10,6 +10,26 @@ The `ExecutionOrchestrator` is the stateless core service responsible for the at
 -   **State Management:** It manages the state of the execution run, collecting `ActionLog` objects and building the final `ExecutionReport`.
 -   **Port-driven Interaction:** All side effects (user interaction, file I/O) are delegated through outbound ports, keeping the orchestrator's logic pure and testable.
 
+## Primary Responsibilities
+
+### Console Visibility
+After the interactive plan review (via `_perform_interactive_review`) and before any action execution logs are printed, the orchestrator prints a single line containing the plan status emoji and plan title to stderr. This provides the user with immediate semantic context in the terminal scrollback.
+
+**Injection Point:** Inside `execute()`, after `reviewed_plan = self._perform_interactive_review(...)` returns, before `action_logs = self._process_plan_actions(...)` is called.
+
+**Format:** `typer.secho(f"{emoji} {plan.title}", fg=typer.colors.CYAN, err=True)`
+
+**Emoji Extraction:** The status emoji (🟢, 🟡, 🔴) is extracted from `plan.metadata.get("Status", "")` using the regex pattern `[🟢🟡🔴]`. If no emoji is found, a fallback "❓" is used. This logic is encapsulated in a private helper `_extract_status_emoji()` within the module.
+
+### Message Visibility
+After all actions have been processed (via `_process_plan_actions`) and before the `ExecutionReport` is assembled, the orchestrator prints a user message line if one was provided. The message is resolved from the `message` parameter first, falling back to `plan.metadata.get("user_request")` (which is populated when the user presses 'm' in the TUI to provide an additional message).
+
+**Injection Point:** Inside `execute()`, after `action_logs = self._process_plan_actions(...)` returns, before `return self._report_assembler.assemble(...)` is called.
+
+**Format:** `typer.secho(f"User Message: {resolved_message}", fg=typer.colors.YELLOW, err=True)`
+
+If no message is provided (both `message` and `plan.metadata.user_request` are empty/None), no "User Message:" line is printed.
+
 ## 2. Dependencies
 
 -   **Inbound Ports & Services:**
