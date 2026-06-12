@@ -10,9 +10,10 @@ Users need visibility into new TeDDy releases and a frictionless upgrade path. C
 ### The Solution
 Provide a comprehensive update system with:
 1. A dedicated `teddy update` command for manual version checking and upgrading.
-2. A lightweight, non-blocking background check that runs at the start of `teddy start`, `teddy resume`, and `teddy execute`.
-3. An `auto_update` configuration setting (default: `true`) that automatically installs upgrades when a newer version is detected.
-4. A daily cache to avoid redundant PyPI requests.
+2. A `--version` flag that displays the current installed version of TeDDy.
+3. A lightweight, non-blocking background check that runs at the start of `teddy start`, `teddy resume`, and `teddy execute`.
+4. An `auto_update` configuration setting (default: `true`) that automatically installs upgrades when a newer version is detected.
+5. A daily cache to avoid redundant PyPI requests.
 
 ---
 
@@ -105,7 +106,14 @@ Provide a comprehensive update system with:
   ```
 - This logic should be extracted into a shared helper function (e.g., `_prewarm_imports()`) in `cli_helpers.py` to avoid duplication with `teddy init`.
 
-### 3.6. Pre-warming Shared Logic
+### 3.6. `--version` Flag
+
+- **Command:** `teddy --version` (also available as `teddy version` for consistency with other subcommands).
+- **Behavior:** Prints the current installed version of TeDDy (read from `importlib.metadata.version("teddy-executor")`) and exits.
+- **Output format:** `TeDDy vX.Y.Z`
+- **Integration:** The update checker uses the same metadata source (`importlib.metadata`) to determine the current version for comparison with the latest PyPI release. Both `--version` and the update command share the version retrieval helper.
+
+### 3.7. Pre-warming Shared Logic
 
 - Both `teddy init` and `teddy update` (after upgrade) execute the same import pre-warming block. Extract to a helper in `cli_helpers.py`.
 
