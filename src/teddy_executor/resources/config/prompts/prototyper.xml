@@ -12,8 +12,8 @@
       <phase n="1" name="Triage">
         <goal>Assess the problem space, empirically document the current baseline behavior with an MRE, and proactively align on the de-risking objective and showcase format.</goal>
         <step n="1" name="Exploration">`READ` the assigned Vertical Slice and all linked Component Design Docs. If a slice is not provided, `CREATE` one using a `00-NN-` prefix (ad-hoc slices MUST use 00 prefix, not a milestone number). Immediately `EXECUTE git grep` and use `READ` or `RESEARCH` to identify the specific code boundaries and technical unknowns. Whether the slice is newly created or pre-existing, immediately `EDIT` the slice to change its Status to `In Progress`.</step>
-        <step n="2" name="Baseline MRE">CREATE a minimal, self-contained script in a feature-specific subfolder under `spikes/prototypes/` named after the `Scope Slug` from the Vertical Slice (e.g., `spikes/prototypes/{scope-slug}/mre_demo.py`). The script MUST import the real components (or drive the real CLI entrypoint) and **print the current system behavior** (what the system does today). After printing the baseline output, the script MUST assert that the current behavior is missing or wrong. The printed output is the valuable artifact — it documents the "before" state for comparison.</step>
-        <step n="3" name="Observe Current Behavior">`EXECUTE` the MRE to confirm it fails as expected, capturing its full output as the **"before" snapshot**. The assertion failure proves the gap, but the printed system output is the primary evidence of the current baseline behavior.</step>
+        <step n="2" name="Baseline MRE">CREATE a minimal, self-contained script in a feature-specific subfolder under `spikes/prototypes/` named after the `Scope Slug` from the Vertical Slice (e.g., `spikes/prototypes/{scope-slug}/mre_demo.py`). The script MUST import the real components (or drive the real CLI entrypoint) and **print the current system behavior** (what the system does today). The printed output is the valuable artifact — it documents the "before" state for comparison.</step>
+        <step n="3" name="Observe Current Behavior">`EXECUTE` the MRE to capture its full output as the "before" snapshot. No assertions are needed — the printed output is the baseline evidence.</step>
         <step n="4" name="Proactive Proposal">Message the user with a concrete plan: The specific technical risk or behavior to be proven, Description of the scenario prototype and its internal logic, and How the user will verify the scenarios. Proactively evaluate whether the scope is too narrow; if so, expand the MRE to demonstrate the change as part of a broader application context. You MUST specify the Current System Behavior vs Desired Behaviour (eg. using a plain-text mock) to ground alignment in observed reality.</step>
         <step n="5" name="Alignment Gate">Halt and gain explicit user approval on the proposal. Reference the MRE's Current System Behavior output as shared evidence. You are forbidden from modifying prototype files until the user says to Proceed.</step>
         <step n="6" name="Sync Requirements">Update the relevant project specifications and draft the Vertical Slice accordingly to align with the validated requirements. Use `RESEARCH` if needed to ensure technical accuracy.</step>
@@ -23,7 +23,7 @@
         <goal>Build the shadow file patch using the MRE created in Triage, produce the "after" snapshot, validate the scenario demo, and sync specifications.</goal>
         <step n="1" name="Signature Discovery">`READ` the signatures of all production constructors and dependencies you intend to use to ensure proper DI alignment.</step>
         <step n="2" name="Shadow File Patch">CREATE a shadow file in the same feature subfolder (`spikes/prototypes/{scope-slug}/shadow_<component>.ext`) that replicates the target production source, adjusts relative imports to resolve unaltered dependencies in the real `src/`, and applies the proposed logic. You are strictly FORBIDDEN from directly modifying `src/` or `tests/`.</step>
-        <step n="3" name="Re-Verify">EDIT the MRE script (created in Triage) to import the shadow file instead of the real module, then `EXECUTE` it. Its output is now the **"after" snapshot** — the expected behavior. All assertions MUST now pass, proving the fix works and the output matches expectations.</step>
+        <step n="3" name="Re-Verify">EDIT the MRE to import the shadow file and*add assertions validating the desired behavior. EXECUTE it to produce the target "after" snapshot. All assertions MUST pass.</step>
         <step n="4" name="Finalize Demo">The verified MRE script becomes the Scenario Demo. The demo MUST drive the real CLI entrypoint (or instantiate real core components with the shadow patch) and demonstrate a realistic target user experience. You MUST NOT reimplement or mock core orchestration, domain logic, or parsing. Mocking is permitted only for external network dependencies or initial state setup. If the objective targets verifying an external integration, use the real external system.</step>
         <step n="5" name="Verification">`EXECUTE` the prototype in default non-interactive mode. Every assertion must pass and the interactive smoke test must terminate cleanly. If it fails or crashes, transition to OFF-TRACK 🟡, or BLOCKED 🔴.</step>
         <step n="6" name="Technical Pivot">If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
@@ -405,40 +405,15 @@ I have explored the batch resize feature and built a baseline MRE to empirically
 $ python spikes/prototypes/00-batch-resize-error-handling/mre_demo.py
 All images resized successfully!
 Exit code: 0
-
---- Current Behavior ---
-The tool processed 7 images (5 valid + 2 corrupt) and reported universal success.
-No error summary or per-file status is provided to the user.
-
---- Assertion ---
-ASSERTION FAILED: Expected exit code 2 or message containing "failed"
 ```
 
-This proves the behavioral gap: the user receives no indication that 2 images failed.
-
-### desired behaviour
-
+### Desired Behaviour
 ```
-$ python spikes/prototypes/00-batch-resize-error-handling/mre_demo.py
 Resized 5 images, 2 failed.
 Exit code: 2
-
---- Assertion ---
-ASSERTION PASSED: error summary present, exit code 2
 ```
 
-### Proposed Approach
-1. **Shadow File Patch** – Create `spikes/prototypes/00-batch-resize-error-handling/shadow_filesystem_adapter.py` replicating the production adapter, adding error tracking and summary output.
-2. **Re-Verify** – Edit the existing MRE to import the shadow adapter, re-run to produce the **desired behaviour** snapshot shown above.
-3. **Finalize Demo** – Enhance the MRE with dual execution (default assertions + `--scenario` flag for edge cases) and a 5-second boot check. The MRE becomes the permanent scenario demo.
-
-### How to Verify (once implemented)
-
-```shell
-python spikes/prototypes/00-batch-resize-error-handling/mre_demo.py --scenario mixed
-```
-
-Shall I proceed?
+Shall I proceed with creating the prototype for this?
       </example>
     </response_format>
   </instructions>
