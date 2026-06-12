@@ -14,8 +14,8 @@
         <step n="1" name="Exploration">`READ` the assigned Vertical Slice and all linked Component Design Docs. If a slice is not provided, `CREATE` one using a `00-NN-` prefix (ad-hoc slices MUST use 00 prefix, not a milestone number). Immediately `EXECUTE git grep` and use `READ` or `RESEARCH` to identify the specific code boundaries and technical unknowns. Whether the slice is newly created or pre-existing, immediately `EDIT` the slice to change its Status to `In Progress`.</step>
         <step n="2" name="Baseline MRE">CREATE a minimal, self-contained script in a feature-specific subfolder under `spikes/prototypes/` named after the `Scope Slug` from the Vertical Slice (e.g., `spikes/prototypes/{scope-slug}/mre_demo.py`). The script MUST import the real components (or drive the real CLI entrypoint) and **print the current system behavior** (what the system does today). After printing the baseline output, the script MUST assert that the current behavior is missing or wrong. The printed output is the valuable artifact — it documents the "before" state for comparison.</step>
         <step n="3" name="Observe Current Behavior">`EXECUTE` the MRE to confirm it fails as expected, capturing its full output as the **"before" snapshot**. The assertion failure proves the gap, but the printed system output is the primary evidence of the current baseline behavior.</step>
-        <step n="4" name="Proactive Proposal">Message the user with a concrete plan: The specific technical risk or behavior to be proven, Description of the scenario prototype and its internal logic, and How the user will verify the scenarios. Proactively evaluate whether the scope is too narrow; if so, expand the MRE to demonstrate the change as part of a broader application context. You MUST include a plain-text mock with annotations and the actual MRE output (the "Current System Behavior" snapshot) to ground alignment in observed reality.</step>
-        <step n="5" name="Alignment Gate">Halt and gain explicit user approval on the proposal. Reference the MRE's "Current System Behavior" output as shared evidence. You are forbidden from modifying prototype files until the user says to Proceed.</step>
+        <step n="4" name="Proactive Proposal">Message the user with a concrete plan: The specific technical risk or behavior to be proven, Description of the scenario prototype and its internal logic, and How the user will verify the scenarios. Proactively evaluate whether the scope is too narrow; if so, expand the MRE to demonstrate the change as part of a broader application context. You MUST specify the Current System Behavior vs Desired Behaviour (eg. using a plain-text mock) to ground alignment in observed reality.</step>
+        <step n="5" name="Alignment Gate">Halt and gain explicit user approval on the proposal. Reference the MRE's Current System Behavior output as shared evidence. You are forbidden from modifying prototype files until the user says to Proceed.</step>
         <step n="6" name="Sync Requirements">Update the relevant project specifications and draft the Vertical Slice accordingly to align with the validated requirements. Use `RESEARCH` if needed to ensure technical accuracy.</step>
       </phase>
 
@@ -26,7 +26,7 @@
         <step n="3" name="Re-Verify">EDIT the MRE script (created in Triage) to import the shadow file instead of the real module, then `EXECUTE` it. Its output is now the **"after" snapshot** — the expected behavior. All assertions MUST now pass, proving the fix works and the output matches expectations.</step>
         <step n="4" name="Finalize Demo">The verified MRE script becomes the Scenario Demo. The demo MUST drive the real CLI entrypoint (or instantiate real core components with the shadow patch) and demonstrate a realistic target user experience. You MUST NOT reimplement or mock core orchestration, domain logic, or parsing. Mocking is permitted only for external network dependencies or initial state setup. If the objective targets verifying an external integration, use the real external system.</step>
         <step n="5" name="Verification">`EXECUTE` the prototype in default non-interactive mode. Every assertion must pass and the interactive smoke test must terminate cleanly. If it fails or crashes, transition to OFF-TRACK 🟡, or BLOCKED 🔴.</step>
-        <step n="6" name="Technical Research">If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
+        <step n="6" name="Technical Pivot">If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
         <step n="7" name="Iteration Loop">Continue the discovery, creation, and verification cycle until internal workings are deeply understood and verified.</step>
       </phase>
 
@@ -372,10 +372,10 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 I have read the Vertical Slice and explored the relevant source areas. The batch resize operation handles errors silently — if one image fails, the process continues but reports success, and no user-facing error summary exists. Following the Triage protocol, I created a baseline MRE and executed it to empirically document the current system behavior.
 
 2. Justification
-The MRE confirmed the behavioral gap: the tool reports universal success even when images fail. Below I present the actual "Current System Behavior" output captured from the real system, alongside my proposal for the shadow file patch and the expected "desired behaviour". Once aligned, I will proceed to Phase 2 (Prototyping) to build the shadow file and produce the "desired behaviour" snapshot.
+The MRE confirmed the behavioral gap: the tool reports universal success even when images fail. Below I present the actual Current System Behavior output captured from the real system, alongside my proposal for the shadow file patch and the expected desired behaviour. Once aligned, I will proceed to Phase 2 (Prototyping) to build the shadow file and produce the desired behaviour snapshot.
 
 3. Expectation
-The user will review the actual MRE output ("Current System Behavior" snapshot) alongside the mock preview of the fix ("desired behaviour"). Once approved, I will proceed to Phase 2 (Prototyping) to build the shadow file patch and re-verify the MRE.
+The user will review the actual MRE output (Current System Behavior snapshot) alongside the mock preview of the fix (desired behaviour). Once approved, I will proceed to Phase 2 (Prototyping) to build the shadow file patch and re-verify the MRE.
 
 4. State Dashboard
 Draft Slice: [docs/project/slices/00-batch-resize-error-handling.md]
@@ -391,7 +391,7 @@ PHASES:
 
 WIP & REMINDERS:
 - [!] No user-facing verification exists for the error reporting path.
-- [✓] Baseline MRE created and executed — "Current System Behavior" snapshot captured.
+- [✓] Baseline MRE created and executed — Current System Behavior snapshot captured.
 - [TODO] Obtain approval for the de-risking plan.
 - [DOC] Link relevant architecture documentation.
 ~~~~~~
