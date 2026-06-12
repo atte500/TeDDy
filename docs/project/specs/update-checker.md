@@ -14,6 +14,7 @@ Provide a comprehensive update system with:
 3. A lightweight, non-blocking background check that runs at the start of `teddy start`, `teddy resume`, and `teddy execute`.
 4. An `auto_update` configuration setting (default: `true`) that automatically installs upgrades when a newer version is detected.
 5. A daily cache to avoid redundant PyPI requests.
+6. An `--experimental` flag on `teddy update` that checks and upgrades from TestPyPI for pre-release versions.
 
 ---
 
@@ -36,7 +37,7 @@ Provide a comprehensive update system with:
 - **Type:** boolean
 - **Default:** `true`
 - **Behavior:**
-  - `true`: When `teddy update` runs, automatically run `pip install --upgrade teddy-executor` (using the same Python interpreter) and echo a clean success message.
+  - `true`: When `teddy update` runs, automatically run `pip install --upgrade teddy-cli` (using the same Python interpreter) and echo a clean success message.
   - `false`: When a newer version is found, echo a clean notification: *"A new version X.Y.Z is available. Run 'teddy update' to upgrade."* Do NOT auto-install.
 
 ### 3.2. `teddy update` Command
@@ -50,7 +51,7 @@ Provide a comprehensive update system with:
   2. Compare against the current installed version (read from `importlib.metadata`).
   3. If no newer version: echo *"You are already running the latest version (X.Y.Z)."*
   4. If newer version available:
-      - If `auto_update: true` or `--yes` provided: Run `pip install --upgrade teddy-executor` via `sys.executable -m pip install --upgrade ...`. Echo *"Updated to vX.Y.Z."* Then pre-warm heavy imports.
+      - If `auto_update: true` or `--yes` provided: Run `pip install --upgrade teddy-cli` via `sys.executable -m pip install --upgrade ...`. Echo *"Updated to vX.Y.Z."* Then pre-warm heavy imports.
       - If `auto_update: false` and no `--yes`: Echo *"A new version X.Y.Z is available. Run 'teddy update --yes' to upgrade."*
   5. Pre-warm heavy imports **only after a successful upgrade**.
   6. **Prompt update notification:** After the version check (regardless of upgrade outcome), if `.teddy/prompts/` exists, print a styled notification directing the user to apply prompt updates. The notification MUST use colored output (e.g., `rich` or `typer.style()`) to draw attention. Example rendering:
@@ -109,7 +110,7 @@ Provide a comprehensive update system with:
 ### 3.6. `--version` Flag
 
 - **Command:** `teddy --version` (also available as `teddy version` for consistency with other subcommands).
-- **Behavior:** Prints the current installed version of TeDDy (read from `importlib.metadata.version("teddy-executor")`) and exits.
+- **Behavior:** Prints the current installed version of TeDDy (read from `importlib.metadata.version("teddy-cli")`) and exits.
 - **Output format:** `TeDDy vX.Y.Z`
 - **Integration:** The update checker uses the same metadata source (`importlib.metadata`) to determine the current version for comparison with the latest PyPI release. Both `--version` and the update command share the version retrieval helper.
 
@@ -117,13 +118,24 @@ Provide a comprehensive update system with:
 
 - Both `teddy init` and `teddy update` (after upgrade) execute the same import pre-warming block. Extract to a helper in `cli_helpers.py`.
 
+### 3.8. `--experimental` Flag
+
+- **Command:** `teddy update --experimental`
+- **Behavior:** Instead of checking PyPI (`https://pypi.org/pypi/teddy-cli/json`), check TestPyPI (`https://test.pypi.org/pypi/teddy-cli/json`) for the latest version. If a newer version is found, install from TestPyPI using `--index-url https://test.pypi.org/simple/`.
+- **Output:** The version notification and upgrade message MUST indicate this is an experimental release (e.g., *"Updated to experimental vX.Y.Z.dev..."*).
+- **No background check change:** The background check in `start`/`resume`/`execute` stays on PyPI. `--experimental` is only for manual `teddy update` invocations.
+- **Config interaction:** Respects `auto_update` setting. If `auto_update: true`, automatically upgrade from TestPyPI. If `auto_update: false`, notify the user to run `teddy update --experimental --yes` to upgrade.
+- **Note on index URL:** For `pip install` from TestPyPI, use `--index-url https://test.pypi.org/simple/` (the simple index), NOT `https://test.pypi.org/legacy/` (which is the upload API endpoint used in CI).
+- **Version comparison:** The same version comparison logic is used as for PyPI checks. Versions from TestPyPI are expected to follow PEP 440 (e.g., `0.1.0.dev<run_number>`).
+
 ---
 
 ## 4. Guidelines for Implementation
 
 ### Phase 1: Core Infrastructure
 1. Extract import pre-warming into a helper function in `cli_helpers.py`.
-2. Implement PyPI version check using `urllib.request` to fetch `https://pypi.org/pypi/teddy-executor/json`.
+2. Implement PyPI version check using `urllib.request` to fetch `https://pypi.org/pypi/teddy-cli/json`.
+   - Note: The same function should accept an optional `index` parameter to switch between PyPI and TestPyPI URLs for the `--experimental` flag.
 3. Compare versions using `packaging.version` or simple `tuple(map(int, ...))`.
 4. Implement daily cache read/write in `_update_cache.json`.
 
@@ -139,3 +151,10 @@ Provide a comprehensive update system with:
 ### Phase 4: Testing & Documentation
 1. Unit tests for version comparison, cache, and pre-warming.
 2. Update CLI architecture doc and README.
+
+### Phase 5: Experimental Flag
+1. Add `--experimental` option to the `teddy update` command.
+2. Implement TestPyPI URL resolution (use `https://test.pypi.org/pypi/teddy-cli/json` for version check and `--index-url https://test.pypi.org/simple/` for pip install).
+3. Update the upgrade path to conditionally use TestPyPI when `--experimental` is provided.
+4. Ensure version notifications distinctly label experimental releases.
+5. Unit tests for TestPyPI fallback and experimental flag behavior.
