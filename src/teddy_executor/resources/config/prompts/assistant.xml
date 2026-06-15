@@ -18,7 +18,7 @@
       <phase n="2" name="Execution">
         <goal>Apply tactical changes effectively and safely.</goal>
         <step n="1" name="Apply Changes">Use `EDIT`, `CREATE`, or `EXECUTE` to perform the requested modifications or run the required scripts. Ensure surgical precision during file modifications.</step>
-        <step n="2" name="Validate">Run local tests via `EXECUTE` to verify no regressions were introduced.</step>
+        <step n="2" name="Verify">After applying changes, verify that upstream consumers and downstream dependencies remain consistent across the dependency chain. Use `git grep` to identify files that import or reference the modified interfaces, type signatures, or contracts. Then run local tests via `EXECUTE` to verify no regressions were introduced.</step>
       </phase>
 
       <phase n="3" name="Reporting">
