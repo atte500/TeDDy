@@ -95,36 +95,44 @@ PlanningService.generate_plan()
 ### Root Cause
 A data-flow gap in `PlanningService.generate_plan()`: the `ProjectContext.system_prompt_tokens` field is initialized to `0` by `ContextService.get_context()` and is never updated after the system prompt is resolved via `PromptManager.fetch_system_prompt()`.
 
-### The Fix (4 lines in `planning_service.py`)
-After `fetch_system_prompt()` returns, compute the token count and update the DTO:
+### The Fix (Architectural: Pre-compute, then Construct Correctly)
+Instead of patching the DTO after construction, the system prompt token count is now computed **before** the `ProjectContext` DTO is built, and passed into `get_context()` as a parameter:
 
 ```python
+# NEW ORDER: system prompt resolved BEFORE context construction
 system_prompt = self._prompt_manager.fetch_system_prompt(agent_name, turn_path)
-
-# === FIX: Propagate system prompt tokens to the ProjectContext DTO ===
-model = str(
-    meta.get("model")
-    or self._config_service.get_setting("llm.model")
-    or "gpt-4o"
+system_token_count = self._llm_client.get_text_token_count(
+    system_prompt, model=model
 )
-try:
-    system_token_count = self._llm_client.get_text_token_count(
-        system_prompt, model=model
-    )
-except Exception:
-    system_token_count = 0
-object.__setattr__(context, "system_prompt_tokens", system_token_count)
+
+# Pass it in — DTO is born correct
+context = self._context_service.get_context(
+    context_files=resolved_context_files,
+    agent_name=agent_name,
+    current_turn=Path(turn_dir).name,
+    system_prompt_tokens=system_token_count,  # NEW PARAMETER
+)
 ```
 
-**Why `object.__setattr__`?** Because `ProjectContext` is a frozen `dataclass` (immutable by convention, though not decorated with `frozen=True`). Using `object.__setattr__` avoids needing to refactor the entire DTO to a builder pattern for this single field.
+**Changes made across the codebase:**
+
+1. **`IGetContextUseCase` port:** Added `system_prompt_tokens: int = 0` parameter (backward-compatible default).
+2. **`ContextService.get_context()`:** Uses the new parameter instead of hardcoding `0`.
+3. **`PlanningService.generate_plan()`:** Reordered `fetch_system_prompt()` before `get_context()`, removed `object.__setattr__` patch. Also removed the hardcoded `or "gpt-4o"` fallback (replaced with `or ""` — preflight validation guarantees a model is configured, and the adapter layer handles any missing model).
+4. **`SessionOrchestrator.execute()`:** Same reordering and pattern, removing the post-hoc `dataclasses.replace()` for `system_prompt_tokens` in favor of pre-compute.
+5. **`_display_telemetry()`:** Also cleaned up the `or "gpt-4o"` fallback (kept `or "unknown"` for display purposes).
+
+**Why this is cleaner than `object.__setattr__`:**
+- The DTO is **correct from birth** — no post-construction patching
+- No reference staleness (TUI holds the original object, not a replaced copy)
+- The data flows naturally through the correct components: `PromptManager` (resolves prompt) → `ILlmClient.get_text_token_count` (computes tokens) → `ContextService.get_context` (builds DTO with correct value)
+- No violation of separation of concerns — `ContextService` doesn't need to know about prompts
 
 ### Preventative Measures
 To prevent this entire class of "data-flow gap" bugs globally:
 
 1. **Checklist for DTO population completeness:** When a DTO field is initialized to a constant default (like `=0`), verify it's actually populated by at least one code path before the DTO reaches consumers.
 
-2. **Secondary fix (non-TUI path):** `session_orchestrator.py` line 143 also hardcodes `system_prompt_tokens=0`. When refactoring, this should also be fixed to accept the token count from the planning service output.
+2. **Remove hardcoded model fallbacks at the service layer:** The `or "gpt-4o"` convention was removed from all service-layer locations. Preflight validation guarantees a model is configured, and the adapter layer (`LiteLLMAdapter._resolve_model`) handles any missing model with its own fallback. The service layer should not hardcode model names.
 
-3. **Architectural improvement (future):** Consider making `PlanningService` responsible for computing `system_prompt_tokens` before constructing the `ProjectContext` DTO. This could be achieved by:
-   - Adding a `system_prompt` parameter to `ContextService.get_context()` so it can compute the token count at construction time
-   - OR making `ProjectContext` mutable for fields that are filled asynchronously (builder pattern)
+3. **Pre-compute before construction pattern:** When a DTO field depends on data that becomes available after the DTO is initially built, consider whether the data flow can be reordered so the DTO is born correct rather than patched after the fact.
