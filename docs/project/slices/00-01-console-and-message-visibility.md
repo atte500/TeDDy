@@ -1,5 +1,5 @@
 # Slice: Console and Message Visibility
-- **Status:** Completed
+- **Status:** In Progress
 - **Type:** Feature
 - **Milestone:** [02-stability-and-polish](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -109,8 +109,16 @@ sequenceDiagram
 - [x] **Wiring** - Insert calls to the three helpers at appropriate points in `execute()`.
 - [x] **Migration** - (None: no consumers need updating.)
 - [x] **Cleanup** - Remove any test artifacts or temporary spike files.
+- [ ] **Logic** - Print Initial Request in lifecycle manager before planning to fix output ordering.
+- [ ] **Logic** - Suppress MESSAGE action description and SUCCESS status output during execution.
 
 ## Implementation Notes
+
+### Ordering Issue (Turn 25)
+Manual verification revealed that `Initial Request:` appears AFTER the turn header (`[01] test-message | Waiting for...`). Root cause: the turn header is printed by `PlanningService.generate_plan()` inside `SessionLifecycleManager._handle_planning_and_execution()` BEFORE `execute()` is called. The fix is to print the initial request in `_handle_planning_and_execution()` before `trigger_new_plan()`.
+
+### MESSAGE Noise Issue (Turn 25)
+Manual verification revealed that `MESSAGE - Message to user` and `SUCCESS` lines are still printed for communication actions. These should be suppressed to reduce console noise. Root cause is in the action executor or execution orchestrator where action type/description and status are printed.
 
 ### Contract
 - The three helper function signatures were defined in the [SessionOrchestrator component doc](/docs/architecture/core/services/session_orchestrator.md) under a new "Console Visibility Helpers" section.
@@ -139,4 +147,8 @@ sequenceDiagram
 1. [x] Run `poetry run python spikes/prototypes/00-console-and-message-visibility/raw_demo.py` and confirm output matches the approved format.
 2. [x] Run unit tests: `poetry run pytest tests/suites/unit/core/services/test_session_orchestrator.py -v`
 3. [x] Run integration tests: `poetry run pytest tests/suites/integration/core/services/test_session_orchestration_integration.py -v`
-4. [ ] Manual: Start a session with a message and verify the three lines appear in correct order.
+4. [ ] Manual: Start a session with a message and verify:
+    - Initial Request appears before the turn header/telemetry.
+    - Header bar with emoji and title appears before action logs.
+    - User Message appears after action logs.
+    - No "MESSAGE - Message to user" or "SUCCESS" lines for communication turns.
