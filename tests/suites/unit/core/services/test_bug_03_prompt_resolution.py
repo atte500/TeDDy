@@ -93,33 +93,28 @@ class TestLifecyclePrintsInitialRequest:
     def test_lifecycle_manager_does_not_print_initial_request_on_subsequent_turns(
         self,
     ):
-        """When resuming a non-first turn, lifecycle manager must NOT call _print_initial_request."""
+        """When handling a non-first turn (turn_dir name != "01"), lifecycle manager must NOT call _print_initial_request."""
         with patch(
             "teddy_executor.core.services.session_orchestrator._print_initial_request"
         ) as mock_print:
             ports = MagicMock()
-            ports.session_service = MagicMock()
-            ports.session_service.get_session_state.return_value = (
-                SessionState.COMPLETE_TURN,
-                ".teddy/sessions/test/02",
-            )
-            ports.session_service.transition_to_next_turn.return_value = (
-                ".teddy/sessions/test/03",
-            )
             ports.file_system_manager = MagicMock()
             ports.report_formatter = MagicMock()
             ports.user_interactor = MagicMock()
             ports.session_planner = MagicMock()
             ports.session_planner.trigger_new_plan.return_value = "test"
             ports.replanner = MagicMock()
+            ports.session_service = MagicMock()
 
             lifecycle = SessionLifecycleManager(ports)
 
             mock_orchestrator = MagicMock(spec=IRunPlanUseCase)
             mock_orchestrator.execute.return_value = MagicMock(run_summary=MagicMock())
-            lifecycle.resume(
-                "test",
-                mock_orchestrator,
+
+            # Directly call _handle_planning_and_execution with a turn_dir for turn "02"
+            lifecycle._handle_planning_and_execution(
+                turn_dir="/root/session/turns/02",
+                orchestrator=mock_orchestrator,
                 interactive=False,
             )
 
