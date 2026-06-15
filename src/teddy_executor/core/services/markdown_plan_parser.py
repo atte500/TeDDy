@@ -81,7 +81,7 @@ class MarkdownPlanParser(IPlanParser):
         # before # because Markdown permits up to 3 spaces before heading markers.
         h1_match = re.search(r"^[ \t]*#", clean_content, re.MULTILINE)
         if h1_match and h1_match.start() > 0:
-            clean_content = clean_content[h1_match.start():]
+            clean_content = clean_content[h1_match.start() :]
 
         # Normalize H1 heading on the first line (e.g., #Title -> # Title)
         # This runs after preamble stripping so it always targets the heading line
@@ -125,6 +125,7 @@ class MarkdownPlanParser(IPlanParser):
             # Write corrected content back to source file if it came from a session file path
             if plan_path and is_session:
                 from pathlib import Path
+
                 path_obj = Path(plan_path)
                 try:
                     current_disk = path_obj.read_text(encoding="utf-8")

@@ -61,9 +61,7 @@ class PlanningService(IPlanningUseCase):
         # Compute system prompt token count BEFORE context construction so the
         # ProjectContext DTO is born with correct data (no post-hoc patching needed).
         model = str(
-            meta.get("model")
-            or self._config_service.get_setting("llm.model")
-            or ""
+            meta.get("model") or self._config_service.get_setting("llm.model") or ""
         )
         try:
             system_token_count = self._llm_client.get_text_token_count(
@@ -94,9 +92,7 @@ class PlanningService(IPlanningUseCase):
         )
 
         model = str(
-            meta.get("model")
-            or self._config_service.get_setting("llm.model")
-            or ""
+            meta.get("model") or self._config_service.get_setting("llm.model") or ""
         )
 
         # Pre-emptive Hydration: Trigger hydration via get_context_window BEFORE counting tokens.

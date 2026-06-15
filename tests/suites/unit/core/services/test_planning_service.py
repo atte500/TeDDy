@@ -261,7 +261,10 @@ def test_generate_plan_auto_resolves_context_from_turn_dir_when_missing(env):
 
     # 2. Verify get_context received the resolved manifests
     mock_context_service.get_context.assert_called_once_with(
-        context_files=fake_manifests, agent_name="pf", current_turn="02", system_prompt_tokens=0
+        context_files=fake_manifests,
+        agent_name="pf",
+        current_turn="02",
+        system_prompt_tokens=0,
     )
 
 

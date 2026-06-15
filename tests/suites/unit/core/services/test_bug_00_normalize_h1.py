@@ -121,7 +121,6 @@ class TestParserIntegration:
 
     def test_parser_writes_corrected_content_to_file(self, parser, tmp_path):
         """When plan_path points to a session file and heading is missing space, file is overwritten with corrected content."""
-        from pathlib import Path
 
         # Simulate a session file path
         session_dir = tmp_path / ".teddy" / "sessions" / "test-session"
@@ -164,7 +163,6 @@ class TestParserIntegration:
 
     def test_parser_does_not_overwrite_if_content_unchanged(self, parser, tmp_path):
         """When heading is already correct and no preamble, file should not be overwritten (idempotent)."""
-        from pathlib import Path
 
         session_dir = tmp_path / ".teddy" / "sessions" / "test-session"
         turn_dir = session_dir / "01"

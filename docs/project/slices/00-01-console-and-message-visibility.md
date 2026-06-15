@@ -60,6 +60,29 @@ Then no "Initial Request:" line is printed
 - **Message action suppression**: Communication actions (MESSAGE type) should not echo the action description or SUCCESS status to the console to reduce noise.
 - **Tee installation conflict**: The Tee guard (already implemented) ensures the visibility lines are not captured into history.log — they remain terminal-only.
 - **Post-commit hook failure**: The `pytest` check in .githooks/post-commit fails because pytest is not in system PATH — must use `git commit --no-verify` to bypass.
+- **TUI bypass**: The TUI's `_execute_silently` path bypasses `SessionOrchestrator.execute()`, so `_print_user_message` must be activated by either modifying `confirm_and_dispatch` to return the user message (Option C) or adding a wrap to the TUI execution handler.
+- **Empty dispatch_message for MESSAGE**: When `confirm_and_dispatch` returns `""` as the second value (reason), `captured_message` is empty even though the user typed a reply. The second return value should contain the actual user message.
+
+## Scenarios (Additional)
+
+> As a user, I want to see my MESSAGE reply logged with "User Message:" in the console when the reply is provided during TUI execution, so that I can audit my input.
+
+```gherkin
+Given I am using the TUI
+And I reply to a MESSAGE action
+When the action is dispatched and executed
+Then the console should show "User Message:" followed by my reply
+
+Given the TUI dispatches a MESSAGE action without a user reply
+When the action completes
+Then no "User Message:" line should appear in the console
+```
+- **Non-session mode**: If `is_session` is False, all visibility features must be suppressed. The helpers check `is_session` before printing.
+- **Empty message**: If `message` is empty or whitespace-only, no Initial Request, User Message, or related output should appear.
+- **Missing status emoji**: If `plan.metadata["Status"]` is missing or lacks a 🟢/🟡/🔴 emoji, the header line should print the title alone (no emoji prefix) instead of crashing.
+- **Message action suppression**: Communication actions (MESSAGE type) should not echo the action description or SUCCESS status to the console to reduce noise.
+- **Tee installation conflict**: The Tee guard (already implemented) ensures the visibility lines are not captured into history.log — they remain terminal-only.
+- **Post-commit hook failure**: The `pytest` check in .githooks/post-commit fails because pytest is not in system PATH — must use `git commit --no-verify` to bypass.
 
 ## Implementation Plan
 
@@ -112,8 +135,25 @@ sequenceDiagram
 - [x] **Logic** - Print Initial Request in lifecycle manager before planning to fix output ordering.
 - [x] **Logic** - Suppress MESSAGE action description and SUCCESS status output during execution.
 - [x] **Logic** - Fix Initial Request trailing blank line, duplicate display across turns, and User Message not showing after reply.
+- [ ] **Logic** - Fix `confirm_and_dispatch` to return the actual user message (not `reason`) as the second return value for MESSAGE actions, so `captured_message` propagates correctly through `_dispatch_single_action`.
+- [ ] **Logic** - Ensure `_print_user_message` is called even when execution goes through the TUI `_execute_silently` path. Options: wrap `_execute_silently` to emit console output, or move user message printing into `ActionDispatcher.dispatch_and_execute`.
+- [ ] **Wiring** - Update the TUI execution handler (`textual_plan_reviewer_execution.py`) to invoke `_print_user_message` after successful dispatch.
+- [ ] **Logging** - In `confirm_and_dispatch`, change the MESSAGE bypass to return the user's typed message (from `dispatch_and_execute` result) as the second return value instead of empty `reason`.
 
-## Implementation Notes
+### Implementation Notes
+
+### Root Cause Analysis (Bug #3 — MESSAGE Reply Not Logged)
+**Root cause:** The TUI execution path (`textual_plan_reviewer_execution.py::_execute_silently`) calls `dispatcher.dispatch_and_execute()` directly, completely bypassing `SessionOrchestrator.execute()` where `_print_user_message` is called. Therefore, even though `plan.metadata["user_request"]` is correctly set by the TUI's `_finalize_user_message`, the console output helper is never invoked.
+
+**Secondary cause:** `ActionExecutor.confirm_and_dispatch()` returns `reason` (always `""` for MESSAGE actions) as the second return value instead of the user's typed message. This means even the `SessionOrchestrator` path through `_dispatch_single_action` would get an empty `captured_message` for MESSAGE actions.
+
+**Preferred fix strategy:** Option C — fix `confirm_and_dispatch` to return the actual user message for MESSAGE actions, and ensure the orchestrator path receives it. This fixes both the CLI session path (through `SessionOrchestrator`) and makes the TUI path fixable by either:
+- Wrapping `_execute_silently` to run `_print_user_message` after dispatch, OR
+- Moving the user message printing into `ActionDispatcher` itself (closer to execution).
+
+**Rejected options:**
+- Option A (add to TUI handler only): Would not fix CLI session path.
+- Option B (wrap _execute_silently): Works but is fragile.
 
 ### Ordering Issue (Turn 25)
 Manual verification revealed that `Initial Request:` appears AFTER the turn header (`[01] test-message | Waiting for...`). Root cause: the turn header is printed by `PlanningService.generate_plan()` inside `SessionLifecycleManager._handle_planning_and_execution()` BEFORE `execute()` is called.
