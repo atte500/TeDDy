@@ -97,7 +97,7 @@ def get_session_history_display_name(path: str) -> str | None:
         return f"Turn {int(plan_match.group(1))}: Plan"
     report_match = re.search(r"sessions/[^/]+/(\d+)/report.md$", clean_path)
     if report_match:
-        return f"Turn {int(report_match.group(1))}: Execution Report"
+        return f"Turn {int(report_match.group(1))}: Report"
     return None
 
 

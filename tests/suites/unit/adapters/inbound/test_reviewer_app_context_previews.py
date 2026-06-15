@@ -177,7 +177,7 @@ async def test_reviewer_app_renders_session_history_under_dedicated_node(env):
         assert len(history_leaves) == 3
         assert "Initial Request" in history_leaves[0]
         assert "Turn 1: Plan" in history_leaves[1]
-        assert "Turn 1: Execution Report" in history_leaves[2]
+        assert "Turn 1: Report" in history_leaves[2]
 
 
 @pytest.mark.anyio

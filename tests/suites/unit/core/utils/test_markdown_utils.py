@@ -97,7 +97,7 @@ def test_session_history_helpers(container):
     )
     assert (
         get_session_history_display_name(".teddy/sessions/XYZ/01/report.md")
-        == "Turn 1: Execution Report"
+        == "Turn 1: Report"
     )
     assert get_session_history_display_name(".teddy/sessions/XYZ/01/meta.yaml") is None
     assert get_session_history_display_name("src/main.py") is None
