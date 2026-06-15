@@ -63,6 +63,23 @@ class PlanningService(IPlanningUseCase):
         )
         system_prompt = self._prompt_manager.fetch_system_prompt(agent_name, turn_path)
 
+        # === FIX: Propagate system prompt tokens to the ProjectContext DTO ===
+        # The system prompt was just fetched, so compute its token count
+        # and update the context object so the TUI can display it correctly.
+        model = str(
+            meta.get("model")
+            or self._config_service.get_setting("llm.model")
+            or "gpt-4o"
+        )
+        try:
+            system_token_count = self._llm_client.get_text_token_count(
+                system_prompt, model=model
+            )
+        except Exception:
+            system_token_count = 0
+        object.__setattr__(context, "system_prompt_tokens", system_token_count)
+        # =======================================================================
+
         # Context is purely project state (including initial_request.md via session.context).
         full_context = f"{context.header}\n{context.content}"
         messages = [
