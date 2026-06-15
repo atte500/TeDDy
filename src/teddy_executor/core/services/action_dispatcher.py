@@ -109,7 +109,9 @@ class ActionDispatcher:
         """
         action_name = action_data.type.upper()
         log_desc = f" - {action_data.description}" if action_data.description else ""
-        logger.info(f"{action_name}{log_desc}")
+        is_message_action = action_data.type.upper() == "MESSAGE"
+        if not is_message_action:
+            logger.info(f"{action_name}{log_desc}")
 
         log_params = action_data.params.copy()
         if action_data.description and "Description" not in log_params:
@@ -129,10 +131,12 @@ class ActionDispatcher:
             )
             log_data["details"] = details
             log_data["status"] = status
-            logger.info(status.value.upper())
+            if not is_message_action:
+                logger.info(status.value.upper())
         except Exception as e:
             log_data["status"] = ActionStatus.FAILURE
             log_data["details"] = str(e)
-            logger.info("FAILURE")
+            if not is_message_action:
+                logger.info("FAILURE")
 
         return ActionLog(**log_data)

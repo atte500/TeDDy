@@ -42,3 +42,65 @@ def test_dispatcher_normalizes_create_action_parameters(
     handler_args, handler_kwargs = mock_handler.execute.call_args
     assert handler_kwargs["path"] == "foo.py"
     assert "file_path" not in handler_kwargs
+
+
+class TestMessageLoggingSuppression:
+    """Tests that MESSAGE action type suppresses INFO-level logging."""
+
+    def test_message_action_suppresses_info_logs(self, dispatcher, monkeypatch) -> None:
+        """MESSAGE actions must not produce logger.info calls."""
+        captured_info_calls = []
+        monkeypatch.setattr(
+            "teddy_executor.core.services.action_dispatcher.logger.info",
+            lambda *a: captured_info_calls.append(a),
+        )
+
+        from teddy_executor.core.domain.models import ActionData
+
+        action = ActionData(
+            type="MESSAGE",
+            params={"message": "Hello world"},
+            description="Message to user",
+        )
+
+        def mock_create_action(action_type, params=None):
+            handler = Mock()
+            handler.execute.return_value = {"result": "ok"}
+            return handler
+
+        dispatcher._action_factory.create_action.side_effect = mock_create_action
+
+        dispatcher.dispatch_and_execute(action)
+
+        assert len(captured_info_calls) == 0, (
+            f"logger.info should not be called for MESSAGE actions, "
+            f"but got {len(captured_info_calls)} calls: {captured_info_calls}"
+        )
+
+    def test_non_message_action_still_logs(self, dispatcher, monkeypatch) -> None:
+        """Non-MESSAGE actions must still call logger.info."""
+        captured_info_calls = []
+        monkeypatch.setattr(
+            "teddy_executor.core.services.action_dispatcher.logger.info",
+            lambda *a: captured_info_calls.append(a),
+        )
+
+        from teddy_executor.core.domain.models import ActionData
+
+        action = ActionData(
+            type="READ",
+            params={"path": "/fake/file.txt"},
+        )
+
+        def mock_create_action(action_type, params=None):
+            handler = Mock()
+            handler.execute.return_value = {"content": "file content"}
+            return handler
+
+        dispatcher._action_factory.create_action.side_effect = mock_create_action
+
+        dispatcher.dispatch_and_execute(action)
+
+        assert len(captured_info_calls) > 0, (
+            "logger.info should be called for non-MESSAGE actions"
+        )

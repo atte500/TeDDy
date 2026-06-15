@@ -110,7 +110,7 @@ sequenceDiagram
 - [x] **Migration** - (None: no consumers need updating.)
 - [x] **Cleanup** - Remove any test artifacts or temporary spike files.
 - [x] **Logic** - Print Initial Request in lifecycle manager before planning to fix output ordering.
-- [▶] **Logic** - Suppress MESSAGE action description and SUCCESS status output during execution.
+- [x] **Logic** - Suppress MESSAGE action description and SUCCESS status output during execution.
 
 ## Implementation Notes
 
@@ -122,7 +122,16 @@ Manual verification revealed that `Initial Request:` appears AFTER the turn head
 **Test:** `TestInitialRequestOrdering.test_initial_request_printed_before_planning` asserts that `_print_initial_request` is called before `trigger_new_plan` during the EMPTY state resume path. Uses `monkeypatch` to mock the helper and track call order.
 
 ### MESSAGE Noise Issue (Turn 25)
-Manual verification revealed that `MESSAGE - Message to user` and `SUCCESS` lines are still printed for communication actions. These should be suppressed to reduce console noise. Root cause is in the action executor or execution orchestrator where action type/description and status are printed.
+Manual verification revealed that `MESSAGE - Message to user` and `SUCCESS` lines are still printed for communication actions. These should be suppressed to reduce console noise.
+
+**Root cause:** The `ActionDispatcher.dispatch_and_execute()` method logs the action type, description, and status via `logger.info()`. These log messages are printed to the console via a configured `StreamHandler`. The suppression was needed at the logging call site.
+
+**Fix:** In `ActionDispatcher.dispatch_and_execute()`, both `logger.info(f"{action_name}{log_desc}")` and `logger.info(status.value.upper())` are guarded by `if not is_message_action:` where `is_message_action = action_data.type.upper() == "MESSAGE"`. The FAILURE fallback in the `except` block is similarly guarded. This ensures no INFO-level log output for MESSAGE actions while preserving all logging for other action types.
+
+**Test:** `TestMessageLoggingSuppression` in `test_action_dispatcher_normalization.py`:
+- `test_message_action_suppresses_info_logs`: Asserts zero `logger.info` calls for a MESSAGE action.
+- `test_non_message_action_still_logs`: Asserts at least one `logger.info` call for a non-MESSAGE action.
+Both use `monkeypatch` to intercept `logger.info`.
 
 ### Contract
 - The three helper function signatures were defined in the [SessionOrchestrator component doc](/docs/architecture/core/services/session_orchestrator.md) under a new "Console Visibility Helpers" section.
