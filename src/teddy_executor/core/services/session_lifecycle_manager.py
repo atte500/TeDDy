@@ -128,8 +128,11 @@ class SessionLifecycleManager:
                 tee = None
 
         try:
-            # Print initial request before planning header/telemetry
-            _print_initial_request(None, True, plan_path=f"{turn_dir}/plan.md")
+            # Print initial request only for the very first turn (01) to avoid
+            # showing it again on every subsequent turn.
+            turn_number = Path(turn_dir).name
+            if turn_number == "01":
+                _print_initial_request(None, True, plan_path=f"{turn_dir}/plan.md")
             new_name = self._session_planner.trigger_new_plan(turn_dir)
             if not new_name or new_name == "CANCELLED":
                 return (turn_dir, None)

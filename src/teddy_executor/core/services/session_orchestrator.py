@@ -57,7 +57,6 @@ def _print_initial_request(
             return
     typer.secho("Initial Request:")
     typer.secho(message.strip())
-    typer.secho("")
 
 
 def _print_header_bar(plan: Any, is_session: bool) -> None:
@@ -236,9 +235,7 @@ class SessionOrchestrator(IRunPlanUseCase):
                 system_prompt = self._prompt_manager.fetch_system_prompt(
                     agent_name, Path(plan_path).parent
                 )
-                model = str(
-                    self._config_service.get_setting("llm.model") or ""
-                )
+                model = str(self._config_service.get_setting("llm.model") or "")
                 try:
                     system_token_count = self._llm_client.get_text_token_count(
                         system_prompt, model=model
@@ -255,8 +252,12 @@ class SessionOrchestrator(IRunPlanUseCase):
                 )
                 from dataclasses import is_dataclass
 
-                if is_dataclass(project_context) and agent_name != project_context.agent_name:
+                if (
+                    is_dataclass(project_context)
+                    and agent_name != project_context.agent_name
+                ):
                     from dataclasses import replace
+
                     project_context = replace(
                         cast(Any, project_context),
                         agent_name=agent_name,
@@ -314,10 +315,12 @@ class SessionOrchestrator(IRunPlanUseCase):
                     )
                     return None  # type: ignore
 
-            # Print user message after all actions executed (only for session with non-empty message)
+            # Print user message after all actions executed (only for session mode)
+            # Uses plan.metadata["user_request"] which is populated by _dispatch_single_action
+            # when the user provides a reply during execution.
             if is_session:
-                # Try explicit message first, then fall back to plan metadata
-                _print_user_message(message, is_session, plan=plan)
+                user_reply = plan.metadata.get("user_request", "") if plan else ""
+                _print_user_message(user_reply, is_session, plan=plan)
 
             # 4. Turn Transition
             if is_session and plan_path:

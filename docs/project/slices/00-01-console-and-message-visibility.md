@@ -111,6 +111,7 @@ sequenceDiagram
 - [x] **Cleanup** - Remove any test artifacts or temporary spike files.
 - [x] **Logic** - Print Initial Request in lifecycle manager before planning to fix output ordering.
 - [x] **Logic** - Suppress MESSAGE action description and SUCCESS status output during execution.
+- [x] **Logic** - Fix Initial Request trailing blank line, duplicate display across turns, and User Message not showing after reply.
 
 ## Implementation Notes
 
@@ -132,6 +133,16 @@ Manual verification revealed that `MESSAGE - Message to user` and `SUCCESS` line
 - `test_message_action_suppresses_info_logs`: Asserts zero `logger.info` calls for a MESSAGE action.
 - `test_non_message_action_still_logs`: Asserts at least one `logger.info` call for a non-MESSAGE action.
 Both use `monkeypatch` to intercept `logger.info`.
+
+### Initial Request Spacing & Duplicate Fix (Turn 43-44)
+Manual verification (Turn 42) revealed three issues:
+1. **Trailing blank line after "Initial Request:"** – `_print_initial_request` was emitting a trailing blank line via `typer.secho("")`. **Fix:** removed the blank line call; the natural blank line before the turn header provides adequate separation.
+2. **Initial Request shown on every turn** – The `_print_initial_request(None, True, plan_path=...)` call in `_handle_planning_and_execution` read `initial_request.md` on EVERY turn. **Fix:** added `turn_number = Path(turn_dir).name` guard, only printing for turn "01".
+3. **User Message not showing after reply** – The `_print_user_message` call in `execute()` received `message=None` because the reply is stored in `plan.metadata["user_request"]` by `_dispatch_single_action`. **Fix:** changed the wiring to read from `plan.metadata.get("user_request", "")` instead of the explicit `message` parameter.
+
+**Test adjustments:**
+- `TestConsoleVisibilityHelpers::test_print_initial_request[Hello-True-expected_calls0]`: removed `("", {})` from expected calls (no trailing blank line).
+- `TestConsoleVisibilityWiring::test_helpers_called_during_execute[session_with_message]`: added `"user_request": message` to mock plan metadata so the new code path finds the message.
 
 ### Contract
 - The three helper function signatures were defined in the [SessionOrchestrator component doc](/docs/architecture/core/services/session_orchestrator.md) under a new "Console Visibility Helpers" section.

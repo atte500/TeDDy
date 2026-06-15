@@ -447,8 +447,8 @@ class TestConsoleVisibilityHelpers:
     @pytest.mark.parametrize(
         ("message", "is_session", "expected_calls"),
         [
-            # Happy: session + non-empty message -> prints two lines + blank line
-            ("Hello", True, [("Initial Request:", {}), ("Hello", {}), ("", {})]),
+            # Happy: session + non-empty message -> prints label + content (no trailing blank line)
+            ("Hello", True, [("Initial Request:", {}), ("Hello", {})]),
             # Non-session: no output
             ("Hello", False, []),
             # Empty message: no output even if session
@@ -617,7 +617,10 @@ class TestConsoleVisibilityWiring:
         # Mock plan
         mock_plan = MagicMock(spec=Plan)
         mock_plan.title = "Test Plan"
-        mock_plan.metadata = {"Status": "SUCCESS 🟢"}
+        mock_plan.metadata = {
+            "Status": "SUCCESS 🟢",
+            "user_request": message if message and message.strip() else "",
+        }
         mock_plan.is_session = is_session
 
         # Setup mocks for execution flow
