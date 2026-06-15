@@ -26,8 +26,13 @@ def _extract_status_emoji(raw_status: str) -> str:
     return ""
 
 
-def _print_initial_request(message: Optional[str], is_session: bool) -> None:
+def _print_initial_request(
+    message: Optional[str], is_session: bool, plan_path: Optional[str] = None
+) -> None:
     """Print the initial user request before the turn header.
+
+    If message is not provided (None) and plan_path is set, falls back to
+    reading '<session_root>/initial_request.md' from the filesystem.
 
     Only prints when is_session=True and message is non-empty.
     Output::
@@ -35,8 +40,21 @@ def _print_initial_request(message: Optional[str], is_session: bool) -> None:
         {content}
         (blank line separator)
     """
-    if not is_session or not message or not message.strip():
+    if not is_session:
         return
+    # Resolve message from file if not provided
+    if not message or not message.strip():
+        if plan_path:
+            try:
+                import_path = Path(plan_path).parent.parent / "initial_request.md"
+                if import_path.exists():
+                    content = import_path.read_text(encoding="utf-8").strip()
+                    if content:
+                        message = content
+            except Exception:
+                pass
+        if not message or not message.strip():
+            return
     typer.secho("Initial Request:")
     typer.secho(message.strip())
     typer.secho("")
@@ -64,8 +82,13 @@ def _print_header_bar(plan: Any, is_session: bool) -> None:
         typer.secho(" ".join(parts))
 
 
-def _print_user_message(message: Optional[str], is_session: bool) -> None:
+def _print_user_message(
+    message: Optional[str], is_session: bool, plan: Optional[Any] = None
+) -> None:
     """Print the user message after all actions execute.
+
+    If message is not provided (None) and plan is set, falls back to
+    plan.metadata.get("user_request").
 
     Only prints when is_session=True and message is non-empty.
     Output::
@@ -74,8 +97,16 @@ def _print_user_message(message: Optional[str], is_session: bool) -> None:
         {content}
         (trailing newline)
     """
-    if not is_session or not message or not message.strip():
+    if not is_session:
         return
+    # Resolve message from plan metadata if not provided
+    if not message or not message.strip():
+        if plan:
+            meta_msg = getattr(plan, "metadata", {}).get("user_request") or ""
+            if meta_msg.strip():
+                message = meta_msg.strip()
+        if not message or not message.strip():
+            return
     typer.secho("")
     typer.secho("User Message:")
     typer.secho(message.strip())
@@ -152,7 +183,10 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         # Print initial request before the turn header (only for session with non-empty message)
         if is_session and message and message.strip():
-            _print_initial_request(message, is_session)
+            _print_initial_request(message, is_session, plan_path=plan_path)
+        elif is_session and plan_path:
+            # No explicit message, try to read from initial_request.md
+            _print_initial_request(message, is_session, plan_path=plan_path)
 
         # Install Tee for history.log capture (guarded: skip if lifecycle manager already installed)
         _tee = None
@@ -281,8 +315,9 @@ class SessionOrchestrator(IRunPlanUseCase):
                     return None  # type: ignore
 
             # Print user message after all actions executed (only for session with non-empty message)
-            if is_session and message and message.strip():
-                _print_user_message(message, is_session)
+            if is_session:
+                # Try explicit message first, then fall back to plan metadata
+                _print_user_message(message, is_session, plan=plan)
 
             # 4. Turn Transition
             if is_session and plan_path:

@@ -552,13 +552,13 @@ class TestConsoleVisibilityWiring:
         self.print_header_bar_calls = []
         self.print_user_message_calls = []
 
-        def _track_print_initial_request(message, is_session):
+        def _track_print_initial_request(message, is_session, **kwargs):
             self.print_initial_request_calls.append((message, is_session))
 
-        def _track_print_header_bar(plan, is_session):
+        def _track_print_header_bar(plan, is_session, **kwargs):
             self.print_header_bar_calls.append((plan, is_session))
 
-        def _track_print_user_message(message, is_session):
+        def _track_print_user_message(message, is_session, **kwargs):
             self.print_user_message_calls.append((message, is_session))
 
         monkeypatch.setattr(
