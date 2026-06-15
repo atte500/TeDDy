@@ -19,6 +19,23 @@ if TYPE_CHECKING:
 app = typer.Typer()
 
 
+@app.callback(invoke_without_command=True)
+def main_callback(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        help="Show the installed version.",
+        is_eager=True,
+    ),
+) -> None:
+    if version:
+        from importlib.metadata import version as _get_version
+
+        installed = _get_version("teddy-cli")
+        typer.echo(f"TeDDy v{installed}")
+        raise typer.Exit()
+
+
 def get_container():
     from teddy_executor.container import get_container as _get_container
 
@@ -166,6 +183,15 @@ def init():
         pass  # Some optional dependencies may not be installed
     # Auto-login would trigger here once `teddy login` is implemented (no-op for now)
     typer.echo("TeDDy initialized in .teddy folder.")
+
+
+@app.command()
+def version() -> None:
+    """Show the installed version."""
+    from importlib.metadata import version as _get_version
+
+    installed = _get_version("teddy-cli")
+    typer.echo(f"TeDDy v{installed}")
 
 
 @app.command()
