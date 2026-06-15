@@ -137,10 +137,23 @@ class SessionOrchestrator(IRunPlanUseCase):
                 from dataclasses import is_dataclass, replace
 
                 if is_dataclass(project_context):
+                    # Compute system prompt tokens for context display (same pattern as planning_service.py)
+                    system_prompt = self._prompt_manager.fetch_system_prompt(
+                        agent_name, Path(plan_path).parent
+                    )
+                    model = str(
+                        self._config_service.get_setting("llm.model") or "gpt-4o"
+                    )
+                    try:
+                        system_token_count = self._llm_client.get_text_token_count(
+                            system_prompt, model=model
+                        )
+                    except Exception:
+                        system_token_count = 0
                     project_context = replace(
                         cast(Any, project_context),
                         agent_name=agent_name,
-                        system_prompt_tokens=0,
+                        system_prompt_tokens=system_token_count,
                     )
                 if self._pruning_service:
                     status = plan.metadata.get("Status") if plan else None
