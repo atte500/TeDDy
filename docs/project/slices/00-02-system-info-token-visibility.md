@@ -80,9 +80,11 @@ Three atomic deliverables following the Contract -> Logic -> Wiring sequence:
 
 ## Verification
 
-1. Run the existing test suite to confirm no regressions:
+- [x] 1. Run the existing test suite to confirm no regressions:
    ```shell
    poetry run pytest -x
    ```
-2. Verify `content_tokens` is computed correctly by checking that `token_count(content)` matches what the LLM sees.
-3. Check edge case: when no files are selected (`selected_file_tokens == 0`), `system_info_tokens` should equal `content_tokens` and System should show all of it plus the system prompt.
+- [x] 2. Verify `content_tokens` is computed correctly by checking that `token_count(content)` matches what the LLM sees.
+   - Covered by `test_get_context_computes_content_tokens` and `test_get_context_content_tokens_zero_when_include_tokens_false` in `test_context_service.py`.
+- [x] 3. Check edge case: when no files are selected (`selected_file_tokens == 0`), `system_info_tokens` should equal `content_tokens` and System should show all of it plus the system prompt.
+   - Covered by `test_populate_context_detail_system_info_tokens_equals_content_tokens_when_no_files_selected` in `test_textual_plan_reviewer_helpers.py`.
