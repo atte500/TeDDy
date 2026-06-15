@@ -1,5 +1,5 @@
 # Slice: System Info Token Visibility
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Feature
 - **Milestone:** N/A (Ad-hoc)
 - **Specs:** [docs/project/tasks/00-02-system-info-token-visibility.md](/docs/project/tasks/00-02-system-info-token-visibility.md)
@@ -46,13 +46,37 @@ Three atomic deliverables following the Contract -> Logic -> Wiring sequence:
 
 ## Deliverables
 
-- [ ] **Contract** - Add `content_tokens` field to `ProjectContext` dataclass
-- [ ] **Logic** - Compute `content_tokens` in `ContextService.get_context()`
-- [ ] **Wiring** - Update TUI detail pane to derive `system_info_tokens` and show merged System line
+- [x] **Contract** - Add `content_tokens` field to `ProjectContext` dataclass
+- [x] **Logic** - Compute `content_tokens` in `ContextService.get_context()`
+- [x] **Wiring** - Update TUI detail pane to derive `system_info_tokens` and show merged System line
 
 ## Implementation Notes
 
-To be filled during implementation.
+### Contract (Deliverable 1)
+- Added `content_tokens: int = 0` field to `ProjectContext` dataclass after `system_prompt_tokens` in `src/teddy_executor/core/domain/models/project_context.py`.
+- Backward-compatible default of 0 ensures no existing callers break.
+
+### Logic (Deliverable 2)
+- In `ContextService.get_context()`, after assembling the `content` string, computed `content_tokens = self._llm_client.get_text_token_count(content)`.
+- Passed `content_tokens=content_tokens` to the `ProjectContext` constructor.
+- When `include_tokens=False`, `content_tokens` is set to 0 and `_llm_client.get_text_token_count` is not called.
+- Updated tests in `test_context_service.py` to verify `content_tokens` computation and zero-case.
+
+### Wiring (Deliverable 3)
+- In `populate_context_detail()` in `textual_plan_reviewer_helpers.py`:
+  - Computed `system_info_tokens = app.project_context.content_tokens - selected_file_tokens`.
+  - Updated `Total Context` to `content_tokens + system_prompt_tokens`.
+  - Updated `• System` to show merged sum `system_prompt_tokens + system_info_tokens`.
+- Tree node for agent name under "System:" remains unchanged (still shows only `system_prompt_tokens`).
+- Session, Turn, History lines remain unchanged.
+- Fixed two Local Flaws in existing tests that were missing the `content_tokens` field:
+  - `test_context_display_helpers.py`: added `content_tokens=1500`.
+  - `test_reviewer_app_context_previews.py`: added `content_tokens=1500` and `content_tokens=8200` for two test functions.
+
+### As-Built Updates
+- Updated `docs/architecture/core/domain/project_context.md` to document `content_tokens` attribute.
+- Updated `docs/architecture/core/services/context_service.md` to document `content_tokens` computation in `get_context()`.
+- Updated `docs/architecture/adapters/inbound/textual_plan_reviewer.md` to document merged System line in context detail pane.
 
 ## Verification
 
