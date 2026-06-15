@@ -53,8 +53,9 @@ def _print_initial_request(
                         message = content
             except Exception:
                 pass
-        if not message or not message.strip():
-            return
+    if not message or not message.strip():
+        return
+    typer.secho("")
     typer.secho("Initial Request:")
     typer.secho(message.strip())
 

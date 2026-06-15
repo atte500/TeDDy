@@ -138,7 +138,9 @@ sequenceDiagram
 - [x] **Logic** - Fix `confirm_and_dispatch` to return the actual user message (not `reason`) as the second return value for MESSAGE actions, so `captured_message` propagates correctly through `_dispatch_single_action`.
 - [x] **Logic** - Ensure `_print_user_message` is called even when execution goes through the TUI `_execute_silently` path. Options: wrap `_execute_silently` to emit console output, or move user message printing into `ActionDispatcher.dispatch_and_execute`.
 - [x] **Wiring** - Update the TUI execution handler (`textual_plan_reviewer_execution.py`) to invoke `_print_user_message` after successful dispatch. (Implemented directly in `orchestrate_execution()` as part of the Logic deliverable above.)
-- [ ] **Logging** - In `confirm_and_dispatch`, change the MESSAGE bypass to return the user's typed message (from `dispatch_and_execute` result) as the second return value instead of empty `reason`.
+- [x] **Logging** - In `confirm_and_dispatch`, change the MESSAGE bypass to return the user's typed message (from `dispatch_and_execute` result) as the second return value instead of empty `reason`. (Implemented as part of the Logic deliverable above.)
+- [x] **Logic** - Add leading blank line to `_print_initial_request` so there is spacing between "Session created at: …" and "Initial Request:".
+- [x] **Logic** - Remove trailing blank line from TUI user message printing so there is exactly one blank line between "User Message:" content and the next turn header.
 
 ### Implementation Notes
 

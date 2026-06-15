@@ -185,7 +185,6 @@ async def orchestrate_execution(app: ReviewerApp, node: Any, update_fn: Any) -> 
             typer.secho("")
             typer.secho("User Message:")
             typer.secho(log.details.strip())
-            typer.secho("")
     except Exception as e:
         logging.getLogger(__name__).debug("Background execution failed: %s", e)
         action.executed, action.state = True, ExecutionStatus.FAILURE

@@ -448,7 +448,7 @@ class TestConsoleVisibilityHelpers:
         ("message", "is_session", "expected_calls"),
         [
             # Happy: session + non-empty message -> prints label + content (no trailing blank line)
-            ("Hello", True, [("Initial Request:", {}), ("Hello", {})]),
+            ("Hello", True, [("", {}), ("Initial Request:", {}), ("Hello", {})]),
             # Non-session: no output
             ("Hello", False, []),
             # Empty message: no output even if session
