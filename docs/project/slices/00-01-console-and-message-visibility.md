@@ -107,7 +107,7 @@ sequenceDiagram
 - [x] **Contract** - Define `_print_initial_request`, `_print_header_bar`, `_print_user_message` signatures and behavior (documented in component doc).
 - [x] **Logic** - Implement the three helper functions in `session_orchestrator.py`.
 - [x] **Wiring** - Insert calls to the three helpers at appropriate points in `execute()`.
-- [ ] **Migration** - (None: no consumers need updating.)
+- [x] **Migration** - (None: no consumers need updating.)
 - [ ] **Cleanup** - Remove any test artifacts or temporary spike files.
 
 ## Implementation Notes
