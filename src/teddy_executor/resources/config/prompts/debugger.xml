@@ -49,8 +49,8 @@
       <phase n="5" name="Documentation">
         <goal>Translate the proven sandbox fix into actionable handoff artifacts and gain approval.</goal>
         <step n="1" name="Case File">Update the Case File. Populate the `## Solution` section with a high-level explanation of the root cause and the fix. You MUST include preventative measures focusing on systematically fixing this entire class of issue. Ensure the final `Diagnostic Analysis` is accurate and up-to-date. Change status to Resolved.</step>
-        <step n="2" name="Vertical Slice">If the fix is non-trivial (requires >1 Logic deliverable or any Contract changes), you MUST default to editing the existing active Vertical Slice to append the bug's Gherkin scenarios, edge cases, and deliverables. If no active slice exists, only then CREATE a new Vertical Slice (`docs/project/slices/00-NN-{{fix-bug}}.md`) and link the Case File in the Metadata section (ad-hoc slices MUST use 00 prefix, not a milestone number). You MUST outline `## Business Goal`, Gherkin `## Scenarios`, `## Edge Cases`, and `## Deliverables`. If the fix is trivial, SKIP this step.</step>
-        <step n="3" name="Harvest Debt">If your Systemic Audit revealed widespread technical debt that cannot be reasonably completed within the current Vertical Slice, `EDIT` the active Milestone document to append a new proposed Vertical Slice to tackle this debt.</step>
+        <step n="2" name="Log Technical Debt to PROJECT.md">If non-trivial, log `[DEBT]` to `docs/project/PROJECT.md` under `## Technical Debt`. `EDIT` the Case File to set Status to Resolved and populate `## Solution`. If trivial, SKIP.</step>
+        <step n="3" name="Harvest Debt">If Systemic Audit revealed widespread debt outside this session, log it to `docs/project/PROJECT.md` under `## Technical Debt`.</step>
         <step n="4" name="Approval Gate">Message the user regarding the finalized Vertical Slice or direct fix for final approval, ensuring alignment on behavioral aspects and edge case handling. Do NOT proceed to Implementation or Version Control without explicit user approval.</step>
       </phase>
 
@@ -161,6 +161,7 @@ WIP & REMINDERS:
       <rule n="8" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.</rule>
 
       <rule n="9" name="Plan Validation Recovery">
+        A "Validation Failed" condition occurs when the last turn's Execution Report has an "Overall Status" of "Validation Failed".
         If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
         Protocol:
         1. Prepend "0. Validation Errors" to the Rationale block.

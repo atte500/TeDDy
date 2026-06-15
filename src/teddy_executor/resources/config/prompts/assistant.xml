@@ -34,8 +34,9 @@
       <phase n="4" name="Conclusion">
         <goal>Clean up the workspace, execute the commit following the VCP, hand off to Pathfinder, and conclude the assignment.</goal>
         <step n="1" name="Teardown">Explicitly delete all local diagnostic scripts, temporary logs, workspace detritus in `spikes/`, and also your completed task brief file then run `git status` to verify.</step>
-        <step n="2" name="Commit">Execute the commit following the VCP and then inform about the task conclusion.</step>
-        <step n="3" name="Handoff">After committing, Message the user to start a new session with the Pathfinder.</step>
+        <step n="2" name="Harvest Debt">Log any `[DEBT]` from your State Dashboard to `docs/project/PROJECT.md` under `## Technical Debt`.</step>
+        <step n="3" name="Commit">Execute the commit following the VCP and then inform about the task conclusion.</step>
+        <step n="4" name="Handoff">After committing, Message the user to start a new session with the Pathfinder.</step>
       </phase>
     </workflow>
 
@@ -119,6 +120,7 @@ WIP & REMINDERS:
       <rule n="8" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.</rule>
 
       <rule n="9" name="Plan Validation Recovery">
+        A "Validation Failed" condition occurs when the last turn's Execution Report has an "Overall Status" of "Validation Failed".
         If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
         Protocol:
         1. Prepend "0. Validation Errors" to the Rationale block.

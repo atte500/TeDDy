@@ -18,7 +18,6 @@
         <step n="1" name="Exploration">`READ` the assigned Vertical Slice and all linked Component Design Docs. If a slice is not provided, `CREATE` one using a `00-NN-` prefix (ad-hoc slices MUST use 00 prefix, not a milestone number). Immediately `EXECUTE git grep` and use `READ` or `RESEARCH` to identify the specific code boundaries and technical unknowns. Whether the slice is newly created or pre-existing, immediately `EDIT` the slice to change its Status to `In Progress`.</step>
         <step n="2" name="Empirical Probe">Before prototyping the solution, empirically probe the real system's current behavior. Iterate the probe until you are observing the correct part of the system with all relevant context. Do not rely on static analysis — the baseline must be empirically confirmed. Probe the current system behavior using the mechanism defined by the prototype's domain (see Domain Adaptation). Capture raw, unprocessed evidence — no assertions, no post-processing — in `spikes/prototypes/{scope-slug}/`.</step>
         <step n="3" name="Alignment Gate">Message the user with a concrete plan: You MUST specify the Current System Behavior (empirically probed) vs Desired Behaviour and what specific technical changes are entailed. The desired behavior must be grounded in empirical understanding of the system — never derived from static analysis alone. During prototyping, the resulting state will be probed to verify it matches the desired behavior. Do not proceed further until you have explicit user approval.</step>
-        <step n="7" name="Sync Requirements">Update the relevant project specifications and draft the Vertical Slice accordingly to align with the validated requirements. Use `RESEARCH` if needed to ensure technical accuracy.</step>
       </phase>
 
       <phase n="2" name="Prototyping">
@@ -40,18 +39,19 @@
 
       <phase n="4" name="Documentation">
         <goal>Analyze the prototype, update specs and vertical slice with all discovered nuances, and finalize the implementation plan and tracking artifacts.</goal>
-        <step n="1" name="Exhaustive Investigation">Perform an exhaustive investigation by `READ`ing ALL relevant source code files and the draft `Component Design Docs` linked in the slice's metadata.</step>
-        <step n="2" name="Update Vertical Slice">Compare the prototype against the current codebase and `EDIT` the `Vertical Slice` to document the findings. Update `## Implementation Plan` with the required codebase modifications (Delta Analysis) and technical strategy. Update `## Edge Cases` with any edge cases discovered during prototyping. Update `## Scenarios` to reflect validated behavioral details — if the prototype revealed that the original scenarios were inaccurate or incomplete, correct the Given/When/Then steps to match reality.</step>
-        <step n="3" name="Refine Component Documentation">`EDIT` the draft `Component Design Docs` to reflect the validated reality of the prototype. Correct any inaccuracies from the Architect's initial draft and add detailed implementation notes, contracts, and logic that you discovered.</step>
-        <step n="4" name="Impact Audit & Consistency Check">
+        <step n="1" name="Exhaustive Investigation">Perform an exhaustive investigation by `READ`ing ALL relevant source code files, the draft `Component Design Docs` linked in the slice's metadata, and the Specification Documents in `docs/project/specs/`.</step>
+        <step n="2" name="Update Specification Documents">`EDIT` the Specification Documents in `docs/project/specs/` to update them with all details and nuances discovered during prototyping. Ensure the specs accurately reflect the validated behavior, edge cases, and implementation details.</step>
+        <step n="3" name="Update Vertical Slice">Compare the prototype against the current codebase and `EDIT` the `Vertical Slice` to document the findings. Update `## Implementation Plan` with the required codebase modifications (Delta Analysis) and technical strategy. Update `## Edge Cases` with any edge cases discovered during prototyping. Update `## Scenarios` to reflect validated behavioral details — if the prototype revealed that the original scenarios were inaccurate or incomplete, correct the Given/When/Then steps to match reality.</step>
+        <step n="4" name="Refine Component Documentation">`EDIT` the draft `Component Design Docs` to reflect the validated reality of the prototype. Correct any inaccuracies from the Architect's initial draft and add detailed implementation notes, contracts, and logic that you discovered.</step>
+        <step n="5" name="Impact Audit & Consistency Check">
           Use `EXECUTE git grep` on target components. If a component has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the plan into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the plan follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.
         </step>
-        <step n="5" name="Harvest Debt">If any debt was logged in your State Dashboard, `EDIT` the active Vertical Slice to append one or more deliverables to address it under the `Deliverables` section.</step>
-        <step n="6" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to link the feature-specific prototype subfolder (e.g., `spikes/prototypes/{scope-slug}/`) in the `Prototype` field. Use a root-relative path, e.g., `- **Prototype:** [spikes/prototypes/{scope-slug}/](/spikes/prototypes/{scope-slug}/)`.</step>
-        <step n="7" name="Cleanup">Delete any unapproved or broken spike files, preserving the approved feature-specific subfolder (containing the Probe script and shadow files). Run `git status` to verify.</step>
-        <step n="8" name="Status Update">`EDIT` the `Vertical Slice` to ensure its `Status:` is set to `Planned` before handoff.</step>
-        <step n="9" name="Final Requirements Sync">Perform a final requirements sync by ensuring the Vertical Slice and all modified specs accurately reflect the verified behavior and are in alignment with the user's expectations.</step>
-        <step n="10" name="Alignment">Message the user with a summary of all changes made to the Vertical Slice and Component Docs. Do NOT proceed to Version Control without explicit user approval to commit.</step>
+        <step n="6" name="Harvest Debt">Log any `[DEBT]` from your State Dashboard to `docs/project/PROJECT.md` under `## Technical Debt`. Do NOT append deliverables to the Vertical Slice for debt items.</step>
+        <step n="7" name="Link Reference Material">`EDIT` the `Vertical Slice`'s `Metadata` section to link the feature-specific prototype subfolder (e.g., `spikes/prototypes/{scope-slug}/`) in the `Prototype` field. Use a root-relative path, e.g., `- **Prototype:** [spikes/prototypes/{scope-slug}/](/spikes/prototypes/{scope-slug}/)`.</step>
+        <step n="8" name="Cleanup">Delete any unapproved or broken spike files, preserving the approved feature-specific subfolder (containing the Probe script and shadow files). Run `git status` to verify.</step>
+        <step n="9" name="Status Update">`EDIT` the `Vertical Slice` to ensure its `Status:` is set to `Planned` before handoff.</step>
+        <step n="10" name="Final Requirements Sync">Perform a final requirements sync by ensuring the Vertical Slice and all modified specs accurately reflect the verified behavior and are in alignment with the user's expectations.</step>
+        <step n="11" name="Alignment">Message the user with a summary of all changes made to the Vertical Slice and Component Docs. Do NOT proceed to Version Control without explicit user approval to commit.</step>
       </phase>
 
       <phase n="5" name="Version Control">
@@ -148,6 +148,7 @@ WIP & REMINDERS:
       <rule n="8" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.</rule>
 
       <rule n="9" name="Plan Validation Recovery">
+        A "Validation Failed" condition occurs when the last turn's Execution Report has an "Overall Status" of "Validation Failed".
         If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
         Protocol:
         1. Prepend "0. Validation Errors" to the Rationale block.

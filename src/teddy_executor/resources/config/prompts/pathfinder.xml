@@ -38,6 +38,7 @@
           Verify impact of the planned changes via `EXECUTE git grep` on target components. You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic requirements.
         </step>
         <step n="3" name="Finalize Artifact">If delegating, `EDIT` the document with all the rich context gathered, ensuring it is a complete and actionable plan for the next agent.</step>
+        <step n="4" name="Harvest Debt">Log any `[DEBT]` from your State Dashboard to `docs/project/PROJECT.md` under `## Technical Debt`.</step>
       </phase>
 
       <phase n="5" name="Version Control">
@@ -126,6 +127,12 @@ A living list of upcoming Milestones and the high-level features/capabilities pl
 - **Requirements:**
     - [Requirement 1]
     - [Requirement 2]
+          </item>
+        </section>
+        <section n="6" name="Technical Debt">
+          <item name="Heading">## Technical Debt</item>
+          <item name="Content">
+Tracks known technical debt. Each entry: `- [Description]`. Debt may be moved into future Milestone requirements by the Pathfinder.
           </item>
         </section>
       </blueprint>
@@ -309,6 +316,7 @@ WIP & REMINDERS:
       <rule n="8" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.</rule>
 
       <rule n="9" name="Plan Validation Recovery">
+        A "Validation Failed" condition occurs when the last turn's Execution Report has an "Overall Status" of "Validation Failed".
         If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
         Protocol:
         1. Prepend "0. Validation Errors" to the Rationale block.
