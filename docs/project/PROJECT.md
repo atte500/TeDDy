@@ -68,3 +68,7 @@ This section defines the conventions for our project management artifacts.
     - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels.
 - **Proposed Vertical Slices:**
     - **`00-03-casefold-agent-name-comparison`:** Apply `.casefold()` to all remaining `stem ==` comparisons in `session_service.py` (lines 83, 522) and `session_repository.py` (line 139) for consistent case-insensitive agent name resolution. This fixes potential mismatches when session metadata or config files use capitalized names.
+
+## Technical Debt Backlog
+
+- **`00-04-reusable-ports-fixture`**: Create a reusable pytest fixture (`ports_fixture`) in `tests/harness/setup/` that provides pre-configured port mocks with sensible defaults for `ISessionManager`, `IFileSystemManager`, etc. This reduces the risk of "mock poisoning" (bare MagicMock instances missing required `return_value` configurations) in test setup. See Bug #04 for context.
