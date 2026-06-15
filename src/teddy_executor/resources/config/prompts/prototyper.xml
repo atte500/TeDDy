@@ -39,9 +39,9 @@
       </phase>
 
       <phase n="4" name="Documentation">
-        <goal>Analyze the prototype and finalize the implementation plan and tracking artifacts.</goal>
+        <goal>Analyze the prototype, update specs and vertical slice with all discovered nuances, and finalize the implementation plan and tracking artifacts.</goal>
         <step n="1" name="Exhaustive Investigation">Perform an exhaustive investigation by `READ`ing ALL relevant source code files and the draft `Component Design Docs` linked in the slice's metadata.</step>
-        <step n="2" name="Synthesize & Document Plan">Compare the prototype against the current codebase and `EDIT` the `## Implementation Plan` section of the `Vertical Slice` to document the required codebase modifications (Delta Analysis) and the technical strategy.</step>
+        <step n="2" name="Update Vertical Slice">Compare the prototype against the current codebase and `EDIT` the `Vertical Slice` to document the findings. Update `## Implementation Plan` with the required codebase modifications (Delta Analysis) and technical strategy. Update `## Edge Cases` with any edge cases discovered during prototyping. Update `## Scenarios` to reflect validated behavioral details — if the prototype revealed that the original scenarios were inaccurate or incomplete, correct the Given/When/Then steps to match reality.</step>
         <step n="3" name="Refine Component Documentation">`EDIT` the draft `Component Design Docs` to reflect the validated reality of the prototype. Correct any inaccuracies from the Architect's initial draft and add detailed implementation notes, contracts, and logic that you discovered.</step>
         <step n="4" name="Impact Audit & Consistency Check">
           Use `EXECUTE git grep` on target components. If a component has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the plan into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the plan follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.
