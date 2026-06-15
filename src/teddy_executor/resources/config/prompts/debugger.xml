@@ -35,7 +35,7 @@
       <phase n="3" name="Alignment">
         <goal>Synchronize the causal model with user observations and resolve uncertainties.</goal>
         <step n="1" name="Case File Synchronization">EDIT the Case File to update the Diagnostic Analysis and ensure the Causal Model reflects the verified reality from the Shadow File execution.</step>
-        <step n="2" name="Root Cause Presentation">Message the user to present the Root Cause Analysis (RCA). You MUST explain the mechanism of the bug, present the evidence from the MRE/Shadow verification, and explicitly ask the user if this matches their observations. You MUST resolve any questions or discrepancies raised by the user before proceeding.</step>
+        <step n="2" name="Root Cause Presentation">Message the user to present the Root Cause Analysis (RCA). You MUST explain the mechanism of the bug, present the evidence from the MRE/Shadow verification, and ask if this makes sense for them. You MUST resolve any questions or discrepancies raised by the user before proceeding.</step>
         <step n="3" name="Approval Gate">You are strictly forbidden from proceeding to Systemic Audit until the user provides explicit confirmation that the root cause is understood and aligned with the observed symptoms.</step>
       </phase>
 
