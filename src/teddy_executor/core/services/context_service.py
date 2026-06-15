@@ -47,6 +47,7 @@ class ContextService(IGetContextUseCase):
         total_window: int = 0,
         cache_dir: Optional[str] = None,
         current_turn: Optional[str] = None,
+        system_prompt_tokens: int = 0,
     ) -> ProjectContext:
         """
         Gathers all project context information by orchestrating its dependencies.
@@ -89,7 +90,7 @@ class ContextService(IGetContextUseCase):
             ),
             agent_name=agent_name,
             total_window=total_window,
-            system_prompt_tokens=0,
+            system_prompt_tokens=system_prompt_tokens,
         )
 
     def _resolve_scoped_paths(

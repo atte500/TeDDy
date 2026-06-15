@@ -113,17 +113,23 @@ class TestSystemPromptTokenPropagation:
         except Exception:
             pass  # Expected with mock environment
 
-        # ASSERT: system_prompt_tokens should be populated after fetch_system_prompt()
-        # Before the fix, this was 0. After the fix, it should be 95.
-        assert returned_context.system_prompt_tokens > 0, (
-            f"Expected system_prompt_tokens > 0, got {returned_context.system_prompt_tokens}. "
-            "Bug #01 regression: system prompt token count was not propagated to ProjectContext."
-        )
-        assert returned_context.system_prompt_tokens == 95, (
-            f"Expected system_prompt_tokens == 95, got {returned_context.system_prompt_tokens}"
-        )
+        # ASSERT: system prompt tokens are passed into get_context() at construction time.
+        # We cannot assert on the mock's returned DTO because the mock returns the pre-built
+        # object we provided (with system_prompt_tokens=0). Instead, we verify the call params.
 
         # Verify get_text_token_count was called with the system prompt text and model
         mock_llm.get_text_token_count.assert_called_once_with(
             system_prompt_text, model="gpt-4o"
+        )
+
+        # Verify get_context was called with system_prompt_tokens parameter
+        mock_context.get_context.assert_called_once()
+        _call_kwargs = mock_context.get_context.call_args[1]
+        assert "system_prompt_tokens" in _call_kwargs, (
+            "Expected get_context() to be called with system_prompt_tokens parameter. "
+            "Bug #01 regression: token count was not passed to context construction."
+        )
+        assert _call_kwargs["system_prompt_tokens"] == 95, (
+            f"Expected system_prompt_tokens=95 in get_context() call, "
+            f"got {_call_kwargs.get('system_prompt_tokens')}"
         )

@@ -56,16 +56,10 @@ class PlanningService(IPlanningUseCase):
             if not meta.get("is_replan"):
                 meta["user_request"] = resolved_message
 
-        context = self._context_service.get_context(
-            context_files=resolved_context_files,
-            agent_name=agent_name,
-            current_turn=Path(turn_dir).name,
-        )
         system_prompt = self._prompt_manager.fetch_system_prompt(agent_name, turn_path)
 
-        # === FIX: Propagate system prompt tokens to the ProjectContext DTO ===
-        # The system prompt was just fetched, so compute its token count
-        # and update the context object so the TUI can display it correctly.
+        # Compute system prompt token count BEFORE context construction so the
+        # ProjectContext DTO is born with correct data (no post-hoc patching needed).
         model = str(
             meta.get("model")
             or self._config_service.get_setting("llm.model")
@@ -77,8 +71,13 @@ class PlanningService(IPlanningUseCase):
             )
         except Exception:
             system_token_count = 0
-        object.__setattr__(context, "system_prompt_tokens", system_token_count)
-        # =======================================================================
+
+        context = self._context_service.get_context(
+            context_files=resolved_context_files,
+            agent_name=agent_name,
+            current_turn=Path(turn_dir).name,
+            system_prompt_tokens=system_token_count,
+        )
 
         # Context is purely project state (including initial_request.md via session.context).
         full_context = f"{context.header}\n{context.content}"

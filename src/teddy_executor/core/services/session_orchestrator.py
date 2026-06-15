@@ -197,30 +197,35 @@ class SessionOrchestrator(IRunPlanUseCase):
                 total_window = self._llm_client.get_context_window()
 
                 cache_dir = str(Path(plan_path).parent.parent)
+                # Compute system prompt token count BEFORE context construction so the
+                # ProjectContext DTO is born with correct data (no post-hoc patching needed).
+                system_prompt = self._prompt_manager.fetch_system_prompt(
+                    agent_name, Path(plan_path).parent
+                )
+                model = str(
+                    self._config_service.get_setting("llm.model") or ""
+                )
+                try:
+                    system_token_count = self._llm_client.get_text_token_count(
+                        system_prompt, model=model
+                    )
+                except Exception:
+                    system_token_count = 0
+
                 project_context = self._context_service.get_context(
                     context_files=context_files,
                     agent_name=agent_name,
                     total_window=total_window,
                     cache_dir=cache_dir,
+                    system_prompt_tokens=system_token_count,
                 )
-                from dataclasses import is_dataclass, replace
+                from dataclasses import is_dataclass
 
-                if is_dataclass(project_context):
-                    # Compute system prompt tokens for context display (same pattern as planning_service.py)
-                    system_prompt = self._prompt_manager.fetch_system_prompt(
-                        agent_name, Path(plan_path).parent
-                    )
-                    model = str(self._config_service.get_setting("llm.model") or "")
-                    try:
-                        system_token_count = self._llm_client.get_text_token_count(
-                            system_prompt, model=model
-                        )
-                    except Exception:
-                        system_token_count = 0
+                if is_dataclass(project_context) and agent_name != project_context.agent_name:
+                    from dataclasses import replace
                     project_context = replace(
                         cast(Any, project_context),
                         agent_name=agent_name,
-                        system_prompt_tokens=system_token_count,
                     )
                 if self._pruning_service:
                     status = plan.metadata.get("Status") if plan else None

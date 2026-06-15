@@ -16,6 +16,7 @@ class IGetContextUseCase(Protocol):
         total_window: int = 0,
         cache_dir: Optional[str] = None,
         current_turn: Optional[str] = None,
+        system_prompt_tokens: int = 0,
     ) -> ProjectContext:
         """
         Gathers all project context information.
@@ -23,6 +24,7 @@ class IGetContextUseCase(Protocol):
         Args:
             context_files: Optional mapping of scope names to .context files.
             current_turn: Optional 2-digit turn number to include in the header.
+            system_prompt_tokens: Token count of the system prompt (pre-computed).
 
         Returns:
             ProjectContext: A data object containing the aggregated context.
