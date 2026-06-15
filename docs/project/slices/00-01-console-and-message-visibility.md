@@ -1,5 +1,5 @@
 # Slice: Console and Message Visibility
-- **Status:** In Progress
+- **Status:** Planned
 - **Type:** Feature
 - **Milestone:** [02-stability-and-polish](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -104,19 +104,14 @@ sequenceDiagram
 ```
 
 ## Deliverables
-- [x] **Contract** - Define `_print_initial_request`, `_print_header_bar`, `_print_user_message` signatures and behavior (documented in component doc).
-- [x] **Logic** - Implement the three helper functions in `session_orchestrator.py`.
-- [▶] **Wiring** - Insert calls to the three helpers at appropriate points in `execute()`.
+- [ ] **Contract** - Define `_print_initial_request`, `_print_header_bar`, `_print_user_message` signatures and behavior (documented in component doc).
+- [ ] **Logic** - Implement the three helper functions in `session_orchestrator.py`.
+- [ ] **Wiring** - Insert calls to the three helpers at appropriate points in `execute()`.
 - [ ] **Migration** - (None: no consumers need updating.)
 - [ ] **Cleanup** - Remove any test artifacts or temporary spike files.
 
 ## Implementation Notes
-- **2026-06-15:** Contract and Logic deliverables completed.
-  - Three standalone helper functions added to `session_orchestrator.py` at module level (outside class).
-  - Functions use `typer.secho` for console output and `extract_status_emoji` from `textual_plan_reviewer_helpers`.
-  - Unit tests in `test_console_visibility.py` cover guard clauses (non-session, empty message), emoji extraction, fallback to lowercase status key, whitespace stripping, and combined output format (emoji + title, blank lines).
-  - **Hexagonal boundary debt:** `extract_status_emoji` is imported from `adapters/inbound/` into `core/services/`. This violates the Hexagonal Architecture rule. Should be moved to `core/utils/` in a future refactor deliverable.
-  - All 19 unit tests pass (1 contract test + 18 behavioral tests).
+*(To be filled by Developer)*
 
 ## Verification
 1. Run `poetry run python spikes/prototypes/00-console-and-message-visibility/raw_demo.py` and confirm output matches the approved format.
