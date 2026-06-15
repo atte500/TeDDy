@@ -78,11 +78,16 @@ class ContextService(IGetContextUseCase):
                 except Exception:
                     file_contents[url] = None
 
+        content = self._format_content(
+            repo_tree, scoped_paths, file_contents, git_status
+        )
+        content_tokens = (
+            self._llm_client.get_text_token_count(content) if include_tokens else 0
+        )
+
         return ProjectContext(
             header=self._format_header(system_info, current_turn),
-            content=self._format_content(
-                repo_tree, scoped_paths, file_contents, git_status
-            ),
+            content=content,
             scoped_paths=scoped_paths,
             git_status=git_status,
             items=self._collect_items(
@@ -91,6 +96,7 @@ class ContextService(IGetContextUseCase):
             agent_name=agent_name,
             total_window=total_window,
             system_prompt_tokens=system_prompt_tokens,
+            content_tokens=content_tokens,
         )
 
     def _resolve_scoped_paths(

@@ -479,3 +479,58 @@ def test_get_context_with_current_turn_parameter(
 
     # Assert
     assert "- **Current Turn:** 01" in result.header
+
+
+def test_get_context_computes_content_tokens(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+    mock_llm_client,
+):
+    """
+    Scenario: Content Token Computation
+    Tests that get_context() computes content_tokens from the assembled content
+    string and stores it on the ProjectContext DTO.
+    """
+    # Arrange
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_fs.get_context_paths.return_value = []
+
+    # Mock token counting to return a known value
+    mock_llm_client.get_text_token_count.return_value = 42
+
+    # Act
+    result = service.get_context()
+
+    # Assert
+    # content_tokens should be the token count of the assembled content string
+    assert result.content_tokens == 42
+    mock_llm_client.get_text_token_count.assert_called_once_with(result.content)
+
+
+def test_get_context_content_tokens_zero_when_include_tokens_false(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+    mock_llm_client,
+):
+    """
+    Scenario: Content Token Computation Disabled
+    Tests that content_tokens is 0 when include_tokens=False.
+    """
+    # Arrange
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_fs.get_context_paths.return_value = []
+
+    # Act
+    result = service.get_context(include_tokens=False)
+
+    # Assert
+    assert result.content_tokens == 0
+    mock_llm_client.get_text_token_count.assert_not_called()

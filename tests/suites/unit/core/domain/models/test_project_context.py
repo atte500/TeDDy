@@ -94,3 +94,19 @@ def test_project_context_git_status_defaults_to_none():
     """
     project_context = ProjectContext(header="H", content="C")
     assert project_context.git_status is None
+
+
+def test_project_context_content_tokens_defaults_to_zero():
+    """
+    Verify that content_tokens defaults to 0 if not provided.
+    """
+    project_context = ProjectContext(header="H", content="C")
+    assert project_context.content_tokens == 0
+
+
+def test_project_context_content_tokens_can_be_set():
+    """
+    Verify that content_tokens can be set via the constructor.
+    """
+    project_context = ProjectContext(header="H", content="C", content_tokens=1500)
+    assert project_context.content_tokens == 1500

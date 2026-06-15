@@ -52,4 +52,5 @@ class ProjectContext:
     items: List[ContextItem] = field(default_factory=list)
     agent_name: str = "Unknown"
     system_prompt_tokens: int = 0
+    content_tokens: int = 0
     total_window: int = 0

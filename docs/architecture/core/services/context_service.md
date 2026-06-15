@@ -67,7 +67,8 @@ When the `get_context` method is called, the `ContextService` performs the follo
 4.  It uses the `IFileSystemManager` again to read the content of each file in `context_vault_paths`.
 5.  It gathers all paths into `ContextItem` DTOs, performing **deduplication** to ensure each unique path appears only once. If a path exists in multiple scopes (e.g., "Session" and "Turn"), it prioritizes non-"Turn" scopes to prevent double-counting in token budget calculations.
 6.  It formats the system information into a `header` string and the repository tree and file contents into a `content` string using private helper methods.
-7.  It assembles the final `ProjectContext` DTO with the formatted `header`, `content`, and deduplicated `items`, then returns it.
+7.  It computes `content_tokens` by calling `self._llm_client.get_text_token_count(content)` on the assembled content string. If `include_tokens` is False, `content_tokens` is set to 0.
+8.  It assembles the final `ProjectContext` DTO with the formatted `header`, `content`, deduplicated `items`, and `content_tokens`, then returns it.
 
 ## 5. Data Contracts / Methods
 

@@ -25,6 +25,7 @@ The `ProjectContext` and `ContextItem` models are implemented as Python `@datacl
 -   **`items` (`List[ContextItem]`):** A structured list of all context files and their metadata for UI presentation.
 -   **`agent_name` (`str`):** The name of the active agent persona (e.g., "Developer").
 -   **`system_prompt_tokens` (`int`):** The estimated token size of the agent's system prompt.
+-   **`content_tokens` (`int`):** The estimated token size of the full `content` string, including all overhead (headers, formatting, file tree, git status). Defaults to 0.
 -   **`total_window` (`int`):** The total context window (input limit) for the model in use.
 
 ### Preconditions

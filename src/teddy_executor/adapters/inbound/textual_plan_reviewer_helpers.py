@@ -54,8 +54,10 @@ def populate_context_detail(app: "ReviewerApp", pane: Any, data: Any) -> None:
     elif app.project_context:
         # Context Aggregate View - Only sum SELECTED items
         selected_items = [i for i in app.project_context.items if i.selected]
+        selected_file_tokens = sum(i.token_count for i in selected_items)
+        system_info_tokens = app.project_context.content_tokens - selected_file_tokens
         total_tokens = (
-            sum(i.token_count for i in selected_items)
+            app.project_context.content_tokens
             + app.project_context.system_prompt_tokens
         )
         window_val = (
@@ -71,7 +73,8 @@ def populate_context_detail(app: "ReviewerApp", pane: Any, data: Any) -> None:
         )
         pane.append(
             DetailItem(
-                "• System", f"{app.project_context.system_prompt_tokens / 1000.0:.1f}k"
+                "• System",
+                f"{(app.project_context.system_prompt_tokens + system_info_tokens) / 1000.0:.1f}k",
             )
         )
         session_tokens = sum(

@@ -26,6 +26,7 @@ Implements the `IPlanReviewer` port using the `Textual` TUI framework. It provid
 5. **Tiered Interaction:**
    - **Tier 1:** Summary view (Header/Footer).
    - **Tier 2:** Detail view/Checklist (Tree) with side-by-side parameter inspection.
+3. **Context Detail Pane (Token Breakdown):** When the Context Root is selected in the left pane, the right pane shows an aggregate token breakdown. The `• System` line displays the merged sum of `system_prompt_tokens` and `system_info_tokens` (where `system_info_tokens = content_tokens - sum(selected_file_tokens)`). The `Total Context` line displays `content_tokens + system_prompt_tokens` divided by the model's context window. This ensures the breakdown accurately reflects all content sent to the LLM, including overhead tokens from headers, formatting, file tree, and git status.
 3. **Focus Management:** Navigation between panes is handled via `Tab`. Tabbing into the right pane automatically highlights the first parameter.
 3. **Modification Logic:**
    - When a user selects "Modify/Preview" (key `p`), the adapter uses the `ISystemEnvironment` to open a temporary file in the user's editor.

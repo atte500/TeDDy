@@ -45,6 +45,7 @@ async def test_reviewer_app_shows_context_aggregate_detail(env):
         ],
         agent_name="Architect",
         system_prompt_tokens=2000,
+        content_tokens=1500,
         total_window=128000,
     )
     plan = Plan(
@@ -275,6 +276,7 @@ async def test_reviewer_app_shows_history_row_in_context_aggregate_detail(env):
         ],
         agent_name="Developer",
         system_prompt_tokens=1000,
+        content_tokens=8200,
         total_window=32000,
     )
     plan = Plan(

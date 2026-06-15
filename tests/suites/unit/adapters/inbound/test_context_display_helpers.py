@@ -22,6 +22,7 @@ def test_populate_context_detail_shows_sentinel_on_zero_window():
         content="",
         items=[item],
         system_prompt_tokens=1000,
+        content_tokens=1500,
         total_window=0,  # Sentinel value
     )
     pane = []
