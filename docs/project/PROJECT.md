@@ -66,3 +66,5 @@ This section defines the conventions for our project management artifacts.
     - **Tier 2 Editing:** Automatically open external editor for parameters that are multiline or >100 characters.
     - **Editor & Diff Mapping:** Strictly respect `editor` config; implement a translation table for diff flags (e.g., `nvim` -> `-d`); remove all implicit VS Code fallbacks.
     - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels.
+- **Proposed Vertical Slices:**
+    - **`00-03-casefold-agent-name-comparison`:** Apply `.casefold()` to all remaining `stem ==` comparisons in `session_service.py` (lines 83, 522) and `session_repository.py` (line 139) for consistent case-insensitive agent name resolution. This fixes potential mismatches when session metadata or config files use capitalized names.
