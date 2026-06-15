@@ -72,3 +72,5 @@ This section defines the conventions for our project management artifacts.
 ## Technical Debt
 
 - Create a reusable pytest fixture (`ports_fixture`) in `tests/harness/setup/` that provides pre-configured port mocks with sensible defaults for `ISessionManager`, `IFileSystemManager`, etc. This reduces the risk of "mock poisoning" (bare MagicMock instances missing required `return_value` configurations) in test setup.
+
+- Extract shared `prewarm_imports()` logic from `__main__.py` `init` command into `cli_helpers.py`. Currently, the heavy import block (`litellm`, `trafilatura`, `pyperclip`, `BeautifulSoup`, `DDGS`) is duplicated inline in the `init` command. A shared helper would allow both `init` and the planned `update` command (post-upgrade) to call it without duplication. (Addressed by Slice `00-02-update-checker`)
