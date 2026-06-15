@@ -90,7 +90,43 @@ class TestLifecyclePrintsInitialRequest:
             assert call_args[0][0] is None, "message should be None"
             assert call_args[0][1] is True, "is_session should be True"
 
-    def test_print_initial_request_resolves_path_with_parent(
+    def test_lifecycle_manager_does_not_print_initial_request_on_subsequent_turns(
+        self,
+    ):
+        """When resuming a non-first turn, lifecycle manager must NOT call _print_initial_request."""
+        with patch(
+            "teddy_executor.core.services.session_orchestrator._print_initial_request"
+        ) as mock_print:
+            ports = MagicMock()
+            ports.session_service = MagicMock()
+            ports.session_service.get_session_state.return_value = (
+                SessionState.COMPLETE_TURN,
+                ".teddy/sessions/test/02",
+            )
+            ports.session_service.transition_to_next_turn.return_value = (
+                ".teddy/sessions/test/03",
+            )
+            ports.file_system_manager = MagicMock()
+            ports.report_formatter = MagicMock()
+            ports.user_interactor = MagicMock()
+            ports.session_planner = MagicMock()
+            ports.session_planner.trigger_new_plan.return_value = "test"
+            ports.replanner = MagicMock()
+
+            lifecycle = SessionLifecycleManager(ports)
+
+            mock_orchestrator = MagicMock(spec=IRunPlanUseCase)
+            mock_orchestrator.execute.return_value = MagicMock(run_summary=MagicMock())
+            lifecycle.resume(
+                "test",
+                mock_orchestrator,
+                interactive=False,
+            )
+
+            # Assert: _print_initial_request should NOT have been called for turn 02+
+            mock_print.assert_not_called()
+
+    def test_print_initial_request_resolves_path_with_parent
         self, tmp_path, monkeypatch
     ):
         """_print_initial_request must resolve initial_request.md using Path(plan_path).parent
