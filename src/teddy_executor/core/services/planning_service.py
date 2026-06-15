@@ -69,7 +69,7 @@ class PlanningService(IPlanningUseCase):
         model = str(
             meta.get("model")
             or self._config_service.get_setting("llm.model")
-            or "gpt-4o"
+            or ""
         )
         try:
             system_token_count = self._llm_client.get_text_token_count(
@@ -97,7 +97,7 @@ class PlanningService(IPlanningUseCase):
         model = str(
             meta.get("model")
             or self._config_service.get_setting("llm.model")
-            or "gpt-4o"
+            or ""
         )
 
         # Pre-emptive Hydration: Trigger hydration via get_context_window BEFORE counting tokens.

@@ -142,7 +142,7 @@ class SessionOrchestrator(IRunPlanUseCase):
                         agent_name, Path(plan_path).parent
                     )
                     model = str(
-                        self._config_service.get_setting("llm.model") or "gpt-4o"
+                        self._config_service.get_setting("llm.model") or ""
                     )
                     try:
                         system_token_count = self._llm_client.get_text_token_count(
