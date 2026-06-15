@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "teddy-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "A local-first, file-based AI coding workflow that applies the UNIX philosophy to AI collaboration."
 authors = ["Raphael Atteritano"]
 license = "AGPL-3.0-only"
 packages = [{ include = "teddy_executor", from = "src" }]
 
 [tool.poetry.dependencies]
-python = ">=3.11, <3.14"
+python = ">=3.11, <3.15"
 typer = { version = "*", extras = ["all"] }
 pyperclip = "*"
 playwright = "*"
