@@ -1,5 +1,5 @@
 # Slice: Console and Message Visibility
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Feature
 - **Milestone:** [02-stability-and-polish](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -136,7 +136,7 @@ sequenceDiagram
 - Test assertions were adjusted to match the actual execution flow: empty message causes early `return None` before the header bar call; non-session mode requires `plan_path=None`.
 
 ## Verification
-1. Run `poetry run python spikes/prototypes/00-console-and-message-visibility/raw_demo.py` and confirm output matches the approved format.
-2. Run unit tests: `poetry run pytest tests/suites/unit/core/services/test_session_orchestrator.py -v`
-3. Run integration tests: `poetry run pytest tests/suites/integration/core/services/test_session_orchestration_integration.py -v`
-4. Manual: Start a session with a message and verify the three lines appear in correct order.
+1. [x] Run `poetry run python spikes/prototypes/00-console-and-message-visibility/raw_demo.py` and confirm output matches the approved format.
+2. [x] Run unit tests: `poetry run pytest tests/suites/unit/core/services/test_session_orchestrator.py -v`
+3. [x] Run integration tests: `poetry run pytest tests/suites/integration/core/services/test_session_orchestration_integration.py -v`
+4. [ ] Manual: Start a session with a message and verify the three lines appear in correct order.
