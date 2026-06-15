@@ -126,7 +126,7 @@ class TestLifecyclePrintsInitialRequest:
             # Assert: _print_initial_request should NOT have been called for turn 02+
             mock_print.assert_not_called()
 
-    def test_print_initial_request_resolves_path_with_parent
+    def test_print_initial_request_resolves_path_with_parent(
         self, tmp_path, monkeypatch
     ):
         """_print_initial_request must resolve initial_request.md using Path(plan_path).parent
