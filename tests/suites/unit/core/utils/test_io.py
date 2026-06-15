@@ -121,8 +121,9 @@ class TestTee:
     ) -> None:
         """Verify Tee duplicates stdout writes to the log file."""
         test_message = "Hello, stdout!\n"
-        with Tee(tee_log_path):
-            sys.stdout.write(test_message)
+        with open(tee_log_path, "a", encoding="utf-8") as log_file:
+            with Tee(log_file):
+                sys.stdout.write(test_message)
 
         # Original stdout (via capsys) should have the message
         captured = capsys.readouterr()
@@ -137,8 +138,9 @@ class TestTee:
     ) -> None:
         """Verify Tee duplicates stderr writes to the log file."""
         test_message = "Hello, stderr!\n"
-        with Tee(tee_log_path):
-            sys.stderr.write(test_message)
+        with open(tee_log_path, "a", encoding="utf-8") as log_file:
+            with Tee(log_file):
+                sys.stderr.write(test_message)
 
         captured = capsys.readouterr()
         assert captured.err == test_message, (
@@ -151,10 +153,11 @@ class TestTee:
     ) -> None:
         """Verify that flush() on the Tee writer flushes both original and log file."""
         test_message = "Test flush\n"
-        with Tee(tee_log_path):
-            # Write to sys.stdout (which is the Tee writer) and flush directly
-            sys.stdout.write(test_message)
-            sys.stdout.flush()
+        with open(tee_log_path, "a", encoding="utf-8") as log_file:
+            with Tee(log_file):
+                # Write to sys.stdout (which is the Tee writer) and flush directly
+                sys.stdout.write(test_message)
+                sys.stdout.flush()
 
         # After flush, content should be in both
         captured = capsys.readouterr()
@@ -166,8 +169,9 @@ class TestTee:
     def test_tee_isatty_forwarding(self, tee_log_path: Path) -> None:
         """Verify that isatty() on the Tee writer returns the same as original stdout."""
         original_isatty = sys.stdout.isatty()
-        with Tee(tee_log_path):
-            tee_isatty = sys.stdout.isatty()
+        with open(tee_log_path, "a", encoding="utf-8") as log_file:
+            with Tee(log_file):
+                tee_isatty = sys.stdout.isatty()
         assert tee_isatty == original_isatty, (
             f"Expected isatty() to return {original_isatty}, got {tee_isatty}"
         )
@@ -177,9 +181,10 @@ class TestTee:
         original_stdout = sys.stdout
         original_stderr = sys.stderr
 
-        with Tee(tee_log_path):
-            assert sys.stdout is not original_stdout
-            assert sys.stderr is not original_stderr
+        with open(tee_log_path, "a", encoding="utf-8") as log_file:
+            with Tee(log_file):
+                assert sys.stdout is not original_stdout
+                assert sys.stderr is not original_stderr
 
         assert sys.stdout is original_stdout, "sys.stdout not restored"
         assert sys.stderr is original_stderr, "sys.stderr not restored"
@@ -191,12 +196,8 @@ class TestTee:
         original_stdout = sys.stdout
         original_stderr = sys.stderr
 
-        # Replace tee_log_path with a path that cannot be opened (parent is a file)
-        bad_path = tee_log_path.parent / "blocking_file"
-        bad_path.write_text("", encoding="utf-8")
-        inaccessible_log = bad_path / "history.log"  # Not a directory -> OSError
-
-        with Tee(inaccessible_log):
+        # Pass None to simulate file open failure (Tee handles None gracefully)
+        with Tee(None):
             sys.stdout.write("This should go only to original stdout\n")
 
         # Streams should be unchanged
@@ -209,8 +210,3 @@ class TestTee:
         # Original stdout should contain our message (via capsys)
         captured = capsys.readouterr()
         assert captured.out == "This should go only to original stdout\n"
-        # No log file should have been created
-        assert not inaccessible_log.exists()
-
-        # Cleanup
-        bad_path.unlink()

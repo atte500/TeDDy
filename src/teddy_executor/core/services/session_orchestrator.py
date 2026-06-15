@@ -184,16 +184,17 @@ class SessionOrchestrator(IRunPlanUseCase):
         _tee = None
         if is_session and plan_path and not self._lifecycle_manager.tee_active:
             try:
-                _log_path = Path(plan_path).parent.parent / "history.log"
+                _log_path = str(Path(plan_path).parent.parent / "history.log")
                 # Defensive guard: ensure history.log is never written to project root.
                 # If resolved path equals project root or CWD, redirect to .tmp/.
-                _resolved = str(_log_path.resolve())
+                _resolved = str(Path(_log_path).resolve())
                 _project_root = str(Path.cwd().resolve())
                 if _resolved.rstrip("/") == _project_root.rstrip("/"):
-                    _safe_dir = Path(plan_path).parent.parent / ".tmp"
-                    _safe_dir.mkdir(parents=True, exist_ok=True)
-                    _log_path = _safe_dir / "history.log"
-                _tee = _Tee(_log_path)
+                    _safe_dir = str(Path(plan_path).parent.parent / ".tmp")
+                    self._file_system_manager.create_directory(_safe_dir)
+                    _log_path = str(Path(_safe_dir) / "history.log")
+                _log_file = self._file_system_manager.open_file_for_append(_log_path)
+                _tee = _Tee(_log_file)
                 _tee.__enter__()
             except Exception:
                 _tee = None

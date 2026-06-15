@@ -23,7 +23,8 @@ def test_ansi_codes_stripped_from_log():
     log_path = Path(tempfile.mktemp(suffix=".log"))
 
     # Capture output containing ANSI codes via Tee
-    with Tee(log_path):
+    log_file = open(log_path, "a", encoding="utf-8")
+    with Tee(log_file):
         # These are typical ANSI sequences used by CLI formatter
         print("\x1b[31mRed text\x1b[0m")
         print("\x1b[1;33mYellow bold\x1b[0m")

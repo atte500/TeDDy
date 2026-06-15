@@ -1,4 +1,4 @@
-from typing import Protocol, Sequence
+from typing import Protocol, Sequence, TextIO
 
 
 class IFileSystemManager(Protocol):
@@ -118,4 +118,14 @@ class IFileSystemManager(Protocol):
         Moves or renames a directory.
         """
         _ = old_path
+        ...
+
+    def open_file_for_append(self, path: str) -> TextIO:
+        """
+        Opens a file for appending, creating parent directories if needed.
+        Returns a TextIO file-like object for writing.
+
+        Raises:
+            IOError: If the file cannot be opened.
+        """
         ...

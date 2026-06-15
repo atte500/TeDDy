@@ -1,7 +1,6 @@
 import logging
 import re
 import sys
-from pathlib import Path
 from typing import Optional, TextIO
 
 
@@ -38,19 +37,15 @@ class _TeeWriter:
 
 
 class Tee:
-    def __init__(self, log_path: Path):
-        self._log_path = log_path
-        self._log_file: Optional[TextIO] = None
+    def __init__(self, log_file: TextIO):
+        self._log_file: Optional[TextIO] = log_file
         self._original_stdout: Optional[TextIO] = None
         self._original_stderr: Optional[TextIO] = None
 
     def __enter__(self) -> "Tee":
         self._original_stdout = sys.stdout
         self._original_stderr = sys.stderr
-        try:
-            self._log_path.parent.mkdir(parents=True, exist_ok=True)
-            self._log_file = open(self._log_path, "a", encoding="utf-8")
-        except OSError:
+        if self._log_file is None:
             return self
         sys.stdout = _TeeWriter(self._original_stdout, self._log_file)
         sys.stderr = _TeeWriter(self._original_stderr, self._log_file)

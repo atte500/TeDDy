@@ -35,8 +35,9 @@ def test_logging_output_captured_by_tee():
         logging.root.addHandler(root_handler)
         logging.root.setLevel(logging.INFO)
 
-        # Install Tee (simulates session execution)
-        tee = Tee(log_path)
+        # Install Tee (simulates session execution) - open the file first
+        log_file = open(log_path, "a", encoding="utf-8")
+        tee = Tee(log_file)
         tee.__enter__()
 
         # Log a message while Tee is active (the bug: originally bypasses Tee)
@@ -44,7 +45,7 @@ def test_logging_output_captured_by_tee():
         test_logger = logging.getLogger("teddy_executor.test")
         test_logger.info("BUG22_TEST_MESSAGE")
 
-        # Restore streams
+        # Restore streams (Tee closes the log file on exit)
         tee.__exit__(None, None, None)
 
         # Read the log file

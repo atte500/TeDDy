@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import List, Sequence
+from typing import List, Sequence, TextIO
 from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.ports.inbound.edit_simulator import EditPair, IEditSimulator
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
@@ -171,6 +171,15 @@ class LocalFileSystemAdapter(IFileSystemManager):
             raise FileExistsError(f"Destination directory already exists: {new_path}")
 
         shutil.move(str(source), str(destination))
+
+    def open_file_for_append(self, path: str) -> TextIO:
+        """
+        Opens a file for appending, creating parent directories if needed.
+        Returns a TextIO file-like object for writing.
+        """
+        file_path = self._resolve_path(path)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        return open(file_path, "a", encoding="utf-8")
 
     def read_files_in_vault(self, paths: list[str]) -> dict[str, str | None]:
         """

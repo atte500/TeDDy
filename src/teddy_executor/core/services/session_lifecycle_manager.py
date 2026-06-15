@@ -109,15 +109,16 @@ class SessionLifecycleManager:
         tee = None
         if not self.tee_active:
             try:
-                log_path = Path(turn_dir).parent / "history.log"
+                log_path = str(Path(turn_dir).parent / "history.log")
                 # Defensive guard: never write history.log to project root
-                resolved = str(log_path.resolve())
+                resolved = str(Path(log_path).resolve())
                 project_root = str(Path.cwd().resolve())
                 if resolved.rstrip("/") == project_root.rstrip("/"):
-                    safe_dir = Path(turn_dir).parent.parent / ".tmp"
-                    safe_dir.mkdir(parents=True, exist_ok=True)
-                    log_path = safe_dir / "history.log"
-                tee = _Tee(log_path)
+                    safe_dir = str(Path(turn_dir).parent.parent / ".tmp")
+                    self._file_system_manager.create_directory(safe_dir)
+                    log_path = str(Path(safe_dir) / "history.log")
+                log_file = self._file_system_manager.open_file_for_append(log_path)
+                tee = _Tee(log_file)
                 tee.__enter__()
                 self.tee_active = True
             except Exception:
