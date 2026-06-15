@@ -129,7 +129,7 @@ WIP & REMINDERS:
            # 3. Pull and Push (if remote exists)
            git pull --rebase && git push || [ -z "$(git remote)" ]
            ```
-        4. Post-conditions: Log debt in Vertical Slice and use --no-verify if needed to bypass non-trivial quality gate failures (like file length).
+        4. Post-conditions: All tests MUST pass (post-commit hook enforces this; never bypass). Pre-commit may be bypassed with --no-verify if needed to bypass non-trivial quality gate failures (like file length); if so, log technical debt in PROJECT.md.
       </rule>
 
 
