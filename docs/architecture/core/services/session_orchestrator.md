@@ -56,4 +56,28 @@ The `SessionOrchestrator` is a decorator-style service that wraps the stateless 
     2.  **EMPTY**: Prompt for instructions -> Generate Plan -> Resolve actual path via `SessionService` -> Call `execute`.
     3.  **PENDING_PLAN**: Call `execute(plan_path=...)`.
     4.  **COMPLETE_TURN**: Transition to next turn -> Prompt for instructions -> Generate Plan -> Resolve actual path via `SessionService` -> Call `execute`.
--   **Recursion Safety:** To prevent recursion loops and handle dynamic renaming, the state machine resolves the current turn's path from the `SessionService` after planning/renaming and delegates directly to `execute`.
+- **Recursion Safety:** To prevent recursion loops and handle dynamic renaming, the state machine resolves the current turn's path from the `SessionService` after planning/renaming and delegates directly to `execute`.
+
+## Console Visibility Helpers
+
+Three helper functions are defined in this module to improve user visibility during session execution:
+
+### `_print_initial_request(message, is_session)`
+Prints the initial user request before the turn header/telemetry block.
+- **Input**: `message` (Optional[str]), `is_session` (bool)
+- **Behavior**: Only prints when `is_session=True` and `message` is non-empty.
+- **Output**: `Initial Request:\n{message}\n`
+
+### `_print_header_bar(plan, is_session)`
+Prints the plan status emoji and title after the telemetry block, before action execution logs.
+- **Input**: `plan` (Plan), `is_session` (bool)
+- **Behavior**: Only prints when `is_session=True`. Extracts emoji from `plan.metadata["Status"]` using anchored regex. Falls back to first occurring emoji, then empty string.
+- **Output**: `{emoji} {title}` (no blank lines around it)
+
+### `_print_user_message(message, is_session)`
+Prints the user message after all actions execute.
+- **Input**: `message` (Optional[str]), `is_session` (bool)
+- **Behavior**: Only prints when `is_session=True` and `message` is non-empty.
+- **Output**: `\nUser Message:\n{message}\n`
+
+All helpers are guarded by `is_session` and will not produce output in non-session mode.
