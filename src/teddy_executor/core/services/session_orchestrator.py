@@ -110,8 +110,6 @@ def _print_user_message(
     typer.secho("")
     typer.secho("User Message:")
     typer.secho(message.strip())
-    typer.secho("")
-
 
 class SessionOrchestrator(IRunPlanUseCase):
     """
