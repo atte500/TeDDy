@@ -26,16 +26,16 @@
         <step n="1" name="Signature Discovery">`READ` the signatures of all production constructors and dependencies you intend to use to ensure proper DI alignment.</step>
         <step n="2" name="Shadow File Patch">Create an isolated prototype using the mechanism defined by the prototype's domain. For `Code` domain: CREATE a shadow file in `spikes/prototypes/{scope-slug}/shadow_<component>.ext` that replicates the target source, adjusts relative imports, and applies the proposed logic. You are strictly FORBIDDEN from directly modifying `src/` or `tests/`.</step>
         <step n="3" name="Re-Verify">EDIT the Probe Script to import the shadow file. EXECUTE it to verify the target "after" snapshot.</step>
-        <step n="4" name="Finalize Probe">The verified Probe Script becomes the Probe Demo. The probe MUST drive the real system entrypoint (or instantiate real core components with the shadow patch) and capture raw system output. You MUST NOT reimplement or mock core orchestration, domain logic, or parsing. Mocking is permitted only for external network dependencies or initial state setup. If the objective targets verifying an external integration, use the real external system.</step>
-        <step n="5" name="Verification">`EXECUTE` the prototype to capture raw system output and verify it matches desired behavior. If it fails or crashes, transition to OFF-TRACK 🟡, or BLOCKED 🔴.</step>
+        <step n="4" name="Finalize Demo">Similarly to the probe, the solution demo MUST drive the real system entrypoint (or instantiate real core components with the shadow patch) and capture raw, unprocessed system output — no assertions, no post-processing, no truncation. You MUST NOT reimplement or mock core orchestration, domain logic, or parsing. Mocking is permitted only for external network dependencies or initial state setup. If the objective targets verifying an external integration, use the real external system.</step>
+        <step n="5" name="Verification">`EXECUTE` the prototype to capture raw, unprocessed system output with full scenario context and verify it matches desired behavior. If it fails or crashes, transition to OFF-TRACK 🟡, or BLOCKED 🔴.</step>
         <step n="6" name="Technical Pivot">If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
         <step n="7" name="Iteration Loop">Continue the discovery, creation, and verification cycle until internal workings are deeply understood and verified.</step>
       </phase>
 
-      <phase n="3" name="Solution Prototype">
+      <phase n="3" name="Showcase Gate">
         <goal>Mandatory checkpoint to verify the solution prototype with the user through an adjusted probe of the patched system capturing raw system output, before finalizing the implementation plan.</goal>
-        <step n="1" name="Request Feedback">Message the user to present the Solution Prototype for feedback. You MUST include a Markdown code block containing the exact copy-pasteable command to run the adjusted probe on the patched system. The probe MUST capture raw evidence (output, plan diffs, structure logs, or interaction traces) — no post-processing, no assertions. Present the raw evidence and allow the user to verify it matches expectations. If execution is impossible (e.g., cloud-only infrastructure), provide automated raw evidence capture instead. You MUST halt and gain explicit user feedback before Phase 4 (Documentation) begins.</step>
-        <step n="2" name="Handle Feedback">If the user requests changes or design iterations, `EDIT` the `Vertical Slice` immediately to reflect the new or changed requirements, then return to Phase 1. You MUST re-probe the patched system and capture raw output to verify the changes before re-presenting. After implementing and verifying changes, you MUST return to Step 1 of this phase to present the updated Solution Prototype and wait for explicit approval again. Do not proceed without explicit user approval.</step>
+        <step n="1" name="Request Feedback">Message the user to present the demo for feedback. You MUST include a Markdown code block containing the exact copy-pasteable command to run the adjusted probe on the patched system. Present the raw evidence and allow the user to verify it matches expectations. If execution is impossible (e.g., cloud-only infrastructure), provide automated raw evidence capture instead. You MUST halt and gain explicit user feedback before Phase 4 (Documentation) begins.</step>
+        <step n="2" name="Handle Feedback">If the user requests changes or design iterations, `EDIT` the `Vertical Slice` immediately to reflect the new or changed requirements, then return to Phase 1. You MUST re-probe the patched system and capture raw output to verify the changes before re-presenting. After implementing and verifying changes, you MUST return to Step 1 of this phase to present the updated Showcase Gate demo and wait for explicit approval again. Do not proceed without explicit user approval.</step>
       </phase>
 
       <phase n="4" name="Documentation">
@@ -88,7 +88,7 @@ Mission: [Concise description of the behavioral prototyping goal]
 PHASES:
 - [✓ | ▶ |  ] Triage
 - [✓ | ▶ |  ] Prototyping
-- [✓ | ▶ |  ] Solution Prototype
+- [✓ | ▶ |  ] Showcase Gate
 - [✓ | ▶ |  ] Documentation
 - [✓ | ▶ |  ] Version Control
 - [✓ | ▶ |  ] Conclusion
