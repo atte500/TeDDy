@@ -125,6 +125,12 @@ class SessionLifecycleManager:
                 tee = None
 
         try:
+            # Print initial request before turn header (before planning)
+            from teddy_executor.core.services.session_orchestrator import (
+                _print_initial_request,
+            )
+
+            _print_initial_request(None, True, plan_path=Path(turn_dir).as_posix())
             new_name = self._session_planner.trigger_new_plan(turn_dir)
             if not new_name or new_name == "CANCELLED":
                 return (turn_dir, None)

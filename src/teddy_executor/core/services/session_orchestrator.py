@@ -111,6 +111,7 @@ def _print_user_message(
     typer.secho("User Message:")
     typer.secho(message.strip())
 
+
 class SessionOrchestrator(IRunPlanUseCase):
     """
     A wrapper service implementing the 'Turn Transition Algorithm'
@@ -178,13 +179,6 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         # 0. Detect Session Mode (requires plan_path and meta.yaml)
         is_session = self._is_session_mode(plan_path)
-
-        # Print initial request before the turn header (only for session with non-empty message)
-        if is_session and message and message.strip():
-            _print_initial_request(message, is_session, plan_path=plan_path)
-        elif is_session and plan_path:
-            # No explicit message, try to read from initial_request.md
-            _print_initial_request(message, is_session, plan_path=plan_path)
 
         # Install Tee for history.log capture (guarded: skip if lifecycle manager already installed)
         _tee = None

@@ -3,6 +3,8 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+from teddy_executor.core.ports.outbound.session_manager import SessionState
 from teddy_executor.core.services.prompt_manager import PromptManager
 from teddy_executor.core.services.session_lifecycle_manager import (
     SessionLifecycleManager,
@@ -45,11 +47,11 @@ class TestPromptCaseSensitivity:
         assert result == "You are a pathfinder agent."
 
 
-class TestLifecycleNoDuplicateInitialRequest:
-    """Verifies that the lifecycle manager does NOT print the initial request."""
+class TestLifecyclePrintsInitialRequest:
+    """Verifies that the lifecycle manager prints the initial request."""
 
-    def test_lifecycle_manager_does_not_print_initial_request(self):
-        """When resuming first turn, lifecycle manager must not call _print_initial_request."""
+    def test_lifecycle_manager_prints_initial_request(self):
+        """When resuming first turn, lifecycle manager must call _print_initial_request."""
         # Arrange: mock _print_initial_request on the session_orchestrator module
         with patch(
             "teddy_executor.core.services.session_orchestrator._print_initial_request"
@@ -58,7 +60,7 @@ class TestLifecycleNoDuplicateInitialRequest:
             ports = MagicMock()
             ports.session_service = MagicMock()
             ports.session_service.get_session_state.return_value = (
-                "EMPTY",  # SessionState.EMPTY
+                SessionState.EMPTY,
                 ".teddy/sessions/test/01",
             )
             ports.session_service.transition_to_next_turn.return_value = (
@@ -74,7 +76,7 @@ class TestLifecycleNoDuplicateInitialRequest:
             lifecycle = SessionLifecycleManager(ports)
 
             # Act: simulate resume for EMPTY state
-            mock_orchestrator = MagicMock()
+            mock_orchestrator = MagicMock(spec=IRunPlanUseCase)
             mock_orchestrator.execute.return_value = MagicMock(run_summary=MagicMock())
             lifecycle.resume(
                 "test",
@@ -82,6 +84,8 @@ class TestLifecycleNoDuplicateInitialRequest:
                 interactive=False,
             )
 
-            # Assert: _print_initial_request should NOT have been called
-            # (The orchestrator will do it later)
-            mock_print.assert_not_called()
+            # Assert: _print_initial_request should have been called once
+            mock_print.assert_called_once()
+            call_args = mock_print.call_args
+            assert call_args[0][0] is None, "message should be None"
+            assert call_args[0][1] is True, "is_session should be True"

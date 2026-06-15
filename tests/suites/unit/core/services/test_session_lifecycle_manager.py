@@ -157,15 +157,13 @@ class TestTeeActiveContract:
 class TestInitialRequestOrdering:
     """Tests that _print_initial_request is called before trigger_new_plan."""
 
-    def test_initial_request_not_printed_by_lifecycle(
-        self, manager, monkeypatch
-    ) -> None:
-        """_print_initial_request must NOT be called by the lifecycle manager
-        (it is handled by SessionOrchestrator.execute() instead)."""
+    def test_initial_request_printed_by_lifecycle(self, manager, monkeypatch) -> None:
+        """_print_initial_request must be called by the lifecycle manager
+        before trigger_new_plan."""
         from unittest.mock import MagicMock
         from teddy_executor.core.ports.outbound.session_manager import SessionState
 
-        # Mock _print_initial_request on session_orchestrator to verify it's NOT called
+        # Mock _print_initial_request on session_orchestrator to track calls
         mock_print = MagicMock()
 
         monkeypatch.setattr(
@@ -187,8 +185,15 @@ class TestInitialRequestOrdering:
 
         manager._handle_planning_and_execution(turn_dir, mock_orch, interactive=False)
 
-        # Assert: _print_initial_request was NOT called by the lifecycle manager
-        mock_print.assert_not_called()
+        # Assert: _print_initial_request was called once with correct args
+        mock_print.assert_called_once()
+        call_args = mock_print.call_args
+        assert call_args[0][0] is None, "message should be None (falls back to file)"
+        assert call_args[0][1] is True, "is_session should be True"
+        plan_path = call_args[1].get("plan_path", "")
+        assert "/root/session/turns/01" in str(plan_path), (
+            f"plan_path should contain turn_dir, got {plan_path}"
+        )
 
 
 class TestTeeTiming:

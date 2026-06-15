@@ -664,14 +664,8 @@ class TestConsoleVisibilityWiring:
             interactive=True,
         )
 
-        # _print_initial_request: called only if is_session and message non-empty
-        if is_session and message.strip():
-            assert len(self.print_initial_request_calls) == 1
-            actual_message, actual_is_session = self.print_initial_request_calls[0]
-            assert actual_message == message
-            assert actual_is_session is True
-        else:
-            assert len(self.print_initial_request_calls) == 0
+        # _print_initial_request: no longer called from orchestrator (lifecycle manager handles it)
+        assert len(self.print_initial_request_calls) == 0
 
         # _print_header_bar: called only when the flow reaches that point.
         # Early return on empty message prevents it; non-session mode also prevents it.

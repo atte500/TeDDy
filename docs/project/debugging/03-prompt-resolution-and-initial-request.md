@@ -74,10 +74,10 @@ This aligns with `get_available_agents` which already uses `.casefold()` for sor
 
 ### Root Cause 2: Duplicate "Initial Request:" Output
 `_print_initial_request` is called from two locations for the first turn:
-1. `SessionLifecycleManager._handle_planning_and_execution()` before planning.
-2. `SessionOrchestrator.execute()` during execution.
+1. `SessionLifecycleManager._handle_planning_and_execution()` before planning (correct position).
+2. `SessionOrchestrator.execute()` during execution (after turn header, duplicate).
 
-**Fix:** Remove the call from `SessionLifecycleManager._handle_planning_and_execution()`. The orchestrator already handles printing the initial request for all turns, including the first. The lifecycle manager's call was redundant.
+**Fix:** Restore the call in `SessionLifecycleManager._handle_planning_and_execution()` and remove the calls from `SessionOrchestrator.execute()`. The lifecycle manager's call prints before the turn header; the orchestrator's call was redundant and appeared after the header.
 
 ### Preventative Measures
 - **Case normalization policy:** Establish a convention that agent names should be treated case-insensitively across the codebase. `_find_prompt_file` was the only location with a strict equality check; all other comparisons (sorting, display) already used casefold or case-insensitive methods.
