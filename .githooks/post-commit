@@ -9,6 +9,37 @@
 # Dependencies: poetry run pytest (project's test runner)
 #
 
+# Pre-flight: ensure poetry is installed
+if ! command -v poetry >/dev/null 2>&1; then
+    echo ""
+    echo "============================================"
+    echo " ERROR: poetry is not installed"
+    echo "============================================"
+    echo "Install poetry to run the test suite."
+    echo "  curl -sSL https://install.python-poetry.org | python3 -"
+    echo ""
+    echo "The commit has been undone. Fix the dependency and re-commit."
+    echo "============================================"
+    echo ""
+    git reset --soft HEAD~1
+    exit 1
+fi
+
+# Pre-flight: ensure pytest is available in the poetry environment
+if ! poetry run python -c "import pytest" >/dev/null 2>&1; then
+    echo ""
+    echo "============================================"
+    echo " ERROR: pytest is not installed in the poetry environment"
+    echo "============================================"
+    echo "Run 'poetry install --with dev' to install test dependencies."
+    echo ""
+    echo "The commit has been undone. Fix the dependency and re-commit."
+    echo "============================================"
+    echo ""
+    git reset --soft HEAD~1
+    exit 1
+fi
+
 # Run the full test suite (do NOT use set -e; capture exit code explicitly)
 poetry run pytest --tb=short -q 2>&1
 
