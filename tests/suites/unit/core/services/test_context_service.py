@@ -339,13 +339,13 @@ def test_get_context_separates_and_formats_session_history(
     assert "Implement user login" in history_block
     assert "### Turn 1: Plan" in history_block
     assert "Plan for step 1" in history_block
-    assert "### Turn 1: Execution Report" in history_block
+    assert "### Turn 1: Report" in history_block
     assert "Report for step 1" in history_block
 
     # Assert correct ordering
     idx_req = history_block.index("### Initial Request")
     idx_plan = history_block.index("### Turn 1: Plan")
-    idx_report = history_block.index("### Turn 1: Execution Report")
+    idx_report = history_block.index("### Turn 1: Report")
     assert idx_req < idx_plan < idx_report
 
     # Ensure no raw directory paths exist under Session History
