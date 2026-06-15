@@ -185,9 +185,12 @@ class ActionExecutor:
             self._file_hashes.clear()
 
         # For success, we still want to return the message captured via 'm'
+        # For MESSAGE actions, return the user's typed message from action_log.details
+        # instead of the empty reason string.
+        captured_message = action_log.details if is_communication else reason
         return (
             ActionDiffManager.inject_diff(action, action_log, change_set),
-            reason,
+            captured_message,
         )
 
     def handle_skipped_action(self, action, reason: str) -> ActionLog:

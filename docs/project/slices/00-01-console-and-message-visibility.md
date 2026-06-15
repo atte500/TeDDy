@@ -135,12 +135,26 @@ sequenceDiagram
 - [x] **Logic** - Print Initial Request in lifecycle manager before planning to fix output ordering.
 - [x] **Logic** - Suppress MESSAGE action description and SUCCESS status output during execution.
 - [x] **Logic** - Fix Initial Request trailing blank line, duplicate display across turns, and User Message not showing after reply.
-- [ ] **Logic** - Fix `confirm_and_dispatch` to return the actual user message (not `reason`) as the second return value for MESSAGE actions, so `captured_message` propagates correctly through `_dispatch_single_action`.
+- [x] **Logic** - Fix `confirm_and_dispatch` to return the actual user message (not `reason`) as the second return value for MESSAGE actions, so `captured_message` propagates correctly through `_dispatch_single_action`.
 - [ ] **Logic** - Ensure `_print_user_message` is called even when execution goes through the TUI `_execute_silently` path. Options: wrap `_execute_silently` to emit console output, or move user message printing into `ActionDispatcher.dispatch_and_execute`.
 - [ ] **Wiring** - Update the TUI execution handler (`textual_plan_reviewer_execution.py`) to invoke `_print_user_message` after successful dispatch.
 - [ ] **Logging** - In `confirm_and_dispatch`, change the MESSAGE bypass to return the user's typed message (from `dispatch_and_execute` result) as the second return value instead of empty `reason`.
 
 ### Implementation Notes
+
+### confirm_and_dispatch MESSAGE Return Value Fix
+**Root cause:** `ActionExecutor.confirm_and_dispatch()` returned `reason` (always `""` for MESSAGE actions) as the second return value. The `_dispatch_single_action` method in `execution_orchestrator.py` receives this as `captured_message` and stores it in `plan.metadata["user_request"]`. Since `reason` was always empty for MESSAGE actions, the user's typed reply was never propagated.
+
+**Fix:** In `confirm_and_dispatch`, after `dispatch_and_execute` succeeds, check if the action is a MESSAGE action (`is_communication`). If so, return `action_log.details` (which contains the user's typed message from `ask_question`) instead of `reason`. The change is a single line:
+```python
+captured_message = action_log.details if is_communication else reason
+```
+
+**Test:** Created `test_action_executor_message_return.py` with two tests:
+- `test_confirm_and_dispatch_returns_user_message_for_message_action`: Asserts the second return value is the user's typed message from `action_log.details` for MESSAGE actions.
+- `test_confirm_and_dispatch_returns_empty_for_non_message_action`: Asserts the second return value is still empty string for non-MESSAGE actions (regression guard).
+
+**Impact:** This fix ensures that when `_dispatch_single_action` stores `captured_message` in `plan.metadata["user_request"]`, it contains the actual user message for MESSAGE actions. This fixes the data flow for both the CLI session path (through `SessionOrchestrator`) and makes the TUI path fixable by wrapping `_execute_silently` to invoke `_print_user_message` after dispatch.
 
 ### Root Cause Analysis (Bug #3 — MESSAGE Reply Not Logged)
 **Root cause:** The TUI execution path (`textual_plan_reviewer_execution.py::_execute_silently`) calls `dispatcher.dispatch_and_execute()` directly, completely bypassing `SessionOrchestrator.execute()` where `_print_user_message` is called. Therefore, even though `plan.metadata["user_request"]` is correctly set by the TUI's `_finalize_user_message`, the console output helper is never invoked.
