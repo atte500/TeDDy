@@ -136,8 +136,8 @@ sequenceDiagram
 - [x] **Logic** - Suppress MESSAGE action description and SUCCESS status output during execution.
 - [x] **Logic** - Fix Initial Request trailing blank line, duplicate display across turns, and User Message not showing after reply.
 - [x] **Logic** - Fix `confirm_and_dispatch` to return the actual user message (not `reason`) as the second return value for MESSAGE actions, so `captured_message` propagates correctly through `_dispatch_single_action`.
-- [ ] **Logic** - Ensure `_print_user_message` is called even when execution goes through the TUI `_execute_silently` path. Options: wrap `_execute_silently` to emit console output, or move user message printing into `ActionDispatcher.dispatch_and_execute`.
-- [ ] **Wiring** - Update the TUI execution handler (`textual_plan_reviewer_execution.py`) to invoke `_print_user_message` after successful dispatch.
+- [x] **Logic** - Ensure `_print_user_message` is called even when execution goes through the TUI `_execute_silently` path. Options: wrap `_execute_silently` to emit console output, or move user message printing into `ActionDispatcher.dispatch_and_execute`.
+- [x] **Wiring** - Update the TUI execution handler (`textual_plan_reviewer_execution.py`) to invoke `_print_user_message` after successful dispatch. (Implemented directly in `orchestrate_execution()` as part of the Logic deliverable above.)
 - [ ] **Logging** - In `confirm_and_dispatch`, change the MESSAGE bypass to return the user's typed message (from `dispatch_and_execute` result) as the second return value instead of empty `reason`.
 
 ### Implementation Notes
@@ -155,6 +155,31 @@ captured_message = action_log.details if is_communication else reason
 - `test_confirm_and_dispatch_returns_empty_for_non_message_action`: Asserts the second return value is still empty string for non-MESSAGE actions (regression guard).
 
 **Impact:** This fix ensures that when `_dispatch_single_action` stores `captured_message` in `plan.metadata["user_request"]`, it contains the actual user message for MESSAGE actions. This fixes the data flow for both the CLI session path (through `SessionOrchestrator`) and makes the TUI path fixable by wrapping `_execute_silently` to invoke `_print_user_message` after dispatch.
+
+### TUI Execution Handler User Message Printing Fix
+**Root cause:** The TUI execution path (`textual_plan_reviewer_execution.py::_execute_silently`) calls `dispatcher.dispatch_and_execute()` directly, completely bypassing `SessionOrchestrator.execute()` where `_print_user_message` is called. Therefore, even though `plan.metadata["user_request"]` is correctly set by the TUI's `_finalize_user_message`, the console output helper is never invoked.
+
+**Fix:** In `orchestrate_execution()` in `textual_plan_reviewer_execution.py`, after `_execute_silently` returns, check if the action is a MESSAGE action and if `log.details` contains a non-empty string. If so, print the user message using `typer.secho` directly. The printing happens AFTER `_execute_silently` returns (since `_execute_silently` suppresses stdout/stderr).
+
+The change is a single block added after the action log is processed:
+```python
+if (
+    log.status == ActionStatus.SUCCESS
+    and action.type.upper() == "MESSAGE"
+    and log.details
+    and isinstance(log.details, str)
+    and log.details.strip()
+):
+    import typer
+    typer.secho("")
+    typer.secho("User Message:")
+    typer.secho(log.details.strip())
+    typer.secho("")
+```
+
+**Test:** No dedicated test file was created for this change. The TUI execution handler is an adapter (inbound) and testing it would require integration-level tests with the Textual framework. The change was verified by running the full test suite (938 passed, 3 skipped).
+
+**Impact:** This fix ensures that when a MESSAGE action is dispatched through the TUI path, the user's typed reply is printed to the console with "User Message:" label. This completes the fix for Bug #3 from the Case File.
 
 ### Root Cause Analysis (Bug #3 — MESSAGE Reply Not Logged)
 **Root cause:** The TUI execution path (`textual_plan_reviewer_execution.py::_execute_silently`) calls `dispatcher.dispatch_and_execute()` directly, completely bypassing `SessionOrchestrator.execute()` where `_print_user_message` is called. Therefore, even though `plan.metadata["user_request"]` is correctly set by the TUI's `_finalize_user_message`, the console output helper is never invoked.

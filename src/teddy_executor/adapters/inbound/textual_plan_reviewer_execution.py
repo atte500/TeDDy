@@ -169,6 +169,23 @@ async def orchestrate_execution(app: ReviewerApp, node: Any, update_fn: Any) -> 
             if log.status == ActionStatus.SUCCESS
             else ExecutionStatus.FAILURE
         )
+
+        # For MESSAGE actions, print the user's typed reply to the console
+        # since the TUI execution path bypasses SessionOrchestrator.execute()
+        # where _print_user_message is called.
+        if (
+            log.status == ActionStatus.SUCCESS
+            and action.type.upper() == "MESSAGE"
+            and log.details
+            and isinstance(log.details, str)
+            and log.details.strip()
+        ):
+            import typer
+
+            typer.secho("")
+            typer.secho("User Message:")
+            typer.secho(log.details.strip())
+            typer.secho("")
     except Exception as e:
         logging.getLogger(__name__).debug("Background execution failed: %s", e)
         action.executed, action.state = True, ExecutionStatus.FAILURE
