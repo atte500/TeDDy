@@ -73,7 +73,7 @@ class PromptManager(IPromptManager):
         if not self._file_system_manager.path_exists(directory):
             return None
         for f in self._file_system_manager.list_directory(directory):
-            if Path(f).stem == agent_name:
+            if Path(f).stem.casefold() == agent_name.casefold():
                 return f"{directory}/{f}"
         return None
 

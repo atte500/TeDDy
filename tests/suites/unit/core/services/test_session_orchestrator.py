@@ -513,7 +513,7 @@ class TestConsoleVisibilityHelpers:
     @pytest.mark.parametrize(
         ("message", "is_session", "expected_calls"),
         [
-            # Happy: session + non-empty -> blank line, label, content, trailing newline
+            # Happy: session + non-empty -> blank line, label, content
             (
                 "User feedback",
                 True,
@@ -521,7 +521,6 @@ class TestConsoleVisibilityHelpers:
                     ("", {}),
                     ("User Message:", {}),
                     ("User feedback", {}),
-                    ("", {}),
                 ],
             ),
             # Non-session: no output

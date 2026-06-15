@@ -157,22 +157,19 @@ class TestTeeActiveContract:
 class TestInitialRequestOrdering:
     """Tests that _print_initial_request is called before trigger_new_plan."""
 
-    def test_initial_request_printed_before_planning(
+    def test_initial_request_not_printed_by_lifecycle(
         self, manager, monkeypatch
     ) -> None:
-        """_print_initial_request must be called before trigger_new_plan."""
+        """_print_initial_request must NOT be called by the lifecycle manager
+        (it is handled by SessionOrchestrator.execute() instead)."""
         from unittest.mock import MagicMock
         from teddy_executor.core.ports.outbound.session_manager import SessionState
 
-        # Mock _print_initial_request to track calls
-        captured_calls = []
+        # Mock _print_initial_request on session_orchestrator to verify it's NOT called
         mock_print = MagicMock()
-        mock_print.side_effect = lambda *a, **kw: captured_calls.append(
-            ("print", a, kw)
-        )
 
         monkeypatch.setattr(
-            "teddy_executor.core.services.session_lifecycle_manager._print_initial_request",
+            "teddy_executor.core.services.session_orchestrator._print_initial_request",
             mock_print,
         )
 
@@ -186,31 +183,12 @@ class TestInitialRequestOrdering:
             turn_dir,
         )
 
-        # Track call order using side_effect
-        call_log = []
-        manager._session_planner.trigger_new_plan.side_effect = lambda *a, **kw: (
-            call_log.append("trigger_new_plan") or "session-name"
-        )
+        manager._session_planner.trigger_new_plan.return_value = "session-name"
 
         manager._handle_planning_and_execution(turn_dir, mock_orch, interactive=False)
 
-        # Assert: _print_initial_request was called
-        assert captured_calls, (
-            "_print_initial_request was not called during _handle_planning_and_execution"
-        )
-        # Assert: it was called before trigger_new_plan
-        print_index = captured_calls[0][0]
-        plan_index = call_log[0]
-        assert print_index == "print", "First call should be _print_initial_request"
-        # Verify plan_path argument is correctly derived from turn_dir
-        call_args = captured_calls[0][1]
-        call_kwargs = captured_calls[0][2]
-        assert call_args[0] is None, "message should be None (falls back to file)"
-        assert call_args[1] is True, "is_session should be True"
-        plan_path = call_kwargs.get("plan_path", "")
-        assert "plan.md" in str(plan_path), (
-            f"plan_path should end with plan.md, got {plan_path}"
-        )
+        # Assert: _print_initial_request was NOT called by the lifecycle manager
+        mock_print.assert_not_called()
 
 
 class TestTeeTiming:
