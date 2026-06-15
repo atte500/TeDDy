@@ -71,7 +71,8 @@ Prints the initial user request before the turn header/telemetry block.
 ### `_print_header_bar(plan, is_session)`
 Prints the plan status emoji and title after the telemetry block, before action execution logs.
 - **Input**: `plan` (Plan), `is_session` (bool)
-- **Behavior**: Only prints when `is_session=True`. Extracts emoji from `plan.metadata["Status"]` using anchored regex. Falls back to first occurring emoji, then empty string.
+- **Behavior**: Only prints when `is_session=True`. Extracts emoji from `plan.metadata["Status"]` using a local `_extract_status_emoji` helper that checks for emoji substrings (🟢, 🟡, 🔴). Falls back to empty string if no emoji found.
+- **Note**: A local emoji extraction helper was implemented using simple substring containment (`if emoji in raw_status`) instead of importing `extract_status_emoji` from `textual_plan_reviewer_helpers.py` to maintain Hexagonal Architecture boundaries (core must not depend on adapters).
 - **Output**: `{emoji} {title}` (no blank lines around it)
 
 ### `_print_user_message(message, is_session)`
@@ -80,4 +81,4 @@ Prints the user message after all actions execute.
 - **Behavior**: Only prints when `is_session=True` and `message` is non-empty.
 - **Output**: `\nUser Message:\n{message}\n`
 
-All helpers are guarded by `is_session` and will not produce output in non-session mode.
+All helpers are guarded at their call sites in `execute()`: `_print_initial_request` and `_print_user_message` are wrapped with `if is_session and message and message.strip():`, and `_print_header_bar` is wrapped with `if is_session:`. This ensures no unnecessary function invocations occur in non-session or empty-message modes. Each helper also has internal guards as defense-in-depth.

@@ -13,8 +13,69 @@ from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.services.session_replanner import SessionReplanner
 from teddy_executor.core.utils.io import Tee as _Tee
+import typer
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_status_emoji(raw_status: str) -> str:
+    """Extract the first status emoji (🟢, 🟡, 🔴) from a status string."""
+    for emoji in ("🟢", "🟡", "🔴"):
+        if emoji in raw_status:
+            return emoji
+    return ""
+
+
+def _print_initial_request(message: Optional[str], is_session: bool) -> None:
+    """Print the initial user request before the turn header.
+
+    Only prints when is_session=True and message is non-empty.
+    Output::
+        Initial Request:
+        {content}
+        (blank line separator)
+    """
+    if not is_session or not message or not message.strip():
+        return
+    typer.secho("Initial Request:")
+    typer.secho(message.strip())
+    typer.secho("")
+
+
+def _print_header_bar(plan: Any, is_session: bool) -> None:
+    """Print the plan status emoji and title after telemetry, before actions.
+
+    Only prints when is_session=True.
+    Output: {emoji} {title}  (no blank lines around it)
+    """
+    if not is_session:
+        return
+    raw_status = (
+        (plan.metadata or {}).get("Status") or (plan.metadata or {}).get("status") or ""
+    )
+    emoji = _extract_status_emoji(raw_status)
+    title = plan.title or ""
+    parts = [p for p in [emoji, title] if p]
+    if parts:
+        typer.secho(" ".join(parts))
+
+
+def _print_user_message(message: Optional[str], is_session: bool) -> None:
+    """Print the user message after all actions execute.
+
+    Only prints when is_session=True and message is non-empty.
+    Output::
+        (blank line)
+        User Message:
+        {content}
+        (trailing newline)
+    """
+    if not is_session or not message or not message.strip():
+        return
+    typer.secho("")
+    typer.secho("User Message:")
+    typer.secho(message.strip())
+    typer.secho("")
 
 
 class SessionOrchestrator(IRunPlanUseCase):
@@ -84,6 +145,10 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         # 0. Detect Session Mode (requires plan_path and meta.yaml)
         is_session = self._is_session_mode(plan_path)
+
+        # Print initial request before the turn header (only for session with non-empty message)
+        if is_session and message and message.strip():
+            _print_initial_request(message, is_session)
 
         # Install Tee for history.log capture (guarded: skip if lifecycle manager already installed)
         _tee = None
@@ -174,6 +239,10 @@ class SessionOrchestrator(IRunPlanUseCase):
             if isinstance(result, ExecutionReport):
                 return result
 
+            # Print header bar (emoji + title) before execution logs (only for session mode)
+            if is_session:
+                _print_header_bar(plan, is_session)
+
             # 4. Execution
             report = self._execution_orchestrator.execute(
                 plan=plan,
@@ -203,6 +272,10 @@ class SessionOrchestrator(IRunPlanUseCase):
                         err=True,
                     )
                     return None  # type: ignore
+
+            # Print user message after all actions executed (only for session with non-empty message)
+            if is_session and message and message.strip():
+                _print_user_message(message, is_session)
 
             # 4. Turn Transition
             if is_session and plan_path:

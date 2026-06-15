@@ -1,5 +1,5 @@
 # Slice: Console and Message Visibility
-- **Status:** Planned
+- **Status:** In Progress
 - **Type:** Feature
 - **Milestone:** [02-stability-and-polish](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -104,14 +104,36 @@ sequenceDiagram
 ```
 
 ## Deliverables
-- [ ] **Contract** - Define `_print_initial_request`, `_print_header_bar`, `_print_user_message` signatures and behavior (documented in component doc).
-- [ ] **Logic** - Implement the three helper functions in `session_orchestrator.py`.
-- [ ] **Wiring** - Insert calls to the three helpers at appropriate points in `execute()`.
+- [x] **Contract** - Define `_print_initial_request`, `_print_header_bar`, `_print_user_message` signatures and behavior (documented in component doc).
+- [x] **Logic** - Implement the three helper functions in `session_orchestrator.py`.
+- [x] **Wiring** - Insert calls to the three helpers at appropriate points in `execute()`.
 - [ ] **Migration** - (None: no consumers need updating.)
 - [ ] **Cleanup** - Remove any test artifacts or temporary spike files.
 
 ## Implementation Notes
-*(To be filled by Developer)*
+
+### Contract
+- The three helper function signatures were defined in the [SessionOrchestrator component doc](/docs/architecture/core/services/session_orchestrator.md) under a new "Console Visibility Helpers" section.
+
+### Logic
+- Three module-level functions implemented in `session_orchestrator.py`:
+  - `_print_initial_request(message, is_session)`: Prints "Initial Request:" label + content + blank line.
+  - `_print_header_bar(plan, is_session)`: Prints `{emoji} {title}` using a local `_extract_status_emoji` helper.
+  - `_print_user_message(message, is_session)`: Prints blank line, "User Message:" label, content, trailing blank line.
+- Local `_extract_status_emoji` helper uses simple substring containment instead of importing `extract_status_emoji` from `textual_plan_reviewer_helpers.py` to respect Hexagonal Architecture boundaries (no core→adapter dependency).
+- **DEBT**: The local emoji extraction duplicates logic from `textual_plan_reviewer_helpers.py`. Consider extracting a shared utility in `core/utils/` to unify both implementations.
+
+### Wiring
+- Three call sites inserted in `SessionOrchestrator.execute()`:
+  1. `_print_initial_request` after `is_session` detection, guarded by `if is_session and message and message.strip():`.
+  2. `_print_header_bar` after validation success, guarded by `if is_session:`.
+  3. `_print_user_message` after action execution, guarded by `if is_session and message and message.strip():`.
+- Call-site guards prevent unnecessary function invocations in non-session or empty-message scenarios. The helpers also have internal guards as defense-in-depth.
+
+### Tests
+- `TestConsoleVisibilityHelpers` (13 parametrized unit tests): Mocks `typer.secho` and tests each helper with various input combinations.
+- `TestConsoleVisibilityWiring` (3 parametrized wiring tests): Patches all three helpers with tracking mocks and verifies they are called during `execute()` under correct conditions.
+- Test assertions were adjusted to match the actual execution flow: empty message causes early `return None` before the header bar call; non-session mode requires `plan_path=None`.
 
 ## Verification
 1. Run `poetry run python spikes/prototypes/00-console-and-message-visibility/raw_demo.py` and confirm output matches the approved format.
