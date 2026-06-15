@@ -105,6 +105,10 @@ class TestLifecyclePrintsInitialRequest:
             ports.session_planner.trigger_new_plan.return_value = "test"
             ports.replanner = MagicMock()
             ports.session_service = MagicMock()
+            ports.session_service.get_session_state.return_value = (
+                SessionState.EMPTY,
+                "/some/path",
+            )
 
             lifecycle = SessionLifecycleManager(ports)
 
