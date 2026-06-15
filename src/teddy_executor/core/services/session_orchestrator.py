@@ -50,11 +50,15 @@ def _print_header_bar(plan: Any, is_session: bool) -> None:
     """
     if not is_session:
         return
-    raw_status = (
-        (plan.metadata or {}).get("Status") or (plan.metadata or {}).get("status") or ""
-    )
+    # Guard against mock objects or non-standard plan-like objects
+    metadata = getattr(plan, "metadata", {})
+    if not isinstance(metadata, dict):
+        metadata = {}
+    raw_status = metadata.get("Status") or metadata.get("status") or ""
     emoji = _extract_status_emoji(raw_status)
-    title = plan.title or ""
+    title = getattr(plan, "title", None)
+    if not isinstance(title, str):
+        title = ""
     parts = [p for p in [emoji, title] if p]
     if parts:
         typer.secho(" ".join(parts))
@@ -206,9 +210,7 @@ class SessionOrchestrator(IRunPlanUseCase):
                     system_prompt = self._prompt_manager.fetch_system_prompt(
                         agent_name, Path(plan_path).parent
                     )
-                    model = str(
-                        self._config_service.get_setting("llm.model") or ""
-                    )
+                    model = str(self._config_service.get_setting("llm.model") or "")
                     try:
                         system_token_count = self._llm_client.get_text_token_count(
                             system_prompt, model=model
