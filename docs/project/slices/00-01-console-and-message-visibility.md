@@ -108,7 +108,7 @@ sequenceDiagram
 - [x] **Logic** - Implement the three helper functions in `session_orchestrator.py`.
 - [x] **Wiring** - Insert calls to the three helpers at appropriate points in `execute()`.
 - [x] **Migration** - (None: no consumers need updating.)
-- [ ] **Cleanup** - Remove any test artifacts or temporary spike files.
+- [x] **Cleanup** - Remove any test artifacts or temporary spike files.
 
 ## Implementation Notes
 
