@@ -109,13 +109,17 @@ sequenceDiagram
 - [x] **Wiring** - Insert calls to the three helpers at appropriate points in `execute()`.
 - [x] **Migration** - (None: no consumers need updating.)
 - [x] **Cleanup** - Remove any test artifacts or temporary spike files.
-- [ ] **Logic** - Print Initial Request in lifecycle manager before planning to fix output ordering.
-- [ ] **Logic** - Suppress MESSAGE action description and SUCCESS status output during execution.
+- [x] **Logic** - Print Initial Request in lifecycle manager before planning to fix output ordering.
+- [▶] **Logic** - Suppress MESSAGE action description and SUCCESS status output during execution.
 
 ## Implementation Notes
 
 ### Ordering Issue (Turn 25)
-Manual verification revealed that `Initial Request:` appears AFTER the turn header (`[01] test-message | Waiting for...`). Root cause: the turn header is printed by `PlanningService.generate_plan()` inside `SessionLifecycleManager._handle_planning_and_execution()` BEFORE `execute()` is called. The fix is to print the initial request in `_handle_planning_and_execution()` before `trigger_new_plan()`.
+Manual verification revealed that `Initial Request:` appears AFTER the turn header (`[01] test-message | Waiting for...`). Root cause: the turn header is printed by `PlanningService.generate_plan()` inside `SessionLifecycleManager._handle_planning_and_execution()` BEFORE `execute()` is called.
+
+**Fix:** In `_handle_planning_and_execution()`, call `_print_initial_request(None, True, plan_path=...)` before `trigger_new_plan()`. The helper reads `initial_request.md` from the session root when `message` is None. The import is a cross-module dependency from session_lifecycle_manager → session_orchestrator for the private helper, which is acceptable as both are in the same service layer.
+
+**Test:** `TestInitialRequestOrdering.test_initial_request_printed_before_planning` asserts that `_print_initial_request` is called before `trigger_new_plan` during the EMPTY state resume path. Uses `monkeypatch` to mock the helper and track call order.
 
 ### MESSAGE Noise Issue (Turn 25)
 Manual verification revealed that `MESSAGE - Message to user` and `SUCCESS` lines are still printed for communication actions. These should be suppressed to reduce console noise. Root cause is in the action executor or execution orchestrator where action type/description and status are printed.

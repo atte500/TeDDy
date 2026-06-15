@@ -9,6 +9,9 @@ from typing import Sequence
 
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import SessionState
+from teddy_executor.core.services.session_orchestrator import (
+    _print_initial_request,
+)
 from teddy_executor.core.utils.io import Tee as _Tee
 
 logger = logging.getLogger(__name__)
@@ -125,6 +128,8 @@ class SessionLifecycleManager:
                 tee = None
 
         try:
+            # Print initial request before planning header/telemetry
+            _print_initial_request(None, True, plan_path=f"{turn_dir}/plan.md")
             new_name = self._session_planner.trigger_new_plan(turn_dir)
             if not new_name or new_name == "CANCELLED":
                 return (turn_dir, None)
