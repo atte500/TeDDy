@@ -147,16 +147,15 @@ WIP & REMINDERS:
 
       <rule n="8" name="Code Block Formatting">Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under #### FIND:, #### REPLACE:, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.</rule>
 
-      <rule n="9" name="Plan Validation Recovery">
-        A "Validation Failed" condition occurs when the last turn's Execution Report has an "Overall Status" of "Validation Failed".
-        If Validation Failed, you MUST persist the following exactly from the failed response: Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
-        Protocol:
-        1. Prepend "0. Validation Errors" to the Rationale block.
-        2. Analyze the root cause.
-        3. Add a clear, actionable directive (e.g., `[!] Ensure strict 6-tilde encapsulation`) to the `WIP & REMINDERS` section of your State Dashboard to ensure you do not repeat the mistake.
-        4. Submit a corrected plan focusing strictly on the failed/problematic action.
-        5. Defer the remaining steps of the original plan to subsequent turns.
-        6. You are strictly forbidden from wasting turns sending a `## Message` to the user about a validation error. Validation errors are internal formatting mistakes; silently fix and resubmit.
+      <rule n="9" name="Validation Failure Recovery">
+        A Validation Failure occurs when the last turn's Execution Report has an "Overall Status" of "Validation Failed" due to structural or logical issues with the plan submitted. Recovery Protocol:
+        1. Persist the failed response's Title, Status, Color, and Rationale sections 1-4 (unless the fix requires modifying the plan logic).
+        2. Prepend "0. Validation Errors" to the Rationale block.
+        3. Analyze the root cause.
+        4. Add a clear, actionable directive (e.g., `[!] Ensure strict 6-tilde encapsulation`) to the `WIP & REMINDERS` section of your State Dashboard to ensure you do not repeat the mistake.
+        5. Submit a corrected plan focusing strictly on the failed/problematic action.
+        6. Defer the remaining steps of the original plan to subsequent turns.
+        7. You are strictly forbidden from wasting turns sending a `## Message` to the user about a validation error. Validation errors are internal formatting mistakes; silently fix and resubmit.
       </rule>
 
       <rule n="10" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
