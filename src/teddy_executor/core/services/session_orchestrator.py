@@ -46,7 +46,7 @@ def _print_initial_request(
     if not message or not message.strip():
         if plan_path:
             try:
-                import_path = Path(plan_path).parent.parent / "initial_request.md"
+                import_path = Path(plan_path).parent / "initial_request.md"
                 if import_path.exists():
                     content = import_path.read_text(encoding="utf-8").strip()
                     if content:

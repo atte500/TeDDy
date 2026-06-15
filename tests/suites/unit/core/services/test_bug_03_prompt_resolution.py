@@ -64,7 +64,7 @@ class TestLifecyclePrintsInitialRequest:
                 ".teddy/sessions/test/01",
             )
             ports.session_service.transition_to_next_turn.return_value = (
-                ".teddy/sessions/test/02"
+                ".teddy/sessions/test/02",
             )
             ports.file_system_manager = MagicMock()
             ports.report_formatter = MagicMock()
@@ -89,3 +89,98 @@ class TestLifecyclePrintsInitialRequest:
             call_args = mock_print.call_args
             assert call_args[0][0] is None, "message should be None"
             assert call_args[0][1] is True, "is_session should be True"
+
+    def test_print_initial_request_resolves_path_with_parent(
+        self, tmp_path, monkeypatch
+    ):
+        """_print_initial_request must resolve initial_request.md using Path(plan_path).parent
+        (not .parent.parent) when plan_path is the turn directory."""
+        from teddy_executor.core.services.session_orchestrator import (
+            _print_initial_request,
+        )
+
+        # Create a temp session structure
+        session_root = tmp_path / "my_session"
+        session_root.mkdir()
+        turn_dir = session_root / "01"
+        turn_dir.mkdir()
+
+        # Write initial_request.md at session root
+        (session_root / "initial_request.md").write_text(
+            "Hello from test\n", encoding="utf-8"
+        )
+
+        # Capture typer.secho calls
+        calls = []
+        monkeypatch.setattr(
+            "teddy_executor.core.services.session_orchestrator.typer.secho",
+            lambda text, **kwargs: calls.append(text),
+        )
+
+        # Act: call with plan_path = turn_dir (absolute, as the lifecycle manager does)
+        _print_initial_request(
+            message=None,
+            is_session=True,
+            plan_path=str(turn_dir),
+        )
+
+        # Assert: file content was found and printed
+        assert len(calls) == 3, (
+            f"Expected 3 calls (blank, label, content), got {len(calls)}: {calls}"
+        )
+        assert calls[0] == "", "First call should be blank line"
+        assert calls[1] == "Initial Request:", "Second call should be the label"
+        assert calls[2] == "Hello from test", (
+            f"Third call should be the file content, got: {calls[2]}"
+        )
+
+    def test_print_initial_request_empty_file_no_output(self, tmp_path, monkeypatch):
+        """_print_initial_request must produce no output when initial_request.md is empty."""
+        from teddy_executor.core.services.session_orchestrator import (
+            _print_initial_request,
+        )
+
+        session_root = tmp_path / "empty_session"
+        session_root.mkdir()
+        turn_dir = session_root / "01"
+        turn_dir.mkdir()
+
+        # Write empty file
+        (session_root / "initial_request.md").write_text("", encoding="utf-8")
+
+        calls = []
+        monkeypatch.setattr(
+            "teddy_executor.core.services.session_orchestrator.typer.secho",
+            lambda text, **kwargs: calls.append(text),
+        )
+
+        _print_initial_request(
+            message=None,
+            is_session=True,
+            plan_path=str(turn_dir),
+        )
+
+        assert len(calls) == 0, f"Expected no output for empty file, got: {calls}"
+
+    def test_print_initial_request_no_file_no_output(self, tmp_path, monkeypatch):
+        """_print_initial_request must produce no output when initial_request.md doesn't exist."""
+        from teddy_executor.core.services.session_orchestrator import (
+            _print_initial_request,
+        )
+
+        turn_dir = tmp_path / "no_session_file" / "01"
+        turn_dir.mkdir(parents=True)
+
+        calls = []
+        monkeypatch.setattr(
+            "teddy_executor.core.services.session_orchestrator.typer.secho",
+            lambda text, **kwargs: calls.append(text),
+        )
+
+        _print_initial_request(
+            message=None,
+            is_session=True,
+            plan_path=str(turn_dir),
+        )
+
+        assert len(calls) == 0, "Expected no output when file does not exist"
