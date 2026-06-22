@@ -166,13 +166,13 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - [x] **Wiring** - `version` subcommand in `__main__.py` (already implemented).
 - [x] **Wiring** - Add `update` command with `--yes` and `--experimental` options in `__main__.py`.
 - [ ] **Wiring** - Add background version check call in `session_cli_handlers.py` (`handle_new_session` and `handle_resume_session`).
-- [ ] **Wiring** - Add `auto_update: true` key to `config.yaml` baseline.
+- [x] **Wiring** - Add `auto_update: true` key to `config.yaml` baseline.
 - [ ] **Wiring** - Read `auto_update` config in update command (via `IConfigService.get_setting("auto_update")`).
 
 ### Testing (Unit & Acceptance)
-- [ ] **Test** - Unit tests for `update_checker.py` (version comparison, cache I/O, fetch resilience, upgrade command, should_update logic).
-- [ ] **Test** - Unit tests for `prewarm_imports()` extraction (verify it executes without error).
-- [ ] **Test** - Acceptance test for `teddy update` happy path (newer version → upgrade).
+- [x] **Test** - Unit tests for `update_checker.py` (version comparison, cache I/O, fetch resilience, upgrade command, should_update logic).
+- [x] **Test** - Unit tests for `prewarm_imports()` extraction (verify it executes without error).
+- [x] **Test** - Acceptance test for `teddy update` happy path (newer version → upgrade).
 - [ ] **Test** - Acceptance test for `teddy --version` (displays correct version).
 - [ ] **Test** - Acceptance test for `teddy update --experimental` (TestPyPI URL resolution).
 
@@ -264,6 +264,13 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - **Test outcome:** Red → `AttributeError` in `should_update` and `ValueError` in acceptance test. Green → 1 acceptance test passes.
 - **Full suite:** 995 passed, 3 skipped — no regressions.
 - **Rationale:** The `None` guard is a defensive programming best practice for functions that accept `Optional[Path]`. The test fix aligns with `CliRunner`'s API contract (stderr not captured unless configured). Moking `should_update` to return `True` is acceptable for a Tracer Bullet acceptance test (hardcoded trivial return).
+
+### Wiring — Add `auto_update: true` key to `config.yaml` baseline
+- **Change:** Added `# Update Settings` section with `auto_update: true` key to `src/teddy_executor/resources/config/config.yaml`. Placed after the `editor` key and before `Execution Settings` for logical grouping.
+- **File modified:** `config.yaml` (+5 lines: comment block + key-value pair).
+- **Test impact:** No new tests needed — the existing `test_config_defaults.py` integration test validates that all config keys are loaded correctly. No behavioral change to CLI commands yet (the key is consumed in a separate Wiring deliverable).
+- **Full suite:** 995 passed, 3 skipped — no regressions (config defaults test still passes).
+- **Rationale:** The `auto_update` key is the central configuration toggle for the auto-update feature. It must exist in the baseline `config.yaml` template before the `update` command can read it via `IConfigService.get_setting("auto_update")`. The default is `true` to provide frictionless upgrades out-of-the-box (matching the spec).
 
 ## Verification
 

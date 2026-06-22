@@ -9,6 +9,12 @@ ui_mode: "tui"
 # Fallback chain: Config -> VISUAL/EDITOR env vars -> code -> nano.
 editor: "code"
 
+# Update Settings
+# Controls automatic upgrade behavior. When true, `teddy update` will
+# automatically install newer versions via pip. When false, it will only
+# notify the user about available updates.
+auto_update: true
+
 # Execution Settings
 execution:
   default_timeout_seconds: 60
