@@ -8,9 +8,13 @@ performing upgrades. All public functions use stdlib only (plus the
 
 from __future__ import annotations
 
-from typing import Optional
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional
 
 from packaging.version import Version
+
+if TYPE_CHECKING:
+    import ssl
 
 # --- Constants ---
 
@@ -18,6 +22,34 @@ PYPI_URL = "https://pypi.org/pypi/teddy-cli/json"
 TEST_PYPI_URL = "https://test.pypi.org/pypi/teddy-cli/json"
 CACHE_FILENAME = ".update_cache.json"
 CACHE_TTL_HOURS = 24
+
+
+# --- SSL Context Setup ---
+
+
+def _create_ssl_context() -> ssl.SSLContext:
+    """
+    Create an SSL context with proper CA bundle.
+
+    Priority order:
+    1. certifi if available (provides latest Mozilla CA bundle)
+    2. Default SSL context (system CA bundle)
+
+    Returns an ssl.SSLContext object suitable for urllib.
+    """
+    import ssl  # noqa: F811  (imported at module level under TYPE_CHECKING)
+
+    try:
+        import certifi
+
+        cafile = certifi.where()
+        if Path(cafile).is_file():
+            return ssl.create_default_context(cafile=cafile)
+    except ImportError:
+        pass
+
+    # Fallback: use system default (may fail on some Python 3.14 macOS builds)
+    return ssl.create_default_context()
 
 
 # --- Public API ---
@@ -39,11 +71,12 @@ def get_current_version() -> str:
 def fetch_latest_version(index_url: str = PYPI_URL) -> Optional[str]:
     """
     Fetch latest version from PyPI/TestPyPI JSON API.
-    Returns None on any failure (network, parse, etc.) — silent fallback.
+    Uses certifi for SSL context if available.
+    Returns None on any failure (network, parse, etc.) — logged for debugging.
     """
     import json
-    import urllib.request
     import urllib.error
+    import urllib.request
 
     try:
         req = urllib.request.Request(
@@ -53,10 +86,15 @@ def fetch_latest_version(index_url: str = PYPI_URL) -> Optional[str]:
                 "Accept": "application/json",
             },
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        context = _create_ssl_context()
+        with urllib.request.urlopen(req, timeout=10, context=context) as resp:  # nosec
             data = json.loads(resp.read().decode("utf-8"))
             return data.get("info", {}).get("version")
-    except (urllib.error.URLError, OSError, json.JSONDecodeError, KeyError):
+    except (urllib.error.URLError, OSError, json.JSONDecodeError, KeyError) as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.debug("fetch_latest_version failed: %s", e)
         return None
 
 
@@ -124,10 +162,36 @@ def write_update_cache(cache_path: Path, latest_version: str) -> None:
             tmp_path.unlink()
 
 
-def perform_upgrade(latest_version: str, index_url: str = PYPI_URL) -> bool:
+def _is_uv_installed() -> bool:
     """
-    Run pip install --upgrade for the package.
-    Uses sys.executable to ensure the correct Python environment.
+    Detect if the package was installed via uv by checking
+    if 'teddy-cli' appears in `uv tool list` output.
+    """
+    import subprocess  # nosec
+
+    try:
+        result = subprocess.run(  # nosec
+            ["uv", "tool", "list"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0 and "teddy-cli" in result.stdout:
+            return True
+    except (subprocess.SubprocessError, FileNotFoundError):
+        pass
+    return False
+
+
+def _get_install_method() -> str:
+    """Determine the installation method: 'uv' or 'pip' (default)."""
+    return "uv" if _is_uv_installed() else "pip"
+
+
+def perform_upgrade(latest_version: str, index_url: str = PYPI_URL) -> bool:  # noqa: PLR0911
+    """
+    Run upgrade command for the package.
+    Detects uv vs pip installation and uses the appropriate tool.
 
     Args:
         latest_version: The version string being upgraded to (for logging).
@@ -136,14 +200,43 @@ def perform_upgrade(latest_version: str, index_url: str = PYPI_URL) -> bool:
     Returns:
         True if upgrade succeeded, False otherwise.
     """
-    import subprocess
+    install_method = _get_install_method()
+
+    if install_method == "uv":
+        import subprocess  # nosec
+
+        cmd = ["uv", "tool", "upgrade", "teddy-cli"]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)  # nosec
+            if result.returncode != 0:
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.error("UV upgrade failed: %s", result.stderr.strip())
+                return False
+            return True
+        except subprocess.TimeoutExpired:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error("UV upgrade timed out after 120 seconds")
+            return False
+        except OSError as e:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error("Could not run uv: %s", e)
+            return False
+
+    # Fallback to pip for pip-installed packages
+    import subprocess  # nosec
     import sys
 
     cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "teddy-cli"]
     if index_url != PYPI_URL:
         cmd.extend(["--index-url", index_url])
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)  # nosec
         if result.returncode != 0:
             import logging
 

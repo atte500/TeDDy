@@ -253,10 +253,21 @@ class TestWriteUpdateCache:
 class TestPerformUpgrade:
     """Tests for perform_upgrade function."""
 
+    # Helper: makes _is_uv_installed return False so _get_install_method returns "pip"
+    # without calling subprocess.run (which is mocked for the actual upgrade command).
+    @staticmethod
+    def _mock_uv_not_installed(monkeypatch):
+        monkeypatch.setattr(
+            "teddy_executor.core.services.update_checker._is_uv_installed",
+            lambda: False,
+        )
+
     def test_constructs_pip_command(self, monkeypatch):
         """Should construct and run pip install --upgrade command."""
         import subprocess
         from teddy_executor.core.services.update_checker import perform_upgrade
+
+        self._mock_uv_not_installed(monkeypatch)
 
         results = []
 
@@ -285,6 +296,8 @@ class TestPerformUpgrade:
             TEST_PYPI_URL,
         )
 
+        self._mock_uv_not_installed(monkeypatch)
+
         results = []
 
         def mock_run(cmd, *args, **kwargs):
@@ -305,6 +318,8 @@ class TestPerformUpgrade:
         import subprocess
         from teddy_executor.core.services.update_checker import perform_upgrade
 
+        self._mock_uv_not_installed(monkeypatch)
+
         def mock_run(cmd, *args, **kwargs):
             completed = subprocess.CompletedProcess(cmd, 1, stdout="", stderr="Error")
             return completed
@@ -319,6 +334,8 @@ class TestPerformUpgrade:
         import subprocess
         from teddy_executor.core.services.update_checker import perform_upgrade
 
+        self._mock_uv_not_installed(monkeypatch)
+
         def mock_run(cmd, *args, **kwargs):
             raise subprocess.TimeoutExpired(cmd, 120)
 
@@ -331,6 +348,8 @@ class TestPerformUpgrade:
         """Should return False when pip is not found."""
         import subprocess
         from teddy_executor.core.services.update_checker import perform_upgrade
+
+        self._mock_uv_not_installed(monkeypatch)
 
         def mock_run(cmd, *args, **kwargs):
             raise OSError("pip not found")
