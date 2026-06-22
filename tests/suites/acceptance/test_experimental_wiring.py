@@ -29,6 +29,12 @@ def test_experimental_flag_uses_test_pypi_url(monkeypatch):
         "teddy_executor.core.services.update_checker.compare_versions",
         lambda current, latest: True,
     )
+    # Mock perform_upgrade (shouldn't be called since auto_update=False, but safe to mock)
+    monkeypatch.setattr(
+        "teddy_executor.core.services.update_checker.perform_upgrade",
+        lambda latest_version, index_url=None: True,
+    )
+
     # Mock the config service to return auto_update=False (notification only)
     mock_config = Mock()
     mock_config.get_setting.side_effect = lambda key, default=None: (

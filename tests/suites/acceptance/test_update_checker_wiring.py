@@ -27,6 +27,12 @@ def test_update_command_returns_version_notification_when_newer_version_availabl
         "teddy_executor.core.services.update_checker.compare_versions",
         lambda current, latest: True,
     )
+    # Mock perform_upgrade to simulate a successful upgrade
+    monkeypatch.setattr(
+        "teddy_executor.core.services.update_checker.perform_upgrade",
+        lambda latest_version, index_url=None: True,
+    )
+
     # Mock the config service to return auto_update=True
     mock_config = Mock()
     mock_config.get_setting.side_effect = lambda key, default=None: (

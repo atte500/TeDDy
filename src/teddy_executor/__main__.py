@@ -256,12 +256,19 @@ def update(
     auto_update = config_service.get_setting("auto_update", default=True)
 
     if auto_update or yes:
-        # Hardcoded: always say success for now (perform_upgrade will be
-        # wired in a later pass)
-        typer.echo(f"Updated to v{latest}.")
-        from teddy_executor.adapters.inbound.cli_helpers import prewarm_imports
+        from teddy_executor.core.services.update_checker import perform_upgrade
 
-        prewarm_imports()
+        success = perform_upgrade(latest, index_url=index_url)
+        if success:
+            typer.echo(f"Updated to v{latest}.")
+            from teddy_executor.adapters.inbound.cli_helpers import prewarm_imports
+
+            prewarm_imports()
+        else:
+            typer.echo(
+                f"Upgrade to v{latest} failed: upgrade command returned an error."
+            )
+            raise typer.Exit(code=1)
     else:
         typer.echo(
             f"A new version {latest} is available. "

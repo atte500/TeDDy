@@ -65,13 +65,17 @@ Two changes were made to the production code:
 
 3. **Acceptance tests:** Updated 3 mock lambdas/functions in `test_auto_update_wiring.py`, `test_experimental_wiring.py`, and `test_update_checker_wiring.py` to accept `**kwargs` for forward-compatibility with the new `stable_only` parameter.
 
+4. **`perform_upgrade` wiring:** The update command success branch was previously a hardcoded echo stub. It now calls `perform_upgrade(latest, index_url=index_url)` to actually run the upgrade via pip or uv. If the upgrade succeeds, it echoes "Updated to vX.Y.Z." and pre-warms imports. If it fails, it echoes an error and exits with code 1. Acceptance tests were updated to mock `perform_upgrade` and verify the auto_update=True path.
+
 ### Verification
 - MRE confirmed the fix correctly identifies `0.1.4` as the latest stable from PyPI and `0.1.5.dev640` as the latest from TestPyPI.
 - Regression tests for `is_prerelease`, `fetch_latest_version(stable_only)`, and the override decision logic all pass.
 - Full test suite: 1016 passed, 3 skipped.
+- User can now run `teddy update` and actually be upgraded (confirmed by acceptance tests covering the full success path).
 
 ### Preventative Measures
 - Added `is_prerelease()` as a public utility function so the prerelease detection logic is reusable and testable.
 - The `stable_only` parameter makes version filtering explicit and easy to reason about.
 - Updated acceptance tests to accept `**kwargs` in mock signatures to prevent future breakage when new keyword arguments are added.
+- `perform_upgrade` includes detection for uv vs pip installation, ensuring the correct upgrade tool is used.
 - Documented in the update checker spec that version checks scan all releases and filter based on stability.
