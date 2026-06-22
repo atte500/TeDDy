@@ -132,8 +132,8 @@ Use a lightweight utility module in `core/services/update_checker.py` (Option B)
 - [ ] **Harness** - Create test fixture/setup for mocking HTTP responses (PyPI JSON) in unit tests.
 - [ ] **Logic** - Implement `src/teddy_executor/core/services/update_checker.py` with all functions.
 - [ ] **Logic** - Extract and implement `prewarm_imports()` in `cli_helpers.py`.
-- [ ] **Wiring** - Add `--version` to Typer app in `__main__.py`.
-- [ ] **Wiring** - Add `version` subcommand in `__main__.py`.
+- [x] **Wiring** - Add `--version` to Typer app in `__main__.py`.
+- [x] **Wiring** - Add `version` subcommand in `__main__.py`.
 - [ ] **Wiring** - Add `update` command with `--yes` and `--experimental` options in `__main__.py`.
 - [ ] **Wiring** - Add background version check call in `session_cli_handlers.py` (in `handle_new_session` and `handle_resume_session`).
 - [ ] **Wiring** - Add `auto_update` key to `config.yaml` baseline.
@@ -145,6 +145,7 @@ Use a lightweight utility module in `core/services/update_checker.py` (Option B)
 - [ ] **Test** - Acceptance test for `teddy --version`.
 - [ ] **Test** - Acceptance test for `teddy update --experimental`.
 - [ ] **Harness** - Create a `FakeHTTPResponse` test helper if needed to simulate PyPI responses.
+- [ ] **Documentation** - Update `README.md` with `version` command and `update` command usage after update checker is implemented.
 
 ## Implementation Notes
 
@@ -152,8 +153,8 @@ Use a lightweight utility module in `core/services/update_checker.py` (Option B)
 
 ## Verification
 
-1. Run `poetry run teddy --version` — should print "TeDDy v0.1.0"
-2. Run `poetry run teddy version` — should print same
+1. ✓ Run `poetry run teddy --version` — prints "TeDDy v0.1.0"
+2. ✓ Run `poetry run teddy version` — prints same
 3. Run `poetry run teddy update` while offline — should print "Could not check for updates: [error]" or fallback silently.
 4. Run `poetry run teddy update` with network — should check PyPI and either update or report up-to-date.
 5. Run `teddy start` — should start a session. Background check should not delay.
