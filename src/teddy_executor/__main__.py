@@ -233,8 +233,12 @@ def update(
         typer.echo(f"You are already running the latest version ({current}).")
         return
 
-    # Tracer Bullet: hardcode auto_update to True for now
-    auto_update = True
+    # Read auto_update setting from config (default: True)
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+    container = get_container()
+    config_service = container.resolve(IConfigService)
+    auto_update = config_service.get_setting("auto_update", default=True)
     action = should_update(None, auto_update_enabled=auto_update)
 
     if action is True:
