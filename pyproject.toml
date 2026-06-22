@@ -29,6 +29,7 @@ bandit = ">=1.7.9,<1.8.0"
 pip-audit = ">=2.7.3,<2.8.0"
 textual = "^8.1.0"
 urllib3 = "^2.7.0"
+tld = ">=0.10"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.3"
