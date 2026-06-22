@@ -6,7 +6,7 @@
 
 As developers we've come to accept the premise that working with AI is inherently going to produce low-quality code. People seem to either accept it as a trade-off for speed, or they avoid using it for that exact reason. I believe it doesn't have to be that way.
 
-TeDDy is a radically different coding harness that uses **Markdown as Interface** and directly embeds proven software engineering practices like **Test-Driven Development, Hexagonal Architecture, and iterative delivery**. 
+TeDDy is a radically different coding harness that uses **Markdown as Interface** and directly embeds proven software engineering practices like **Test-Driven Development, Hexagonal Architecture, and iterative delivery**.
 
 ## Why LMMs Suck at Software Development
 
@@ -126,10 +126,13 @@ teddy resume
 
 #### Browser chat usage
 
-1. Run `teddy context` to copy your project context to the clipboard.
-2. Paste it into an LLM chat interface alongside your request.
-3. Have the model generate a Markdown plan.
-4. Copy the plan and run `teddy execute` (or `teddy execute -y` for automatic execution).
+1. Copy the system prompt for your desired agent. You can either:
+   - Use `teddy get-prompt` (e.g., `teddy get-prompt -a assistant`), or
+   - Copy the contents directly from a prompt file (e.g., `.teddy/prompts/assistant.xml`).
+2. Run `teddy context` to copy your project context to the clipboard.
+3. Paste it into an LLM chat interface alongside your request.
+4. Have the model generate a Markdown plan.
+5. Copy the plan and run `teddy execute` (or `teddy execute -y` for automatic execution).
 
 ### Command Reference
 
