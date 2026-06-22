@@ -10,34 +10,34 @@ TeDDy is a radically different coding harness that uses **Markdown as Interface*
 
 ## Why LMMs Suck at Software Development
 
-At its core, an AI agent is a language model paired with a harness. LLMs are trained for next-token prediction and optimized for short-term, atomic tasks. They naturally try to generate the final solution in one shot, which makes the defects they introduce compound the more you use them.
+At its core, an AI agent is a language model paired with a harness. LLMs are trained for next-token prediction and optimized for short-term, atomic tasks. They naturally try to generate the final solution in one shot, which makes the defects they introduce compound turn after turn.
 
-Addessing and preventing defects has been a central problem for software engineering long before LLMs became a thing. So maybe we should take a page out of real software engineering practices, that have been proven over decades and apply them to the AI-assisted software development as well.
+Addessing and preventing defects has been a central problem for software engineering long before LLMs became a thing. So maybe we should take a page out of real software engineering practices, that have been proven over decades and apply them to AI-assisted software development as well.
 
-We can conceptually split defects into two categories:
+We can conceptually split **defects in software** into two categories:
 
-- **Technical Defects**: code that simply doesn't work the way it's intended.
+- **Technical**: code that simply doesn't work the way it's intended.
 - **Misalignment**: code that technically works but isn't what the user(s) actually wanted.
 
-Current coding harnesses don't address these issues at all and frontier models are also hitting diminishing returns, leaving users trying to fix this by bolting on external systems like MCPs, skill files, spec-driven workflows, leading to a messy and frustrating development experience.
+Current coding harnesses don't address these issues at all and frontier models are also hitting diminishing returns, leaving users trying to fix these by bolting on external systems like MCPs, skill files and spec-driven development, leading to a messy and frustrating development experience.
 
-TeDDy instead attempts to solve these issues directly adopting, amongst others, the following strategies:
+TeDDy instead attempts to solve these issues directly by adopting, amongst others, the following strategies:
 - **For Technical Defects:** TeDDy enforces a strict **Test-Driven (Red-Green-Refactor)** cycle. The AI must write a test first and verify it fails before writing any actual code. This catches errors early, before they compound.
 - **For Misalignment:** Instead of specing everything upfront and building layer by layer, TeDDy builds features as **end-to-end vertical slices**. Each slice gives you a working piece of software to review and verify alignment.
 
-**Additionally:** The use of Pre-commit quality checks and post-commit test suite run is designed to prevent defective code to reach your repo and allow different agents to work in parallel while ensuring continuous integration.
+**Additionally:** The use of Pre-commit quality checks and post-commit test suite run is designed to prevent defective code to reach your repo, allowing multiple agents to work in parallel while ensuring continuous integration.
 
 ## Guiding Principles
 
-1. **Markdown as Interface:** Each turn the LLM is made to follow a human-friendly Markdown protocol, including first a rationale for the plan and then a batch of actions to be executed. Allowing you to review, approve, or reject each step while staying in control at every turn.
-2. **Data Ownership:** Your entire collaboration history lives on your machine in plain Markdown. No cloud lock-in. Your sessions are as portable, private, and versionable as the rest of your codebase.
-3. **Fully Hackable:** Context goes in as a file, results come out as a file. Every turn is auditable. Agent personas are defined in simple XML files you can edit or create, making the workflow fully hackable towards your needs.
+1. **Markdown as Interface:** Each turn the LLM is made to follow a human-friendly Markdown protocol, including first a rationale for the plan and then a batch of actions to be executed that turn. Allowing you to review, approve, or reject each step while staying in control at every turn. The approven actions from the Markdown response are parsed and executed directly by the harness without requiring a separate JSON / YAML format for it.
+2. **Data Ownership:** Your entire collaboration history lives on your machine in plain Markdown. There is inherently no cloud lock-in, and local models are also fully supported. Your sessions are as portable, private, and versionable as the rest of your codebase.
+3. **Fully Hackable:** Context goes in as a file, responses come out as a file. Every turn is completely auditable and human-friendly. Agents are defined in plain-text files meaning you can edit or create new agents to tailor the workflow to your needs.
 
-## The TeDDy Workflow: Multi-Agent Development
+## The TeDDy Workflow
 
-TeDDy structures development around distinct AI agents, each with a specific mandate. Their interaction is mediated through documents, letting you steer the project at a high level.
+TeDDy breaks down the development process into distinct agents, each with a specific mandate. Their interaction is mediated through documents, letting you steer the project at a high level throughout.
 
-<!-- Workflow diagram placeholder: `<img src="./assets/workflow-schematic.png" alt="TeDDy Workflow" />` -->
+<img src="./assets/workflow-schematic.png" alt="TeDDy Workflow" />
 
 1. **Pathfinder:** Navigates from a vague idea to a technically-grounded roadmap. Explores *why*, *what*, and *how*, then helps you concretize it into a plan.
 2. **Architect:** Defines contracts, boundaries, and vertical slices for the Developer. Uses spikes to de-risk uncertain approaches before committing to an architecture.
@@ -46,13 +46,9 @@ TeDDy structures development around distinct AI agents, each with a specific man
 5. **Debugger:** Uses the scientific method to isolate root causes by building minimal reproduction cases.
 6. **Assistant:** A flexible agent that follows your instructions without enforcing a strict process. Use it as a template for custom agents or for tasks that don't require the full disciplined workflow.
 
-> Each agent's workflow is defined in plain-text XML files under `.teddy/prompts/` — you can customize any agent to fit your needs.
+> **Note:** Each agent's workflow is defined in plain-text XML files under `.teddy/prompts/`. You can customize any agent to fit your needs or create new ones for specific uses cases.
 
-## The `teddy` CLI
-
-The command-line tool that executes AI-generated plans on your filesystem.
-
-### Getting Started
+## Getting Started
 
 #### Prerequisites
 - Python 3.11 or later.
@@ -82,14 +78,27 @@ uv add teddy-cli
 teddy init
 ```
 
-#### Add your API key
+#### LLM Configuration
 
 Edit `.teddy/config.yaml`:
 
 ```yaml
 llm:
-  api_key: "your-api-key-here"
+  api_key: "your-openrouter-api-key-here"
+  model: "openrouter/deepseek/deepseek-v4-flash:nitro"
 ```
+
+> **Note:** You can update the `model` field to switch providers/models. TeDDy defaults to the [OpenRouter API](https://openrouter.ai/) which supports hundreds of models. To change the model, simply edit the `model` value in your config.
+
+#### Editor Configuration
+
+Set your preferred editor for reviewing and modifying plans:
+
+```yaml
+editor: "nvim"
+```
+
+If no editor is configured, TeDDy will use the system default. Supported editors include `nvim`, `vim`, `code`, and any editor available on your `PATH`.
 
 #### Start a session
 
@@ -121,12 +130,6 @@ teddy resume
 2. Paste it into an LLM chat interface alongside your request.
 3. Have the model generate a Markdown plan.
 4. Copy the plan and run `teddy execute` (or `teddy execute -y` for automatic execution).
-
-### Upgrade
-
-```bash
-uv add teddy-cli
-```
 
 ### Command Reference
 
