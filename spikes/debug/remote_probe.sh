@@ -60,11 +60,10 @@ echo "Test directory 2: $TEST_DIR_2"
 python3 -m venv "$TEST_DIR_2/venv"
 source "$TEST_DIR_2/venv/bin/activate"
 
-# Install deps first? We install WITHOUT deps because basic deps should be available.
-# If we get import errors, the diagnostics will show them.
-pip install --no-deps "$PROJECT_ROOT" 2>&1
+# Install the package WITH dependencies (typer, pyyaml, etc. are required)
+pip install "$PROJECT_ROOT" 2>&1
 PIP_INSTALL_EXIT=$?
-echo "pip install --no-deps exit code: $PIP_INSTALL_EXIT"
+echo "pip install exit code: $PIP_INSTALL_EXIT"
 echo ""
 
 # Run teddy init in a subdirectory (outside the venv)
@@ -112,10 +111,9 @@ except Exception as e:
     print(f'Error: {e}')
 "
     echo ""
-    echo "InitService direct check:"
+    echo "InitService direct check (using pip-installed code):"
     python -c "
-import sys, os
-sys.path.insert(0, '${PROJECT_ROOT}/src')
+import os
 from teddy_executor.core.services.init_service import InitService
 from teddy_executor.adapters.outbound.local_file_system_adapter import LocalFileSystemAdapter
 from teddy_executor.core.services.edit_simulator import EditSimulator
@@ -123,14 +121,20 @@ from teddy_executor.core.services.edit_simulator import EditSimulator
 srv = InitService(LocalFileSystemAdapter(EditSimulator()))
 print(f'config_dir: {srv._config_dir}')
 print(f'config_dir exists: {os.path.isdir(srv._config_dir) if srv._config_dir else \"N/A\"}')
-# Try reading config.yaml
-content = srv._get_default_content('config.yaml')
-print(f'_get_default_content config.yaml: {content is not None}')
-print(f'Content preview: {content[:80] if content else \"None\"}')
+
+# Try reading config templates
+for name in ['config.yaml', 'init.context', '.gitignore']:
+    content = srv._get_default_content(name)
+    print(f'_get_default_content({name}): {content is not None}')
+    if content:
+        print(f'  preview: {content[:80]}')
 
 # Try ensure_initialized
 srv.ensure_initialized()
 print(f'.teddy exists after direct call: {os.path.isdir(\".teddy\")}')
+if os.path.isdir('.teddy'):
+    import glob
+    print(f'  contents: {os.listdir(\".teddy\")}')
 "
 fi
 
