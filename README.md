@@ -1,84 +1,171 @@
-# TeDDy CLI: A file-based AI coding workflow that puts you in control
+# TeDDy: A Coding Harness Designed for Quality
 
-TeDDy's goal is to apply the **[UNIX philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)** to AI development and create a **[Git-like workflow](https://git-scm.com/)** to embed the entire collaboration process directly into the file system. Inspired by **[Obsidian](https://obsidian.md/)**, the entire AI collaboration lives exclusively in plain Markdown files in your local directory.
-
+<!-- Old video placeholder – will be updated with new release video
 [![My Plan to Fix AI Coding](https://img.youtube.com/vi/By6wGuT-4sA/0.jpg)](https://www.youtube.com/watch?v=By6wGuT-4sA)
+-->
+
+AI code generation has become synonymous with high volume, low quality output. I believe it doesn't have to be that way.
+
+TeDDy is an open-source coding harness that embeds proven software engineering practices like Test-Driven Development, Hexagonal Architecture, and iterative delivery.
+
+## The Problem: Why LMMs Suck at Software Development
+
+At its core, an AI agent is a language model paired with a harness. LLMs are trained for next-token prediction and optimized for short-term, atomic tasks. They naturally try to generate the final solution in one shot, which makes the defects they introduce compound the more you use them.
+
+Addessing and preventing defects has been a central problem for software engineering long before LLMs became a thing. So maybe we should take a page out of real software engineering practices, that have been proven over decades and apply them to the AI-assisted software development as well.
+
+We can conceptually split defects into two categories:
+
+- **Technical Defects**: code that simply doesn't work the way it's intended.
+- **Misalignment**: code that technically works but isn't what the user(s) actually wanted.
+
+Current coding harnesses don't address these issues at all and frontier models are also hitting diminishing returns, leaving users trying to fix this by bolting on external systems like MCPs, skill files, spec-driven workflows, leading to a messy and frustrating development experience.
+
+TeDDy instead attempts to solve these issues directly adopting, amongst others, the following strategies:
+- **For Technical Defects:** TeDDy enforces a strict **Test-Driven (Red-Green-Refactor)** cycle. The AI must write a test first and verify it fails before writing any actual code. This catches errors early, before they compound.
+- **For Misalignment:** Instead of specing everything upfront and building layer by layer, TeDDy builds features as **end-to-end vertical slices**. Each slice gives you a working piece of software to review and verify alignment.
+
+**Additionally:** The use of Pre-commit quality checks and post-commit test suite run is designed to prevent defective code to reach your repo and allow different agents to work in parallel while ensuring continuous integration.
 
 ## Guiding Principles
 
-### 1. Markdown Files as Interface
+### 1. Markdown as Interface
 
-With TeDDy, your interface *is* the file system. You interact with the AI through simple Markdown files that you can edit, search, and manage with the tools you already use every day. Your AI workflow lives and breathes alongside your code, not in a separate, siloed application.
+You interact with the AI through simple Markdown files you can edit, search, and manage with the tools you already use. No chat UI — your AI workflow lives alongside your code.
 
-### 2. Local-First & Data Ownership
+### 2. Human-Centric
 
-Your complete AI collaboration history resides on your machine in a simple, open format. There is no cloud service, no vendor lock-in. This gives you absolute control over your privacy and full ownership of your data. Your sessions are as portable, private, and versionable as the rest of your codebase.
+Plans are presented in a clear Markdown protocol: rationale first, then a batch of actions for your approval. You review, approve, or reject — staying in control at every turn.
 
-### 3. Stateless & Transparent
+### 3. Local-First & Data Ownership
 
-TeDDy is stateless by design. The AI's complete context is passed in as a file, and its results are written out as a file. This explicitness makes every turn completely transparent and auditable. Because the entire state is just text on your disk, the workflow is also incredibly hackable. Agent personas are defined in simple prompt files you can easily edit or create, allowing you to tailor the AI's skills, rules, and personality to perfectly fit your project's unique needs.
+Your entire collaboration history lives on your machine in plain Markdown. No cloud lock-in. Your sessions are as portable, private, and versionable as the rest of your codebase.
 
-### 4. Human-Centric Workflow
+### 4. Stateless & Transparent
 
-Instead of executing actions directly, each turn, agents outline their plan using a **TeDDy-specific Markdown protocol** structured to clearly present the agent's rationale and every intended action for your approval, while also being precisely executable by the CLI. Once approved, the actions are executed *deterministically*, and the results are summarized in a Markdown execution report that is passed back to the AI to inform the next turn.
+Context goes in as a file, results come out as a file. Every turn is auditable. Agent personas are defined in simple XML files you can edit or create, making the workflow fully hackable.
 
-## The TeDDy Workflow: Pathfinder, Architect, Developer & Debugger
+## The TeDDy Workflow: Multi-Agent Development
 
-TeDDy structures the development process around four distinct AI personas, each with a specific mandate.
+TeDDy structures development around distinct AI agents, each with a specific mandate. Their interaction is mediated through documents, letting you steer the project at a high level.
+
+<!-- Workflow diagram placeholder: `<img src="./assets/workflow-schematic.png" alt="TeDDy Workflow" />` -->
 
 ### 1. The Pathfinder (Strategic Discovery)
-The Pathfinder navigates the journey from a vague idea to a technically-grounded plan. It uses a structured **Diverge-Converge** workflow to explore the **Problem Space (Why)**, **Solution Space (What)**, and **Implementation Space (How)**.
+Navigates from a vague idea to a technically-grounded roadmap. Explores *why*, *what*, and *how*, then outputs a prioritized plan.
 
 ### 2. The Architect (System Design & Strategy)
-The Architect is responsible for big-picture system design. It uses a **Diverge-Converge** workflow to deeply understand the current system, evaluate alternative architectural solutions via spikes, and produce a detailed, Vertical Slice blueprint containing explicit contracts and DTOs.
+Defines contracts, boundaries, and vertical slices. Uses spikes to de-risk uncertain approaches before committing to an architecture.
 
-### 3. The Developer (Outside-In TDD)
-The Developer implements the plan using a disciplined, **Outside-In TDD** workflow. It works in nested **Red-Green-Refactor** loops, ensuring every line of code is traceable to a business requirement.
+### 3. The Prototyper (De-risking)
+Builds standalone scenario runners to validate uncertain feature slices before the Developer implements them.
 
-### 4. The Debugger (Scientific Fault Isolation)
-The Debugger is a specialist agent activated when others fail. It follows the **scientific method** to isolate the verifiable root cause of a problem.
+### 4. The Developer (Outside-In TDD)
+Implements features one deliverable at a time using a strict **Red-Green-Refactor** loop.
 
-## The `teddy` CLI: The Hands of the AI
+### 5. The Debugger (Scientific Fault Isolation)
+Activated when other agents fail. Uses the scientific method to isolate root causes by building minimal reproduction cases.
 
-The `teddy` command-line tool, is the bridge between AI-generated plans and your local filesystem. It allows for the safe, transparent, and user-supervised execution of development tasks, both in interactive as well as non-interactive mode.
+### 6. The Assistant (General Purpose)
+A flexible agent that follows your instructions without enforcing a strict process. Use it as a template for custom agents or for tasks that don't require the full disciplined workflow.
 
-### Execution Flow
+> Each agent's workflow is defined in plain-text XML files under `.teddy/prompts/` — you can customize any agent to fit your needs.
 
-1.  **Plan Generation:** An AI agent generates a multi-step plan in **Markdown format**.
-2.  **Supervised Execution:** You run the `teddy execute` command against the plan.
-3.  **Interactive Approval:** `teddy` prints each action and prompts for your approval (`y/n`). If you reject a step, it is marked as `SKIPPED`, and no changes are made.
-4.  **Markdown Report:** After execution, `teddy` generates a Markdown **Execution Report** and copies it to your clipboard. This report is passed back to the AI to close the loop.
+## The `teddy` CLI
 
-### Installation & Usage
+The command-line tool that executes AI-generated plans on your filesystem.
 
-The `teddy` executor is a CLI tool managed with **Poetry**.
+### Getting Started
 
-#### 1. Installation
+#### Prerequisites
+- Python 3.11 or later.
+- [uv](https://docs.astral.sh/uv/) — a fast Python package installer.
+
+#### Install uv (if not already installed)
+
 ```bash
-# From the project root, install the environment
-poetry install
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-#### 2. Usage
-To run commands, use `poetry run teddy <command>`.
+Keep uv itself up-to-date:
 
-### Command-Line Reference
+```bash
+uv self update
+```
 
-| Command      | Description                                                                                                                            |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `init`       | Initializes the `.teddy` directory with default files and pre-warms heavy imports for faster startup.                                  |
-| `execute`    | Executes a Markdown plan file. If no file is provided, it reads the plan from the clipboard.                                           |
-| `context`    | Gathers project context (file tree + selected file contents) and copies it to the clipboard. Respects `.gitignore` and `.teddyignore`. |
-| `get-prompt` | Retrieves a system prompt (e.g., `pathfinder`, `dev`). Searches in `.teddy/prompts/` for overrides before falling back to defaults.    |
+#### Install TeDDy
 
-To streamline the workflow, `execute` and `context` **copy their output to the clipboard by default**. Use the `--no-copy` flag to disable this behavior.
+```bash
+uv add teddy-cli
+```
 
-## Project Roadmap
+#### Initialize
 
-Here's a look at our development priorities.
+```bash
+teddy init
+```
 
-|  Status   | Stage / Feature Set               | Description                                                                                                                                                  |
-| :-------: | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Completed | **Agent Prompts v1**              | Core prompts for Pathfinder, Architect, Developer, and Debugger are defined and functional.                                                                  |
-| Completed | **Core Action & Utility Support** | The foundational actions (`create`, `read`, `edit`, `execute`, `chat`, `research`) and the `context` utility command are fully implemented and stable.       |
-|    WIP    | **Interactive Session Workflow**  | A local-first, file-based workflow that eliminates chat UIs. Manages conversation history, context, and state snapshots directly on the filesystem with Git. |
+#### Add your API key
+
+Edit `.teddy/config.yaml`:
+
+```yaml
+llm:
+  api_key: "your-api-key-here"
+```
+
+#### Start a session
+
+```bash
+teddy start
+```
+
+Run with `--yolo` / `-y` for automatic approval:
+
+```bash
+teddy start -y
+```
+
+Resume a previous session:
+
+```bash
+teddy resume
+```
+
+#### Optional flags
+
+- `--agent` / `-a` – Choose an agent persona (e.g., `pathfinder`, `architect`, `developer`).
+- `--context` / `-c` – Pass additional context files or directories.
+- `--model` / `-m` – Override the default model.
+
+#### Browser chat usage
+
+1. Run `teddy context` to copy your project context to the clipboard.
+2. Paste it into an LLM chat interface alongside your request.
+3. Have the model generate a Markdown plan.
+4. Copy the plan and run `teddy execute` (or `teddy execute -y` for automatic execution).
+
+### Upgrade
+
+```bash
+uv add teddy-cli
+```
+
+### Command Reference
+
+| Command      | Description                                                               |
+| ------------ | ------------------------------------------------------------------------- |
+| `init`       | Initialize `.teddy` directory with defaults and pre-warm heavy imports.   |
+| `start`      | Start an interactive session.                                             |
+| `resume`     | Resume an existing session.                                               |
+| `execute`    | Execute a Markdown plan. Reads from clipboard if no file path provided.   |
+| `context`    | Gather project context (file tree + selected file contents) to clipboard. |
+| `get-prompt` | Retrieve agent system prompts. Respects `.teddy/prompts/` overrides.      |
+
+By default, `execute` and `context` copy their output to the clipboard. Use `--no-copy` to disable.
+
+## Learn More
+
+- [Project Roadmap & Vision](/docs/project/PROJECT.md)
+- [System Architecture](/docs/architecture/ARCHITECTURE.md)
+- [Agent Prompt Templates](/src/teddy_executor/resources/config/prompts/)
