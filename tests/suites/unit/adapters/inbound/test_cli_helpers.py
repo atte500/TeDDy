@@ -24,4 +24,4 @@ def test_packaging_transitive_dependency():
     v2 = Version("2.0.0")
     assert v2 > v1
     assert not (v1 > v2)
-    assert v1 == v1
+    assert v1 == Version("1.0.0")

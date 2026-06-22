@@ -153,7 +153,7 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 
 ### Harness (Test Infrastructure)
 - [x] **Harness** - Verify `packaging` is available as transitive dependency (via `pip-audit`).
-- [ ] **Harness** - Create a `FakeHTTPResponse` test helper to simulate PyPI JSON responses in unit tests.
+- [x] **Harness** - Create a `FakeHTTPResponse` test helper to simulate PyPI JSON responses in unit tests.
 - [ ] **Harness** - Create test fixture for isolated temp cache directory.
 
 ### Logic (Business Logic Implementation)
@@ -204,6 +204,17 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - **Full suite:** 956 passed, 3 skipped — no regressions.
 - **Rationale:** Extracted to `cli_helpers.py` to create a shared seam between the `init` command and the upcoming `update` command (which also needs to pre-warm imports post-upgrade). Avoids code duplication while keeping the function in the adapter layer (not core).
 - **Architecture doc sync:** The `update_checker.md` architecture doc already references `prewarm_imports` as living in `cli_helpers.py`. No update needed.
+
+### Harness — Create FakeHTTPResponse test helper
+- **Class:** `FakeHTTPResponse` created in `tests/harness/setup/fake_http_response.py`.
+- **Interface:** Supports `read()`, `getcode()`, `headers` attribute, and context manager protocol (`__enter__`/`__exit__`). Simulates `urllib.response.addinfourl`.
+- **Tests:** Two unit tests in `tests/suites/unit/test_fake_http_response.py`:
+  - `test_fake_http_response_returns_json_with_status`: Verifies JSON body round-trip, status code, and headers.
+  - `test_fake_http_response_supports_context_manager`: Verifies `with` statement usage.
+- **Test outcome:** Red → `ModuleNotFoundError: No module named 'tests.harness.setup.fake_http_response'`. Green → 2 tests pass.
+- **Full suite:** 959 passed, 3 skipped — no regressions.
+- **Lint fix:** Also fixed `PLR0124` (self-comparison) in `test_packaging_transitive_dependency` — replaced `assert v1 == v1` with `assert v1 == Version("1.0.0")`.
+- **Rationale:** Created as a standalone class in the existing `tests/harness/setup/` directory (consistent with mocking.py). No new files outside the harness tree. Fits the pattern used by existing `POSIXPathMock` and `register_mock` helpers. The context manager support is critical for compatibility with `urllib.request.urlopen` which is used in the update checker prototype.
 
 ## Verification
 
