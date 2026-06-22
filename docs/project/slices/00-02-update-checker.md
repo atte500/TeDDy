@@ -152,7 +152,7 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - [x] **Contract** - Define `prewarm_imports()` function signature in `cli_helpers.py` (extracted from `__main__.py`).
 
 ### Harness (Test Infrastructure)
-- [ ] **Harness** - Verify `packaging` is available as transitive dependency (via `pip-audit`).
+- [x] **Harness** - Verify `packaging` is available as transitive dependency (via `pip-audit`).
 - [ ] **Harness** - Create a `FakeHTTPResponse` test helper to simulate PyPI JSON responses in unit tests.
 - [ ] **Harness** - Create test fixture for isolated temp cache directory.
 
@@ -180,6 +180,21 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - [ ] **Documentation** - Update `README.md` with `version` and `update` command usage after implementation.
 
 ## Implementation Notes
+
+### Contract — `prewarm_imports()` extraction
+- **Function:** `prewarm_imports()` added to `src/teddy_executor/adapters/inbound/cli_helpers.py` at line 252.
+- **Body:** Identical to the inline block in `__main__.py`'s `init` command (5 heavy-import packages: litellm, trafilatura, pyperclip, BeautifulSoup, DDGS).
+- **Test:** `test_prewarm_imports_executes_without_error` added to `tests/suites/unit/adapters/inbound/test_cli_helpers.py`.
+- **Test outcome:** Red → `ImportError: cannot import name 'prewarm_imports'`. Green → 2 tests pass.
+- **Full suite:** 956 passed, 3 skipped — no regressions.
+- **Rationale:** Extracted to `cli_helpers.py` to create a shared seam between the `init` command and the upcoming `update` command (which also needs to pre-warm imports post-upgrade). Avoids code duplication while keeping the function in the adapter layer (not core).
+- **Architecture doc sync:** The `update_checker.md` architecture doc already references `prewarm_imports` as living in `cli_helpers.py`. No update needed.
+
+### Harness — Verify `packaging` transitive dependency
+- **Dependency:** `packaging` (version 26.0) is a transitive dependency via `pip-audit` (installed from poetry.lock). Not a direct dependency in `pyproject.toml`.
+- **Verification:** The `packaging.version.Version` class works correctly for version comparison (tested with standard PEP 440 version strings).
+- **Test:** `test_packaging_transitive_dependency` added to `tests/suites/unit/adapters/inbound/test_cli_helpers.py`. Confirms `Version` comparison operators (`>`, `<`, `==`) work as expected.
+- **Result:** All 3 tests in file pass. Full suite passes with no regressions.
 
 ### Contract — `prewarm_imports()` extraction
 - **Function:** `prewarm_imports()` added to `src/teddy_executor/adapters/inbound/cli_helpers.py` at line 252.
