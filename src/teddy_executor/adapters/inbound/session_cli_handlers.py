@@ -17,7 +17,9 @@ from teddy_executor.core.utils.string import slugify
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.adapters.inbound.cli_helpers import (
     echo_and_copy,
+    find_project_root,
 )
+from teddy_executor.core.services.update_checker import background_check
 
 
 def _determine_session_name(name: Optional[str], message: Optional[str]) -> str:
@@ -91,6 +93,17 @@ def handle_new_session(  # noqa: PLR0913
     api_key: Optional[str] = None,
 ):
     """Logic for the 'start' command."""
+    import threading
+
+    # Start non-blocking background version check
+    cache_path = find_project_root() / ".teddy" / ".update_cache.json"
+    thread = threading.Thread(
+        target=background_check,
+        args=(cache_path,),
+        daemon=True,
+    )
+    thread.start()
+
     try:
         # 0. Ensure project is initialized
         container.resolve(IInitUseCase).ensure_initialized()
@@ -326,6 +339,17 @@ def handle_resume_session(  # noqa: PLR0913
     api_key: Optional[str] = None,
 ):
     """Logic for the 'resume' command."""
+    import threading
+
+    # Start non-blocking background version check
+    cache_path = find_project_root() / ".teddy" / ".update_cache.json"
+    thread = threading.Thread(
+        target=background_check,
+        args=(cache_path,),
+        daemon=True,
+    )
+    thread.start()
+
     try:
         # 1. Pre-flight checks
         typer.echo("Checking configurations...", err=True)

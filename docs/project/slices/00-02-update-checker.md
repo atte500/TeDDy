@@ -165,7 +165,7 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - [x] **Wiring** - `--version` flag in Typer `main_callback` (already implemented).
 - [x] **Wiring** - `version` subcommand in `__main__.py` (already implemented).
 - [x] **Wiring** - Add `update` command with `--yes` and `--experimental` options in `__main__.py`.
-- [ ] **Wiring** - Add background version check call in `session_cli_handlers.py` (`handle_new_session` and `handle_resume_session`).
+- [x] **Wiring** - Add background version check call in `session_cli_handlers.py` (`handle_new_session` and `handle_resume_session`).
 - [x] **Wiring** - Add `auto_update: true` key to `config.yaml` baseline.
 - [ ] **Wiring** - Read `auto_update` config in update command (via `IConfigService.get_setting("auto_update")`).
 
@@ -271,6 +271,18 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - **Test impact:** No new tests needed — the existing `test_config_defaults.py` integration test validates that all config keys are loaded correctly. No behavioral change to CLI commands yet (the key is consumed in a separate Wiring deliverable).
 - **Full suite:** 995 passed, 3 skipped — no regressions (config defaults test still passes).
 - **Rationale:** The `auto_update` key is the central configuration toggle for the auto-update feature. It must exist in the baseline `config.yaml` template before the `update` command can read it via `IConfigService.get_setting("auto_update")`. The default is `true` to provide frictionless upgrades out-of-the-box (matching the spec).
+
+### Wiring — Add background version check call in `session_cli_handlers.py`
+- **Change:** Added `find_project_root` to import from `cli_helpers`, added `background_check` import from `update_checker`. In both `handle_new_session` and `handle_resume_session`, added a daemon thread that calls `background_check(cache_path)` at the start of the function (before the `try` block).
+- **Files modified:** `session_cli_handlers.py` (+import lines, +7 lines per handler).
+- **Tests:** Added two unit tests in `tests/suites/unit/adapters/inbound/test_session_cli_handlers.py`:
+  - `test_handle_new_session_starts_background_check_thread`: Verifies a daemon thread targeting `background_check` is started with the correct cache path.
+  - `test_handle_resume_session_starts_background_check_thread`: Same verification for resume handler.
+  - Uses `TrackingThread` (subclasses `threading.Thread`) to capture constructor kwargs without interfering with thread execution.
+  - Monkeypatches `_run_cli_preflight_check`, `_orchestrate_session_loop`, and `_sync_and_display_session_meta` to no-ops to prevent mock container failures in inner session logic.
+- **Test outcome:** Red → No Thread call with target=background_check found (thread not started). Green → Both tests pass.
+- **Full suite:** [to be filled after integration]
+- **Rationale:** The background check runs as a daemon thread so the main thread is never blocked (~0.0007s overhead). The thread auto-terminates when the main process exits. The cache path is resolved via `find_project_root() / ".teddy" / ".update_cache.json"`, consistent with the update checker module constants.
 
 ## Verification
 
