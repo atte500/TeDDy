@@ -192,6 +192,8 @@ def should_update(
         - False → newer version available but auto_update disabled
         - None  → no update needed or version check failed
     """
+    if cache_path is None:
+        return None
     cache = read_update_cache(cache_path)
     if cache is None:
         return None

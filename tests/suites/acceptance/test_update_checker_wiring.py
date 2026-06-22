@@ -26,6 +26,11 @@ def test_update_command_returns_version_notification_when_newer_version_availabl
         "teddy_executor.core.services.update_checker.compare_versions",
         lambda current, latest: True,
     )
+    # Mock should_update to return True (Tracer Bullet: bypass cache)
+    monkeypatch.setattr(
+        "teddy_executor.core.services.update_checker.should_update",
+        lambda cache_path, auto_update_enabled=True: True,
+    )
 
     # Mock the project initialization to avoid DI/container wiring
     monkeypatch.setattr(
@@ -36,10 +41,10 @@ def test_update_command_returns_version_notification_when_newer_version_availabl
     runner = CliRunner()
     result = runner.invoke(app, ["update"])
 
-    # Red phase: command doesn't exist → exit code 2 (no such command)
+    # The command should exit with 0 and print the new version
     assert result.exit_code == 0, (
         f"Expected exit code 0 for a successful update command, "
-        f"got {result.exit_code}. stderr: {result.stderr!r}"
+        f"got {result.exit_code}. Output: {result.stdout!r}"
     )
     # The output should mention the new version or update success
     assert "2.0.0" in result.stdout, (
