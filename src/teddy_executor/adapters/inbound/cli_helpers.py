@@ -247,3 +247,18 @@ def apply_ui_mode_override(container: Container, ui_mode_bool: bool) -> None:
 
     mode = "tui" if ui_mode_bool else "console"
     register_reviewer(container, ui_mode=mode)
+
+
+def prewarm_imports() -> None:
+    """
+    Pre-warm heavy imports to reduce first-run latency.
+    Extracted from __main__.py init command for reuse by update command.
+    """
+    try:
+        import litellm  # noqa: F401
+        import trafilatura  # noqa: F401
+        import pyperclip  # noqa: F401
+        from bs4 import BeautifulSoup  # noqa: F401
+        from ddgs import DDGS  # noqa: F401
+    except ImportError:
+        pass

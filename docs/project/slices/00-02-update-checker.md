@@ -1,6 +1,6 @@
 # Slice: Update Checker & Auto-Update
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Type:** Feature
 - **Milestone:** N/A (ad-hoc)
 - **Specs:** [docs/project/specs/update-checker.md](/docs/project/specs/update-checker.md)
@@ -149,7 +149,7 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 ## Deliverables
 
 ### Contract (Seam Definition)
-- [ ] **Contract** - Define `prewarm_imports()` function signature in `cli_helpers.py` (extracted from `__main__.py`).
+- [x] **Contract** - Define `prewarm_imports()` function signature in `cli_helpers.py` (extracted from `__main__.py`).
 
 ### Harness (Test Infrastructure)
 - [ ] **Harness** - Verify `packaging` is available as transitive dependency (via `pip-audit`).
@@ -181,7 +181,14 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 
 ## Implementation Notes
 
-*(To be filled by Developer)*
+### Contract — `prewarm_imports()` extraction
+- **Function:** `prewarm_imports()` added to `src/teddy_executor/adapters/inbound/cli_helpers.py` at line 252.
+- **Body:** Identical to the inline block in `__main__.py`'s `init` command (5 heavy-import packages: litellm, trafilatura, pyperclip, BeautifulSoup, DDGS).
+- **Test:** `test_prewarm_imports_executes_without_error` added to `tests/suites/unit/adapters/inbound/test_cli_helpers.py`.
+- **Test outcome:** Red → `ImportError: cannot import name 'prewarm_imports'`. Green → 2 tests pass.
+- **Full suite:** 956 passed, 3 skipped — no regressions.
+- **Rationale:** Extracted to `cli_helpers.py` to create a shared seam between the `init` command and the upcoming `update` command (which also needs to pre-warm imports post-upgrade). Avoids code duplication while keeping the function in the adapter layer (not core).
+- **Architecture doc sync:** The `update_checker.md` architecture doc already references `prewarm_imports` as living in `cli_helpers.py`. No update needed.
 
 ## Verification
 
