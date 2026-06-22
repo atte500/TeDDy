@@ -215,13 +215,17 @@ def update(
         get_current_version,
         fetch_latest_version,
         compare_versions,
+        is_prerelease,
         should_update,
         PYPI_URL,
         TEST_PYPI_URL,
     )
 
     index_url = TEST_PYPI_URL if experimental else PYPI_URL
-    latest = fetch_latest_version(index_url)
+    stable_only = (
+        not experimental
+    )  # default: stable only from PyPI; --experimental includes all
+    latest = fetch_latest_version(index_url, stable_only=stable_only)
 
     if latest is None:
         typer.echo("Could not check for updates: network error.")
@@ -229,7 +233,19 @@ def update(
 
     current = get_current_version()
 
-    if not compare_versions(current, latest):
+    # Determine if an upgrade is needed
+    if experimental:
+        # Experimental mode: normal PEP 440 comparison (highest version wins)
+        needs_update = compare_versions(current, latest)
+    # Normal mode: if current version is a prerelease (dev), always upgrade to
+    # the stable version (even if numerically lower). Otherwise use normal comparison.
+    elif is_prerelease(current):
+        # Only consider it an update if we're not already at the exact stable version
+        needs_update = latest != current
+    else:
+        needs_update = compare_versions(current, latest)
+
+    if not needs_update:
         typer.echo(f"You are already running the latest version ({current}).")
         return
 

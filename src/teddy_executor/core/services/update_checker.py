@@ -68,11 +68,23 @@ def get_current_version() -> str:
         return "0.0.0"
 
 
-def fetch_latest_version(index_url: str = PYPI_URL) -> Optional[str]:
+def fetch_latest_version(
+    index_url: str = PYPI_URL,
+    stable_only: bool = True,
+) -> Optional[str]:
     """
-    Fetch latest version from PyPI/TestPyPI JSON API.
-    Uses certifi for SSL context if available.
-    Returns None on any failure (network, parse, etc.) — logged for debugging.
+    Fetch the highest version from PyPI/TestPyPI JSON API.
+
+    Scans all releases in data['releases'] (instead of only data['info']['version']),
+    and optionally filters to stable versions only.
+
+    Args:
+        index_url: The PyPI JSON API URL.
+        stable_only: If True (default), only consider stable (non-prerelease) versions.
+                     If False, consider all versions including dev/pre-releases.
+
+    Returns:
+        The highest matching version string, or None on failure.
     """
     import json
     import urllib.error
@@ -89,13 +101,40 @@ def fetch_latest_version(index_url: str = PYPI_URL) -> Optional[str]:
         context = _create_ssl_context()
         with urllib.request.urlopen(req, timeout=10, context=context) as resp:  # nosec
             data = json.loads(resp.read().decode("utf-8"))
-            return data.get("info", {}).get("version")
+            releases = data.get("releases", {})
+            if not releases:
+                # Fallback to info.version if releases dict is empty
+                return data.get("info", {}).get("version")
+            valid_versions = []
+            for v_str in releases.keys():
+                try:
+                    ver = Version(v_str)
+                    if stable_only and ver.is_prerelease:
+                        continue
+                    valid_versions.append(ver)
+                except Exception:
+                    pass
+            if not valid_versions:
+                return None
+            highest = max(valid_versions)
+            return str(highest)
     except (urllib.error.URLError, OSError, json.JSONDecodeError, KeyError) as e:
         import logging
 
         logger = logging.getLogger(__name__)
         logger.debug("fetch_latest_version failed: %s", e)
         return None
+
+
+def is_prerelease(version_str: str) -> bool:
+    """
+    Returns True if the given version string is a pre-release (dev, alpha, beta, rc, etc.)
+    according to PEP 440. Returns False on any parse failure.
+    """
+    try:
+        return Version(version_str).is_prerelease
+    except Exception:
+        return False
 
 
 def compare_versions(current: str, latest: str) -> bool:

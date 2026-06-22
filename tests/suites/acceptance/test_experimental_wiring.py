@@ -11,7 +11,7 @@ def test_experimental_flag_uses_test_pypi_url(monkeypatch):
     # Track the index_url passed to fetch_latest_version
     fetch_calls = []
 
-    def tracking_fetch_latest_version(index_url=None):
+    def tracking_fetch_latest_version(index_url=None, **kwargs):
         fetch_calls.append(index_url)
         # Return a TestPyPI-like version
         return "0.2.0.dev1"
