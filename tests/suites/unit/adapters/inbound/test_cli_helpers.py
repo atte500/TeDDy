@@ -50,7 +50,7 @@ def test_init_command_calls_prewarm_imports(monkeypatch):
     # doesn't require a .teddy directory or container wiring.
     monkeypatch.setattr(
         "teddy_executor.__main__._ensure_project_initialized",
-        lambda container: None,
+        lambda container, root_dir=None: None,
     )
 
     import teddy_executor.__main__ as main_app
