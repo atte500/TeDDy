@@ -132,7 +132,7 @@ WIP & REMINDERS:
         3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
            ```shell
            # 0. Ensure commit hooks are installed
-           [ -x ".git/hooks/pre-commit" ] && [ -x ".git/hooks/post-commit" ] || exit 1
+           pre-commit install -t pre-commit -t post-commit
 
            # 1. Stage changes and run pre-commit
            git add .
