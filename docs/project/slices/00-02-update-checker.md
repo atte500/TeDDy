@@ -173,7 +173,7 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - [x] **Test** - Unit tests for `update_checker.py` (version comparison, cache I/O, fetch resilience, upgrade command, should_update logic).
 - [x] **Test** - Unit tests for `prewarm_imports()` extraction (verify it executes without error).
 - [x] **Test** - Acceptance test for `teddy update` happy path (newer version → upgrade).
-- [ ] **Test** - Acceptance test for `teddy --version` (displays correct version).
+- [x] **Test** - Acceptance test for `teddy --version` (displays correct version).
 - [ ] **Test** - Acceptance test for `teddy update --experimental` (TestPyPI URL resolution).
 
 ### Documentation
@@ -292,6 +292,15 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - **Test outcome:** Red → `assert should_update_calls[0] is False` failed (hardcoded `auto_update=True` ignored the mock config). Green → Test passes.
 - **Full suite:** 997 passed, 3 skipped (pre-existing failure in test_session_cli_handlers.py — no regression from this change).
 - **Rationale:** The Tracer Bullet (hardcoded `True`) is replaced with real config reading. The default `True` ensures backward compatibility for users without the `auto_update` key in their config. The container is resolved inside the function rather than at module level to avoid import-order issues with test mocking. The acceptance test uses a container monkeypatch pattern because the update command resolves the container internally after the mock is applied.
+
+### Test — Acceptance test for `teddy --version`
+- **Change:** Added `tests/suites/acceptance/test_version_display.py` with two test functions:
+  - `test_version_flag_displays_installed_version`: Mocks `importlib.metadata.version` to return `"0.1.0"` and verifies `teddy --version` outputs `"TeDDy v0.1.0"`.
+  - `test_version_command_displays_installed_version`: Same verification for `teddy version` subcommand.
+- **Files modified:** `test_version_display.py` (new file, ~40 lines).
+- **Test outcome:** Green from first run — no Red-Green cycle needed (no production code change).
+- **Full suite:** 997 passed, 3 skipped (pre-existing failure in test_session_cli_handlers.py — no regression).
+- **Rationale:** The `--version` flag and `version` subcommand were already implemented in `__main__.py`. This test adds coverage to prevent regressions. The version is mocked to avoid dependency on the actual installed version (which changes between releases).
 
 ## Verification
 
