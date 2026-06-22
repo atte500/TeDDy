@@ -57,8 +57,12 @@ logging.basicConfig(
 )
 
 
-def _ensure_project_initialized(container) -> None:
-    """Lazily performs project anchoring and initialization."""
+def _ensure_project_initialized(container, root_dir: str | None = None) -> None:
+    """Lazily performs project anchoring and initialization.
+
+    If root_dir is provided, uses that path as the root. Otherwise, finds
+    the nearest parent containing .teddy/ via find_project_root().
+    """
     from teddy_executor.adapters.inbound.cli_helpers import find_project_root
     from teddy_executor.core.ports.outbound.file_system_manager import (
         IFileSystemManager,
@@ -77,7 +81,10 @@ def _ensure_project_initialized(container) -> None:
     from teddy_executor.adapters.outbound.yaml_config_adapter import YamlConfigAdapter
     from punq import Scope
 
-    root = str(find_project_root())
+    if root_dir is None:
+        root = str(find_project_root())
+    else:
+        root = root_dir
     c = container
 
     regs = getattr(c.registrations, "_Registry__registrations", {})
@@ -173,7 +180,7 @@ def init():
     from teddy_executor.adapters.inbound.cli_helpers import prewarm_imports
 
     container = get_container()
-    _ensure_project_initialized(container)
+    _ensure_project_initialized(container, root_dir=str(Path.cwd()))
     prewarm_imports()
     # Auto-login would trigger here once `teddy login` is implemented (no-op for now)
     typer.echo("TeDDy initialized in .teddy folder.")

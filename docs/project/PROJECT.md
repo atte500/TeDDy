@@ -68,7 +68,9 @@ This section defines the conventions for our project management artifacts.
     - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels.
 - **Proposed Vertical Slices:**
     - **`00-03-casefold-agent-name-comparison`:** Apply `.casefold()` to all remaining `stem ==` comparisons in `session_service.py` (lines 83, 522) and `session_repository.py` (line 139) for consistent case-insensitive agent name resolution. This fixes potential mismatches when session metadata or config files use capitalized names.
+    - **`00-04-remove-bare-except-in-init-service`:** Fix the bare `except: pass` in `InitService._get_default_content()` (lines ~82-84) that catches `(yaml.YAMLError, OSError, ImportError, AttributeError)`. This silently swallows errors from `importlib.resources` API changes (Python 3.12+), returning `None` instead of template content. Action: replace with specific, logged error handling that re-raises unexpected errors, ensuring initialization failures are visible.
 
 ## Technical Debt
 
 - Create a reusable pytest fixture (`ports_fixture`) in `tests/harness/setup/` that provides pre-configured port mocks with sensible defaults for `ISessionManager`, `IFileSystemManager`, etc. This reduces the risk of "mock poisoning" (bare MagicMock instances missing required `return_value` configurations) in test setup.
+- `InitService._get_default_content()` has a bare `except: pass` block catching `(yaml.YAMLError, OSError, ImportError, AttributeError)`. If `importlib.resources.files()` changes its API in Python 3.12+ (which has known `Traversable` changes), any `AttributeError` would be silently swallowed, returning `None` for template content and causing `ensure_initialized()` to skip file creation without any error message. While not the root cause of Bug #05, this masked-failure risk should be fixed systematically. Proposed slice: `00-04-remove-bare-except-in-init-service`.
