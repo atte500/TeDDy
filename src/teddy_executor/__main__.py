@@ -170,17 +170,11 @@ def init():
     """
     Initializes the .teddy directory and pre-warms heavy imports for faster startup.
     """
+    from teddy_executor.adapters.inbound.cli_helpers import prewarm_imports
+
     container = get_container()
     _ensure_project_initialized(container)
-    # Pre-warm heavy imports to reduce first-run latency
-    try:
-        import litellm  # noqa: F401
-        import trafilatura  # noqa: F401
-        import pyperclip  # noqa: F401
-        from bs4 import BeautifulSoup  # noqa: F401
-        from ddgs import DDGS  # noqa: F401
-    except ImportError:
-        pass  # Some optional dependencies may not be installed
+    prewarm_imports()
     # Auto-login would trigger here once `teddy login` is implemented (no-op for now)
     typer.echo("TeDDy initialized in .teddy folder.")
 

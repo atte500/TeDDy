@@ -158,8 +158,8 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 
 ### Logic (Business Logic Implementation)
 - [x] **Logic** - Implement `src/teddy_executor/core/services/update_checker.py` with: `get_current_version`, `fetch_latest_version`, `compare_versions`, `read_update_cache`, `write_update_cache`, `perform_upgrade`, `background_check`, `should_update`.
-- [ ] **Logic** - Extract and implement `prewarm_imports()` in `cli_helpers.py` (shared seam: consumed by init + update).
-- [ ] **Logic** - Update `__main__.py` `init` command to use `prewarm_imports()` from `cli_helpers`.
+- [x] **Logic** - Extract and implement `prewarm_imports()` in `cli_helpers.py` (shared seam: consumed by init + update).
+- [x] **Logic** - Update `__main__.py` `init` command to use `prewarm_imports()` from `cli_helpers`.
 
 ### Wiring (CLI Integration)
 - [x] **Wiring** - `--version` flag in Typer `main_callback` (already implemented).
@@ -244,6 +244,17 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - **Test outcome:** Red → `ImportError: cannot import name '...'`. Green → 32 tests pass.
 - **Full suite:** 993 passed, 3 skipped — no regressions.
 - **Rationale:** Implemented as a lightweight utility module (no new ports/adapter) to minimize architectural overhead while remaining testable via module-level mocking. The `prewarm_imports` function stays in `cli_helpers.py` (shared with `init` command) — not duplicated in `update_checker.py`.
+
+### Logic — Update `__main__.py` init command to use `prewarm_imports()`
+- **Change:** Replaced inline pre-warming block (5 try/except imports) in `__main__.py`'s `init()` command with a single call to `prewarm_imports()` from `cli_helpers.py`.
+- **Files modified:** `__main__.py` (removed ~8 lines, added import + function call).
+- **Test:** `test_init_command_calls_prewarm_imports` added to `tests/suites/unit/adapters/inbound/test_cli_helpers.py`.
+  - Uses `monkeypatch` to track that `prewarm_imports()` is called exactly once.
+  - Uses `CliRunner` to invoke `init` command in-process.
+  - Monkeypatches `_ensure_project_initialized` to a no-op to avoid DI container wiring.
+- **Test outcome:** Red → `AssertionError: Expected prewarm_imports to be called exactly 1 time, got 0`. Green → 1 test passes.
+- **Full suite:** 994 passed, 3 skipped — no regressions.
+- **Rationale:** The `prewarm_imports()` function was already extracted in a previous Contract deliverable. This change completes the consumption of that shared seam. The `init` command behavior is identical (pre-warms the same 5 packages), but now the code is DRY and the `update` command can also call the same helper after a successful upgrade.
 
 ## Verification
 
