@@ -194,3 +194,20 @@ def openrouter_mock(httpserver):
         OPENROUTER_MODELS_RESPONSE
     )
     return httpserver.url_for("")
+
+
+@pytest.fixture
+def temp_cache_dir():
+    """Provides a temporary directory for update cache tests.
+
+    The directory is created in the system temp directory (avoids space-in-path
+    issues on Windows) and is automatically cleaned up after the test.
+    """
+    import tempfile
+    from pathlib import Path
+
+    tmp_dir = Path(tempfile.mkdtemp(prefix="teddy_cache_"))
+    yield tmp_dir
+    import shutil
+
+    shutil.rmtree(tmp_dir, ignore_errors=True)

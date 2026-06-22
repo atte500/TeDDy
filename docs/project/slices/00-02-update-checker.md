@@ -154,7 +154,7 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 ### Harness (Test Infrastructure)
 - [x] **Harness** - Verify `packaging` is available as transitive dependency (via `pip-audit`).
 - [x] **Harness** - Create a `FakeHTTPResponse` test helper to simulate PyPI JSON responses in unit tests.
-- [ ] **Harness** - Create test fixture for isolated temp cache directory.
+- [x] **Harness** - Create test fixture for isolated temp cache directory.
 
 ### Logic (Business Logic Implementation)
 - [ ] **Logic** - Implement `src/teddy_executor/core/services/update_checker.py` with: `get_current_version`, `fetch_latest_version`, `compare_versions`, `read_update_cache`, `write_update_cache`, `perform_upgrade`, `background_check`, `should_update`.
@@ -215,6 +215,17 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - **Full suite:** 959 passed, 3 skipped — no regressions.
 - **Lint fix:** Also fixed `PLR0124` (self-comparison) in `test_packaging_transitive_dependency` — replaced `assert v1 == v1` with `assert v1 == Version("1.0.0")`.
 - **Rationale:** Created as a standalone class in the existing `tests/harness/setup/` directory (consistent with mocking.py). No new files outside the harness tree. Fits the pattern used by existing `POSIXPathMock` and `register_mock` helpers. The context manager support is critical for compatibility with `urllib.request.urlopen` which is used in the update checker prototype.
+
+### Harness — Create temp_cache_dir test fixture
+- **Fixture:** `temp_cache_dir` added to `tests/harness/setup/composition.py` (appended at end of file).
+- **Import/Export:** Imported in `tests/conftest.py` and added to `__all__` list for global discoverability.
+- **Pattern:** Uses `tempfile.mkdtemp(prefix="teddy_cache_")` consistent with existing `TestEnvironment` and `tee_log_path` patterns. Cleans up via `shutil.rmtree` after each test.
+- **Tests:** Two unit tests in `tests/suites/unit/test_cache_fixture.py`:
+  - `test_temp_cache_dir_is_writable_path`: Verifies the fixture provides a writable `Path` that is an existing directory.
+  - `test_temp_cache_dir_isolated_between_calls`: Verifies each call provides an empty, isolated directory.
+- **Test outcome:** Red → `fixture 'temp_cache_dir' not found`. Green → 2 tests pass.
+- **Full suite:** 961 passed, 3 skipped — no regressions (added ~0.02s execution time).
+- **Rationale:** Created as a simple pytest fixture in the existing composition module to align with all other reusable fixtures. The `mkdtemp` pattern avoids space-in-path issues on Windows. The `yield`/cleanup pattern ensures no filesystem pollution even on test failure. This fixture will be used by the Logic tests for `update_checker.py`'s cache I/O functions.
 
 ## Verification
 

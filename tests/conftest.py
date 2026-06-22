@@ -43,6 +43,7 @@ from tests.harness.setup.composition import (
     tee_log_path,
     installed_tee,
     is_tee_active,
+    temp_cache_dir,
 )
 
 
@@ -113,6 +114,7 @@ __all__ = [
     "tee_log_path",
     "installed_tee",
     "is_tee_active",
+    "temp_cache_dir",
 ]
 
 
