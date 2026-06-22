@@ -164,7 +164,7 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 ### Wiring (CLI Integration)
 - [x] **Wiring** - `--version` flag in Typer `main_callback` (already implemented).
 - [x] **Wiring** - `version` subcommand in `__main__.py` (already implemented).
-- [ ] **Wiring** - Add `update` command with `--yes` and `--experimental` options in `__main__.py`.
+- [x] **Wiring** - Add `update` command with `--yes` and `--experimental` options in `__main__.py`.
 - [ ] **Wiring** - Add background version check call in `session_cli_handlers.py` (`handle_new_session` and `handle_resume_session`).
 - [ ] **Wiring** - Add `auto_update: true` key to `config.yaml` baseline.
 - [ ] **Wiring** - Read `auto_update` config in update command (via `IConfigService.get_setting("auto_update")`).

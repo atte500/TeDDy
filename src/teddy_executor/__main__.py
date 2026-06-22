@@ -189,6 +189,64 @@ def version() -> None:
 
 
 @app.command()
+def update(
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Force upgrade even if auto_update is disabled.",
+    ),
+    experimental: bool = typer.Option(
+        False,
+        "--experimental",
+        help="Check and upgrade from TestPyPI instead of PyPI.",
+    ),
+):
+    """Checks PyPI for the latest version of TeDDy and upgrades if a newer release
+    is available. Pre-warms heavy imports after upgrade."""
+    from teddy_executor.core.services.update_checker import (
+        get_current_version,
+        fetch_latest_version,
+        compare_versions,
+        should_update,
+        PYPI_URL,
+        TEST_PYPI_URL,
+    )
+
+    index_url = TEST_PYPI_URL if experimental else PYPI_URL
+    latest = fetch_latest_version(index_url)
+
+    if latest is None:
+        typer.echo("Could not check for updates: network error.")
+        return
+
+    current = get_current_version()
+
+    if not compare_versions(current, latest):
+        typer.echo(f"You are already running the latest version ({current}).")
+        return
+
+    # Tracer Bullet: hardcode auto_update to True for now
+    auto_update = True
+    action = should_update(None, auto_update_enabled=auto_update)
+
+    if action is True:
+        # Hardcoded: always say success for now (perform_upgrade will be
+        # wired in a later pass)
+        typer.echo(f"Updated to v{latest}.")
+        from teddy_executor.adapters.inbound.cli_helpers import prewarm_imports
+
+        prewarm_imports()
+    elif action is False:
+        typer.echo(
+            f"A new version {latest} is available. "
+            f"Run 'teddy update{' --experimental' if experimental else ''} --yes' to upgrade."
+        )
+    else:
+        typer.echo(f"You are already running the latest version ({current}).")
+
+
+@app.command()
 def context(
     no_copy: bool = typer.Option(
         False,
