@@ -135,16 +135,16 @@ Use a lightweight utility module in `core/services/update_checker.py` (Option B)
 ### Prototype Findings
 The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 
-| Risk Area | Status | Detail |
-|-----------|--------|--------|
-| Version detection | ✓ | `get_current_version()` returns `'0.1.3'` (real installed version) |
-| Real PyPI fetch | ✓ | Returns `'0.1.4'` from PyPI JSON API (live HTTP) |
-| Version comparison | ✓ | All edge cases verified — invalid/empty/equal→False |
-| Cache I/O lifecycle | ✓ | Write/read/corrupt/missing/expired/fresh all verified |
-| Background daemon thread | ✓ | Non-blocking (0.0007s main thread delay), auto-writes cache |
-| Prewarm imports extraction | ✓ | Both implementations execute without error |
-| should_update logic | ✓ | None/True/False all correct |
-| Upgrade command construction | ✓ | Command verified (not executed) |
+| Risk Area                    | Status | Detail                                                             |
+| ---------------------------- | ------ | ------------------------------------------------------------------ |
+| Version detection            | ✓      | `get_current_version()` returns `'0.1.3'` (real installed version) |
+| Real PyPI fetch              | ✓      | Returns `'0.1.4'` from PyPI JSON API (live HTTP)                   |
+| Version comparison           | ✓      | All edge cases verified — invalid/empty/equal→False                |
+| Cache I/O lifecycle          | ✓      | Write/read/corrupt/missing/expired/fresh all verified              |
+| Background daemon thread     | ✓      | Non-blocking (0.0007s main thread delay), auto-writes cache        |
+| Prewarm imports extraction   | ✓      | Both implementations execute without error                         |
+| should_update logic          | ✓      | None/True/False all correct                                        |
+| Upgrade command construction | ✓      | Command verified (not executed)                                    |
 
 ## Deliverables
 
@@ -174,10 +174,10 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - [x] **Test** - Unit tests for `prewarm_imports()` extraction (verify it executes without error).
 - [x] **Test** - Acceptance test for `teddy update` happy path (newer version → upgrade).
 - [x] **Test** - Acceptance test for `teddy --version` (displays correct version).
-- [ ] **Test** - Acceptance test for `teddy update --experimental` (TestPyPI URL resolution).
+- [x] **Test** - Acceptance test for `teddy update --experimental` (TestPyPI URL resolution).
 
 ### Documentation
-- [ ] **Documentation** - Update `README.md` with `version` and `update` command usage after implementation.
+- [ ] **Documentation** - Update `README.md` with `update` command usage after implementation (do not mention version command).
 
 ## Implementation Notes
 
@@ -301,6 +301,15 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - **Test outcome:** Green from first run — no Red-Green cycle needed (no production code change).
 - **Full suite:** 997 passed, 3 skipped (pre-existing failure in test_session_cli_handlers.py — no regression).
 - **Rationale:** The `--version` flag and `version` subcommand were already implemented in `__main__.py`. This test adds coverage to prevent regressions. The version is mocked to avoid dependency on the actual installed version (which changes between releases).
+
+### Test — Acceptance test for `teddy update --experimental`
+- **Change:** Added `tests/suites/acceptance/test_experimental_wiring.py` with one test function:
+  - `test_experimental_flag_uses_test_pypi_url`: Mocks `fetch_latest_version` to track the `index_url` argument. Invokes `teddy update --experimental` and asserts `TEST_PYPI_URL` was used. Also verifies the version number appears in output.
+  - Mocks `should_update` to return `None` to avoid triggering the config service resolve path (tested separately in `test_auto_update_wiring.py`).
+- **Files modified:** `test_experimental_wiring.py` (new file, ~50 lines).
+- **Test outcome:** Green from first run — no Red-Green cycle needed (no production code change).
+- **Full suite:** 998 passed, 3 skipped (pre-existing failure in test_session_cli_handlers.py — no regression).
+- **Rationale:** The `--experimental` flag logic was already implemented in `__main__.py`'s `update` command (lines 147-148: `index_url = TEST_PYPI_URL if experimental else PYPI_URL`). This test adds coverage to prevent regressions. The `fetch_latest_version` call is the key verification point — it confirms the flag correctly switches the index URL for both the version check and potential upgrade path.
 
 ## Verification
 

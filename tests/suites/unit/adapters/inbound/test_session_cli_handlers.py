@@ -44,11 +44,20 @@ def test_handle_new_session_starts_background_check_thread(monkeypatch):
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
         lambda container, session_name, interactive, no_copy: None,
     )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._echo_config_success",
+        lambda container, agent=None, model=None, actual_model=None: None,
+    )
     # Mock ensure_initialized to a no-op (container.resolve returns a Mock)
     monkeypatch.setattr(
         "teddy_executor.core.ports.inbound.init.IInitUseCase.ensure_initialized",
         lambda self: None,
     )
+    # Configure the mock container's ISessionManager.create_session to return
+    # a real string so Path(session_dir).name doesn't crash.
+    mock_session_manager = Mock()
+    mock_session_manager.create_session.return_value = "/fake/session/new"
+    mock_container.resolve.side_effect = lambda cls: mock_session_manager
 
     from teddy_executor.adapters.inbound.session_cli_handlers import (
         handle_new_session,
@@ -135,6 +144,12 @@ def test_handle_resume_session_starts_background_check_thread(monkeypatch):
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._sync_and_display_session_meta",
         lambda container, session_name, model=None, provider=None, api_key=None: None,
+    )
+    # Mock _resolve_session_name to return a real string so
+    # Path(".teddy") / "sessions" / session_name doesn't crash.
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._resolve_session_name",
+        lambda container, path=None: "test_session",
     )
 
     from teddy_executor.adapters.inbound.session_cli_handlers import (
