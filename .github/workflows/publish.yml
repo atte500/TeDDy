@@ -41,9 +41,11 @@ jobs:
 
     - name: Generate Dynamic Dev Version
       run: |
-        # Append the GitHub Run Number as a development version suffix (.dev<num>)
+        # Bump patch version and append .dev<run_number> for PEP 440 compliance
+        # Dev versions (0.1.5.devN) sort AFTER the base release (0.1.4)
         CURRENT_VERSION=$(poetry version -s)
-        poetry version "${CURRENT_VERSION}.dev${{ github.run_number }}"
+        NEXT_VERSION=$(echo "$CURRENT_VERSION" | awk -F. '{OFS=FS; $NF=$NF+1; print}')
+        poetry version "${NEXT_VERSION}.dev${{ github.run_number }}"
 
     - name: Build package
       run: poetry build
