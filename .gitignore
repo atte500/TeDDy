@@ -101,6 +101,7 @@ error_screenshot.png
 
 # Test detritus
 .tmp
+.teddy
 
 # Archived Folders
 *archive
