@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "teddy-cli"
-version = "0.1.4"
+version = "0.1.5.dev638"
 description = "A local-first, file-based AI coding workflow that applies the UNIX philosophy to AI collaboration."
 authors = ["Raphael Atteritano"]
 license = "AGPL-3.0-only"
@@ -29,7 +29,7 @@ bandit = ">=1.7.9,<1.8.0"
 pip-audit = ">=2.7.3,<2.8.0"
 textual = "^8.1.0"
 urllib3 = "^2.7.0"
-tld = ">=0.10"
+tld = ">=0.10,<1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.3"

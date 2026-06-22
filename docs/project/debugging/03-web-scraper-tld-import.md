@@ -52,14 +52,21 @@ The second symptom ("--- FILE NOT FOUND ---" for URLs in `init.context`) is a di
 3. **Hypothesis: The "FILE NOT FOUND" for URLs in .context is a separate bug.** Observation: `context_service.py` catches exceptions from `self._web_scraper.get_content(url)` and sets `file_contents[url] = None`, which renders as "--- FILE NOT FOUND ---". Conclusion: This is a consequence of symptom 1, not a separate bug.
 
 ## Solution
-**Root Cause:** The system Python 3.14 site-packages contained a standalone `tld.py` file (16411 bytes) — an unrelated task list manager (package name `tld` version 1.0.1) — which shadowed the proper `tld` package (version 0.13.1) that `trafilatura` depends on. When TeDDy was installed via test PyPI using system Python outside the Poetry virtualenv, Python resolved `import tld` to this rogue module, which does not expose `get_tld` (required by `courlan` → `trafilatura` chain).
+**Root Cause:** There were two layers to this bug:
+
+1. **System Python 3.14 shadowing:** A standalone `tld.py` file (16411 bytes) — an unrelated task list manager (package name `tld` version 1.0.1) — sat in `/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/`. When TeDDy was run outside the Poetry virtualenv (e.g., via test PyPI installation), Python resolved `import tld` to this rogue module, which does not expose `get_tld` (required by `courlan` → `trafilatura` chain).
+
+2. **uv tool environment shadowing:** The same rogue `tld==1.0.1` package was pulled into the uv tool environment at `~/.local/share/uv/tools/teddy-cli/lib/python3.11/site-packages/tld.py`. This happened because the original dependency constraint `tld>=0.10` was too permissive — it allowed `tld==1.0.1` (which satisfies `>=0.10`) to be installed, shadowing the proper `tld` directory package (version 0.13.x) that provides `get_tld`.
 
 **Fix Applied:**
-1. **Added `tld>=0.10` as an explicit dependency in `pyproject.toml`.** This ensures pip installs the correct `tld` package whenever TeDDy is installed, overwriting any conflicting files.
-2. **Deleted the rogue `tld.py` file and its `tld-1.0.1.dist-info`** from `/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/` to immediately resolve the shadowing conflict.
-3. **Added regression test** (`test_bug_03_tld_regression.py`) that verifies the tld import chain works in the managed environment.
-4. **Cleaned up temporary MRE script** (`spikes/debug/03-web-scraper-mre.py`) after successful fix — the regression test permanently covers the scenario.
+1. **Added `tld>=0.10` as an explicit dependency in `pyproject.toml`** — ensures pip installs the correct `tld` package whenever TeDDy is installed, overwriting any conflicting files.
+2. **Tightened constraint to `tld>=0.10,<1.0`** — prevents the rogue 1.0.1 version from being resolved, forcing `uv`/`pip` to install only the compatible 0.13.x versions that provide `get_tld`.
+3. **Deleted the rogue `tld.py` file and its `tld-1.0.1.dist-info`** from:
+   - `/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/` (system Python)
+   - `/Users/raphaelatteritano/.local/share/uv/tools/teddy-cli/lib/python3.11/site-packages/` (uv tool environment)
+4. **Added regression test** (`test_bug_03_tld_regression.py`) that verifies the tld import chain works in the managed environment.
+5. **Cleaned up temporary probe scripts** after successful verification.
 
 **Systemic Preventative Measures:**
-- Adding `tld>=0.10` as a direct dependency prevents this entire class of import-shadowing bugs by ensuring the correct package is always explicitly required at install time. Any future installation of TeDDy (via test PyPI or regular PyPI) will pull in the real `tld` package.
-- If other rogue modules shadow critical dependencies, the same pattern applies: add the dependency explicitly so pip overwrites the conflicting file.
+- Adding `tld>=0.10,<1.0` as an explicit dependency prevents this entire class of import-shadowing bugs by ensuring the correct package is always explicitly required at install time. The upper bound `<1.0` prevents version-confusion attacks where a different package with the same name takes the same namespace.
+- Future audit recommendation: review all dependency constraints in `pyproject.toml` for overly permissive lower bounds that could allow similar version-confusion issues.
