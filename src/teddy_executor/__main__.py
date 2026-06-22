@@ -216,7 +216,6 @@ def update(
         fetch_latest_version,
         compare_versions,
         is_prerelease,
-        should_update,
         PYPI_URL,
         TEST_PYPI_URL,
     )
@@ -255,22 +254,19 @@ def update(
     container = get_container()
     config_service = container.resolve(IConfigService)
     auto_update = config_service.get_setting("auto_update", default=True)
-    action = should_update(None, auto_update_enabled=auto_update)
 
-    if action is True:
+    if auto_update or yes:
         # Hardcoded: always say success for now (perform_upgrade will be
         # wired in a later pass)
         typer.echo(f"Updated to v{latest}.")
         from teddy_executor.adapters.inbound.cli_helpers import prewarm_imports
 
         prewarm_imports()
-    elif action is False:
+    else:
         typer.echo(
             f"A new version {latest} is available. "
             f"Run 'teddy update{' --experimental' if experimental else ''} --yes' to upgrade."
         )
-    else:
-        typer.echo(f"You are already running the latest version ({current}).")
 
 
 @app.command()

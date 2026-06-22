@@ -11,6 +11,7 @@ def test_update_command_returns_version_notification_when_newer_version_availabl
     Happy path: newer version available, auto_update enabled.
     The command should call the update checker and echo a success message.
     """
+    from unittest.mock import Mock
     from teddy_executor.__main__ import app
 
     # Mock the core update checker functions to return trivial/hardcoded values
@@ -26,11 +27,23 @@ def test_update_command_returns_version_notification_when_newer_version_availabl
         "teddy_executor.core.services.update_checker.compare_versions",
         lambda current, latest: True,
     )
-    # Mock should_update to return True (Tracer Bullet: bypass cache)
-    monkeypatch.setattr(
-        "teddy_executor.core.services.update_checker.should_update",
-        lambda cache_path, auto_update_enabled=True: True,
+    # Mock the config service to return auto_update=True
+    mock_config = Mock()
+    mock_config.get_setting.side_effect = lambda key, default=None: (
+        True if key == "auto_update" else default
     )
+
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+    import teddy_executor.__main__ as main_module
+
+    original_get_container = main_module.get_container
+
+    def mock_get_container():
+        c = original_get_container()
+        c.register(IConfigService, instance=mock_config)
+        return c
+
+    monkeypatch.setattr(main_module, "get_container", mock_get_container)
 
     # Mock the project initialization to avoid DI/container wiring
     monkeypatch.setattr(
@@ -46,8 +59,13 @@ def test_update_command_returns_version_notification_when_newer_version_availabl
         f"Expected exit code 0 for a successful update command, "
         f"got {result.exit_code}. Output: {result.stdout!r}"
     )
-    # The output should mention the new version or update success
+    # The output should mention the new version (auto_update=True triggers upgrade message)
     assert "2.0.0" in result.stdout, (
         f"Expected output to contain the new version '2.0.0', "
+        f"got stdout: {result.stdout!r}"
+    )
+    # Since auto_update=True, we should see "Updated to" (the hardcoded success message)
+    assert "Updated to" in result.stdout, (
+        f"Expected output to contain 'Updated to' since auto_update=True, "
         f"got stdout: {result.stdout!r}"
     )

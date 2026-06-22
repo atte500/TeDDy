@@ -6,18 +6,11 @@ from unittest.mock import Mock
 def test_update_command_reads_auto_update_from_config(monkeypatch):
     """Wiring: `teddy update` should read auto_update from IConfigService.
 
-    When auto_update is false in config, should_update should be called
-    with auto_update_enabled=False, resulting in a notification-only message.
+    When auto_update is false in config, the command should display a
+    notification message instead of auto-upgrading.
     """
     from typer.testing import CliRunner
     from teddy_executor.__main__ import app
-
-    # Track the auto_update_enabled argument passed to should_update
-    should_update_calls = []
-
-    def tracking_should_update(cache_path, auto_update_enabled=True):
-        should_update_calls.append(auto_update_enabled)
-        return False  # Simulate notification-only behavior (newer version, but no auto-update)
 
     monkeypatch.setattr(
         "teddy_executor.core.services.update_checker.get_current_version",
@@ -32,10 +25,6 @@ def test_update_command_reads_auto_update_from_config(monkeypatch):
         lambda current, latest: True,
     )
     monkeypatch.setattr(
-        "teddy_executor.core.services.update_checker.should_update",
-        tracking_should_update,
-    )
-    monkeypatch.setattr(
         "teddy_executor.__main__._ensure_project_initialized",
         lambda container: None,
     )
@@ -46,18 +35,17 @@ def test_update_command_reads_auto_update_from_config(monkeypatch):
         False if key == "auto_update" else default
     )
 
-    # Monkeypatch the container to provide our mock config service
     from teddy_executor.core.ports.outbound.config_service import IConfigService
-    import teddy_executor.container as container_module
+    import teddy_executor.__main__ as main_module
 
-    original_get_container = container_module.get_container
+    original_get_container = main_module.get_container
 
     def mock_get_container():
         c = original_get_container()
         c.register(IConfigService, instance=mock_config)
         return c
 
-    monkeypatch.setattr(container_module, "get_container", mock_get_container)
+    monkeypatch.setattr(main_module, "get_container", mock_get_container)
 
     runner = CliRunner()
     result = runner.invoke(app, ["update"])
@@ -67,15 +55,16 @@ def test_update_command_reads_auto_update_from_config(monkeypatch):
         f"Expected exit code 0, got {result.exit_code}. Output: {result.stdout!r}"
     )
 
-    # should_update should have been called with auto_update_enabled=False
-    assert len(should_update_calls) >= 1, (
-        f"Expected at least 1 call to should_update, got {len(should_update_calls)}"
-    )
-    assert should_update_calls[0] is False, (
-        f"Expected should_update to be called with auto_update_enabled=False, "
-        f"got {should_update_calls[0]}. The hardcoded auto_update=True was not replaced."
-    )
     # The output should contain a notification message (not an update success)
     assert "2.0.0" in result.stdout, (
         f"Expected output to mention version 2.0.0, got: {result.stdout!r}"
+    )
+    # Since auto_update=False, we should see "Run" in the notification
+    assert "Run" in result.stdout, (
+        f"Expected notification message containing 'Run', got: {result.stdout!r}"
+    )
+    # The notification should NOT contain "Updated to"
+    assert "Updated to" not in result.stdout, (
+        f"Expected no auto-update since auto_update=False, "
+        f"but output contains 'Updated to': {result.stdout!r}"
     )
