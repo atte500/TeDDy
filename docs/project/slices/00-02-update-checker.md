@@ -157,7 +157,7 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - [x] **Harness** - Create test fixture for isolated temp cache directory.
 
 ### Logic (Business Logic Implementation)
-- [ ] **Logic** - Implement `src/teddy_executor/core/services/update_checker.py` with: `get_current_version`, `fetch_latest_version`, `compare_versions`, `read_update_cache`, `write_update_cache`, `perform_upgrade`, `background_check`, `should_update`.
+- [x] **Logic** - Implement `src/teddy_executor/core/services/update_checker.py` with: `get_current_version`, `fetch_latest_version`, `compare_versions`, `read_update_cache`, `write_update_cache`, `perform_upgrade`, `background_check`, `should_update`.
 - [ ] **Logic** - Extract and implement `prewarm_imports()` in `cli_helpers.py` (shared seam: consumed by init + update).
 - [ ] **Logic** - Update `__main__.py` `init` command to use `prewarm_imports()` from `cli_helpers`.
 
@@ -226,6 +226,24 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - **Test outcome:** Red → `fixture 'temp_cache_dir' not found`. Green → 2 tests pass.
 - **Full suite:** 961 passed, 3 skipped — no regressions (added ~0.02s execution time).
 - **Rationale:** Created as a simple pytest fixture in the existing composition module to align with all other reusable fixtures. The `mkdtemp` pattern avoids space-in-path issues on Windows. The `yield`/cleanup pattern ensures no filesystem pollution even on test failure. This fixture will be used by the Logic tests for `update_checker.py`'s cache I/O functions.
+
+### Logic — Implement `update_checker.py` core functions
+- **Module:** `src/teddy_executor/core/services/update_checker.py` created with 8 functions.
+- **Implements:** `get_current_version`, `fetch_latest_version`, `compare_versions`, `read_update_cache`, `write_update_cache`, `perform_upgrade`, `background_check`, `should_update`.
+- **All functions use stdlib only** (plus `packaging` which is a transitive dependency via pip-audit). Local imports used for `json`, `datetime`, `subprocess`, `sys`, `urllib` to avoid module-level import slowdown.
+- **Prototype fidelity:** All functions match `spikes/prototypes/update-checker/shadow_update_checker.py` signatures and behavior.
+- **Tests:** 32 unit tests in `tests/suites/unit/core/services/test_update_checker.py`:
+  - `TestCompareVersions` (7 tests): edge cases — invalid, empty, equal, newer, older.
+  - `TestGetCurrentVersion` (2 tests): mocked version, fallback on exception.
+  - `TestFetchLatestVersion` (4 tests): PyPI response, network error, invalid JSON, missing version key.
+  - `TestReadUpdateCache` (5 tests): valid cache, missing file, corrupt JSON, expired TTL, missing keys.
+  - `TestWriteUpdateCache` (3 tests): writes file, creates parent dir, atomic write.
+  - `TestPerformUpgrade` (5 tests): pip command construction, TestPyPI flag, failure, timeout, OSError.
+  - `TestBackgroundCheck` (2 tests): fetches and writes, no write on fetch failure.
+  - `TestShouldUpdate` (4 tests): no cache, auto_update=True, auto_update=False, older version.
+- **Test outcome:** Red → `ImportError: cannot import name '...'`. Green → 32 tests pass.
+- **Full suite:** 993 passed, 3 skipped — no regressions.
+- **Rationale:** Implemented as a lightweight utility module (no new ports/adapter) to minimize architectural overhead while remaining testable via module-level mocking. The `prewarm_imports` function stays in `cli_helpers.py` (shared with `init` command) — not duplicated in `update_checker.py`.
 
 ## Verification
 
