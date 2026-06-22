@@ -17,6 +17,76 @@ from teddy_executor.core.services.parser_infrastructure import (
 )
 
 
+def _extract_text_with_emphasis(node: Any) -> str:
+    """
+    Extract text from an AST node, emitting delimiter markers for Strong/Emphasis tokens.
+
+    Used only for extracting the value portion of metadata key-value pairs.
+    Unlike `get_child_text`, it emits `__text__` for Strong tokens and `_text_`
+    for Emphasis tokens, preserving literal double underscores like those in
+    `__main__.py` that mistletoe would otherwise parse as formatting.
+    """
+    from mistletoe.span_token import Strong, Emphasis, RawText
+
+    if isinstance(node, RawText):
+        return getattr(node, "content", "")
+
+    if isinstance(node, Strong):
+        inner = ""
+        if hasattr(node, "children") and node.children:
+            inner = "".join(_extract_text_with_emphasis(c) for c in node.children)
+        return f"__{inner}__"
+
+    if isinstance(node, Emphasis):
+        inner = ""
+        if hasattr(node, "children") and node.children:
+            inner = "".join(_extract_text_with_emphasis(c) for c in node.children)
+        return f"_{inner}_"
+
+    if hasattr(node, "children") and node.children is not None:
+        return "".join(_extract_text_with_emphasis(c) for c in node.children)
+    return getattr(node, "content", "")
+
+
+def _extract_value_after_key(item: "MdListItem", key_text: str) -> Optional[str]:
+    """
+    Extract the value portion of a key-value pair from an AST ListItem node,
+    preserving emphasis delimiters in the value (e.g., for paths like __main__.py).
+
+    Navigates the item's children to find the node containing the key (a Strong
+    token like **Resource:**), then extracts emphasis-aware text from all subsequent
+    sibling nodes. When a Strong/Emphasis token's text matches the key, we STOP
+    recursion and return the remaining siblings at that level.
+    """
+    from mistletoe.span_token import Strong, Emphasis
+
+    key_with_colon = f"{key_text}:"
+
+    def find_remaining(parent) -> Optional[list[Any]]:
+        if not hasattr(parent, "children") or not parent.children:
+            return None
+        children = list(parent.children)
+        for i, child in enumerate(children):
+            child_text = get_child_text(child)
+            if child_text and key_with_colon in child_text:
+                if isinstance(child, (Strong, Emphasis)):
+                    return children[i + 1 :]
+                remaining = find_remaining(child)
+                if remaining is not None:
+                    return remaining
+        return None
+
+    remaining_children = find_remaining(item)
+    if not remaining_children:
+        return None
+
+    value_parts = []
+    for child in remaining_children:
+        value_parts.append(_extract_text_with_emphasis(child))
+    result = "".join(value_parts).strip()
+    return result if result else None
+
+
 def _process_link_key(
     item: "MdListItem", text: str, key_map: dict[str, str]
 ) -> Optional[tuple[str, str]]:
@@ -29,6 +99,12 @@ def _process_link_key(
             if link_node:
                 target = normalize_link_target(link_node.target)
                 return param_key, normalize_path(target)
+            # No link found: extract value from plain text using AST-based
+            # emphasis-aware extraction to preserve double underscores.
+            value = _extract_value_after_key(item, key_text)
+            if value is not None:
+                return param_key, normalize_path(value)
+            # Last resort fallback: use original (possibly corrupted) text
             parts = text.split(f"{key_text}:", 1)
             if len(parts) == EXPECTED_KV_PARTS and parts[1].strip():
                 return param_key, normalize_path(parts[1].strip())
