@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "teddy-cli"
-version = "0.1.5.dev638"
+version = "0.1.4"
 description = "A local-first, file-based AI coding workflow that applies the UNIX philosophy to AI collaboration."
 authors = ["Raphael Atteritano"]
 license = "AGPL-3.0-only"
