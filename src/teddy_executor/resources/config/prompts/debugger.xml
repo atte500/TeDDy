@@ -131,6 +131,9 @@ WIP & REMINDERS:
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
         3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
            ```shell
+           # 0. Ensure commit hooks are installed
+           [ -x ".git/hooks/pre-commit" ] && [ -x ".git/hooks/post-commit" ] || exit 1
+
            # 1. Stage changes and run pre-commit
            git add .
            pre-commit run || true
