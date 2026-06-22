@@ -141,6 +141,7 @@ teddy resume
 | `init`       | Initialize `.teddy` directory with defaults and pre-warm heavy imports.   |
 | `start`      | Start an interactive session.                                             |
 | `resume`     | Resume an existing session.                                               |
+| `update`     | Check for updates and upgrade to the latest version of TeDDy.            |
 | `execute`    | Execute a Markdown plan. Reads from clipboard if no file path provided.   |
 | `context`    | Gather project context (file tree + selected file contents) to clipboard. |
 | `get-prompt` | Retrieve agent system prompts. Respects `.teddy/prompts/` overrides.      |

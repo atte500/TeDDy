@@ -1,6 +1,6 @@
 # Slice: Update Checker & Auto-Update
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Type:** Feature
 - **Milestone:** N/A (ad-hoc)
 - **Specs:** [docs/project/specs/update-checker.md](/docs/project/specs/update-checker.md)
@@ -177,7 +177,7 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - [x] **Test** - Acceptance test for `teddy update --experimental` (TestPyPI URL resolution).
 
 ### Documentation
-- [ ] **Documentation** - Update `README.md` with `update` command usage after implementation (do not mention version command).
+- [x] **Documentation** - Update `README.md` with `update` command usage after implementation (do not mention version command).
 
 ## Implementation Notes
 
@@ -310,6 +310,12 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - **Test outcome:** Green from first run — no Red-Green cycle needed (no production code change).
 - **Full suite:** 998 passed, 3 skipped (pre-existing failure in test_session_cli_handlers.py — no regression).
 - **Rationale:** The `--experimental` flag logic was already implemented in `__main__.py`'s `update` command (lines 147-148: `index_url = TEST_PYPI_URL if experimental else PYPI_URL`). This test adds coverage to prevent regressions. The `fetch_latest_version` call is the key verification point — it confirms the flag correctly switches the index URL for both the version check and potential upgrade path.
+
+### Documentation — Update `README.md` with `update` command
+- **Change:** Added `update` command row to the Command Reference table in `README.md`. Description: "Check for updates and upgrade to the latest version of TeDDy." (matches the command's `--help` description).
+- **File modified:** `README.md` (+1 table row).
+- **Test outcome:** No code changes — full suite passes (1002 passed, 3 skipped).
+- **Rationale:** The `update` command is the primary user-facing feature of this slice. Adding it to the README's Command Reference gives users discoverability of the new functionality. The `version` command and `--version` flag are explicitly omitted per spec.
 
 ## Verification
 
