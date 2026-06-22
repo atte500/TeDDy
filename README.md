@@ -69,7 +69,7 @@ uv self update
 #### Install TeDDy
 
 ```bash
-uv add teddy-cli
+uv tool install teddy-cli
 ```
 
 #### Initialize
