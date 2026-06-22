@@ -4,11 +4,11 @@
 [![My Plan to Fix AI Coding](https://img.youtube.com/vi/By6wGuT-4sA/0.jpg)](https://www.youtube.com/watch?v=By6wGuT-4sA)
 -->
 
-AI code generation has become synonymous with high volume, low quality output. I believe it doesn't have to be that way.
+As developers we've come to accept the premise that working with AI is inherently going to produce low-quality code. People seem to either accept it as a trade-off for speed, or they avoid using it for that exact reason. I believe it doesn't have to be that way.
 
-TeDDy is an open-source coding harness that embeds proven software engineering practices like Test-Driven Development, Hexagonal Architecture, and iterative delivery.
+TeDDy is a radically different coding harness that uses **Markdown as Interface** and directly embeds proven software engineering practices like **Test-Driven Development, Hexagonal Architecture, and iterative delivery**. 
 
-## The Problem: Why LMMs Suck at Software Development
+## Why LMMs Suck at Software Development
 
 At its core, an AI agent is a language model paired with a harness. LLMs are trained for next-token prediction and optimized for short-term, atomic tasks. They naturally try to generate the final solution in one shot, which makes the defects they introduce compound the more you use them.
 
@@ -29,21 +29,9 @@ TeDDy instead attempts to solve these issues directly adopting, amongst others, 
 
 ## Guiding Principles
 
-### 1. Markdown as Interface
-
-You interact with the AI through simple Markdown files you can edit, search, and manage with the tools you already use. No chat UI — your AI workflow lives alongside your code.
-
-### 2. Human-Centric
-
-Plans are presented in a clear Markdown protocol: rationale first, then a batch of actions for your approval. You review, approve, or reject — staying in control at every turn.
-
-### 3. Local-First & Data Ownership
-
-Your entire collaboration history lives on your machine in plain Markdown. No cloud lock-in. Your sessions are as portable, private, and versionable as the rest of your codebase.
-
-### 4. Stateless & Transparent
-
-Context goes in as a file, results come out as a file. Every turn is auditable. Agent personas are defined in simple XML files you can edit or create, making the workflow fully hackable.
+1. **Markdown as Interface:** Each turn the LLM is made to follow a human-friendly Markdown protocol, including first a rationale for the plan and then a batch of actions to be executed. Allowing you to review, approve, or reject each step while staying in control at every turn.
+2. **Data Ownership:** Your entire collaboration history lives on your machine in plain Markdown. No cloud lock-in. Your sessions are as portable, private, and versionable as the rest of your codebase.
+3. **Fully Hackable:** Context goes in as a file, results come out as a file. Every turn is auditable. Agent personas are defined in simple XML files you can edit or create, making the workflow fully hackable towards your needs.
 
 ## The TeDDy Workflow: Multi-Agent Development
 
@@ -51,23 +39,12 @@ TeDDy structures development around distinct AI agents, each with a specific man
 
 <!-- Workflow diagram placeholder: `<img src="./assets/workflow-schematic.png" alt="TeDDy Workflow" />` -->
 
-### 1. The Pathfinder (Strategic Discovery)
-Navigates from a vague idea to a technically-grounded roadmap. Explores *why*, *what*, and *how*, then outputs a prioritized plan.
-
-### 2. The Architect (System Design & Strategy)
-Defines contracts, boundaries, and vertical slices. Uses spikes to de-risk uncertain approaches before committing to an architecture.
-
-### 3. The Prototyper (De-risking)
-Builds standalone scenario runners to validate uncertain feature slices before the Developer implements them.
-
-### 4. The Developer (Outside-In TDD)
-Implements features one deliverable at a time using a strict **Red-Green-Refactor** loop.
-
-### 5. The Debugger (Scientific Fault Isolation)
-Activated when other agents fail. Uses the scientific method to isolate root causes by building minimal reproduction cases.
-
-### 6. The Assistant (General Purpose)
-A flexible agent that follows your instructions without enforcing a strict process. Use it as a template for custom agents or for tasks that don't require the full disciplined workflow.
+1. **Pathfinder:** Navigates from a vague idea to a technically-grounded roadmap. Explores *why*, *what*, and *how*, then helps you concretize it into a plan.
+2. **Architect:** Defines contracts, boundaries, and vertical slices for the Developer. Uses spikes to de-risk uncertain approaches before committing to an architecture.
+3. **Prototyper:** Builds standalone prototype to validate uncertain features before the Developer implements them.
+4. **Developer:** Implements features one deliverable at a time using a strict **Red-Green-Refactor** loop.
+5. **Debugger:** Uses the scientific method to isolate root causes by building minimal reproduction cases.
+6. **Assistant:** A flexible agent that follows your instructions without enforcing a strict process. Use it as a template for custom agents or for tasks that don't require the full disciplined workflow.
 
 > Each agent's workflow is defined in plain-text XML files under `.teddy/prompts/` — you can customize any agent to fit your needs.
 
