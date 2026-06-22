@@ -1,6 +1,6 @@
 # Component Design: UpdateChecker
 
-- **Status:** Planned
+- **Status:** Validated (prototype confirmed)
 
 ## Purpose / Responsibility
 
@@ -38,11 +38,11 @@ The module contains the following top-level functions (all pure or with explicit
 
 6. **`perform_upgrade(latest_version: str, index_url: str = PYPI_URL) -> bool`**: Runs `sys.executable -m pip install --upgrade teddy-cli` with optional `--index-url` for TestPyPI. Returns `True` on success.
 
-7. **`should_update(cache_path: Path, config_service) -> bool`**: High-level check: read cache -> if valid and newer version, respect `auto_update` setting.
+**7. `should_update(cache_path: Path, auto_update_enabled: bool = False) -> Optional[bool]`**: High-level check: read cache -> if valid and newer version, respect `auto_update` setting. Returns `True` (proceed with upgrade), `False` (notify only), or `None` (no action needed). The `auto_update_enabled` boolean is read from `IConfigService.get_setting("auto_update")` by the calling CLI code and passed directly — `should_update` does NOT accept or depend on a config service.
 
-8. **`Pywarm imports helper (prewarm_imports) -> None`**: Extracted from `__main__.py` init command. Tries to import heavy packages (`litellm`, `trafilatura`, `pyperclip`, `BeautifulSoup`, `DDGS`). Silently ignores `ImportError`.
+**8. `prewarm_imports() -> None`**: Extracted from `__main__.py` init command into `cli_helpers.py`. Tries to import heavy packages (`litellm`, `trafilatura`, `pyperclip`, `BeautifulSoup`, `DDGS`). Silently ignores `ImportError`. Called by both `init` command (pre-existing) and `update` command (after successful upgrade).
 
-All functions use stdlib only (plus `packaging` which is a transitive dependency). No new external dependencies.
+All functions use stdlib only (plus `packaging` which is a transitive dependency). No new external dependencies. The `prewarm_imports` function lives in `cli_helpers.py` (not `update_checker.py`) because it is shared with the `init` command.
 
 ## Data Contracts / Methods
 
@@ -56,7 +56,9 @@ def get_current_version() -> str: ...
 
 def fetch_latest_version(index_url: str = PYPI_URL) -> str | None: ...
 
-def compare_versions(current: str, latest: str) -> bool: ...
+def compare_versions(current: str, latest: str) -> bool:
+    """Returns True if latest > current. Returns False on any parse failure
+    (invalid version strings, empty strings, or equal versions)."""
 
 def read_update_cache(cache_path: Path) -> dict | None: ...
 
@@ -64,7 +66,9 @@ def write_update_cache(cache_path: Path, latest_version: str) -> None: ...
 
 def perform_upgrade(latest_version: str, index_url: str = PYPI_URL) -> bool: ...
 
-def should_update(cache_path: Path, config_service) -> bool: ...
+def should_update(cache_path: Path, auto_update_enabled: bool = False) -> bool | None:
+    """Returns True (upgrade now), False (notify only), or None (no action)."""
 
+# Located in cli_helpers.py (shared with init command):
 def prewarm_imports() -> None: ...
 ```

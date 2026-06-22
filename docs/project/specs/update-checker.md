@@ -130,6 +130,33 @@ Provide a comprehensive update system with:
 
 ---
 
+## 5. Prototype Validation
+
+The prototype documented in `spikes/prototypes/update-checker/` was built and executed against the real system, exercising all key risk areas with real dependencies (no mocking of core logic). Below are the validated results.
+
+### Validated Risk Areas
+
+| Risk Area | Result | Detail |
+|-----------|--------|--------|
+| **Version detection** | ✓ Verified | `get_current_version()` returned `'0.1.3'` via `importlib.metadata.version("teddy-cli")` |
+| **Real PyPI fetch** | ✓ Verified | `fetch_latest_version()` returned `'0.1.4'` via real `urllib.request` HTTP call |
+| **Version comparison** | ✓ Verified | Edge cases confirmed: invalid versions → `False`, empty strings → `False`, same version → `False` |
+| **Cache I/O lifecycle** | ✓ Verified | Write succeeds, read valid → dict, corrupt JSON → `None`, missing file → `None`, expired TTL → `None`, fresh TTL → valid data |
+| **Background daemon thread** | ✓ Verified | Non-blocking (main thread delay: ~0.0007s), daemon thread completed and wrote cache automatically |
+| **Prewarm imports extraction** | ✓ Verified | Both `shadow_cli_helpers` and `shadow_update_checker` implementations execute without error |
+| **should_update logic** | ✓ Verified | No cache → `None`, older version → `None`, newer + `auto_update=True` → `True`, newer + `auto_update=False` → `False` |
+| **Upgrade command construction** | ✓ Verified | Command verified: `sys.executable -m pip install --upgrade teddy-cli [--index-url ...]` (not executed) |
+
+### Key Findings
+- **Version drift:** The current installed version is `0.1.3` (not `0.1.0` as referenced in earlier slice scenarios). PyPI reports `0.1.4` available as of 2026-06-22.
+- **Non-blocking verified:** Background daemon threads with `daemon=True` allow the main thread to continue processing immediately (~0.0007s overhead for thread creation vs ~0.5s for a real HTTP fetch).
+- **compare_versions edge cases:** Returns `False` for any parse failure — invalid strings (`"abc"`), empty strings (`""`), and equal versions all correctly return `False`. Only strictly greater PEP 440 versions return `True`.
+- **Atomic cache writes work:** The write-to-temp-then-rename pattern prevents partial reads by other threads or processes.
+- **prewarm_imports is safe:** Import errors are silently caught; the function works identically when extracted to `cli_helpers.py`.
+- **Cache path:** The cache file path should be `.teddy/.update_cache.json` (consistent with the `.teddy` directory convention).
+
+---
+
 ## 4. Guidelines for Implementation
 
 ### Phase 1: Core Infrastructure
