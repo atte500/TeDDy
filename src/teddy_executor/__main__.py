@@ -225,17 +225,26 @@ def update(
     current = get_current_version()
 
     needs_update = compare_versions(current, latest)
+    is_channel_switch = False
     if not needs_update:
         # If current is a pre-release and the latest is stable, allow downgrade
         # to the stable channel
         if is_prerelease(current) and not is_prerelease(latest):
-            needs_update = True
+            is_channel_switch = True
 
-    if not needs_update:
+    if not needs_update and not is_channel_switch:
         typer.echo(f"You are already running the latest version ({current}).")
         return
 
-    if experimental:
+    if is_channel_switch:
+        typer.echo(f"You are running the latest experimental version ({current}).")
+        typer.echo(
+            "To switch to the stable release, run: pip install --upgrade teddy-cli"
+        )
+        typer.echo(
+            "To apply prompt updates: delete .teddy/prompts/ and run 'teddy init'"
+        )
+    elif experimental:
         typer.echo(f"A new experimental version {latest} is available.")
         typer.echo(
             "To upgrade, run: pip install --upgrade teddy-cli --index-url https://test.pypi.org/simple/"

@@ -61,7 +61,8 @@ def test_experimental_flag_uses_stable_only_false(monkeypatch):
 
 def test_dev_version_offers_upgrade_to_stable(monkeypatch):
     """When current version is a pre-release and latest is stable,
-    the update notification should be offered even though PEP 440 says dev > stable."""
+    the update notification should explain the user is on the latest experimental
+    version and how to switch to the stable channel."""
     _setup_basic_mocks(monkeypatch)
 
     # compare_versions returns False (dev > stable in PEP 440)
@@ -84,12 +85,15 @@ def test_dev_version_offers_upgrade_to_stable(monkeypatch):
 
     result = runner.invoke(app, ["update"])
 
-    # Should show notification with upgrade command
-    assert "new version" in result.stdout.lower(), (
-        f"Expected 'new version' in output, got: {result.stdout!r}"
+    # Should show channel-switch message (not "new version")
+    assert "latest experimental version" in result.stdout.lower(), (
+        f"Expected 'latest experimental version' in output, got: {result.stdout!r}"
     )
-    assert "0.1.4" in result.stdout, (
-        f"Expected version 0.1.4 in output, got: {result.stdout!r}"
+    assert "0.1.5.dev646" in result.stdout, (
+        f"Expected current version 0.1.5.dev646 in output, got: {result.stdout!r}"
+    )
+    assert "switch to the stable release" in result.stdout.lower(), (
+        f"Expected 'switch to the stable release' in output, got: {result.stdout!r}"
     )
     assert "pip install --upgrade teddy-cli" in result.stdout, (
         f"Expected upgrade command in output, got: {result.stdout!r}"
@@ -99,7 +103,7 @@ def test_dev_version_offers_upgrade_to_stable(monkeypatch):
 
 def test_dev_version_notifies_without_auto_upgrade(monkeypatch):
     """When current is prerelease and latest is stable, the command shows
-    notification without attempting auto-upgrade."""
+    channel-switch message without attempting auto-upgrade."""
     _setup_basic_mocks(monkeypatch)
     _setup_compare_versions_mock(monkeypatch, False)
 
@@ -124,8 +128,8 @@ def test_dev_version_notifies_without_auto_upgrade(monkeypatch):
     assert "Updated to" not in result.stdout, (
         f"Expected no 'Updated to' message, got: {result.stdout!r}"
     )
-    # Must show notification
-    assert "new version" in result.stdout.lower(), (
-        f"Expected notification in output, got: {result.stdout!r}"
+    # Must show channel-switch message (not "new version")
+    assert "latest experimental version" in result.stdout.lower(), (
+        f"Expected 'latest experimental version' in output, got: {result.stdout!r}"
     )
     assert result.exit_code == 0
