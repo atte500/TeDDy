@@ -117,3 +117,108 @@ def test_ensure_initialized_copies_prompts_to_teddy(service, mock_fs):
         prompt_name = fname.replace(".xml", "")
         expected_content = f"{prompt_name} prompt"
         mock_fs.write_file.assert_any_call(f".teddy/prompts/{fname}", expected_content)
+
+
+# ── New tests for overwrite flags and summary strings ────────────────────────
+
+
+def test_ensure_initialized_returns_summary_when_everything_exists(service, mock_fs):
+    """All files exist → "Config: unchanged. Prompts: unchanged." """
+    mock_fs.path_exists.return_value = True  # Everything exists
+    result = service.ensure_initialized()
+    mock_fs.write_file.assert_not_called()
+    assert result == "Config: unchanged. Prompts: unchanged."
+
+
+def test_ensure_initialized_returns_summary_when_files_missing(service, mock_fs):
+    """Missing everything → "Config: updated (3 files). Prompts: updated (6 files)." """
+
+    def mock_exists(p):
+        # config templates exist, but .teddy does not
+        if p.startswith("/mock/config"):
+            return True
+        return False
+
+    mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.read_file.return_value = "mock content"
+
+    result = service.ensure_initialized()
+    assert result == "Config: updated (3 files). Prompts: updated (6 files)."
+
+
+def test_ensure_prompts_initialized_overwrite_true(service, mock_fs):
+    """All prompts exist, but overwrite=True → overwrites all 6 and returns "Prompts overwritten (6 files)." """
+
+    def mock_exists(p):
+        if p.startswith("/mock/config"):
+            return True
+        return True  # everything else also exists
+
+    mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.read_file.return_value = "mock content"
+
+    result = service.ensure_prompts_initialized(overwrite=True)
+    assert mock_fs.write_file.call_count == 6
+    assert result == "Prompts overwritten (6 files)."
+
+
+def test_ensure_prompts_initialized_overwrite_false(service, mock_fs):
+    """All prompts exist, overwrite=False → nothing written, returns "Prompts unchanged." """
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = "mock content"
+
+    result = service.ensure_prompts_initialized(overwrite=False)
+    mock_fs.write_file.assert_not_called()
+    assert result == "Prompts unchanged."
+
+
+def test_ensure_prompts_initialized_missing_prompts_non_overwrite(service, mock_fs):
+    """No prompts exist, overwrite=False → write 6, returns "Prompts updated (6 files)." """
+
+    def mock_exists(p):
+        if p.startswith("/mock/config"):
+            return True
+        return False  # nothing exists in .teddy
+
+    mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.read_file.return_value = "mock content"
+
+    result = service.ensure_prompts_initialized(overwrite=False)
+    assert mock_fs.write_file.call_count == 6
+    assert result == "Prompts updated (6 files)."
+
+
+def test_ensure_config_initialized_overwrite_true(service, mock_fs):
+    """All config exist, overwrite=True → overwrites 3, returns "Configuration files overwritten (3 files)." """
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = "mock content"
+
+    result = service.ensure_config_initialized(overwrite=True)
+    assert mock_fs.write_file.call_count == 3
+    assert result == "Configuration files overwritten (3 files)."
+
+
+def test_ensure_config_initialized_overwrite_false(service, mock_fs):
+    """All config exist, overwrite=False → nothing written, returns "Configuration files unchanged." """
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = "mock content"
+
+    result = service.ensure_config_initialized(overwrite=False)
+    mock_fs.write_file.assert_not_called()
+    assert result == "Configuration files unchanged."
+
+
+def test_ensure_config_initialized_missing_config_non_overwrite(service, mock_fs):
+    """No config files exist, overwrite=False → write 3, returns "Configuration files updated (3 files)." """
+
+    def mock_exists(p):
+        if p.startswith("/mock/config"):
+            return True
+        return False
+
+    mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.read_file.return_value = "mock content"
+
+    result = service.ensure_config_initialized(overwrite=False)
+    assert mock_fs.write_file.call_count == 3
+    assert result == "Configuration files updated (3 files)."

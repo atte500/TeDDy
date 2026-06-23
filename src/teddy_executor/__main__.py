@@ -172,18 +172,61 @@ def start(  # noqa: PLR0913
     )
 
 
-@app.command()
-def init():
+init_app = typer.Typer()
+app.add_typer(
+    init_app,
+    name="init",
+    help="Initialize .teddy directory, prompts, or configuration.",
+)
+
+
+@init_app.callback(invoke_without_command=True)
+def init_callback():
     """
     Initializes the .teddy directory and pre-warms heavy imports for faster startup.
     """
     from teddy_executor.adapters.inbound.cli_helpers import prewarm_imports
+    from teddy_executor.core.ports.inbound.init import IInitUseCase
 
     container = get_container()
     _ensure_project_initialized(container, root_dir=str(Path.cwd()))
     prewarm_imports()
     # Auto-login would trigger here once `teddy login` is implemented (no-op for now)
-    typer.echo("TeDDy initialized in .teddy folder.")
+    init_use_case = container.resolve(IInitUseCase)
+    summary = init_use_case.ensure_initialized()
+    typer.echo(f"TeDDy initialized in .teddy folder. {summary}")
+
+
+@init_app.command()
+def prompts():
+    """
+    Overwrites bundled prompt XMLs in .teddy/prompts/ with defaults.
+    """
+    from teddy_executor.adapters.inbound.cli_helpers import prewarm_imports
+    from teddy_executor.core.ports.inbound.init import IInitUseCase
+
+    container = get_container()
+    _ensure_project_initialized(container, root_dir=str(Path.cwd()))
+    prewarm_imports()
+    init_use_case = container.resolve(IInitUseCase)
+    status = init_use_case.ensure_prompts_initialized(overwrite=True)
+    typer.echo(status)
+
+
+@init_app.command()
+def config():
+    """
+    Overwrites config.yaml, .gitignore, and init.context with defaults.
+    """
+    from teddy_executor.adapters.inbound.cli_helpers import prewarm_imports
+    from teddy_executor.core.ports.inbound.init import IInitUseCase
+
+    container = get_container()
+    _ensure_project_initialized(container, root_dir=str(Path.cwd()))
+    prewarm_imports()
+    init_use_case = container.resolve(IInitUseCase)
+    status = init_use_case.ensure_config_initialized(overwrite=True)
+    typer.echo(status)
 
 
 @app.command()
@@ -241,23 +284,17 @@ def update(
         typer.echo(
             "To switch to the stable release, run: pip install --upgrade teddy-cli"
         )
-        typer.echo(
-            "To apply prompt updates: delete .teddy/prompts/ and run 'teddy init'"
-        )
+        typer.echo("To apply prompt updates, run: teddy init prompts")
     elif experimental:
         typer.echo(f"A new experimental version {latest} is available.")
         typer.echo(
             "To upgrade, run: pip install --upgrade teddy-cli --index-url https://test.pypi.org/simple/"
         )
-        typer.echo(
-            "To apply prompt updates: delete .teddy/prompts/ and run 'teddy init'"
-        )
+        typer.echo("To apply prompt updates, run: teddy init prompts")
     else:
         typer.echo(f"A new version {latest} is available.")
         typer.echo("To upgrade, run: pip install --upgrade teddy-cli")
-        typer.echo(
-            "To apply prompt updates: delete .teddy/prompts/ and run 'teddy init'"
-        )
+        typer.echo("To apply prompt updates, run: teddy init prompts")
 
 
 @app.command()

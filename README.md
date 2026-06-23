@@ -72,6 +72,11 @@ pip install teddy-cli
 teddy init
 ```
 
+Use subcommands to overwrite specific files with defaults:
+
+- `teddy init prompts` – Overwrite bundled prompt XMLs in `.teddy/prompts/` (useful after upgrades).
+- `teddy init config` – Overwrite config.yaml, .gitignore, and init.context with defaults.
+
 #### LLM Configuration
 
 Edit `.teddy/config.yaml`:
@@ -142,7 +147,9 @@ pip install --upgrade teddy-cli --index-url https://test.pypi.org/simple/
 
 | Command      | Description                                                               |
 | ------------ | ------------------------------------------------------------------------- |
-| `init`       | Initialize `.teddy` directory with defaults and pre-warm heavy imports.   |
+| `init`       | Initialize `.teddy` directory with defaults and pre-warm heavy imports. See subcommands below. |
+| `init prompts` | Overwrite bundled prompt XMLs in `.teddy/prompts/` with defaults. |
+| `init config`  | Overwrite config.yaml, .gitignore, and init.context with defaults. |
 | `start`      | Start an interactive session.                                             |
 | `resume`     | Resume an existing session.                                               |
 | `update`     | Check for updates and display upgrade instructions.                       |
