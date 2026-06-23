@@ -94,7 +94,7 @@
         </section>
         <section n="3" name="Key Architectural Decisions">
           <goal>A living "System Law" document.</goal>
-          <item name="Format">Concise bulleted list. Format: `**[Subject]:** [Strict Rule]. ([Rationale])`.</item>
+          <item name="Format">Concise bulleted list. Format: `**Subject:** Strict Rule. (Rationale)`.</item>
         </section>
         <section n="4" name="Debug Mode & Branch by Abstraction">
           <goal>Enforce zero-cost diagnostic and behavioral branching standards.</goal>
