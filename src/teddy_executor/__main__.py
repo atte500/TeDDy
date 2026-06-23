@@ -282,7 +282,7 @@ def update(
     if is_channel_switch:
         typer.echo(f"You are running the latest experimental version ({current}).")
         typer.echo(
-            "To switch to the stable release, run: pip install --upgrade teddy-cli"
+            "To switch to the stable release, run: pip uninstall -y teddy-cli && pip install teddy-cli"
         )
         typer.echo("To apply prompt updates, run: teddy init prompts")
     elif experimental:
