@@ -112,7 +112,7 @@ def validate_path_is_safe(path_str: str, action_type: str):
     Ensures a file path is safe by checking for absolute paths and
     directory traversal attempts.
     """
-    if os.path.isabs(path_str):
+    if path_str.startswith("/") or os.path.isabs(path_str):
         raise PlanValidationError(
             f"Action `{action_type}` contains an absolute path, which is not allowed: {path_str}"
         )
