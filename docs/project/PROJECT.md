@@ -85,4 +85,9 @@ This section defines the conventions for our project management artifacts.
   - `src/teddy_executor/adapters/outbound/openrouter_hydrator.py:17` — Untyped function body not checked (annotation-unchecked).
   These errors exist in the base code and are not introduced by any recent fix. They block pre-commit's Mypy hook, requiring `--no-verify` for commits. A dedicated fix slice should address these by adding proper type annotations and fixing return type mismatches.
 
-- **pip-audit pre-commit hook:** The pip-audit hook in `.pre-commit-config.yaml` flags 15 known vulnerabilities in transitive dependencies (aiohttp, litellm, msgpack, python-dotenv).
+- **pip-audit pre-commit hook:** The pip-audit hook in `.pre-commit-config.yaml` flags 15 known vulnerabilities across 4 transitive dependencies (aiohttp, litellm, msgpack, python-dotenv). All are assessed as **Low practical risk** for TeDDy:
+  - **aiohttp (11 vulns):** Server-side issues (DoS, request smuggling) — TeDDy only uses aiohttp as an async HTTP client, not a server.
+  - **litellm (2 vulns):** Proxy SQLi (High) and Auth Bypass via Host Header (Critical) — TeDDy uses the client SDK only, no proxy server.
+  - **msgpack (1 vuln):** Potential DoS via crafted input — TeDDy serializes standard types with trusted data only.
+  - **python-dotenv (1 vuln):** Path traversal in .env loading — TeDDy runs in controlled environments with a single config file.
+  - **Blocker:** All four packages are transitively pinned by litellm 1.83.7. Upgrading any of them requires also upgrading litellm, but all litellm versions ≥1.83.8 dropped Python 3.14 support via `requires-python <3.14`. Our CI is now fully on Python 3.14, so we cannot upgrade without breaking installation. Fix blocked until upstream lifts the cap: [litellm#26343](https://github.com/BerriAI/litellm/issues/26343).
