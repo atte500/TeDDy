@@ -14,15 +14,11 @@ from teddy_executor.__main__ import app
 runner = typer.testing.CliRunner()
 
 
-def _setup_basic_mocks(monkeypatch, install_method="pip"):
+def _setup_basic_mocks(monkeypatch):
     """Helper to set up common monkeypatches for update command tests."""
     monkeypatch.setattr(
         "teddy_executor.core.services.update_checker.get_current_version",
         lambda: "0.1.0",
-    )
-    monkeypatch.setattr(
-        "teddy_executor.core.services.update_checker._get_install_method",
-        lambda: install_method,
     )
 
 

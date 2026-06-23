@@ -28,10 +28,6 @@ def test_experimental_flag_uses_test_pypi_url(monkeypatch):
         "teddy_executor.core.services.update_checker.compare_versions",
         lambda current, latest: True,
     )
-    monkeypatch.setattr(
-        "teddy_executor.core.services.update_checker._get_install_method",
-        lambda: "pip",
-    )
 
     runner = CliRunner()
     result = runner.invoke(app, ["update", "--experimental"])

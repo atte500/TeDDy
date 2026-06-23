@@ -210,7 +210,6 @@ def update(
         fetch_latest_version,
         compare_versions,
         is_prerelease,
-        _get_install_method,
         PYPI_URL,
         TEST_PYPI_URL,
     )
@@ -236,21 +235,12 @@ def update(
         typer.echo(f"You are already running the latest version ({current}).")
         return
 
-    # Determine installation method and show the appropriate upgrade command
-    install_method = _get_install_method()
-    if install_method == "uv":
-        base_cmd = "uv tool upgrade teddy-cli"
-        experimental_cmd = "uv tool install --reinstall teddy-cli --index-url https://test.pypi.org/simple/"
-    else:
-        base_cmd = "pip install --upgrade teddy-cli"
-        experimental_cmd = f"{base_cmd} --index-url https://test.pypi.org/simple/"
-
     if experimental:
         typer.echo(f"A new experimental version {latest} is available.")
-        typer.echo(f"To upgrade, run: {experimental_cmd}")
+        typer.echo("To upgrade, run: pip install --upgrade teddy-cli --index-url https://test.pypi.org/simple/")
     else:
         typer.echo(f"A new version {latest} is available.")
-        typer.echo(f"To upgrade, run: {base_cmd}")
+        typer.echo("To upgrade, run: pip install --upgrade teddy-cli")
 
 
 @app.command()

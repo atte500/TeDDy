@@ -52,24 +52,18 @@ TeDDy breaks down the development process into distinct agents, each with a spec
 
 #### Prerequisites
 - Python 3.11 or later.
-- [uv](https://docs.astral.sh/uv/) — a fast Python package installer.
+- `pip` (included with Python).
 
-#### Install uv (if not already installed)
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Keep uv itself up-to-date:
+#### Ensure pip is up to date
 
 ```bash
-uv self update
+pip install --upgrade pip
 ```
 
 #### Install TeDDy
 
 ```bash
-uv tool install teddy-cli
+pip install teddy-cli
 ```
 
 #### Initialize
@@ -134,6 +128,16 @@ teddy resume
 4. Have the model generate a Markdown plan.
 5. Copy the plan and run `teddy execute` (or `teddy execute -y` for automatic execution).
 
+### Installing Experimental Versions
+
+To install or upgrade to the latest experimental (pre-release) version from TestPyPI:
+
+```bash
+pip install --upgrade teddy-cli --index-url https://test.pypi.org/simple/
+```
+
+> **Note:** Experimental versions are published to TestPyPI and may include features that are not yet stable. Use with caution.
+
 ### Command Reference
 
 | Command      | Description                                                               |
@@ -141,7 +145,7 @@ teddy resume
 | `init`       | Initialize `.teddy` directory with defaults and pre-warm heavy imports.   |
 | `start`      | Start an interactive session.                                             |
 | `resume`     | Resume an existing session.                                               |
-| `update`     | Check for updates and upgrade to the latest version of TeDDy.            |
+| `update`     | Check for updates and display upgrade instructions.                       |
 | `execute`    | Execute a Markdown plan. Reads from clipboard if no file path provided.   |
 | `context`    | Gather project context (file tree + selected file contents) to clipboard. |
 | `get-prompt` | Retrieve agent system prompts. Respects `.teddy/prompts/` overrides.      |

@@ -26,10 +26,6 @@ def test_update_command_returns_version_notification_when_newer_version_availabl
         lambda current, latest: True,
     )
     monkeypatch.setattr(
-        "teddy_executor.core.services.update_checker._get_install_method",
-        lambda: "pip",
-    )
-    monkeypatch.setattr(
         "teddy_executor.__main__._ensure_project_initialized",
         lambda container: None,
     )

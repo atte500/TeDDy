@@ -28,11 +28,6 @@ def _setup_basic_mocks(monkeypatch):
         "teddy_executor.core.services.update_checker.compare_versions",
         lambda current, latest: True,
     )
-    # Mock _get_install_method to return pip (default for tests)
-    monkeypatch.setattr(
-        "teddy_executor.core.services.update_checker._get_install_method",
-        lambda: "pip",
-    )
 
 
 def test_update_command_shows_notification_for_newer_version(monkeypatch):
@@ -56,32 +51,10 @@ def test_update_command_shows_notification_for_newer_version(monkeypatch):
     assert result.exit_code == 0
 
 
-def test_update_command_notification_for_uv_install(monkeypatch):
-    """When uv is the install method, show uv upgrade command."""
-    _setup_basic_mocks(monkeypatch)
-    monkeypatch.setattr(
-        "teddy_executor.core.services.update_checker._get_install_method",
-        lambda: "uv",
-    )
-
-    result = runner.invoke(app, ["update"])
-
-    # Should contain the uv upgrade command
-    assert "uv tool upgrade teddy-cli" in result.stdout, (
-        f"Expected uv upgrade command in output, got: {result.stdout!r}"
-    )
-    # Should not contain pip command
-    assert "pip install" not in result.stdout
-    assert result.exit_code == 0
-
 
 def test_update_command_shows_notification_for_experimental(monkeypatch):
     """When --experimental flag is used, show experimental upgrade command."""
     _setup_basic_mocks(monkeypatch)
-    monkeypatch.setattr(
-        "teddy_executor.core.services.update_checker._get_install_method",
-        lambda: "pip",
-    )
 
     result = runner.invoke(app, ["update", "--experimental"])
 
@@ -93,8 +66,6 @@ def test_update_command_shows_notification_for_experimental(monkeypatch):
     assert "pip install --upgrade teddy-cli" in result.stdout
     assert "test.pypi.org" in result.stdout
     assert result.exit_code == 0
-
-
 def test_update_command_shows_already_latest_when_no_update(monkeypatch):
     """When no newer version exists, show 'already latest' message."""
     _setup_basic_mocks(monkeypatch)
@@ -148,7 +119,4 @@ def test_update_command_hardcoded_upgrade_messages_not_present():
     # Verify new notification pattern is present
     assert "pip install --upgrade teddy-cli" in source, (
         "Notification pip upgrade command not found in update()"
-    )
-    assert "uv tool upgrade teddy-cli" in source, (
-        "UV upgrade command not found in update()"
     )
