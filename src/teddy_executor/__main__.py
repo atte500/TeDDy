@@ -215,16 +215,12 @@ def update(
         get_current_version,
         fetch_latest_version,
         compare_versions,
-        is_prerelease,
         PYPI_URL,
         TEST_PYPI_URL,
     )
 
     index_url = TEST_PYPI_URL if experimental else PYPI_URL
-    stable_only = (
-        not experimental
-    )  # default: stable only from PyPI; --experimental includes all
-    latest = fetch_latest_version(index_url, stable_only=stable_only)
+    latest = fetch_latest_version(index_url)
 
     if latest is None:
         typer.echo("Could not check for updates: network error.")
@@ -232,19 +228,7 @@ def update(
 
     current = get_current_version()
 
-    # Determine if an upgrade is needed
-    if experimental:
-        # Experimental mode: normal PEP 440 comparison (highest version wins)
-        needs_update = compare_versions(current, latest)
-    # Normal mode: if current version is a prerelease (dev), always upgrade to
-    # the stable version (even if numerically lower). Otherwise use normal comparison.
-    elif is_prerelease(current):
-        # Only consider it an update if we're not already at the exact stable version
-        needs_update = latest != current
-    else:
-        needs_update = compare_versions(current, latest)
-
-    if not needs_update:
+    if not compare_versions(current, latest):
         typer.echo(f"You are already running the latest version ({current}).")
         return
 
@@ -254,7 +238,6 @@ def update(
     container = get_container()
     config_service = container.resolve(IConfigService)
     auto_update = config_service.get_setting("auto_update", default=True)
-
     if auto_update or yes:
         from teddy_executor.core.services.update_checker import perform_upgrade
 
