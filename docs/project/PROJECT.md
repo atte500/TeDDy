@@ -71,6 +71,7 @@ This section defines the conventions for our project management artifacts.
     - **`00-04-remove-bare-except-in-init-service`:** Fix the bare `except: pass` in `InitService._get_default_content()` (lines ~82-84) that catches `(yaml.YAMLError, OSError, ImportError, AttributeError)`. This silently swallows errors from `importlib.resources` API changes (Python 3.12+), returning `None` instead of template content. Action: replace with specific, logged error handling that re-raises unexpected errors, ensuring initialization failures are visible.
 
 ## Technical Debt
+- `[DEBT]` Pathfinder Phase 4 originally conflated "handoff to assistant" with "direct execution" — the logic was backwards (skipped artifact creation for assistant instead of for direct execution). Corrected in a follow-up turn. Ensure future iterations clearly distinguish "no handoff" from "handoff to any target".
 
 
 - Create a reusable pytest fixture (`ports_fixture`) in `tests/harness/setup/` that provides pre-configured port mocks with sensible defaults for `ISessionManager`, `IFileSystemManager`, etc. This reduces the risk of "mock poisoning" (bare MagicMock instances missing required `return_value` configurations) in test setup.
