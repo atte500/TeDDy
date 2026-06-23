@@ -237,10 +237,18 @@ def update(
 
     if experimental:
         typer.echo(f"A new experimental version {latest} is available.")
-        typer.echo("To upgrade, run: pip install --upgrade teddy-cli --index-url https://test.pypi.org/simple/")
+        typer.echo(
+            "To upgrade, run: pip install --upgrade teddy-cli --index-url https://test.pypi.org/simple/"
+        )
+        typer.echo(
+            "To apply prompt updates: delete .teddy/prompts/ and run 'teddy init'"
+        )
     else:
         typer.echo(f"A new version {latest} is available.")
         typer.echo("To upgrade, run: pip install --upgrade teddy-cli")
+        typer.echo(
+            "To apply prompt updates: delete .teddy/prompts/ and run 'teddy init'"
+        )
 
 
 @app.command()

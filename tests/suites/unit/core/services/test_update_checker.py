@@ -250,8 +250,6 @@ class TestWriteUpdateCache:
         assert not tmp_path.exists()
 
 
-
-
 class TestBackgroundCheck:
     """Tests for background_check function."""
 
@@ -292,73 +290,3 @@ class TestBackgroundCheck:
         background_check(cache_path)
 
         assert not cache_path.exists()
-
-
-class TestShouldUpdate:
-    """Tests for should_update function."""
-
-    def test_returns_none_when_no_cache(self, temp_cache_dir):
-        """Should return None when cache does not exist."""
-        from teddy_executor.core.services.update_checker import should_update
-
-        cache_path = temp_cache_dir / ".update_cache.json"
-        result = should_update(cache_path, auto_update_enabled=True)
-        assert result is None
-
-    def test_returns_true_when_newer_version_and_auto_update(
-        self, monkeypatch, temp_cache_dir
-    ):
-        """Should return True when newer version available and auto_update enabled."""
-        from teddy_executor.core.services.update_checker import (
-            should_update,
-            write_update_cache,
-        )
-
-        cache_path = temp_cache_dir / ".update_cache.json"
-        write_update_cache(cache_path, "99.99.99")
-
-        monkeypatch.setattr(
-            "teddy_executor.core.services.update_checker.get_current_version",
-            lambda: "1.0.0",
-        )
-
-        result = should_update(cache_path, auto_update_enabled=True)
-        assert result is True
-
-    def test_returns_false_when_newer_version_and_no_auto_update(
-        self, monkeypatch, temp_cache_dir
-    ):
-        """Should return False when newer version available but auto_update disabled."""
-        from teddy_executor.core.services.update_checker import (
-            should_update,
-            write_update_cache,
-        )
-
-        cache_path = temp_cache_dir / ".update_cache.json"
-        write_update_cache(cache_path, "99.99.99")
-
-        monkeypatch.setattr(
-            "teddy_executor.core.services.update_checker.get_current_version",
-            lambda: "1.0.0",
-        )
-
-        result = should_update(cache_path, auto_update_enabled=False)
-        assert result is False
-
-    def test_returns_none_when_no_newer_version(self, monkeypatch, temp_cache_dir):
-        """Should return None when cached version is not newer than current."""
-        from teddy_executor.core.services.update_checker import (
-            should_update,
-            write_update_cache,
-        )
-
-        cache_path = temp_cache_dir / ".update_cache.json"
-        write_update_cache(cache_path, "0.9.0")
-
-        monkeypatch.setattr(
-            "teddy_executor.core.services.update_checker.get_current_version",
-            lambda: "1.0.0",
-        )
-
-        result = should_update(cache_path, auto_update_enabled=True)
-        assert result is None

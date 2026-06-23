@@ -50,9 +50,7 @@ def test_experimental_flag_uses_stable_only_false(monkeypatch):
         called_with["stable_only"] = stable_only
         return "99.99.99"
 
-    monkeypatch.setattr(
-        uc, "fetch_latest_version", tracking_fetch
-    )
+    monkeypatch.setattr(uc, "fetch_latest_version", tracking_fetch)
 
     runner.invoke(app, ["update", "--experimental"])
 

@@ -201,8 +201,6 @@ def write_update_cache(cache_path: Path, latest_version: str) -> None:
             tmp_path.unlink()
 
 
-
-
 def background_check(cache_path: Path, index_url: str = PYPI_URL) -> None:
     """
     Non-blocking background version check.
@@ -212,31 +210,3 @@ def background_check(cache_path: Path, index_url: str = PYPI_URL) -> None:
     latest = fetch_latest_version(index_url)
     if latest is not None:
         write_update_cache(cache_path, latest)
-
-
-def should_update(
-    cache_path: Path,
-    auto_update_enabled: bool = False,
-) -> Optional[bool]:
-    """
-    High-level check: read cache, compare versions, respect auto_update setting.
-
-    Args:
-        cache_path: Path to the cache file.
-        auto_update_enabled: Whether auto_update is enabled in config.
-
-    Returns:
-        - True  → update should proceed (newer version + auto_update enabled)
-        - False → newer version available but auto_update disabled
-        - None  → no update needed or version check failed
-    """
-    if cache_path is None:
-        return None
-    cache = read_update_cache(cache_path)
-    if cache is None:
-        return None
-    current = get_current_version()
-    latest = cache["latest_version"]
-    if not compare_versions(current, latest):
-        return None
-    return auto_update_enabled

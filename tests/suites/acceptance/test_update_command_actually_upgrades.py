@@ -51,7 +51,6 @@ def test_update_command_shows_notification_for_newer_version(monkeypatch):
     assert result.exit_code == 0
 
 
-
 def test_update_command_shows_notification_for_experimental(monkeypatch):
     """When --experimental flag is used, show experimental upgrade command."""
     _setup_basic_mocks(monkeypatch)
@@ -66,6 +65,8 @@ def test_update_command_shows_notification_for_experimental(monkeypatch):
     assert "pip install --upgrade teddy-cli" in result.stdout
     assert "test.pypi.org" in result.stdout
     assert result.exit_code == 0
+
+
 def test_update_command_shows_already_latest_when_no_update(monkeypatch):
     """When no newer version exists, show 'already latest' message."""
     _setup_basic_mocks(monkeypatch)

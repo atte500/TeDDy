@@ -157,7 +157,7 @@ The [prototype](/spikes/prototypes/update-checker/) validated all 8 risk areas:
 - [x] **Harness** - Create test fixture for isolated temp cache directory.
 
 ### Logic (Business Logic Implementation)
-- [x] **Logic** - Implement `src/teddy_executor/core/services/update_checker.py` with: `get_current_version`, `fetch_latest_version`, `compare_versions`, `read_update_cache`, `write_update_cache`, `perform_upgrade`, `background_check`, `should_update`.
+- [x] **Logic** - Implement `src/teddy_executor/core/services/update_checker.py` with: `get_current_version`, `fetch_latest_version`, `compare_versions`, `read_update_cache`, `write_update_cache`, `background_check`.
 - [x] **Logic** - Extract and implement `prewarm_imports()` in `cli_helpers.py` (shared seam: consumed by init + update).
 - [x] **Logic** - Update `__main__.py` `init` command to use `prewarm_imports()` from `cli_helpers`.
 

@@ -19,7 +19,12 @@ from teddy_executor.adapters.inbound.cli_helpers import (
     echo_and_copy,
     find_project_root,
 )
-from teddy_executor.core.services.update_checker import background_check
+from teddy_executor.core.services.update_checker import (
+    background_check,
+    compare_versions,
+    get_current_version,
+    read_update_cache,
+)
 
 
 def _determine_session_name(name: Optional[str], message: Optional[str]) -> str:
@@ -80,6 +85,34 @@ def _orchestrate_session_loop(
             break
 
 
+def _display_update_notification(cache_path: Path) -> None:
+    """Check the update cache and display a non-blocking notification
+    if a newer version is available. Called on session startup, after
+    the background check thread has been started."""
+    try:
+        cache = read_update_cache(cache_path)
+        if cache is None:
+            return
+        latest = cache.get("latest_version", "")
+        if not latest:
+            return
+        current = get_current_version()
+        if compare_versions(current, latest):
+            typer.echo(
+                typer.style(
+                    f"ℹ A new version {latest} is available. "
+                    "To upgrade, run: pip install --upgrade teddy-cli\n"
+                    "   To apply prompt updates: delete .teddy/prompts/ and run 'teddy init'",
+                    fg=typer.colors.YELLOW,
+                )
+            )
+    except Exception:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.debug("Failed to display update notification", exc_info=True)
+
+
 def handle_new_session(  # noqa: PLR0913
     container: Container,
     name: Optional[str],
@@ -103,6 +136,7 @@ def handle_new_session(  # noqa: PLR0913
         daemon=True,
     )
     thread.start()
+    _display_update_notification(cache_path)
 
     try:
         # 0. Ensure project is initialized
@@ -349,6 +383,7 @@ def handle_resume_session(  # noqa: PLR0913
         daemon=True,
     )
     thread.start()
+    _display_update_notification(cache_path)
 
     try:
         # 1. Pre-flight checks
