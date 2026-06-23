@@ -72,7 +72,6 @@ This section defines the conventions for our project management artifacts.
 
 ## Technical Debt
 
-- **Bug #10 systemic category — Missing parameter in delegation:** The `cache_dir` parameter was added to `IGetContextUseCase.get_context()` but `PlanningService` (and `handle_context_gathering` in session_cli_handlers.py) were not updated. No automated guard detects when new interface parameters are omitted by callers. Consider a static analysis rule or parameter validation in `get_context` that warns when `cache_dir` is omitted but URLs are present in `context_files`.
 
 - Create a reusable pytest fixture (`ports_fixture`) in `tests/harness/setup/` that provides pre-configured port mocks with sensible defaults for `ISessionManager`, `IFileSystemManager`, etc. This reduces the risk of "mock poisoning" (bare MagicMock instances missing required `return_value` configurations) in test setup.
 - `InitService._get_default_content()` has a bare `except: pass` block catching `(yaml.YAMLError, OSError, ImportError, AttributeError)`. If `importlib.resources.files()` changes its API in Python 3.12+ (which has known `Traversable` changes), any `AttributeError` would be silently swallowed, returning `None` for template content and causing `ensure_initialized()` to skip file creation without any error message. While not the root cause of Bug #05, this masked-failure risk should be fixed systematically. Proposed slice: `00-04-remove-bare-except-in-init-service`.
