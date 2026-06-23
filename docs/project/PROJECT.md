@@ -85,3 +85,5 @@ This section defines the conventions for our project management artifacts.
   - `src/teddy_executor/core/services/session_orchestrator.py:251` — Item "DataclassInstance" has no attribute "agent_name" (union-attr).
   - `src/teddy_executor/adapters/outbound/openrouter_hydrator.py:17` — Untyped function body not checked (annotation-unchecked).
   These errors exist in the base code and are not introduced by any recent fix. They block pre-commit's Mypy hook, requiring `--no-verify` for commits. A dedicated fix slice should address these by adding proper type annotations and fixing return type mismatches.
+
+- **pip-audit pre-commit hook:** The pip-audit hook in `.pre-commit-config.yaml` flags 15 known vulnerabilities in transitive dependencies (aiohttp, litellm, msgpack, python-dotenv).
