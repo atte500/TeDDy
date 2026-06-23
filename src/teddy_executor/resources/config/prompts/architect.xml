@@ -29,7 +29,7 @@
         <step n="2" name="CI Quality Gate">Verify CI pipeline status for the targeted components. Ensure non-blocking quality jobs are monitored and correlate warnings with the localized debt found.</step>
         <step n="3" name="Specs Alignment">Identify divergences where implementation reality differs from the `Specification Document`. Resolve these via As-Built Alignment by `EDIT`-ing the Spec and Design Docs to match reality.</step>
         <step n="4" name="Milestone Management">If no active milestone exists, `READ` the Roadmap in `docs/project/PROJECT.md` to `CREATE` the next `Milestone`. You MUST translate ALL its Roadmap requirements into the Milestone document. Change status to `In Progress` and transition to `Completed` once fully implemented.</step>
-        <step n="5" name="Draft Component Designs">`CREATE` or `EDIT` draft design docs for affected components. Focus strictly on strategic intent, purpose, and key contracts; defer detailed logic. Transition any updated existing docs to `Refactoring` status.</step>
+        <step n="5" name="Draft Component Designs">`CREATE` or `EDIT` draft design docs for affected components. Focus strictly on strategic intent, purpose, and key contracts; defer detailed logic. Transition any updated existing docs to `Refactoring` status. If any existing component design docs do not adhere to the Component Design blueprint, update them to align.</step>
         <step n="6" name="Architecture Maintenance">Update `docs/architecture/ARCHITECTURE.md`'s `Component & Boundary Map` and `Key Architectural Decisions` if needed to align.</step>
         <step n="7" name="Delta Analysis">Use `EXECUTE git grep` and `READ` on all targeted components, contracts, interfaces, and DTOs referenced in the design. Verify implementation status of every piece the design calls for. Catalog the delta: what already exists (skip — do NOT include as a deliverable), what is partially implemented (note remaining work), and what is entirely missing (add as pending). Only truly unimplemented or incomplete work SHALL appear in the slice deliverables. Do NOT create entries for work that demonstrably exists.</step>
         <step n="8" name="Create Slice">`CREATE` exactly ONE Vertical Slice following these rules:
@@ -91,17 +91,32 @@
         </section>
         <section n="3" name="Failure Modes">
           <item name="Heading">## Failure Modes</item>
-          <item name="Content">Explicitly list known failure modes for this component. Ports (Interfaces) MUST NOT return generic "error-swallowing" values (like `None` or `False`) to hide internal crashes; instead, they should allow exceptions to propagate to the boundary where they can be handled transparently.</item>
+          <item name="Content">Explicitly list known failure modes for this component. Each entry MUST reference the specific precondition or postcondition it violates. Ports (Interfaces) MUST NOT return generic "error-swallowing" values (like `None` or `False`) to hide internal crashes; instead, they should allow exceptions to propagate to the boundary where they can be handled transparently.</item>
+          <item name="Content">Format: "- **Failure Title**: Violates the precondition/postcondition 'XYZ'. The component MUST raise a specific exception rather than returning a partial/invalid result."</item>
         </section>
-        <section n="4" name="Ports">
+        <section n="4" name="Class Invariants">
+          <item name="Heading">## Class Invariants</item>
+          <item name="Content">Document conditions that must always hold true for instances of this component (e.g., "turn_counter >= 0", "plan is never None after initialization"). Invariants are checked at public method entry and exit. If no invariants apply, state: "None — stateless component."</item>
+        </section>
+        <section n="5" name="Ports">
           <item name="Heading">## Ports</item>
           <item name="Content">Explicit inbound/outbound relationships.</item>
+          <item name="Content">If this component depends on other Ports' contracts, list them under **Contract Dependencies:** with links to the relevant doc sections. Example: "- Relies on `IFileSystemManager.read()` postcondition 'Returns file content as string'."</item>
         </section>
-        <section n="4" name="Logic">
+        <section n="6" name="Logic">
           <item name="Heading">## Implementation Details / Logic</item>
         </section>
-        <section n="5" name="Contracts">
+        <section n="7" name="Contracts">
           <item name="Heading">## Data Contracts / Methods</item>
+          <item name="Content">Document every public method with the following standard subsections:</item>
+          <item name="Content">```text
+### `method_name`
+- **Preconditions:** (required) What must be true before calling. Use "must" language: "key must be a non-empty string."
+- **Postconditions:** (required) What is guaranteed after successful return. Use "returns" or "ensures" language: "Returns a valid ConfigValue. Ensures the cache is updated."
+- **Exceptions:** (required) What errors can be raised and under what conditions.
+- **Invariants:** (optional) Class-level invariants that must hold before and after this method executes.
+```</item>
+          <item name="Content">**Contract Enforcement:** Implementations MUST validate preconditions with explicit guard clauses (assertions or early raises). Postcondition failures MUST be surfaced as specific exceptions, never swallowed. Invariants should be checked at public method entry and exit where practical. Core domain code should enforce contracts at boundary crossings (ports), not deep inside implementation details.</item>
         </section>
         <directory_conventions>
           <rule>Doc path: docs/architecture/BOUNDARY/LAYER/TYPE/name.md -> Source path: src/{pkg}/BOUNDARY/LAYER/TYPE/name.py -> Test path: tests/suites/TEST_TYPE/BOUNDARY/LAYER/TYPE/test_name.py</rule>
