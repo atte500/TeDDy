@@ -9,7 +9,7 @@ This test validates both the original (platform-dependent) and fixed
 (cross-platform) logic against PurePosixPath and PureWindowsPath.
 """
 
-from pathlib import PureWindowsPath
+from pathlib import PurePosixPath, PureWindowsPath
 
 
 def _original_is_absolute(path_str: str) -> bool:
@@ -29,28 +29,25 @@ def _fixed_is_absolute(path_str: str) -> bool:
 def test_original_logic_fails_on_posix_absolute_paths_on_windows():
     """Original os.path.isabs fails to detect /etc as absolute on Windows
     because ntpath.isabs requires a drive letter or backslash prefix.
-    We use PureWindowsPath to simulate Windows path behavior without
-    relying on ntpath.isabs behavior on non-Windows platforms."""
-    # On Windows, ntpath.isabs('/etc') returns False. We verify this
-    # by checking PureWindowsPath behavior.
-    win_path = PureWindowsPath("/etc")
-    # PureWindowsPath.is_absolute() returns False for /etc on Windows
-    assert win_path.is_absolute() is False, (
-        "On Windows (PureWindowsPath), /etc should NOT be absolute"
+    We use PureWindowsPath and PurePosixPath to demonstrate the platform
+    difference without relying on os.path.isabs platform-dependent behavior.
+
+    PureWindowsPath.is_absolute() simulates Windows semantics (False for /etc),
+    while PurePosixPath.is_absolute() simulates POSIX semantics (True for /etc).
+    The fixed logic uses startswith("/") to catch POSIX absolute paths on all
+    platforms, while the original logic (os.path.isabs) fails on Windows."""
+    # Demonstrate the platform difference using pure path simulation
+    assert PureWindowsPath("/etc").is_absolute() is False, (
+        "On Windows (PureWindowsPath), /etc is NOT absolute"
     )
-    # The original logic uses os.path.isabs, which on Windows would
-    # return False for /etc. We can't call ntpath.isabs directly on
-    # non-Windows (it may behave differently), but we can prove the
-    # bug exists by showing that os.path.isabs('/etc') == True but
-    # PureWindowsPath('/etc').is_absolute() == False.
-    assert _original_is_absolute("/etc") is True, (
-        "On this platform, os.path.isabs('/etc') returns True"
+    assert PurePosixPath("/etc").is_absolute() is True, (
+        "On POSIX (PurePosixPath), /etc is absolute"
     )
-    assert _fixed_is_absolute("/etc") is True, "Fixed logic also returns True for /etc"
-    # The key: on Windows, _original_is_absolute would return False,
-    # but _fixed_is_absolute would still return True. We can't
-    # directly test that here, but we can prove the fix is correct by
-    # checking that startswith("/") handles it.
+    # The fixed logic always detects /etc as absolute regardless of platform
+    assert _fixed_is_absolute("/etc") is True, (
+        "Fixed logic detects /etc as absolute on all platforms"
+    )
+    # Verify the fix mechanism: startswith("/") handles POSIX absolute paths
     assert "/etc".startswith("/") is True, (
         "startswith('/') catches POSIX absolute paths on all platforms"
     )
