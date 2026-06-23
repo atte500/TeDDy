@@ -204,7 +204,8 @@ def write_update_cache(cache_path: Path, latest_version: str) -> None:
 def _is_uv_installed() -> bool:
     """
     Detect if the package was installed via uv by checking
-    if 'teddy-cli' appears in `uv tool list` output.
+    if 'teddy-cli' appears in `uv tool list` output, or if the
+    current executable path resides in a uv-managed tools directory.
     """
     import subprocess  # nosec
 
@@ -219,6 +220,24 @@ def _is_uv_installed() -> bool:
             return True
     except (subprocess.SubprocessError, FileNotFoundError):
         pass
+
+    # Fallback: check if the current executable path suggests uv installation
+    # Common uv tool paths: ~/.local/share/uv/tools/ (Linux/macOS),
+    # %APPDATA%\uv\data\tools\ (Windows)
+    import sys
+
+    uv_path_indicators = [
+        ".local/share/uv/tools/",
+        "AppData\\Local\\uv\\data\\tools\\",
+    ]
+    try:
+        exec_path = sys.executable
+        for indicator in uv_path_indicators:
+            if indicator in exec_path and "teddy-cli" in exec_path:
+                return True
+    except AttributeError:
+        pass
+
     return False
 
 

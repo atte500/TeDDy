@@ -215,12 +215,14 @@ def update(
         get_current_version,
         fetch_latest_version,
         compare_versions,
+        is_prerelease,
         PYPI_URL,
         TEST_PYPI_URL,
     )
 
     index_url = TEST_PYPI_URL if experimental else PYPI_URL
-    latest = fetch_latest_version(index_url)
+    # When experimental, include prerelease versions (TestPyPI only has dev releases)
+    latest = fetch_latest_version(index_url, stable_only=not experimental)
 
     if latest is None:
         typer.echo("Could not check for updates: network error.")
@@ -228,7 +230,14 @@ def update(
 
     current = get_current_version()
 
-    if not compare_versions(current, latest):
+    needs_update = compare_versions(current, latest)
+    if not needs_update:
+        # If current is a pre-release and the latest is stable, allow downgrade
+        # to the stable channel
+        if is_prerelease(current) and not is_prerelease(latest):
+            needs_update = True
+
+    if not needs_update:
         typer.echo(f"You are already running the latest version ({current}).")
         return
 

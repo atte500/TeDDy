@@ -18,7 +18,7 @@ def test_update_command_reads_auto_update_from_config(monkeypatch):
     )
     monkeypatch.setattr(
         "teddy_executor.core.services.update_checker.fetch_latest_version",
-        lambda index_url=None: "2.0.0",
+        lambda index_url=None, **kwargs: "2.0.0",
     )
     monkeypatch.setattr(
         "teddy_executor.core.services.update_checker.compare_versions",

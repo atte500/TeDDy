@@ -61,7 +61,7 @@ def _mock_container(monkeypatch, auto_update: bool):
 
     monkeypatch.setattr(
         "teddy_executor.core.services.update_checker.fetch_latest_version",
-        lambda index_url=None: "99.99.99",
+        lambda index_url=None, **kwargs: "99.99.99",
     )
     monkeypatch.setattr(
         "teddy_executor.core.services.update_checker.get_current_version",
@@ -104,7 +104,7 @@ def _mock_container_upgrade_fails(monkeypatch):
     monkeypatch.setattr("teddy_executor.__main__.get_container", mock_get_container)
     monkeypatch.setattr(
         "teddy_executor.core.services.update_checker.fetch_latest_version",
-        lambda index_url=None: "99.99.99",
+        lambda index_url=None, **kwargs: "99.99.99",
     )
     monkeypatch.setattr(
         "teddy_executor.core.services.update_checker.get_current_version",
@@ -213,7 +213,7 @@ def test_update_command_notifies_when_auto_update_false(monkeypatch):
     monkeypatch.setattr("teddy_executor.__main__.get_container", mock_get_container)
     monkeypatch.setattr(
         "teddy_executor.core.services.update_checker.fetch_latest_version",
-        lambda index_url=None: "99.99.99",
+        lambda index_url=None, **kwargs: "99.99.99",
     )
     monkeypatch.setattr(
         "teddy_executor.core.services.update_checker.get_current_version",
