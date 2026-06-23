@@ -33,6 +33,7 @@ The fix must replace the platform-dependent `os.path.isabs` with a cross-platfor
 
 ### Investigation History
 1. Hypothesis: The absolute path check in `_get_validated_path` uses a platform-dependent method (e.g., `Path.is_absolute()`, `startswith("/")`) that fails on Windows. Observation: `validate_path_is_safe` uses `os.path.isabs(path_str)`, which on Windows (ntpath) returns False for paths starting with `/` without a drive letter. Conclusion: Confirmed – `os.path.isabs` is platform-dependent and fails to detect POSIX absolute paths on Windows.
+2. Regression test fix: The initial regression test `test_original_logic_fails_on_posix_absolute_paths_on_windows` incorrectly assumed `ntpath.isabs('/etc')` is False on all platforms, but on macOS it returns True. Fixed to use `PureWindowsPath` for cross-platform simulation. All tests now pass.
 
 ## Solution
 
