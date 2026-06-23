@@ -75,6 +75,7 @@ class PlanningService(IPlanningUseCase):
             agent_name=agent_name,
             current_turn=Path(turn_dir).name,
             system_prompt_tokens=system_token_count,
+            cache_dir=str(Path(turn_dir).parent),
         )
 
         # Context is purely project state (including initial_request.md via session.context).
