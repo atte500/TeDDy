@@ -148,7 +148,7 @@ def test_check_git_cli_not_found(monkeypatch):
 
 
 def test_check_git_already_repo(monkeypatch):
-    """When already in a git repo, should show green 'Git repository detected'."""
+    """When .git exists in CWD, should show green 'Git repository detected'."""
     import typer
 
     messages = []
@@ -159,14 +159,8 @@ def test_check_git_already_repo(monkeypatch):
     monkeypatch.setattr("typer.secho", fake_secho)
     monkeypatch.setattr("shutil.which", lambda cmd: "/usr/bin/git")
 
-    # Mock subprocess.run to succeed (zero return code)
-    class FakeResult:
-        returncode = 0
-
-    monkeypatch.setattr(
-        "teddy_executor.adapters.inbound.session_cli_handlers.subprocess.run",
-        lambda *args, **kwargs: FakeResult(),
-    )
+    # Simulate that (Path.cwd() / ".git").exists() returns True
+    monkeypatch.setattr("pathlib.Path.exists", lambda self: True)
 
     from teddy_executor.adapters.inbound.session_cli_handlers import (
         _check_git_initialized,
@@ -182,7 +176,7 @@ def test_check_git_already_repo(monkeypatch):
 
 
 def test_check_git_initialized_success(monkeypatch):
-    """When not a repo and git init succeeds, should show green 'Git repository initialized'."""
+    """When .git missing and git init succeeds, should show green 'Git repository initialized'."""
     import typer
 
     messages = []
@@ -193,18 +187,19 @@ def test_check_git_initialized_success(monkeypatch):
     monkeypatch.setattr("typer.secho", fake_secho)
     monkeypatch.setattr("shutil.which", lambda cmd: "/usr/bin/git")
 
-    # First run (rev-parse) fails, second run (init) succeeds
-    call_count = [0]
+    # Simulate that (Path.cwd() / ".git").exists() returns False
+    def controlled_exists(self):
+        # Only return False for the .git check; let other Path.exists calls pass through
+        if str(self).endswith("/.git"):
+            return False
+        return True
 
-    def fake_run(*args, **kwargs):
-        call_count[0] += 1
-        if call_count[0] == 1:
-            raise __import__("subprocess").CalledProcessError(128, "git rev-parse")
-        return type("FakeResult", (), {"returncode": 0})()
+    monkeypatch.setattr("pathlib.Path.exists", controlled_exists)
 
+    # Mock subprocess.run for git init to succeed
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers.subprocess.run",
-        fake_run,
+        lambda *args, **kwargs: type("FakeResult", (), {"returncode": 0})(),
     )
 
     from teddy_executor.adapters.inbound.session_cli_handlers import (
@@ -221,7 +216,7 @@ def test_check_git_initialized_success(monkeypatch):
 
 
 def test_check_git_initialized_failure(monkeypatch):
-    """When git init fails, should log debug and return without notification."""
+    """When .git missing and git init fails, should log debug and return without notification."""
     import logging
 
     messages = []
@@ -232,12 +227,16 @@ def test_check_git_initialized_failure(monkeypatch):
     monkeypatch.setattr("typer.secho", fake_secho)
     monkeypatch.setattr("shutil.which", lambda cmd: "/usr/bin/git")
 
-    call_count = [0]
+    # Simulate that (Path.cwd() / ".git").exists() returns False
+    def controlled_exists(self):
+        if str(self).endswith("/.git"):
+            return False
+        return True
 
+    monkeypatch.setattr("pathlib.Path.exists", controlled_exists)
+
+    # Mock subprocess.run for git init to fail
     def fake_run(*args, **kwargs):
-        call_count[0] += 1
-        if call_count[0] == 1:
-            raise __import__("subprocess").CalledProcessError(128, "git rev-parse")
         raise __import__("subprocess").CalledProcessError(128, "git init")
 
     monkeypatch.setattr(

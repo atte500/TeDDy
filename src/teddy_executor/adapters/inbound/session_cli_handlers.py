@@ -72,7 +72,9 @@ def _ensure_commit_hooks() -> None:
 def _check_git_initialized() -> None:
     """Verify git repository status. Auto-initializes if not a repo.
     Shows green notification if already a repo or freshly initialized,
-    yellow warning if git CLI not found."""
+    yellow warning if git CLI not found.
+    Only checks the current working directory for a `.git` marker.
+    Does NOT walk up parent directories."""
     if not shutil.which("git"):
         typer.secho(
             "⚠ Git CLI not found",
@@ -80,20 +82,15 @@ def _check_git_initialized() -> None:
             err=True,
         )
         return
-    try:
-        subprocess.run(  # nosec B603 B607
-            ["git", "rev-parse", "--git-dir"],
-            check=True,
-            capture_output=True,
-        )
+    # Check if CWD itself contains a .git marker (directory or file)
+    if (Path.cwd() / ".git").exists():
         typer.secho(
             "✓ Git repository detected",
             fg=typer.colors.GREEN,
             err=True,
         )
         return
-    except subprocess.CalledProcessError:
-        pass
+    # No local .git found – auto-initialize
     try:
         subprocess.run(["git", "init"], check=True, capture_output=True)  # nosec B603 B607
     except subprocess.CalledProcessError:
