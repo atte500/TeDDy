@@ -173,15 +173,10 @@ def start(  # noqa: PLR0913
 
 
 init_app = typer.Typer()
-app.add_typer(
-    init_app,
-    name="init",
-    help="Initialize .teddy directory, prompts, or configuration.",
-)
 
 
 @init_app.callback(invoke_without_command=True)
-def init_callback():
+def init_callback(ctx: typer.Context):
     """
     Initializes the .teddy directory and pre-warms heavy imports for faster startup.
     """
@@ -192,6 +187,10 @@ def init_callback():
     _ensure_project_initialized(container, root_dir=str(Path.cwd()))
     prewarm_imports()
     # Auto-login would trigger here once `teddy login` is implemented (no-op for now)
+    if ctx.invoked_subcommand is not None:
+        # A subcommand (e.g., prompts, config) will handle its own initialization
+        # and output. Skip the full summary to avoid conflicting messages.
+        return
     init_use_case = container.resolve(IInitUseCase)
     summary = init_use_case.ensure_initialized()
     typer.echo(f"TeDDy initialized in .teddy folder. {summary}")
@@ -202,12 +201,9 @@ def prompts():
     """
     Overwrites bundled prompt XMLs in .teddy/prompts/ with defaults.
     """
-    from teddy_executor.adapters.inbound.cli_helpers import prewarm_imports
     from teddy_executor.core.ports.inbound.init import IInitUseCase
 
     container = get_container()
-    _ensure_project_initialized(container, root_dir=str(Path.cwd()))
-    prewarm_imports()
     init_use_case = container.resolve(IInitUseCase)
     status = init_use_case.ensure_prompts_initialized(overwrite=True)
     typer.echo(status)
@@ -218,15 +214,19 @@ def config():
     """
     Overwrites config.yaml, .gitignore, and init.context with defaults.
     """
-    from teddy_executor.adapters.inbound.cli_helpers import prewarm_imports
     from teddy_executor.core.ports.inbound.init import IInitUseCase
 
     container = get_container()
-    _ensure_project_initialized(container, root_dir=str(Path.cwd()))
-    prewarm_imports()
     init_use_case = container.resolve(IInitUseCase)
     status = init_use_case.ensure_config_initialized(overwrite=True)
     typer.echo(status)
+
+
+app.add_typer(
+    init_app,
+    name="init",
+    help="Initialize .teddy directory, prompts, or configuration.",
+)
 
 
 @app.command()
