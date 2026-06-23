@@ -1,5 +1,9 @@
+import logging
+import shutil
+import subprocess  # nosec B404
 from pathlib import Path
 from typing import Dict, Optional, Sequence
+
 import typer
 from punq import Container
 
@@ -25,6 +29,87 @@ from teddy_executor.core.services.update_checker import (
     get_current_version,
     read_update_cache,
 )
+
+
+logger = logging.getLogger(__name__)
+
+
+def _ensure_commit_hooks() -> None:
+    """Install pre-commit hooks if config exists and CLI is available.
+    Shows green notification on success, yellow warning if config missing
+    or CLI not found."""
+    config_path = Path.cwd() / ".pre-commit-config.yaml"
+    if not config_path.exists():
+        typer.secho(
+            "⚠ No pre-commit hooks configured",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+        return
+    if not shutil.which("pre-commit"):
+        typer.secho(
+            "⚠ pre-commit CLI not found",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+        return
+    try:
+        subprocess.run(  # nosec B603 B607
+            ["pre-commit", "install", "-t", "pre-commit", "-t", "post-commit"],
+            check=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError:
+        logger.debug("pre-commit install failed", exc_info=True)
+        return
+    typer.secho(
+        "✓ pre-commit hooks installed",
+        fg=typer.colors.GREEN,
+        err=True,
+    )
+
+
+def _check_git_initialized() -> None:
+    """Verify git repository status. Auto-initializes if not a repo.
+    Shows green notification if already a repo or freshly initialized,
+    yellow warning if git CLI not found."""
+    if not shutil.which("git"):
+        typer.secho(
+            "⚠ Git CLI not found",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+        return
+    try:
+        subprocess.run(  # nosec B603 B607
+            ["git", "rev-parse", "--git-dir"],
+            check=True,
+            capture_output=True,
+        )
+        typer.secho(
+            "✓ Git repository detected",
+            fg=typer.colors.GREEN,
+            err=True,
+        )
+        return
+    except subprocess.CalledProcessError:
+        pass
+    try:
+        subprocess.run(["git", "init"], check=True, capture_output=True)  # nosec B603 B607
+    except subprocess.CalledProcessError:
+        logger.debug("git init failed", exc_info=True)
+        return
+    typer.secho(
+        "✓ Git repository initialized",
+        fg=typer.colors.GREEN,
+        err=True,
+    )
+
+
+def _run_health_checks() -> None:
+    """Run all startup health checks and display notifications if needed."""
+    _ensure_commit_hooks()
+    _check_git_initialized()
 
 
 def _determine_session_name(name: Optional[str], message: Optional[str]) -> str:
@@ -142,7 +227,10 @@ def handle_new_session(  # noqa: PLR0913
         # 0. Ensure project is initialized
         container.resolve(IInitUseCase).ensure_initialized()
 
-        # 1. Pre-flight checks (Fail-fast before user interaction)
+        # 1. Health checks (advisory, non-blocking)
+        _run_health_checks()
+
+        # 2. Pre-flight checks (Fail-fast before user interaction)
         typer.echo("Checking configurations...", err=True)
         _run_cli_preflight_check(container, agent=agent)
         _echo_config_success(container, agent, model=model)
@@ -386,7 +474,10 @@ def handle_resume_session(  # noqa: PLR0913
     _display_update_notification(cache_path)
 
     try:
-        # 1. Pre-flight checks
+        # 1. Health checks (advisory, non-blocking)
+        _run_health_checks()
+
+        # 2. Pre-flight checks
         typer.echo("Checking configurations...", err=True)
         _run_cli_preflight_check(container)
 

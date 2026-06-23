@@ -1,6 +1,290 @@
-"""Unit tests for session_cli_handlers background check wiring."""
+"""Unit tests for session_cli_handlers background check wiring and health checks."""
 
 from pathlib import Path
+
+
+def test_ensure_commit_hooks_config_missing(monkeypatch):
+    """When .pre-commit-config.yaml does not exist, should show yellow warning."""
+    import typer
+
+    messages = []
+
+    def fake_secho(msg, fg=None, err=None):
+        messages.append((msg, fg, err))
+
+    monkeypatch.setattr("typer.secho", fake_secho)
+    monkeypatch.setattr("pathlib.Path.exists", lambda self: False)
+
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _ensure_commit_hooks,
+    )
+
+    _ensure_commit_hooks()
+
+    assert len(messages) == 1, f"Expected 1 secho call, got {len(messages)}"
+    msg, fg, err = messages[0]
+    assert "No pre-commit hooks configured" in msg
+    assert fg == typer.colors.YELLOW
+    assert err is True
+
+
+def test_ensure_commit_hooks_cli_not_found(monkeypatch):
+    """When pre-commit CLI not found, should show yellow warning."""
+    import typer
+
+    messages = []
+
+    def fake_secho(msg, fg=None, err=None):
+        messages.append((msg, fg, err))
+
+    monkeypatch.setattr("typer.secho", fake_secho)
+    monkeypatch.setattr("pathlib.Path.exists", lambda self: True)
+    monkeypatch.setattr("shutil.which", lambda cmd: None)
+
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _ensure_commit_hooks,
+    )
+
+    _ensure_commit_hooks()
+
+    assert len(messages) == 1, f"Expected 1 secho call, got {len(messages)}"
+    msg, fg, err = messages[0]
+    assert "pre-commit CLI not found" in msg
+    assert fg == typer.colors.YELLOW
+    assert err is True
+
+
+def test_ensure_commit_hooks_success(monkeypatch):
+    """When config exists and CLI is available, should install hooks and show green notification."""
+    import typer
+
+    messages = []
+
+    def fake_secho(msg, fg=None, err=None):
+        messages.append((msg, fg, err))
+
+    monkeypatch.setattr("typer.secho", fake_secho)
+    monkeypatch.setattr("pathlib.Path.exists", lambda self: True)
+    monkeypatch.setattr("shutil.which", lambda cmd: "/usr/bin/pre-commit")
+
+    # Mock subprocess.run to succeed
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers.subprocess.run",
+        lambda *args, **kwargs: None,
+    )
+
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _ensure_commit_hooks,
+    )
+
+    _ensure_commit_hooks()
+
+    assert len(messages) == 1, f"Expected 1 secho call, got {len(messages)}"
+    msg, fg, err = messages[0]
+    assert "pre-commit hooks installed" in msg
+    assert fg == typer.colors.GREEN
+    assert err is True
+
+
+def test_ensure_commit_hooks_failure(monkeypatch):
+    """When subprocess.run fails, should log debug and return without notification."""
+    import logging
+
+    messages = []
+
+    def fake_secho(msg, fg=None, err=None):
+        messages.append((msg, fg, err))
+
+    monkeypatch.setattr("typer.secho", fake_secho)
+    monkeypatch.setattr("pathlib.Path.exists", lambda self: True)
+    monkeypatch.setattr("shutil.which", lambda cmd: "/usr/bin/pre-commit")
+
+    def fake_run(*args, **kwargs):
+        raise __import__("subprocess").CalledProcessError(1, "pre-commit install")
+
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers.subprocess.run",
+        fake_run,
+    )
+
+    # Silence logging output during test
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers.logger",
+        logging.getLogger("test"),
+    )
+
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _ensure_commit_hooks,
+    )
+
+    _ensure_commit_hooks()
+
+    assert len(messages) == 0, f"Expected 0 secho calls, got {len(messages)}"
+
+
+def test_check_git_cli_not_found(monkeypatch):
+    """When git CLI not found, should show yellow warning."""
+    import typer
+
+    messages = []
+
+    def fake_secho(msg, fg=None, err=None):
+        messages.append((msg, fg, err))
+
+    monkeypatch.setattr("typer.secho", fake_secho)
+    monkeypatch.setattr("shutil.which", lambda cmd: None)
+
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _check_git_initialized,
+    )
+
+    _check_git_initialized()
+
+    assert len(messages) == 1, f"Expected 1 secho call, got {len(messages)}"
+    msg, fg, err = messages[0]
+    assert "Git CLI not found" in msg
+    assert fg == typer.colors.YELLOW
+    assert err is True
+
+
+def test_check_git_already_repo(monkeypatch):
+    """When already in a git repo, should show green 'Git repository detected'."""
+    import typer
+
+    messages = []
+
+    def fake_secho(msg, fg=None, err=None):
+        messages.append((msg, fg, err))
+
+    monkeypatch.setattr("typer.secho", fake_secho)
+    monkeypatch.setattr("shutil.which", lambda cmd: "/usr/bin/git")
+
+    # Mock subprocess.run to succeed (zero return code)
+    class FakeResult:
+        returncode = 0
+
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers.subprocess.run",
+        lambda *args, **kwargs: FakeResult(),
+    )
+
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _check_git_initialized,
+    )
+
+    _check_git_initialized()
+
+    assert len(messages) == 1, f"Expected 1 secho call, got {len(messages)}"
+    msg, fg, err = messages[0]
+    assert "Git repository detected" in msg
+    assert fg == typer.colors.GREEN
+    assert err is True
+
+
+def test_check_git_initialized_success(monkeypatch):
+    """When not a repo and git init succeeds, should show green 'Git repository initialized'."""
+    import typer
+
+    messages = []
+
+    def fake_secho(msg, fg=None, err=None):
+        messages.append((msg, fg, err))
+
+    monkeypatch.setattr("typer.secho", fake_secho)
+    monkeypatch.setattr("shutil.which", lambda cmd: "/usr/bin/git")
+
+    # First run (rev-parse) fails, second run (init) succeeds
+    call_count = [0]
+
+    def fake_run(*args, **kwargs):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            raise __import__("subprocess").CalledProcessError(128, "git rev-parse")
+        return type("FakeResult", (), {"returncode": 0})()
+
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers.subprocess.run",
+        fake_run,
+    )
+
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _check_git_initialized,
+    )
+
+    _check_git_initialized()
+
+    assert len(messages) == 1, f"Expected 1 secho call, got {len(messages)}"
+    msg, fg, err = messages[0]
+    assert "Git repository initialized" in msg
+    assert fg == typer.colors.GREEN
+    assert err is True
+
+
+def test_check_git_initialized_failure(monkeypatch):
+    """When git init fails, should log debug and return without notification."""
+    import logging
+
+    messages = []
+
+    def fake_secho(msg, fg=None, err=None):
+        messages.append((msg, fg, err))
+
+    monkeypatch.setattr("typer.secho", fake_secho)
+    monkeypatch.setattr("shutil.which", lambda cmd: "/usr/bin/git")
+
+    call_count = [0]
+
+    def fake_run(*args, **kwargs):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            raise __import__("subprocess").CalledProcessError(128, "git rev-parse")
+        raise __import__("subprocess").CalledProcessError(128, "git init")
+
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers.subprocess.run",
+        fake_run,
+    )
+
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers.logger",
+        logging.getLogger("test"),
+    )
+
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _check_git_initialized,
+    )
+
+    _check_git_initialized()
+
+    assert len(messages) == 0, f"Expected 0 secho calls, got {len(messages)}"
+
+
+def test_run_health_checks_calls_both(monkeypatch):
+    """_run_health_checks should call _ensure_commit_hooks and _check_git_initialized."""
+    calls = []
+
+    def fake_commit_hooks():
+        calls.append("commit_hooks")
+
+    def fake_git():
+        calls.append("git")
+
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._ensure_commit_hooks",
+        fake_commit_hooks,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._check_git_initialized",
+        fake_git,
+    )
+
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _run_health_checks,
+    )
+
+    _run_health_checks()
+
+    assert calls == ["commit_hooks", "git"], f"Expected both calls, got {calls}"
 
 
 def test_handle_new_session_starts_background_check_thread(monkeypatch):
