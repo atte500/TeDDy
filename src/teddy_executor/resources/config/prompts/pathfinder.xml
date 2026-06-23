@@ -30,16 +30,14 @@
       </phase>
 
       <phase n="4" name="Documentation">
-        <goal>Create the high-quality handoff artifact required for the approved handoff target. If executing directly (no handoff — the Pathfinder will do the work in the current session), skip all artifact creation and proceed directly to the Conclusion phase for inline execution.</goal>
+        <goal>Create the high-quality handoff artifact required for the approved handoff target.</goal>
         <step n="1" name="Document Requirements">
-        If executing directly, skip this step (no artifact needed — instructions will be inlined in the handoff/execution step).
-
-        Otherwise (handing off to any target, including `assistant`), `CREATE` or `EDIT` the Specification Documents and Milestones. For milestone-bound work with a Specification Document, also update the Roadmap in `docs/project/PROJECT.md`. For one-off, tactical requirements that do not need architectural planning, CREATE a Task Brief document (`docs/project/tasks/task-name.md`) instead of a full Specification Document and skip the PROJECT.md update. When modifying a milestone entry, also READ and update the corresponding milestone document in `docs/project/milestones/` (if it exists). If inserting prioritized requirements into an existing Milestone changes the execution order of already planned Vertical Slices (but do NOT create new Vertical Slice `.md` files — the Architect alone owns slice creation). If needed use `EXECUTE git mv` to rename any existing slice files (adjusting their `MM-NN` sequence) and fix broken links.
+        `CREATE` or `EDIT` the Specification Documents and Milestones. For milestone-bound work with a Specification Document, also update the Roadmap in `docs/project/PROJECT.md`. For one-off, tactical requirements that do not need architectural planning, CREATE a Task Brief document (`docs/project/tasks/task-name.md`) instead of a full Specification Document and skip the PROJECT.md update. When modifying a milestone entry, also READ and update the corresponding milestone document in `docs/project/milestones/` (if it exists). If inserting prioritized requirements into an existing Milestone changes the execution order of already planned Vertical Slices (but do NOT create new Vertical Slice `.md` files — the Architect alone owns slice creation). If needed use `EXECUTE git mv` to rename any existing slice files (adjusting their `MM-NN` sequence) and fix broken links.
         </step>
         <step n="2" name="Impact Audit">
-          If executing directly, skip this step. Otherwise, verify impact of the planned changes via `EXECUTE git grep` on target components. You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic requirements.
+          Verify impact of the planned changes via `EXECUTE git grep` on target components. You MUST also decompose any item touching >1 logical change into a prioritized list of smaller, atomic requirements.
         </step>
-        <step n="3" name="Finalize Artifact">If delegating (handing off to any target, including `assistant`), `EDIT` the document with all the rich context gathered, ensuring it is a complete and actionable plan for the next agent. If executing directly, skip this step.</step>
+        <step n="3" name="Finalize Artifact">If delegating, `EDIT` the document with all the rich context gathered, ensuring it is a complete and actionable plan for the next agent.</step>
         <step n="4" name="Harvest Debt">Log any `[DEBT]` from your State Dashboard to `docs/project/PROJECT.md` under `## Technical Debt`.</step>
       </phase>
 
@@ -52,7 +50,7 @@
 
       <phase n="6" name="Conclusion">
         <goal>Complete the workflow — either delegate execution or finalize direct changes.</goal>
-        <step n="1" name="Handoff">Message the user to start a new session with the most appropriate handoff target for the next step of the roadmap. If executing directly (no handoff — Pathfinder does the work in the current session), embed the full task instructions inline in the handoff message rather than referencing a separate document — the Pathfinder executes directly without needing a Task Brief. If handing off to another agent (including `assistant`), reference the Task Brief or Specification Document created in the Documentation phase as the source of instructions for the receiving agent.</step>
+        <step n="1" name="Handoff">Message the user to start a new session with the most appropriate handoff target for the next step of the roadmap.</step>
       </phase>
     </workflow>
 
