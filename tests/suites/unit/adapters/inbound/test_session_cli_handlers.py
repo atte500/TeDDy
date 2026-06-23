@@ -190,7 +190,7 @@ def test_check_git_initialized_success(monkeypatch):
     # Simulate that (Path.cwd() / ".git").exists() returns False
     def controlled_exists(self):
         # Only return False for the .git check; let other Path.exists calls pass through
-        if str(self).endswith("/.git"):
+        if self.name == ".git":
             return False
         return True
 
@@ -229,7 +229,7 @@ def test_check_git_initialized_failure(monkeypatch):
 
     # Simulate that (Path.cwd() / ".git").exists() returns False
     def controlled_exists(self):
-        if str(self).endswith("/.git"):
+        if self.name == ".git":
             return False
         return True
 

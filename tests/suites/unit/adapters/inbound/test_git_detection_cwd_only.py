@@ -23,7 +23,7 @@ def test_check_git_not_detected_in_parent_repo_subfolder(monkeypatch):
 
     # Pretend .git does NOT exist in CWD (as in a fresh empty subfolder)
     def controlled_exists(self):
-        if str(self).endswith("/.git"):
+        if self.name == ".git":
             return False
         return True
 
