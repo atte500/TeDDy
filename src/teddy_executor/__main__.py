@@ -197,25 +197,20 @@ def version() -> None:
 
 @app.command()
 def update(
-    yes: bool = typer.Option(
-        False,
-        "--yes",
-        "-y",
-        help="Force upgrade even if auto_update is disabled.",
-    ),
     experimental: bool = typer.Option(
         False,
         "--experimental",
         help="Check and upgrade from TestPyPI instead of PyPI.",
     ),
 ):
-    """Checks PyPI for the latest version of TeDDy and upgrades if a newer release
-    is available. Pre-warms heavy imports after upgrade."""
+    """Checks PyPI for the latest version of TeDDy and displays upgrade
+    instructions. Does not upgrade automatically."""
     from teddy_executor.core.services.update_checker import (
         get_current_version,
         fetch_latest_version,
         compare_versions,
         is_prerelease,
+        _get_install_method,
         PYPI_URL,
         TEST_PYPI_URL,
     )
@@ -241,31 +236,21 @@ def update(
         typer.echo(f"You are already running the latest version ({current}).")
         return
 
-    # Read auto_update setting from config (default: True)
-    from teddy_executor.core.ports.outbound.config_service import IConfigService
-
-    container = get_container()
-    config_service = container.resolve(IConfigService)
-    auto_update = config_service.get_setting("auto_update", default=True)
-    if auto_update or yes:
-        from teddy_executor.core.services.update_checker import perform_upgrade
-
-        success = perform_upgrade(latest, index_url=index_url)
-        if success:
-            typer.echo(f"Updated to v{latest}.")
-            from teddy_executor.adapters.inbound.cli_helpers import prewarm_imports
-
-            prewarm_imports()
-        else:
-            typer.echo(
-                f"Upgrade to v{latest} failed: upgrade command returned an error."
-            )
-            raise typer.Exit(code=1)
+    # Determine installation method and show the appropriate upgrade command
+    install_method = _get_install_method()
+    if install_method == "uv":
+        base_cmd = "uv tool upgrade teddy-cli"
+        experimental_cmd = "uv tool install --reinstall teddy-cli --index-url https://test.pypi.org/simple/"
     else:
-        typer.echo(
-            f"A new version {latest} is available. "
-            f"Run 'teddy update{' --experimental' if experimental else ''} --yes' to upgrade."
-        )
+        base_cmd = "pip install --upgrade teddy-cli"
+        experimental_cmd = f"{base_cmd} --index-url https://test.pypi.org/simple/"
+
+    if experimental:
+        typer.echo(f"A new experimental version {latest} is available.")
+        typer.echo(f"To upgrade, run: {experimental_cmd}")
+    else:
+        typer.echo(f"A new version {latest} is available.")
+        typer.echo(f"To upgrade, run: {base_cmd}")
 
 
 @app.command()
