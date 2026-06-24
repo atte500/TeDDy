@@ -45,12 +45,14 @@ def test_get_context_orchestrates_and_returns_correct_dto(
         "current_time": "16:50:00",
     }
     mock_git_status = " M file.py\n?? new.txt"
+    mock_full_git_status = "On branch main\nnothing to commit, working tree clean"
     mock_repo_tree = "dir/\n  file.txt"
     mock_vault_paths = ["file1.txt", "file2.py"]
     mock_file_contents = {"file1.txt": "content1", "file2.py": "print('hello')"}
 
     mock_inspector.get_environment_info.return_value = mock_sys_info
     mock_inspector.get_git_status.return_value = mock_git_status
+    mock_inspector.get_full_git_status.return_value = mock_full_git_status
     mock_tree_gen.generate_tree.return_value = mock_repo_tree
     mock_fs.get_context_paths.return_value = mock_vault_paths
     mock_fs.read_files_in_vault.return_value = mock_file_contents
@@ -62,6 +64,7 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     # Check that dependencies were called correctly
     mock_inspector.get_environment_info.assert_called_once()
     mock_inspector.get_git_status.assert_called_once()
+    mock_inspector.get_full_git_status.assert_called_once()
     mock_tree_gen.generate_tree.assert_called_once()
     mock_fs.get_context_paths.assert_called_once()
     mock_fs.read_files_in_vault.assert_called_once_with(mock_vault_paths)
@@ -79,10 +82,10 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     # Default (no current_turn passed) should show "N/A"
     assert "- **Current Turn:** N/A" in result.header
 
-    # Check git status section
-    assert result.git_status == mock_git_status
+    # Check git status section (uses full status)
+    assert result.git_status == mock_full_git_status
     assert "## Git Status" in result.content
-    assert mock_git_status in result.content
+    assert mock_full_git_status in result.content
 
     # Check main content sections
     assert "## Project Structure" in result.content
@@ -113,6 +116,7 @@ def test_get_context_distinguishes_between_manifests_and_targets(
 
     mock_inspector.get_environment_info.return_value = {}
     mock_inspector.get_git_status.return_value = None
+    mock_inspector.get_full_git_status.return_value = None
     mock_tree_gen.generate_tree.return_value = ""
     mock_fs.read_files_in_vault.return_value = mock_file_contents
 
@@ -137,6 +141,7 @@ def test_get_context_uses_dynamic_fences_for_safe_encapsulation(
     mock_fs.read_files_in_vault.return_value = {"tricky.md": content_with_backticks}
     mock_inspector.get_environment_info.return_value = {}
     mock_inspector.get_git_status.return_value = None
+    mock_inspector.get_full_git_status.return_value = None
     mock_tree_gen.generate_tree.return_value = ""
 
     # Act
@@ -153,9 +158,11 @@ def test_get_context_uses_dynamic_fences_for_safe_encapsulation(
 def test_get_context_always_includes_git_status_even_if_empty(
     service, mock_fs, mock_tree_gen, mock_inspector
 ):
-    """Tests that the Git Status section is present even if the status is an empty string."""
+    """Tests that the Git Status section is present even if short status is empty. Full status includes branch."""
     # Arrange
-    mock_inspector.get_git_status.return_value = ""  # Clean repo
+    mock_full_git_status = "On branch main\nnothing to commit, working tree clean"
+    mock_inspector.get_git_status.return_value = ""  # Clean repo (short)
+    mock_inspector.get_full_git_status.return_value = mock_full_git_status
     mock_inspector.get_environment_info.return_value = {}
     mock_tree_gen.generate_tree.return_value = ""
     mock_fs.get_context_paths.return_value = []
@@ -165,6 +172,8 @@ def test_get_context_always_includes_git_status_even_if_empty(
 
     # Assert
     assert "## Git Status" in result.content
+    assert mock_full_git_status in result.content
+    assert "On branch main" in result.content
     assert "nothing to commit, working tree clean" in result.content
 
 
@@ -188,8 +197,10 @@ def test_get_context_populates_context_items_with_metadata(
     # Mock Git Status: core.py is modified, README is unmodified, new_file is untracked
     mock_git_status = " M src/core.py\n?? new_file.txt"
 
+    mock_full_git_status = "On branch main\nnothing to commit, working tree clean"
     mock_inspector.get_environment_info.return_value = {}
     mock_inspector.get_git_status.return_value = mock_git_status
+    mock_inspector.get_full_git_status.return_value = mock_full_git_status
     mock_tree_gen.generate_tree.return_value = ""
     mock_fs.resolve_paths_from_files.side_effect = lambda files: files
     mock_fs.read_files_in_vault.return_value = mock_file_contents
@@ -247,6 +258,7 @@ def test_get_context_with_long_content_file_does_not_crash(
     long_content = "This is a very long line of text " * 100
     mock_inspector.get_environment_info.return_value = {}
     mock_inspector.get_git_status.return_value = None
+    mock_inspector.get_full_git_status.return_value = None
     mock_tree_gen.generate_tree.return_value = ""
     mock_fs.read_files_in_vault.return_value = {"long_spec.md": long_content}
     mock_llm_client.get_text_token_count.return_value = 50
@@ -285,8 +297,10 @@ def test_get_context_separates_and_formats_session_history(
         "src/main.py": "print('hello')",  # standard workspace file
     }
 
+    mock_full_git_status = "On branch main\nnothing to commit, working tree clean"
     mock_inspector.get_environment_info.return_value = {}
-    mock_inspector.get_git_status.return_value = ""
+    mock_inspector.get_git_status.return_value = ""  # short status
+    mock_inspector.get_full_git_status.return_value = mock_full_git_status
     mock_tree_gen.generate_tree.return_value = "src/main.py"
     mock_fs.resolve_paths_from_files.side_effect = lambda files: files
     mock_fs.read_files_in_vault.return_value = mock_file_contents
@@ -364,6 +378,7 @@ def test_get_context_omits_session_history_if_none_present(
     # Arrange
     mock_inspector.get_environment_info.return_value = {}
     mock_inspector.get_git_status.return_value = ""
+    mock_inspector.get_full_git_status.return_value = None
     mock_tree_gen.generate_tree.return_value = ""
     mock_fs.read_files_in_vault.return_value = {"src/main.py": "print('hello')"}
 
@@ -393,6 +408,7 @@ def test_get_context_deduplicates_overlapping_paths_prioritizing_non_turn_scope(
 
     mock_inspector.get_environment_info.return_value = {}
     mock_inspector.get_git_status.return_value = None
+    mock_inspector.get_full_git_status.return_value = None
     mock_tree_gen.generate_tree.return_value = ""
     mock_fs.resolve_paths_from_files.side_effect = lambda files: files
     mock_fs.read_files_in_vault.return_value = mock_file_contents
@@ -439,6 +455,7 @@ def test_get_context_fetches_remote_url_content_via_web_scraper(
 
     mock_inspector.get_environment_info.return_value = {}
     mock_inspector.get_git_status.return_value = None
+    mock_inspector.get_full_git_status.return_value = None
     mock_tree_gen.generate_tree.return_value = ""
     mock_fs.resolve_paths_from_files.side_effect = lambda files: files
     mock_fs.read_files_in_vault.return_value = {local_file: local_content}
@@ -471,6 +488,7 @@ def test_get_context_with_current_turn_parameter(
     # Arrange
     mock_inspector.get_environment_info.return_value = {}
     mock_inspector.get_git_status.return_value = None
+    mock_inspector.get_full_git_status.return_value = None
     mock_tree_gen.generate_tree.return_value = ""
     mock_fs.get_context_paths.return_value = []
 
@@ -496,6 +514,7 @@ def test_get_context_computes_content_tokens(
     # Arrange
     mock_inspector.get_environment_info.return_value = {}
     mock_inspector.get_git_status.return_value = None
+    mock_inspector.get_full_git_status.return_value = None
     mock_tree_gen.generate_tree.return_value = ""
     mock_fs.get_context_paths.return_value = []
 
@@ -525,6 +544,7 @@ def test_get_context_content_tokens_zero_when_include_tokens_false(
     # Arrange
     mock_inspector.get_environment_info.return_value = {}
     mock_inspector.get_git_status.return_value = None
+    mock_inspector.get_full_git_status.return_value = None
     mock_tree_gen.generate_tree.return_value = ""
     mock_fs.get_context_paths.return_value = []
 

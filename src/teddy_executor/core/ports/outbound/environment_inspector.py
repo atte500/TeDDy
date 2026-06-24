@@ -22,9 +22,18 @@ class IEnvironmentInspector(Protocol):
 
     def get_git_status(self) -> Optional[str]:
         """
-        Gathers the current Git status of the working directory.
+        Gathers the current Git status of the working directory (short format).
 
         Returns:
             Optional[str]: The output of 'git status -s' or None if not a git repo.
+        """
+        ...
+
+    def get_full_git_status(self) -> Optional[str]:
+        """
+        Gathers the full Git status of the working directory (including branch info).
+
+        Returns:
+            Optional[str]: The output of 'git status' or None if not a git repo.
         """
         ...

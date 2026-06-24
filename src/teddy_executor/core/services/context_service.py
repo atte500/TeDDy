@@ -39,7 +39,7 @@ class ContextService(IGetContextUseCase):
         self._llm_client = llm_client
         self._web_scraper = web_scraper
 
-    def get_context(
+    def get_context(  # noqa: PLR0913
         self,
         context_files: Optional[Dict[str, Sequence[str]]] = None,
         include_tokens: bool = True,
@@ -53,7 +53,8 @@ class ContextService(IGetContextUseCase):
         Gathers all project context information by orchestrating its dependencies.
         """
         system_info = self._environment_inspector.get_environment_info()
-        git_status = self._environment_inspector.get_git_status()
+        short_git_status = self._environment_inspector.get_git_status()
+        full_git_status = self._environment_inspector.get_full_git_status()
         repo_tree = self._repo_tree_generator.generate_tree()
 
         scoped_paths, all_resolved_paths = self._resolve_scoped_paths(context_files)
@@ -79,7 +80,7 @@ class ContextService(IGetContextUseCase):
                     file_contents[url] = None
 
         content = self._format_content(
-            repo_tree, scoped_paths, file_contents, git_status
+            repo_tree, scoped_paths, file_contents, full_git_status
         )
         content_tokens = (
             self._llm_client.get_text_token_count(content) if include_tokens else 0
@@ -89,9 +90,9 @@ class ContextService(IGetContextUseCase):
             header=self._format_header(system_info, current_turn),
             content=content,
             scoped_paths=scoped_paths,
-            git_status=git_status,
+            git_status=full_git_status,
             items=self._collect_items(
-                scoped_paths, file_contents, git_status, include_tokens
+                scoped_paths, file_contents, short_git_status, include_tokens
             ),
             agent_name=agent_name,
             total_window=total_window,
@@ -303,10 +304,6 @@ class ContextService(IGetContextUseCase):
         git_status: Optional[str] = None,
     ) -> str:
         """Formats the main content section of the context report."""
-        display_status = git_status
-        if git_status == "":
-            display_status = "nothing to commit, working tree clean"
-
         # Gather all unique paths
         all_paths: List[str] = []
         for paths in scoped_paths.values():
@@ -320,7 +317,7 @@ class ContextService(IGetContextUseCase):
 
         content_parts = [
             "\n## Git Status",
-            display_status if display_status is not None else "",
+            git_status if isinstance(git_status, str) else "",
             "\n## Project Structure",
             f"```\n{repo_tree}\n```",
         ]

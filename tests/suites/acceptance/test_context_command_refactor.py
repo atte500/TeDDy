@@ -83,6 +83,9 @@ def test_context_includes_git_status_when_present(tmp_path, monkeypatch):
     mock_inspector = env.get_service(IEnvironmentInspector)
     mock_git_status = " M modified_file.py\n?? untracked_file.txt"
     mock_inspector.get_git_status.return_value = mock_git_status
+    mock_inspector.get_full_git_status.return_value = (
+        "On branch main\n M modified_file.py\n?? untracked_file.txt"
+    )
 
     (tmp_path / ".teddy").mkdir()
     (tmp_path / ".teddy/init.context").write_text("README.md\n", encoding="utf-8")
