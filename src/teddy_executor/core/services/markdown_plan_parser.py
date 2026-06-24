@@ -286,22 +286,24 @@ class MarkdownPlanParser(IPlanParser):
 
             stream.next()  # Consume action heading
             action_type_str = get_child_text(action_heading).strip().replace("`", "")
+            # Normalize: strip non-alphabetic characters so "READ**" matches "READ"
+            cleaned_action_type = re.sub(r"[^A-Za-z]", "", action_type_str)
 
             # Guard: MESSAGE under ## Action Plan must produce a clear mutual exclusivity error
-            if action_type_str == "MESSAGE":
+            if cleaned_action_type == "MESSAGE":
                 raise InvalidPlanError(
                     "MESSAGE action is not allowed under '## Action Plan'. "
                     "Use '## Message' section instead. Mutual exclusivity is required.",
                     offending_nodes=[action_heading],
                 )
 
-            if action_type_str not in self._dispatch_map:
+            if cleaned_action_type not in self._dispatch_map:
                 raise InvalidPlanError(
                     f"Unknown action type: {action_type_str}",
                     offending_nodes=[action_heading],
                 )
 
-            parse_method = self._dispatch_map[action_type_str]
+            parse_method = self._dispatch_map[cleaned_action_type]
             actions.append(parse_method(stream, node=action_heading))
 
         return actions

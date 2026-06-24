@@ -142,7 +142,9 @@ def get_action_heading(node: Any, valid_actions: set[str]) -> "Optional[Heading]
     if isinstance(node, Heading) and node.level == H3_LEVEL:
         text = get_child_text(node).strip()
         potential_type = text.split(":")[0].strip().replace("`", "")
-        if potential_type in valid_actions:
+        # Normalize: strip non-alphabetic characters so "READ**" matches "READ"
+        cleaned_type = re.sub(r"[^A-Za-z]", "", potential_type)
+        if cleaned_type in valid_actions:
             return node
         # Allow unknown actions if they are formatted like `ACTION` to fail later
         children = list(node.children) if node.children else []

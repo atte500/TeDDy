@@ -79,11 +79,13 @@ This section defines the conventions for our project management artifacts.
 - `perform_upgrade` and `should_update` in `update_checker.py` were removed as dead code (the update system is now notification-only). The legacy debt about `uv tool install` incompatibility is no longer relevant.
 - The startup notification (`_display_update_notification`) was wired in both `handle_new_session` and `handle_resume_session` to display a non-blocking update notification after the background check thread starts.
 - `auto_update` config key was removed from `config.yaml` as dead config (never read by production code).
-- **Pre-existing Mypy errors in three files:**
+- **Pre-existing Mypy errors in three files (block pre-commit Mypy hook):**
   - `src/teddy_executor/core/services/action_executor.py:191` — Incompatible return value type (tuple[ActionLog, Any | str | None] vs tuple[ActionLog, str]).
   - `src/teddy_executor/core/services/session_orchestrator.py:251` — Item "DataclassInstance" has no attribute "agent_name" (union-attr).
   - `src/teddy_executor/adapters/outbound/openrouter_hydrator.py:17` — Untyped function body not checked (annotation-unchecked).
   These errors exist in the base code and are not introduced by any recent fix. They block pre-commit's Mypy hook, requiring `--no-verify` for commits. A dedicated fix slice should address these by adding proper type annotations and fixing return type mismatches.
+
+- **Pre-existing C901 complexity in `markdown_plan_parser.py`:** The `parse` method has a cyclomatic complexity of 10 (threshold 9). This is a pre-existing issue encountered during Bug #14's commit. It blocks the Ruff linter pre-commit hook. A dedicated refactor slice should extract the preamble stripping, normalization, and AST validation steps into smaller helper methods.
 
 - **pip-audit pre-commit hook:** The pip-audit hook in `.pre-commit-config.yaml` flags 15 known vulnerabilities across 4 transitive dependencies (aiohttp, litellm, msgpack, python-dotenv). All are assessed as **Low practical risk** for TeDDy:
   - **aiohttp (11 vulns):** Server-side issues (DoS, request smuggling) — TeDDy only uses aiohttp as an async HTTP client, not a server.
