@@ -1,18 +1,24 @@
-# TeDDy: A Coding Harness Designed for Quality
+# TeDDy: An Opinionated Coding Harness
+
+As developers, we've come to accept the premise that working with AI is inherently going to produce low-quality code. People seem to either accept it as a trade-off for speed, or they avoid using it for that exact reason. I believe it doesn't have to be that way.
+
+TeDDy takes an unconventional approach. It uses **Markdown as Interface** and directly embeds proven software engineering practices like **Test-Driven Development, Hexagonal Architecture, and iterative delivery**.
 
 <!-- Old video placeholder – will be updated with new release video
 [![My Plan to Fix AI Coding](https://img.youtube.com/vi/By6wGuT-4sA/0.jpg)](https://www.youtube.com/watch?v=By6wGuT-4sA)
 -->
 
-As developers we've come to accept the premise that working with AI is inherently going to produce low-quality code. People seem to either accept it as a trade-off for speed, or they avoid using it for that exact reason. I believe it doesn't have to be that way.
+## The Shoulders We Stand On
 
-TeDDy is a radically different coding harness that uses **Markdown as Interface** and directly embeds proven software engineering practices like **Test-Driven Development, Hexagonal Architecture, and iterative delivery**.
+1.  **Obsidian (Markdown as Interface):** TeDDy adopts a "file-over-app" philosophy. There is no proprietary UI or cloud database; the interface *is* your file system. Your entire collaboration history lives in plain Markdown files on your machine, making it as portable, private, and searchable as the rest of your codebase.
+2.  **Git (Local-First & Incremental):** Every turn is persisted as an auditable snapshot, logging the plan, execution, and metadata in a transparent file system ledger for total traceability. By enforcing a local-first, incremental workflow, TeDDy ensures that your project's history is auditable and that changes are delivered in small, verifiable units rather than a massive, one-shot monolith.
+3.  **The UNIX Philosophy (Small, Sharp Tools):** Instead of one "do-everything" agent, TeDDy breaks down the development process into specialized roles. Each agent acts following a specific workflow, and the interaction between them is mediated only through plaintext documents, which act as an additional layer of abstraction for the user to steer the project at a high level. Each agent's workflow is further broken down into distinct phases and transition rules. These are defined in plain-text XML files, designed to make it as easy as possible to fine-tune and personalize the workflow.
 
-## Why LMMs Suck at Software Development
+## Why LLMs Suck at Software Development
 
-At its core, an AI agent is a language model paired with a harness. LLMs are trained for next-token prediction and optimized for short-term, atomic tasks. They naturally try to generate the final solution in one shot, which makes the defects they introduce compound turn after turn.
+At its core, an AI agent is a language model paired with a harness. LLMs are trained for next-token prediction and optimized for short-term, atomic tasks. They naturally try to generate the final solution in one shot, which makes the **defects they introduce compound** turn after turn.
 
-Addessing and preventing defects has been a central problem for software engineering long before LLMs became a thing. So maybe we should take a page out of real software engineering practices, that have been proven over decades and apply them to AI-assisted software development as well.
+Addressing and preventing defects has been a central problem for software engineering long before LLMs became a thing. So maybe we should take a page out of real software engineering practices, that have been proven over decades, and apply them to AI-assisted software development as well.
 
 We can conceptually split **defects in software** into two categories:
 
@@ -22,16 +28,8 @@ We can conceptually split **defects in software** into two categories:
 Current coding harnesses don't address these issues at all and frontier models are also hitting diminishing returns, leaving users trying to fix these by bolting on external systems like MCPs, skill files and spec-driven development, leading to a messy and frustrating development experience.
 
 TeDDy instead attempts to solve these issues directly by adopting, amongst others, the following strategies:
-- **For Technical Defects:** TeDDy enforces a strict **Test-Driven (Red-Green-Refactor)** cycle. The AI must write a test first and verify it fails before writing any actual code. This catches errors early, before they compound.
-- **For Misalignment:** Instead of specing everything upfront and building layer by layer, TeDDy builds features as **end-to-end vertical slices**. Each slice gives you a working piece of software to review and verify alignment.
-
-**Additionally:** The use of Pre-commit quality checks and post-commit test suite run is designed to prevent defective code to reach your repo, allowing multiple agents to work in parallel while ensuring continuous integration.
-
-## Guiding Principles
-
-1. **Markdown as Interface:** Each turn the LLM is made to follow a human-friendly Markdown protocol, including first a rationale for the plan and then a batch of actions to be executed that turn. Allowing you to review, approve, or reject each step while staying in control at every turn. The approven actions from the Markdown response are parsed and executed directly by the harness without requiring a separate JSON / YAML format for it.
-2. **Data Ownership:** Your entire collaboration history lives on your machine in plain Markdown. There is inherently no cloud lock-in, and local models are also fully supported. Your sessions are as portable, private, and versionable as the rest of your codebase.
-3. **Fully Hackable:** Context goes in as a file, responses come out as a file. Every turn is completely auditable and human-friendly. Agents are defined in plain-text files meaning you can edit or create new agents to tailor the workflow to your needs.
+- **For Technical Defects:** TeDDy enforces a strict **Test-Driven (Red-Green-Refactor)** cycle and **continuous delivery using Git**. To prevent errors from compounding, the AI must write a test first and commit its progress in small, atomic units. At startup, the harness verifies that Git and pre-commit hooks are initialized to ensure that **pre-commit checks** (linters and quality) and **post-commit test runs** (ensuring a "green-to-green" state) are active. This local safety net is designed to prevent defective code from ever reaching the remote repository and works in synergy with a **CI/CD workflow** to catch platform-dependent issues.
+- **For Misalignment:** TeDDy is designed to drive your intent through the entire agent lifecycle by using specific **Markdown Documents** to mediate transitions between project phases. These documents serve as anchoring for the agents while providing a high-level interface for you to steer the project at every step. The workflow moves from high-level **Specification Documents and Milestones** to granular **Component Design Docs** that enforce **Hexagonal Architecture** through defined Ports and Contracts. By delivering features through **Vertical Slices** and **Gherkin Scenarios**, agents produce working pieces of software for you to review and verify at the end of each iteration, ensuring the system doesn't drift away from your vision.
 
 ## The TeDDy Workflow
 
@@ -41,12 +39,12 @@ TeDDy breaks down the development process into distinct agents, each with a spec
 
 1. **Pathfinder:** Navigates from a vague idea to a technically-grounded roadmap. Explores *why*, *what*, and *how*, then helps you concretize it into a plan.
 2. **Architect:** Defines contracts, boundaries, and vertical slices for the Developer. Uses spikes to de-risk uncertain approaches before committing to an architecture.
-3. **Prototyper:** Builds standalone prototype to validate uncertain features before the Developer implements them.
+3. **Prototyper:** Builds standalone prototypes to validate uncertain features before the Developer implements them.
 4. **Developer:** Implements features one deliverable at a time using a strict **Red-Green-Refactor** loop.
 5. **Debugger:** Uses the scientific method to isolate root causes by building minimal reproduction cases.
 6. **Assistant:** A flexible agent that follows your instructions without enforcing a strict process. Use it as a template for custom agents or for tasks that don't require the full disciplined workflow.
 
-> **Note:** Each agent's workflow is defined in plain-text XML files under `.teddy/prompts/`. You can customize any agent to fit your needs or create new ones for specific uses cases.
+> **Note:** Each agent's workflow is defined in plain-text XML files under `.teddy/prompts/`. You can customize any agent to fit your needs or create new ones for specific use cases.
 
 ## Getting Started
 
@@ -145,17 +143,17 @@ pip install --upgrade teddy-cli --index-url https://test.pypi.org/simple/
 
 ### Command Reference
 
-| Command      | Description                                                               |
-| ------------ | ------------------------------------------------------------------------- |
-| `init`       | Initialize `.teddy` directory with defaults and pre-warm heavy imports. See subcommands below. |
-| `init prompts` | Overwrite bundled prompt XMLs in `.teddy/prompts/` with defaults. |
-| `init config`  | Overwrite config.yaml, .gitignore, and init.context with defaults. |
-| `start`      | Start an interactive session.                                             |
-| `resume`     | Resume an existing session.                                               |
-| `update`     | Check for updates and display upgrade instructions.                       |
-| `execute`    | Execute a Markdown plan. Reads from clipboard if no file path provided.   |
-| `context`    | Gather project context (file tree + selected file contents) to clipboard. |
-| `get-prompt` | Retrieve agent system prompts. Respects `.teddy/prompts/` overrides.      |
+| Command        | Description                                                                                    |
+| -------------- | ---------------------------------------------------------------------------------------------- |
+| `init`         | Initialize `.teddy` directory with defaults and pre-warm heavy imports. See subcommands below. |
+| `init prompts` | Overwrite bundled prompt XMLs in `.teddy/prompts/` with defaults.                              |
+| `init config`  | Overwrite config.yaml, .gitignore, and init.context with defaults.                             |
+| `start`        | Start an interactive session.                                                                  |
+| `resume`       | Resume an existing session.                                                                    |
+| `update`       | Check for updates and display upgrade instructions.                                            |
+| `execute`      | Execute a Markdown plan. Reads from clipboard if no file path provided.                        |
+| `context`      | Gather project context (file tree + selected file contents) to clipboard.                      |
+| `get-prompt`   | Retrieve agent system prompts. Respects `.teddy/prompts/` overrides.                           |
 
 By default, `execute` and `context` copy their output to the clipboard. Use `--no-copy` to disable.
 
