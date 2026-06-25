@@ -1,6 +1,6 @@
 # TeDDy: An Opinionated Coding Harness
 
-As developers, we've come to accept the premise that working with AI is inherently going to produce low-quality code. People seem to either accept it as a trade-off for speed, or they avoid using it for that exact reason. I believe it doesn't have to be that way.
+As developers, we've come to accept the premise that working with AI is inherently going to produce low-quality code. This means we either accept it as a trade-off for speed, or avoid using it for that exact reason. I believe it doesn't have to be that way.
 
 TeDDy takes an unconventional approach. It uses **Markdown as Interface** and directly embeds proven software engineering practices like **Test-Driven Development, Hexagonal Architecture, and iterative delivery**.
 
@@ -10,9 +10,9 @@ TeDDy takes an unconventional approach. It uses **Markdown as Interface** and di
 
 ## The Shoulders We Stand On
 
-1.  **Obsidian (Markdown as Interface):** TeDDy adopts a "file-over-app" philosophy. There is no proprietary UI or cloud database; the interface *is* your file system. Your entire collaboration history lives in plain Markdown files on your machine, making it as portable, private, and searchable as the rest of your codebase.
-2.  **Git (Local-First & Incremental):** Every turn is persisted as an auditable snapshot, logging the plan, execution, and metadata in a transparent file system ledger for total traceability. By enforcing a local-first, incremental workflow, TeDDy ensures that your project's history is auditable and that changes are delivered in small, verifiable units rather than a massive, one-shot monolith.
-3.  **The UNIX Philosophy (Small, Sharp Tools):** Instead of one "do-everything" agent, TeDDy breaks down the development process into specialized roles. Each agent acts following a specific workflow, and the interaction between them is mediated only through plaintext documents, which act as an additional layer of abstraction for the user to steer the project at a high level. Each agent's workflow is further broken down into distinct phases and transition rules. These are defined in plain-text XML files, designed to make it as easy as possible to fine-tune and personalize the workflow.
+1.  **[Obsidian](https://obsidian.md/) (Markdown as Interface):** TeDDy adopts a "file-over-app" philosophy. There is no proprietary UI or cloud database; the interface *is* your file system. Your entire collaboration history lives in plain Markdown files on your machine, making it as portable, private, and searchable as the rest of your codebase.
+2.  **[Git](https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F) (Local-First & Incremental):** Every turn is persisted as an auditable snapshot, logging the plan, execution, and metadata in a transparent file system ledger for total traceability. By enforcing a local-first, incremental workflow, TeDDy ensures that your project's history is auditable and that changes are delivered in small, verifiable units rather than a massive, one-shot monolith.
+3.  **[The UNIX Philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) (Small, Sharp Tools):** Instead of one "do-everything" agent, TeDDy breaks down the development process into specialized roles. Each agent acts following a specific workflow, and the interaction between them is mediated only through plaintext documents, which act as an additional layer of abstraction for the user to steer the project at a high level. Each agent's workflow is further broken down into distinct phases and transition rules. These are defined in plain-text XML files, designed to make it as easy as possible to fine-tune and personalize the workflow.
 
 ## Why LLMs Suck at Software Development
 
