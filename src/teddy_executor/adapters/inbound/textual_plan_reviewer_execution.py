@@ -154,6 +154,9 @@ async def orchestrate_execution(app: ReviewerApp, node: Any, update_fn: Any) -> 
     action.state = ExecutionStatus.RUNNING
     app._refresh_node(node)
 
+    # Harvest modified content from pending_temp_file before execution
+    harvest_action_content(action, app.INSTRUCTION_MARKER)
+
     try:
         import anyio
 
