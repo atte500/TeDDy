@@ -1,14 +1,9 @@
 # TeDDy Configuration
 
-# UI Settings
-# Supported modes: "tui" (Interactive Terminal UI), "console" (Sequential CLI prompts)
-ui_mode: "tui"
-
 # The preferred external editor for reviewing and modifying plans/messages.
 # Supports arbitrary command strings (e.g., "code --wait", "nvim -R", "zed").
 # Fallback chain: Config -> VISUAL/EDITOR env vars -> code -> nano.
 editor: "code"
-
 
 # Execution Settings
 execution:
