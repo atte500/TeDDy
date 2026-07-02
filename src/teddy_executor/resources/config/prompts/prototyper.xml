@@ -166,7 +166,7 @@ WIP & REMINDERS:
         <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Slice: {{feature_name}}</item>
-          <item name="Status">- **Status:** [Draft | To De-risk | Planned | In Progress | Completed]</item>
+          <item name="Status">- **Status:** [Draft | Pending Prototype | Planned | In Progress | Completed]</item>
           <item name="Type">- **Type:** [Feature | Tweak | Refactor | Bugfix]</item>
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>
@@ -362,7 +362,11 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 
       <example>
         <description>Complete example of the required response format.</description>
+<<<<<<< HEAD
 # Validate Behavioral Spec for Batch Image Resize Error Handling
+=======
+# Propose Plan for Batch Image Resize Error Handling
+>>>>>>> 68b8249e (refactor(prompts): rename "To De-risk" to "Pending Prototype" and fix example titles)
 - **Agent:** Prototyper
 - **Plan Type:** Alignment
 - **Status:** ON-TRACK 🟢

@@ -33,7 +33,7 @@
         <step n="6" name="Architecture Maintenance">Update `docs/architecture/ARCHITECTURE.md`'s `Component & Boundary Map` and `Key Architectural Decisions` if needed to align.</step>
         <step n="7" name="Delta Analysis">Use `EXECUTE git grep` and `READ` on all targeted components, contracts, interfaces, and DTOs referenced in the design. Verify implementation status of every piece the design calls for. Catalog the delta: what already exists (skip — do NOT include as a deliverable), what is partially implemented (note remaining work), and what is entirely missing (add as pending). Only truly unimplemented or incomplete work SHALL appear in the slice deliverables. Do NOT create entries for work that demonstrably exists.</step>
         <step n="8" name="Create Slice">`CREATE` exactly ONE Vertical Slice following these rules:
-          1. Type & Status: Must be single-purpose (Do NOT mix Feature/Tweak/Refactor). Bugfixes are only created by the Debugger. If Type is Feature, initial Status MUST be `To De-risk`. For Tweak and Refactor, initial Status SHOULD be `Planned`.
+          1. Type & Status: Must be single-purpose (Do NOT mix Feature/Tweak/Refactor). Bugfixes are only created by the Debugger. If Type is Feature, initial Status MUST be `Pending Prototype`. For Tweak and Refactor, initial Status SHOULD be `Planned`.
           2. Content: MUST include linked Component Docs. If Type is Feature, it MUST include Gherkin scenarios and a final `Wiring` behavioral gate. For Tweak and Refactor, these are omitted or optional.
           3. Debt: Inject `Refactor`/`Cleanup` deliverables for audit findings, and `Harness` deliverables to patch preventable static analysis gaps.</step>
         <step n="9" name="Impact Audit & Consistency Check">Use `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the design into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a non-breaking sequence (Contract/Expansion -> Migration -> Cleanup/Contraction). Ensure the design follows the Deliverable Dependency Sequence. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.</step>
@@ -130,7 +130,7 @@
         <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Slice: {{feature_name}}</item>
-          <item name="Status">- **Status:** [Draft | To De-risk | Planned | In Progress | Completed]</item>
+          <item name="Status">- **Status:** [Draft | Pending Prototype | Planned | In Progress | Completed]</item>
           <item name="Type">- **Type:** [Feature | Tweak | Refactor | Bugfix]</item>
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>

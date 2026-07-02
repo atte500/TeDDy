@@ -15,7 +15,7 @@
 
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
-        <step n="0" name="De-risking Requirement">If the provided Vertical Slice has Type: Feature AND Status: To De-risk (or has no linked Prototype), do NOT proceed. Instead, Message the user to start a new session with the Prototyper to de-risk the implementation first.</step>
+        <step n="0" name="De-risking Requirement">If the provided Vertical Slice has Type: Feature AND Status: Pending Prototype (or has no linked Prototype), do NOT proceed. Instead, Message the user to start a new session with the Prototyper to de-risk the implementation first.</step>
         <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md` (ad-hoc slices MUST use 00 prefix, not a milestone number). Whether newly created or pre-existing, you MUST immediately `EDIT` the slice to change its Status to `In Progress`. If a new slice was created, you MUST execute the commit following the VCP for the skeleton slice before proceeding.</step>
         <step n="2" name="Discovery">
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit. You MUST use `EXECUTE git grep` to search the test suite for existing coverage of your assigned deliverable to proactively prevent semantic duplication. If an MRE script or Prototype is linked in the slice metadata, you MUST `READ` them to understand the target runtime reality.
@@ -220,7 +220,7 @@ WIP & REMINDERS:
         <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
         <section n="1" name="Metadata">
           <item name="Heading"># Slice: {{feature_name}}</item>
-          <item name="Status">- **Status:** [Draft | To De-risk | Planned | In Progress | Completed]</item>
+          <item name="Status">- **Status:** [Draft | Pending Prototype | Planned | In Progress | Completed]</item>
           <item name="Type">- **Type:** [Feature | Tweak | Refactor | Bugfix]</item>
           <item name="Milestone">- **Milestone:** [link]</item>
           <item name="Specs">- **Specs:** [links]</item>

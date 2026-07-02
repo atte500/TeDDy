@@ -493,7 +493,7 @@ My initial discovery for the API data import feature is complete.
 Given this scope, I recommend we formalize this request:
 
 1.  **Path (Strategy):** Plan and Update Requirements.
-2.  **Target Agent:** Architect (I will draft the Spec and Roadmap updates, and then hand off to the Architect to design the `To De-risk` slices).
+2.  **Target Agent:** Architect (I will draft the Spec and Roadmap updates, and then hand off to the Architect to design the `Planned` slices).
 
 Do you approve this path?
       </example>
