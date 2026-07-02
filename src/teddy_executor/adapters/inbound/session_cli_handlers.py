@@ -183,8 +183,7 @@ def _display_update_notification(cache_path: Path) -> None:
             typer.echo(
                 typer.style(
                     f"ℹ A new version {latest} is available. "
-                    "To upgrade, run: pip install --upgrade teddy-cli\n"
-                    "   To apply prompt updates: delete .teddy/prompts/ and run 'teddy init'",
+                    "To upgrade, run: pip install --upgrade teddy-cli\n",
                     fg=typer.colors.YELLOW,
                 )
             )
