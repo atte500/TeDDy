@@ -4,9 +4,9 @@ As developers, we've come to accept the premise that working with AI is inherent
 
 TeDDy takes an unconventional approach. It uses **Markdown as Interface** and directly embeds proven software engineering practices like **Test-Driven Development, Hexagonal Architecture, and iterative delivery**.
 
-<!-- Old video placeholder – will be updated with new release video
-[![My Plan to Fix AI Coding](https://img.youtube.com/vi/By6wGuT-4sA/0.jpg)](https://www.youtube.com/watch?v=By6wGuT-4sA)
--->
+
+[![Designing an Opinionated Harness for Coding Agents](https://img.youtube.com/vi/2j2fvRBGtag/0.jpg)](https://www.youtube.com/watch?v=2j2fvRBGtag)
+
 
 ## The Shoulders We Stand On
 
