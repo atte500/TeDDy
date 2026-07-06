@@ -1,4 +1,4 @@
-# TeDDy: An Opinionated Coding Harness
+# TeDDy: a very opinionated coding harness
 
 As developers, we've come to accept the premise that working with AI is inherently going to produce low-quality code. This means we either accept it as a trade-off for speed, or avoid using it for that exact reason. I believe it doesn't have to be that way.
 
