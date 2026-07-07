@@ -31,6 +31,8 @@ TeDDy instead attempts to solve these issues directly by adopting, amongst other
 - **For Technical Defects:** TeDDy enforces a strict **Test-Driven (Red-Green-Refactor)** cycle and **continuous delivery using Git**. To prevent errors from compounding, the AI must write a test first and commit its progress in small, atomic units. At startup, the harness verifies that Git and pre-commit hooks are initialized to ensure that **pre-commit checks** (linters and quality) and **post-commit test runs** (ensuring a "green-to-green" state) are active. This local safety net is designed to prevent defective code from ever reaching the remote repository and works in synergy with a **CI/CD workflow** to catch platform-dependent issues.
 - **For Misalignment:** TeDDy is designed to drive your intent through the entire agent lifecycle by using specific **Markdown Documents** to mediate transitions between project phases. These documents serve as anchoring for the agents while providing a high-level interface for you to steer the project at every step. The workflow moves from high-level **Specification Documents and Milestones** to granular **Component Design Docs** that enforce **Hexagonal Architecture** through defined Ports and Contracts. By delivering features through **Vertical Slices** and **Gherkin Scenarios**, agents produce working pieces of software for you to review and verify at the end of each iteration, ensuring the system doesn't drift away from your vision.
 
+<img src="./assets/matrix.png" alt="Workflow Matrix" />
+
 ## The TeDDy Workflow
 
 TeDDy breaks down the development process into distinct agents, each with a specific mandate. Their interaction is mediated through documents, letting you steer the project at a high level throughout.
