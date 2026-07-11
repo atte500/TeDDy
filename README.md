@@ -132,7 +132,7 @@ teddy resume
 To install or upgrade to the latest experimental (pre-release) version from TestPyPI:
 
 ```bash
-uv tool install teddy-cli --force --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --index-strategy unsafe-best-match
+uv tool install teddy-cli --pre --force --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --index-strategy unsafe-best-match
 ```
 
 > **Note:** Experimental versions are published to TestPyPI and may include features that are not yet stable. Use with caution.

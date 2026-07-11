@@ -64,29 +64,14 @@ repos:
 
     -   id: check-core-di-boundary
         name: Check Core DI Boundary (No punq in core)
-        entry: |
-          bash -c 'for f in "$@"; do
-            if grep -qE "import punq|from punq" "$f"; then
-              echo "DI Boundary Violation: punq imported in core service ($f). Core logic must not depend on DI framework."
-              exit 1
-            fi
-          done' --
+        entry: uv run python .githooks/check_core_di_boundary.py
         language: system
         types: [python]
         files: ^src/teddy_executor/core/
 
     -   id: check-explicit-utf8
         name: Enforce Explicit UTF-8 Encoding (Production)
-        entry: |
-          bash -c 'for f in "$@"; do
-            # Scan for read_text, write_text, or open(..., "w"/"r") missing encoding="utf-8"
-            # Excludes binary modes (rb/wb) and existing correct usages.
-            if grep -qE "(read_text|write_text)\(\)" "$f" || \
-               grep -qE "open\(.*, *[\"'"'"'][rw][^\"'"'"'b]*[\"'"'"']\)" "$f" | grep -qv "encoding="; then
-              echo "UTF-8 Compliance Violation: Missing explicit encoding=\"utf-8\" in $f"
-              exit 1
-            fi
-          done' --
+        entry: uv run python .githooks/check_explicit_utf8.py
         language: system
         types: [python]
         files: ^src/
