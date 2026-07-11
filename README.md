@@ -54,16 +54,16 @@ TeDDy breaks down the development process into distinct agents, each with a spec
 - Python 3.11 or later.
 - `pip` (included with Python).
 
-#### Ensure pip is up to date
+#### Install pipx
 
 ```bash
-pip install --upgrade pip
+pip install pipx && pipx ensurepath
 ```
 
 #### Install TeDDy
 
 ```bash
-pip install teddy-cli
+pipx install teddy-cli
 ```
 
 #### Initialize
@@ -138,7 +138,7 @@ teddy resume
 To install or upgrade to the latest experimental (pre-release) version from TestPyPI:
 
 ```bash
-pip install --upgrade teddy-cli --index-url https://test.pypi.org/simple/
+pipx install --pip-args '--index-url https://test.pypi.org/simple/' teddy-cli
 ```
 
 > **Note:** Experimental versions are published to TestPyPI and may include features that are not yet stable. Use with caution.

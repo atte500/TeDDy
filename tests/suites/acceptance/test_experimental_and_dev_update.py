@@ -95,7 +95,7 @@ def test_dev_version_offers_upgrade_to_stable(monkeypatch):
     assert "switch to the stable release" in result.stdout.lower(), (
         f"Expected 'switch to the stable release' in output, got: {result.stdout!r}"
     )
-    assert "pip uninstall -y teddy-cli && pip install teddy-cli" in result.stdout, (
+    assert "pipx uninstall teddy-cli && pipx install teddy-cli" in result.stdout, (
         f"Expected uninstall-and-install upgrade command in output, got: {result.stdout!r}"
     )
     assert result.exit_code == 0

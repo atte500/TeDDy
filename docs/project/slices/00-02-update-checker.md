@@ -108,7 +108,7 @@ Feature: Prompt Update Notice
 
 - **Network Failure:** If PyPI is unreachable, `fetch_latest_version` returns None and no error is shown. The cache remains unchanged.
 - **Corrupt Cache:** If `.update_cache.json` has invalid JSON or missing keys, it is treated as expired and overwritten on next successful fetch.
-- **Permissions Denied for pip:** If `sys.executable -m pip install` fails (e.g., not running in a virtualenv), display a clear error: "Could not upgrade: [error message]. Please run 'pip install --upgrade teddy-cli' manually."
+- **Permissions Denied for pip:** If `sys.executable -m pip install` fails (e.g., not running in a virtualenv), display a clear error: "Could not upgrade: [error message]. Please run 'pipx upgrade teddy-cli' manually."
 - **Package Not Found:** If `importlib.metadata.version("teddy-cli")` raises `PackageNotFoundError`, fall back to `"0.0.0"` (dev installation).
 - **Experimental + auto_update false:** When `--experimental` is used and `auto_update: false`, the notification should say: "Run 'teddy update --experimental --yes' to upgrade."
 - **Race Condition:** Background thread writing cache while main thread reads it. Use atomic write (write to temp, rename) to ensure the main thread never reads a partially written file.

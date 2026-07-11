@@ -16,7 +16,7 @@ Provide a lightweight update system with:
 5. A daily cache to avoid redundant PyPI requests.
 6. An `--experimental` flag on `teddy update` that checks from TestPyPI for pre-release versions.
 
-**Design Decision:** The system is notification-only. There is no auto-upgrade or `auto_update` config. The `teddy update` command always shows manual upgrade instructions (`pip install --upgrade teddy-cli`). The user must manually run the pip command to upgrade.
+**Design Decision:** The system is notification-only. There is no auto-upgrade or `auto_update` config. The `teddy update` command always shows manual upgrade instructions (`pipx upgrade teddy-cli`). The user must manually run the pip command to upgrade.
 
 ---
 
@@ -42,7 +42,7 @@ Provide a lightweight update system with:
   1. Check PyPI (or TestPyPI if `--experimental`) for the latest published version of `teddy-cli`.
   2. Compare against the current installed version (read from `importlib.metadata`).
   3. If no newer version: echo *"You are already running the latest version (X.Y.Z)."*
-  4. If newer version available: echo *"A new version X.Y.Z is available."* followed by *"To upgrade, run: pip install --upgrade teddy-cli"* (or with `--index-url` for experimental).
+  4. If newer version available: echo *"A new version X.Y.Z is available."* followed by *"To upgrade, run: pipx upgrade teddy-cli"* (or with `--index-url` for experimental).
   5. After the upgrade instructions, display: *"To apply prompt updates: delete .teddy/prompts/ and run 'teddy init'"*.
   6. Never attempts to install automatically. No pre-warming of imports.
 
@@ -57,7 +57,7 @@ Provide a lightweight update system with:
   - After starting the background thread, the main thread reads the cache file (which may be from a previous session) and displays a non-blocking notification if the cached version is newer than the current installed version.
   - If the cache is missing or expired, no notification is shown until the background check completes (which writes the cache for the next session).
   - Notification format: Yellow-colored text, two lines:
-    `ℹ A new version X.Y.Z is available. To upgrade, run: pip install --upgrade teddy-cli`
+    `ℹ A new version X.Y.Z is available. To upgrade, run: pipx upgrade teddy-cli`
     `   To apply prompt updates: delete .teddy/prompts/ and run 'teddy init'`
 
 ### 3.3. Cache File: `.teddy/.update_cache.json`
