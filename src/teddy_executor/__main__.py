@@ -288,7 +288,7 @@ def update(
     elif experimental:
         typer.echo(f"A new experimental version {latest} is available.")
         typer.echo(
-            "To upgrade, run: uv tool install teddy-cli --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --index-strategy unsafe-best-match"
+            "To upgrade, run: uv tool install teddy-cli --force --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --index-strategy unsafe-best-match"
         )
         typer.echo("To apply prompt updates, run: teddy init prompts")
     else:
