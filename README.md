@@ -52,18 +52,12 @@ TeDDy breaks down the development process into distinct agents, each with a spec
 
 #### Prerequisites
 - Python 3.11 or later.
-- `pip` (included with Python).
-
-#### Install pipx
-
-```bash
-pip install pipx && pipx ensurepath
-```
+- `pip` (included with Python) or `uv` (recommended).
 
 #### Install TeDDy
 
 ```bash
-pipx install teddy-cli
+uv tool install teddy-cli
 ```
 
 #### Initialize
@@ -138,7 +132,10 @@ teddy resume
 To install or upgrade to the latest experimental (pre-release) version from TestPyPI:
 
 ```bash
-pipx install --pip-args '--index-url https://test.pypi.org/simple/' teddy-cli
+uv tool install teddy-cli \
+  --index-url https://test.pypi.org/simple/ \
+  --extra-index-url https://pypi.org/simple/ \
+  --index-strategy unsafe-best-match
 ```
 
 > **Note:** Experimental versions are published to TestPyPI and may include features that are not yet stable. Use with caution.

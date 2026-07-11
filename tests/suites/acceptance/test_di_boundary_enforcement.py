@@ -1,7 +1,14 @@
+import shutil
 import subprocess
+
+import pytest
 from pathlib import Path
 
 
+@pytest.mark.skipif(
+    shutil.which("grep") is None,
+    reason="grep not available on PATH (Windows)",
+)
 def test_di_boundary_hook_rejects_punq_in_core(tmp_path):
     # Setup: Create a violation file in a mock core directory
     # We use a real path relative to the project root for the grep command to work
@@ -36,6 +43,10 @@ def test_di_boundary_hook_rejects_punq_in_core(tmp_path):
             violation_file.unlink()
 
 
+@pytest.mark.skipif(
+    shutil.which("grep") is None,
+    reason="grep not available on PATH (Windows)",
+)
 def test_di_boundary_hook_passes_clean_core():
     # Setup: Ensure no violations (excluding known action_factory.py)
     cmd = [

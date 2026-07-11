@@ -33,23 +33,18 @@ jobs:
       with:
         python-version: "3.14"
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: 2.2.1
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-        installer-parallel: true
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
 
     - name: Load cached venv
-      id: cached-poetry-dependencies
+      id: cached-uv-dependencies
       uses: actions/cache@v5
       with:
         path: .venv
-        key: venv-${{ runner.os }}-3.14-${{ hashFiles('**/poetry.lock') }}
+        key: venv-${{ runner.os }}-3.14-${{ hashFiles('**/uv.lock') }}
 
     - name: Install dependencies
-      run: poetry install --no-interaction
+      run: uv sync --frozen
 
     - name: Install clipboard backend (Linux)
       if: runner.os == 'Linux'
@@ -58,7 +53,7 @@ jobs:
         sudo apt-get install -y xclip
 
     - name: Run Tests
-      run: poetry run pytest
+      run: uv run pytest
 
   quality-checks:
     name: Quality Checks
@@ -78,31 +73,27 @@ jobs:
       with:
         node-version: "24"
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: 2.2.1
-        virtualenvs-create: true
-        virtualenvs-in-project: true
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
 
     - name: Load cached venv
-      id: cached-poetry-dependencies
+      id: cached-uv-dependencies
       uses: actions/cache@v5
       with:
         path: .venv
-        key: venv-quality-${{ runner.os }}-3.14-${{ hashFiles('**/poetry.lock') }}
+        key: venv-quality-${{ runner.os }}-3.14-${{ hashFiles('**/uv.lock') }}
 
     - name: Install dependencies
-      run: poetry install --no-interaction
+      run: uv sync --frozen
 
     - name: Run Pre-commit Hooks
       # We skip 'run-tests' as it is handled by the test-suite job
       run: |
-        SKIP=run-tests poetry run pre-commit run --all-files
+        SKIP=run-tests uv run pre-commit run --all-files
 
     - name: Verify Test Pyramid
       run: |
-        poetry run python scripts/verify_test_pyramid.py
+        uv run python scripts/verify_test_pyramid.py
 
     - name: Check Python File Length (Max 300 Lines)
       run: |

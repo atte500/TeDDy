@@ -40,9 +40,9 @@ def test_update_command_shows_notification_for_newer_version(monkeypatch):
     assert "new version" in result.stdout.lower(), (
         f"Expected 'new version' in output, got: {result.stdout!r}"
     )
-    # Should contain the pip upgrade command
-    assert "pipx upgrade teddy-cli" in result.stdout, (
-        f"Expected pip install command in output, got: {result.stdout!r}"
+    # Should contain the uv upgrade command
+    assert "uv tool upgrade teddy-cli" in result.stdout, (
+        f"Expected uv upgrade command in output, got: {result.stdout!r}"
     )
     # Should not contain upgrade failure or success messages
     assert "failed" not in result.stdout.lower()
@@ -61,8 +61,8 @@ def test_update_command_shows_notification_for_experimental(monkeypatch):
     assert "experimental" in result.stdout.lower(), (
         f"Expected 'experimental' in output, got: {result.stdout!r}"
     )
-    # Should contain the experimental pip command with testpypi index
-    assert "pipx upgrade teddy-cli" in result.stdout
+    # Should contain the experimental uv command with testpypi index
+    assert "uv tool install teddy-cli" in result.stdout
     assert "test.pypi.org" in result.stdout
     assert result.exit_code == 0
 
@@ -118,6 +118,6 @@ def test_update_command_hardcoded_upgrade_messages_not_present():
         "prewarm_imports still referenced in update() - should be removed!"
     )
     # Verify new notification pattern is present
-    assert "pipx upgrade teddy-cli" in source, (
-        "Notification pip upgrade command not found in update()"
+    assert "uv tool upgrade teddy-cli" in source, (
+        "Notification uv upgrade command not found in update()"
     )

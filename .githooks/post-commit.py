@@ -31,34 +31,34 @@ def _fail(message: str, detail: str | None = None) -> None:
 
 
 def main() -> None:
-    # Pre-flight: ensure poetry is installed
+    # Pre-flight: ensure uv is installed
     try:
         subprocess.run(
-            ["poetry", "--version"],
+            ["uv", "--version"],
             capture_output=True,
             check=True,
         )
     except (subprocess.CalledProcessError, FileNotFoundError):
         _fail(
-            "ERROR: poetry is not installed",
-            "Install poetry to run the test suite.\n"
-            "  curl -sSL https://install.python-poetry.org | python3 -",
+            "ERROR: uv is not installed",
+            "Install uv to run the test suite.\n"
+            "  https://docs.astral.sh/uv/getting-started/installation/",
         )
 
-    # Pre-flight: ensure pytest is available in the poetry environment
+    # Pre-flight: ensure pytest is available in the uv environment
     result = subprocess.run(
-        ["poetry", "run", "python", "-c", "import pytest"],
+        ["uv", "run", "python", "-c", "import pytest"],
         capture_output=True,
     )
     if result.returncode != 0:
         _fail(
             "ERROR: pytest is not installed",
-            "Run 'poetry install --with dev' to install test dependencies.",
+            "Run 'uv sync --group dev' to install test dependencies.",
         )
 
     # Run the full test suite (capture exit code; do not use check=True)
     result = subprocess.run(
-        ["poetry", "run", "pytest", "--tb=short", "-q"],
+        ["uv", "run", "pytest", "--tb=short", "-q"],
     )
 
     if result.returncode != 0:

@@ -35,21 +35,21 @@ repos:
     hooks:
     -   id: ruff-lint
         name: Ruff Linter
-        entry: poetry run ruff check --fix --force-exclude
+        entry: uv run ruff check --fix --force-exclude
         language: system
         types: [python]
         require_serial: true
 
     -   id: ruff-format
         name: Ruff Formatter
-        entry: poetry run ruff format --force-exclude
+        entry: uv run ruff format --force-exclude
         language: system
         types: [python]
         require_serial: true
 
     -   id: mypy
         name: Mypy
-        entry: poetry run mypy
+        entry: uv run mypy
         language: system
         types: [python]
         require_serial: true
@@ -57,10 +57,10 @@ repos:
 
     -   id: pip-audit
         name: Vulnerability Scanning (pip-audit)
-        entry: poetry run pip-audit --ignore-vuln PYSEC-2026-196
+        entry: uv run pip-audit --ignore-vuln PYSEC-2026-196
         language: system
         pass_filenames: false
-        files: ^(pyproject\.toml|poetry\.lock)$
+        files: ^(pyproject\.toml|uv\.lock)$
 
     -   id: check-core-di-boundary
         name: Check Core DI Boundary (No punq in core)
@@ -93,7 +93,7 @@ repos:
 
     -   id: post-commit-test-gate
         name: Post-commit test gate
-        entry: poetry run python .githooks/post-commit.py
+        entry: uv run python .githooks/post-commit.py
         language: system
         stages: [post-commit]
         always_run: true

@@ -1,56 +1,62 @@
-[tool.poetry]
+[project]
 name = "teddy-cli"
 version = "0.1.7"
 description = "A local-first, file-based AI coding workflow that applies the UNIX philosophy to AI collaboration."
-authors = ["Raphael Atteritano"]
-license = "AGPL-3.0-only"
-packages = [{ include = "teddy_executor", from = "src" }]
-
-[tool.poetry.dependencies]
-python = ">=3.11, <3.15"
-typer = { version = "*", extras = ["all"] }
-pyperclip = "*"
-playwright = "*"
-httpx = "^0.28.1"
-beautifulsoup4 = "^4.14.3"
-requests = "^2.33.0"
-ddgs = "^9.10.0"
-pathspec = "^0.12.1"
-punq = "^0.7.0"
-mistletoe = "^1.3.0"
-jinja2 = "^3.1.6"
-trafilatura = "^2.0.0"
-lxml = "^6.1.0"
-python-dotenv = ">=1.0.1"
-litellm = ">=1.83.7,<1.83.8"
-pyyaml = ">=6.0,<7.0"
-detect-secrets = ">=1.4,<2.0"
-bandit = ">=1.7.9,<1.8.0"
-pip-audit = ">=2.7.3,<2.8.0"
-textual = "^8.1.0"
-urllib3 = "^2.7.0"
-tld = ">=0.10,<1.0"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^9.0.3"
-ruff = "*"
-mypy = "*"
-pre-commit = "*"
-responses = "^0.25.8"
-pytest-httpserver = "^1.1.3"
-types-requests = "^2.32.4.20250913"
-pytest-timeout = "^2.4.0"
-pyfakefs = "^6.1.1"
-pytest-cov = "^7.0.0"
-types-pyyaml = "^6.0.12.20250915"
-pytest-xdist = "^3.8.0"
-
-[tool.poetry.scripts]
+authors = [{ name = "Raphael Atteritano" }]
+license = { text = "AGPL-3.0-only" }
+requires-python = ">=3.11, <3.15"
+dependencies = [
+    "typer[all]",
+    "pyperclip",
+    "playwright",
+    "httpx>=0.28.1,<0.29",
+    "beautifulsoup4>=4.14.3,<5",
+    "requests>=2.33.0,<3",
+    "ddgs>=9.10.0,<10",
+    "pathspec>=0.12.1,<1",
+    "punq>=0.7.0,<1",
+    "mistletoe>=1.3.0,<2",
+    "jinja2>=3.1.6,<4",
+    "trafilatura>=2.0.0,<3",
+    "lxml>=6.1.0,<7",
+    "python-dotenv>=1.0.1",
+    "litellm>=1.83.7,<1.83.8",
+    "pyyaml>=6.0,<7.0",
+    "detect-secrets>=1.4,<2.0",
+    "bandit>=1.7.9,<1.8.0",
+    "pip-audit>=2.7.3,<2.8.0",
+    "textual>=8.1.0,<9",
+    "urllib3>=2.7.0,<3",
+    "tld>=0.10,<1.0",
+]
+[project.scripts]
 teddy = "teddy_executor.__main__:app"
 
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3,<10",
+    "ruff",
+    "mypy",
+    "pre-commit",
+    "responses>=0.25.8,<1",
+    "pytest-httpserver>=1.1.3,<2",
+    "types-requests>=2.32.4.20250913,<3",
+    "pytest-timeout>=2.4.0,<3",
+    "pyfakefs>=6.1.1,<7",
+    "pytest-cov>=7.0.0,<8",
+    "types-pyyaml>=6.0.12.20250915,<7",
+    "pytest-xdist>=3.8.0,<4",
+]
+
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/teddy_executor"]
+
+[tool.hatch.build]
+include = ["src/teddy_executor"]
 
 [tool.ruff]
 line-length = 88

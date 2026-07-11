@@ -34,21 +34,18 @@ jobs:
       with:
         python-version: "3.14"
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: 2.2.1
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
 
     - name: Generate Dynamic Dev Version
       run: |
         # Bump patch version and append .dev<run_number> for PEP 440 compliance
-        # Dev versions (0.1.5.devN) sort AFTER the base release (0.1.4)
-        CURRENT_VERSION=$(poetry version -s)
+        CURRENT_VERSION=$(uv run python -c "import tomllib; f=open('pyproject.toml','rb'); print(tomllib.load(f)['project']['version'])")
         NEXT_VERSION=$(echo "$CURRENT_VERSION" | awk -F. '{OFS=FS; $NF=$NF+1; print}')
-        poetry version "${NEXT_VERSION}.dev${{ github.run_number }}"
+        sed -i "s/^version = \".*\"/version = \"${NEXT_VERSION}.dev${{ github.run_number }}\"/" pyproject.toml
 
     - name: Build package
-      run: poetry build
+      run: uv build
 
     - name: Publish to Test PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
@@ -73,13 +70,11 @@ jobs:
       with:
         python-version: "3.14"
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: 2.2.1
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
 
     - name: Build package
-      run: poetry build
+      run: uv build
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1

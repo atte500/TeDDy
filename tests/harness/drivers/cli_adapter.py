@@ -13,7 +13,7 @@ class CliTestAdapter:
     """
 
     def __init__(self, monkeypatch, cwd: Path):
-        self._runner = CliRunner(mix_stderr=False)
+        self._runner = CliRunner()
         self._monkeypatch = monkeypatch
         self._cwd = cwd
         self._mock_editor_output: Optional[str] = None

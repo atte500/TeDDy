@@ -282,18 +282,18 @@ def update(
     if is_channel_switch:
         typer.echo(f"You are running the latest experimental version ({current}).")
         typer.echo(
-            "To switch to the stable release, run: pipx uninstall teddy-cli && pipx install teddy-cli"
+            "To switch to the stable release, run: uv tool install teddy-cli --force"
         )
         typer.echo("To apply prompt updates, run: teddy init prompts")
     elif experimental:
         typer.echo(f"A new experimental version {latest} is available.")
         typer.echo(
-            "To upgrade, run: pipx upgrade teddy-cli --pip-args '--index-url https://test.pypi.org/simple/'"
+            "To upgrade, run: uv tool install teddy-cli --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --index-strategy unsafe-best-match"
         )
         typer.echo("To apply prompt updates, run: teddy init prompts")
     else:
         typer.echo(f"A new version {latest} is available.")
-        typer.echo("To upgrade, run: pipx upgrade teddy-cli")
+        typer.echo("To upgrade, run: uv tool upgrade teddy-cli")
         typer.echo("To apply prompt updates, run: teddy init prompts")
 
 

@@ -45,7 +45,7 @@ def test_update_command_does_not_read_auto_update_config(monkeypatch):
     assert "new version" in result.stdout.lower(), (
         f"Expected 'new version' in output, got: {result.stdout!r}"
     )
-    assert "pipx upgrade teddy-cli" in result.stdout, (
+    assert "uv tool upgrade teddy-cli" in result.stdout, (
         f"Expected upgrade command in output, got: {result.stdout!r}"
     )
     # Should NOT contain --yes (that was for auto-upgrade)

@@ -79,8 +79,8 @@ class TestInitCliRegression:
                 assert "Prompts overwritten (6 files)." in result.stdout
                 # There should be no "Prompts: unchanged." (either from callback summary
                 # or the subcommand). The callback should skip when subcommand active.
-                assert (
-                    "Prompts: unchanged." not in result.stdout
-                ), "Conflicting 'Prompts: unchanged.' found in output!"
+                assert "Prompts: unchanged." not in result.stdout, (
+                    "Conflicting 'Prompts: unchanged.' found in output!"
+                )
             finally:
                 os.chdir(original_cwd)

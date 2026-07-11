@@ -46,6 +46,6 @@ def test_update_command_returns_version_notification_when_newer_version_availabl
     assert "2.0.0" in result.stdout, (
         f"Expected version 2.0.0 in output, got: {result.stdout!r}"
     )
-    assert "pipx upgrade teddy-cli" in result.stdout, (
+    assert "uv tool upgrade teddy-cli" in result.stdout, (
         f"Expected upgrade command in output, got: {result.stdout!r}"
     )
