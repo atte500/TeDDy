@@ -1,6 +1,6 @@
 [project]
 name = "teddy-cli"
-version = "0.1.7"
+version = "0.1.8"
 description = "A local-first, file-based AI coding workflow that applies the UNIX philosophy to AI collaboration."
 authors = [{ name = "Raphael Atteritano" }]
 license = { text = "AGPL-3.0-only" }
