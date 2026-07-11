@@ -93,8 +93,8 @@ repos:
 
     -   id: post-commit-test-gate
         name: Post-commit test gate
-        entry: .githooks/post-commit
-        language: script
+        entry: poetry run python .githooks/post-commit.py
+        language: system
         stages: [post-commit]
         always_run: true
         pass_filenames: false
