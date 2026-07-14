@@ -6,10 +6,11 @@ from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
 
 
 @pytest.mark.parametrize("platform", ["win32", "linux", "darwin"])
-def test_prepare_subprocess_kwargs_isolates_stdin_universally(platform):
+def test_prepare_subprocess_kwargs_stdin_is_pipe(platform):
     """
-    Verify that stdin is isolated (DEVNULL) across all platforms
-    to prevent concurrent test workers from crashing.
+    Verify that stdin is PIPE across all platforms to provide a valid
+    file descriptor for Python 3.14.2's C-level initialization, while
+    still isolating the subprocess from the parent's stdin.
     """
     adapter = ShellAdapter()
 
@@ -19,6 +20,6 @@ def test_prepare_subprocess_kwargs_isolates_stdin_universally(platform):
         )
 
         assert "stdin" in kwargs, f"stdin key missing on platform: {platform}"
-        assert kwargs["stdin"] == subprocess.DEVNULL, (
-            f"stdin not DEVNULL on platform: {platform}"
+        assert kwargs["stdin"] == subprocess.PIPE, (
+            f"stdin not PIPE on platform: {platform}"
         )

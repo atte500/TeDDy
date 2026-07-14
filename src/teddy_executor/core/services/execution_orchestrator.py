@@ -106,7 +106,10 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             action_log = self._action_executor.handle_failed_action(action, str(e))
             captured_message = ""
 
-        if captured_message:
+        # Only propagate captured_message to user_request for non-MESSAGE actions.
+        # MESSAGE action replies belong in the action log (action_log.details),
+        # not in the User Request section of the report.
+        if captured_message and action.type.upper() != "MESSAGE":
             plan.metadata["user_request"] = captured_message
 
         should_halt = (

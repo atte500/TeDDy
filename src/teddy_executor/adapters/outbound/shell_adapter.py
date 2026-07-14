@@ -108,7 +108,10 @@ class ShellAdapter(IShellExecutor):
             "shell": use_shell,
             "stdout": subprocess.PIPE,
             "stderr": subprocess.PIPE,
-            "stdin": subprocess.DEVNULL,
+            # Use PIPE instead of DEVNULL to provide a valid file descriptor for
+            # Python 3.14.2's C-level initialization. The pipe is closed
+            # immediately after Popen so children see EOF on reads.
+            "stdin": subprocess.PIPE,
             "text": True,
             "cwd": cwd,
             "env": env,
@@ -278,6 +281,14 @@ class ShellAdapter(IShellExecutor):
 
             kwargs = self._prepare_subprocess_kwargs(use_shell, cwd, env)
             process = self._popen(command_args, **kwargs)  # nosec
+
+            # Note: stdin is subprocess.PIPE (not DEVNULL) to provide a valid file
+            # descriptor for Python 3.14.2's C-level initialization. We do NOT close
+            # the stdin pipe here — communicate() internally flushes stdin before
+            # reading output, so closing stdin prematurely causes:
+            #   ValueError: I/O operation on closed file.
+            # communicate() handles the pipe EOF naturally when the subprocess finishes.
+            # No input data is written to the pipe, so children see empty stdin.
 
             try:
                 # Type cast is required because Mypy cannot infer str types when
