@@ -61,7 +61,32 @@ jobs:
       url: https://pypi.org/p/teddy-cli
     permissions:
       id-token: write  # MANDATORY: This permission is required for OIDC Trusted Publishing
+      actions: read  # Required to check CI workflow run status before publishing
     steps:
+    - name: Wait for CI to pass
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Checking CI status for commit ${{ github.sha }}..."
+        for i in $(seq 1 60); do
+          RUN=$(gh run list --commit "${{ github.sha }}" --workflow CI --json conclusion,status --limit 1)
+          CONCLUSION=$(echo "$RUN" | jq -r '.[0].conclusion // "null"')
+          STATUS=$(echo "$RUN" | jq -r '.[0].status // "null"')
+
+          if [ "$STATUS" = "completed" ] && [ "$CONCLUSION" = "success" ]; then
+            echo "CI passed! Proceeding with publish."
+            exit 0
+          elif [ "$STATUS" = "completed" ] && [ "$CONCLUSION" != "success" ]; then
+            echo "CI failed with conclusion: $CONCLUSION"
+            exit 1
+          fi
+
+          echo "Waiting for CI to complete... (attempt $i/60, status=$STATUS, conclusion=$CONCLUSION)"
+          sleep 10
+        done
+        echo "Timed out waiting for CI after 10 minutes"
+        exit 1
+
     - name: Checkout source
       uses: actions/checkout@v5
 
