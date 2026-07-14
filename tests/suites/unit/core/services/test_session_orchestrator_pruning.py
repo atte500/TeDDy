@@ -300,6 +300,8 @@ def test_execute_respects_manually_pruned_files_during_transition(
     # We setup the nested mock explicitly
     report.run_summary = MagicMock()
     report.run_summary.status = RunStatus.SUCCESS
+    # Provide action_logs for SessionOrchestrator's call to _print_user_message
+    report.action_logs = []
     orchestrator._execution_orchestrator.execute.return_value = report
 
     # Act

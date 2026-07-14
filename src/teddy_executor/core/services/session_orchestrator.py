@@ -83,12 +83,17 @@ def _print_header_bar(plan: Any, is_session: bool) -> None:
 
 
 def _print_user_message(
-    message: Optional[str], is_session: bool, plan: Optional[Any] = None
+    message: Optional[str],
+    is_session: bool,
+    plan: Optional[Any] = None,
+    action_logs: Optional[list] = None,
 ) -> None:
     """Print the user message after all actions execute.
 
-    If message is not provided (None) and plan is set, falls back to
-    plan.metadata.get("user_request").
+    Priority order:
+    1. Direct `message` parameter (from TUI `m` input).
+    2. `plan.metadata["user_request"]` (for non-MESSAGE action replies).
+    3. MESSAGE action replies from `action_logs` (for MESSAGE action responses).
 
     Only prints when is_session=True and message is non-empty.
     Output::
@@ -99,14 +104,30 @@ def _print_user_message(
     """
     if not is_session:
         return
-    # Resolve message from plan metadata if not provided
+
+    # Priority 1: Direct message parameter
+    # Priority 2: plan.metadata["user_request"] (non-MESSAGE actions, TUI 'm' input)
     if not message or not message.strip():
         if plan:
             meta_msg = getattr(plan, "metadata", {}).get("user_request") or ""
             if meta_msg.strip():
                 message = meta_msg.strip()
-        if not message or not message.strip():
-            return
+
+    # Priority 3: Fallback to MESSAGE action replies from action_logs
+    # When Bug 16 prevents MESSAGE replies from being stored in
+    # plan.metadata["user_request"], we still want to print them to
+    # terminal by reading directly from the action logs.
+    if (not message or not message.strip()) and action_logs:
+        for log in action_logs:
+            log_type = getattr(log, "action_type", "") or ""
+            log_details = getattr(log, "details", "") or ""
+            if log_type.upper() == "MESSAGE" and log_details.strip():
+                message = log_details.strip()
+                break  # Use the last MESSAGE action's reply
+
+    if not message or not message.strip():
+        return
+
     typer.secho("")
     typer.secho("User Message:")
     typer.secho(message.strip())
@@ -312,9 +333,15 @@ class SessionOrchestrator(IRunPlanUseCase):
             # Print user message after all actions executed (only for session mode)
             # Uses plan.metadata["user_request"] which is populated by _dispatch_single_action
             # when the user provides a reply during execution.
+            # Also extracts MESSAGE action replies from action_logs as a fallback
+            # (see Bug 17: Bug 16's guard prevents MESSAGE replies from being stored
+            # in plan.metadata["user_request"]).
             if is_session:
                 user_reply = plan.metadata.get("user_request", "") if plan else ""
-                _print_user_message(user_reply, is_session, plan=plan)
+                action_logs = report.action_logs if report else []
+                _print_user_message(
+                    user_reply, is_session, plan=plan, action_logs=action_logs
+                )
 
             # 4. Turn Transition
             if is_session and plan_path:
