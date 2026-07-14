@@ -62,7 +62,7 @@ def test_update_command_shows_notification_for_experimental(monkeypatch):
         f"Expected 'experimental' in output, got: {result.stdout!r}"
     )
     # Should contain the experimental uv command with testpypi index
-    assert "uv tool install teddy-cli --force" in result.stdout
+    assert "uv tool install teddy-cli --pre --force" in result.stdout
     assert "test.pypi.org" in result.stdout
     assert result.exit_code == 0
 
