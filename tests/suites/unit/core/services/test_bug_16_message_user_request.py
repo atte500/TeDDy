@@ -7,6 +7,7 @@ only be populated by:
 
 MESSAGE action replies belong exclusively in action_log.details.
 """
+
 from unittest.mock import MagicMock
 
 from teddy_executor.core.domain.models import (
