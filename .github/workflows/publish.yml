@@ -69,7 +69,7 @@ jobs:
       run: |
         echo "Checking CI status for commit ${{ github.sha }}..."
         for i in $(seq 1 60); do
-          RUN=$(gh run list --commit "${{ github.sha }}" --workflow CI --json conclusion,status --limit 1)
+          RUN=$(gh run list --repo ${{ github.repository }} --commit "${{ github.sha }}" --workflow CI --json conclusion,status --limit 1)
           CONCLUSION=$(echo "$RUN" | jq -r '.[0].conclusion // "null"')
           STATUS=$(echo "$RUN" | jq -r '.[0].status // "null"')
 
