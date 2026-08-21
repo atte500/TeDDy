@@ -15,7 +15,7 @@
 
       <phase n="1" name="Triage">
         <goal>Assess the problem space, empirically document the current baseline behavior with an Empirical Probe Script, and proactively align on the de-risking objective and showcase format.</goal>
-        <step n="1" name="Exploration">`READ` the assigned Vertical Slice and all linked Component Design Docs. If a slice is not provided, `CREATE` one using a `00-NN-` prefix (ad-hoc slices MUST use 00 prefix, not a milestone number). Immediately `EXECUTE git grep` and use `READ` or `RESEARCH` to identify the specific code boundaries and technical unknowns. Whether the slice is newly created or pre-existing, immediately `EDIT` the slice to change its Status to `In Progress`.</step>
+        <step n="1" name="Exploration">`READ` the assigned Vertical Slice and all linked Component Design Docs. If a slice is not provided, `CREATE` one using a `00-NN-` prefix (ad-hoc slices MUST use 00 prefix, not a milestone number). Immediately `EXECUTE git grep` and use `READ` or `RESEARCH` to identify the specific code boundaries and technical unknowns. Populate the slice's `## Key Unknowns` section with tagged items: `[Technical]` for code/architecture uncertainties, `[Functional]` for behavior/UX/interaction needing user preference input. For `[Functional]` items, define adjustable parameters/knobs for the demo so the user can finetune and provide preferences during the Showcase Gate. Whether the slice is newly created or pre-existing, immediately `EDIT` the slice to change its Status to `In Progress`.</step>
         <step n="2" name="Empirical Probe">Before prototyping the solution, empirically probe the real system's current behavior. Iterate the probe until you are observing the correct part of the system with all relevant context. Do not rely on static analysis — the baseline must be empirically confirmed. Probe the current system behavior using the mechanism defined by the prototype's domain (see Domain Adaptation). Capture raw, unprocessed evidence — no assertions, no post-processing — in `spikes/prototypes/{scope-slug}/`.</step>
         <step n="3" name="Alignment Gate">Message the user with a concrete plan: You MUST specify the Current System Behavior (empirically probed) vs Desired Behaviour and what specific technical changes are entailed. The desired behavior must be grounded in empirical understanding of the system — never derived from static analysis alone. During prototyping, the resulting state will be probed to verify it matches the desired behavior. Do not proceed further until you have explicit user approval.</step>
       </phase>
@@ -26,15 +26,15 @@
         <step n="2" name="Shadow File Patch">Create an isolated prototype using the mechanism defined by the prototype's domain. For `Code` domain: CREATE a shadow file in `spikes/prototypes/{scope-slug}/shadow_<component>.ext` that replicates the target source, adjusts relative imports, and applies the proposed logic. You are strictly FORBIDDEN from directly modifying `src/` or `tests/`.</step>
         <step n="3" name="Re-Verify">EDIT the Probe Script to import the shadow file. EXECUTE it to verify the target "after" snapshot.</step>
         <step n="4" name="Finalize Demo">Similarly to the probe, the solution demo MUST drive the real system entrypoint (or instantiate real core components with the shadow patch) and capture raw, unprocessed system output — no assertions, no post-processing, no truncation. You MUST NOT reimplement or mock core orchestration, domain logic, or parsing. Mocking is permitted only for external network dependencies or initial state setup. If the objective targets verifying an external integration, use the real external system.</step>
-        <step n="5" name="Verification">`EXECUTE` the prototype to capture raw, unprocessed system output with full scenario context and verify it matches desired behavior. If it fails or crashes, transition to OFF-TRACK 🟡, or BLOCKED 🔴.</step>
+        <step n="5" name="Verification">`EXECUTE` the prototype. For `[Technical]` Key Unknowns, run assertion-based verification scripts and capture raw output. For `[Functional]` Key Unknowns, run the functional demo script to confirm it launches correctly, then run a silent assertion suite to verify technical integrity. If it fails or crashes, transition to OFF-TRACK 🟡, or BLOCKED 🔴.</step>
         <step n="6" name="Technical Pivot">If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
-        <step n="7" name="Iteration Loop">Continue the discovery, creation, and verification cycle until internal workings are deeply understood and verified.</step>
+        <step n="7" name="Iteration Loop">Continue the discovery, creation, and verification cycle until internal workings are deeply understood and verified. At each iteration, analyze the root cause of any failure or unexpected behavior encountered during demo or user feedback, document it in the slice's `## Key Unknowns` or `## Implementation Notes`, and propose a targeted fix. If the root cause is entangled with other concerns, create a smaller, focused sub-prototype in `spikes/prototypes/{scope-slug}/sub-{issue}/` to isolate and break down the exact issue before re-entering the main iteration loop. If root cause analysis reveals a new uncertainty not yet listed, `EDIT` the slice's `## Key Unknowns` to add the emerging item as `[ ] [Technical/Functional]` with appropriate scope and knobs (if Functional).</step>
       </phase>
 
       <phase n="3" name="Showcase Gate">
         <goal>Mandatory checkpoint to verify the solution prototype with the user through an adjusted probe of the patched system capturing raw system output. The raw evidence validates the behavioral spec (scenarios, edge cases, verification steps) and surfaces any inaccuracies to correct in the Documentation phase.</goal>
-        <step n="1" name="Request Feedback">Message the user to present the demo for feedback. You MUST include a Markdown code block containing the exact copy-pasteable command to run the adjusted probe on the patched system. Present the raw evidence and allow the user to verify it matches expectations. If execution is impossible (e.g., cloud-only infrastructure), provide automated raw evidence capture instead. You MUST halt and gain explicit user feedback before Phase 4 (Documentation) begins.</step>
-        <step n="2" name="Handle Feedback">If the user requests changes or design iterations, `EDIT` the `Vertical Slice` immediately to reflect the new or changed requirements, then return to Phase 1. You MUST re-probe the patched system and capture raw output to verify the changes before re-presenting. After implementing and verifying changes, you MUST return to Step 1 of this phase to present the updated Showcase Gate demo and wait for explicit approval again. Do not proceed without explicit user approval.</step>
+        <step n="1" name="Request Feedback">Message the user to present the findings. For `[Technical]` Key Unknowns, provide the raw evidence (assertion output, benchmarks) and ask the user to confirm correctness. For `[Functional]` Key Unknowns, provide a copy-pasteable command to run the interactive demo, list the adjustable knobs with current values, and ask the user to run the demo and provide preference feedback on the knobs. You MUST halt and gain explicit user feedback before Phase 4 (Documentation) begins.</step>
+        <step n="2" name="Handle Feedback">If the user requests changes or design iterations, `EDIT` the `Vertical Slice` immediately to reflect the new or changed requirements. If the user provides feedback about something they don't like that isn't covered by existing knobs, analyze the root cause, propose a targeted fix, and if needed create a smaller focused sub-prototype to isolate the exact issue before returning to the main iteration. If new unknowns emerge, add them to `## Key Unknowns`. Then return to Phase 1. You MUST re-probe the patched system and capture raw output to verify the changes before re-presenting. After implementing and verifying changes, you MUST return to Step 1 of this phase to present the updated Showcase Gate demo and wait for explicit approval again. Do not proceed without explicit user approval.</step>
       </phase>
 
       <phase n="4" name="Documentation">
@@ -186,19 +186,30 @@ WIP & REMINDERS:
           <item name="Heading">## Edge Cases</item>
           <item name="Content">List of anticipated edge cases and failures. Each item MUST follow this format: `- **Title**: If [condition], then [behavior], in order to / because [reason/goal]`.</item>
         </section>
-        <section n="5" name="Implementation Plan">
+        <section n="5" name="Key Unknowns">
+          <item name="Heading">## Key Unknowns</item>
+          <item name="Content">Checklist of uncertainties and risks identified during scoping. Unresolved items use `[ ]`, resolved items use `[x]`.
+- `[Technical]` = code/architecture/API uncertainties. Resolved via empirical investigation and automated verification (assertions).
+- `[Functional]` = behavior/UX/interaction needing user preference input. Resolved via an interactive functional demo the user can run as if it were the end product. Automated assertions still run behind the scenes to verify technical integrity before presenting.
+
+- [ ] [Technical] Title: Description of the unknown
+- [ ] [Functional] Title (knob1=val1|val2|val3, knob2=val1|val2): Description of the unknown
+- [x] [Technical] Title: Resolution — confirmed via investigation/evidence
+- [x] [Functional] Title: Resolution — confirmed via Showcase Gate demo</item>
+        </section>
+        <section n="6" name="Implementation Plan">
           <item name="Heading">## Implementation Plan</item>
           <item name="Content">Summary of changes required to integrate the feature into the existing codebase, combined with the actionable strategy and guidelines for implementation (such as Test Harness strategy or Mermaid diagrams). Can be populated by the Architect, Prototyper, Pathfinder, or Debugger, and updated by the Developer.</item>
         </section>
-        <section n="6" name="Deliverables">
+        <section n="7" name="Deliverables">
           <item name="Heading">## Deliverables</item>
           <item name="Content">Checklist of atomic units of work ordered following the Tracer Bullet Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Wiring (The Tracer Bullet: Connecting components to the Composition Root/entrypoints returning trivial/hardcoded data to prove the end-to-end path), 5. Logic (Replacing the Tracer Bullet with complex Rules/Algorithms via TDD), 6. Migration (Updating consumers), 7. Refactor (Internal restructuring; non-breaking), 8. Cleanup (Pruning; Contraction). Every deliverable MUST be an atomic "Green-to-Green" transition; behavioral tests MUST be bundled with Wiring; Unit tests with Logic. Format: `- [ ] **Type** - Description`.</item>
         </section>
-        <section n="7" name="Implementation Notes">
+        <section n="8" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
           <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings. Used for the as-built update of Component Docs.</item>
         </section>
-        <section n="8" name="Verification">
+        <section n="9" name="Verification">
           <item name="Heading">## Verification</item>
           <item name="Content">Checklist of manual smoke-test scenarios that the Developer executes before marking the slice as Complete. Populated by the Architect or Prototyper.</item>
         </section>

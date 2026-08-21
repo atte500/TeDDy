@@ -15,7 +15,7 @@
 
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
-        <step n="0" name="De-risking Requirement">If the provided Vertical Slice has Type: Feature AND Status: Pending Prototype (or has no linked Prototype), do NOT proceed. Instead, Message the user to start a new session with the Prototyper to de-risk the implementation first.</step>
+        <step n="0" name="De-risking Requirement">If the provided Vertical Slice has any unresolved `[ ]` items in its `## Key Unknowns` section, do NOT proceed. Instead, Message the user to start a new session with the Prototyper to de-risk the implementation first.</step>
         <step n="1" name="Initialization">If missing, CREATE slice at `docs/project/slices/00-NN-{{feature}}.md` (ad-hoc slices MUST use 00 prefix, not a milestone number). Whether newly created or pre-existing, you MUST immediately `EDIT` the slice to change its Status to `In Progress`. If a new slice was created, you MUST execute the commit following the VCP for the skeleton slice before proceeding.</step>
         <step n="2" name="Discovery">
           Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and prior agent artifacts required for a thorough plan audit. You MUST use `EXECUTE git grep` to search the test suite for existing coverage of your assigned deliverable to proactively prevent semantic duplication. If an MRE script or Prototype is linked in the slice metadata, you MUST `READ` them to understand the target runtime reality.
@@ -240,19 +240,30 @@ WIP & REMINDERS:
           <item name="Heading">## Edge Cases</item>
           <item name="Content">List of anticipated edge cases and failures. Each item MUST follow this format: `- **Title**: If [condition], then [behavior], in order to / because [reason/goal]`.</item>
         </section>
-        <section n="5" name="Implementation Plan">
+        <section n="5" name="Key Unknowns">
+          <item name="Heading">## Key Unknowns</item>
+          <item name="Content">Checklist of uncertainties and risks identified during scoping. Unresolved items use `[ ]`, resolved items use `[x]`.
+- `[Technical]` = code/architecture/API uncertainties. Resolved via empirical investigation and automated verification (assertions).
+- `[Functional]` = behavior/UX/interaction needing user preference input. Resolved via an interactive functional demo the user can run as if it were the end product. Automated assertions still run behind the scenes to verify technical integrity before presenting.
+
+- [ ] [Technical] Title: Description of the unknown
+- [ ] [Functional] Title (knob1=val1|val2|val3, knob2=val1|val2): Description of the unknown
+- [x] [Technical] Title: Resolution — confirmed via investigation/evidence
+- [x] [Functional] Title: Resolution — confirmed via Showcase Gate demo</item>
+        </section>
+        <section n="6" name="Implementation Plan">
           <item name="Heading">## Implementation Plan</item>
           <item name="Content">Summary of changes required to integrate the feature into the existing codebase, combined with the actionable strategy and guidelines for implementation (such as Test Harness strategy or Mermaid diagrams). Can be populated by the Architect, Prototyper, Pathfinder, or Debugger, and updated by the Developer.</item>
         </section>
-        <section n="6" name="Deliverables">
+        <section n="7" name="Deliverables">
           <item name="Heading">## Deliverables</item>
           <item name="Content">Checklist of atomic units of work ordered following the Tracer Bullet Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Wiring (The Tracer Bullet: Connecting components to the Composition Root/entrypoints returning trivial/hardcoded data to prove the end-to-end path), 5. Logic (Replacing the Tracer Bullet with complex Rules/Algorithms via TDD), 6. Migration (Updating consumers), 7. Refactor (Internal restructuring; non-breaking), 8. Cleanup (Pruning; Contraction). Every deliverable MUST be an atomic "Green-to-Green" transition; behavioral tests MUST be bundled with Wiring; Unit tests with Logic. Format: `- [ ] **Type** - Description`.</item>
         </section>
-        <section n="7" name="Implementation Notes">
+        <section n="8" name="Implementation Notes">
           <item name="Heading">## Implementation Notes</item>
           <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings. Used for the as-built update of Component Docs.</item>
         </section>
-        <section n="8" name="Verification">
+        <section n="9" name="Verification">
           <item name="Heading">## Verification</item>
           <item name="Content">Checklist of manual smoke-test scenarios that the Developer executes before marking the slice as Complete. Populated by the Architect or Prototyper.</item>
         </section>
