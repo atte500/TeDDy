@@ -10,7 +10,7 @@ To harden the system against external failures, ensure cost/safety limits, and i
 Implement resilient infrastructure patterns (retries, User-Agent rotation), enforce strict safety bounds (turn/cost limits), automate context management (auto-addition, recursion), and harden the parser/orchestrator against edge-case failures.
 
 ## Guidelines (The "How")
-- **Test Harness Triad Strategy:**
+- **Test Harness Strategy:**
     - **Driver:** Use `MockLlmClient` to simulate transient SSL/Timeout failures.
     - **Observer:** Use `FileSystemObserver` to verify recursive context contents in `input.md`.
     - **Setup:** Use `TestEnvironment` to patch `IFileSystemManager` for directory traversal tests.

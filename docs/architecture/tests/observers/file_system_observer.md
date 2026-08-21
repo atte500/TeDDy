@@ -2,7 +2,7 @@
 - **Status:** Planned
 
 ## 1. Purpose / Responsibility
-Acting as the **Observer** in the Test Harness Triad, the `FileSystemObserver` is a specialized test utility responsible for performing complex assertions against the local file system. It abstracts away low-level `pathlib` or `os` calls into a high-level, expressive API for verifying the results of file system operations.
+Acting as the **Observer** in the Test Harness, the `FileSystemObserver` is a specialized test utility responsible for performing complex assertions against the local file system. It abstracts away low-level `pathlib` or `os` calls into a high-level, expressive API for verifying the results of file system operations.
 
 ## 2. Ports
 - **Primary Driving Adapter:** Used by Integration and Acceptance tests to verify file system side-effects.

@@ -10,7 +10,7 @@ To simplify the AI's communication by separating "acting" and "communicating" in
 We will implement the "Unified Turn" pattern, where the `MarkdownPlanParser` supports both `## Action Plan` and `## Message` headings. A `## Message` section is parsed into a specialized `MESSAGE` domain action that captures raw Markdown. The `ExecutionOrchestrator` will treat turns containing only a `MESSAGE` action as auto-executing communication turns.
 
 ## Guidelines (The "How")
-- **Test Harness Triad:** Use `MarkdownPlanBuilder` to generate plans with the new `## Message` section and `ReportParser` to verify the resulting execution report.
+- **Test Harness:** Use `MarkdownPlanBuilder` to generate plans with the new `## Message` section and `ReportParser` to verify the resulting execution report.
 - **Mutual Exclusivity:** Validation MUST fail if both `## Action Plan` and `## Message` are present in the same plan.
 - **CLI Flag Realignment:** Support `-a/--agent` and `-c/--context` on the `start` command to allow programmatic handoffs via prompt instructions.
 

@@ -93,7 +93,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for DuckDuckGo searches with automated follow-up scraping.        | [WebSearcherAdapter](./adapters/outbound/web_searcher_adapter.md)                 |
 | **YamlConfigAdapter**          | Implements `IConfigService` by reading configuration from a `.teddy/config.yaml` file.                               | [YamlConfigAdapter](./adapters/outbound/yaml_config_adapter.md)                   |
 
-#### Test Harness Triad (Setup, Driver, Observer)
+#### Test Harness (Setup, Driver, Observer)
 
 | Component                        | Description                                                                                                                                | Contract                                               |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
