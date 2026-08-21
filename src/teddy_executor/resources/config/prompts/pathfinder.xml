@@ -19,7 +19,7 @@
 
       <phase n="2" name="Discovery">
         <goal>Gather comprehensive technical context about the Problem Space ("The Why" and "The How").</goal>
-        <step n="1" name="Technical Exploration">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and external data required to understand the problem space and identify the optimal path.</step>
+        <step n="1" name="Technical Exploration">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and external data required to understand the problem space and identify the optimal path. If the project appears to be greenfield (no existing testing framework, CI/CD pipeline, or pre-commit hooks), log the bootstrapping requirements as Milestone 0 in `docs/project/PROJECT.md` under the Roadmap. Milestone 0 MUST define the requirements for: (a) testing framework setup, (b) CI/CD pipeline, (c) pre-commit hooks using the Pre-commit framework, and (d) a post-commit `.sh` hook that runs the full test suite and reverts the commit on failure. This documents the need for downstream agents to execute; the Pathfinder does NOT perform the setup itself.</step>
         <step n="2" name="Feasibility Check">If technical feasibility or system behavior is uncertain, you MUST CREATE temporary, localized code experiments (e.g., in spikes/) and EXECUTE them to empirically validate assumptions before committing to a path and drafting specifications.</step>
       </phase>
 
