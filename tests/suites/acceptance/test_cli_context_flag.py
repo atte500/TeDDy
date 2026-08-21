@@ -51,9 +51,10 @@ def test_start_command_accepts_context_and_overrides(tmp_path: Path, monkeypatch
     )
     session_root = session_dirs[0]
 
-    # Verify session.context includes the extra file
+    # Verify session.context includes the extra file (normalized, leading slash stripped)
     session_context = (session_root / "session.context").read_text()
-    assert str(extra_file) in session_context
+    normalized = str(extra_file).lstrip("/")
+    assert normalized in session_context
 
     # Verify meta.yaml includes overrides
     # We check Turn 01's meta.yaml for persistence of overrides if they are turn-scoped,

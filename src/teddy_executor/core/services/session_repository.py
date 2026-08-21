@@ -136,7 +136,7 @@ class SessionRepository(ISessionRepository):
         if not self._file_system_manager.path_exists(src_dir):
             return
         for f in self._file_system_manager.list_directory(src_dir):
-            if Path(f).stem == agent:
+            if Path(f).stem.casefold() == agent.casefold():
                 src_path = f"{src_dir}/{f}"
                 if self._file_system_manager.path_exists(src_path):
                     content = self._file_system_manager.read_file(src_path)

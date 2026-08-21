@@ -80,7 +80,7 @@ class SessionService(ISessionManager):
         # Find the prompt file with the agent name (any extension)
         prompt_filename = None
         for f in self._file_system_manager.list_directory(prompts_dir):
-            if Path(f).stem == options.agent_name:
+            if Path(f).stem.casefold() == options.agent_name.casefold():
                 prompt_filename = f
                 break
         if prompt_filename is None:
@@ -128,10 +128,15 @@ class SessionService(ISessionManager):
             if line.strip() and not line.strip().startswith("#")
         ]
 
-        # Merge additional context
+        # Merge additional context with path normalization
         for path in options.additional_context:
-            if path and path not in clean_lines:
-                clean_lines.append(path)
+            if path:
+                normalized = path.strip().replace("\\", "/")
+                if normalized.startswith("./"):
+                    normalized = normalized[2:]
+                normalized = normalized.lstrip("/")
+                if normalized and normalized not in clean_lines:
+                    clean_lines.append(normalized)
 
         # Add initial_request path BEFORE dedup so it's also deduplicated
         if options.initial_request:
@@ -519,7 +524,7 @@ class SessionService(ISessionManager):
         src_session_str = src_session.as_posix()
         if self._file_system_manager.path_exists(src_session_str):
             for f in self._file_system_manager.list_directory(src_session_str):
-                if Path(f).stem == agent_name:
+                if Path(f).stem.casefold() == agent_name.casefold():
                     src_prompt_path = (src_session / f).as_posix()
                     break
         if src_prompt_path and self._file_system_manager.path_exists(src_prompt_path):

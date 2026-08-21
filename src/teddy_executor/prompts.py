@@ -6,9 +6,10 @@ def _search_prompt_in_dir(directory: Path, prompt_name: str) -> Optional[str]:
     """Searches a directory for a prompt file and returns its content."""
     if not directory.is_dir():
         return None
-    found_files = list(directory.glob(f"{prompt_name}.*"))
-    if found_files:
-        return found_files[0].read_text(encoding="utf-8")
+    prompt_name_cased = prompt_name.casefold()
+    for f in directory.iterdir():
+        if f.is_file() and f.stem.casefold() == prompt_name_cased:
+            return f.read_text(encoding="utf-8")
     return None
 
 
