@@ -20,7 +20,7 @@
 Both issues are pre-existing behaviors, not recent regressions. The causative code paths are:
 1. `session_ervice.py:83` — `if Path(f).stem == options.agent_name` is an exact, case-sensitive stem comparison against prompt filenames. Prompt files are lowercase (e.g., `developer.xml`), so any case variant of `-a` fails. The same exact-match pattern also exists in `_ lone_session_artifacts`and `session_repository.py` (~line 139 per the PROJECT.md slice `00-03` audit note).
 2. `ession_service.py::_ prepre_session_context` — entries from `options.additional_context`( the `- c` flag) are appended verbatim, without stripping leading slashes, `./` prefixes, or normalizing backslashes. The class already owns `_ extract_resource_path()` which performs exactly this normalization (used for READ/CREATE/EDT resorce dedup), but it is not reused for `-` seeding.
-3. `session_cli_handlers.py::_ run_cli_prefight_check` — calls `prompt_manager.get_prompt_content(agent)` beore session 
+3. `session_cli_handlers.py::_ run_cli_prefight_check` — calls `prompt_manager.get_prompt_content(agent)` beore session
 real estate; this   is another case-sensitive gate that must be aligned for an end-to-end fix.
 
 ### Environmental Triggers

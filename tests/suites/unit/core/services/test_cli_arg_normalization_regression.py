@@ -6,7 +6,7 @@ Regression tests for CLI arg normalization:
 2. Context path normalization: _prepare_session_context should strip
    leading slashes, ./ prefixes, and normalize backslashes.
 """
-from pathlib import Path
+
 from unittest.mock import MagicMock
 from datetime import datetime, timezone
 
@@ -51,10 +51,12 @@ class TestAgentNameCaseInsensitivity:
         create_session should succeed (case-insensitive).
         """
         fs = mock_deps["file_system_manager"]
+
         # Simulate .teddy/prompts/ directory with developer.xml
         # Must also handle init.context path check in _prepare_session_context
         def _path_exists(p):
             return p in (".teddy/prompts", ".teddy/init.context")
+
         fs.path_exists.side_effect = _path_exists
         fs.list_directory.return_value = ["developer.xml"]
         fs.read_file.return_value = "<prompt>developer content</prompt>"
@@ -76,8 +78,10 @@ class TestAgentNameCaseInsensitivity:
         Lowercase agent name still works.
         """
         fs = mock_deps["file_system_manager"]
+
         def _path_exists(p):
             return p in (".teddy/prompts", ".teddy/init.context")
+
         fs.path_exists.side_effect = _path_exists
         fs.list_directory.return_value = ["developer.xml"]
         fs.read_file.return_value = "<prompt>developer content</prompt>"
@@ -95,8 +99,10 @@ class TestAgentNameCaseInsensitivity:
         should still match case-insensitively.
         """
         fs = mock_deps["file_system_manager"]
+
         def _path_exists(p):
             return p in (".teddy/prompts", ".teddy/init.context")
+
         fs.path_exists.side_effect = _path_exists
         fs.list_directory.return_value = ["DEVELOPER.XML"]
         fs.read_file.return_value = "<prompt>content</prompt>"
@@ -113,8 +119,10 @@ class TestAgentNameCaseInsensitivity:
         Agent name "DeVeLoPeR" should match "developer.xml".
         """
         fs = mock_deps["file_system_manager"]
+
         def _path_exists(p):
             return p in (".teddy/prompts", ".teddy/init.context")
+
         fs.path_exists.side_effect = _path_exists
         fs.list_directory.return_value = ["developer.xml"]
         fs.read_file.return_value = "<prompt>content</prompt>"
@@ -144,8 +152,9 @@ class TestContextPathNormalization:
         Path "/abs/path/file.md" should become "abs/path/file.md".
         """
         options = SessionOptions(
-            name="test", agent_name="developer",
-            additional_context=["/abs/path/file.md"]
+            name="test",
+            agent_name="developer",
+            additional_context=["/abs/path/file.md"],
         )
         result = service._prepare_session_context(".teddy/sessions/test", options)
         assert "abs/path/file.md" in result
@@ -156,8 +165,7 @@ class TestContextPathNormalization:
         Path "./docs/readme.md" should become "docs/readme.md".
         """
         options = SessionOptions(
-            name="test", agent_name="developer",
-            additional_context=["./docs/readme.md"]
+            name="test", agent_name="developer", additional_context=["./docs/readme.md"]
         )
         result = service._prepare_session_context(".teddy/sessions/test", options)
         assert "docs/readme.md" in result
@@ -168,8 +176,7 @@ class TestContextPathNormalization:
         Path "docs\\guide.md" should become "docs/guide.md".
         """
         options = SessionOptions(
-            name="test", agent_name="developer",
-            additional_context=["docs\\guide.md"]
+            name="test", agent_name="developer", additional_context=["docs\\guide.md"]
         )
         result = service._prepare_session_context(".teddy/sessions/test", options)
         assert "docs/guide.md" in result
@@ -178,12 +185,13 @@ class TestContextPathNormalization:
     def test_all_three_forms_normalized(self, service):
         """Multiple paths with different issues all normalized."""
         options = SessionOptions(
-            name="test", agent_name="developer",
+            name="test",
+            agent_name="developer",
             additional_context=[
                 "/abs/path/file.md",
                 "./docs/readme.md",
-                "docs\\guide.md"
-            ]
+                "docs\\guide.md",
+            ],
         )
         result = service._prepare_session_context(".teddy/sessions/test", options)
         lines = result.strip().split("\n")
@@ -198,8 +206,9 @@ class TestContextPathNormalization:
     def test_empty_context_entry_skipped(self, service):
         """Empty string from -c should not add any line."""
         options = SessionOptions(
-            name="test", agent_name="developer",
-            additional_context=["/valid/path.md", ""]
+            name="test",
+            agent_name="developer",
+            additional_context=["/valid/path.md", ""],
         )
         result = service._prepare_session_context(".teddy/sessions/test", options)
         lines = [l for l in result.strip().split("\n") if l]
@@ -209,8 +218,7 @@ class TestContextPathNormalization:
     def test_dot_hidden_preserved(self, service):
         """Paths like .hidden/file.md should retain leading dot."""
         options = SessionOptions(
-            name="test", agent_name="developer",
-            additional_context=[".hidden/file.md"]
+            name="test", agent_name="developer", additional_context=[".hidden/file.md"]
         )
         result = service._prepare_session_context(".teddy/sessions/test", options)
         assert ".hidden/file.md" in result
