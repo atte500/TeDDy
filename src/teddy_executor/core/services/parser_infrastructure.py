@@ -1,6 +1,7 @@
 import os
 import re
 from typing import Any, List, Optional, Iterator, TYPE_CHECKING
+from urllib.parse import unquote
 
 
 # Insert a space after `#` on the first line if missing (e.g., `#Title` -> `# Title`)
@@ -96,7 +97,8 @@ class _PeekableStream:
 
 
 def normalize_path(path: str) -> str:
-    return path.replace("\\", "/")
+    result = path.replace("\\", "/")
+    return unquote(result)
 
 
 def normalize_link_target(target: str) -> str:
