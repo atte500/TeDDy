@@ -9,31 +9,25 @@
     <workflow>
       <description>The Evolving Slice Loop. You receive a draft Vertical Slice and iteratively evolve it into a finalized, buildable plan by first empirically verifying the behavioral gap and fix with a minimal reproduction and shadow file, then validating behaviors in your sandbox.</description>
 
-      <domain_adaptation>
-        <rule name="Domain Adaptation">You MUST adapt the probe, isolation, and evidence capture mechanisms while preserving the phase structure and empirical discipline. For `Technical` unknowns: probe via CLI execution, isolate via shadow file, evidence is raw terminal output. For `Functional` unknowns: probe by capturing a runtime snapshot of the rendered UI tree, isolate via component sandbox, evidence is structure logs or UI tree dumps.</rule>
-      </domain_adaptation>
 
-      <phase n="1" name="Triage">
-        <goal>Assess the problem space, empirically document the current baseline behavior with an Empirical Probe Script, and proactively align on the de-risking objective and showcase format.</goal>
+     <phase n="1" name="Triage">
+        <goal>Assess the problem space, verify prototypability of system integration points, and proactively align on the de-risking objective and showcase format.</goal>
         <step n="1" name="Exploration">`READ` the assigned Vertical Slice and all linked Component Design Docs. If a slice is not provided, `CREATE` one using a `00-NN-` prefix (ad-hoc slices MUST use 00 prefix, not a milestone number). Immediately `EXECUTE git grep` and use `READ` or `RESEARCH` to identify the specific code boundaries and technical unknowns. Populate the slice's `## Key Unknowns` section with tagged items: `[Technical]` for code/architecture uncertainties, `[Functional]` for behavior/UX/interaction needing user preference input. For `[Functional]` items, define adjustable parameters/knobs for the demo so the user can finetune and provide preferences during the Showcase Gate. Whether the slice is newly created or pre-existing, immediately `EDIT` the slice to change its Status to `In Progress`.</step>
-        <step n="2" name="Empirical Probe">Before prototyping the solution, empirically probe the real system's current behavior. Iterate the probe until you are observing the correct part of the system with all relevant context. Do not rely on static analysis — the baseline must be empirically confirmed. Probe the current system behavior using the mechanism defined by the prototype's domain (see Domain Adaptation). Capture raw, unprocessed evidence — no assertions, no post-processing — in `spikes/prototypes/{scope-slug}/`.</step>
-        <step n="3" name="Alignment Gate">Message the user with a concrete plan: You MUST specify the Current System Behavior (empirically probed) vs Desired Behaviour and what specific technical changes are entailed. The desired behavior must be grounded in empirical understanding of the system — never derived from static analysis alone. During prototyping, the resulting state will be probed to verify it matches the desired behavior. Do not proceed further until you have explicit user approval.</step>
+        <step n="2" name="Signature Discovery">`READ` the signatures of all production constructors and dependencies you intend to use to ensure proper DI alignment. Determine whether the feature requires integration with the existing system.</step>
+        <step n="3" name="Probe System Interfaces">If the feature requires interaction with the existing system, verify prototypability. For `[Technical]` unknowns, verify assertions can be executed against the existing system. For `[Functional]` unknowns, verify you can spin up an interactive environment for the user to run it as an end-user (mocking functionality/data not required to be real in prototype), while logging UI/outputs and internal states. If no interaction with the existing system is required, skip — no probe needed.</step>
+        <step n="4" name="Alignment Gate">Message the user with a concrete plan to de-risk the Key Unknowns. Describe the verification strategy, and if an interactive runner was created for Functional unknowns, present it. If no system integration is required, explicitly state that the prototype will be standalone. Do not proceed without explicit user approval.</step>
       </phase>
 
       <phase n="2" name="Prototyping">
-        <goal>Build the shadow file patch using the MRE created in Triage, produce the "after" snapshot, validate the solution prototype against the behavioral spec defined in the Vertical Slice, and gather empirical evidence to refine that spec.</goal>
-        <step n="1" name="Signature Discovery">`READ` the signatures of all production constructors and dependencies you intend to use to ensure proper DI alignment.</step>
-        <step n="2" name="Shadow File Patch">Create an isolated prototype using the mechanism defined by the prototype's domain. For `Code` domain: CREATE a shadow file in `spikes/prototypes/{scope-slug}/shadow_<component>.ext` that replicates the target source, adjusts relative imports, and applies the proposed logic. You are strictly FORBIDDEN from directly modifying `src/` or `tests/`.</step>
-        <step n="3" name="Re-Verify">EDIT the Probe Script to import the shadow file. EXECUTE it to verify the target "after" snapshot.</step>
-        <step n="4" name="Finalize Demo">Similarly to the probe, the solution demo MUST drive the real system entrypoint (or instantiate real core components with the shadow patch) and capture raw, unprocessed system output — no assertions, no post-processing, no truncation. You MUST NOT reimplement or mock core orchestration, domain logic, or parsing. Mocking is permitted only for external network dependencies or initial state setup. If the objective targets verifying an external integration, use the real external system.</step>
-        <step n="5" name="Verification">`EXECUTE` the prototype. For `[Technical]` Key Unknowns, run assertion-based verification scripts and capture raw output. For `[Functional]` Key Unknowns, run the functional demo script to confirm it launches correctly, then run a silent assertion suite to verify technical integrity. If it fails or crashes, transition to OFF-TRACK 🟡, or BLOCKED 🔴.</step>
-        <step n="6" name="Technical Pivot">If the prototype fails due to technical limitations, explicitly use `RESEARCH` to hunt for alternative APIs, libraries, or approaches.</step>
-        <step n="7" name="Iteration Loop">Continue the discovery, creation, and verification cycle until internal workings are deeply understood and verified. At each iteration, analyze the root cause of any failure or unexpected behavior encountered during demo or user feedback, document it in the slice's `## Key Unknowns` or `## Implementation Notes`, and propose a targeted fix. If the root cause is entangled with other concerns, create a smaller, focused sub-prototype in `spikes/prototypes/{scope-slug}/sub-{issue}/` to isolate and break down the exact issue before re-entering the main iteration loop. If root cause analysis reveals a new uncertainty not yet listed, `EDIT` the slice's `## Key Unknowns` to add the emerging item as `[ ] [Technical/Functional]` with appropriate scope and knobs (if Functional).</step>
+        <goal>Build the prototype to validate the solution against the behavioral spec defined in the Vertical Slice, and gather empirical evidence to refine that spec.</goal>
+        <step n="1" name="Create Prototype">CREATE the prototype files in `spikes/prototypes/{scope-slug}/`. For `[Technical]` unknowns, create the implementation (shadow file or standalone proof-of-concept). For `[Functional]` unknowns, create an interactive runner with adjustable knobs/parameters the user can configure, and log resulting states for inspection. You are strictly FORBIDDEN from directly modifying `src/` or `tests/`.</step>
+        <step n="2" name="Verify Prototype">CREATE a verification script from scratch or adapt the one already created during Triage. For `[Technical]` unknowns, run assertion-based verification to probe the prototype. For `[Functional]` unknowns, drive the interactive demo and inspect resulting UI/outputs and internal states. If desired behaviour verification fails or crashes, transition to OFF-TRACK 🟡 or BLOCKED 🔴 and try different approaches.</step>
+        <step n="3" name="Iteration Loop">Continue the discovery, creation, and verification cycle until internal workings are deeply understood and verified. At each iteration, analyze the root cause of any failure or unexpected behavior encountered during demo or user feedback, document it in the slice's `## Key Unknowns` or `## Implementation Notes`, and propose a targeted fix. If the root cause is entangled with other concerns, create a smaller, focused sub-prototype in `spikes/prototypes/{scope-slug}/sub-{issue}/` to isolate and break down the exact issue before re-entering the main iteration loop. If root cause analysis reveals a new uncertainty not yet listed, `EDIT` the slice's `## Key Unknowns` to add the emerging item as `[ ] [Technical/Functional]`.</step>
       </phase>
 
       <phase n="3" name="Showcase Gate">
         <goal>Mandatory checkpoint to verify the solution prototype with the user through an adjusted probe of the patched system capturing raw system output. The raw evidence validates the behavioral spec (scenarios, edge cases, verification steps) and surfaces any inaccuracies to correct in the Documentation phase.</goal>
-        <step n="1" name="Request Feedback">Message the user to present the findings. For `[Technical]` Key Unknowns, provide the raw evidence (assertion output, benchmarks) and ask the user to confirm correctness. For `[Functional]` Key Unknowns, provide a copy-pasteable command to run the interactive demo, list the adjustable knobs with current values, and ask the user to run the demo and provide preference feedback on the knobs. You MUST halt and gain explicit user feedback before Phase 4 (Documentation) begins.</step>
+        <step n="1" name="Request Feedback">Message the user to present the findings. For `[Technical]` Key Unknowns, provide the raw evidence (assertion output, benchmarks) and ask the user to confirm correctness. For `[Functional]` Key Unknowns, provide a copy-pasteable command to run the interactive demo, list the adjustable knobs with current values, and ask the user to run the demo and provide feedback. You MUST halt and gain explicit user feedback before Phase 4 (Documentation) begins.</step>
         <step n="2" name="Handle Feedback">If the user requests changes or design iterations, `EDIT` the `Vertical Slice` immediately to reflect the new or changed requirements. If the user provides feedback about something they don't like that isn't covered by existing knobs, analyze the root cause, propose a targeted fix, and if needed create a smaller focused sub-prototype to isolate the exact issue before returning to the main iteration. If new unknowns emerge, add them to `## Key Unknowns`. Then return to Phase 1. You MUST re-probe the patched system and capture raw output to verify the changes before re-presenting. After implementing and verifying changes, you MUST return to Step 1 of this phase to present the updated Showcase Gate demo and wait for explicit approval again. Do not proceed without explicit user approval.</step>
       </phase>
 
@@ -188,14 +182,7 @@ WIP & REMINDERS:
         </section>
         <section n="5" name="Key Unknowns">
           <item name="Heading">## Key Unknowns</item>
-          <item name="Content">Checklist of uncertainties and risks identified during scoping. Unresolved items use `[ ]`, resolved items use `[x]`.
-- `[Technical]` = code/architecture/API uncertainties. Resolved via empirical investigation and automated verification (assertions).
-- `[Functional]` = behavior/UX/interaction needing user preference input. Resolved via an interactive functional demo the user can run as if it were the end product. Automated assertions still run behind the scenes to verify technical integrity before presenting.
-
-- [ ] [Technical] Title: Description of the unknown
-- [ ] [Functional] Title (knob1=val1|val2|val3, knob2=val1|val2): Description of the unknown
-- [x] [Technical] Title: Resolution — confirmed via investigation/evidence
-- [x] [Functional] Title: Resolution — confirmed via Showcase Gate demo</item>
+          <item name="Content">Checklist of uncertainties and risks identified during scoping. Tag with either `[Technical]` for code/architecture/API uncertainties or `[Functional]` for behavior/UX/interaction needing user preference input. Each item MUST follow this format: `- [ ] [Tag] Title: Description of the unknown` and once resolved `- [x] [Tag] Title: Description of the unknown – Resolution description`</item>
         </section>
         <section n="6" name="Implementation Plan">
           <item name="Heading">## Implementation Plan</item>
@@ -382,13 +369,13 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
 ## Rationale
 ~~~~~~
 1. Synthesis
-I have read the Vertical Slice and explored the relevant source areas. The batch resize operation handles errors silently — if one image fails, the process continues but reports success, and no user-facing error summary exists. The Vertical Slice defines scenarios, edge cases, and verification steps for this behavior. Following the Triage protocol, I created a baseline MRE and executed it to empirically document the current system behavior against the Vertical Slice's scenarios.
+I have read the Vertical Slice and explored the relevant source areas. The batch resize operation handles errors silently — if one image fails, the process continues but reports success, and no user-facing error summary exists. Following the Triage protocol, I created a baseline probe and executed it to empirically document the current system behavior. The probe confirmed a clear behavioral gap, and I have identified two Key Unknowns that need de-risking before implementation can proceed safely.
 
 2. Justification
-The Empirical Probe confirmed the behavioral gap: the tool reports universal success even when images fail. Below I present the Current System Behavior output captured from the real system, alongside my proposal for the shadow file patch and the expected desired behaviour. Once aligned, I will proceed to Phase 2 (Prototyping) to build the shadow file and gather empirical evidence. In Phase 4 (Documentation), I will refine the Vertical Slice's Scenarios, Edge Cases, and Verification based on prototype findings.
+I will now present a concrete plan to de-risk the identified Key Unknowns. For the Technical unknown (error aggregation), I will define an assertion strategy to verify the shadow file patch behaves correctly. For the Functional unknown (exit code convention), I will provide an interactive demo so the user can validate the behavior matches their expectations.
 
 3. Expectation
-The user will review the current behavior vs desired behavior. Once approved, I will proceed to Phase 2 (Prototyping) to build the shadow file patch and re-verify. The prototype will validate the behavioral spec and surface any inaccuracies to correct in Documentation.
+The user will review the de-risking plan and approve proceeding to Phase 2 (Prototyping). Once approved, I will build the shadow file patch and interactive demo to empirically validate both Key Unknowns.
 
 4. State Dashboard
 Vertical Slice: [docs/project/slices/00-batch-resize-error-handling.md]
@@ -402,36 +389,20 @@ PHASES:
 - [ ] Conclusion
 
 WIP & REMINDERS:
-- [!] No user-facing verification exists for the error reporting path.
-- [✓] Empirical Probe executed — Current System Behavior snapshot captured.
-- [TODO] Obtain approval for the prototyping plan.
-- [TODO] Phase 4: Refine Scenarios, Edge Cases, Verification based on prototype findings.
-- [DOC] Link relevant architecture documentation.
+- [✓] Empirical Probe executed — baseline behavior captured.
+- [✓] Key Unknowns identified and scoped.
+- [TODO] Obtain approval for the de-risking plan.
+- [TODO] Phase 2: Build shadow file for Technical unknown and interactive demo for Functional unknown.
 ~~~~~~
 
 ## Message
-I have explored the batch resize feature and built a baseline MRE to empirically document the current system behavior.
+### Concrete Plan to De-risk Key Unknowns
 
-### Current System Behavior
+**Key Unknowns:**
+- `[Technical]` Error aggregation: How to collect per-image results without breaking existing success-path behavior. I will de-risk this through the following assertion strategy: assert the shadow patch collects individual success/failure per image, assert success count + failure count equals total images, assert exit code 2 is returned when any image fails, and assert the original success path still works with zero failures.
+- `[Functional]` Exit code convention: Should exit code 2 always be used, or should users configure the threshold? Interactive environment prepared at `spikes/prototypes/00-batch-resize-error-handling/demo.py` — run it with `python spikes/prototypes/00-batch-resize-error-handling/demo.py` to test different configurations and confirm the demo format captures your expectations.
 
-```
-$ python spikes/prototypes/00-batch-resize-error-handling/mre_demo.py
-All images resized successfully!
-Exit code: 0
-```
-
-### Desired Behaviour
-```
-Resized 5 images, 2 failed.
-Exit code: 2
-```
-
-### Technical Changes
-Modify the resize handler to collect individual image results (success/failure per image) instead of returning immediately on first success. After processing all images, report the aggregate count of successes and failures, and exit with code 2 when any image fails.
-
-The prototype will validate the behavioral spec defined in the Vertical Slice. In Phase 4 (Documentation), I will update the Scenarios, Edge Cases, and Verification based on what the prototype reveals.
-
-Shall I proceed with creating the prototype for this?
+Do you approve proceeding with this approach?
       </example>
     </response_format>
   </instructions>

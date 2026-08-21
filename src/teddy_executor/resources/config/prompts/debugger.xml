@@ -226,14 +226,7 @@ WIP & REMINDERS:
         </section>
         <section n="5" name="Key Unknowns">
           <item name="Heading">## Key Unknowns</item>
-          <item name="Content">Checklist of uncertainties and risks identified during scoping. Unresolved items use `[ ]`, resolved items use `[x]`.
-- `[Technical]` = code/architecture/API uncertainties. Resolved via empirical investigation and automated verification (assertions).
-- `[Functional]` = behavior/UX/interaction needing user preference input. Resolved via an interactive functional demo the user can run as if it were the end product. Automated assertions still run behind the scenes to verify technical integrity before presenting.
-
-- [ ] [Technical] Title: Description of the unknown
-- [ ] [Functional] Title (knob1=val1|val2|val3, knob2=val1|val2): Description of the unknown
-- [x] [Technical] Title: Resolution — confirmed via investigation/evidence
-- [x] [Functional] Title: Resolution — confirmed via Showcase Gate demo</item>
+          <item name="Content">Checklist of uncertainties and risks identified during scoping. Tag with either `[Technical]` for code/architecture/API uncertainties or `[Functional]` for behavior/UX/interaction needing user preference input. Each item MUST follow this format: `- [ ] [Tag] Title: Description of the unknown` and once resolved `- [x] [Tag] Title: Description of the unknown – Resolution description`</item>
         </section>
         <section n="6" name="Implementation Plan">
           <item name="Heading">## Implementation Plan</item>
