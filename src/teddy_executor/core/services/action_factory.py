@@ -138,7 +138,13 @@ class ActionFactory(IActionFactory):
                 "execution.default_timeout_seconds", 60.0
             )
             if default_timeout is not None:
-                execute_params["timeout"] = float(default_timeout)
+                from teddy_executor.core.services.parser_infrastructure import (
+                    coerce_param,
+                )
+
+                coerced = coerce_param(default_timeout, float)
+                if coerced is not None:
+                    execute_params["timeout"] = coerced
 
         return method(**execute_params)
 
@@ -151,7 +157,13 @@ class ActionFactory(IActionFactory):
                 "execution.similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
             )
             if global_threshold is not None:
-                kwargs["similarity_threshold"] = float(global_threshold)
+                from teddy_executor.core.services.parser_infrastructure import (
+                    coerce_param,
+                )
+
+                coerced = coerce_param(global_threshold, float)
+                if coerced is not None:
+                    kwargs["similarity_threshold"] = coerced
         return method(**kwargs)
 
     def _handle_message_protocol(self, method: Any, kwargs: dict) -> Any:

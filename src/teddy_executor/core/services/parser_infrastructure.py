@@ -224,3 +224,50 @@ def translate_setup_commands(
                 env[key] = value
 
     return cwd, env
+
+
+def coerce_param(value: Any, expected_type: type) -> Any:
+    """
+    Best-effort coercion of a raw parameter value to the expected type.
+    If coercion fails entirely, returns None (caller should remove/ignore param).
+    """
+    if value is None:
+        return None
+    if isinstance(value, expected_type):
+        return value
+
+    if expected_type is int:
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            match = re.match(r"^(\d+)", str(value).strip())
+            return int(match.group(1)) if match else None
+
+    if expected_type is float:
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            match = re.match(r"^(\d+(?:\.\d+)?)", str(value).strip())
+            return float(match.group(1)) if match else None
+
+    if expected_type is bool:
+        if isinstance(value, str):
+            return value.strip().lower() == "true"
+        return bool(value)
+
+    return value
+
+
+def coerce_action_params(params: dict, type_map: dict[str, type]) -> dict:
+    """
+    Apply best-effort coercion to all params declared in type_map.
+    Params that fail coercion entirely are removed (fall back to system default).
+    """
+    for key, expected_type in type_map.items():
+        if key in params:
+            coerced = coerce_param(params[key], expected_type)
+            if coerced is None:
+                del params[key]
+            else:
+                params[key] = coerced
+    return params

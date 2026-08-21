@@ -32,7 +32,9 @@ def parse_create_action(
     )
 
     if "overwrite" in params:
-        params["overwrite"] = params["overwrite"].lower() == "true"
+        from teddy_executor.core.services.parser_infrastructure import coerce_action_params
+
+        params = coerce_action_params(params, {"overwrite": bool})
 
     code_block = stream.next()
     if not isinstance(code_block, CodeFence):

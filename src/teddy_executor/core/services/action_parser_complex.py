@@ -78,8 +78,11 @@ def parse_edit_action(
         },
     )
 
-    if "match_all" in params:
-        params["match_all"] = str(params["match_all"]).lower() == "true"
+    from teddy_executor.core.services.parser_infrastructure import coerce_action_params
+
+    params = coerce_action_params(params, {
+        "match_all": bool,
+    })
 
     edits = []
     while stream.has_next():
@@ -130,12 +133,12 @@ def parse_execute_action(
     if "background" in params:
         params["background"] = params["background"].lower() == "true"
 
-    if "timeout" in params and params["timeout"]:
-        try:
-            params["timeout"] = int(params["timeout"])
-        except ValueError:
-            # Leave as string, ActionFactory or validation will handle it
-            pass
+    from teddy_executor.core.services.parser_infrastructure import coerce_action_params
+
+    params = coerce_action_params(params, {
+        "timeout": int,
+        "tail": int,
+    })
 
     env_from_meta = parse_env_from_metadata(metadata_list)
     if env_from_meta:

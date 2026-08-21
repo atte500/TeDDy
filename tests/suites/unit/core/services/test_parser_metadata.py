@@ -49,7 +49,7 @@ def test_parse_execute_action_with_invalid_timeout(parser: IPlanParser):
     """Verify invalid Timeout remains as a string."""
     builder = MarkdownPlanBuilder("T").add_execute("ls", timeout="abc")
     action = _p(parser, builder).actions[0]
-    assert action.params.get("timeout") == "abc"
+    assert "timeout" not in action.params
 
 
 def test_parse_execute_action_with_cd_directive(parser: IPlanParser):
@@ -95,7 +95,7 @@ def test_parse_execute_action_with_tail(parser: IPlanParser):
     assert action.params.get("tail") is not None, (
         "Tail parameter should be extracted when present"
     )
-    assert action.params["tail"] == "5"
+    assert action.params["tail"] == 5
 
 
 def test_parse_read_action_with_lines(parser: IPlanParser):
