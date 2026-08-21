@@ -1,7 +1,5 @@
 """Tests for parameter coercion utility functions and parser integration."""
 
-import pytest
-
 from teddy_executor.core.services.parser_infrastructure import (
     coerce_param,
     coerce_action_params,

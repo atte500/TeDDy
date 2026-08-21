@@ -80,9 +80,12 @@ def parse_edit_action(
 
     from teddy_executor.core.services.parser_infrastructure import coerce_action_params
 
-    params = coerce_action_params(params, {
-        "match_all": bool,
-    })
+    params = coerce_action_params(
+        params,
+        {
+            "match_all": bool,
+        },
+    )
 
     edits = []
     while stream.has_next():
@@ -135,10 +138,13 @@ def parse_execute_action(
 
     from teddy_executor.core.services.parser_infrastructure import coerce_action_params
 
-    params = coerce_action_params(params, {
-        "timeout": int,
-        "tail": int,
-    })
+    params = coerce_action_params(
+        params,
+        {
+            "timeout": int,
+            "tail": int,
+        },
+    )
 
     env_from_meta = parse_env_from_metadata(metadata_list)
     if env_from_meta:

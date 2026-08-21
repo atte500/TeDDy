@@ -32,7 +32,9 @@ def parse_create_action(
     )
 
     if "overwrite" in params:
-        from teddy_executor.core.services.parser_infrastructure import coerce_action_params
+        from teddy_executor.core.services.parser_infrastructure import (
+            coerce_action_params,
+        )
 
         params = coerce_action_params(params, {"overwrite": bool})
 
