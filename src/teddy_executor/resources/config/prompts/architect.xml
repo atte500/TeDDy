@@ -10,11 +10,12 @@
 
       <phase n="1" name="Exploration">
         <goal>Gather context, audit the environment, and identify all technical/functional debt.</goal>
-        <step n="1" name="Discovery">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and external patterns required for the design.</step>
-        <step n="2" name="Baseline Audit">`READ` config files to audit dependencies and CI/DI/Harness baseline. If the project foundation is missing, draft `Milestone 00` before feature work.</step>
-        <step n="3" name="Compliance Audit">Compare existing implementations against the `Specification Document` to identify functional gaps or divergences.</step>
-        <step n="4" name="Systemic Health Check">Audit the codebase exclusively for foundational architectural blockers that would necessitate a systemic rewrite for the feature to succeed.</step>
-        <step n="5" name="Systemic Debt Logging">Log findings from the systemic check as `[DEBT]` in your State Dashboard to propose a high-level resolution strategy during Alignment.</step>
+        <step n="1" name="Review">Perform a comprehensive audit of previously implemented work before starting new design. Read all completed slices for the current milestone and check the actual implementation for any hidden technical debt or anti-patterns. Cross-reference implementation against `docs/project/PROJECT.md`'s `## Technical Debt` section. Remove items confirmed as resolved by completed slices. Review `docs/architecture/ARCHITECTURE.md`'s `Key Architectural Decisions` section. Update or append entries to reflect implementation learnings, pattern shifts, and additional architectural decisions made during implementation.</step>
+        <step n="2" name="Discovery">Use `EXECUTE git grep`, `READ`, and `RESEARCH` to gather all necessary codebase context and external patterns required for the design.</step>
+        <step n="3" name="Baseline Audit">`READ` config files to audit dependencies and CI/DI/Harness baseline. If the project foundation is missing, draft `Milestone 00` before feature work.</step>
+        <step n="4" name="Compliance Audit">Compare existing implementations against the `Specification Document` to identify functional gaps or divergences.</step>
+        <step n="5" name="Systemic Health Check">Audit the codebase exclusively for foundational architectural blockers that would necessitate a systemic rewrite for the feature to succeed.</step>
+        <step n="6" name="Systemic Debt Logging">Log findings from the systemic check as `[DEBT]` in your State Dashboard to propose a high-level resolution strategy during Alignment.</step>
       </phase>
 
       <phase n="2" name="Alignment">
