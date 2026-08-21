@@ -53,7 +53,7 @@ def test_start_command_accepts_context_and_overrides(tmp_path: Path, monkeypatch
 
     # Verify session.context includes the extra file (normalized, leading slash stripped)
     session_context = (session_root / "session.context").read_text()
-    normalized = str(extra_file).lstrip("/")
+    normalized = str(extra_file).replace("\\", "/").lstrip("/")
     assert normalized in session_context
 
     # Verify meta.yaml includes overrides
@@ -73,7 +73,9 @@ def test_start_command_accepts_context_and_overrides(tmp_path: Path, monkeypatch
     session_context_file = session_root / "session.context"
     assert session_context_file.exists()
     content = session_context_file.read_text()
-    assert str(extra_file).lstrip("/") in content, "Additional context missing from session.context"
+    assert str(extra_file).replace("\\", "/").lstrip("/") in content, (
+        "Additional context missing from session.context"
+    )
 
     # Verify overrides were persisted in meta.yaml
     meta_file = session_root / "01" / "meta.yaml"
