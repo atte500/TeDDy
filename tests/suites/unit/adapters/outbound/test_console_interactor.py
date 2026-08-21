@@ -24,7 +24,14 @@ class TestConsoleInteractorAdapter:
         """Test that ask_question reads exactly one line of standard input if 'e' is not typed."""
         # The user just types their response and hits Enter.
         inputs = iter(["My standard response"])
-        monkeypatch.setattr("builtins.input", lambda: next(inputs))
+        monkeypatch.setattr(
+            "teddy_executor.adapters.outbound.console_interactor_ask_loop.ptk_prompt",
+            lambda msg, **kwargs: next(inputs),
+        )
+        monkeypatch.setattr(
+            "teddy_executor.adapters.outbound.console_interactor_ask_loop.ConsoleAskLoop._is_tty",
+            lambda self: True,
+        )
 
         response = adapter.ask_question("What say you?")
         assert response == "My standard response"
@@ -37,7 +44,14 @@ class TestConsoleInteractorAdapter:
 
         # Input 'e' to launch, then empty Enter to read result
         inputs = iter(["e", ""])
-        monkeypatch.setattr("builtins.input", lambda: next(inputs))
+        monkeypatch.setattr(
+            "teddy_executor.adapters.outbound.console_interactor_ask_loop.ptk_prompt",
+            lambda msg, **kwargs: next(inputs),
+        )
+        monkeypatch.setattr(
+            "teddy_executor.adapters.outbound.console_interactor_ask_loop.ConsoleAskLoop._is_tty",
+            lambda self: True,
+        )
 
         file_content_before_editor = ""
 
@@ -72,7 +86,14 @@ class TestConsoleInteractorAdapter:
         self, adapter: ConsoleInteractorAdapter, mock_env, monkeypatch
     ):
         inputs = iter(["e", "Fallback input", ""])
-        monkeypatch.setattr("builtins.input", lambda: next(inputs))
+        monkeypatch.setattr(
+            "teddy_executor.adapters.outbound.console_interactor_ask_loop.ptk_prompt",
+            lambda msg, **kwargs: next(inputs),
+        )
+        monkeypatch.setattr(
+            "teddy_executor.adapters.outbound.console_interactor_ask_loop.ConsoleAskLoop._is_tty",
+            lambda self: True,
+        )
 
         # Ensure no editor is found via port
         mock_env.get_env.return_value = None
@@ -86,7 +107,14 @@ class TestConsoleInteractorAdapter:
     ):
         # Input 'e' (fails), then "" (tries to read result but none exists), then "" (confirms empty response)
         inputs = iter(["e", "", ""])
-        monkeypatch.setattr("builtins.input", lambda: next(inputs))
+        monkeypatch.setattr(
+            "teddy_executor.adapters.outbound.console_interactor_ask_loop.ptk_prompt",
+            lambda msg, **kwargs: next(inputs),
+        )
+        monkeypatch.setattr(
+            "teddy_executor.adapters.outbound.console_interactor_ask_loop.ConsoleAskLoop._is_tty",
+            lambda self: True,
+        )
         mock_env.get_env.return_value = "mock_editor"
         mock_env.which.return_value = "/usr/bin/mock_editor"
 

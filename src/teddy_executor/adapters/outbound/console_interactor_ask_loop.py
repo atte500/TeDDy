@@ -1,7 +1,10 @@
 from __future__ import annotations
+import sys
 from typing import TYPE_CHECKING, Optional
 
 import typer
+from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.shortcuts import prompt as ptk_prompt
 
 if TYPE_CHECKING:
     from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
@@ -16,6 +19,25 @@ class ConsoleAskLoop:
         self._tooling = tooling
         self._active_editor_path: Optional[str] = None
         self._active_editor_marker: Optional[str] = None
+        self._history = InMemoryHistory()
+
+    def _is_tty(self) -> bool:
+        """Check if stdin is a real TTY (vs pipe/test runner)."""
+        return sys.stdin.isatty()
+
+    def _pt_prompt(self, prompt_text: str) -> str:
+        """Prompt the user using prompt_toolkit (TTY) or input() (non-TTY/pipe)."""
+        if not self._is_tty():
+            # Non-TTY: fall back to input() for test compatibility (CliRunner, pipes, etc.)
+            try:
+                return input(prompt_text)
+            except EOFError:
+                return ""
+
+        try:
+            return ptk_prompt(prompt_text, history=self._history)
+        except (EOFError, KeyboardInterrupt):
+            return ""
 
     def run(self, prompt: str) -> str:
         """Orchestrates the interactive loop for capturing user response."""
@@ -26,12 +48,7 @@ class ConsoleAskLoop:
                     "Editor opened. Terminal reply or [Enter] to confirm editor › "
                 )
 
-            typer.echo(prompt_label, nl=False, err=True)
-            try:
-                user_input = input().strip()
-            except EOFError:
-                self.cleanup()
-                return ""
+            user_input = self._pt_prompt(prompt_label).strip()
 
             if user_input.lower() == "e":
                 self._launch_editor_background(prompt)
@@ -50,15 +67,9 @@ class ConsoleAskLoop:
         if self._active_editor_path:
             return self._read_editor_result()
 
-        typer.echo(
-            "Press [Enter] again to confirm empty response › ",
-            nl=False,
-            err=True,
-        )
-        try:
-            confirm = input().strip()
-        except EOFError:
-            return ""
+        confirm = self._pt_prompt(
+            "Press [Enter] again to confirm empty response › "
+        ).strip()
 
         if not confirm:
             return ""
