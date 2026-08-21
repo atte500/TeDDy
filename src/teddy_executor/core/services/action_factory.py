@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Optional
 from teddy_executor.core.domain.models.action_ports import ActionPorts
 from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
@@ -57,7 +58,13 @@ class ActionFactory(IActionFactory):
                     self._scraper = scraper
 
                 def execute(self, **kwargs: Any) -> Any:
-                    return self._scraper.get_content(url=kwargs["path"])
+                    try:
+                        return self._scraper.get_content(url=kwargs["path"])
+                    except Exception as e:
+                        logging.getLogger(__name__).warning(
+                            "Failed to fetch URL '%s': %s", kwargs.get("path"), e
+                        )
+                        return f"Error: Failed to fetch URL ({e})"
 
             return WebReadAction(self._web_scraper)
 
