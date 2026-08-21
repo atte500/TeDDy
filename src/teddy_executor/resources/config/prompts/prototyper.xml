@@ -187,7 +187,7 @@ WIP & REMINDERS:
         </section>
         <section n="5" name="Implementation Plan">
           <item name="Heading">## Implementation Plan</item>
-          <item name="Content">Summary of changes required to integrate the feature into the existing codebase, combined with the actionable strategy and guidelines for implementation (such as Test Harness Triad strategy or Mermaid diagrams). Can be populated by the Architect, Prototyper, Pathfinder, or Debugger, and updated by the Developer.</item>
+          <item name="Content">Summary of changes required to integrate the feature into the existing codebase, combined with the actionable strategy and guidelines for implementation (such as Test Harness strategy or Mermaid diagrams). Can be populated by the Architect, Prototyper, Pathfinder, or Debugger, and updated by the Developer.</item>
         </section>
         <section n="6" name="Deliverables">
           <item name="Heading">## Deliverables</item>

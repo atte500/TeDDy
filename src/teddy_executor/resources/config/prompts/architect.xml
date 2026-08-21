@@ -68,7 +68,7 @@
           <item name="Description">## Proposed Solution (The "What"): Approved tech and trade-offs.</item>
         </section>
         <section n="4" name="Guidelines">
-          <item name="Description">## Guidelines (The "How"): Actionable plan. MUST explicitly include Test Harness Triad strategy.</item>
+          <item name="Description">## Guidelines (The "How"): Actionable plan. MUST explicitly include Test Harness strategy.</item>
         </section>
         <section n="5" name="Technical Specifications">
           <item name="Description">## Technical Specifications: API contracts and data models.</item>
@@ -151,7 +151,7 @@
         </section>
         <section n="5" name="Implementation Plan">
           <item name="Heading">## Implementation Plan</item>
-          <item name="Content">Summary of changes required to integrate the feature into the existing codebase, combined with the actionable strategy and guidelines for implementation (such as Test Harness Triad strategy or Mermaid diagrams). Can be populated by the Architect, Prototyper, Pathfinder, or Debugger, and updated by the Developer.</item>
+          <item name="Content">Summary of changes required to integrate the feature into the existing codebase, combined with the actionable strategy and guidelines for implementation (such as Test Harness strategy or Mermaid diagrams). Can be populated by the Architect, Prototyper, Pathfinder, or Debugger, and updated by the Developer.</item>
         </section>
         <section n="6" name="Deliverables">
           <item name="Heading">## Deliverables</item>

@@ -37,7 +37,7 @@
             - Integration (Adapters ONLY): `Harness`, `Migration`.
             - Unit (Core Logic & Edge Cases): `Contract`, `Seam`, `Logic`, `Refactor`, `Cleanup`.
 
-            Create or locate the appropriate test file. Set up the test function using the Test Harness Triad (Setup = Arrange, Driver = Act, Observer = Assert). Write ONE atomic failing test asserting a missing condition or breaking a hardcoded "fake". Use parameterized tests for data permutations.
+            Create or locate the appropriate test file. Set up the test function using the Test Harness (Setup = Fixtures + Arrange, Driver = Act, Observer = Assert). Write ONE atomic failing test asserting a missing condition or breaking a hardcoded "fake". Use parameterized tests for data permutations.
 
             Anti-Mock Poisoning: Global `mock.patch` and bare `MagicMock` are strictly forbidden; inject all test doubles via Constructor Injection. Use In-Memory Fakes for internal state (databases, caches). Use strictly bound mocks (e.g., `register_mock` or `autospec=True`) ONLY for un-fakeable external side-effects (APIs, SMTP) to prevent signature drift.
 
@@ -54,7 +54,7 @@
             - Centralize Configuration: Migrate hardcoded defaults or magic numbers to the central configuration layer.
             - Eliminate Shadow Logic: Replace hardcoded literals or re-implemented system logic in tests with imports from the source of truth.
             - Failure Transparency: Eliminate generic `except Exception:` or silent `pass` blocks in your modifications.
-            - Test Harness Extraction: Extract repetitive test logic into the Test Harness Triad (Setup, Driver, Observer).
+            - Test Harness Extraction: Extract repetitive test logic into the Test Harness.
             - Prune Redundancy: Delete redundant tests if your new tests render them obsolete.
             - DI Purity: Ensure no concrete defaults exist in your new code. Service Locator and `mock.patch` are forbidden.
             - Clean Code: Apply SRP locally. Simplify logic where possible to improve readability and maintainability. Remove stale comments.
@@ -241,7 +241,7 @@ WIP & REMINDERS:
         </section>
         <section n="5" name="Implementation Plan">
           <item name="Heading">## Implementation Plan</item>
-          <item name="Content">Summary of changes required to integrate the feature into the existing codebase, combined with the actionable strategy and guidelines for implementation (such as Test Harness Triad strategy or Mermaid diagrams). Can be populated by the Architect, Prototyper, Pathfinder, or Debugger, and updated by the Developer.</item>
+          <item name="Content">Summary of changes required to integrate the feature into the existing codebase, combined with the actionable strategy and guidelines for implementation (such as Test Harness strategy or Mermaid diagrams). Can be populated by the Architect, Prototyper, Pathfinder, or Debugger, and updated by the Developer.</item>
         </section>
         <section n="6" name="Deliverables">
           <item name="Heading">## Deliverables</item>
