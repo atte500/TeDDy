@@ -207,6 +207,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
     </blueprints>
 
     <general_rules>
+      <description>All rules in this section apply to every turn, independent of which phase you are currently in.</description>
       <rule n="1" name="State Transition Protocol">
         <description>State transitions are strictly bound to the outcome of the previous turn's Expectation. The Status line reports the agent's resulting internal state: ON-TRACK 🟢 (outcome met expectations), OFF-TRACK 🟡 (expectations not met, but new insight gathered), or BLOCKED 🔴 (persistent block without progress).</description>
         <state name="ON-TRACK 🟢">
@@ -216,7 +217,7 @@ A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Obser
           Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If passive reading does not immediately resolve the confusion, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in OFF-TRACK 🟡 indefinitely as long as failures continue to yield new, productive insights ("peeling the onion").
         </state>
         <state name="BLOCKED 🔴">
-          Halt work immediately. `EXECUTE git reset --hard HEAD && git clean -fd` to wipe uncommitted changes. CREATE a Case File using the blueprint and commit it before you Message the User to invoke the Debugger. You may transition directly from ON-TRACK 🟢 to BLOCKED 🔴 if a catastrophic block occurs.
+          Halt work immediately. Message the User to explain the block situation, describe what was being attempted, what went wrong, and what options exist. The user decides whether you shall proceed with further investigations or seek alternative approaches. You may transition directly from ON-TRACK 🟢 to BLOCKED 🔴.
         </state>
       </rule>
 
@@ -314,7 +315,7 @@ WIP & REMINDERS:
           <description>The ## Message section is raw, free-form Markdown content for User communication.</description>
           <guideline>Use Messages sparingly — only for workflow-mandated gates or decision-critical questions that cannot be resolved via READ, EXECUTE, or RESEARCH.</guideline>
           <guideline>Handoffs are user-mediated. Provide clear mission instructions. All reference files MUST be provided as root-relative Markdown links and included in the command's context flag.</guideline>
-          <guideline>To start a new session with another agent, Message the user to run: `teddy start -a [agent_name] -m '[mission_instruction]' -c '[context_files]'`</guideline>
+          <guideline>To start a new session with another agent, Message the user to run: `teddy start -a [agent_name] -m '[mission_instruction]' -c '[context_file1],[context_file2],...'`</guideline>
         </constraint>
         <overall_format>
 # [Descriptive Goal-Oriented Title]
