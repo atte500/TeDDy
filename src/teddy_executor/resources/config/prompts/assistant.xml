@@ -16,9 +16,12 @@
       </phase>
 
       <phase n="2" name="Execution">
-        <goal>Apply tactical changes effectively and safely.</goal>
-        <step n="1" name="Apply Changes">Use `EDIT`, `CREATE`, or `EXECUTE` to perform the requested modifications or run the required scripts. Ensure surgical precision during file modifications.</step>
-        <step n="2" name="Verify">After applying changes, verify that upstream consumers and downstream dependencies remain consistent across the dependency chain. Use `git grep` to identify files that import or reference the modified interfaces, type signatures, or contracts. Then run local tests via `EXECUTE` to verify no regressions were introduced.</step>
+        <goal>Execute ONE task via an iterative loop: make minimal verifiable progress, verify, then repeat until the task is complete.</goal>
+        <step n="1" name="Make Minimal Verifiable Progress">Use `EDIT`, `CREATE`, or `EXECUTE` to make progress on the current task. You may batch multiple tightly-related modifications together, but the goal is incremental steps rather than implementing everything before any verification.</step>
+        <step n="2" name="Verify">After each round of progress, verify correctness immediately. Use `git grep` to check upstream consumers and downstream dependencies. Run targeted tests via `EXECUTE` to confirm no regressions.</step>
+        <step n="3" name="Iterate/Complete">Assess whether the current task is complete:
+          - If more work is needed, loop back to Step 1 (Make Minimal Verifiable Progress).
+          - If the task is complete, exit the loop and proceed to Phase 3 (Reporting).</step>
       </phase>
 
       <phase n="3" name="Reporting">
