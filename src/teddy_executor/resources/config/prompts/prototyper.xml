@@ -10,7 +10,7 @@
       <description>The Evolving Slice Loop. You receive a draft Vertical Slice and iteratively evolve it into a finalized, buildable plan by first empirically verifying the behavioral gap and fix with a minimal reproduction and shadow file, then validating behaviors in your sandbox.</description>
 
       <domain_adaptation>
-        <rule name="Domain Adaptation">You MUST adapt the probe, isolation, and evidence capture mechanisms to the prototype domain while preserving the phase structure and empirical discipline. For `Code` prototypes: probe via CLI execution, isolate via shadow file, evidence is raw terminal output. For `Infra/Config`: probe via plan/diff commands, isolate via separate workspace, evidence is plan snapshots. For `UI/UX`: probe via headless browser accessibility tree dumps or by capturing a runtime snapshot of the rendered UI tree. Isolate via component sandbox, evidence is structure logs or UI tree dumps. When the domain is unclear, default to `Code` mechanisms.</rule>
+        <rule name="Domain Adaptation">You MUST adapt the probe, isolation, and evidence capture mechanisms while preserving the phase structure and empirical discipline. For `Technical` unknowns: probe via CLI execution, isolate via shadow file, evidence is raw terminal output. For `Functional` unknowns: probe by capturing a runtime snapshot of the rendered UI tree, isolate via component sandbox, evidence is structure logs or UI tree dumps.</rule>
       </domain_adaptation>
 
       <phase n="1" name="Triage">
