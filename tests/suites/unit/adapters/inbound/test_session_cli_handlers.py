@@ -87,8 +87,8 @@ def test_ensure_commit_hooks_success(monkeypatch):
 
 
 def test_ensure_commit_hooks_failure(monkeypatch):
-    """When subprocess.run fails, should log debug and return without notification."""
-    import logging
+    """When subprocess.run fails, should show yellow warning."""
+    import typer
 
     messages = []
 
@@ -107,19 +107,17 @@ def test_ensure_commit_hooks_failure(monkeypatch):
         fake_run,
     )
 
-    # Silence logging output during test
-    monkeypatch.setattr(
-        "teddy_executor.adapters.inbound.session_cli_handlers.logger",
-        logging.getLogger("test"),
-    )
-
     from teddy_executor.adapters.inbound.session_cli_handlers import (
         _ensure_commit_hooks,
     )
 
     _ensure_commit_hooks()
 
-    assert len(messages) == 0, f"Expected 0 secho calls, got {len(messages)}"
+    assert len(messages) == 1, f"Expected 1 secho call, got {len(messages)}"
+    msg, fg, err = messages[0]
+    assert "pre-commit install failed" in msg
+    assert fg == typer.colors.YELLOW
+    assert err is True
 
 
 def test_check_git_cli_not_found(monkeypatch):
@@ -216,8 +214,8 @@ def test_check_git_initialized_success(monkeypatch):
 
 
 def test_check_git_initialized_failure(monkeypatch):
-    """When .git missing and git init fails, should log debug and return without notification."""
-    import logging
+    """When .git missing and git init fails, should show yellow warning."""
+    import typer
 
     messages = []
 
@@ -244,18 +242,17 @@ def test_check_git_initialized_failure(monkeypatch):
         fake_run,
     )
 
-    monkeypatch.setattr(
-        "teddy_executor.adapters.inbound.session_cli_handlers.logger",
-        logging.getLogger("test"),
-    )
-
     from teddy_executor.adapters.inbound.session_cli_handlers import (
         _check_git_initialized,
     )
 
     _check_git_initialized()
 
-    assert len(messages) == 0, f"Expected 0 secho calls, got {len(messages)}"
+    assert len(messages) == 1, f"Expected 1 secho call, got {len(messages)}"
+    msg, fg, err = messages[0]
+    assert "git init failed" in msg
+    assert fg == typer.colors.YELLOW
+    assert err is True
 
 
 def test_run_health_checks_calls_both(monkeypatch):
@@ -284,6 +281,65 @@ def test_run_health_checks_calls_both(monkeypatch):
     _run_health_checks()
 
     assert calls == ["commit_hooks", "git"], f"Expected both calls, got {calls}"
+
+
+def test_ensure_commit_hooks_which_raises(monkeypatch):
+    """When shutil.which raises PermissionError, should show yellow warning."""
+    import typer
+
+    messages = []
+
+    def fake_secho(msg, fg=None, err=None):
+        messages.append((msg, fg, err))
+
+    monkeypatch.setattr("typer.secho", fake_secho)
+    monkeypatch.setattr("pathlib.Path.exists", lambda self: True)
+
+    def which_raising(cmd):
+        raise PermissionError("PATH access denied")
+
+    monkeypatch.setattr("shutil.which", which_raising)
+
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _ensure_commit_hooks,
+    )
+
+    _ensure_commit_hooks()
+
+    assert len(messages) == 1, f"Expected 1 secho call, got {len(messages)}"
+    msg, fg, err = messages[0]
+    assert "Could not check for pre-commit CLI" in msg
+    assert fg == typer.colors.YELLOW
+    assert err is True
+
+
+def test_check_git_initialized_which_raises(monkeypatch):
+    """When shutil.which raises PermissionError in git check, should show yellow warning."""
+    import typer
+
+    messages = []
+
+    def fake_secho(msg, fg=None, err=None):
+        messages.append((msg, fg, err))
+
+    monkeypatch.setattr("typer.secho", fake_secho)
+
+    def which_raising(cmd):
+        raise PermissionError("PATH access denied")
+
+    monkeypatch.setattr("shutil.which", which_raising)
+
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _check_git_initialized,
+    )
+
+    _check_git_initialized()
+
+    assert len(messages) == 1, f"Expected 1 secho call, got {len(messages)}"
+    msg, fg, err = messages[0]
+    assert "Could not check for git CLI" in msg
+    assert fg == typer.colors.YELLOW
+    assert err is True
 
 
 def test_handle_new_session_starts_background_check_thread(monkeypatch):

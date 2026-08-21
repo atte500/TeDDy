@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 
 def _ensure_commit_hooks() -> None:
     """Install pre-commit hooks if config exists and CLI is available.
-    Shows green notification on success, yellow warning if config missing
-    or CLI not found."""
+    Shows green notification on success, yellow warning if config missing,
+    CLI not found, CLI lookup fails, or install subprocess fails."""
     config_path = Path.cwd() / ".pre-commit-config.yaml"
     if not config_path.exists():
         typer.secho(
@@ -46,7 +46,17 @@ def _ensure_commit_hooks() -> None:
             err=True,
         )
         return
-    if not shutil.which("pre-commit"):
+    try:
+        pre_commit_path = shutil.which("pre-commit")
+    except (OSError, AttributeError):
+        logger.debug("pre-commit CLI lookup failed", exc_info=True)
+        typer.secho(
+            "⚠ Could not check for pre-commit CLI",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+        return
+    if not pre_commit_path:
         typer.secho(
             "⚠ pre-commit CLI not found",
             fg=typer.colors.YELLOW,
@@ -61,6 +71,11 @@ def _ensure_commit_hooks() -> None:
         )
     except subprocess.CalledProcessError:
         logger.debug("pre-commit install failed", exc_info=True)
+        typer.secho(
+            "⚠ pre-commit install failed",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
         return
     typer.secho(
         "✓ pre-commit hooks installed",
@@ -72,10 +87,21 @@ def _ensure_commit_hooks() -> None:
 def _check_git_initialized() -> None:
     """Verify git repository status. Auto-initializes if not a repo.
     Shows green notification if already a repo or freshly initialized,
-    yellow warning if git CLI not found.
+    yellow warning if git CLI not found, CLI lookup fails, or git init
+    fails.
     Only checks the current working directory for a `.git` marker.
     Does NOT walk up parent directories."""
-    if not shutil.which("git"):
+    try:
+        git_path = shutil.which("git")
+    except (OSError, AttributeError):
+        logger.debug("git CLI lookup failed", exc_info=True)
+        typer.secho(
+            "⚠ Could not check for git CLI",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+        return
+    if not git_path:
         typer.secho(
             "⚠ Git CLI not found",
             fg=typer.colors.YELLOW,
@@ -95,6 +121,11 @@ def _check_git_initialized() -> None:
         subprocess.run(["git", "init"], check=True, capture_output=True)  # nosec B603 B607
     except subprocess.CalledProcessError:
         logger.debug("git init failed", exc_info=True)
+        typer.secho(
+            "⚠ git init failed",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
         return
     typer.secho(
         "✓ Git repository initialized",
