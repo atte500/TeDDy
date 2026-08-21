@@ -87,7 +87,9 @@ This section defines the conventions for our project management artifacts.
 
 - **Pre-existing C901 complexity in `markdown_plan_parser.py`:** The `parse` method has a cyclomatic complexity of 10 (threshold 9). This is a pre-existing issue encountered during Bug #14's commit. It blocks the Ruff linter pre-commit hook. A dedicated refactor slice should extract the preamble stripping, normalization, and AST validation steps into smaller helper methods.
 
-- **pip-audit pre-commit hook:** The pip-audit hook in `.pre-commit-config.yaml` flags 15 known vulnerabilities across 4 transitive dependencies (aiohttp, litellm, msgpack, python-dotenv). All are assessed as **Low practical risk** for TeDDy:
+- **Startup notification hardcodes upgrade command:** `_display_update_notification` in `session_cli_handlers.py` prints `uv tool upgrade teddy-cli` without checking if the current install is a pre-release (TestPyPI experimental channel). The same channel-aware conditional applied to `__main__.py::update()` (Bug #20) should be applied here to show `uv tool install teddy-cli --force` when the user is on an experimental build.
+
+- pip-audit pre-commit hook: The pip-audit hook in `.pre-commit-config.yaml` flags 15 known vulnerabilities across 4 transitive dependencies (aiohttp, litellm, msgpack, python-dotenv). All are assessed as **Low practical risk** for TeDDy:
   - **aiohttp (11 vulns):** Server-side issues (DoS, request smuggling) — TeDDy only uses aiohttp as an async HTTP client, not a server.
   - **litellm (2 vulns):** Proxy SQLi (High) and Auth Bypass via Host Header (Critical) — TeDDy uses the client SDK only, no proxy server.
   - **msgpack (1 vuln):** Potential DoS via crafted input — TeDDy serializes standard types with trusted data only.
