@@ -241,3 +241,121 @@ class TestTee:
         assert stderr_fd >= 0, (
             f"Expected non-negative file descriptor for stderr, got {stderr_fd}"
         )
+
+
+class TestTeeHandlerRestoration:
+    """Regression test: after Tee exit, root logger handlers must not reference closed files.
+
+    The bug: Tee.__enter__ replaces root logger handlers with a new StreamHandler(sys.stderr)
+    (where sys.stderr is the Tee proxy). Tee.__exit__ restores sys.stderr and closes the log_file
+    but does NOT restore the original handlers. Post-exit logging hits the old Tee proxy with its
+    closed log_file, causing 'I/O operation on closed file' errors.
+    """
+
+    def test_no_io_error_on_closed_file_after_tee_exit(self, capsys):
+        """After Tee exit, logging must not produce 'I/O operation on closed file' in stderr."""
+        import logging
+        import sys
+        import tempfile
+        from pathlib import Path
+        from teddy_executor.core.utils.io import Tee
+
+        logger = logging.getLogger("regression_test_handler_restore")
+
+        # Save original root handler state
+        original_handlers = logging.root.handlers[:]
+
+        try:
+            # Set up a baseline root logger handler (simulates __main__.py setup)
+            # We must force=True to override any existing basicConfig
+            logging.basicConfig(
+                level=logging.INFO,
+                format="%(message)s",
+                handlers=[logging.StreamHandler(sys.stderr)],
+                force=True,
+            )
+
+            # Create a temporary log file for Tee
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".log", delete=False
+            ) as tmp:
+                log_path = Path(tmp.name)
+
+            # Install Tee (simulates session environment)
+            log_file = open(log_path, "a", encoding="utf-8")
+            tee = Tee(log_file)
+            tee.__enter__()
+
+            # Log a message during Tee (should work - baseline)
+            logger.info("DURING_TEE_MESSAGE")
+
+            # Exit Tee (log_file closed, but handlers should be restored in fixed version)
+            tee.__exit__(None, None, None)
+
+            # Now log after Tee exit, capture stderr for the error pattern
+            # Use capsys's ability to capture stderr
+            logger.info("AFTER_TEE_MESSAGE")
+
+            # Collect stderr output
+            stderr = capsys.readouterr().err
+
+            # The bug would produce 'I/O operation on closed file' in stderr
+            assert "I/O operation on closed file" not in stderr, (
+                f"Detected 'I/O operation on closed file' in stderr after Tee exit. "
+                f"Root logger handlers still reference closed Tee stream.\n"
+                f"stderr snippet: {stderr[:500]}"
+            )
+
+        finally:
+            # Restore root handler state
+            logging.root.handlers = original_handlers
+            # Clean up temp file
+            log_path.unlink(missing_ok=True)
+
+    def test_handler_state_restored_after_tee_exit(self):
+        """After Tee exit, root logger handlers must be the original ones (not Tee StreamHandler)."""
+        import logging
+        import sys
+        import tempfile
+        from pathlib import Path
+        from teddy_executor.core.utils.io import Tee
+        from teddy_executor.core.utils.io import _TeeWriter
+
+        # Save original state
+        original_handlers = logging.root.handlers[:]
+
+        try:
+            # Set up a baseline handler
+            logging.basicConfig(
+                level=logging.INFO,
+                format="%(message)s",
+                handlers=[logging.StreamHandler(sys.stderr)],
+                force=True,
+            )
+
+            # Install Tee
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".log", delete=False
+            ) as tmp:
+                log_path = Path(tmp.name)
+            log_file = open(log_path, "a", encoding="utf-8")
+            tee = Tee(log_file)
+            tee.__enter__()
+
+            # Exit Tee
+            tee.__exit__(None, None, None)
+
+            # After Tee: handlers should be restored
+            post_tee_handlers = list(logging.root.handlers)
+
+            # Assert: handlers restored (same count, but StreamHandler instances may differ;
+            # the key is that no handler has a _TeeWriter as stream)
+            for handler in post_tee_handlers:
+                if isinstance(handler, logging.StreamHandler):
+                    assert not isinstance(handler.stream, _TeeWriter), (
+                        f"Handler {handler} still has _TeeWriter stream after Tee exit"
+                    )
+
+        finally:
+            logging.root.handlers = original_handlers
+            log_path.unlink(missing_ok=True)

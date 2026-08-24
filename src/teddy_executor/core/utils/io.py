@@ -51,6 +51,7 @@ class Tee:
         self._log_file: Optional[TextIO] = log_file
         self._original_stdout: Optional[TextIO] = None
         self._original_stderr: Optional[TextIO] = None
+        self._saved_handlers: list[logging.Handler] = []
 
     def __enter__(self) -> "Tee":
         self._original_stdout = sys.stdout
@@ -60,13 +61,12 @@ class Tee:
         sys.stdout = _TeeWriter(self._original_stdout, self._log_file)
         sys.stderr = _TeeWriter(self._original_stderr, self._log_file)
 
-        # Fix for bug 22: Replace root logger handlers with new ones that use
-        # the current sys.stderr (the Tee proxy). This robustly ensures logging
-        # output flows through the Tee, regardless of how handlers were added.
-        old_handlers = list(logging.root.handlers)
-        for h in old_handlers:
+        # Replace root logger handlers with new ones that use the current
+        # sys.stderr (the Tee proxy). Save original handlers WITHOUT closing
+        # them so they can be restored in __exit__.
+        self._saved_handlers = list(logging.root.handlers)
+        for h in self._saved_handlers:
             logging.root.removeHandler(h)
-            h.close()
         new_handler = logging.StreamHandler(sys.stderr)
         new_handler.setFormatter(logging.Formatter("%(message)s"))
         logging.root.addHandler(new_handler)
@@ -74,6 +74,19 @@ class Tee:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        # Restore original root logger handlers: remove the Tee handler we
+        # added, then re-add the saved handlers (which still point to the
+        # original sys.stderr).
+        if self._saved_handlers:
+            for h in list(logging.root.handlers):
+                if isinstance(h, logging.StreamHandler) and hasattr(
+                    h.stream, "_log_file"
+                ):
+                    logging.root.removeHandler(h)
+            for h in self._saved_handlers:
+                logging.root.addHandler(h)
+
+        # Restore original streams
         if self._original_stdout is not None:
             sys.stdout = self._original_stdout
         if self._original_stderr is not None:
