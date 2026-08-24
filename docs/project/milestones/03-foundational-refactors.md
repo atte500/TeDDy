@@ -13,7 +13,7 @@ Three workstreams will be executed:
 
 2. **MRP.xml Base Prompt:** Extract the MRP response format and the common general rules (rules 1-9: State Transition Protocol, State Dashboard, Sequential Action Workflow, Path & Link Formatting, Information Gathering Workflow, VCP, Standardized Plan Types, Code Block Formatting, Validation Failure Recovery; plus Conflict Resolution and Programmatic Edits) that are duplicated identically across all 6 agents. Place these in `MRP.xml` as a base prompt. The Prompt Manager appends `MRP.xml` after the agent-specific XML at system prompt assembly time. `MRP.xml` is NOT copied to `.teddy/prompts/` for user modification.
 
-3. **Command Patterns Reference (docs/templates/command-patterns.md):** Create a combined reference template documenting the VCP commit workflow and the Debugger's Remote Probing Protocol. This serves as the specification for Milestone 0 bootstrapping — teams implement their build tooling following this pattern. Defines the `make commit 'message'` interface with optional `--no-verify` flag.
+3. **Makefile Template (docs/templates/makefile.md):** Create a Makefile template defining executable commands for the VCP commit workflow and the Debugger's Remote Probing Protocol. Defines `make commit 'message'` for the VCP workflow (stages, pre-commit runs, commits, and pushes) and `make probe 'reason'` for the Remote Probing Protocol (pushes probe, triggers CI workflow, retrieves logs). This serves as the specification for Milestone 0 bootstrapping — teams implement their project-specific Makefile following this pattern.
 
 ## Guidelines (The "How")
 - **Test Harness Strategy:**
@@ -34,7 +34,7 @@ Three workstreams will be executed:
     - `docs/templates/component-design.md` — Template for Component Design Documents
     - `docs/templates/architecture-conventions.md` — Template for ARCHITECTURE.md Conventions section
     - `docs/templates/roadmap.md` — Template for PROJECT.md Roadmap section
-    - `docs/templates/command-patterns.md` — Combined VCP + Debugger probing protocol reference
+    - `docs/templates/makefile.md` — Makefile template for VCP commit and Remote Probing Protocol commands
     - `src/teddy_executor/resources/MRP.xml` — Base prompt (NOT in docs/templates/ or .teddy/prompts/)
 - **CLI Changes:** Add `teddy init templates` subcommand to the `init` command group.
 
