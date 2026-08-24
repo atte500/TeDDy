@@ -31,13 +31,23 @@ class _TeeWriter:
     def isatty(self) -> bool:
         return self._original.isatty()
 
+    def fileno(self) -> int:
+        """Delegate fileno to the original stream.
+
+        This is required because Python's TextIO protocol includes fileno()
+        as an expected method. Without it, any code that inspects the stream's
+        file descriptor (e.g., terminal capability checks via os.isatty(fd),
+        or libraries like prompt_toolkit) will crash with AttributeError.
+        """
+        return self._original.fileno()
+
     @property
     def encoding(self) -> str:
         return self._original.encoding or "utf-8"
 
 
 class Tee:
-    def __init__(self, log_file: TextIO):
+    def __init__(self, log_file: Optional[TextIO]):
         self._log_file: Optional[TextIO] = log_file
         self._original_stdout: Optional[TextIO] = None
         self._original_stderr: Optional[TextIO] = None

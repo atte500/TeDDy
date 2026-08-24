@@ -210,3 +210,34 @@ class TestTee:
         # Original stdout should contain our message (via capsys)
         captured = capsys.readouterr()
         assert captured.out == "This should go only to original stdout\n"
+
+    def test_tee_writer_fileno_returns_file_descriptor(
+        self, tee_log_path: Path
+    ) -> None:
+        """Regression test: _TeeWriter.fileno() must return a valid file descriptor.
+
+        Python's TextIO protocol includes fileno() as an expected method.
+        Without it, any code calling .fileno() on Tee-wrapped streams (e.g.,
+        terminal introspection, prompt_toolkit, os.isatty) raises AttributeError.
+        This test asserts that the method exists and returns an int.
+        """
+        with open(tee_log_path, "a", encoding="utf-8") as log_file:
+            with Tee(log_file):
+                # Act: call fileno() on Tee-wrapped streams
+                stdout_fd = sys.stdout.fileno()
+                stderr_fd = sys.stderr.fileno()
+
+        # Assert: fileno() returns valid file descriptors
+        assert isinstance(stdout_fd, int), (
+            f"Expected sys.stdout.fileno() to return an int, got {type(stdout_fd)}"
+        )
+        assert isinstance(stderr_fd, int), (
+            f"Expected sys.stderr.fileno() to return an int, got {type(stderr_fd)}"
+        )
+        # stdout is typically 1, stderr is typically 2
+        assert stdout_fd >= 0, (
+            f"Expected non-negative file descriptor for stdout, got {stdout_fd}"
+        )
+        assert stderr_fd >= 0, (
+            f"Expected non-negative file descriptor for stderr, got {stderr_fd}"
+        )
