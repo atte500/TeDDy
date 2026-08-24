@@ -56,19 +56,51 @@ This section defines the conventions for our project management artifacts.
     - **Validation Failure Pruning Timing:** Modify Heuristic 4 in `session_pruning_service.py` to prune validation-failed turns ONLY when a subsequent report.md without "Validation Failed" status exists (a "non-VF report"). The guard checks for non-VF reports on disk (any turn with a report.md whose overall status is not "Validation Failed") and the current turn's status (`current_status` not containing "Validation Failed"). This is distinct from Heuristic 3's guard (green plan status) and ensures validation failure turns remain visible in context during chains of consecutive failures.
     - **Session Context Write-Time Dedup:** Add path deduplication in `SessionService._prepare_session_context()` before writing to `session.context`. Currently, `init.context` lines merged with `additional_context` can contain duplicates that are written to disk. Ensure the merged list is deduplicated so that `session.context` never contains duplicate paths at creation time. (Note: read-time dedup via `read_context_file` already handles the `session.context` → `resolve_context_paths` pipeline, but write-time dedup is a defensive best practice.)
 
-### Milestone 3: TUI & UX Enhancements [PLANNED]
-- **Core Goal:** Improve the interactive experience and provide better visibility into session state.
+### Milestone 3: Foundational Refactors [PLANNED]
+- **Core Goal:** Eliminate redundant blueprint definitions across all 6 agent prompts by extracting shared content into `docs/templates/`, and reduce prompt maintenance burden by injecting MRP + common general rules from a central `MRP.xml` base prompt.
+- **Specs:** TBD
+- **Requirements:**
+    - **Blueprint Extraction to docs/templates/:** Remove all `<blueprints>` sections from every agent XML prompt (pathfinder, architect, developer, debugger, assistant, prototyper). Replace them with a directive in each agent's workflow instructions to "use the corresponding template from `docs/templates/` when creating an artifact." Create `docs/templates/` populated with default Markdown template files for: Specification Document, Task Brief, Case File, Vertical Slice, Milestone, Component Design Document, ARCHITECTURE.md (Conventions section), PROJECT.md (Roadmap section). Add `teddy init templates` subcommand to regenerate `docs/templates/` from defaults. `teddy init` (without subcommand) also creates `docs/templates/` on first init.
+    - **MRP.xml Base Prompt:** Extract the Markdown Response Protocol (MRP) from `<response_format>` and common `<general_rules>` (rules 1-9, plus Conflict Resolution and Programmatic Edits) from all 6 agent XMLs into a single `MRP.xml` file. This base prompt is appended after the agent-specific XML at system prompt assembly time and is NOT copied to `.teddy/prompts/` for user modification. Agent-specific rules (e.g., Debugger's Remote Probing Protocol, Developer's Contract Enforcement) remain in their respective XMLs.
+    - **Command Patterns Reference (docs/templates/command-patterns.md):** Create a combined reference template documenting the VCP commit workflow and the Debugger's Remote Probing Protocol as reference implementations for Milestone 0 bootstrapping. The PROJECT.md template links to this file for teams setting up their build/CI tooling. Defines the `make commit 'message'` interface (with optional `--no-verify` flag) for the VCP workflow.
+- **Guidelines:**
+    - Blueprint extraction is a content-only change to agent XMLs and a file generation change to InitService — zero architecture changes to PromptManager.
+    - MRP.xml requires a PromptManager change to prepend/append the base prompt at resolution time.
+    - The command patterns template is strictly documentation; TeDDy does NOT create the Makefile directly.
+
+### Milestone 4: TUI & UX Enhancements [PLANNED]
+- **Core Goal:** Improve the interactive experience, provide better visibility into session state, and add foundational quality-of-life features.
 - **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 - **Requirements:**
-    - **Navigation:** Alt+Up/Down for jumping between Context, Rationale, and Plan/Message sections.
-    - **Context Interactions:** Pressing `e` on context nodes opens the corresponding file/context file in the external editor.
-    - **Metadata Visibility:** Display model name and session cost (rounded to nearest cent) in the right panel when the Context Root is selected.
-    - **Tier 2 Editing:** Automatically open external editor for parameters that are multiline or >100 characters.
+    - **Navigation:** Alt+Up/Down for jumping between Context, Rationale, and Plan/Message sections. If at the bottom, scroll page down instead of looping to top. Allow jumping between context sub-sections (system, session, turn).
+    - **Context Interactions:** Pressing `e` on context nodes: if on session/turn root node, open corresponding `.context` file; if on a specific filepath, open the file; if on system node, show agent switch menu.
+    - **Metadata Visibility:** Display model name and session cost (rounded to nearest cent) in the right panel when the Context Root is selected. Align rounding to cents (not fractions of cents).
+    - **Tier 2 Editing:** Automatically open external editor for parameters that are multiline or >100 characters. Prevent multi-line break up for long text — if long text or multiline is detected, edit in editor instead of directly in TUI.
     - **Editor & Diff Mapping:** Strictly respect `editor` config; implement a translation table for diff flags (e.g., `nvim` -> `-d`); remove all implicit VS Code fallbacks.
-    - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels.
+    - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels. Apply same padding for both panels.
+    - **MOVE & DELETE Actions:** Add `MOVE` and `DELETE` action types. Both should update context manifest files as well (renaming path/file name if moved, removing if deleted). `MOVE` can also be used for renaming. Both apply to files and folders.
+    - **Configurable Limits:** Add `--max-turns` and `--max-cost` with sensible defaults (99 turns or $5 spent — set in config.yaml). These only apply in `-y` mode and are not cumulative (on `teddy resume`, start counting from 0).
+    - **Configurable Tree Depth:** Add `max-project-tree-depth` config setting with omission indicators for truncated directories.
+    - **Session Interrupt:** Add a way to interrupt a session (e.g., press `q`, then confirm with Enter).
+    - **`--yolo` as Default:** Make `--yolo` mode a configurable default setting.
+    - **Deprecate `--console`:** Mark `--console` mode as deprecated. Remove related dead code in a follow-up milestone.
 - **Proposed Vertical Slices:**
     - **`00-03-cli-arg-normalization`:** Apply casefold to all remaining `stem ==` comparisons in `session_service.py` (lines 83, 522), `session_repository.py` (line 139), and make the prompt lookup in `prompts.py` case-insensitive. Additionally, normalize context paths from the `-c` flag by stripping leading slash, `./` prefix, and normalizing backslashes before seeding `session.context`. This fixes two bugs: case-sensitive agent name matching and verbatim path appending without normalization.
     - **`00-04-remove-bare-except-in-init-service`:** Fix the bare `except: pass` in `InitService._get_default_content()` (lines ~82-84) that catches `(yaml.YAMLError, OSError, ImportError, AttributeError)`. This silently swallows errors from `importlib.resources` API changes (Python 3.12+), returning `None` instead of template content. Action: replace with specific, logged error handling that re-raises unexpected errors, ensuring initialization failures are visible.
+
+### Milestone 5: Quality Gate & Debt Reconciliation [PLANNED]
+- **Core Goal:** Remove unnecessary inline quality bypasses, deprecate `--console` mode and related dead code, and eliminate redundant test coverage.
+- **Specs:** TBD
+- **Requirements:**
+    - **Audit Inline Quality Bypasses:** Find and remove all unnecessary inline suppression comments (`# noqa`, `# pylint: disable`, `# type: ignore`) that mask real issues or are no longer needed. These bypasses allow code to bypass quality gates without justification.
+    - **Deprecate `--console` Mode:** Remove the `--console` mode and all related dead code paths.
+    - **Remove Redundant Tests:** Audit the test suite for acceptance tests that duplicate unit coverage, or tests that exist only to satisfy coverage targets without verifying real behavior. Remove redundant tests.
+    - **Fix Pre-existing Mypy Errors:** Resolve the three known Mypy errors that block the pre-commit Mypy hook:
+        - `action_executor.py:191` — Incompatible return value type.
+        - `session_orchestrator.py:251` — Union-attr on DataclassInstance.
+        - `openrouter_hydrator.py:17` — Untyped function body.
+    - **Fix Pre-existing C901 Complexity:** Refactor the `parse` method in `markdown_plan_parser.py` (cyclomatic complexity 10, threshold 9) by extracting preamble stripping, normalization, and AST validation steps into smaller helper methods.
+    - **Audit Quality Gate Bypasses in Git History:** Check for any `--no-verify` commits logged in Technical Debt and verify the bypasses are still justified or can be resolved.
 
 ## Technical Debt
 
