@@ -1,47 +1,55 @@
 # Milestone 3: Foundational Refactors
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Specs:** TBD
 
 ## Goal (The "Why")
 Eliminate redundant blueprint definitions across all 6 agent prompts by extracting shared content into `docs/templates/`, and reduce prompt maintenance burden by injecting the Markdown Response Protocol (MRP) and common general rules from a central `MRP.xml` base prompt. This decouples shared template definitions from agent-specific instructions, making maintenance simpler and changes single-point updates.
 
 ## Proposed Solution (The "What")
-Three workstreams will be executed:
+Two workstreams will be executed as independent slices:
 
-1. **Blueprint Extraction to docs/templates/:** Remove all `<blueprints>` sections from every agent XML prompt. Replace them with a directive in each agent's workflow instructions to reference the corresponding template from `docs/templates/` when creating an artifact. Create `docs/templates/` with default Markdown templates. Add `teddy init templates` subcommand. This requires zero architecture changes to the Prompt Manager — purely content changes to prompt XMLs and a file generation change to InitService.
+### Slice 03-01: Templates & Init
+Bundled Markdown template files are stored in `src/teddy_executor/resources/templates/`. The `teddy init templates` subcommand copies them to `docs/templates/` in the user's project. The `teddy init` (bare) command also creates `docs/templates/` on first init. Agent XMLs have their `<blueprints>` sections replaced with directives referencing the templates. The PROJECT.md template (`project.md`) references `docs/templates/makefile.md` as part of Milestone 0 foundational tasks. Includes the Makefile template (`makefile.md`) as one of the 9 template files.
 
-2. **MRP.xml Base Prompt:** Extract the MRP response format and the common general rules (rules 1-9: State Transition Protocol, State Dashboard, Sequential Action Workflow, Path & Link Formatting, Information Gathering Workflow, VCP, Standardized Plan Types, Code Block Formatting, Validation Failure Recovery; plus Conflict Resolution and Programmatic Edits) that are duplicated identically across all 6 agents. Place these in `MRP.xml` as a base prompt. The Prompt Manager appends `MRP.xml` after the agent-specific XML at system prompt assembly time. `MRP.xml` is NOT copied to `.teddy/prompts/` for user modification.
-
-3. **Makefile Template (docs/templates/makefile.md):** Create a Makefile template defining executable commands for the VCP commit workflow and the Debugger's Remote Probing Protocol. Defines `make commit 'message'` for the VCP workflow (stages, pre-commit runs, commits, and pushes) and `make probe 'reason'` for the Remote Probing Protocol (pushes probe, triggers CI workflow, retrieves logs). This serves as the specification for Milestone 0 bootstrapping — teams implement their project-specific Makefile following this pattern.
+### Slice 03-02: MRP Base Prompt
+Extract the shared Markdown Response Protocol (response format + common general rules 1-9, plus Conflict Resolution and Programmatic Edits) that are duplicated identically across all 6 agents into `src/teddy_executor/resources/config/prompts/MRP.xml` (alongside the agent XMLs). PromptManager loads MRP.xml via `importlib.resources` and appends it at `fetch_system_prompt()` time. MRP.xml is NOT copied to `.teddy/prompts/` for user modification — it is protocol infrastructure.
 
 ## Guidelines (The "How")
 - **Test Harness Strategy:**
-    - **Blueprint Extraction:** Verify via file system assertion that `docs/templates/` contains the expected template files after `teddy init` and `teddy init templates`. Verify agent XMLs no longer contain `<blueprints>` sections.
-    - **MRP.xml Injection:** Verify via unit test of the PromptManager that the assembled prompt contains MRP content followed by agent-specific content. Verify `MRP.xml` is NOT present in `.teddy/prompts/` after init.
-    - **init templates Subcommand:** Verify the subcommand exists in the CLI and regenerates `docs/templates/` correctly.
-- **Fail-Fast:** The PromptManager MUST fail if `MRP.xml` is missing from resources.
-- **Poka-Yoke:** No agent XML should be committed without removing `<blueprints>` sections — a CI check should verify this.
+    - **Blueprint Extraction:** Verify via `mock_fs` that `ensure_templates_initialized()` writes files to `docs/templates/`. Verify agent XMLs no longer contain `<blueprints>` sections via string search.
+    - **MRP.xml Injection:** Verify via unit test that `fetch_system_prompt()` assembled content contains MRP protocol rules after agent-specific content. Verify `MRP.xml` is NOT written to `.teddy/prompts/` by `ensure_initialized()`.
+    - **init templates Subcommand:** Verify via CLI adapter test that `teddy init templates` exists and produces expected output. Verify the `init` callback calls `ensure_templates_initialized()`.
+- **Fail-Fast:** `fetch_system_prompt()` MUST raise `FileNotFoundError` if MRP.xml is missing from resources.
+- **Shared Seam Strategy:** `fetch_system_prompt()` has 2 consumers — but the change is additive (non-breaking, signature unchanged). No migration needed.
 
 ## Technical Specifications
-- **Prompt Resolution:** The PromptManager (or system prompt assembler) currently reads agent XML files individually. For MRP.xml injection, the assembler MUST read `MRP.xml` from resources (not from `.teddy/prompts/`) and append its content after the agent-specific XML content before sending to the LLM.
-- **File Locations:**
-    - `docs/templates/specification-document.md` — Template for Specification Documents
-    - `docs/templates/task-brief.md` — Template for Task Briefs
-    - `docs/templates/case-file.md` — Template for Case Files
-    - `docs/templates/vertical-slice.md` — Template for Vertical Slices
-    - `docs/templates/milestone.md` — Template for Milestone documents
-    - `docs/templates/component-design.md` — Template for Component Design Documents
-    - `docs/templates/architecture-conventions.md` — Template for ARCHITECTURE.md Conventions section
-    - `docs/templates/roadmap.md` — Template for PROJECT.md Roadmap section
-    - `docs/templates/makefile.md` — Makefile template for VCP commit and Remote Probing Protocol commands
-    - `src/teddy_executor/resources/MRP.xml` — Base prompt (NOT in docs/templates/ or .teddy/prompts/)
-- **CLI Changes:** Add `teddy init templates` subcommand to the `init` command group.
+- **Prompt Resolution:** `PromptManager.fetch_system_prompt()` currently reads agent XML files from session root → `.teddy/prompts/`. For MRP.xml injection, the method loads MRP.xml from `src/teddy_executor/resources/config/prompts/MRP.xml` via `importlib.resources.files()` and appends its content after the resolved agent XML content.
+- **Bundled Template Location:** `src/teddy_executor/resources/templates/` — alongside the existing `config/` resource package. Each template is a plain Markdown file.
+- **Project Template Location:** `docs/templates/` — created by `teddy init` or `teddy init templates` in the user's project root.
+- **File Locations (Source → Target):**
+    - `src/teddy_executor/resources/templates/specification-document.md` → `docs/templates/specification-document.md`
+    - `src/teddy_executor/resources/templates/task-brief.md` → `docs/templates/task-brief.md`
+    - `src/teddy_executor/resources/templates/case-file.md` → `docs/templates/case-file.md`
+    - `src/teddy_executor/resources/templates/vertical-slice.md` → `docs/templates/vertical-slice.md`
+    - `src/teddy_executor/resources/templates/milestone.md` → `docs/templates/milestone.md`
+    - `src/teddy_executor/resources/templates/component-design.md` → `docs/templates/component-design.md`
+    - `src/teddy_executor/resources/templates/architecture.md` → `docs/templates/architecture.md`
+    - `src/teddy_executor/resources/templates/project.md` → `docs/templates/project.md`
+    - `src/teddy_executor/resources/templates/makefile.md` → `docs/templates/makefile.md`
+    - `src/teddy_executor/resources/config/prompts/MRP.xml` — NOT copied (bundled only)
+- **CLI Changes:**
+    - Add `init_app.command()` named `templates` to `__main__.py` following the existing `prompts` and `config` pattern.
+    - Modify `init_callback` to also call `ensure_templates_initialized()` when no subcommand is invoked.
+- **IInitUseCase Changes:**
+    - Add abstract method `ensure_templates_initialized(overwrite: bool = False) -> str`.
+    - This is a BREAKING change to the ABC, but only one implementing class exists (`InitService`), making it a safe atomic change.
+- **Agent XML Changes:**
+    - Remove `<blueprints>` section entirely from all 6 agent XMLs.
+    - Remove the duplicated `<general_rules>` (rules 1-9, 10, 11) and `<response_format>` blocks from all agent XMLs. These are now in MRP.xml.
+    - Keep agent-specific rules (e.g., Debugger's Remote Probing Protocol rule 11, Developer's Contract Enforcement rule 10, Architect's programmatic edits rule 11).
+    - Replace blueprint removal with a brief inline directive: e.g., `"Use the [Component Design template](/docs/templates/component-design.md) when creating blueprint artifacts."`
 
 ## Vertical Slices
-> Slice definitions will be created by the Architect during the Design phase. The following high-level breakdown is anticipated:
->
-> 1. Blueprint extraction to `docs/templates/` + remove `<blueprints>` from agent XMLs + add workflow directives
-> 2. MRP.xml creation + PromptManager injection logic
-> 3. `makefile.md` template creation + `teddy init templates` subcommand
-> 4. CI check enforcement (no `<blueprints>` in agent XMLs)
+- [ ] **03-01-Templates-and-Init** — Template files, `teddy init templates` subcommand, InitService changes, and blueprint removal from agent XMLs. See the [slice definition](/docs/project/slices/03-01-templates-and-init.md) for deliverables and scenarios.
+- [ ] **03-02-MRP-Base-Prompt** — MRP.xml creation, PromptManager injection logic, and removal of shared general_rules/response_format from agent XMLs. See the [slice definition](/docs/project/slices/03-02-mrp-base-prompt.md) for deliverables and scenarios.
