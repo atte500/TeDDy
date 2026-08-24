@@ -125,3 +125,5 @@ This section defines the conventions for our project management artifacts.
   - **msgpack (1 vuln):** Potential DoS via crafted input — TeDDy serializes standard types with trusted data only.
   - **python-dotenv (1 vuln):** Path traversal in .env loading — TeDDy runs in controlled environments with a single config file.
   - **Blocker:** All four packages are transitively pinned by litellm 1.83.7. Upgrading any of them requires also upgrading litellm, but all litellm versions ≥1.83.8 dropped Python 3.14 support via `requires-python <3.14`. Our CI is now fully on Python 3.14, so we cannot upgrade without breaking installation. Fix blocked until upstream lifts the cap: [litellm#26343](https://github.com/BerriAI/litellm/issues/26343).
+
+  - **2026-08-24:** `--no-verify` was used for the `v0.1.13` release commit (`8794fe6d`, `chore(release): bump version to 0.1.13 with hotfix release notes`) to bypass the pre-existing pip-audit block documented above. The staged changes were purely a version bump in `pyproject.toml` and the addition of release notes.
