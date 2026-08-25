@@ -45,6 +45,7 @@ A living list of upcoming Milestones and their high-level features.
     - **CI/CD Pipeline:** Set up two parallel jobs: 1) Blocking OS matrix test suite with coverage targets. 2) Non-blocking quality checks (formatters, linters, security scanners).
     - **Pre-commit Hooks:** Install the Pre-commit framework with hooks for formatters, linters, security scanners.
     - **Post-commit Hook:** Implement a hook that runs the full test suite and reverts on failure.
+    - **Debug Workflow:** Create `.github/workflows/debug.yml` following [docs/templates/ci.md](docs/templates/ci.md) to enable the Remote Probing Protocol.
     - **Makefile:** Create a `Makefile` following [docs/templates/makefile.md](docs/templates/makefile.md) with `make commit` and `make probe` commands.
 
 ## Technical Debt

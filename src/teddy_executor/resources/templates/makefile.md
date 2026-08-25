@@ -3,6 +3,25 @@
 This template defines the standard commands for the VCP (Version Control Protocol) commit workflow
 and the Debugger's Remote Probing Protocol (RPP). Below are concrete examples adapted for the TeDDy project.
 
+## Usage
+
+### Commit
+```shell
+make commit 'feat(templates): add PROJECT.md template'
+make commit 'fix(tests): resolve flaky assertion' --no-verify
+```
+
+**What is `.PHONY`?**
+`.PHONY` is a Makefile directive that declares `commit` and `probe` as phony targets — they do not correspond to actual files. Without `.PHONY`, if a file named `commit` or `probe` existed in the directory (e.g., a script called `commit`), Make would see it as up-to-date and skip the target entirely. By declaring them phony, Make always runs the recipe when you call `make commit` or `make probe`.
+
+### Probe
+```shell
+make probe 'investigate windows path handling'
+```
+
+**Why does `probe` need a reason?**
+The Remote Probing Protocol requires a reason string because it is passed as the `reason` input to the GitHub Actions workflow dispatch command (`gh workflow run debug.yml --field reason='...'`). The reason documents what the probe is investigating and appears in the workflow run metadata.
+
 ## VCP Commit Workflow
 
 ### Example (TeDDy Project)
