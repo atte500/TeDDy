@@ -47,8 +47,8 @@ probe:
 	git push
 	@RUN_ID=$$(basename "$$(gh workflow run debug.yml --field reason="$(REASON)" 2>&1)"); \
 	[ -n "$$RUN_ID" ] || { echo "Error: Could not parse workflow run ID"; exit 1; }; \
-	sleep 15; \
-	gh run view "$$RUN_ID" --log 2>&1 | awk '/Execute Remote Probe/{p=1;next} p&&/^[A-Z]/{p=0} p'
+	sleep 60; \
+	gh run view "$$RUN_ID" --log 2>&1 | grep -v '^##\[group\]' | grep -v '^##\[endgroup\]' | grep -v '^$'
 
 %:
 	@:
