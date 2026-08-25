@@ -1,20 +1,11 @@
 .PHONY: commit probe
 
 commit:
-	@args="$(filter-out $@,$(MAKECMDGOALS))"; \
-	case "$$args" in \
-		*--no-verify*) \
-			message=$$(echo "$$args" | sed 's/ --no-verify//'); \
-			no_verify="--no-verify";; \
-		*) \
-			message="$$args"; \
-			no_verify="";; \
-	esac; \
-	[ -n "$$message" ] || { echo "Usage: make commit '<message>' [--no-verify]"; exit 1; }; \
+	@[ -n "$(MESSAGE)" ] || { echo "Usage: make commit MESSAGE='<type>(<scope>): <description>' [NO_VERIFY=1]"; exit 1; }; \
 	git add .; \
 	pre-commit run || true; \
 	git add .; \
-	git commit -m "$$message" $$no_verify; \
+	git commit -m "$(MESSAGE)" $(if $(NO_VERIFY),--no-verify,); \
 	git pull --rebase && git push || [ -z "$$(git remote)" ]
 
 probe:

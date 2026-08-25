@@ -1,5 +1,7 @@
 # CI/CD Template
 
+> **⚠️ This is an example template.** Adapt the runner, test commands, and tool-specific details (e.g., `uv run pytest`, pre-commit hook list) to match your project's actual setup. The concrete examples shown may not work verbatim in all environments.
+
 This template documents how to set up Continuous Integration and the Debug Workflow for Remote Probing.
 
 ## CI Pipeline
