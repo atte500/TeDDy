@@ -94,12 +94,10 @@ probe:
 	git add -f spikes/debug/probe.sh
 	git commit -m 'debug: probe' --no-verify --allow-empty
 	git push
-	@gh workflow run debug.yml --field reason='$(REASON)'
-	@sleep 5
-	@RUN_ID=$$(gh run list --workflow debug.yml -L 1 --json databaseId --jq '.[0].databaseId') && \
+	@RUN_ID=$$(gh workflow run debug.yml --field reason='$(REASON)' --json databaseId -q '.databaseId') && \
 	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 && \
-	gh run download "$$RUN_ID" --name probe-result --dir spikes/debugging/probe >/dev/null 2>&1 && \
-	cat spikes/debug/probe/probe_output.txt 2>/dev/null || echo "(no output file)"
+	gh run download "$$RUN_ID" --name probe-result --dir spikes/debug >/dev/null 2>&1 && \
+	cat spikes/debug/probe_output_*.txt 2>/dev/null || echo "(no output file)"
 ```
 
 **Usage:** `make probe 'investigate windows path handling'`

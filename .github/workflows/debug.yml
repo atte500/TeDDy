@@ -49,14 +49,14 @@ jobs:
         echo "::endgroup::"
 
         if [ -f spikes/debug/probe.sh ]; then
-          bash spikes/debug/probe.sh
+          bash spikes/debug/probe.sh "${{ runner.os }}"
         else
           echo "[ERROR] spikes/debug/probe.sh not found."
           exit 1
         fi
 
-    - name: Upload probe result
+    - name: Upload probe results
       uses: actions/upload-artifact@v4
       with:
         name: probe-result
-        path: spikes/debug/probe_output.txt
+        path: spikes/debug/
