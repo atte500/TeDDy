@@ -24,49 +24,56 @@ make probe 'investigate windows path handling'
 **Why does `probe` need a reason?**
 The Remote Probing Protocol requires a reason string because it is passed as the `reason` input to the GitHub Actions workflow dispatch command (`gh workflow run debug.yml --field reason='...'`). The reason documents what the probe is investigating and appears in the workflow run metadata.
 
+## Cross-Platform Design
+
+The Makefile uses Make's built-in `-` prefix for error suppression (`-pre-commit run`, `-git pull --rebase`, `-git push`) instead of shell-level `|| true` or `&&`/`||` chaining. This ensures cross-platform compatibility:
+
+- **POSIX shells (bash, sh, zsh):** `-` prefix works because Make handles error suppression natively before passing the recipe line to the shell.
+- **Windows (cmd.exe):** `-` prefix works because Make suppresses the exit code check, avoiding shell-specific `||` operators that cmd.exe does not support.
+- **Error transparency:** If pre-commit, pull, or push fail, the commit still succeeds locally. The post-commit test gate is the real safety net; remote failures appear as non-zero exit codes in the terminal output.
+
 ## VCP Commit Workflow
 
-### Example (TeDDy Project)
+### Example
 
 ```makefile
-.PHONY: commit probe
-
 commit:
-	args="$(filter-out $@,$(MAKECMDGOALS))"; \
-	case "$$args" in \
-		*--no-verify*) \
-			message=$$(echo "$$args" | sed 's/ --no-verify//'); \
-			no_verify="--no-verify";; \
-		*) \
-			message="$$args"; \
-			no_verify="";; \
-	esac; \
-	[ -n "$$message" ] || { echo "Usage: make commit '<message>' [--no-verify]"; exit 1; }; \
-	git add .; \
-	pre-commit run || true; \
-	git add .; \
-	git commit -m "$$message" $$no_verify; \
-	git pull --rebase && git push || [ -z "$$(git remote)" ]
+	@args="$(filter-out $@,$(MAKECMDGOALS))"; \
+	[ -n "$$args" ] || { echo "Usage: make commit '<message>' [NO_VERIFY=1]"; exit 1; }
+	git add .
+	-pre-commit run
+	git add .
+	git commit -m "$$args" $(if $(NO_VERIFY),--no-verify,)
+	-git pull --rebase
+	-git push
 
 %:
 	@:
+```
+
+**Usage:**
+- `make commit 'feat(templates): add PROJECT.md template'`
+- `make commit 'fix(tests): resolve flaky assertion' NO_VERIFY=1`
+
 ## Remote Probing Protocol (RPP)
 
-### Example (TeDDy Project)
+### Example
 
 ```makefile
 probe:
+	@args="$(filter-out $@,$(MAKECMDGOALS))"; \
+	[ -n "$$args" ] || { echo "Usage: make probe '<reason>'"; exit 1; }
 	git add -f spikes/debug/remote_probe.sh
 	git commit -m 'debug: probe' --no-verify
 	git push
-	gh workflow run debug.yml --field reason='$(REASON)'
+	gh workflow run debug.yml --field reason="$$args"
 	sleep 10
-	$(eval RUN_ID := $(shell gh run list -w debug.yml -L 1 --json databaseId -q '.[0].databaseId'))
-	gh run watch $(RUN_ID)
-	gh run view $(RUN_ID) --log | awk -F'\t' '...'
+	RUN_ID=$$(gh run list -w debug.yml -L 1 --json databaseId -q '.[0].databaseId')
+	gh run watch $$RUN_ID
+	gh run view $$RUN_ID --log
 ```
 
-**Usage:** `make probe REASON='investigate windows path handling'`
+**Usage:** `make probe 'investigate windows path handling'`
 
 ## Implementation Notes
 
