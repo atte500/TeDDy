@@ -45,12 +45,10 @@ probe:
 	git add -f spikes/debug/remote_probe.sh
 	git commit -m 'debug: probe' --no-verify --allow-empty
 	git push
-	RUN_ID=$$(basename "$$(gh workflow run debug.yml --field reason="$(REASON)" 2>&1)"); \
-	[ -n "$$RUN_ID" ] || { echo "Error: Could not parse workflow run ID from 'gh workflow run' output"; exit 1; }; \
-	sleep 5; \
-	gh run watch "$$RUN_ID"; \
-	# Extract only the "Run Probe" step output, stripping boilerplate markers
-	gh run view "$$RUN_ID" --log 2>&1 | awk 'BEGIN{probe=0} /##\[group\]Run Probe/{probe=1;next} probe&&/##\[endgroup\]/{probe=0;next} probe'
+	@RUN_ID=$$(basename "$$(gh workflow run debug.yml --field reason="$(REASON)" 2>&1)"); \
+	[ -n "$$RUN_ID" ] || { echo "Error: Could not parse workflow run ID"; exit 1; }; \
+	sleep 15; \
+	gh run view "$$RUN_ID" --log 2>&1 | awk '/Execute Remote Probe/{p=1;next} p&&/^[A-Z]/{p=0} p'
 
 %:
 	@:
