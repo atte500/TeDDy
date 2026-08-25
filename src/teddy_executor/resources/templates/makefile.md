@@ -48,6 +48,7 @@ EOF
 
 **Requirements:**
 - The output file MUST be written to `spikes/debug/probe_output.txt` — this path is uploaded as an artifact by the CI workflow.
+- The CI workflow running the probe SHOULD be configured with a single job (no build matrix) to avoid multiple jobs overwriting each other's uploaded artifact (`probe-result`).
 - The script should be minimal and self-contained (ideally a single heredoc). See the Debugger's rule 11 (Remote Probing Protocol) for full protocol details.
 
 ## Cross-Platform Design
@@ -98,8 +99,8 @@ probe:
 	@sleep 5
 	@RUN_ID=$$(gh run list --workflow debug.yml -L 1 --json databaseId --jq '.[0].databaseId') && \
 	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 && \
-	gh run download "$$RUN_ID" --name probe-result --dir spikes/debugging/probe >/dev/null 2>&1 && \
-	cat spikes/debug/probe/probe_output.txt 2>/dev/null || echo "(no output file)"
+	gh run download "$$RUN_ID" --name probe-result --dir spikes/debug >/dev/null 2>&1 && \
+	cat spikes/debug/probe_output.txt 2>/dev/null || echo "(no output file)"
 ```
 
 **Usage:** `make probe 'investigate windows path handling'`
