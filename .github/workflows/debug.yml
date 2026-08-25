@@ -59,4 +59,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: probe-result
-        path: spikes/debug/output/probe_output.txt
+        path: spikes/debug/probe_output.txt

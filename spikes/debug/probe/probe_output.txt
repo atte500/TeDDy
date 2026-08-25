@@ -1,0 +1,4 @@
+=== Probe Result ===
+OS: Darwin
+Python: Python 3.14.6
+Git: git version 2.55.0
