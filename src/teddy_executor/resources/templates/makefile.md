@@ -37,14 +37,15 @@ The Makefile uses Make's built-in `-` prefix for error suppression (`-pre-commit
 ### Example
 
 ```makefile
+commit: ARGS := $(filter-out NO_VERIFY=%,$(filter-out commit,$(MAKECMDGOALS)))
+
 commit:
-	@args="$(filter-out $@,$(MAKECMDGOALS))"; \
-	[ -n "$$args" ] || { echo "Usage: make commit '<message>' [NO_VERIFY=1]"; exit 1; }; \
-	git add .; \
-	-pre-commit run; \
-	git add .; \
-	git commit -m "$$args" $(if $(NO_VERIFY),--no-verify,); \
-	-git pull --rebase; \
+	@[ -n "$(ARGS)" ] || { echo "Usage: make commit '<message>' [NO_VERIFY=1]"; exit 1; }
+	git add .
+	-pre-commit run
+	git add .
+	git commit -m "$(ARGS)" $(if $(NO_VERIFY),--no-verify,)
+	-git pull --rebase
 	-git push
 
 %:
@@ -60,16 +61,14 @@ commit:
 ### Example
 
 ```makefile
+probe: REASON := $(filter-out probe,$(MAKECMDGOALS))
+
 probe:
-	@args="$(filter-out $@,$(MAKECMDGOALS))"; \
-	[ -n "$$args" ] || { echo "Usage: make probe '<reason>'"; exit 1; }; \
-	git add -f spikes/debug/remote_probe.sh; \
-	# --allow-empty ensures a commit is created even if the probe script hasn't changed, \
-	# so the push triggers CI and the workflow dispatch runs on the latest commit. \
-	git commit -m 'debug: probe' --no-verify --allow-empty; \
-	git push; \
-	# Capture the run ID directly from the workflow dispatch output (avoids polling race) \
-	RUN_ID=$$(basename "$$(gh workflow run debug.yml --field reason="$$args" 2>&1)"); \
+	@[ -n "$(REASON)" ] || { echo "Usage: make probe '<reason>'"; exit 1; }
+	git add -f spikes/debug/remote_probe.sh
+	git commit -m 'debug: probe' --no-verify --allow-empty
+	git push
+	RUN_ID=$$(basename "$$(gh workflow run debug.yml --field reason="$(REASON)" 2>&1)"); \
 	[ -n "$$RUN_ID" ] || { echo "Error: Could not parse workflow run ID from 'gh workflow run' output"; exit 1; }; \
 	sleep 5; \
 	gh run watch "$$RUN_ID"; \

@@ -11,30 +11,41 @@
 # Pre-commit failure does NOT block the commit (it's advisory); the post-commit test
 # gate is the real safety net. Pull/push failure does NOT block the local commit.
 
+# Target-specific variables capture positional arguments before recipe execution.
+# These are Make variables, not shell variables, so they persist across all recipe lines.
+# $(filter-out commit,...) strips the target name from MAKECMDGOALS to get the message.
+# $(filter-out NO_VERIFY=%,...) strips the optional bypass flag so it never contaminates
+# the commit message. NO_VERIFY=1 is a Make variable assignment, not part of MAKECMDGOALS,
+# but the filter is defensive against edge cases.
+commit: ARGS := $(filter-out NO_VERIFY=%,$(filter-out commit,$(MAKECMDGOALS)))
+
 commit:
-	@args="$(filter-out $@,$(MAKECMDGOALS))"; \
-	[ -n "$$args" ] || { echo "Usage: make commit '<message>' [NO_VERIFY=1]"; exit 1; }; \
-	git add .; \
-	-pre-commit run; \
-	git add .; \
-	git commit -m "$$args" $(if $(NO_VERIFY),--no-verify,); \
-	-git pull --rebase; \
+	@[ -n "$(ARGS)" ] || { echo "Usage: make commit '<message>' [NO_VERIFY=1]"; exit 1; }
+	git add .
+	-pre-commit run
+	git add .
+	git commit -m "$(ARGS)" $(if $(NO_VERIFY),--no-verify,)
+	-git pull --rebase
 	-git push
 
 # probe - Remote Probing Protocol: push probe, trigger CI workflow, retrieve logs
 # Usage:
 #   make probe '<reason>'  # reason is required, appears in workflow dispatch metadata
+#
+# Target-specific variable captures the reason string.
+# The first three lines (add, commit, push) are on separate recipe lines because
+# error suppression is not needed here — we want failures to be visible.
+# The dispatch/watch section uses a combined shell block because $RUN_ID is a
+# shell variable that must persist across multiple commands.
+
+probe: REASON := $(filter-out probe,$(MAKECMDGOALS))
 
 probe:
-	@args="$(filter-out $@,$(MAKECMDGOALS))"; \
-	[ -n "$$args" ] || { echo "Usage: make probe '<reason>'"; exit 1; }; \
-	git add -f spikes/debug/remote_probe.sh; \
-	# --allow-empty ensures a commit is created even if the probe script hasn't changed, \
-	# so the push triggers CI and the workflow dispatch runs on the latest commit. \
-	git commit -m 'debug: probe' --no-verify --allow-empty; \
-	git push; \
-	# Capture the run ID directly from the workflow dispatch output (avoids polling race) \
-	RUN_ID=$$(basename "$$(gh workflow run debug.yml --field reason="$$args" 2>&1)"); \
+	@[ -n "$(REASON)" ] || { echo "Usage: make probe '<reason>'"; exit 1; }
+	git add -f spikes/debug/remote_probe.sh
+	git commit -m 'debug: probe' --no-verify --allow-empty
+	git push
+	RUN_ID=$$(basename "$$(gh workflow run debug.yml --field reason="$(REASON)" 2>&1)"); \
 	[ -n "$$RUN_ID" ] || { echo "Error: Could not parse workflow run ID from 'gh workflow run' output"; exit 1; }; \
 	sleep 5; \
 	gh run watch "$$RUN_ID"; \
