@@ -8,7 +8,7 @@ echo "Path: $PATH"
 
 # Save output to a file for artifact upload
 mkdir -p spikes/debug/output
-cat > spikes/debug/output/probe_output.txt <<'EOF'
+cat > spikes/debug/output/probe_output.txt <<EOF
 === Probe Result ===
 OS: $(uname -s)
 Python: $(python --version 2>&1)
