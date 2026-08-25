@@ -165,30 +165,8 @@ WIP & REMINDERS:
         <description>For CI/platform-specific bugs that cannot be probed locally.</description>
         1. Pre-flight Check: Verify that `.github/workflows/debug.yml` exists. You MUST first READ docs/templates/ci.md before creating or modifying the debug workflow. If the workflow does not exist, you MUST CREATE a minimal triggerable workflow (using `workflow_dispatch`) following the ci.md template, and commit it before proceeding.
         2. Probe File: Consolidate diagnostic logic into a shell entry point `spikes/debug/remote_probe.sh`. You SHOULD use the "Heredoc" pattern to keep the probe to a single file.
-        3. Execution: You MUST execute the following standardized codeblock to EXECUTE with a 300s Timeout in order to push the probe, trigger the mailbox, and retrieve distilled results:
-        ~~~~~~
-        # 1. Commit and push the probe code only
-        #    --allow-empty ensures a commit is created even if the probe script hasn't changed,
-        #    so the push triggers CI and the workflow dispatch runs on the latest commit.
-        git add -f spikes/debug/<file> && git commit -m 'debug: probe' --no-verify --allow-empty && git push
-
-        # 2. Trigger the remote workflow
-        gh workflow run <workflow.yml> --field reason='[Reason]'
-
-        # 3. Wait for registration and watch (poll for run ID with backoff)
-        sleep 5
-        for i in 1 2 3 4 5 6 7 8 9 10; do \
-          RUN_ID=$(gh run list -w <workflow.yml> -L 1 --json databaseId -q '.[0].databaseId' 2>/dev/null || echo ""); \
-          [ -n "$RUN_ID" ] && break; \
-          sleep 1; \
-        done; \
-        [ -n "$RUN_ID" ] || { echo "Error: Could not find dispatched workflow run"; exit 1; }
-        gh run watch "$RUN_ID"
-        ~~~~~~
-        4. Retrieve Logs
-        gh run view $RUN_ID --log | awk -F'\t' 'BEGIN { print "\n=== REMOTE PROBE LOG START ===" } $2=="[STEP_NAME]" { if(j!=$1){j=$1; print "\n["j"]"} l=$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/, "", l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/, "", l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/, "Error: ", l); print l } END { print "=== REMOTE PROBE LOG END ===\n" }'
-        ~~~~~~
-        4. Timeout Recovery: If the execution times out or `gh run view` reports the run is still in progress, EXECUTE step 3 and 4 of the execution block again using the `RUN_ID` from your history and ensuring you've set the Timeout action parameter.
+        3. Execution: You MUST use `make probe '<reason>'` to push the probe, trigger the workflow, and retrieve logs. The `make probe` command handles the entire workflow: commit (with `--allow-empty`), push, dispatch, and log retrieval. If a `Makefile` does not exist in the project root, you MUST first create one following the template at `docs/templates/makefile.md`.
+        4. Timeout Recovery: If the execution times out or `gh run view` reports the run is still in progress, re-run `make probe '<reason>'` which handles retries.
       </rule>
       <rule n="12" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
       <rule n="13" name="Programmatic Edits">You may use `EXECUTE` with bash tools to modify files when surgical `EDIT` matching is brittle or for bulk changes. You MUST scope these actions to specific files and chain a verification command to output the results. Example: `sed 's/old/new/g' <file> > <file>.tmp && mv <file>.tmp <file> && git grep "new_string" <file>`</rule>

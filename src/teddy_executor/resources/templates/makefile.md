@@ -39,12 +39,12 @@ The Makefile uses Make's built-in `-` prefix for error suppression (`-pre-commit
 ```makefile
 commit:
 	@args="$(filter-out $@,$(MAKECMDGOALS))"; \
-	[ -n "$$args" ] || { echo "Usage: make commit '<message>' [NO_VERIFY=1]"; exit 1; }
-	git add .
-	-pre-commit run
-	git add .
-	git commit -m "$$args" $(if $(NO_VERIFY),--no-verify,)
-	-git pull --rebase
+	[ -n "$$args" ] || { echo "Usage: make commit '<message>' [NO_VERIFY=1]"; exit 1; }; \
+	git add .; \
+	-pre-commit run; \
+	git add .; \
+	git commit -m "$$args" $(if $(NO_VERIFY),--no-verify,); \
+	-git pull --rebase; \
 	-git push
 
 %:
@@ -62,22 +62,17 @@ commit:
 ```makefile
 probe:
 	@args="$(filter-out $@,$(MAKECMDGOALS))"; \
-	[ -n "$$args" ] || { echo "Usage: make probe '<reason>'"; exit 1; }
-	git add -f spikes/debug/remote_probe.sh
-	# --allow-empty ensures a commit is created even if the probe script hasn't changed,
-	# so the push triggers CI and the workflow dispatch runs on the latest commit.
-	git commit -m 'debug: probe' --no-verify --allow-empty
-	git push
-	gh workflow run debug.yml --field reason="$$args"
-	# Poll for the run ID with backoff (workflow runs take a few seconds to register)
-	sleep 5
-	for i in 1 2 3 4 5 6 7 8 9 10; do \
-		RUN_ID=$$(gh run list -w debug.yml -L 1 --json databaseId -q '.[0].databaseId' 2>/dev/null || echo ""); \
-		[ -n "$$RUN_ID" ] && break; \
-		sleep 1; \
-	done
-	[ -n "$$RUN_ID" ] || { echo "Error: Could not find dispatched workflow run for debug.yml"; exit 1; }
-	gh run watch "$$RUN_ID"
+	[ -n "$$args" ] || { echo "Usage: make probe '<reason>'"; exit 1; }; \
+	git add -f spikes/debug/remote_probe.sh; \
+	# --allow-empty ensures a commit is created even if the probe script hasn't changed, \
+	# so the push triggers CI and the workflow dispatch runs on the latest commit. \
+	git commit -m 'debug: probe' --no-verify --allow-empty; \
+	git push; \
+	# Capture the run ID directly from the workflow dispatch output (avoids polling race) \
+	RUN_ID=$$(basename "$$(gh workflow run debug.yml --field reason="$$args" 2>&1)"); \
+	[ -n "$$RUN_ID" ] || { echo "Error: Could not parse workflow run ID from 'gh workflow run' output"; exit 1; }; \
+	sleep 5; \
+	gh run watch "$$RUN_ID"; \
 	gh run view "$$RUN_ID" --log
 ```
 
