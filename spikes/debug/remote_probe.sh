@@ -2,7 +2,7 @@
 # Remote Probe Test Script
 set -euo pipefail
 
-echo "=== REMOTE PROBE START ==="
+echo "=== REMOTE PROBE TEST START ==="
 echo "Host: $(uname -a)"
 echo "Date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo "Git commit: $(git rev-parse HEAD 2>/dev/null || echo 'not a git repo')"
