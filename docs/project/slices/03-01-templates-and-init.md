@@ -95,6 +95,9 @@ Each of the 6 XMLs needs the same changes:
 - [ ] **Refactor** - Update InitService constructor to accept optional `templates_dir` parameter (defaulting to `resources.files("teddy_executor.resources.templates")`).
 - [ ] **Cleanup** - Remove `<blueprints>` sections from all 6 agent XMLs. Replace with inline template directive comments.
 
+## Implementation Notes
+- **Auto-init on startup:** `teddy start` and `teddy resume` automatically call `ensure_templates_initialized(overwrite=False)` to create `docs/templates/` if the directory is missing. This is non-destructive — existing template files are never overwritten. Only the explicit `teddy init templates` command uses `overwrite=True` to force-regenerate all templates from defaults. This behavior was decided during development to prevent agents from failing when template files are accidentally deleted, without risking overriding user-customized templates.
+
 ## Verification
 1. [ ] Run `pytest tests/suites/unit/core/services/test_init_service.py -v` — all existing tests pass, new template tests pass.
 2. [ ] Run `pytest tests/suites/unit/core/ports/inbound/test_init.py -v` — contract tests for new ABC method pass.

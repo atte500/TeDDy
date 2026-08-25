@@ -65,15 +65,15 @@ probe: REASON := $(filter-out probe,$(MAKECMDGOALS))
 
 probe:
 	@[ -n "$(REASON)" ] || { echo "Usage: make probe '<reason>'"; exit 1; }
-	git add -f spikes/debug/remote_probe.sh
+	git add -f spikes/debug/probe.sh
 	git commit -m 'debug: probe' --no-verify --allow-empty
 	git push
-	RUN_ID=$$(basename "$$(gh workflow run debug.yml --field reason="$(REASON)" 2>&1)"); \
-	[ -n "$$RUN_ID" ] || { echo "Error: Could not parse workflow run ID from 'gh workflow run' output"; exit 1; }; \
-	sleep 5; \
-	gh run watch "$$RUN_ID"; \
-	# Extract only the "Run Probe" step output, stripping boilerplate markers
-	gh run view "$$RUN_ID" --log 2>&1 | awk 'BEGIN{probe=0} /##\[group\]Run Probe/{probe=1;next} probe&&/##\[endgroup\]/{probe=0;next} probe'
+	@gh workflow run debug.yml --field reason='$(REASON)'
+	@sleep 5
+	@RUN_ID=$$(gh run list --workflow debug.yml -L 1 --json databaseId --jq '.[0].databaseId') && \
+	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 && \
+	gh run download "$$RUN_ID" --name probe-result --dir spikes/debugging/probe >/dev/null 2>&1 && \
+	cat spikes/debugging/probe/probe_output.txt 2>/dev/null || echo "(no output file)"
 ```
 
 **Usage:** `make probe 'investigate windows path handling'`

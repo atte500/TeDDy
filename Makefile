@@ -49,8 +49,8 @@ probe:
 	@sleep 5
 	@RUN_ID=$$(gh run list --workflow debug.yml -L 1 --json databaseId --jq '.[0].databaseId') && \
 	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 && \
-	gh run download "$$RUN_ID" --name probe-result --dir .tmp/probe >/dev/null 2>&1 && \
-	cat .tmp/probe/probe_output.txt 2>/dev/null || echo "(no output file)"
+	gh run download "$$RUN_ID" --name probe-result --dir spikes/debugging/probe >/dev/null 2>&1 && \
+	cat spikes/debugging/probe/probe_output.txt 2>/dev/null || echo "(no output file)"
 
 %:
 	@:

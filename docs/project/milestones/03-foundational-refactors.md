@@ -12,6 +12,8 @@ Two workstreams will be executed as independent slices:
 ### Slice 03-01: Templates & Init
 Bundled Markdown template files are stored in `src/teddy_executor/resources/templates/`. The `teddy init templates` subcommand copies them to `docs/templates/` in the user's project. The `teddy init` (bare) command also creates `docs/templates/` on first init. Agent XMLs have their `<blueprints>` sections replaced with directives referencing the templates. The PROJECT.md template (`project.md`) references `docs/templates/makefile.md` as part of Milestone 0 foundational tasks. Includes the Makefile template (`makefile.md`) as one of the 9 template files.
 
+- **Auto-init on startup:** `teddy start` and `teddy resume` automatically create `docs/templates/` if the directory is missing (non-destructive — never overwrites existing files). Only `teddy init templates` forces overwrite.
+
 ### Slice 03-02: MRP Base Prompt
 Extract the shared Markdown Response Protocol (response format + common general rules 1-9, plus Conflict Resolution and Programmatic Edits) that are duplicated identically across all 6 agents into `src/teddy_executor/resources/config/prompts/MRP.xml` (alongside the agent XMLs). PromptManager loads MRP.xml via `importlib.resources` and appends it at `fetch_system_prompt()` time. MRP.xml is NOT copied to `.teddy/prompts/` for user modification — it is protocol infrastructure.
 
