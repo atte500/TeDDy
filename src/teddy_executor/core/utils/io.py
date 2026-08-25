@@ -8,9 +8,17 @@ class _TeeWriter:
     def __init__(self, original: TextIO, log_file: TextIO):
         self._original = original
         self._log_file = log_file
+        self._log_file_closed = False  # Track closure state
 
-    # ANSI escape sequence pattern (e.g., \x1b[31m, \x1b[1;33m, \x1b[A)
-    _ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
+    # Comprehensive ANSI escape sequence pattern.
+    # Matches all CSI sequences (including private modes like \x1b[?12l),
+    # OSC sequences (e.g., \x1b]0;title\x07), DCS/SOS/PM/APC, and SS2/SS3/ST.
+    _ANSI_ESCAPE = re.compile(
+        r"\x1b\[[0-?]*[ -/]*[@-~]"  # CSI sequences (all variants)
+        r"|\x1b\].*?(\x1b\\|\x07)"  # OSC sequences
+        r"|\x1b[PX^_].*?\x1b\\"  # DCS, SOS, PM, APC
+        r"|\x1b[NO\\]"  # SS2, SS3, ST
+    )
 
     def write(self, text: str) -> None:
         # Terminal always gets raw text (colours preserved)
@@ -18,15 +26,20 @@ class _TeeWriter:
         self._original.flush()
         # Log file gets cleaned text (ANSI stripped)
         clean = self._ANSI_ESCAPE.sub("", text)
-        self._log_file.write(clean)
-        self._log_file.flush()
+        if not self._log_file_closed:
+            try:
+                self._log_file.write(clean)
+                self._log_file.flush()
+            except (ValueError, OSError):
+                self._log_file_closed = True
 
     def flush(self) -> None:
         self._original.flush()
-        try:
-            self._log_file.flush()
-        except OSError:
-            pass
+        if not self._log_file_closed:
+            try:
+                self._log_file.flush()
+            except (ValueError, OSError):
+                self._log_file_closed = True
 
     def isatty(self) -> bool:
         return self._original.isatty()
@@ -52,6 +65,7 @@ class Tee:
         self._original_stdout: Optional[TextIO] = None
         self._original_stderr: Optional[TextIO] = None
         self._saved_handlers: list[logging.Handler] = []
+        self._tee_handler: Optional[logging.StreamHandler] = None
 
     def __enter__(self) -> "Tee":
         self._original_stdout = sys.stdout
@@ -67,24 +81,21 @@ class Tee:
         self._saved_handlers = list(logging.root.handlers)
         for h in self._saved_handlers:
             logging.root.removeHandler(h)
-        new_handler = logging.StreamHandler(sys.stderr)
-        new_handler.setFormatter(logging.Formatter("%(message)s"))
-        logging.root.addHandler(new_handler)
+        self._tee_handler = logging.StreamHandler(sys.stderr)
+        self._tee_handler.setFormatter(logging.Formatter("%(message)s"))
+        logging.root.addHandler(self._tee_handler)
 
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        # Restore original root logger handlers: remove the Tee handler we
-        # added, then re-add the saved handlers (which still point to the
-        # original sys.stderr).
-        if self._saved_handlers:
-            for h in list(logging.root.handlers):
-                if isinstance(h, logging.StreamHandler) and hasattr(
-                    h.stream, "_log_file"
-                ):
-                    logging.root.removeHandler(h)
-            for h in self._saved_handlers:
-                logging.root.addHandler(h)
+        # Remove the Tee handler by instance identity
+        if self._tee_handler is not None:
+            logging.root.removeHandler(self._tee_handler)
+            self._tee_handler = None
+
+        # Restore saved handlers
+        for h in self._saved_handlers:
+            logging.root.addHandler(h)
 
         # Restore original streams
         if self._original_stdout is not None:
@@ -96,3 +107,4 @@ class Tee:
                 self._log_file.close()
             except OSError:
                 pass
+        self._saved_handlers = []

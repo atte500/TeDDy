@@ -14,8 +14,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[5] / "src"))
 
 from teddy_executor.core.utils.io import Tee
 
-# ANSI escape pattern (same as in production fix)
-_ANSI_PATTERN = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
+# Comprehensive ANSI pattern matching all escape sequence variants
+_ANSI_PATTERN = re.compile(
+    r"\x1b\[[0-?]*[ -/]*[@-~]"  # CSI sequences (all variants)
+    r"|\x1b\].*?(\x1b\\|\x07)"  # OSC sequences
+    r"|\x1b[PX^_].*?\x1b\\"  # DCS, SOS, PM, APC
+    r"|\x1b[NO\\]"  # SS2, SS3, ST
+)
 
 
 def test_ansi_codes_stripped_from_log():
@@ -28,7 +33,9 @@ def test_ansi_codes_stripped_from_log():
         # These are typical ANSI sequences used by CLI formatter
         print("\x1b[31mRed text\x1b[0m")
         print("\x1b[1;33mYellow bold\x1b[0m")
-        print("\x1b[?25hNormal text")  # cursor show, just ANSI
+        print("\x1b[?25hNormal text")  # cursor show (private mode)
+        print("\x1b[?12lHidden cursor")  # DECRST private mode
+        print("\x1b[?2004hBracketed paste")  # Bracketed paste mode
 
     log_content = log_path.read_text(encoding="utf-8")
 
