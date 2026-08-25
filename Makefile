@@ -3,7 +3,7 @@
 # commit - VCP workflow: stage, pre-commit, commit, pull, push
 # Usage:
 #   make commit '<type>(<scope>): <description>'       # normal commit
-#   make commit '<type>(<scope>): <description>' NO_VERIFY=1  # bypass pre-commit checks
+#   make commit '<type>(<scope>): <description>' no-verify  # bypass pre-commit checks
 #
 # The '-' prefix on pre-commit, pull, and push tells Make to ignore non-zero exit codes.
 # This is cross-platform (works on both POSIX shells and Windows cmd.exe) and avoids
@@ -15,16 +15,16 @@
 # These are Make variables, not shell variables, so they persist across all recipe lines.
 # $(filter-out commit,...) strips the target name from MAKECMDGOALS to get the message.
 # $(filter-out NO_VERIFY=%,...) strips the optional bypass flag so it never contaminates
-# the commit message. NO_VERIFY=1 is a Make variable assignment, not part of MAKECMDGOALS,
+# the commit message. no-verify is a Make variable assignment, not part of MAKECMDGOALS,
 # but the filter is defensive against edge cases.
-commit: ARGS := $(filter-out NO_VERIFY=%,$(filter-out commit,$(MAKECMDGOALS)))
+commit: ARGS := $(filter-out no-verify,$(filter-out commit,$(MAKECMDGOALS)))
 
 commit:
-	@[ -n "$(ARGS)" ] || { echo "Usage: make commit '<message>' [NO_VERIFY=1]"; exit 1; }
+	@[ -n "$(ARGS)" ] || { echo "Usage: make commit '<message>' [no-verify]"; exit 1; }
 	git add .
 	-pre-commit run
 	git add .
-	git commit -m "$(ARGS)" $(if $(NO_VERIFY),--no-verify,)
+	git commit -m "$(ARGS)" $(if $(filter no-verify,$(MAKECMDGOALS)),--no-verify,)
 	-git pull --rebase
 	-git push
 
@@ -49,7 +49,8 @@ probe:
 	[ -n "$$RUN_ID" ] || { echo "Error: Could not parse workflow run ID from 'gh workflow run' output"; exit 1; }; \
 	sleep 5; \
 	gh run watch "$$RUN_ID"; \
-	gh run view "$$RUN_ID" --log
+	# Extract only the "Run Probe" step output, stripping boilerplate markers
+	gh run view "$$RUN_ID" --log 2>&1 | awk 'BEGIN{probe=0} /##\[group\]Run Probe/{probe=1;next} probe&&/##\[endgroup\]/{probe=0;next} probe'
 
 %:
 	@:

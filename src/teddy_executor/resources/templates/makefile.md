@@ -10,7 +10,7 @@ and the Debugger's Remote Probing Protocol (RPP). Below are concrete examples ad
 ### Commit
 ```shell
 make commit 'feat(templates): add PROJECT.md template'
-make commit 'fix(tests): resolve flaky assertion' --no-verify
+make commit 'fix(tests): resolve flaky assertion' no-verify
 ```
 
 **What is `.PHONY`?**
@@ -37,14 +37,14 @@ The Makefile uses Make's built-in `-` prefix for error suppression (`-pre-commit
 ### Example
 
 ```makefile
-commit: ARGS := $(filter-out NO_VERIFY=%,$(filter-out commit,$(MAKECMDGOALS)))
+commit: ARGS := $(filter-out no-verify,$(filter-out commit,$(MAKECMDGOALS)))
 
 commit:
-	@[ -n "$(ARGS)" ] || { echo "Usage: make commit '<message>' [NO_VERIFY=1]"; exit 1; }
+	@[ -n "$(ARGS)" ] || { echo "Usage: make commit '<message>' [no-verify]"; exit 1; }
 	git add .
 	-pre-commit run
 	git add .
-	git commit -m "$(ARGS)" $(if $(NO_VERIFY),--no-verify,)
+	git commit -m "$(ARGS)" $(if $(filter no-verify,$(MAKECMDGOALS)),--no-verify,)
 	-git pull --rebase
 	-git push
 
@@ -54,7 +54,7 @@ commit:
 
 **Usage:**
 - `make commit 'feat(templates): add PROJECT.md template'`
-- `make commit 'fix(tests): resolve flaky assertion' NO_VERIFY=1`
+- `make commit 'fix(tests): resolve flaky assertion' no-verify`
 
 ## Remote Probing Protocol (RPP)
 
@@ -72,7 +72,8 @@ probe:
 	[ -n "$$RUN_ID" ] || { echo "Error: Could not parse workflow run ID from 'gh workflow run' output"; exit 1; }; \
 	sleep 5; \
 	gh run watch "$$RUN_ID"; \
-	gh run view "$$RUN_ID" --log
+	# Extract only the "Run Probe" step output, stripping boilerplate markers
+	gh run view "$$RUN_ID" --log 2>&1 | awk 'BEGIN{probe=0} /##\[group\]Run Probe/{probe=1;next} probe&&/##\[endgroup\]/{probe=0;next} probe'
 ```
 
 **Usage:** `make probe 'investigate windows path handling'`

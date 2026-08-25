@@ -162,7 +162,7 @@ WIP & REMINDERS:
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
         1. Pre-conditions: Clean up temporary files (spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
-        3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by running `make commit '<type>(<scope>): <description>'`. If a `Makefile` does not exist in the project root, you MUST first create one following the template at `docs/templates/makefile.md`. To bypass pre-commit checks (e.g., for known false positives), use `make commit '<type>(<scope>): <description>' [NO_VERIFY=1]`.
+        3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by running `make commit '<type>(<scope>): <description>'`. If a `Makefile` does not exist in the project root, you MUST first create one following the template at `docs/templates/makefile.md`. To bypass pre-commit checks (e.g., for known false positives), use `make commit '<type>(<scope>): <description>' no-verify`.
         4. Post-conditions: All tests MUST pass (post-commit hook enforces this; never bypass). Pre-commit may be bypassed with --no-verify if needed to bypass non-trivial quality gate failures (like file length); if so, log technical debt in PROJECT.md.
       </rule>
 
