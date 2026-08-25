@@ -42,13 +42,15 @@ probe: REASON := $(filter-out probe,$(MAKECMDGOALS))
 
 probe:
 	@[ -n "$(REASON)" ] || { echo "Usage: make probe '<reason>'"; exit 1; }
-	git add -f spikes/debug/remote_probe.sh
+	git add -f spikes/debug/probe.sh
 	git commit -m 'debug: probe' --no-verify --allow-empty
 	git push
-	@RUN_ID=$$(basename "$$(gh workflow run debug.yml --field reason="$(REASON)" 2>&1)"); \
-	[ -n "$$RUN_ID" ] || { echo "Error: Could not parse workflow run ID"; exit 1; }; \
-	sleep 60; \
-	gh run view "$$RUN_ID" --log 2>&1 | grep -v '^##\[group\]' | grep -v '^##\[endgroup\]' | grep -v '^$'
+	@gh workflow run debug.yml --field reason='$(REASON)'
+	@sleep 5
+	@RUN_ID=$$(gh run list --workflow debug.yml -L 1 --json databaseId --jq '.[0].databaseId') && \
+	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 && \
+	gh run download "$$RUN_ID" --name probe-result --dir .tmp/probe >/dev/null 2>&1 && \
+	cat .tmp/probe/probe_output.txt 2>/dev/null || echo "(no output file)"
 
 %:
 	@:
