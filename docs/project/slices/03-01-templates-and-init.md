@@ -22,10 +22,10 @@ And it contains case-file.md
 And it contains vertical-slice.md
 And it contains milestone.md
 And it contains component-design.md
-And it contains architecture.md
-And it contains project.md
+And it contains ARCHITECTURE.md
+And it contains PROJECT.md
 And it contains makefile.md
-And the project.md template references docs/templates/makefile.md as part of Milestone 0 foundational tasks
+And the PROJECT.md template references docs/templates/makefile.md as part of Milestone 0 foundational tasks
 ```
 
 > As a user, I want to run `teddy init` (bare) so that docs/templates/ is also created on first initialization.
@@ -52,7 +52,7 @@ And each agent XML contains appropriate inline directives referencing template f
 ```gherkin
 Given I have a new project without docs/project/PROJECT.md
 And I run `teddy init templates`
-When I read docs/templates/project.md
+When I read docs/templates/PROJECT.md
 Then it contains a note or link referencing docs/templates/makefile.md as part of Milestone 0 foundational tasks
 And it is usable as a standalone scaffold if the real PROJECT.md does not yet exist
 ```
@@ -86,7 +86,7 @@ Each of the 6 XMLs needs the same changes:
 
 ### Deliverables
 - [ ] **Contract** - Add `ensure_templates_initialized(overwrite=False) -> str` to `IInitUseCase` ABC.
-- [ ] **Contract** - Create `src/teddy_executor/resources/templates/` directory with 9 bundled Markdown template files: `specification-document.md`, `task-brief.md`, `case-file.md`, `vertical-slice.md`, `milestone.md`, `component-design.md`, `architecture.md`, `project.md`, `makefile.md`.
+- [ ] **Contract** - Create `src/teddy_executor/resources/templates/` directory with 9 bundled Markdown template files: `specification-document.md`, `task-brief.md`, `case-file.md`, `vertical-slice.md`, `milestone.md`, `component-design.md`, `ARCHITECTURE.md`, `PROJECT.md`, `makefile.md`.
 - [ ] **Harness** - Add test fixture support for InitService mock templates directory (follows existing `mock_fs` patterns in `test_init_service.py`).
 - [ ] **Logic** - Implement `_init_templates()` and `ensure_templates_initialized()` in `InitService` following the existing `_init_prompts()` pattern.
 - [ ] **Wiring** - Add `init_app.command("templates")` to `__main__.py` calling `ensure_templates_initialized(overwrite=True)`.
@@ -100,7 +100,7 @@ Each of the 6 XMLs needs the same changes:
 2. [ ] Run `pytest tests/suites/unit/core/ports/inbound/test_init.py -v` — contract tests for new ABC method pass.
 3. [ ] Run full test suite: `pytest` — all tests pass (green-to-green).
 4. [ ] Manual: `cd /tmp/test-project && teddy init && ls docs/templates/` — confirms 9 template files exist.
-5. [ ] Manual: `cd /tmp/test-project && cat docs/templates/project.md` — confirms link to `docs/project/PROJECT.md`.
+5. [ ] Manual: `cd /tmp/test-project && cat docs/templates/PROJECT.md` — confirms link to `docs/project/PROJECT.md`.
 6. [ ] Manual: `cd /tmp/test-project && rm -rf docs/templates/ && teddy init templates && ls docs/templates/` — confirms regeneration works.
 7. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/architect.xml | grep -c "<blueprints>"` — returns 0 (blueprints extracted to templates).
 8. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/architect.xml | grep -c "template"` — returns at least 1 (directive references templates).

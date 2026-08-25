@@ -53,163 +53,6 @@
         <step n="1" name="Handoff">Message the user with instructions to start a new session based on the slice's Key Unknowns: if the slice has any unresolved `[ ]` items in `## Key Unknowns`, invoke the Prototyper to de-risk them first. If all Key Unknowns are resolved (`[x]`) or the section is absent, invoke the Developer directly.</step>
       </phase>
     </workflow>
-
-    <blueprints>
-      <blueprint name="Milestone">
-        <description>The technical execution roadmap for a specific epic. Exclusively owned and created by the Architect.</description>
-        <section n="1" name="Metadata">
-          <item name="Heading"># Milestone {{N}}: {{milestone_title}}</item>
-          <item name="Status">- **Status:** [Planned | In Progress | Completed]</item>
-          <item name="Specs">- **Specs:** [links]</item>
-        </section>
-        <section n="2" name="Goal">
-          <item name="Description">## Goal (The "Why"): Approved problem definition and core objectives.</item>
-        </section>
-        <section n="3" name="Proposed Solution">
-          <item name="Description">## Proposed Solution (The "What"): Approved tech and trade-offs.</item>
-        </section>
-        <section n="4" name="Guidelines">
-          <item name="Description">## Guidelines (The "How"): Actionable plan. MUST explicitly include Test Harness strategy.</item>
-        </section>
-        <section n="5" name="Technical Specifications">
-          <item name="Description">## Technical Specifications: API contracts and data models.</item>
-        </section>
-        <section n="6" name="Vertical Slices">
-          <item name="Description">## Vertical Slices: High-level checklist of implementation steps.</item>
-        </section>
-        </section>
-      </blueprint>
-
-
-      <blueprint name="Component Design Documents">
-        <description>Applies to ALL design documents (docs/architecture/**/*.md).</description>
-        <section n="1" name="Metadata">
-          <item name="Heading"># Component Design: {{component_name}}</item>
-          <item name="Status">- **Status:** [Planned | Implemented | Refactoring]</item>
-        </section>
-        <section n="2" name="Responsibility">
-          <item name="Heading">## Purpose / Responsibility</item>
-        </section>
-        <section n="3" name="Failure Modes">
-          <item name="Heading">## Failure Modes</item>
-          <item name="Content">Explicitly list known failure modes for this component. Each entry MUST reference the specific precondition or postcondition it violates. Ports (Interfaces) MUST NOT return generic "error-swallowing" values (like `None` or `False`) to hide internal crashes; instead, they should allow exceptions to propagate to the boundary where they can be handled transparently.</item>
-          <item name="Content">Format: "- **Failure Title**: Violates the precondition/postcondition 'XYZ'. The component MUST raise a specific exception rather than returning a partial/invalid result."</item>
-        </section>
-        <section n="4" name="Class Invariants">
-          <item name="Heading">## Class Invariants</item>
-          <item name="Content">Document conditions that must always hold true for instances of this component (e.g., "turn_counter >= 0", "plan is never None after initialization"). Invariants are checked at public method entry and exit. If no invariants apply, state: "None — stateless component."</item>
-        </section>
-        <section n="5" name="Ports">
-          <item name="Heading">## Ports</item>
-          <item name="Content">Explicit inbound/outbound relationships.</item>
-          <item name="Content">If this component depends on other Ports' contracts, list them under **Contract Dependencies:** with links to the relevant doc sections. Example: "- Relies on `IFileSystemManager.read()` postcondition 'Returns file content as string'."</item>
-        </section>
-        <section n="6" name="Logic">
-          <item name="Heading">## Implementation Details / Logic</item>
-        </section>
-        <section n="7" name="Contracts">
-          <item name="Heading">## Data Contracts / Methods</item>
-          <item name="Content">Document every public method with the following standard subsections:</item>
-          <item name="Content">```text
-### `method_name`
-- **Preconditions:** (required) What must be true before calling. Use "must" language: "key must be a non-empty string."
-- **Postconditions:** (required) What is guaranteed after successful return. Use "returns" or "ensures" language: "Returns a valid ConfigValue. Ensures the cache is updated."
-- **Exceptions:** (required) What errors can be raised and under what conditions.
-- **Invariants:** (optional) Class-level invariants that must hold before and after this method executes.
-```</item>
-          <item name="Content">**Contract Enforcement:** Implementations MUST validate preconditions with explicit guard clauses (assertions or early raises). Postcondition failures MUST be surfaced as specific exceptions, never swallowed. Invariants should be checked at public method entry and exit where practical. Core domain code should enforce contracts at boundary crossings (ports), not deep inside implementation details.</item>
-        </section>
-        <directory_conventions>
-          <rule>Doc path: docs/architecture/BOUNDARY/LAYER/TYPE/name.md -> Source path: src/{pkg}/BOUNDARY/LAYER/TYPE/name.py -> Test path: tests/suites/TEST_TYPE/BOUNDARY/LAYER/TYPE/test_name.py</rule>
-          <boundary name="core">Layers: domain, ports (inbound/outbound), services.</boundary>
-          <boundary name="adapters">Layers: inbound, outbound.</boundary>
-          <boundary name="tests">Treat as first-class boundary. Layers: setup, drivers, observers. Doc path: docs/architecture/tests/TYPE/name.md -> Source: tests/harness/TYPE/name.py.</boundary>
-        </directory_conventions>
-      </blueprint>
-
-      <blueprint name="Vertical Slice">
-        <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
-        <section n="1" name="Metadata">
-          <item name="Heading"># Slice: {{feature_name}}</item>
-          <item name="Status">- **Status:** [Planned | In Progress | Completed]</item>
-          <item name="Milestone">- **Milestone:** [link]</item>
-          <item name="Specs">- **Specs:** [links]</item>
-          <item name="Prototype">- **Prototype:** [link]</item>
-          <item name="Component Docs">- **Component Docs:** [links]</item>
-          <item name="Scope Slug">- **Scope Slug:** `feature-slug`</item>
-        </section>
-        <section n="2" name="Business Goal">
-          <item name="Heading">## Business Goal</item>
-        </section>
-        <section n="3" name="Scenarios">
-          <item name="Heading">## Scenarios</item>
-          <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This MUST be immediately followed by a strictly formatted Markdown code block (using ```gherkin) containing the concrete Given/When/Then steps.</item>
-        </section>
-        <section n="4" name="Edge Cases">
-          <item name="Heading">## Edge Cases</item>
-          <item name="Content">List of anticipated edge cases and failures. Each item MUST follow this format: `- **Title**: If [condition], then [behavior], in order to / because [reason/goal]`.</item>
-        </section>
-        <section n="5" name="Key Unknowns">
-          <item name="Heading">## Key Unknowns</item>
-          <item name="Content">Checklist of uncertainties and risks identified during scoping. Tag with either `[Technical]` for code/architecture/API uncertainties or `[Functional]` for behavior/UX/interaction needing user preference input. Each item MUST follow this format: `- [ ] [Tag] Title: Description of the unknown` and once resolved `- [x] [Tag] Title: Description of the unknown – Resolution description`</item>
-        </section>
-        <section n="6" name="Implementation Plan">
-          <item name="Heading">## Implementation Plan</item>
-          <item name="Content">Summary of changes required to integrate the feature into the existing codebase, combined with the actionable strategy and guidelines for implementation (such as Test Harness strategy or Mermaid diagrams). Can be populated by the Architect, Prototyper, Pathfinder, or Debugger, and updated by the Developer.</item>
-        </section>
-        <section n="7" name="Deliverables">
-          <item name="Heading">## Deliverables</item>
-          <item name="Content">Checklist of atomic units of work ordered following the Tracer Bullet Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Wiring (The Tracer Bullet: Connecting components to the Composition Root/entrypoints returning trivial/hardcoded data to prove the end-to-end path), 5. Logic (Replacing the Tracer Bullet with complex Rules/Algorithms via TDD), 6. Migration (Updating consumers), 7. Refactor (Internal restructuring; non-breaking), 8. Cleanup (Pruning; Contraction). Every deliverable MUST be an atomic "Green-to-Green" transition; behavioral tests MUST be bundled with Wiring; Unit tests with Logic. Format: `- [ ] **Type** - Description`.</item>
-        </section>
-        <section n="8" name="Implementation Notes">
-          <item name="Heading">## Implementation Notes</item>
-          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings. Used for the as-built update of Component Docs.</item>
-        </section>
-        <section n="9" name="Verification">
-          <item name="Heading">## Verification</item>
-          <item name="Content">Checklist of manual smoke-test scenarios that the Developer executes before marking the slice as Complete. Populated by the Architect or Prototyper.</item>
-        </section>
-
-      </blueprint>
-
-      <blueprint name="Case File">
-        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md) to invoke the Debugger. NEVER overwrite an existing Case File.</description>
-        <section n="1" name="Metadata">
-          <item name="Heading"># Bug: {{bug_title}}</item>
-          <item name="Status">- **Status:** Unresolved</item>
-          <item name="Milestone">- **Milestone:** [link or N/A]</item>
-          <item name="Vertical Slice">- **Vertical Slice:** [link or N/A]</item>
-          <item name="Specs">- **Specs:** [links or N/A]</item>
-        </section>
-        <section n="2" name="Symptoms">
-          <item name="Heading">## Symptoms</item>
-          <item name="Content">Expected vs. Actual behavior and minimal reproduction steps. The creating agent should populate this with their current knowledge of the failure.</item>
-        </section>
-        <section n="3" name="Context & Scope">
-          <item name="Heading">## Context & Scope</item>
-          <item name="Content">### Regressing Delta
-[Identify the exact changes responsible for the regression to narrow the search space. Specify if it is in the current workspace or a past commit. Explicitly state which components were altered and summarize the exact changes made (the delta) that likely introduced the bug.]</item>
-          <item name="Content">### Environmental Triggers
-[Describe the specific OS, configurations, or state conditions required to reproduce the issue]</item>
-          <item name="Content">### Ruled Out
-[List any components, layers, or files definitively proven to be unrelated to the bug]</item>
-        </section>
-        <section n="4" name="Diagnostic Analysis">
-          <item name="Heading">## Diagnostic Analysis</item>
-          <item name="Content">### Causal Model
-A concise, causal description of how the faulty SUT operates. Continuously updated as new information is discovered.</item>
-          <item name="Content">### Discrepancies
-A concise list of observations that contradict the current Causal Model. Format: `- Observation. Conflict. (Resolved: Explanation (once resolution is confirmed))`.</item>
-          <item name="Content">### Investigation History
-A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Observation. Conclusion.`.</item>
-        </section>
-        <section n="5" name="Solution">
-          <item name="Heading">## Solution</item>
-          <item name="Content">A high-level explanation of the root cause, the proven fix, and the systemic preventative measures to prevent this class of issue globally.</item>
-        </section>
-      </blueprint>
-    </blueprints>
-
     <general_rules>
       <description>All rules in this section apply to every turn, independent of which phase you are currently in.</description>
       <rule n="1" name="State Transition Protocol">
@@ -261,22 +104,9 @@ WIP & REMINDERS:
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
         1. Pre-conditions: Clean up temporary files (spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
-        3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
-           ```shell
-           # 1. Stage changes and run pre-commit
-           git add .
-           pre-commit run || true
-
-           # 2. Re-stage and Commit
-           git add .
-           git commit -m '<type>(<scope>): <description>'
-
-           # 3. Pull and Push (if remote exists)
-           git pull --rebase && git push || [ -z "$(git remote)" ]
-           ```
+        3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by running `make commit '<type>(<scope>): <description>'`. If a `Makefile` does not exist in the project root, you MUST first create one following the template at `docs/templates/makefile.md`. To bypass pre-commit checks (e.g., for known false positives), use `make NO_VERIFY=--no-verify commit '<type>(<scope>): <description>'`.
         4. Post-conditions: All tests MUST pass (post-commit hook enforces this; never bypass). Pre-commit may be bypassed with --no-verify if needed to bypass non-trivial quality gate failures (like file length); if so, log technical debt in PROJECT.md.
       </rule>
-
 
       <rule n="7" name="Standardized Plan Types">
         Each turn MUST have ONE responsibility. Plan Type MUST be one of:
@@ -305,6 +135,10 @@ WIP & REMINDERS:
 
       <rule n="10" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
       <rule n="11" name="Programmatic Edits">You may use `EXECUTE` with bash tools to modify files when surgical `EDIT` matching is brittle or for bulk changes. You MUST scope these actions to specific files and chain a verification command to output the results. Example: `sed 's/old/new/g' <file> > <file>.tmp && mv <file>.tmp <file> && git grep "new_string" <file>`</rule>
+
+      <rule n="12" name="Template-First Documentation">
+        <description>Before creating or modifying a documentation file under docs/, you MUST first READ the corresponding template from docs/templates/. Templates define the required structure and format for each artifact type. Template files are named by artifact type (e.g., specification-document.md, task-brief.md, case-file.md, PROJECT.md, ARCHITECTURE.md). If no template exists for your artifact, READ the most similar one as a reference.</description>
+      </rule>
     </general_rules>
 
     <response_format>
