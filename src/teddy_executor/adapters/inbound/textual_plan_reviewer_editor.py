@@ -28,13 +28,14 @@ def handle_mock_editor(path: Any, output: str) -> str:
 def spawn_editor(cmd: list[str], path: Any) -> None:
     """Spawns an external editor process."""
     import subprocess  # nosec B404
+    import sys
 
     try:
         subprocess.Popen(  # nosec B603
             cmd + [str(path)],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdin=sys.stdin,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
         )
     except Exception as e:
         logger.debug("Failed to spawn editor: %s", e)
@@ -144,6 +145,7 @@ async def preview_edit_diff_viewer(
     proposed: str,
 ) -> bool:
     import subprocess  # nosec B404
+    import sys
 
     path_str = cast(str, action.params.get("path", ""))
     before = _setup_before_file(app, path_str, original)
@@ -156,9 +158,9 @@ async def preview_edit_diff_viewer(
         try:
             subprocess.Popen(  # nosec B603
                 diff_viewer + [str(before), str(p_file)],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdin=sys.stdin,
+                stdout=sys.stdout,
+                stderr=sys.stderr,
             )
         except Exception as e:
             logger.debug("Failed to launch diff viewer: %s", e)
