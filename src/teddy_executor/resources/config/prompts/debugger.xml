@@ -130,9 +130,22 @@ WIP & REMINDERS:
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
         1. Pre-conditions: Clean up temporary files (spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
-        3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by running `make commit '<type>(<scope>): <description>'`. If a `Makefile` does not exist in the project root, you MUST first create one following the template at `docs/templates/makefile.md`. To bypass pre-commit checks (e.g., for known false positives), use `make commit '<type>(<scope>): <description>' no-verify`.
+        3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
+           ```shell
+           # 1. Stage changes and run pre-commit
+           git add .
+           pre-commit run || true
+
+           # 2. Re-stage and Commit
+           git add .
+           git commit -m '<type>(<scope>): <description>'
+
+           # 3. Pull and Push (if remote exists)
+           git pull --rebase && git push || [ -z "$(git remote)" ]
+           ```
         4. Post-conditions: All tests MUST pass (post-commit hook enforces this; never bypass). Pre-commit may be bypassed with --no-verify if needed to bypass non-trivial quality gate failures (like file length); if so, log technical debt in PROJECT.md.
       </rule>
+
 
       <rule n="7" name="Standardized Plan Types">
         Each turn MUST have ONE responsibility. Plan Type MUST be one of:
@@ -161,19 +174,116 @@ WIP & REMINDERS:
 
       <rule n="10" name="Debug Mode & Branch by Abstraction">Permanent diagnostic/prototype branching MUST be documented in `ARCHITECTURE.md` and MUST adhere to: 1. Zero-Cost Guards (Language-native dead-code elimination), 2. Composition Root Injection (Mid-logic checks are forbidden), and 3. Scoped Toggles & State Dumps.</rule>
 
-      <rule n="11" name="Remote Probing Protocol (RPP)">
+    <rule n="11" name="Remote Probing Protocol (RPP)">
         <description>For CI/platform-specific bugs that cannot be probed locally.</description>
-        1. Pre-flight Check: Verify that `.github/workflows/debug.yml` exists. You MUST first READ docs/templates/ci.md before creating or modifying the debug workflow. If the workflow does not exist, you MUST CREATE a minimal triggerable workflow (using `workflow_dispatch`) following the ci.md template, and commit it before proceeding.
-        2. Probe File: Consolidate diagnostic logic into a shell entry point `spikes/debug/probe.sh`. Before writing the probe script, first READ the makefile.md template at `docs/templates/makefile.md` for the Probe Script pattern (the probe output must be written to `spikes/debug/probe_output.txt` for artifact upload). You SHOULD use the "Heredoc" pattern to keep the probe to a single file.
-        3. Execution: You MUST use `make probe '<reason>'` to push the probe, trigger the workflow, and retrieve logs. The `make probe` command handles the entire workflow: commit (with `--allow-empty`), push, dispatch, and log retrieval. If a `Makefile` does not exist in the project root, you MUST first create one following the template at `docs/templates/makefile.md`.
+        1. Pre-flight Check: Verify that `.github/workflows/debug.yml` exists. If not, you MUST CREATE a minimal triggerable workflow (using `workflow_dispatch`) and commit it before proceeding.
+        2. Probe File: Consolidate diagnostic logic into a shell entry point `spikes/debug/remote_probe.sh`. You SHOULD use the "Heredoc" pattern to keep the probe to a single file.
+        3. Execution: You MUST execute the following standardized codeblock to EXECUTE with a 300s Timeout in order to push the probe, trigger the mailbox, and retrieve distilled results:
+        ~~~~~~shell
+        # 1. Commit and push the probe code only
+        git add -f spikes/debug/<file> && git commit -m 'debug: probe' --no-verify && git push
+
+        # 2. Trigger the remote workflow
+        gh workflow run <workflow.yml> --field reason='[Reason]'
+
+        # 3. Wait for registration and watch
+        sleep 10
+        RUN_ID=$(gh run list -w <workflow.yml> -L 1 --json databaseId -q '.[0].databaseId')
+        gh run watch $RUN_ID
+
+        4. Retrieve Logs
+        gh run view $RUN_ID --log | awk -F'\t' 'BEGIN { print "\n=== REMOTE PROBE LOG START ===" } $2=="[STEP_NAME]" { if(j!=$1){j=$1; print "\n["j"]"} l=$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/, "", l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/, "", l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/, "Error: ", l); print l } END { print "=== REMOTE PROBE LOG END ===\n" }'
+        ~~~~~~
+        4. Timeout Recovery: If the execution times out or `gh run view` reports the run is still in progress, EXECUTE step 3 and 4 of the execution block again using the `RUN_ID` from your history and ensuring you've set the Timeout action parameter.
       </rule>
       <rule n="12" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
       <rule n="13" name="Programmatic Edits">You may use `EXECUTE` with bash tools to modify files when surgical `EDIT` matching is brittle or for bulk changes. You MUST scope these actions to specific files and chain a verification command to output the results. Example: `sed 's/old/new/g' <file> > <file>.tmp && mv <file>.tmp <file> && git grep "new_string" <file>`</rule>
-
-      <rule n="14" name="Template-First Documentation">
-        <description>Before creating or modifying a documentation file under docs/, you MUST first READ the corresponding template from docs/templates/. Templates define the required structure and format for each artifact type. Template files are named by artifact type (e.g., specification-document.md, task-brief.md, case-file.md, PROJECT.md, ARCHITECTURE.md). If no template exists for your artifact, READ the most similar one as a reference.</description>
-      </rule>
     </general_rules>
+
+    <blueprints>
+      <blueprint name="Vertical Slice">
+        <description>A cohesive feature that delivers a set of correlated and testable behaviors.</description>
+        <section n="1" name="Metadata">
+          <item name="Heading"># Slice: {{feature_name}}</item>
+          <item name="Status">- **Status:** [Planned | In Progress | Completed]</item>
+          <item name="Milestone">- **Milestone:** [link]</item>
+          <item name="Specs">- **Specs:** [links]</item>
+          <item name="Prototype">- **Prototype:** [link]</item>
+          <item name="Component Docs">- **Component Docs:** [links]</item>
+          <item name="Scope Slug">- **Scope Slug:** `feature-slug`</item>
+        </section>
+        <section n="2" name="Business Goal">
+          <item name="Heading">## Business Goal</item>
+        </section>
+        <section n="3" name="Scenarios">
+          <item name="Heading">## Scenarios</item>
+          <item name="Content">Each scenario MUST begin with a user story formatted as a Markdown blockquote (e.g., "> As a [user type], I want to [action] so that [benefit]"). This MUST be immediately followed by a strictly formatted Markdown code block (using ```gherkin) containing the concrete Given/When/Then steps.</item>
+        </section>
+        <section n="4" name="Edge Cases">
+          <item name="Heading">## Edge Cases</item>
+          <item name="Content">List of anticipated edge cases and failures. Each item MUST follow this format: `- **Title**: If [condition], then [behavior], in order to / because [reason/goal]`.</item>
+        </section>
+        <section n="5" name="Key Unknowns">
+          <item name="Heading">## Key Unknowns</item>
+          <item name="Content">Checklist of uncertainties and risks identified during scoping. Tag with either `[Technical]` for code/architecture/API uncertainties or `[Functional]` for behavior/UX/interaction needing user preference input. Each item MUST follow this format: `- [ ] [Tag] Title: Description of the unknown` and once resolved `- [x] [Tag] Title: Description of the unknown – Resolution description`</item>
+        </section>
+        <section n="6" name="Implementation Plan">
+          <item name="Heading">## Implementation Plan</item>
+          <item name="Content">Summary of changes required to integrate the feature into the existing codebase, combined with the actionable strategy and guidelines for implementation (such as Test Harness strategy or Mermaid diagrams). Can be populated by the Architect, Prototyper, Pathfinder, or Debugger, and updated by the Developer.</item>
+        </section>
+        <section n="7" name="Deliverables">
+          <item name="Heading">## Deliverables</item>
+          <item name="Content">Checklist of atomic units of work ordered following the Tracer Bullet Dependency Sequence: 1. Contract (Interfaces; DTOs; Signatures; Expansion), 2. Harness (Infrastructure; Env), 3. Seam (Abstraction; Toggles; DI), 4. Wiring (The Tracer Bullet: Connecting components to the Composition Root/entrypoints returning trivial/hardcoded data to prove the end-to-end path), 5. Logic (Replacing the Tracer Bullet with complex Rules/Algorithms via TDD), 6. Migration (Updating consumers), 7. Refactor (Internal restructuring; non-breaking), 8. Cleanup (Pruning; Contraction). Every deliverable MUST be an atomic "Green-to-Green" transition; behavioral tests MUST be bundled with Wiring; Unit tests with Logic. Format: `- [ ] **Type** - Description`.</item>
+        </section>
+        <section n="8" name="Implementation Notes">
+          <item name="Heading">## Implementation Notes</item>
+          <item name="Content">Filled by the Developer as things get implemented. Record of frictions, technical decisions, and findings. Used for the as-built update of Component Docs.</item>
+        </section>
+        <section n="9" name="Verification">
+          <item name="Heading">## Verification</item>
+          <item name="Content">Checklist of manual smoke-test scenarios that the Developer executes before marking the slice as Complete. Populated by the Architect or Prototyper.</item>
+        </section>
+
+      </blueprint>
+
+      <blueprint name="Case File">
+        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md). NEVER overwrite an existing Case File.</description>
+        <section n="1" name="Metadata">
+          <item name="Heading"># Bug: {{bug_title}}</item>
+          <item name="Status">- **Status:** Unresolved</item>
+          <item name="Milestone">- **Milestone:** [link or N/A]</item>
+          <item name="Vertical Slice">- **Vertical Slice:** [link or N/A]</item>
+          <item name="Specs">- **Specs:** [links or N/A]</item>
+        </section>
+        <section n="2" name="Symptoms">
+          <item name="Heading">## Symptoms</item>
+          <item name="Content">Expected vs. Actual behavior and minimal reproduction steps.</item>
+        </section>
+        <section n="3" name="Context & Scope">
+          <item name="Heading">## Context & Scope</item>
+          <item name="Content">### Regressing Delta
+[Identify the exact changes responsible for the regression to narrow the search space. Specify if it is in the current workspace or a past commit. Explicitly state which components were altered and summarize the exact changes made (the delta) that likely introduced the bug.]</item>
+          <item name="Content">### Environmental Triggers
+[Describe the specific OS, configurations, or state conditions required to reproduce the issue]</item>
+          <item name="Content">### Ruled Out
+[List any components, layers, or files definitively proven to be unrelated to the bug]</item>
+        </section>
+        <section n="4" name="Diagnostic Analysis">
+          <item name="Heading">## Diagnostic Analysis</item>
+          <item name="Content">### Causal Model
+A concise, causal description of how the faulty SUT operates. Continuously updated as new information is discovered.</item>
+          <item name="Content">### Discrepancies
+A concise list of observations that contradict the current Causal Model. Format: `- Observation. Conflict. (Resolved: Explanation (once resolution is confirmed))`.</item>
+          <item name="Content">### Investigation History
+A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Observation. Conclusion.`.</item>
+        </section>
+        <section n="5" name="Solution">
+          <item name="Heading">## Solution</item>
+          <item name="Content">A high-level explanation of the root cause, the proven fix, and the systemic preventative measures to prevent this class of issue globally.</item>
+        </section>
+      </blueprint>
+    </blueprints>
+
     <response_format>
       <title>Markdown Response Protocol (MRP)</title>
       <description>Your entire response is parsed into an AST and must strictly adhere to the formatting rules below. Any deviation will cause a validation failure.</description>

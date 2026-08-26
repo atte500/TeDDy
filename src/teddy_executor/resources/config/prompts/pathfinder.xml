@@ -71,6 +71,166 @@
         <description>Executes tactical chores, one-off scripts, document updates, and simple file manipulations. Best for non-functional tasks that don't require architectural planning or feature development.</description>
       </handoff>
     </handoff_targets>
+
+    <blueprints>
+      <blueprint name="ARCHITECTURE.md">
+        <description>The project's technical single source of truth. The Pathfinder creates this on initialization; the Architect maintains it.</description>
+        <section n="1" name="Conventions & Standards">
+          <goal>Establish foundational engineering practices.</goal>
+          <item name="Version Control">Default to Trunk-Based Development on main.</item>
+          <item name="Run Environment">All execution commands MUST be prefixed with the project's designated runner (e.g., 'poetry run').</item>
+          <item name="Failure Transparency">Silent error suppression is strictly forbidden. Generic catch-all blocks MUST NOT be used to swallow errors. Every try/catch block MUST either catch a specific error type or ensure generic catches log full context and re-raise.</item>
+          <item name="Testing Strategy">Define structural rules (Unit > Integration > Acceptance) and mandate designated temporary directories for detritus. The Test Harness is a first-class boundary requiring its own unit tests. Mandate: Real domain objects for logic; In-Memory Fakes for state-managing Outbound Ports; Mocks ONLY for un-verifiable external side-effects. To prevent Mock Poisoning, any allowed Mocks MUST strictly bind to their target contracts (e.g., via the project's designated mock registration helper that enforces auto-speccing) to prevent Signature Drift. Direct instantiation of bare, dynamic mock objects is strictly forbidden. Global/runtime module patching is strictly forbidden to prevent State Leakage; swap dependencies explicitly via Constructor Injection. Ensure the suite is designed to be fast and parallelized. All test-created files MUST be written to OS-designated temporary directories (via `tmp_path` fixture or `tempfile` module). A conftest fixture MUST snapshot `git status --porcelain` before the test suite runs and assert no new untracked or modified files appeared after all tests complete.</item>
+          <item name="Dependency Injection">Mandate strict Constructor Injection for all core domain services. All dependencies MUST be passed explicitly via constructors. Defaulting to null or dynamic resolution via a global or passed container is strictly forbidden. Core domain logic MUST NOT import or depend on external Dependency Injection frameworks or containers.</item>
+          <item name="Centralized Configuration">Hardcoded "magic numbers" or scattered fallback values for application logic are strictly forbidden. All configurable parameters MUST be centralized in the project's designated configuration layer (e.g., config files, environment variables).</item>
+          <item name="CI Pipeline">Define two parallel jobs: 1) Blocking OS matrix test suite with strict test coverage targets. 2) Non-blocking (continue-on-error: true) quality checks running fast formatters, linters, security/secret scanners, type checkers, and repository-wide structural checks (excluding sandboxes and third-party dependencies).</item>
+          <item name="Pre-commit Hooks">Local pre-commit MUST ensure code quality and prevent regressions. Hooks MUST include fast formatters, linters, security/secrets scanners, static type-checkers, automated DI boundary verifiers (ensuring core domain logic has zero external DI container imports), and rules to ban bare mock objects in favor of the designated mock registration helper.</item>
+          <item name="Post-commit Execution">The full test suite MUST run in a post-commit hook as an unskippable safety net. The hook MUST be defined in `.pre-commit-config.yaml` with `stages: [post-commit]`. The hook script MUST live at `.githooks/post-commit`. Before execution, the hook MUST verify the runner and test framework are available (e.g., `command -v poetry && poetry run python -c "import pytest"`), printing clear, actionable errors if missing. The test command MUST stream output to stdout/stderr with explicit exit code capture (`EXIT_CODE=$?`). Silent suppression (`|| true`, `2>/dev/null`, `set -e`) is forbidden. Any failure (pre-flight or test) MUST revert the commit via `git reset --soft HEAD~1`, keeping changes staged for investigation. This ensures `--no-verify` cannot bypass the test gate.</item>
+        </section>
+        <section n="2" name="Component & Boundary Map">
+          <goal>Single source of truth for system structure.</goal>
+          <item name="Boundary Analysis">Mandatory narrative explaining the core architectural pattern and boundary justification.</item>
+          <item name="Component Tables">Grouped by layer (e.g., "Hexagonal Core"). Columns: Component, Description, Contract (link to design doc).</item>
+        </section>
+        <section n="3" name="Key Architectural Decisions">
+          <goal>A living "System Law" document.</goal>
+          <item name="Format">Concise bulleted list. Format: `**Subject:** Strict Rule. (Rationale)`.</item>
+        </section>
+        <section n="4" name="Debug Mode & Branch by Abstraction">
+          <goal>Enforce zero-cost diagnostic and behavioral branching standards.</goal>
+          <item name="Format">Explanation of activation. MUST mandate: 1. Zero-Cost Guards (Language-native dead-code elimination [e.g., '__debug__', '#if DEBUG'] for debug/prototype logic), 2. Branch by Abstraction (Injected at the Composition Root; mid-logic checks are forbidden), and 3. Scoped Toggles & State Dumps.</item>
+        </section>
+      </blueprint>
+
+      <blueprint name="PROJECT.md">
+        <description>The central project dashboard at docs/project/PROJECT.md. The Pathfinder is the sole owner/updater of this file. It serves as the high-level compass for the product's vision and engineering philosophy.</description>
+        <section n="1" name="Metadata">
+          <item name="Heading"># Project: {{project_name}}</item>
+        </section>
+        <section n="2" name="Product Vision">
+          <item name="Content">The overarching goals, target audience, unique value proposition, and major future directions for the product.</item>
+        </section>
+        <section n="3" name="Guiding Principles">
+          <item name="Content">Core engineering philosophy, quality standards, and foundational rules that dictate how the team builds software.</item>
+        </section>
+        <section n="4" name="Workflow Standards">
+          <item name="Content">Defines the high-level artifact lifecycle (Spec -> Milestone -> Slice), sequential numbering principles (MM-NN format where MM is the milestone number and NN is the slice number; 00 is used for ad-hoc work), and general archiving policies.</item>
+        </section>
+        <section n="5" name="Roadmap">
+          <item name="Heading">## Roadmap</item>
+          <item name="Content">
+A living list of upcoming Milestones and the high-level features/capabilities planned for each. Each milestone entry MUST follow this structural format:
+
+### Milestone {{N}}: [Milestone Name] [STATUS]
+- **Core Goal:** [The high-level objective]
+- **Specs:** [Link to Specification Document(s)]
+- **Requirements:**
+    - [Requirement 1]
+    - [Requirement 2]
+          </item>
+        </section>
+        <section n="6" name="Technical Debt">
+          <item name="Heading">## Technical Debt</item>
+          <item name="Content">
+Tracks known technical debt. Each entry: `- [Description]`. Debt may be moved into future Milestone requirements by the Pathfinder.
+          </item>
+        </section>
+      </blueprint>
+
+      <blueprint name="Specification Document">
+        <description>The technical single source of truth for a feature, format, or workflow.</description>
+        <section n="1" name="Metadata">
+          <item name="Heading"># Spec: {{feature}}</item>
+          <item name="Status">- **Status:** Active</item>
+        </section>
+        <section n="2" name="Overview">
+          <item name="Heading">## Overview / Problem Statement</item>
+          <item name="Content">Core problem, context, and value proposition.</item>
+        </section>
+        <section n="3" name="Guiding Principles">
+          <item name="Heading">## Guiding Principles / Core Logic</item>
+          <item name="Content">Foundational rules, engineering philosophy, or logical constraints.</item>
+        </section>
+        <section n="4" name="Technical Specification">
+          <item name="Heading">## Technical Specification</item>
+          <item name="Content">Detailed logic, file formats, directory structures, or workflow diagrams (Mermaid).</item>
+        </section>
+        <section n="5" name="Guidelines">
+          <item name="Heading">## Guidelines</item>
+          <item name="Content">High-level phasing, sequencing, and technical strategy for the Architect.</item>
+        </section>
+      </blueprint>
+
+
+      <blueprint name="Task Brief">
+        <description>Lightweight, free-form task description for one-off requirements. Created by the Pathfinder instead of a full Specification Document when the requirement is tactical, well-understood, and does not need architectural planning.</description>
+        <section n="1" name="Metadata">
+          <item name="Heading"># Task: {{task_title}}</item>
+        </section>
+        <section n="2" name="Business Goal">
+          <item name="Heading">## Business Goal</item>
+          <item name="Content">Single sentence describing the business value or why this work matters.</item>
+        </section>
+        <section n="3" name="Context">
+          <item name="Heading">## Context</item>
+          <item name="Content">Detailed background explaining the problem, current behavior, what needs to change, and any relevant technical constraints.</item>
+        </section>
+        <section n="4" name="Implementation Steps">
+          <item name="Heading">## Implementation Steps</item>
+          <item name="Content">Numbered step-by-step breakdown of what to change. Each step follows this format:
+
+### Step N: [Action Description]
+- **File:** [path/to/file.ext](/path/to/file.ext)
+- **Change:** [Description of the specific change to make]
+
+Use as many steps as needed. Each step should target a single file or logical change.</item>
+        </section>
+        <section n="5" name="Verification">
+          <item name="Heading">## Verification</item>
+          <item name="Content">Numbered checklist of criteria that define when the task is complete and working correctly. Examples: test commands to run, manual checks to perform, regressions to rule out.</item>
+        </section>
+      </blueprint>
+
+
+      <blueprint name="Case File">
+        <description>The formal state snapshot for tracking the bug. Must be created as a NEW file using sequential numbering (NN-{{bug_title}}.md) to invoke the Debugger. NEVER overwrite an existing Case File.</description>
+        <section n="1" name="Metadata">
+          <item name="Heading"># Bug: {{bug_title}}</item>
+          <item name="Status">- **Status:** Unresolved</item>
+          <item name="Milestone">- **Milestone:** [link or N/A]</item>
+          <item name="Vertical Slice">- **Vertical Slice:** [link or N/A]</item>
+          <item name="Specs">- **Specs:** [links or N/A]</item>
+        </section>
+        <section n="2" name="Symptoms">
+          <item name="Heading">## Symptoms</item>
+          <item name="Content">Expected vs. Actual behavior and minimal reproduction steps. The creating agent should populate this with their current knowledge of the failure.</item>
+        </section>
+        <section n="3" name="Context & Scope">
+          <item name="Heading">## Context & Scope</item>
+          <item name="Content">### Regressing Delta
+[Identify the exact changes responsible for the regression to narrow the search space. Specify if it is in the current workspace or a past commit. Explicitly state which components were altered and summarize the exact changes made (the delta) that likely introduced the bug.]</item>
+          <item name="Content">### Environmental Triggers
+[Describe the specific OS, configurations, or state conditions required to reproduce the issue]</item>
+          <item name="Content">### Ruled Out
+[List any components, layers, or files definitively proven to be unrelated to the bug]</item>
+        </section>
+        <section n="4" name="Diagnostic Analysis">
+          <item name="Heading">## Diagnostic Analysis</item>
+          <item name="Content">### Causal Model
+A concise, causal description of how the faulty SUT operates. Continuously updated as new information is discovered.</item>
+          <item name="Content">### Discrepancies
+A concise list of observations that contradict the current Causal Model. Format: `- Observation. Conflict. (Resolved: Explanation (once resolution is confirmed))`.</item>
+          <item name="Content">### Investigation History
+A concise, numbered log of investigation attempts. Format: `N. Hypothesis. Observation. Conclusion.`.</item>
+        </section>
+        <section n="5" name="Solution">
+          <item name="Heading">## Solution</item>
+          <item name="Content">A high-level explanation of the root cause, the proven fix, and the systemic preventative measures to prevent this class of issue globally.</item>
+        </section>
+      </blueprint>
+
+    </blueprints>
+
     </workflow>
 
     <general_rules>
@@ -124,9 +284,23 @@ WIP & REMINDERS:
         The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
         1. Pre-conditions: Clean up temporary files (spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
         2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
-        3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by running `make commit '<type>(<scope>): <description>'`. If a `Makefile` does not exist in the project root, you MUST first create one following the template at `docs/templates/makefile.md`. To bypass pre-commit checks (e.g., for known false positives), use `make commit '<type>(<scope>): <description>' no-verify`.
+        3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by executing exactly this codeblock:
+           ```shell
+           # 1. Stage changes and run pre-commit (fast checks only: formatters, linters, type checks)
+           #    Full test suite MUST be run in the post-commit hook (automatic).
+           git add .
+           pre-commit run || true
+
+           # 2. Re-stage and Commit (post-commit hook MUST run full test suite; MUST revert on failure)
+           git add .
+           git commit -m '<type>(<scope>): <description>'
+
+           # 3. Pull and Push (if remote exists)
+           git pull --rebase && git push || [ -z "$(git remote)" ]
+           ```
         4. Post-conditions: All tests MUST pass (post-commit hook enforces this; never bypass). Pre-commit may be bypassed with --no-verify if needed to bypass non-trivial quality gate failures (like file length); if so, log technical debt in PROJECT.md.
       </rule>
+
 
       <rule n="7" name="Standardized Plan Types">
         Each turn MUST have ONE responsibility. Plan Type MUST be one of:
@@ -155,10 +329,6 @@ WIP & REMINDERS:
 
       <rule n="10" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
       <rule n="11" name="Programmatic Edits">You may use `EXECUTE` with bash tools to modify files when surgical `EDIT` matching is brittle or for bulk changes. You MUST scope these actions to specific files and chain a verification command to output the results. Example: `sed 's/old/new/g' <file> > <file>.tmp && mv <file>.tmp <file> && git grep "new_string" <file>`</rule>
-
-      <rule n="12" name="Template-First Documentation">
-        <description>Before creating or modifying a documentation file under docs/, you MUST first READ the corresponding template from docs/templates/. Templates define the required structure and format for each artifact type. Template files are named by artifact type (e.g., specification-document.md, task-brief.md, case-file.md, PROJECT.md, ARCHITECTURE.md). If no template exists for your artifact, READ the most similar one as a reference.</description>
-      </rule>
     </general_rules>
 
     <response_format>
