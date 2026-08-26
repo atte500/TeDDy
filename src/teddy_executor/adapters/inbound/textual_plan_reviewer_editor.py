@@ -144,9 +144,6 @@ async def preview_edit_diff_viewer(
     original: str,
     proposed: str,
 ) -> bool:
-    import subprocess  # nosec B404
-    import sys
-
     path_str = cast(str, action.params.get("path", ""))
     before = _setup_before_file(app, path_str, original)
     p_file = action.pending_temp_file
@@ -156,11 +153,9 @@ async def preview_edit_diff_viewer(
             return True
         prepare_after_file(p_file, proposed)
         try:
-            subprocess.Popen(  # nosec B603
+            app._system_env.run_command(
                 diff_viewer + [str(before), str(p_file)],
-                stdin=sys.stdin,
-                stdout=sys.stdout,
-                stderr=sys.stderr,
+                background=True,
             )
         except Exception as e:
             logger.debug("Failed to launch diff viewer: %s", e)
