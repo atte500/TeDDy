@@ -1,3 +1,4 @@
+import os
 from unittest.mock import create_autospec
 from teddy_executor.core.ports.outbound import IConfigService
 from teddy_executor.core.services.session_loop_guard import ProductionSessionLoopGuard
@@ -52,7 +53,10 @@ def test_production_guard_stops_on_max_turns_non_interactive():
     assert should_continue is False
     assert reason is not None
     assert "max_turns" in reason
-    assert ".teddy/config.yaml" in reason
+    # Use os.path.normpath for cross-platform path comparison (Windows uses \)
+    assert os.path.normpath(".teddy/config.yaml") in reason, (
+        f"Reason should include config file path, got: {reason!r}"
+    )
     assert "5/5" in reason
     # delta = 4 (< limit 5) -> CONTINUE
     assert guard.should_continue(
@@ -80,7 +84,10 @@ def test_production_guard_stops_on_max_cost_non_interactive():
     assert should_continue is False
     assert reason is not None
     assert "max_session_cost" in reason
-    assert ".teddy/config.yaml" in reason
+    # Use os.path.normpath for cross-platform path comparison (Windows uses \)
+    assert os.path.normpath(".teddy/config.yaml") in reason, (
+        f"Reason should include config file path, got: {reason!r}"
+    )
     assert "$1.50/$1.50" in reason
     # delta = 1.49 (< limit 1.50) -> CONTINUE
     assert guard.should_continue(
@@ -114,7 +121,9 @@ def test_production_guard_reason_includes_config_key_and_path():
     assert "yolo_guardrails.max_turns" in reason, (
         f"Reason should mention the config key, got: {reason!r}"
     )
-    assert ".teddy/config.yaml" in reason, (
+    # Use os.path.normpath for cross-platform path comparison (Windows uses \)
+    expected_path = os.path.normpath(".teddy/config.yaml")
+    assert expected_path in reason, (
         f"Reason should include the config file path, got: {reason!r}"
     )
 
