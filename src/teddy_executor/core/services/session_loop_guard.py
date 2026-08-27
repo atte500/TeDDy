@@ -1,10 +1,12 @@
+from typing import Optional
+
 from teddy_executor.core.ports.outbound import IConfigService
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 
 
 class ProductionSessionLoopGuard(ISessionLoopGuard):
     """
-    Production implementation: always continues unless manually interrupted.
+    Production implementation: enforces YOLO guardrails in non-interactive mode.
     """
 
     def __init__(
@@ -19,12 +21,12 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
 
     def should_continue(
         self, turn_count: int, cumulative_cost: float, interactive: bool
-    ) -> bool:
+    ) -> tuple[bool, Optional[str]]:
         if interactive:
-            return True
+            return True, None
 
         if not self._config_service.get_setting("yolo_guardrails.enabled", True):
-            return True
+            return True, None
 
         max_turns = int(
             self._config_service.get_setting("yolo_guardrails.max_turns", 99) or 99
@@ -38,9 +40,9 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
         cost_delta = cumulative_cost - self._initial_cost
 
         if turn_delta >= max_turns:
-            return False
+            return False, "YOLO guardrail limit reached."
 
         if cost_delta >= max_cost:
-            return False
+            return False, "YOLO guardrail limit reached."
 
-        return True
+        return True, None

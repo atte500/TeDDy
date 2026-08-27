@@ -11,10 +11,9 @@ def test_production_guard_always_continues():
     )
 
     # Act / Assert
-    assert (
-        guard.should_continue(turn_count=1, cumulative_cost=0.0, interactive=True)
-        is True
-    )
+    assert guard.should_continue(
+        turn_count=1, cumulative_cost=0.0, interactive=True
+    ) == (True, None)
 
 
 def test_production_guard_stores_initial_state():
@@ -46,15 +45,16 @@ def test_production_guard_stops_on_max_turns_non_interactive():
 
     # Act / Assert
     # delta = 5 (>= limit 5) -> STOP
-    assert (
-        guard.should_continue(turn_count=6, cumulative_cost=0.0, interactive=False)
-        is False
+    should_continue, reason = guard.should_continue(
+        turn_count=6, cumulative_cost=0.0, interactive=False
     )
+    assert should_continue is False
+    assert reason is not None
+    assert "guardrail" in reason
     # delta = 4 (< limit 5) -> CONTINUE
-    assert (
-        guard.should_continue(turn_count=5, cumulative_cost=0.0, interactive=False)
-        is True
-    )
+    assert guard.should_continue(
+        turn_count=5, cumulative_cost=0.0, interactive=False
+    ) == (True, None)
 
 
 def test_production_guard_stops_on_max_cost_non_interactive():
@@ -70,15 +70,16 @@ def test_production_guard_stops_on_max_cost_non_interactive():
 
     # Act / Assert
     # delta = 1.50 (>= limit 1.50) -> STOP
-    assert (
-        guard.should_continue(turn_count=1, cumulative_cost=2.50, interactive=False)
-        is False
+    should_continue, reason = guard.should_continue(
+        turn_count=1, cumulative_cost=2.50, interactive=False
     )
+    assert should_continue is False
+    assert reason is not None
+    assert "guardrail" in reason
     # delta = 1.49 (< limit 1.50) -> CONTINUE
-    assert (
-        guard.should_continue(turn_count=1, cumulative_cost=2.49, interactive=False)
-        is True
-    )
+    assert guard.should_continue(
+        turn_count=1, cumulative_cost=2.49, interactive=False
+    ) == (True, None)
 
 
 def test_production_guard_ignores_limits_in_interactive_mode():
@@ -94,7 +95,6 @@ def test_production_guard_ignores_limits_in_interactive_mode():
 
     # Act / Assert
     # Limits reached but interactive -> CONTINUE
-    assert (
-        guard.should_continue(turn_count=100, cumulative_cost=100.0, interactive=True)
-        is True
-    )
+    assert guard.should_continue(
+        turn_count=100, cumulative_cost=100.0, interactive=True
+    ) == (True, None)

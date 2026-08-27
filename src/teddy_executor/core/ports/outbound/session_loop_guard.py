@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Optional, Protocol
 
 
 class ISessionLoopGuard(Protocol):
@@ -9,8 +9,11 @@ class ISessionLoopGuard(Protocol):
 
     def should_continue(
         self, turn_count: int, cumulative_cost: float, interactive: bool
-    ) -> bool:
+    ) -> tuple[bool, Optional[str]]:
         """
-        Returns True if the loop should continue to the next turn.
+        Returns (True, None) if the loop should continue to the next turn.
+        Returns (False, reason) when a guardrail limit is hit, where `reason`
+        is a human-readable message explaining which limit was exceeded and
+        how to adjust the configuration.
         """
         ...

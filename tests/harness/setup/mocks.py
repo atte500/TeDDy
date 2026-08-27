@@ -77,7 +77,9 @@ def mock_session_loop_guard(container):
         ISessionLoopGuard,
     )
 
-    return register_mock(container, ISessionLoopGuard)
+    mock = register_mock(container, ISessionLoopGuard)
+    mock.should_continue.return_value = (True, None)
+    return mock
 
 
 @pytest.fixture
