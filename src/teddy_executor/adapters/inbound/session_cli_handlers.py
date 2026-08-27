@@ -208,6 +208,7 @@ def _orchestrate_session_loop(
         if not should_continue:
             reason = guard_reason or "YOLO guardrail limit reached."
             lines = reason.lstrip("\n").split("\n", 1)
+            typer.secho("")
             typer.secho(lines[0], fg=typer.colors.RED)
             if len(lines) > 1:
                 typer.secho(lines[1])

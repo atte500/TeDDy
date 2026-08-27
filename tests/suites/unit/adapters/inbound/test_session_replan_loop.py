@@ -215,8 +215,8 @@ def test_termination_message_printed_when_guard_stops(capsys):
 
     # Assert — should print only the bare reason: "YOLO guardrail limit reached."
     captured = capsys.readouterr()
-    assert captured.out == "YOLO guardrail limit reached.\n", (
-        f"Expected bare reason in stdout, got: {captured.out!r}"
+    assert captured.out == "\nYOLO guardrail limit reached.\n", (
+        f"Expected bare reason in stdout with leading empty line, got: {captured.out!r}"
     )
 
 
@@ -241,7 +241,7 @@ def test_guard_reason_split_with_leading_newline(capsys):
     # Guard returns a reason with leading newline + two sentences
     mock_loop_guard.should_continue.return_value = (
         False,
-        "\nYOLO turn limit reached: 2/1 turns in this run.\n"
+        "YOLO turn limit reached: 2/1 turns in this run.\n"
         "To change this limit, set 'yolo_guardrails.max_turns' in .teddy/config.yaml.",
     )
 
@@ -269,8 +269,7 @@ def test_guard_reason_split_with_leading_newline(capsys):
     # Assert — first sentence red, second sentence unstyled, both on separate lines
     captured = capsys.readouterr()
     assert captured.out == (
+        "\n"
         "YOLO turn limit reached: 2/1 turns in this run.\n"
         "To change this limit, set 'yolo_guardrails.max_turns' in .teddy/config.yaml.\n"
-    ), (
-        f"Expected both sentences in stdout (split correctly), got: {captured.out!r}"
-    )
+    ), f"Expected both sentences in stdout (split correctly), got: {captured.out!r}"
