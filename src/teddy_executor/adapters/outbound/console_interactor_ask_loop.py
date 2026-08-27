@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 import os
 import re
+import shlex
 import sys
 from typing import TYPE_CHECKING, Optional
 
@@ -9,9 +11,12 @@ from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.shortcuts import prompt as ptk_prompt
 
 if TYPE_CHECKING:
-    from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
-    from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
-
+    from teddy_executor.adapters.outbound.console_tooling import (
+        ConsoleToolingHelper,
+    )
+    from teddy_executor.core.ports.outbound.system_environment import (
+        ISystemEnvironment,
+    )
 
 # Regex to match ANSI SGR codes and OSC sequences
 # - ANSI SGR: ESC [ <params> m  (e.g., \x1b[31m)
@@ -34,37 +39,25 @@ class ConsoleAskLoop:
     def _flush_stdin(self) -> None:
         """Flush stale escape sequences from the TTY input buffer.
 
-        After an editor process (with TTY attached) exits, the terminal
-        emulator may have written escape sequences (e.g., OSC color responses)
-        into the shared stdin buffer. Flushing before the next prompt
-        prevents them from being captured as user input.
+        After an editor process exits, the terminal emulator may have written
+        escape sequences into the shared stdin buffer. Flushing before the next
+        prompt prevents them from being captured as user input.
         """
         if not self._is_tty():
             return
         try:
             import termios  # noqa: PLC0415
+
             termios.tcflush(sys.stdin, termios.TCIFLUSH)
         except Exception:  # nosec B110
-            # Not all platforms support termios; safe to ignore.
             pass
 
     def _strip_escape_sequences(self, text: str) -> str:
-        """Remove ANSI escape sequences and OSC control sequences from text.
-
-        This prevents terminal emulator escape sequences (e.g., color sync
-        responses written during editor runtime) from leaking into user input.
-
-        Returns the cleaned text with escape sequences removed.
-        """
+        """Remove ANSI escape sequences and OSC control sequences from text."""
         return _ESCAPE_SEQUENCE_RE.sub("", text)
 
     def cleanup(self) -> None:
-        """No-op cleanup method retained for backward compatibility.
-
-        Previously used to clean up background editor state. The synchronous
-        editor flow no longer requires cleanup, but the method is kept to
-        avoid breaking callers.
-        """
+        """No-op cleanup method retained for backward compatibility."""
 
     def _pt_prompt(self, prompt_text: str) -> str:
         """Prompt the user using prompt_toolkit (TTY) or input() (non-TTY/pipe)."""
@@ -82,18 +75,14 @@ class ConsoleAskLoop:
         """Orchestrates the interactive loop for capturing user response.
 
         The loop runs until the user provides a non-empty response. Typing 'e'
-        opens an external editor **synchronously** (blocking Python entirely),
-        giving the editor exclusive access to the TTY. After the editor exits,
-        the file content is read and returned if non-empty.
+        opens an external editor synchronously. After the editor exits, the
+        file content is read and returned if non-empty.
         """
         while True:
-            user_input = self._pt_prompt("Response (type 'e' for editor) › ").strip()
-
-            # Strip escape sequences unconditionally.
-            user_input = self._strip_escape_sequences(user_input)
+            raw_input = self._pt_prompt("Response (type 'e' for editor) › ").strip()
+            user_input = self._strip_escape_sequences(raw_input)
 
             if user_input.lower() == "e":
-                # Open editor synchronously: Python blocks, editor has exclusive TTY.
                 content = self._open_editor_blocking(prompt)
                 if content:
                     return content
@@ -124,13 +113,8 @@ class ConsoleAskLoop:
     def _open_editor_blocking(self, prompt: str) -> str:
         """Opens a temporary file in an external editor synchronously.
 
-        Python blocks until the editor exits. The editor has exclusive access
-        to the TTY, preventing race conditions between the editor and
-        prompt_toolkit on the same terminal. After the editor exits, the TTY
-        buffer is flushed to remove any leftover escape sequences.
-
-        Returns the user's content from the file (stripped), or empty string
-        if the file was empty or an error occurred.
+        Python blocks until the editor exits. After the editor exits, the file
+        is read, parsed above the marker, and the TTY buffer is flushed.
         """
         marker = "<!-- Please enter your response above this line. -->"
         initial_content = f"\n\n{marker}\n\n{prompt}\n"
@@ -140,27 +124,23 @@ class ConsoleAskLoop:
             with open(temp_path, "w", encoding="utf-8") as f:
                 f.write(initial_content)
 
-            editor_cmd = self._tooling.find_editor()
-            if not editor_cmd:
-                typer.echo("Error: No suitable editor found.", err=True)
-                return ""
+            editor_cmd = self._tooling.find_editor() or "vim"
+            cmd = (
+                shlex.split(editor_cmd)
+                if isinstance(editor_cmd, str)
+                else list(editor_cmd)
+            )
 
-            cmd = editor_cmd + [temp_path]
-
-            # Optional: suppress Vim's terminal color queries to reduce OSC
-            # sequences from being written to the TTY during editor runtime.
+            # Suppress Vim OSC color queries to prevent leaking into the buffer
             saved_viminit = os.environ.get("VIMINIT")
             try:
                 os.environ["VIMINIT"] = "set t_u7= t_RF= t_RB="
-                self._system_env.run_command(cmd)
+                self._system_env.run_command(cmd + [temp_path])
             finally:
                 if saved_viminit is None:
                     os.environ.pop("VIMINIT", None)
                 else:
                     os.environ["VIMINIT"] = saved_viminit
-
-            # Flush the TTY buffer after the editor has fully exited.
-            self._flush_stdin()
 
             with open(temp_path, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -174,3 +154,6 @@ class ConsoleAskLoop:
             return ""
         finally:
             self._system_env.delete_file(temp_path)
+            if sys.platform != "win32":
+                os.system("stty sane 2>/dev/null")
+            self._flush_stdin()
