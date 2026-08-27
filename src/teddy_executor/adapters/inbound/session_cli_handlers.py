@@ -195,7 +195,18 @@ def _orchestrate_session_loop(
         )
 
         cumulative_cost = float(report.metadata.get("cumulative_cost", 0.0))
-        if not loop_guard.should_continue(turn_count, cumulative_cost, interactive):
+        should_continue, guard_reason = loop_guard.should_continue(
+            turn_count, cumulative_cost, interactive
+        )
+        if not should_continue:
+            reason = guard_reason or "YOLO guardrail limit reached."
+            logger.warning(
+                "YOLO guardrail hit — session terminated: %s", reason
+            )
+            typer.secho(
+                f"⚠ YOLO guardrail hit — session terminated.\n{reason}",
+                fg=typer.colors.RED,
+            )
             break
 
 

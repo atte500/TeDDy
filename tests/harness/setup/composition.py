@@ -142,11 +142,13 @@ def container(monkeypatch):
     class TestSessionLoopGuard(ISessionLoopGuard):
         def should_continue(
             self, turn_count: int, cumulative_cost: float, interactive: bool
-        ) -> bool:
+        ) -> tuple[bool, str | None]:
             import os
 
             max_turns = int(os.getenv("TEDDY_MAX_TURNS", "1"))
-            return turn_count < max_turns
+            if turn_count < max_turns:
+                return True, None
+            return False, "Test YOLO guardrail limit reached."
 
     c.register(ISessionLoopGuard, TestSessionLoopGuard)
 

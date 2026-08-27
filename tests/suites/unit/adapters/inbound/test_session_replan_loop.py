@@ -69,7 +69,9 @@ def test_handle_new_session_loops_multiple_turns_when_non_interactive():
     # turn_count=2: should_continue(2) -> False
     # turn_count=1: should_continue(1, cost, interact) -> True
     # turn_count=2: should_continue(2, cost, interact) -> False
-    mock_loop_guard.should_continue.side_effect = lambda tc, cost, interact: tc < 2
+    mock_loop_guard.should_continue.side_effect = lambda tc, cost, interact: (
+        (True, None) if tc < 2 else (False, "max turns reached")
+    )
 
     # Act
     handle_new_session(
@@ -125,7 +127,9 @@ def test_handle_resume_session_loops_multiple_turns_when_non_interactive():
 
     # turn_count=1: should_continue(1, cost, interact) -> True
     # turn_count=2: should_continue(2, cost, interact) -> False
-    mock_loop_guard.should_continue.side_effect = lambda tc, cost, interact: tc < 2
+    mock_loop_guard.should_continue.side_effect = lambda tc, cost, interact: (
+        (True, None) if tc < 2 else (False, "max turns reached")
+    )
 
     # Act
     handle_resume_session(
@@ -162,3 +166,55 @@ def test_handle_report_output_does_not_exit_in_session_mode():
     handle_report_output(
         container, report, no_copy=True, silent=True, exit_on_failure=False
     )
+
+
+def test_termination_message_printed_when_guard_stops(capsys):
+    """
+    Verify that a YOLO guardrail termination message is printed via typer.secho
+    when _orchestrate_session_loop stops due to the guard returning (False, reason).
+    """
+    # Arrange
+    container = Container()
+    mock_session_manager = Mock(spec=ISessionManager)
+    mock_orchestrator = Mock(spec=IRunPlanUseCase)
+    mock_loop_guard = create_autospec(ISessionLoopGuard)
+
+    container.register(ISessionManager, instance=mock_session_manager)
+    container.register(IRunPlanUseCase, instance=mock_orchestrator)
+    container.register(ISessionLoopGuard, instance=mock_loop_guard)
+    container.register(IMarkdownReportFormatter, MockFormatter)
+    container.register(IUserInteractor, Mock(spec=IUserInteractor))
+
+    # Guard returns (False, reason) on first check — stops immediately
+    mock_loop_guard.should_continue.return_value = (
+        False,
+        "YOLO guardrail limit reached.",
+    )
+
+    fake_report = Mock(spec=ExecutionReport)
+    fake_report.run_summary = RunSummary(
+        status=RunStatus.SUCCESS,
+        start_time=datetime.now(timezone.utc),
+        end_time=datetime.now(timezone.utc),
+    )
+    fake_report.metadata = {}
+    # Resume returns one report then None to ensure loop termination
+    mock_orchestrator.resume.side_effect = [("session", fake_report)]
+
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _orchestrate_session_loop,
+    )
+
+    # Act
+    _orchestrate_session_loop(
+        container=container,
+        session_name="test-session",
+        interactive=False,
+        no_copy=True,
+    )
+
+    # Assert — currently fails because no message is printed
+    captured = capsys.readouterr()
+    assert (
+        "YOLO guardrail" in captured.out
+    ), f"No termination message found in stdout: {captured.out!r}"

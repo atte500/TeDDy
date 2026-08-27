@@ -47,7 +47,7 @@ The protocol change (`bool -> tuple[bool, str | None]`) is a breaking signature 
 
 ## Deliverables
 - [x] **Contract** - Update protocol, production guard (trivial reason), mock fixture default, and unit tests to new tuple contract.
-- [ ] **Wiring + Harness Migration** - Update call site to unpack tuple + print/log termination message; atomically update harness fakes and replan-loop test lambdas; add termination message test.
+- [x] **Wiring + Harness Migration** - Update call site to unpack tuple + print/log termination message; atomically update harness fakes and replan-loop test lambdas; add termination message test.
 - [ ] **Logic** - Implement human-readable reasons in ProductionSessionLoopGuard with new tests.
 - [ ] **Documentation** - Sync architecture docs and config.yaml comment.
 
@@ -74,6 +74,25 @@ A tuple return is **always truthy** in Python. If the test-harness fakes (`TestS
 - `docs/project/slices/00-06-yolo-guardrail-termination-message.md`
 
 **VCP note:** `--no-verify` was used to bypass the pre-existing Mypy error (`action_executor.py:191`) documented in PROJECT.md Technical Debt. This error is not related to the Contract deliverable and is scheduled for resolution in Milestone 5 (Quality Gate & Debt Reconciliation).
+
+### 2026-08-27 – Wiring + Harness Migration Deliverable
+
+**Completion Summary:**
+- `_orchestrate_session_loop` in `session_cli_handlers.py` updated to unpack the tuple from `should_continue`: `should_continue, guard_reason = loop_guard.should_continue(...)`. On stop, it logs via `logger.warning` and prints a red warning via `typer.secho` with the reason, then `break`.
+- `TestSessionLoopGuard` in `composition.py` updated to return `(True, None)` / `(False, "Test YOLO guardrail limit reached.")`.
+- `_apply_loop_guard_defaults` in `test_environment.py` updated to return tuples from its side_effect lambda.
+- Both `should_continue.side_effect` lambdas in `test_session_replan_loop.py` updated to return `(True, None) if tc < 2 else (False, "max turns reached")`.
+- New test `test_termination_message_printed_when_guard_stops` added that directly calls `_orchestrate_session_loop` with a mock guard and asserts `"YOLO guardrail" in capsys.readouterr().out`.
+
+**Tuple-Truthiness Coupling Resolution:**
+The atomic update of harness fakes + call site + replan-loop lambdas was executed in a single Green step (Turn 17). This avoided the truthy-tuple infinite-loop problem: before the call site unpacked the tuple, the `if not should_continue` expression would have seen a non-empty tuple (always truthy) and never broken. Changing all three together in one commit ensures no intermediate state exposes the bug.
+
+**Files modified:**
+- `src/teddy_executor/adapters/inbound/session_cli_handlers.py`
+- `tests/harness/setup/composition.py`
+- `tests/harness/setup/test_environment.py`
+- `tests/suites/unit/adapters/inbound/test_session_replan_loop.py`
+- `docs/project/slices/00-06-yolo-guardrail-termination-message.md`
 
 ## Verification
 

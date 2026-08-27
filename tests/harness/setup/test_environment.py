@@ -231,9 +231,14 @@ class TestEnvironment(RealAdapterMixin):
     def _apply_loop_guard_defaults(self, mock: Any) -> None:
         import os
 
-        mock.should_continue.side_effect = lambda turn_count, cost, interactive: (
-            turn_count < int(os.getenv("TEDDY_MAX_TURNS", "1"))
-        )
+        max_turns = int(os.getenv("TEDDY_MAX_TURNS", "1"))
+
+        def _side_effect(turn_count, cost, interactive):
+            if turn_count < max_turns:
+                return True, None
+            return False, "Test YOLO guardrail limit reached."
+
+        mock.should_continue.side_effect = _side_effect
 
     def get_service(self, service_type: Any) -> Any:
         """Resolves a service from the test-configured container."""
