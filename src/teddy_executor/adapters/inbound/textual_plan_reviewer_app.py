@@ -98,6 +98,11 @@ class ReviewerApp(App):
         self._user_message_cache: Optional[str] = None
         self._log_preview_files: list[str] = []
 
+        # Restore pending_message_file from plan metadata if present
+        pending_file = self.plan.metadata.get("pending_message_file")
+        if pending_file and os.path.exists(pending_file):
+            self._pending_message_file = pending_file
+
     def compose(self) -> ComposeResult:
         """
         Create child widgets for the app.
@@ -384,3 +389,6 @@ class ReviewerApp(App):
             return
         marker = self.INSTRUCTION_MARKER.strip()
         self.plan.metadata["user_request"] = msg.split(marker)[0].strip()
+
+        # Remove pending_message_file metadata after harvest
+        self.plan.metadata.pop("pending_message_file", None)

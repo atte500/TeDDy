@@ -122,7 +122,7 @@ The fix targets two files: `console_interactor_ask_loop.py` and `textual_plan_re
 - [x] **Wiring (Console)** — Modify `ConsoleAskLoop.run()` and `_handle_empty_input()` to use `_launch_editor_background` instead of `_open_editor_blocking`. Add opening log. Update prompt text for active editor state.
 - [x] **Logic (Console)** — Implement `_launch_editor_background()` with `subprocess.Popen` + TTY inheritance + persistent file reuse. Implement harvest logic in `_handle_empty_input()` to read `_active_editor_path`, strip escape sequences, and return content. Remove `_open_editor_blocking()`.
 - [x] **Wiring (TUI)** — Replace ConfirmScreen with notification in `launch_editor()`. Wire s-key harvest in `textual_plan_reviewer_app.py` to read persistent temp file when submitting plan.
-- [ ] **Logic (TUI)** — Implement persistent temp file storage in action. Store/retrieve `pending_message_file` across launches.
+- [x] **Logic (TUI)** — Implement persistent temp file storage in action. Store/retrieve `pending_message_file` across launches.
 - [ ] **Migration** — Update `test_console_ask_loop_escape_stripping.py` to mock background path instead of blocking path. Update `test_console_ask_loop_stdin_flush.py` to verify flush timing in new flow.
 - [ ] **Cleanup** — Remove `_open_editor_blocking()`, VIMINIT suppression, and `test_console_ask_loop_stdin_flush.py` if redundant with escape stripping tests.
 
@@ -203,6 +203,25 @@ This will be replaced by real `subprocess.Popen` + TTY inheritance + persistent 
 - The new acceptance test required multiple iterative fixes: syntax error (`async async def`), duplicate `@pytest.mark.anyio`, and `Plan.__post_init__` requiring at least one action. Each required reading the actual file state and applying surgical edits.
 - The `HEADLESS` override (`pilot.app.HEADLESS = False`) was necessary for the initial Red phase to force the ConfirmScreen to actually push a modal (proving the defect). In the production commit, this override is no longer needed but is kept in test to maintain the assertion's validity.
 - The production changes were partially applied before the Red test was confirmed passing (the order got ahead of itself). This was a workflow deviation, but the final implementation is correct.
+
+### Logic (TUI) — Deliverable 4
+
+**Changes made:**
+- **`ReviewerApp.__init__()` in `textual_plan_reviewer_app.py`**: Added restore of `_pending_message_file` from `plan.metadata["pending_message_file"]` if the file exists on disk. This ensures that a new `ReviewerApp` instance (e.g., after plan reload) can pick up the persistent temp file path.
+- **`add_message_handler()` in `textual_plan_reviewer_previews.py`**: After creating `app._pending_message_file`, stores `app.plan.metadata["pending_message_file"] = app._pending_message_file` to persist the path across app instances.
+- **`_finalize_user_message()` in `textual_plan_reviewer_app.py`**: Added `self.plan.metadata.pop("pending_message_file", None)` after harvest to clean up the metadata entry when the message is finalized.
+- **New unit test `test_pending_message_file_restored_from_plan_metadata`** in `test_reviewer_app_core.py`: Verifies that a `ReviewerApp` created with a plan containing `pending_message_file` in metadata correctly restores `_pending_message_file` from that metadata.
+
+**Key decisions:**
+- The metadata key `pending_message_file` is used to persist the temp file path. It is stored in `plan.metadata` so it survives TUI closure/reopening (plan metadata is serialized when the plan is saved to disk).
+- The restore only happens if the file actually exists on disk (`os.path.exists(pending_file)`), providing a safety net against stale metadata.
+- The metadata is cleaned up in `_finalize_user_message` after the file is read and deleted, preventing stale paths from accumulating in saved plan metadata.
+- No changes to the acceptance test were needed — the existing Wired acceptance test already covers the full end-to-end flow.
+
+**Frictions encountered:**
+- Initial unit test creation failed because proper `FIND`/`REPLACE` targets were needed for the file's exact content. The test was appended after the last test function to avoid syntax issues.
+- The `ISystemEnvironment` resolve required `env.container.resolve()` instead of `env.get_service()` in the unit test, matching the existing test pattern.
+- The `_pending_message_file` attribute could be set in `__init__` before `compose()` runs (attribute exists but `True` / `False` check in `add_message_handler`'s `hasattr` — this is safe as the attribute is set in `__init__` now, but careful if order changes in future refactors.
 
 ## Verification
 

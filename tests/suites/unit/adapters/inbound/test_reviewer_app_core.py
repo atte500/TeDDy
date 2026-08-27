@@ -98,3 +98,53 @@ async def test_reviewer_app_context_tree_population(env):
         assert "  src/core.py" in str(file_node.label)
         assert "[M]" in str(file_node.label)
         assert "1.2k" in str(file_node.label)
+
+
+def test_pending_message_file_restored_from_plan_metadata(env, tmp_path):
+    """When a plan has 'pending_message_file' in metadata, a new ReviewerApp
+    restores it as _pending_message_file and reuses it.
+
+    This is the core unit test for the Logic (TUI) deliverable: persistent
+    temp file storage across launches via plan metadata.
+    """
+    from unittest.mock import MagicMock
+    from teddy_executor.core.domain.models.plan import Plan, ActionData
+    from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
+    from teddy_executor.core.ports.outbound.system_environment import (
+        ISystemEnvironment,
+    )
+
+    # Arrange: create a plan with a pre-existing pending_message_file metadata
+    pending_file = str(tmp_path / "pending_message.md")
+    # Write some initial content to the file
+    with open(pending_file, "w", encoding="utf-8") as f:
+        f.write("Initial content")
+    plan = Plan(
+        title="Test",
+        rationale="Test",
+        actions=[ActionData(type="MESSAGE", params={})],
+    )
+    plan.metadata["pending_message_file"] = pending_file
+
+    system_env = env.container.resolve(ISystemEnvironment)
+
+    console_tooling = MagicMock()
+    console_tooling.get_diff_viewer_command.return_value = None
+    console_tooling.find_editor.return_value = ["/usr/bin/vim"]
+
+    # Act: create a new ReviewerApp with this plan
+    app = ReviewerApp(
+        plan=plan,
+        system_env=system_env,
+        console_tooling=console_tooling,
+        action_dispatcher=MagicMock(),
+        file_system=MagicMock(),
+    )
+
+    # Assert: app._pending_message_file should be restored from plan metadata
+    assert hasattr(app, "_pending_message_file"), (
+        "ReviewerApp should have _pending_message_file attribute"
+    )
+    assert app._pending_message_file == pending_file, (
+        f"Expected {pending_file}, got {app._pending_message_file}"
+    )

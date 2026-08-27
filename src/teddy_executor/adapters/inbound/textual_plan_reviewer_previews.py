@@ -225,6 +225,7 @@ async def add_message_handler(app: "ReviewerApp") -> None:
     # Create persistent file path if not already set
     if not hasattr(app, "_pending_message_file") or app._pending_message_file is None:
         app._pending_message_file = app._system_env.create_temp_file(suffix=".md")
+        app.plan.metadata["pending_message_file"] = app._pending_message_file
 
     current_message = app._user_message_cache
     if current_message is None:
