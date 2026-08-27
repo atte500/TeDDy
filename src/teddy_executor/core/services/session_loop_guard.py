@@ -44,7 +44,7 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
             import os as _os
             rel_path = _os.path.relpath(config_path)
             return False, (
-                f"YOLO turn limit reached: {turn_delta}/{max_turns} turns in this run. "
+                f"YOLO turn limit reached: {turn_delta}/{max_turns} turns in this run.\n"
                 f"To change this limit, set 'yolo_guardrails.max_turns' in {rel_path}."
             )
 
@@ -53,7 +53,7 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
             import os as _os
             rel_path = _os.path.relpath(config_path)
             return False, (
-                f"YOLO cost limit reached: ${cost_delta:.2f}/${max_cost:.2f} in this run. "
+                f"YOLO cost limit reached: ${cost_delta:.2f}/${max_cost:.2f} in this run.\n"
                 f"To change this limit, set 'yolo_guardrails.max_session_cost' in {rel_path}."
             )
 
