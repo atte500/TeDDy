@@ -323,7 +323,11 @@ class SessionOrchestrator(IRunPlanUseCase):
                 if user_reply is not None and not user_reply.strip():
                     import typer
 
-                    typer.secho("\nSession terminated.", fg=typer.colors.RED, err=True)
+                    typer.secho(
+                        "\nSession terminated (empty message).",
+                        fg=typer.colors.RED,
+                        err=True,
+                    )
                     typer.secho(
                         "To continue the session, use `teddy resume [session_path]`.",
                         err=True,

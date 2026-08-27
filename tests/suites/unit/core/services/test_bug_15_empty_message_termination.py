@@ -77,7 +77,7 @@ def _make_empty_reply_report() -> ExecutionReport:
 class TestBug15EmptyMessageTermination:
     """Bug #15: Session must terminate without report.md when user provides empty reply to a Message turn."""
 
-    def test_communication_turn_empty_reply_terminates_session(self):
+    def test_communication_turn_empty_reply_terminates_session(self, capsys):
         """Regression test: empty user_request after communication turn -> return None, no report.md."""
         container = punq.Container()
         fs_mock = MagicMock(spec=IFileSystemManager)
@@ -130,6 +130,10 @@ class TestBug15EmptyMessageTermination:
         assert lifecycle_mgr.finalize_turn.call_count == 0, (
             "finalize_turn should NOT be called when terminating on empty reply"
         )
+
+        # Assert: the termination message explains the empty-message cause
+        captured = capsys.readouterr()
+        assert "Session terminated (empty message)." in captured.err
 
     def test_communication_turn_non_empty_reply_continues_session(self):
         """Non-empty user_request after communication turn should NOT terminate."""
