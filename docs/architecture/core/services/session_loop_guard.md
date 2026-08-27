@@ -24,5 +24,5 @@ To support resuming sessions without immediate limit hits, the guard captures th
    - Return `False` if either `delta_turns >= max_turns` or `delta_cost >= max_cost`.
 
 ## Data Contracts / Methods
-### `should_continue(current_turn: int, current_cost: float, interactive: bool) -> bool`
-Checks process-relative deltas against configured `yolo_guardrails`.
+### `should_continue(current_turn: int, current_cost: float, interactive: bool) -> tuple[bool, str | None]`
+Returns `(True, None)` to continue, or `(False, reason)` to stop with a human-readable explanation. Checks process-relative deltas against configured `yolo_guardrails`.

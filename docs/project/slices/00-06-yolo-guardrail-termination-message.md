@@ -49,7 +49,7 @@ The protocol change (`bool -> tuple[bool, str | None]`) is a breaking signature 
 - [x] **Contract** - Update protocol, production guard (trivial reason), mock fixture default, and unit tests to new tuple contract.
 - [x] **Wiring + Harness Migration** - Update call site to unpack tuple + print/log termination message; atomically update harness fakes and replan-loop test lambdas; add termination message test.
 - [x] **Logic** - Implement human-readable reasons in ProductionSessionLoopGuard with new tests.
-- [ ] **Documentation** - Sync architecture docs and config.yaml comment.
+- [x] **Documentation** - Sync architecture docs and config.yaml comment.
 
 ## Implementation Notes
 
@@ -107,6 +107,19 @@ The atomic update of harness fakes + call site + replan-loop lambdas was execute
 **Files modified:**
 - `src/teddy_executor/core/services/session_loop_guard.py`
 - `tests/suites/unit/core/services/test_session_loop_guard.py`
+- `docs/project/slices/00-06-yolo-guardrail-termination-message.md`
+
+### 2026-08-27 – Documentation Deliverable
+
+**Completion Summary:**
+- Updated `docs/architecture/core/ports/outbound/session_loop_guard.md`: changed `should_continue` return type from `-> bool` to `-> tuple[bool, str | None]` with updated description.
+- Updated `docs/architecture/core/services/session_loop_guard.md`: same signature update to reflect the new contract.
+- Expanded `yolo_guardrails` comment in `src/teddy_executor/resources/config/config.yaml` to document the termination message behavior and per-run semantics.
+
+**Files modified:**
+- `docs/architecture/core/ports/outbound/session_loop_guard.md`
+- `docs/architecture/core/services/session_loop_guard.md`
+- `src/teddy_executor/resources/config/config.yaml`
 - `docs/project/slices/00-06-yolo-guardrail-termination-message.md`
 
 ## Verification

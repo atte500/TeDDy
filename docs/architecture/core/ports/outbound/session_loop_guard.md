@@ -11,5 +11,5 @@ None (Interface definition).
 
 ## Data Contracts / Methods
 
-### `should_continue(turn_count: int, cumulative_cost: float, interactive: bool) -> bool`
-Returns `True` if the loop should continue to the next turn. It enforces YOLO guardrails (turn/cost limits) strictly when `interactive` is `False` and `yolo_guardrails.enabled` is `True` in the configuration. Limits are calculated as deltas from the process-start baseline.
+### `should_continue(turn_count: int, cumulative_cost: float, interactive: bool) -> tuple[bool, str | None]`
+Returns `(True, None)` if the loop should continue to the next turn. Returns `(False, reason)` when a guardrail limit is hit, where `reason` is a human-readable message explaining which limit was exceeded and how to adjust the configuration. Limits are calculated as deltas from the process-start baseline.
