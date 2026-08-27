@@ -25,6 +25,24 @@ class ConsoleAskLoop:
         """Check if stdin is a real TTY (vs pipe/test runner)."""
         return sys.stdin.isatty()
 
+    def _flush_stdin(self) -> None:
+        """Flush stale escape sequences from the TTY input buffer.
+
+        When a background editor process (with TTY attached) exits, the terminal
+        emulator may have written escape sequences (e.g., OSC color responses)
+        into the shared stdin buffer. Flushing these before the next prompt
+        prevents them from being captured as user input.
+        """
+        if not self._is_tty():
+            return
+        try:
+            import termios  # noqa: PLC0415
+
+            termios.tcflush(sys.stdin, termios.TCIFLUSH)
+        except Exception:  # nosec B110
+            # Not all platforms support termios; safe to ignore.
+            pass
+
     def _pt_prompt(self, prompt_text: str) -> str:
         """Prompt the user using prompt_toolkit (TTY) or input() (non-TTY/pipe)."""
         if not self._is_tty():
@@ -52,6 +70,7 @@ class ConsoleAskLoop:
 
             if user_input.lower() == "e":
                 self._launch_editor_background(prompt)
+                self._flush_stdin()
                 continue
 
             if user_input:
@@ -76,6 +95,7 @@ class ConsoleAskLoop:
 
         if confirm.lower() == "e":
             self._launch_editor_background(prompt)
+            self._flush_stdin()
             return None
 
         return confirm
