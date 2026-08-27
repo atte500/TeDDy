@@ -200,9 +200,7 @@ def _orchestrate_session_loop(
         )
         if not should_continue:
             reason = guard_reason or "YOLO guardrail limit reached."
-            logger.warning(
-                "YOLO guardrail hit — session terminated: %s", reason
-            )
+            logger.warning("YOLO guardrail hit — session terminated: %s", reason)
             typer.secho(
                 f"⚠ YOLO guardrail hit — session terminated.\n{reason}",
                 fg=typer.colors.RED,

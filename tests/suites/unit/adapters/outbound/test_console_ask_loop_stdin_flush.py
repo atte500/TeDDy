@@ -45,9 +45,7 @@ def ask_loop(mock_system_env, mock_tooling):
 class TestStdinFlush:
     """Tests for _flush_stdin and its integration in the run loop."""
 
-    PROD_PREFIX = (
-        "teddy_executor.adapters.outbound.console_interactor_ask_loop"
-    )
+    PROD_PREFIX = "teddy_executor.adapters.outbound.console_interactor_ask_loop"
 
     def test_flush_stdin_called_after_editor_launch_in_run(self, ask_loop):
         """When user types 'e' in TTY mode, termios.tcflush must be called
@@ -60,9 +58,7 @@ class TestStdinFlush:
             # _launch_editor_background calls create_temp_file and run_command,
             # which are already mocked via mock_system_env fixture
             ask_loop.run("test prompt")
-            mock_tcflush.assert_called_once_with(
-                sys.stdin, termios.TCIFLUSH
-            )
+            mock_tcflush.assert_called_once_with(sys.stdin, termios.TCIFLUSH)
 
     def test_flush_stdin_called_when_in_tty_mode(self, ask_loop):
         """_flush_stdin should call termios.tcflush when stdin is a TTY."""
@@ -71,9 +67,7 @@ class TestStdinFlush:
             patch.object(termios, "tcflush") as mock_tcflush,
         ):
             ask_loop._flush_stdin()
-            mock_tcflush.assert_called_once_with(
-                sys.stdin, termios.TCIFLUSH
-            )
+            mock_tcflush.assert_called_once_with(sys.stdin, termios.TCIFLUSH)
 
     def test_flush_stdin_not_called_when_not_tty(self, ask_loop):
         """_flush_stdin should NOT call termios.tcflush when stdin is not a TTY."""
@@ -111,7 +105,10 @@ class TestStdinFlush:
         """_flush_stdin should not crash if termios is unavailable."""
         with (
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
-            patch("builtins.__import__", side_effect=ImportError("No module named termios")),
+            patch(
+                "builtins.__import__",
+                side_effect=ImportError("No module named termios"),
+            ),
         ):
             # Should not raise any exception
             ask_loop._flush_stdin()

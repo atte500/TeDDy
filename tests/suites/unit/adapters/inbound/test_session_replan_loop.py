@@ -215,6 +215,6 @@ def test_termination_message_printed_when_guard_stops(capsys):
 
     # Assert — currently fails because no message is printed
     captured = capsys.readouterr()
-    assert (
-        "YOLO guardrail" in captured.out
-    ), f"No termination message found in stdout: {captured.out!r}"
+    assert "YOLO guardrail" in captured.out, (
+        f"No termination message found in stdout: {captured.out!r}"
+    )

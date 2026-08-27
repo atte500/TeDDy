@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 import sys
 from typing import TYPE_CHECKING, Optional
 
@@ -9,6 +10,12 @@ from prompt_toolkit.shortcuts import prompt as ptk_prompt
 if TYPE_CHECKING:
     from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
     from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
+
+
+# Regex to match ANSI SGR codes and OSC sequences
+# - ANSI SGR: ESC [ <params> m  (e.g., \x1b[31m)
+# - OSC sequences: ESC ] <params> ST (where ST is ESC \ or BEL \x07)
+_ESCAPE_SEQUENCE_RE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x1b]*(?:\x1b\\|\x07)")
 
 
 class ConsoleAskLoop:
@@ -43,6 +50,16 @@ class ConsoleAskLoop:
             # Not all platforms support termios; safe to ignore.
             pass
 
+    def _strip_escape_sequences(self, text: str) -> str:
+        """Remove ANSI escape sequences and OSC control sequences from text.
+
+        This prevents terminal emulator escape sequences (e.g., color sync
+        responses written during editor runtime) from leaking into user input.
+
+        Returns the cleaned text with escape sequences removed.
+        """
+        return _ESCAPE_SEQUENCE_RE.sub("", text)
+
     def _pt_prompt(self, prompt_text: str) -> str:
         """Prompt the user using prompt_toolkit (TTY) or input() (non-TTY/pipe)."""
         if not self._is_tty():
@@ -67,6 +84,12 @@ class ConsoleAskLoop:
                 )
 
             user_input = self._pt_prompt(prompt_label).strip()
+
+            # Strip escape sequences from input that may have been captured
+            # during background editor runtime (terminal emulator OSC responses
+            # that arrived in the TTY input buffer after the editor was launched).
+            if self._active_editor_path:
+                user_input = self._strip_escape_sequences(user_input)
 
             if user_input.lower() == "e":
                 self._launch_editor_background(prompt)
