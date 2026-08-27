@@ -80,3 +80,34 @@ class TestStdinFlush:
             ),
         ):
             ask_loop._flush_stdin()
+
+    def test_flush_stdin_called_during_harvest(self, ask_loop, mock_system_env):
+        """When _handle_empty_input is called with _active_editor_path set,
+        the file is read, content harvested, temp file deleted, and
+        _flush_stdin is called."""
+        from unittest.mock import mock_open, patch
+
+        # Arrange
+        ask_loop._active_editor_path = "/tmp/editor.md"
+        marker = "<!-- Please enter your response above this line. -->"
+        file_content = (
+            "User response above marker\n\n" + marker + "\n\nPrompt text"
+        )
+
+        with (
+            patch.object(ask_loop, "_flush_stdin") as mock_flush,
+            patch("builtins.open", mock_open(read_data=file_content)),
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+        ):
+            # Act
+            result = ask_loop._handle_empty_input("test prompt")
+
+        # Assert
+        assert result == "User response above marker", (
+            f"Expected 'User response above marker', got: {repr(result)}"
+        )
+        mock_flush.assert_called_once()
+        mock_system_env.delete_file.assert_called_once_with("/tmp/editor.md")
+        assert ask_loop._active_editor_path is None, (
+            "_active_editor_path should be reset after harvest"
+        )

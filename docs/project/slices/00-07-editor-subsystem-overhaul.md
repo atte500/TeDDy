@@ -123,7 +123,7 @@ The fix targets two files: `console_interactor_ask_loop.py` and `textual_plan_re
 - [x] **Logic (Console)** — Implement `_launch_editor_background()` with `subprocess.Popen` + TTY inheritance + persistent file reuse. Implement harvest logic in `_handle_empty_input()` to read `_active_editor_path`, strip escape sequences, and return content. Remove `_open_editor_blocking()`.
 - [x] **Wiring (TUI)** — Replace ConfirmScreen with notification in `launch_editor()`. Wire s-key harvest in `textual_plan_reviewer_app.py` to read persistent temp file when submitting plan.
 - [x] **Logic (TUI)** — Implement persistent temp file storage in action. Store/retrieve `pending_message_file` across launches.
-- [ ] **Migration** — Update `test_console_ask_loop_escape_stripping.py` to mock background path instead of blocking path. Update `test_console_ask_loop_stdin_flush.py` to verify flush timing in new flow.
+- [x] **Migration** — Update `test_console_ask_loop_escape_stripping.py` to mock background path instead of blocking path. Update `test_console_ask_loop_stdin_flush.py` to verify flush timing in new flow.
 - [ ] **Cleanup** — Remove `_open_editor_blocking()`, VIMINIT suppression, and `test_console_ask_loop_stdin_flush.py` if redundant with escape stripping tests.
 
 ## Implementation Notes
@@ -222,6 +222,22 @@ This will be replaced by real `subprocess.Popen` + TTY inheritance + persistent 
 - Initial unit test creation failed because proper `FIND`/`REPLACE` targets were needed for the file's exact content. The test was appended after the last test function to avoid syntax issues.
 - The `ISystemEnvironment` resolve required `env.container.resolve()` instead of `env.get_service()` in the unit test, matching the existing test pattern.
 - The `_pending_message_file` attribute could be set in `__init__` before `compose()` runs (attribute exists but `True` / `False` check in `add_message_handler`'s `hasattr` — this is safe as the attribute is set in `__init__` now, but careful if order changes in future refactors.
+
+### Migration — Deliverable 5
+
+**Changes made:**
+- **`test_console_ask_loop_escape_stripping.py`**: Confirmed no remaining references to `_open_editor_blocking` (all mocks already target `_launch_editor_background`). No changes needed — fully migrated in Wiring (Console).
+- **`test_console_ask_loop_stdin_flush.py`**: Added `test_flush_stdin_called_during_harvest` — a new unit test verifying that when `_handle_empty_input` is called with `_active_editor_path` set, the file is read, content harvested (above marker), temp file deleted via `mock_system_env.delete_file`, `_active_editor_path` reset to `None`, and `_flush_stdin` is called.
+
+**Key decisions:**
+- The escape stripping tests were already migrated during the Wiring (Console) deliverable — all editor-related tests now mock `_launch_editor_background` instead of `_open_editor_blocking`. No additional changes were required.
+- The new flush timing test uses `patch.object(ask_loop, "_flush_stdin")` to verify the flush call directly, matching the pattern used by the existing escape stripping tests.
+- The `mock_open` pattern with `patch("builtins.open")` avoids patching on the production module, preventing the `PROD_PREFIX` issue that affected earlier deliverable tests.
+- The test verifies the full harvest sequence: read file → strip escape sequences → split at marker → delete file → reset path → flush stdin.
+
+**Frictions encountered:**
+- No significant frictions — the Migration deliverable was straightforward as the escape stripping tests were already migrated and only a single new test needed to be added.
+- The `mock_system_env` fixture is shared between files; importing it required ensuring the `tmp_path` fixture is not needed (using `"/tmp/editor.md"` as the path).
 
 ## Verification
 
