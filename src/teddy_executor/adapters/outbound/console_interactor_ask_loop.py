@@ -85,16 +85,23 @@ class ConsoleAskLoop:
 
             user_input = self._pt_prompt(prompt_label).strip()
 
-            # Strip escape sequences from input that may have been captured
-            # during background editor runtime (terminal emulator OSC responses
-            # that arrived in the TTY input buffer after the editor was launched).
-            if self._active_editor_path:
-                user_input = self._strip_escape_sequences(user_input)
+            # Strip escape sequences unconditionally. Terminal emulator OSC
+            # responses can arrive on stdin at any time (not just during editor
+            # runtime), so we apply stripping to ALL input to prevent leaks
+            # like ']10;rgb:8080/8989/b3b3' from becoming session names.
+            user_input = self._strip_escape_sequences(user_input)
 
             if user_input.lower() == "e":
                 self._launch_editor_background(prompt)
                 self._flush_stdin()
                 continue
+
+            if self._active_editor_path:
+                # Editor is active: ignore stdin entirely, always read the
+                # editor temp file. The file is the source of truth and cannot
+                # contain terminal escape sequences. Return whatever the user
+                # wrote in the editor.
+                return self._read_editor_result()
 
             if user_input:
                 self.cleanup()
