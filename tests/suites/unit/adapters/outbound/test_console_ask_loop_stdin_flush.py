@@ -6,8 +6,14 @@ the next prompt_toolkit read.
 """
 
 import sys
-import termios
 from unittest.mock import MagicMock, patch
+
+import pytest
+
+# Skip the entire test module on platforms without termios (e.g., Windows).
+# The production code guards termios inside _flush_stdin with a try/except,
+# but the test must import it at module level for mocking.
+termios = pytest.importorskip("termios")
 
 import pytest
 
