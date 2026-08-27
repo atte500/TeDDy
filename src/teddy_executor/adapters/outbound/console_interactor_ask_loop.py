@@ -100,8 +100,14 @@ class ConsoleAskLoop:
                 # Editor is active: ignore stdin entirely, always read the
                 # editor temp file. The file is the source of truth and cannot
                 # contain terminal escape sequences. Return whatever the user
-                # wrote in the editor.
-                return self._read_editor_result()
+                # wrote in the editor. If the file is empty (user closed vim
+                # without writing anything), clean up and return to the normal
+                # prompt instead of propagating an empty response up.
+                content = self._read_editor_result()
+                if content:
+                    return content
+                # Empty content from editor: back to normal prompt
+                continue
 
             if user_input:
                 self.cleanup()
@@ -114,7 +120,15 @@ class ConsoleAskLoop:
     def _handle_empty_input(self, prompt: str) -> Optional[str]:
         """Handles logic when Enter is pressed without terminal input."""
         if self._active_editor_path:
-            return self._read_editor_result()
+            content = self._read_editor_result()
+            # Note: _read_editor_result() calls cleanup() in its finally
+            # block, so _active_editor_path is None after this.
+            if content:
+                return content
+            # Empty editor content: return None so the loop continues
+            # back to the normal prompt instead of propagating empty
+            # input up to the caller (which would cancel the session).
+            return None
 
         confirm = self._pt_prompt(
             "Press [Enter] again to confirm empty response › "

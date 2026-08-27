@@ -54,9 +54,8 @@ class TestStdinFlush:
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
             patch(f"{self.PROD_PREFIX}.ptk_prompt", side_effect=["e", "\n"]),
             patch.object(termios, "tcflush") as mock_tcflush,
+            patch.object(ask_loop, "_read_editor_result", return_value="Done"),
         ):
-            # _launch_editor_background calls create_temp_file and run_command,
-            # which are already mocked via mock_system_env fixture
             ask_loop.run("test prompt")
             mock_tcflush.assert_called_once_with(sys.stdin, termios.TCIFLUSH)
 
@@ -95,6 +94,7 @@ class TestStdinFlush:
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
             patch(f"{self.PROD_PREFIX}.ptk_prompt", side_effect=["e", "e", "\n"]),
             patch.object(termios, "tcflush") as mock_tcflush,
+            patch.object(ask_loop, "_read_editor_result", return_value="Done"),
         ):
             ask_loop.run("test")
             assert mock_tcflush.call_count == 2, (

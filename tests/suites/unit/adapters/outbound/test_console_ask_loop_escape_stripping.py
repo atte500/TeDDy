@@ -142,23 +142,45 @@ class TestEscapeSequenceStripping:
             )
 
     def test_strip_osc_and_returns_empty_when_editor_empty(self, ask_loop):
-        """When OSC leaks and the editor file is empty, the response is
-        empty (user pressed Enter without writing anything)."""
+        """When OSC leaks and the editor file is empty, the loop continues
+        and returns to the normal prompt (app does not exit)."""
         osc_payload = "\x1b]10;rgb:8080/8989/b3b3\x1b\\"
+        # First ptk call returns OSC (stripped to empty) with editor active.
+        # _read_editor_result returns empty → loop continues.
+        # Since the mock doesn't call real cleanup, we explicitly clear the
+        # active_editor_path after the first _read_editor_result call.
+        # Second ptk call returns the user's actual typed response.
+        follow_up_text = "second attempt"
+        call_count = 0
+
+        def mock_read_editor():
+            nonlocal call_count
+            call_count += 1
+            # The mock must simulate cleanup: reset active_editor_path
+            # so the loop returns to normal prompt after empty content.
+            ask_loop._active_editor_path = None
+            return ""
+
         with (
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
-            patch(f"{self.PROD_PREFIX}.ptk_prompt", return_value=osc_payload),
+            patch(
+                f"{self.PROD_PREFIX}.ptk_prompt",
+                side_effect=[osc_payload, follow_up_text],
+            ),
             patch.object(ask_loop, "_flush_stdin"),
             patch.object(ask_loop, "_launch_editor_background"),
-            patch.object(ask_loop, "_read_editor_result", return_value=""),
+            patch.object(ask_loop, "_read_editor_result", side_effect=mock_read_editor),
         ):
             ask_loop._active_editor_path = "/tmp/fake_editor.md"
             result = ask_loop.run("test prompt")
             assert "8080/8989" not in result, (
                 f"OSC payload leaked: {repr(result)}"
             )
-            assert result == "", (
-                f"Expected empty string when editor empty, got: {repr(result)}"
+            assert result == "second attempt", (
+                f"Expected follow-up text, got: {repr(result)}"
+            )
+            assert call_count == 1, (
+                f"Editor should be read only once, got {call_count} calls"
             )
 
     def test_ansi_sgr_stripped_when_editor_active(self, ask_loop):
