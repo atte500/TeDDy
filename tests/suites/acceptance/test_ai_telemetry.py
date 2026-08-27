@@ -130,14 +130,14 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
 
     # In Discovery Protocol, we don't pass -m to resume
     result = adapter.run_resume(
-        ".teddy/sessions/20260417_120000-turn-1",
+        ".teddy/sessions/20260417_120000-turn",
         interactive=False,
         extra_args=["-y"],
     )
 
     assert result.exit_code == 0
     meta_2 = yaml.safe_load(
-        (tmp_path / ".teddy/sessions/20260417_120000-turn-1/02/meta.yaml").read_text()
+        (tmp_path / ".teddy/sessions/20260417_120000-turn/02/meta.yaml").read_text()
     )
     # Turn 2 meta.yaml inherits the cumulative cost of Turn 1 (0.01)
     # before its own cost (0.02) is added in the next turn transition.

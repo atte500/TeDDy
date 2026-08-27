@@ -81,8 +81,15 @@ def test_slugify_basic():
 
 
 def test_slugify_special_characters():
-    """It should remove non-alphanumeric characters and collapse hyphens."""
-    assert slugify("Refactor: Auth Service (v2)!!!") == "refactor-auth-service-v2"
+    """It should remove special characters and digits."""
+    assert slugify("Refactor: Auth Service (v2)!!!") == "refactor-auth-service"
+
+
+def test_slugify_removes_numbers():
+    """It should strip digits from session names entirely."""
+    assert slugify("Feature 2.0 release!") == "feature-release"
+    assert slugify("Fix bug #42 now") == "fix-bug"
+    assert slugify("Update v3 of the API") == "update-api"
 
 
 def test_slugify_truncation():

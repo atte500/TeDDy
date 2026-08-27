@@ -204,8 +204,12 @@ def slugify(text: str, max_length: int = 40) -> str:
     # 1. Lowercase and strip apostrophes
     s = text.lower().replace("'", "")
 
-    # 2. Split and filter stopwords
-    all_words = [w for w in re.split(r"[^a-z0-9]+", s) if w and w not in STOPWORDS]
+    # 2. Split and filter stopwords (words containing digits are dropped entirely)
+    all_words = [
+        w
+        for w in re.split(r"[^a-z0-9]+", s)
+        if w and not re.search(r"\d", w) and w not in STOPWORDS
+    ]
 
     # 3. Build slug word by word to respect max_length
     slug_words: list[str] = []
