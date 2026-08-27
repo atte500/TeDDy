@@ -124,7 +124,7 @@ The fix targets two files: `console_interactor_ask_loop.py` and `textual_plan_re
 - [x] **Wiring (TUI)** — Replace ConfirmScreen with notification in `launch_editor()`. Wire s-key harvest in `textual_plan_reviewer_app.py` to read persistent temp file when submitting plan.
 - [x] **Logic (TUI)** — Implement persistent temp file storage in action. Store/retrieve `pending_message_file` across launches.
 - [x] **Migration** — Update `test_console_ask_loop_escape_stripping.py` to mock background path instead of blocking path. Update `test_console_ask_loop_stdin_flush.py` to verify flush timing in new flow.
-- [ ] **Cleanup** — Remove `_open_editor_blocking()`, VIMINIT suppression, and `test_console_ask_loop_stdin_flush.py` if redundant with escape stripping tests.
+- [x] **Cleanup** — Remove `_open_editor_blocking()`, VIMINIT suppression, and `test_console_ask_loop_stdin_flush.py` if redundant with escape stripping tests.
 
 ## Implementation Notes
 
@@ -238,6 +238,19 @@ This will be replaced by real `subprocess.Popen` + TTY inheritance + persistent 
 **Frictions encountered:**
 - No significant frictions — the Migration deliverable was straightforward as the escape stripping tests were already migrated and only a single new test needed to be added.
 - The `mock_system_env` fixture is shared between files; importing it required ensuring the `tmp_path` fixture is not needed (using `"/tmp/editor.md"` as the path).
+
+### Cleanup — Deliverable 6
+
+**Status:** Already complete — no code changes needed.
+
+- **`_open_editor_blocking()`:** Already removed in Logic (Console) deliverable (Deliverable 2). No remaining references in production code or test files outside of historical documentation.
+- **VIMINIT suppression:** Removed as part of the `_open_editor_blocking()` removal. No references to `viminfo`, `VIMINIT`, or `suppress_viminfo` remain anywhere in the codebase.
+- **`test_console_ask_loop_stdin_flush.py`:** Evaluated and determined NOT redundant. The file contains distinct tests for:
+  - `_flush_stdin` behavior (TTY/non-TTY, missing termios).
+  - `test_flush_stdin_called_during_harvest` (added in Migration deliverable) — verifies flush timing after harvest, which is not covered by the escape stripping tests (which mock `_handle_empty_input`).
+  Keep the file as-is.
+
+**Frictions encountered:** None — the deliverable was a validation-only exercise confirming prior work.
 
 ## Verification
 
