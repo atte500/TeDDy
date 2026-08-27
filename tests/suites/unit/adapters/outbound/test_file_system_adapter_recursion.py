@@ -50,3 +50,32 @@ def test_list_directory_recursive_respects_ignores(fs, mock_edit_simulator):
     assert "node_modules/dep/index.js" not in files
     assert "secret.txt" not in files
     assert "src/main.py" in files
+
+
+def test_list_directory_recursive_dot_resolves_correctly(fs, mock_edit_simulator):
+    """
+    Regression test for Bug #26: list_directory_recursive(".") must not raise
+    FileNotFoundError when root_dir points to a path that exists only in pyfakefs.
+    """
+    # Arrange
+    fs.create_file("/app/.gitignore", contents="*.log\nnode_modules/")
+    fs.create_file("/app/src/main.py", contents="print('hello')")
+    fs.create_file("/app/src/app.log", contents="some log")
+    fs.create_file("/app/node_modules/dep/index.js", contents="...")
+    fs.create_file("/app/.teddyignore", contents="secret.txt")
+    fs.create_file("/app/secret.txt", contents="shhh")
+
+    adapter = LocalFileSystemAdapter(
+        edit_simulator=mock_edit_simulator, root_dir="/app"
+    )
+
+    # Act
+    files = adapter.list_directory_recursive(".")
+
+    # Assert
+    assert "src/app.log" not in files
+    assert "node_modules/dep/index.js" not in files
+    assert "secret.txt" not in files
+    assert "src/main.py" in files
+    # Note: .gitignore is not expected in files because load_ignore_spec
+    # adds the .gitignore filename itself to the ignore patterns.

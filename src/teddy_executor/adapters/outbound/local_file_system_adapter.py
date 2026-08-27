@@ -41,7 +41,9 @@ class LocalFileSystemAdapter(IFileSystemManager):
         """
         path_obj = Path(path)
         if not hasattr(self, "_resolved_root"):
-            self._resolved_root = self.root_dir.resolve()
+            # Use os.path.realpath instead of Path.resolve() to ensure pyfakefs
+            # can correctly patch path resolution during testing.
+            self._resolved_root = Path(os.path.realpath(str(self.root_dir)))
         if path_obj.is_absolute():
             # Optimization: Only resolve if there are symlinks or ".." components.
             if ".." in str(path) or path_obj.is_symlink():
@@ -121,13 +123,13 @@ class LocalFileSystemAdapter(IFileSystemManager):
             raise FileNotFoundError(f"Directory not found: {path}")
 
         if not hasattr(self, "_resolved_root"):
-            self._resolved_root = self.root_dir.resolve()
+            self._resolved_root = Path(os.path.realpath(str(self.root_dir)))
 
         spec = self._get_ignore_spec()
         files = []
 
         for entry, is_dir in walk_recursive(self._resolved_root, dir_path, spec):
-            if not is_dir and entry.is_file():
+            if not is_dir and os.path.isfile(str(entry)):
                 try:
                     rel_path = entry.relative_to(self._resolved_root)
                 except ValueError:
@@ -144,7 +146,7 @@ class LocalFileSystemAdapter(IFileSystemManager):
             )
 
             if not hasattr(self, "_resolved_root"):
-                self._resolved_root = self.root_dir.resolve()
+                self._resolved_root = Path(os.path.realpath(str(self.root_dir)))
 
             self._ignore_spec = load_ignore_spec(self._resolved_root)
         return self._ignore_spec
