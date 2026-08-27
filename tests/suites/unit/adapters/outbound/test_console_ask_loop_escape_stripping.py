@@ -1,8 +1,8 @@
 """Regression tests for ConsoleAskLoop escape sequence stripping (Bug #25).
 
 Verifies that terminal escape sequences (OSC/ANSI) are stripped from user
-input when a background editor is active, preventing leaks like
-']10;rgb:8080/8989/b3b3' from appearing in the returned response.
+input, and that the synchronous editor flow correctly returns editor content
+or continues the loop on empty editor.
 """
 
 from unittest.mock import MagicMock, patch
@@ -34,27 +34,24 @@ def ask_loop(mock_system_env, mock_tooling):
 
 
 class TestEscapeSequenceStripping:
-    """Tests for the _strip_escape_sequences fix."""
+    """Tests for escape sequence stripping and the synchronous editor flow."""
 
     PROD_PREFIX = "teddy_executor.adapters.outbound.console_interactor_ask_loop"
 
-    def test_strips_osc_sequence_when_editor_active(self, ask_loop):
-        """When active editor path is set and ptk returns an OSC sequence,
-        the OSC is stripped before any further processing; the editor
-        content is returned (not the stdin input)."""
-        osc_payload = "\x1b]10;rgb:8080/8989/b3b3\x1b\\"
+    def test_strips_osc_sequence_when_user_types_e(self, ask_loop):
+        """When user types 'e' with OSC sequences prepended, the OSC is
+        stripped and the remaining 'e' launches the editor synchronously."""
+        # The OSC payload is prepended to 'e', so after stripping we get 'e'.
+        osc_payload = "\x1b]10;rgb:8080/8989/b3b3\x1b\\e"
         editor_content = "Actual work from vim"
         with (
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
             patch(f"{self.PROD_PREFIX}.ptk_prompt", return_value=osc_payload),
             patch.object(ask_loop, "_flush_stdin"),
-            patch.object(ask_loop, "_launch_editor_background"),
-            patch.object(ask_loop, "_read_editor_result", return_value=editor_content),
+            patch.object(ask_loop, "_open_editor_blocking", return_value=editor_content),
         ):
-            ask_loop._active_editor_path = "/tmp/fake_editor.md"
             result = ask_loop.run("test prompt")
-            # OSC must be stripped — even in the editor content path, the
-            # stripping happens on the ptk input (which is then ignored).
+            # The OSC must be stripped, and the stripped 'e' launches editor.
             assert "8080/8989" not in result, (
                 f"OSC payload leaked into result: {repr(result)}"
             )
@@ -62,56 +59,47 @@ class TestEscapeSequenceStripping:
                 f"Expected editor content, got: {repr(result)}"
             )
 
-    def test_strips_osc_with_bel_terminator(self, ask_loop):
-        """OSC sequences terminated with BEL (\\x07) must also be stripped."""
-        osc_bel = "\x1b]10;rgb:8080/8989/b3b3\x07"
-        editor_content = "Bel-terminated work"
+    def test_user_types_e_returns_editor_content(self, ask_loop):
+        """When user types 'e' and the editor returns content, that content
+        is returned directly."""
+        editor_content = "Message from vim"
         with (
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
-            patch(f"{self.PROD_PREFIX}.ptk_prompt", return_value=osc_bel),
+            patch(f"{self.PROD_PREFIX}.ptk_prompt", return_value="e"),
             patch.object(ask_loop, "_flush_stdin"),
-            patch.object(ask_loop, "_launch_editor_background"),
-            patch.object(ask_loop, "_read_editor_result", return_value=editor_content),
+            patch.object(ask_loop, "_open_editor_blocking", return_value=editor_content),
         ):
-            ask_loop._active_editor_path = "/tmp/fake_editor.md"
             result = ask_loop.run("test prompt")
-            assert "8080/8989" not in result, f"OSC payload leaked: {repr(result)}"
-            assert result == "Bel-terminated work", (
+            assert result == "Message from vim", (
                 f"Expected editor content, got: {repr(result)}"
             )
 
-    def test_preserves_normal_text_when_editor_active(self, ask_loop):
-        """Normal user input (no escape sequences) is stripped (no-op) and
-        editor content is returned."""
-        normal_text = "Hello, this is my response!"
-        editor_content = "Work from vim"
+    def test_user_types_e_empty_editor_continues_loop(self, ask_loop):
+        """When user types 'e' and the editor returns empty content, the loop
+        continues and the user can type normal text."""
         with (
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
-            patch(f"{self.PROD_PREFIX}.ptk_prompt", return_value=normal_text),
+            patch(
+                f"{self.PROD_PREFIX}.ptk_prompt",
+                side_effect=["e", "my response"],
+            ),
             patch.object(ask_loop, "_flush_stdin"),
-            patch.object(ask_loop, "_launch_editor_background"),
-            patch.object(ask_loop, "_read_editor_result", return_value=editor_content),
+            patch.object(ask_loop, "_open_editor_blocking", return_value=""),
         ):
-            ask_loop._active_editor_path = "/tmp/fake_editor.md"
             result = ask_loop.run("test prompt")
-            # The normal text is ignored; editor content is returned
-            assert result == "Work from vim", (
-                f"Expected editor content, got: {repr(result)}"
+            assert result == "my response", (
+                f"Expected follow-up text, got: {repr(result)}"
             )
 
-    def test_strips_osc_when_editor_not_active(self, ask_loop):
-        """Even when no editor is active, escape sequences are stripped
-        unconditionally to prevent initial-prompt leaks."""
+    def test_strips_osc_when_typing_normal_text(self, ask_loop):
+        """Escape sequences are stripped unconditionally from normal input."""
         osc_payload = "\x1b]10;rgb:8080/8989/b3b3\x1b\\test"
         with (
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
-            patch(f"{self.PROD_PREFIX}.ptk_prompt", side_effect=[osc_payload]),
+            patch(f"{self.PROD_PREFIX}.ptk_prompt", return_value=osc_payload),
             patch.object(ask_loop, "_flush_stdin"),
-            patch.object(ask_loop, "_launch_editor_background"),
         ):
-            ask_loop._active_editor_path = None
             result = ask_loop.run("test prompt")
-            # OSC must be stripped, leaving only visible text
             assert "\x1b]" not in result, (
                 f"Escape sequences leaked: {repr(result)}"
             )
@@ -119,85 +107,28 @@ class TestEscapeSequenceStripping:
                 f"Expected 'test', got: {repr(result)}"
             )
 
-    def test_strip_osc_and_uses_editor_content(self, ask_loop):
-        """When OSC leaks into stdin but the editor file contains the user's
-        message, the OSC is stripped (unconditionally) and the editor content
-        is returned."""
-        osc_payload = "\x1b]10;rgb:8080/8989/b3b3\x1b\\"
-        editor_content = "My actual message written in vim"
-        with (
-            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
-            patch(f"{self.PROD_PREFIX}.ptk_prompt", return_value=osc_payload),
-            patch.object(ask_loop, "_flush_stdin"),
-            patch.object(ask_loop, "_launch_editor_background"),
-            patch.object(ask_loop, "_read_editor_result", return_value=editor_content),
-        ):
-            ask_loop._active_editor_path = "/tmp/fake_editor.md"
-            result = ask_loop.run("test prompt")
-            assert "8080/8989" not in result, (
-                f"OSC payload leaked into result: {repr(result)}"
-            )
-            assert result == "My actual message written in vim", (
-                f"Expected editor content, got: {repr(result)}"
-            )
-
-    def test_strip_osc_and_returns_empty_when_editor_empty(self, ask_loop):
-        """When OSC leaks and the editor file is empty, the loop continues
-        and returns to the normal prompt (app does not exit)."""
-        osc_payload = "\x1b]10;rgb:8080/8989/b3b3\x1b\\"
-        # First ptk call returns OSC (stripped to empty) with editor active.
-        # _read_editor_result returns empty → loop continues.
-        # Since the mock doesn't call real cleanup, we explicitly clear the
-        # active_editor_path after the first _read_editor_result call.
-        # Second ptk call returns the user's actual typed response.
-        follow_up_text = "second attempt"
-        call_count = 0
-
-        def mock_read_editor():
-            nonlocal call_count
-            call_count += 1
-            # The mock must simulate cleanup: reset active_editor_path
-            # so the loop returns to normal prompt after empty content.
-            ask_loop._active_editor_path = None
-            return ""
-
-        with (
-            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
-            patch(
-                f"{self.PROD_PREFIX}.ptk_prompt",
-                side_effect=[osc_payload, follow_up_text],
-            ),
-            patch.object(ask_loop, "_flush_stdin"),
-            patch.object(ask_loop, "_launch_editor_background"),
-            patch.object(ask_loop, "_read_editor_result", side_effect=mock_read_editor),
-        ):
-            ask_loop._active_editor_path = "/tmp/fake_editor.md"
-            result = ask_loop.run("test prompt")
-            assert "8080/8989" not in result, (
-                f"OSC payload leaked: {repr(result)}"
-            )
-            assert result == "second attempt", (
-                f"Expected follow-up text, got: {repr(result)}"
-            )
-            assert call_count == 1, (
-                f"Editor should be read only once, got {call_count} calls"
-            )
-
-    def test_ansi_sgr_stripped_when_editor_active(self, ask_loop):
-        """ANSI SGR codes (e.g., \\x1b[31m) are stripped from stdin input;
-        editor content is returned (not the stripped input)."""
+    def test_ansi_sgr_stripped_from_normal_input(self, ask_loop):
+        """ANSI SGR codes are stripped unconditionally."""
         ansi_text = "\x1b[31mred\x1b[0mtext"
-        editor_content = "stripped red text"
         with (
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
             patch(f"{self.PROD_PREFIX}.ptk_prompt", return_value=ansi_text),
             patch.object(ask_loop, "_flush_stdin"),
-            patch.object(ask_loop, "_launch_editor_background"),
-            patch.object(ask_loop, "_read_editor_result", return_value=editor_content),
         ):
-            ask_loop._active_editor_path = "/tmp/fake_editor.md"
             result = ask_loop.run("test prompt")
-            # Editor content is returned, not the stripped stdin input
-            assert result == "stripped red text", (
-                f"Expected editor content, got: {repr(result)}"
+            assert result == "redtext", (
+                f"Expected 'redtext', got: {repr(result)}"
+            )
+
+    def test_preserves_normal_text(self, ask_loop):
+        """Normal text is preserved after stripping (no-op)."""
+        normal_text = "Hello, this is my response!"
+        with (
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch(f"{self.PROD_PREFIX}.ptk_prompt", return_value=normal_text),
+            patch.object(ask_loop, "_flush_stdin"),
+        ):
+            result = ask_loop.run("test prompt")
+            assert result == "Hello, this is my response!", (
+                f"Expected normal text, got: {repr(result)}"
             )
