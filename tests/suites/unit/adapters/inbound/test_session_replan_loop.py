@@ -218,3 +218,59 @@ def test_termination_message_printed_when_guard_stops(capsys):
     assert captured.out == "YOLO guardrail limit reached.\n", (
         f"Expected bare reason in stdout, got: {captured.out!r}"
     )
+
+
+def test_guard_reason_split_with_leading_newline(capsys):
+    """
+    Regression: a guard reason starting with a leading newline (as the turn-limit
+    reason in ProductionSessionLoopGuard does) must be stripped before splitting,
+    so the first sentence is printed red and the second (config hint) is unstyled.
+    """
+    # Arrange
+    container = Container()
+    mock_session_manager = Mock(spec=ISessionManager)
+    mock_orchestrator = Mock(spec=IRunPlanUseCase)
+    mock_loop_guard = create_autospec(ISessionLoopGuard)
+
+    container.register(ISessionManager, instance=mock_session_manager)
+    container.register(IRunPlanUseCase, instance=mock_orchestrator)
+    container.register(ISessionLoopGuard, instance=mock_loop_guard)
+    container.register(IMarkdownReportFormatter, MockFormatter)
+    container.register(IUserInteractor, Mock(spec=IUserInteractor))
+
+    # Guard returns a reason with leading newline + two sentences
+    mock_loop_guard.should_continue.return_value = (
+        False,
+        "\nYOLO turn limit reached: 2/1 turns in this run.\n"
+        "To change this limit, set 'yolo_guardrails.max_turns' in .teddy/config.yaml.",
+    )
+
+    fake_report = Mock(spec=ExecutionReport)
+    fake_report.run_summary = RunSummary(
+        status=RunStatus.SUCCESS,
+        start_time=datetime.now(timezone.utc),
+        end_time=datetime.now(timezone.utc),
+    )
+    fake_report.metadata = {}
+    mock_orchestrator.resume.side_effect = [("session", fake_report)]
+
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _orchestrate_session_loop,
+    )
+
+    # Act
+    _orchestrate_session_loop(
+        container=container,
+        session_name="test-session",
+        interactive=False,
+        no_copy=True,
+    )
+
+    # Assert — first sentence red, second sentence unstyled, both on separate lines
+    captured = capsys.readouterr()
+    assert captured.out == (
+        "YOLO turn limit reached: 2/1 turns in this run.\n"
+        "To change this limit, set 'yolo_guardrails.max_turns' in .teddy/config.yaml.\n"
+    ), (
+        f"Expected both sentences in stdout (split correctly), got: {captured.out!r}"
+    )
