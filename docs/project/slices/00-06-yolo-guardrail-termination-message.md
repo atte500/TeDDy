@@ -1,5 +1,5 @@
 # Slice: YOLO Guardrail Termination Message
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (Ad-hoc slice, not tied to active milestone)
 - **Specs:** N/A
 - **Prototype:** N/A
@@ -124,8 +124,8 @@ The atomic update of harness fakes + call site + replan-loop lambdas was execute
 
 ## Verification
 
-1. `uv run pytest tests/suites/unit/core/services/test_session_loop_guard.py -q` — all pass with the tuple contract, including new reason-content assertions.
-2. `uv run pytest tests/suites/unit/adapters/inbound/test_session_replan_loop.py tests/suites/unit/adapters/inbound/test_session_start_resequencing.py tests/suites/unit/test_session_loop_guard_harness.py tests/suites/unit/test_environment_harness.py -q` — loop and harness tests pass; termination-message assertion passes.
-3. `grep -rn "should_continue" src/ tests/ --include="*.py"` — every implementation returns and every consumer unpacks the tuple contract (no leftover `-> bool` annotations or bool-returning lambdas).
-4. `uv run pytest -q` — full suite green (post-commit hook enforces this too).
-5. Manual smoke test (optional): set `yolo_guardrails.max_turns: 1` in `.teddy/config.yaml`, run `teddy start -y`, confirm the session terminates after one turn with the red ⚠ message including the config key and file path. Restore the config afterward.
+- [x] 1. `uv run pytest tests/suites/unit/core/services/test_session_loop_guard.py -q` — all pass with the tuple contract, including new reason-content assertions.
+- [x] 2. `uv run pytest tests/suites/unit/adapters/inbound/test_session_replan_loop.py tests/suites/unit/adapters/inbound/test_session_start_resequencing.py tests/suites/unit/test_session_loop_guard_harness.py tests/suites/unit/test_environment_harness.py -q` — loop and harness tests pass; termination-message assertion passes.
+- [x] 3. `grep -rn "should_continue" src/ tests/ --include="*.py"` — every implementation returns and every consumer unpacks the tuple contract (no leftover `-> bool` annotations or bool-returning lambdas).
+- [x] 4. `uv run pytest -q` — full suite green (post-commit hook enforces this too).
+- [ ] 5. Manual smoke test (optional): set `yolo_guardrails.max_turns: 1` in `.teddy/config.yaml`, run `teddy start -y`, confirm the session terminates after one turn with the red ⚠ message including the config key and file path. Restore the config afterward.
