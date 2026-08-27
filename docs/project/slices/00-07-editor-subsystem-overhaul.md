@@ -120,7 +120,7 @@ The fix targets two files: `console_interactor_ask_loop.py` and `textual_plan_re
 ## Deliverables
 
 - [x] **Wiring (Console)** — Modify `ConsoleAskLoop.run()` and `_handle_empty_input()` to use `_launch_editor_background` instead of `_open_editor_blocking`. Add opening log. Update prompt text for active editor state.
-- [ ] **Logic (Console)** — Implement `_launch_editor_background()` with `subprocess.Popen` + TTY inheritance + persistent file reuse. Implement harvest logic in `_handle_empty_input()` to read `_active_editor_path`, strip escape sequences, and return content. Remove `_open_editor_blocking()`.
+- [x] **Logic (Console)** — Implement `_launch_editor_background()` with `subprocess.Popen` + TTY inheritance + persistent file reuse. Implement harvest logic in `_handle_empty_input()` to read `_active_editor_path`, strip escape sequences, and return content. Remove `_open_editor_blocking()`.
 - [ ] **Wiring (TUI)** — Replace ConfirmScreen with notification in `launch_editor()`. Wire s-key harvest in `textual_plan_reviewer_app.py` to read persistent temp file when submitting plan.
 - [ ] **Logic (TUI)** — Implement persistent temp file storage in action. Store/retrieve `pending_message_file` across launches.
 - [ ] **Migration** — Update `test_console_ask_loop_escape_stripping.py` to mock background path instead of blocking path. Update `test_console_ask_loop_stdin_flush.py` to verify flush timing in new flow.
@@ -154,6 +154,35 @@ The Wiring deliverable's `_launch_editor_background` simply returns the prompt s
 return prompt if prompt else ""
 ```
 This will be replaced by real `subprocess.Popen` + TTY inheritance + persistent file reuse in the Logic deliverable.
+
+### Logic (Console) — Deliverable 2
+
+**Changes made:**
+- **`_launch_editor_background()`**: Replaced Tracer Bullet with real implementation:
+  - Creates a temp file (`.md` suffix) with initial content: blank line, marker (`<!-- Please enter your response above this line. -->`), blank line, prompt, newline.
+  - On persistent file reuse (subsequent opens while `_active_editor_path` is set), reads existing content, preserves user edits above the marker, and writes updated prompt below the marker. Falls back to fresh content on any read error.
+  - Spawns editor via `subprocess.Popen(editor_cmd + [temp_path], stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)` for TTY inheritance.
+  - Logs `"Opening Editor: %s"` before spawn.
+  - Stores `self._active_editor_path` and returns empty string (non-blocking).
+- **`_handle_empty_input()`**: Added harvest path:
+  - If `_active_editor_path` is set, reads the file, strips escape sequences, splits at marker, returns content above marker.
+  - Deletes the temp file via `self._system_env.delete_file()`, resets `_active_editor_path` to `None`, calls `self._flush_stdin()`.
+  - Returns `None` on any error (cleanup + loop continues).
+  - Existing confirm/editor fallback path preserved when `_active_editor_path` is not set.
+- **`run()`**: Added dynamic prompt text: `"Editor opened. Terminal reply or [Enter] to confirm editor › "` when `_active_editor_path` is set, normal prompt otherwise.
+- **`__init__()`**: Added `self._active_editor_path: Optional[str] = None`.
+- **Removed `_open_editor_blocking()`**: Entire method (including VIMINIT suppression, `os.system("stty sane")`, `shlex.split`, `typer.echo` error handling, `run_command` call) removed.
+- **Added `import subprocess`** at module level.
+
+**Key decisions:**
+- The persistent file reuse preserves user edits across multiple editor opens, preventing the user from losing work if they accidentally close the editor and re-open it.
+- TTY inheritance (`stdin=sys.stdin`, `stdout=sys.stdout`, `stderr=sys.stderr`) ensures terminal editors like vim work correctly (no "Warning: Input is not from a terminal").
+- The marker-based splitting preserves the same interface as the old `_open_editor_blocking`, ensuring backward compatibility with existing user workflows.
+- `_open_editor_blocking` was removed in this deliverable (not deferred to Cleanup) because the Logic deliverable explicitly includes removal per the slice definition.
+
+**Frictions encountered:**
+- Initial TDD test used `patch(f"{PROD_PREFIX}.subprocess.Popen")` which failed because `subprocess` is not imported at the module level of `console_interactor_ask_loop.py` — the test-level patch resolution traverses the dotted path via `getattr`, requiring `subprocess` to be a module attribute. Fixed by using `patch("subprocess.Popen")` (global patch).
+- The first Python script-based replacement of test functions (in the Wiring deliverable) caused file corruption due to nested `def mock_run_command` inside a test function causing incorrect function boundary detection. This prompted a surgical second pass fix.
 
 ## Verification
 
