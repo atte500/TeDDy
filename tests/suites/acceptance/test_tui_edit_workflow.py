@@ -8,6 +8,73 @@ from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
 
 @pytest.mark.anyio
+async def test_tui_add_message_harvest_on_submit(env, monkeypatch):
+    """
+    Regression test for Wiring (TUI): pressing 'm' opens the editor without a
+    ConfirmScreen (uses notification instead), and pressing 's' harvests the
+    temp file content into plan.metadata.user_request.
+    """
+    # Arrange: create a plan with no existing user_request
+    plan = Plan(
+        title="Test",
+        rationale="Test",
+        actions=[ActionData(type="MESSAGE", params={})],
+    )
+    system_env = env.container.resolve(ISystemEnvironment)
+    file_system = env.container.resolve(IFileSystemManager)
+    monkeypatch.setenv("TEDDY_TEST_MOCK_EDITOR_OUTPUT", "My edited message")
+
+    # Ensure create_temp_file returns a real path inside the workspace
+    def _create_temp_file(suffix=".txt"):
+        import pathlib
+        path = env.workspace / f"message{suffix}"
+        return str(path)
+    system_env.create_temp_file.side_effect = _create_temp_file
+
+    console_tooling = MagicMock()
+    console_tooling.get_diff_viewer_command.return_value = None
+    console_tooling.find_editor.return_value = ["/usr/bin/vim"]
+
+    app = ReviewerApp(
+        plan=plan,
+        system_env=system_env,
+        console_tooling=console_tooling,
+        action_dispatcher=MagicMock(),
+        file_system=file_system,
+    )
+
+    # Act
+    async with app.run_test() as pilot:
+        # Override HEADLESS so that the current code's push_screen_wait pushes
+        # a real modal (confirming the defect).
+        pilot.app.HEADLESS = False
+
+        # Press 'm' to open the editor
+        await pilot.press("m")
+        await pilot.app.workers.wait_for_complete()
+        await pilot.wait_for_scheduled_animations()
+
+        # Assert: No modal screen (ConfirmScreen) should be pushed.
+        # In the current buggy code, a ConfirmScreen modal IS pushed,
+        # making screen_stack == 2, so this assertion fails (Red).
+        assert len(pilot.app.screen_stack) == 1, (
+            f"Expected 1 screen (main), got {len(pilot.app.screen_stack)}: "
+            f"a ConfirmScreen was likely pushed"
+        )
+
+        # Press 's' to submit the plan and harvest the message
+        await pilot.press("s")
+        await pilot.app.workers.wait_for_complete()
+        await pilot.wait_for_scheduled_animations()
+
+    # Assert: The message content is now set in the plan metadata
+    harvested = plan.metadata.get("user_request", "")
+    assert harvested == "My edited message", (
+        f"Expected 'My edited message', got: {repr(harvested)}"
+    )
+
+
+@pytest.mark.anyio
 async def test_tui_modifying_edit_action_content_succeeds(env, monkeypatch):
     """
     Regression test for ensuring that modifying an EDIT action's content

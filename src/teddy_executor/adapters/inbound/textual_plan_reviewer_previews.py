@@ -216,12 +216,28 @@ async def view_plan_handler(app: "ReviewerApp") -> None:
 
 
 async def add_message_handler(app: "ReviewerApp") -> None:
-    """Implementation for adding user instruction message."""
+    """Implementation for adding user instruction message.
+
+    Stores the editor path in app._pending_message_file for deferred harvest
+    on plan submit (s-key). Uses skip_confirm=True to avoid the old
+    ConfirmScreen popup.
+    """
+    # Create persistent file path if not already set
+    if not hasattr(app, "_pending_message_file") or app._pending_message_file is None:
+        app._pending_message_file = app._system_env.create_temp_file(suffix=".md")
+
     current_message = app._user_message_cache
     if current_message is None:
         current_message = app.plan.metadata.get("user_request") or ""
         if app.INSTRUCTION_MARKER not in current_message:
             current_message += app.INSTRUCTION_MARKER
-    new_message = await launch_editor(app, current_message, suffix=".md")
+
+    new_message = await launch_editor(
+        app,
+        current_message,
+        suffix=".md",
+        persistent_path=app._pending_message_file,
+        skip_confirm=True,
+    )
     if new_message is not None and new_message != current_message:
         app._user_message_cache = new_message

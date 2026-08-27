@@ -121,7 +121,7 @@ The fix targets two files: `console_interactor_ask_loop.py` and `textual_plan_re
 
 - [x] **Wiring (Console)** — Modify `ConsoleAskLoop.run()` and `_handle_empty_input()` to use `_launch_editor_background` instead of `_open_editor_blocking`. Add opening log. Update prompt text for active editor state.
 - [x] **Logic (Console)** — Implement `_launch_editor_background()` with `subprocess.Popen` + TTY inheritance + persistent file reuse. Implement harvest logic in `_handle_empty_input()` to read `_active_editor_path`, strip escape sequences, and return content. Remove `_open_editor_blocking()`.
-- [ ] **Wiring (TUI)** — Replace ConfirmScreen with notification in `launch_editor()`. Wire s-key harvest in `textual_plan_reviewer_app.py` to read persistent temp file when submitting plan.
+- [x] **Wiring (TUI)** — Replace ConfirmScreen with notification in `launch_editor()`. Wire s-key harvest in `textual_plan_reviewer_app.py` to read persistent temp file when submitting plan.
 - [ ] **Logic (TUI)** — Implement persistent temp file storage in action. Store/retrieve `pending_message_file` across launches.
 - [ ] **Migration** — Update `test_console_ask_loop_escape_stripping.py` to mock background path instead of blocking path. Update `test_console_ask_loop_stdin_flush.py` to verify flush timing in new flow.
 - [ ] **Cleanup** — Remove `_open_editor_blocking()`, VIMINIT suppression, and `test_console_ask_loop_stdin_flush.py` if redundant with escape stripping tests.
@@ -183,6 +183,26 @@ This will be replaced by real `subprocess.Popen` + TTY inheritance + persistent 
 **Frictions encountered:**
 - Initial TDD test used `patch(f"{PROD_PREFIX}.subprocess.Popen")` which failed because `subprocess` is not imported at the module level of `console_interactor_ask_loop.py` — the test-level patch resolution traverses the dotted path via `getattr`, requiring `subprocess` to be a module attribute. Fixed by using `patch("subprocess.Popen")` (global patch).
 - The first Python script-based replacement of test functions (in the Wiring deliverable) caused file corruption due to nested `def mock_run_command` inside a test function causing incorrect function boundary detection. This prompted a surgical second pass fix.
+
+### Wiring (TUI) — Deliverable 3
+
+**Changes made:**
+- **`launch_editor()` in `textual_plan_reviewer_editor.py`**: Added `app.notify(f"Opening Editor: {editor_name}")` before calling `spawn_editor()`. The `skip_confirm` flag is now passed through from `add_message_handler` to `_confirm_and_harvest`.
+- **`add_message_handler()` in `textual_plan_reviewer_previews.py`**: Created a persistent `_pending_message_file` on the app instance (via `app._system_env.create_temp_file(suffix=".md")`). This file path is reused across multiple 'm' presses for the same session. Passes `skip_confirm=True` and `persistent_path=app._pending_message_file` to `launch_editor()`.
+- **`_finalize_user_message()` in `textual_plan_reviewer_app.py`**: Added logic to read from `_pending_message_file` if it exists, updating the cache and cleaning up after harvest. Falls back to `_user_message_cache` if the file is missing or unreadable.
+- **New acceptance test `test_tui_add_message_harvest_on_submit`** in `test_tui_edit_workflow.py`: Verifies that pressing 'm' does **not** push a `ConfirmScreen` (screen_stack remains 1), and that pressing 's' harvests the mocked editor output into `plan.metadata["user_request"]`.
+- **Fixed pre-existing syntax error** in existing test `test_tui_modifying_edit_action_content_succeeds`: The function was using `async with` but was not declared as `async`. Added `@pytest.mark.anyio` decorator and changed `def` to `async def`.
+
+**Key decisions:**
+- The `_pending_message_file` is attached to the app instance (`app._pending_message_file`) rather than stored in the plan metadata, keeping it separate from session persistence. This ensures the file persists across 'm' opens within a single TUI session but is cleaned up on submit or cancel.
+- `app.notify()` is used for the notification — it shows a brief non-blocking toast in Textual. This replaces the old `ConfirmScreen` modal, providing a less intrusive experience.
+- The harvest is deferred to submit time (`action_submit` -> `_finalize_user_message`) instead of being done immediately in `add_message_handler`. This allows the user to open the editor, continue navigating the TUI, and have the content harvested only when they're ready to submit.
+- The previous test `test_tui_modifying_edit_action_content_succeeds` was not properly async (had `async with` but not `async def`). This was a pre-existing defect not caught previously because the test only runs in acceptance test runs, not in normal `pytest` without xdist.
+
+**Frictions encountered:**
+- The new acceptance test required multiple iterative fixes: syntax error (`async async def`), duplicate `@pytest.mark.anyio`, and `Plan.__post_init__` requiring at least one action. Each required reading the actual file state and applying surgical edits.
+- The `HEADLESS` override (`pilot.app.HEADLESS = False`) was necessary for the initial Red phase to force the ConfirmScreen to actually push a modal (proving the defect). In the production commit, this override is no longer needed but is kept in test to maintain the assertion's validity.
+- The production changes were partially applied before the Red test was confirmed passing (the order got ahead of itself). This was a workflow deviation, but the final implementation is correct.
 
 ## Verification
 

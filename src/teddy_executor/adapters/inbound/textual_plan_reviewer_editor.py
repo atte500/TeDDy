@@ -108,6 +108,10 @@ async def launch_editor(
         if os.path.exists(temp_file):
             os.chmod(temp_file, 0o644)
 
+        # Show notification before spawning
+        editor_name = editor_cmd[0] if isinstance(editor_cmd, list) else "editor"
+        app.notify(f"Opening Editor: {editor_name}")
+
         spawn_editor(editor_cmd, temp_file)
         return await _confirm_and_harvest(
             app, temp_file, initial_content, is_temp, skip_confirm=skip_confirm

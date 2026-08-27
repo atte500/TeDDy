@@ -359,9 +359,28 @@ class ReviewerApp(App):
         harvest_action_content(action, self.INSTRUCTION_MARKER)
 
     def _finalize_user_message(self) -> None:
-        """Extracts final message from cache, stripping marker."""
-        if self._user_message_cache is None:
+        """Extracts final message from persistent file or cache, stripping marker.
+
+        If a pending message file exists (set by add_message_handler), reads
+        from it first and updates the cache. Falls back to _user_message_cache.
+        Cleans up the file after harvest.
+        """
+        msg: Optional[str] = None
+        pending_file = getattr(self, "_pending_message_file", None)
+        if pending_file and os.path.exists(pending_file):
+            try:
+                with open(pending_file, "r", encoding="utf-8") as f:
+                    msg = f.read()
+                self._user_message_cache = msg
+                os.remove(pending_file)
+                self._pending_message_file = None
+            except Exception:
+                msg = self._user_message_cache
+
+        if msg is None:
+            msg = self._user_message_cache
+
+        if msg is None:
             return
         marker = self.INSTRUCTION_MARKER.strip()
-        msg = self._user_message_cache
         self.plan.metadata["user_request"] = msg.split(marker)[0].strip()
