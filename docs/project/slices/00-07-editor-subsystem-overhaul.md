@@ -1,8 +1,8 @@
 # Slice: Editor Subsystem Overhaul — Restore Background+Harvest Pattern
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc quality fix)
-- **Prototype:** [26-editor-devnull-stdin-mre.py](/spikes/debug/26-editor-devnull-stdin-mre.py), [26-probe-gui-editor-empty.py](/spikes/debug/26-probe-gui-editor-empty.py)
+- **Prototype:** N/A (prototype files from original scoping were not persisted — logic established by v0.1.13 codebase)
 - **Component Docs:** [console_interactor.md](/docs/architecture/adapters/outbound/console_interactor.md), [system_environment_adapter.md](/docs/architecture/adapters/outbound/system_environment_adapter.md)
 - **Scope Slug:** `editor-subsystem-overhaul`
 
@@ -119,12 +119,41 @@ The fix targets two files: `console_interactor_ask_loop.py` and `textual_plan_re
 
 ## Deliverables
 
-- [ ] **Wiring (Console)** — Modify `ConsoleAskLoop.run()` and `_handle_empty_input()` to use `_launch_editor_background` instead of `_open_editor_blocking`. Add opening log. Update prompt text for active editor state.
+- [x] **Wiring (Console)** — Modify `ConsoleAskLoop.run()` and `_handle_empty_input()` to use `_launch_editor_background` instead of `_open_editor_blocking`. Add opening log. Update prompt text for active editor state.
 - [ ] **Logic (Console)** — Implement `_launch_editor_background()` with `subprocess.Popen` + TTY inheritance + persistent file reuse. Implement harvest logic in `_handle_empty_input()` to read `_active_editor_path`, strip escape sequences, and return content. Remove `_open_editor_blocking()`.
 - [ ] **Wiring (TUI)** — Replace ConfirmScreen with notification in `launch_editor()`. Wire s-key harvest in `textual_plan_reviewer_app.py` to read persistent temp file when submitting plan.
 - [ ] **Logic (TUI)** — Implement persistent temp file storage in action. Store/retrieve `pending_message_file` across launches.
 - [ ] **Migration** — Update `test_console_ask_loop_escape_stripping.py` to mock background path instead of blocking path. Update `test_console_ask_loop_stdin_flush.py` to verify flush timing in new flow.
 - [ ] **Cleanup** — Remove `_open_editor_blocking()`, VIMINIT suppression, and `test_console_ask_loop_stdin_flush.py` if redundant with escape stripping tests.
+
+## Implementation Notes
+
+### Wiring (Console) — Deliverable 1
+
+**Changes made:**
+- Added `import logging` and `logger = logging.getLogger(__name__)` to `console_interactor_ask_loop.py`.
+- Implemented `_launch_editor_background(self, prompt: str) -> str` as a Tracer Bullet method: logs the editor name via `logger.info("Opening Editor: %s", editor_name)` and returns the prompt string as trivial/hardcoded content.
+- Updated `run()` to call `self._launch_editor_background(prompt)` instead of `self._open_editor_blocking(prompt)`.
+- Updated `_handle_empty_input()` to call `self._launch_editor_background(prompt)` instead of `self._open_editor_blocking(prompt)`.
+- Created new test file `test_console_ask_loop_editor_background.py` with one test verifying that typing 'e' calls `_launch_editor_background` and returns its content.
+- Updated `test_console_ask_loop_escape_stripping.py`: replaced all `_open_editor_blocking` references with `_launch_editor_background` in mock patches.
+- Updated `test_console_interactor.py`: replaced three editor-related tests to mock `_launch_editor_background` directly instead of the old `_open_editor_blocking`/`run_command` pattern.
+
+**Key decisions:**
+- The Wiring deliverable uses trivial return values (returns the prompt string) to prove the end-to-end path. The real background+harvest logic will be implemented in the Logic (Console) deliverable.
+- `_open_editor_blocking()` is preserved for now — it will be removed in the Cleanup deliverable.
+- A new dedicated test file was created for the background editor flow to avoid modifying the escape stripping tests during the Wiring phase.
+
+**Frictions encountered:**
+- `git grep --include` flag is not supported on the installed git version — use direct path arguments instead.
+- Python script-based multiline replacement for test functions was fragile due to nested functions (`def mock_run_command`) causing incorrect function boundary detection. Fix required a second pass to remove stale residual code.
+
+### Tracer Bullet Logic
+The Wiring deliverable's `_launch_editor_background` simply returns the prompt string:
+```python
+return prompt if prompt else ""
+```
+This will be replaced by real `subprocess.Popen` + TTY inheritance + persistent file reuse in the Logic deliverable.
 
 ## Verification
 

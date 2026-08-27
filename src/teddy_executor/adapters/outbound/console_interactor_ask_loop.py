@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import re
 import shlex
@@ -22,6 +23,8 @@ if TYPE_CHECKING:
 # - ANSI SGR: ESC [ <params> m  (e.g., \x1b[31m)
 # - OSC sequences: ESC ] <params> ST (where ST is ESC \ or BEL \x07)
 _ESCAPE_SEQUENCE_RE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x1b]*(?:\x1b\\|\x07)")
+
+logger = logging.getLogger(__name__)
 
 
 class ConsoleAskLoop:
@@ -83,7 +86,7 @@ class ConsoleAskLoop:
             user_input = self._strip_escape_sequences(raw_input)
 
             if user_input.lower() == "e":
-                content = self._open_editor_blocking(prompt)
+                content = self._launch_editor_background(prompt)
                 if content:
                     return content
                 # Empty editor content: back to normal prompt
@@ -96,6 +99,18 @@ class ConsoleAskLoop:
             if response is not None:
                 return response
 
+    def _launch_editor_background(self, prompt: str) -> str:
+        """Opens an external editor in the background and returns the harvested content.
+
+        This is the Tracer Bullet wiring implementation. Logs the editor name
+        and uses a trivial return to prove the end-to-end path.
+        """
+        editor_name = self._tooling.find_editor() or "vim"
+        logger.info("Opening Editor: %s", editor_name)
+        # For Wiring: return the prompt itself as a trivial hardcoded response.
+        # The real background+harvest logic will be implemented in the Logic deliverable.
+        return prompt if prompt else ""
+
     def _handle_empty_input(self, prompt: str) -> Optional[str]:
         """Handles logic when Enter is pressed without terminal input."""
         confirm = self._pt_prompt(
@@ -104,7 +119,7 @@ class ConsoleAskLoop:
         if not confirm:
             return ""
         if confirm.lower() == "e":
-            content = self._open_editor_blocking(prompt)
+            content = self._launch_editor_background(prompt)
             if content:
                 return content
             return None

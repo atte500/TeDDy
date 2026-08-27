@@ -39,10 +39,8 @@ class TestConsoleInteractorAdapter:
     def test_ask_question_opens_editor_on_e(
         self, adapter: ConsoleInteractorAdapter, mock_env, monkeypatch
     ):
-        """Test that typing 'e' opens an editor, reads the temp file, and strips comments."""
-        from pathlib import Path
-
-        # Input 'e' to launch, then empty Enter to read result
+        """Test that typing 'e' opens the background editor and returns its content."""
+        # Input 'e' to launch editor, then empty Enter to read result
         inputs = iter(["e", ""])
         monkeypatch.setattr(
             "teddy_executor.adapters.outbound.console_interactor_ask_loop.ptk_prompt",
@@ -52,35 +50,13 @@ class TestConsoleInteractorAdapter:
             "teddy_executor.adapters.outbound.console_interactor_ask_loop.ConsoleAskLoop._is_tty",
             lambda self: True,
         )
-
-        file_content_before_editor = ""
-
-        def mock_run_command(cmd, *_args, **_kwargs):
-            nonlocal file_content_before_editor
-            filepath = Path(cmd[-1])
-            file_content_before_editor = filepath.read_text(encoding="utf-8")
-            filepath.write_text(
-                "Hello from editor\n\n<!-- Please enter your response above this line. -->\n\nDon't read this.",
-                encoding="utf-8",
-            )
-
-        mock_env.run_command.side_effect = mock_run_command
-        mock_env.get_env.side_effect = lambda key: (
-            "mock_editor" if key == "EDITOR" else None
+        monkeypatch.setattr(
+            "teddy_executor.adapters.outbound.console_interactor_ask_loop.ConsoleAskLoop._launch_editor_background",
+            lambda self, prompt: "Hello from editor",
         )
-        mock_env.which.return_value = "/usr/bin/mock_editor"
 
-        prompt_text = "AI says: Write a lot:"
-        response = adapter.ask_question(prompt_text)
-
+        response = adapter.ask_question("AI says: Write a lot:")
         assert "Hello from editor" == response.strip()
-        assert "Don't read this." not in response
-        assert mock_env.run_command.called
-        # Assert the prompt was written below the marker in the initial file content
-        assert (
-            file_content_before_editor
-            == f"\n\n<!-- Please enter your response above this line. -->\n\n{prompt_text}\n"
-        )
 
     def test_ask_question_editor_fallback_when_no_editor_found(
         self, adapter: ConsoleInteractorAdapter, mock_env, monkeypatch
@@ -94,10 +70,12 @@ class TestConsoleInteractorAdapter:
             "teddy_executor.adapters.outbound.console_interactor_ask_loop.ConsoleAskLoop._is_tty",
             lambda self: True,
         )
-
-        # Ensure no editor is found via port
-        mock_env.get_env.return_value = None
-        mock_env.which.return_value = None
+        # Mock the background editor to return empty (simulating no content/failure)
+        # so the loop continues and the user's manual input is used.
+        monkeypatch.setattr(
+            "teddy_executor.adapters.outbound.console_interactor_ask_loop.ConsoleAskLoop._launch_editor_background",
+            lambda self, prompt: "",
+        )
 
         response = adapter.ask_question("Prompt:")
         assert response == "Fallback input"
@@ -105,7 +83,7 @@ class TestConsoleInteractorAdapter:
     def test_ask_question_editor_fails_returns_empty(
         self, adapter: ConsoleInteractorAdapter, mock_env, monkeypatch
     ):
-        # Input 'e' (fails), then "" (tries to read result but none exists), then "" (confirms empty response)
+        # Input 'e' (simulated empty editor), then "" (confirms empty response)
         inputs = iter(["e", "", ""])
         monkeypatch.setattr(
             "teddy_executor.adapters.outbound.console_interactor_ask_loop.ptk_prompt",
@@ -115,10 +93,11 @@ class TestConsoleInteractorAdapter:
             "teddy_executor.adapters.outbound.console_interactor_ask_loop.ConsoleAskLoop._is_tty",
             lambda self: True,
         )
-        mock_env.get_env.return_value = "mock_editor"
-        mock_env.which.return_value = "/usr/bin/mock_editor"
-
-        mock_env.run_command.side_effect = Exception("Editor failed")
+        # Mock the background editor to return empty (simulating failure)
+        monkeypatch.setattr(
+            "teddy_executor.adapters.outbound.console_interactor_ask_loop.ConsoleAskLoop._launch_editor_background",
+            lambda self, prompt: "",
+        )
 
         response = adapter.ask_question("Prompt:")
         assert response == ""

@@ -48,7 +48,9 @@ class TestEscapeSequenceStripping:
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
             patch(f"{self.PROD_PREFIX}.ptk_prompt", return_value=osc_payload),
             patch.object(ask_loop, "_flush_stdin"),
-            patch.object(ask_loop, "_open_editor_blocking", return_value=editor_content),
+            patch.object(
+                ask_loop, "_launch_editor_background", return_value=editor_content
+            ),
         ):
             result = ask_loop.run("test prompt")
             # The OSC must be stripped, and the stripped 'e' launches editor.
@@ -67,7 +69,9 @@ class TestEscapeSequenceStripping:
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
             patch(f"{self.PROD_PREFIX}.ptk_prompt", return_value="e"),
             patch.object(ask_loop, "_flush_stdin"),
-            patch.object(ask_loop, "_open_editor_blocking", return_value=editor_content),
+            patch.object(
+                ask_loop, "_launch_editor_background", return_value=editor_content
+            ),
         ):
             result = ask_loop.run("test prompt")
             assert result == "Message from vim", (
@@ -84,7 +88,7 @@ class TestEscapeSequenceStripping:
                 side_effect=["e", "my response"],
             ),
             patch.object(ask_loop, "_flush_stdin"),
-            patch.object(ask_loop, "_open_editor_blocking", return_value=""),
+            patch.object(ask_loop, "_launch_editor_background", return_value=""),
         ):
             result = ask_loop.run("test prompt")
             assert result == "my response", (
@@ -100,12 +104,8 @@ class TestEscapeSequenceStripping:
             patch.object(ask_loop, "_flush_stdin"),
         ):
             result = ask_loop.run("test prompt")
-            assert "\x1b]" not in result, (
-                f"Escape sequences leaked: {repr(result)}"
-            )
-            assert result == "test", (
-                f"Expected 'test', got: {repr(result)}"
-            )
+            assert "\x1b]" not in result, f"Escape sequences leaked: {repr(result)}"
+            assert result == "test", f"Expected 'test', got: {repr(result)}"
 
     def test_ansi_sgr_stripped_from_normal_input(self, ask_loop):
         """ANSI SGR codes are stripped unconditionally."""
@@ -116,9 +116,7 @@ class TestEscapeSequenceStripping:
             patch.object(ask_loop, "_flush_stdin"),
         ):
             result = ask_loop.run("test prompt")
-            assert result == "redtext", (
-                f"Expected 'redtext', got: {repr(result)}"
-            )
+            assert result == "redtext", f"Expected 'redtext', got: {repr(result)}"
 
     def test_preserves_normal_text(self, ask_loop):
         """Normal text is preserved after stripping (no-op)."""
