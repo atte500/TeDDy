@@ -109,7 +109,11 @@ async def launch_editor(
             os.chmod(temp_file, 0o644)
 
         # Show notification before spawning
-        editor_name = editor_cmd[0] if isinstance(editor_cmd, list) else "editor"
+        editor_name = (
+            os.path.basename(editor_cmd[0])
+            if isinstance(editor_cmd, list) and editor_cmd
+            else "editor"
+        )
         app.notify(f"Opening Editor: {editor_name}")
 
         spawn_editor(editor_cmd, temp_file)

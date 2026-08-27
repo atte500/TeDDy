@@ -66,7 +66,9 @@ class TestRealLaunchEditorBackground:
         """Create a ConsoleAskLoop with real dependencies (no mock overrides on the method itself)."""
         return ConsoleAskLoop(mock_system_env, mock_tooling)
 
-    def test_launch_editor_background_creates_file_and_sets_path(self, real_ask_loop, tmp_path):
+    def test_launch_editor_background_creates_file_and_sets_path(
+        self, real_ask_loop, tmp_path
+    ):
         """_launch_editor_background should create a temp file with initial content, set _active_editor_path,
         call subprocess.Popen with TTY inheritance, and return an empty string."""
         # Override create_temp_file to return a known path inside tmp_path
@@ -92,11 +94,17 @@ class TestRealLaunchEditorBackground:
                 content = f.read()
             # The file should contain the prompt and the marker
             assert "test prompt" in content, "Prompt not in file content"
-            assert "Please enter your response above this line" in content, "Marker not in file content"
+            assert "Please enter your response above this line" in content, (
+                "Marker not in file content"
+            )
 
             # _active_editor_path must be set to the temp file path
-            assert hasattr(real_ask_loop, "_active_editor_path"), "Instance missing _active_editor_path"
-            assert real_ask_loop._active_editor_path == temp_file, f"Expected '{temp_file}', got '{real_ask_loop._active_editor_path}'"
+            assert hasattr(real_ask_loop, "_active_editor_path"), (
+                "Instance missing _active_editor_path"
+            )
+            assert real_ask_loop._active_editor_path == temp_file, (
+                f"Expected '{temp_file}', got '{real_ask_loop._active_editor_path}'"
+            )
 
             # subprocess.Popen must have been called with the editor command and the temp file path
             mock_popen.assert_called_once()
@@ -107,3 +115,44 @@ class TestRealLaunchEditorBackground:
             assert call_kwargs.get("stdin") is mock_stdin, "stdin not inherited"
             assert call_kwargs.get("stdout") is mock_stdout, "stdout not inherited"
             assert call_kwargs.get("stderr") is mock_stderr, "stderr not inherited"
+
+    def test_stripped_osc_tail_is_cleared_and_harvest_runs(
+        self, ask_loop, mock_system_env
+    ):
+        """Regression test for Bug #27: stripped OSC tail `]10;rgb:...` should
+        be stripped by the hardened regex, making the input empty, which routes
+        to `_handle_empty_input` -> harvest path returns file content.
+
+        The fix combines:
+        - Hardened regex matching stripped OSC tails (no \\x1b prefix)
+        - Flush after editor launch in run()
+        - Flush after subprocess spawn in _launch_editor_background()
+        - Flush before file read in _handle_empty_input()
+        """
+        from unittest.mock import mock_open
+
+        ask_loop._active_editor_path = "/tmp/editor_bug27.md"
+        marker = "<!-- Please enter your response above this line. -->"
+        file_content = "Bug fix content\n\n" + marker + "\n\nPrompt text"
+        tail_input = "]10;rgb:8080/8989/b3b3"
+
+        call_count = [0]
+
+        def mock_pt(prompt_text):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return tail_input
+            return "fallback"
+
+        with (
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch.object(ask_loop, "_pt_prompt", side_effect=mock_pt),
+            patch.object(ask_loop, "_launch_editor_background", return_value=""),
+            patch("builtins.open", mock_open(read_data=file_content)),
+        ):
+            result = ask_loop.run("test prompt")
+
+        assert "8080/8989" not in result, f"OSC tail leaked into result: {repr(result)}"
+        assert result == "Bug fix content", (
+            f"Expected harvested content 'Bug fix content', got {repr(result)}"
+        )

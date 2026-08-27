@@ -3,12 +3,10 @@ from __future__ import annotations
 import logging
 import os
 import re
-import shlex
 import subprocess
 import sys
 from typing import TYPE_CHECKING, Optional
 
-import typer
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.shortcuts import prompt as ptk_prompt
 
@@ -20,10 +18,19 @@ if TYPE_CHECKING:
         ISystemEnvironment,
     )
 
-# Regex to match ANSI SGR codes and OSC sequences
-# - ANSI SGR: ESC [ <params> m  (e.g., \x1b[31m)
-# - OSC sequences: ESC ] <params> ST (where ST is ESC \ or BEL \x07)
-_ESCAPE_SEQUENCE_RE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x1b]*(?:\x1b\\|\x07)")
+# Regex to match ANSI SGR codes and OSC sequences, including partially
+# stripped OSC color-palette tails whose leading ESC byte was consumed by
+# terminal processing (e.g., `]10;rgb:8080/8989/b3b3`).
+#   - ANSI SGR: ESC [ <params> m (e.g., \x1b[31m) or any final byte [a-zA-Z]
+#   - OSC (full): ESC ] ... ST (ESC \ or BEL \x07)
+#   - OSC (stripped tail): `]10;[<params>;]rgb:<hex...>` — narrowed to the
+#     `rgb:` palette syntax emitted by terminals when restoring dynamic colors,
+#     so ordinary text like `]1, 2, 3` is never stripped.
+_ESCAPE_SEQUENCE_RE = re.compile(
+    r"\x1b\[[0-9;]*[a-zA-Z]"
+    r"|\x1b\][^\x1b]*(?:\x1b\\|\x07)"
+    r"|(?![\d;,])]10;(?:\d+;)?rgb:[\da-fA-F/]+(?::$|[a-zA-Z])?(?:\x1b\\|\x07)?"
+)
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +92,9 @@ class ConsoleAskLoop:
         """
         while True:
             if self._active_editor_path:
-                prompt_text = "Editor opened. Terminal reply or [Enter] to confirm editor › "
+                prompt_text = (
+                    "Editor opened. Terminal reply or [Enter] to confirm editor › "
+                )
             else:
                 prompt_text = "Response (type 'e' for editor) › "
             raw_input = self._pt_prompt(prompt_text).strip()
@@ -95,6 +104,9 @@ class ConsoleAskLoop:
                 content = self._launch_editor_background(prompt)
                 if content:
                     return content
+                # FIX: flush stale terminal escape sequences immediately after
+                # the editor spawn, BEFORE the next prompt reads from stdin.
+                self._flush_stdin()
                 # Empty editor content: back to normal prompt
                 continue
 
@@ -140,7 +152,11 @@ class ConsoleAskLoop:
             self._active_editor_path = temp_path
 
         editor_cmd = self._tooling.find_editor() or ["vim"]
-        editor_name = editor_cmd[0] if isinstance(editor_cmd, list) else "editor"
+        editor_name = (
+            os.path.basename(editor_cmd[0])
+            if isinstance(editor_cmd, list) and editor_cmd
+            else "editor"
+        )
         logger.info("Opening Editor: %s", editor_name)
 
         subprocess.Popen(  # nosec B603
@@ -149,6 +165,9 @@ class ConsoleAskLoop:
             stdout=sys.stdout,
             stderr=sys.stderr,
         )
+        # FIX: flush immediately after the spawn — the editor/tty may already
+        # have written escape sequences into the shared stdin buffer.
+        self._flush_stdin()
         # Non-blocking: return empty string to continue the loop
         return ""
 
@@ -159,6 +178,10 @@ class ConsoleAskLoop:
         from the persistent file. Otherwise, prompt for confirmation.
         """
         if self._active_editor_path:
+            # FIX: flush BEFORE reading the harvested file so any sequence
+            # buffered between the last prompt and the harvest is not confused
+            # with file content.
+            self._flush_stdin()
             try:
                 with open(self._active_editor_path, "r", encoding="utf-8") as f:
                     content = f.read()
@@ -185,4 +208,3 @@ class ConsoleAskLoop:
                 return content
             return None
         return confirm
-

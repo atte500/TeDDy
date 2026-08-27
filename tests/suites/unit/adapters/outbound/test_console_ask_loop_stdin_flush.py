@@ -106,7 +106,11 @@ class TestStdinFlush:
         assert result == "User response above marker", (
             f"Expected 'User response above marker', got: {repr(result)}"
         )
-        mock_flush.assert_called_once()
+        # Flush is called twice: once before reading the harvested file,
+        # once after cleanup (delete + reset path).
+        assert mock_flush.call_count == 2, (
+            f"Expected 2 flush calls, got {mock_flush.call_count}"
+        )
         mock_system_env.delete_file.assert_called_once_with("/tmp/editor.md")
         assert ask_loop._active_editor_path is None, (
             "_active_editor_path should be reset after harvest"

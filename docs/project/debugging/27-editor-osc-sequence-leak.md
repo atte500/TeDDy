@@ -1,6 +1,6 @@
 # Bug: Editor Escape Sequence Leak in Harvest Flow
 
-- **Status:** Unresolved
+- **Status:** Resolved
 - **Milestone:** N/A (ad-hoc slice 00-07)
 - **Vertical Slice:** [00-07-editor-subsystem-overhaul.md](/docs/project/slices/00-07-editor-subsystem-overhaul.md)
 - **Specs:** N/A
@@ -76,7 +76,37 @@ The issue is that `_flush_stdin()` is called AFTER the file is harvested. The OS
 
 ## Solution
 
-(To be filled by the Debugger.)
+### Root Cause
+Three interacting failures when the terminal emulator restores dynamic colors after vim exits:
+
+1. **Flush timing:** `_flush_stdin()` was only called in `_handle_empty_input()` — after the file had already been harvested and after `_pt_prompt` had already captured the OSC sequence. There was no flush after editor spawn, before the next prompt, or before file harvest.
+2. **Regex vulnerability:** `_ESCAPE_SEQUENCE_RE` required `\x1b]` prefix. The OSC sequence's leading ESC byte was consumed by terminal processing, leaving the tail `]10;rgb:...` which survived stripping completely.
+3. **Early return:** Because the non-empty tail passed the `if user_input:` check, `run()` returned it immediately, never reaching `_handle_empty_input()` → harvest.
+
+### Verified Fix
+- **Hardened regex** — Added a third alternative to match stripped OSC palette tails:
+  `(?![\d;,])]10;(?:\d+;)?rgb:[\da-fA-F/]+(?::$|[a-zA-Z])?(?:\x1b\\|\x07)?`
+  Narrowed to `rgb:` syntax so ordinary text like `]1, 2, 3` is never stripped.
+- **Flush timing (3 locations):**
+  - In `run()`: flush immediately after `_launch_editor_background()` and before `continue`.
+  - In `_launch_editor_background()`: flush immediately after `subprocess.Popen` spawn.
+  - In `_handle_empty_input()`: flush *before* reading the harvested file.
+- **Editor log:** Changed `editor_cmd[0]` to `os.path.basename(editor_cmd[0])` for both console and TUI editor logging, so it logs `vim` instead of `/usr/bin/vim`.
+
+### Evidence
+Shadow file verification (MRE exit code 0):
+- Real module: `run()` returns `]10;rgb:8080/8989/b3b3` (BUG REPRODUCED)
+- Shadow fixed module: `run()` returns `User wrote this in vim` (FIX VERIFIED)
+- Buggy-shadow regression control: `run()` returns tail (MRE sensitive)
+`
+
+### `EXECUTE`
+- **Description:** Run the full test suite to ensure no regressions. This is critical before commit.
+- **Expected Outcome:** All tests pass (exit code 0).
+- **Timeout:** 600
+~~~~~~
+uv run pytest tests/ -x --timeout=120 2>&1 | tail -40
+~~~~~~
 
 **Proposed fix hypothesis:**
 - Call `_flush_stdin()` immediately after `_launch_editor_background()` returns, before the next prompt in `run()`.
