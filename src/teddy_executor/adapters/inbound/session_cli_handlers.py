@@ -165,8 +165,15 @@ def _orchestrate_session_loop(
     # Resolve initial state for process-relative guardrails
     latest_turn_path = session_manager.get_latest_turn(session_name)
     try:
-        # get_latest_turn returns a path string; the turn ID is the folder name
-        initial_turn = int(Path(latest_turn_path).name) if latest_turn_path else 0
+        # get_latest_turn returns a path string; the turn ID is the folder name.
+        # For a fresh session, create_session seeds turn 01 (the initial request)
+        # BEFORE the loop starts, so the latest turn = 1. The loop then processes
+        # turn 01 again (turn_count starts at 1). Subtracting 1 makes the baseline
+        # 0 for fresh sessions so delta after turn 01 = 1.
+        # For resume, the latest turn is the last completed turn, and the loop
+        # processes the NEXT turn (turn_count = latest + 1), so delta is correct.
+        latest_turn = int(Path(latest_turn_path).name) if latest_turn_path else 0
+        initial_turn = max(0, latest_turn - 1) if latest_turn_path else 0
     except (ValueError, TypeError):
         # Handle non-numeric turn names or MagicMocks in tests
         initial_turn = 0
@@ -200,11 +207,7 @@ def _orchestrate_session_loop(
         )
         if not should_continue:
             reason = guard_reason or "YOLO guardrail limit reached."
-            logger.warning("YOLO guardrail hit — session terminated: %s", reason)
-            typer.secho(
-                f"⚠ YOLO guardrail hit — session terminated.\n{reason}",
-                fg=typer.colors.RED,
-            )
+            typer.secho(reason, fg=typer.colors.RED)
             break
 
 

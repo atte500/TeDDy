@@ -1,6 +1,6 @@
 # Bug: YOLO Guardrail Termination Message Format, Duplication & Timing
 
-- **Status:** Unresolved
+- **Status:** Resolved
 - **Milestone:** N/A (Ad-hoc slice)
 - **Vertical Slice:** [00-06-yolo-guardrail-termination-message.md](/docs/project/slices/00-06-yolo-guardrail-termination-message.md)
 - **Specs:** N/A
@@ -88,10 +88,10 @@ Both output channels hardcode a prefix (`"YOLO guardrail hit — session termina
 3. Two output channels (logger + secho) for the same event.
 4. Hardcoded prefixes (`"YOLO guardrail hit — session terminated: "` / `"⚠ YOLO guardrail hit — session terminated.\n"`) in both output channels.
 
-**Proven Fix:**
-1. In `_orchestrate_session_loop()`, resolve `initial_turn` so a fresh session starts from 0 (e.g., subtract 1 when the latest turn folder is the seeded initial request, or resolve it as the turn count completed before the loop starts). Verify the resume path still uses the latest completed turn as baseline.
-2. In `ProductionSessionLoopGuard.should_continue()`, convert the absolute `config_path` to the project-relative form (e.g., `Path(config_path).relative_to(Path.cwd())`) or extract the last two segments to get `.teddy/config.yaml`.
-3. In `_orchestrate_session_loop()`, remove the `logger.warning` call and print only the bare reason: `typer.secho(reason, fg=typer.colors.RED)`.
+**Applied Fix (2026-08-27):**
+1. In `_orchestrate_session_loop()` (`session_cli_handlers.py`, lines 130-144): changed `initial_turn` resolution to `max(0, latest_turn - 1)` when `latest_turn_path` exists. This makes fresh sessions start from 0 (turn 01 seeded by `create_session` becomes delta 1 after the first iteration) while keeping resume baselines correct (latest completed turn - 1 = last completed turn, next turn produces delta 1).
+2. In `ProductionSessionLoopGuard.should_continue()` (`session_loop_guard.py`): replaced raw `config_path = self._config_service.get_config_path()` with `rel_path = os.path.relpath(config_path)` in both failure branches, producing `.teddy/config.yaml` instead of the absolute path.
+3. In `_orchestrate_session_loop()` (`session_cli_handlers.py`, lines 203-207): removed the `logger.warning(...)` call entirely and changed `typer.secho(...)` to print only the bare `reason` string without the prefix line or ⚠ symbol.
 
 **Preventive Measures:**
 - Add a test that captures the exact printed output (not just substring match) to enforce the format contract.

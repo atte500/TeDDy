@@ -213,8 +213,8 @@ def test_termination_message_printed_when_guard_stops(capsys):
         no_copy=True,
     )
 
-    # Assert — currently fails because no message is printed
+    # Assert — should print only the bare reason: "YOLO guardrail limit reached."
     captured = capsys.readouterr()
-    assert "YOLO guardrail" in captured.out, (
-        f"No termination message found in stdout: {captured.out!r}"
+    assert captured.out == "YOLO guardrail limit reached.\n", (
+        f"Expected bare reason in stdout, got: {captured.out!r}"
     )
