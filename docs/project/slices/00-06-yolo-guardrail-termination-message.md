@@ -48,7 +48,7 @@ The protocol change (`bool -> tuple[bool, str | None]`) is a breaking signature 
 ## Deliverables
 - [x] **Contract** - Update protocol, production guard (trivial reason), mock fixture default, and unit tests to new tuple contract.
 - [x] **Wiring + Harness Migration** - Update call site to unpack tuple + print/log termination message; atomically update harness fakes and replan-loop test lambdas; add termination message test.
-- [ ] **Logic** - Implement human-readable reasons in ProductionSessionLoopGuard with new tests.
+- [x] **Logic** - Implement human-readable reasons in ProductionSessionLoopGuard with new tests.
 - [ ] **Documentation** - Sync architecture docs and config.yaml comment.
 
 ## Implementation Notes
@@ -92,6 +92,21 @@ The atomic update of harness fakes + call site + replan-loop lambdas was execute
 - `tests/harness/setup/composition.py`
 - `tests/harness/setup/test_environment.py`
 - `tests/suites/unit/adapters/inbound/test_session_replan_loop.py`
+- `docs/project/slices/00-06-yolo-guardrail-termination-message.md`
+
+### 2026-08-27 – Logic Deliverable
+
+**Completion Summary:**
+- `ProductionSessionLoopGuard.should_continue()` now returns detailed human-readable reasons instead of the trivial "YOLO guardrail limit reached."
+- Turn‑limit stop reason format: `"YOLO turn limit reached: {turn_delta}/{max_turns} turns in this run. To change this limit, set 'yolo_guardrails.max_turns' in {config_path}."`
+- Cost‑limit stop reason format: `"YOLO cost limit reached: ${cost_delta:.2f}/${max_cost:.2f} in this run. To change this limit, set 'yolo_guardrails.max_session_cost' in {config_path}."`
+- `config_path` is resolved via `self._config_service.get_config_path()` only inside the failure branches (avoiding unnecessary I/O on the happy path).
+- Unit tests updated: existing stop‑path tests now mock `get_config_path.return_value` and assert the config key and path are in the reason. New test `test_production_guard_reason_includes_config_key_and_path` verifies both the config key (`yolo_guardrails.max_turns`) and file path (`.teddy/config.yaml`) appear in the reason.
+- Termination‑message test (`test_termination_message_printed_when_guard_stops`) continues to pass: it asserts `"YOLO guardrail"` appears in captured stdout, which it does via the prefix text `"YOLO turn limit reached:"` / `"YOLO cost limit reached:"`.
+
+**Files modified:**
+- `src/teddy_executor/core/services/session_loop_guard.py`
+- `tests/suites/unit/core/services/test_session_loop_guard.py`
 - `docs/project/slices/00-06-yolo-guardrail-termination-message.md`
 
 ## Verification

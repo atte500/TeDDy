@@ -40,9 +40,17 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
         cost_delta = cumulative_cost - self._initial_cost
 
         if turn_delta >= max_turns:
-            return False, "YOLO guardrail limit reached."
+            config_path = self._config_service.get_config_path()
+            return False, (
+                f"YOLO turn limit reached: {turn_delta}/{max_turns} turns in this run. "
+                f"To change this limit, set 'yolo_guardrails.max_turns' in {config_path}."
+            )
 
         if cost_delta >= max_cost:
-            return False, "YOLO guardrail limit reached."
+            config_path = self._config_service.get_config_path()
+            return False, (
+                f"YOLO cost limit reached: ${cost_delta:.2f}/${max_cost:.2f} in this run. "
+                f"To change this limit, set 'yolo_guardrails.max_session_cost' in {config_path}."
+            )
 
         return True, None
