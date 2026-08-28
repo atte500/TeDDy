@@ -33,6 +33,21 @@ _ESCAPE_SEQUENCE_RE = re.compile(
 
 logger = logging.getLogger(__name__)
 
+# Set of known CLI (terminal) editors. GUI editors (code, sublime, cursor, etc.)
+# will default to the asynchronous background launch pattern.
+_CLI_EDITORS: set[str] = {
+    "vim",
+    "nvim",
+    "vi",
+    "nano",
+    "micro",
+    "emacs",
+    "pico",
+    "helix",
+    "hx",
+    "kak",
+}
+
 
 class ConsoleAskLoop:
     """Handles the interactive loop for capturing user response via terminal or editor."""
@@ -42,6 +57,18 @@ class ConsoleAskLoop:
         self._tooling = tooling
         self._history = InMemoryHistory()
         self._active_editor_path: Optional[str] = None
+
+    @staticmethod
+    def _is_cli_editor(editor_cmd: Optional[list[str]]) -> bool:
+        """Return True if the resolved editor command is a known terminal (CLI) editor.
+
+        Uses the basename of the executable to classify. Returns False for
+        unknown editors, empty commands, or None (default to GUI/background pattern).
+        """
+        if not editor_cmd:
+            return False
+        basename = os.path.basename(editor_cmd[0])
+        return basename in _CLI_EDITORS
 
     def _is_tty(self) -> bool:
         """Check if stdin is a real TTY (vs pipe/test runner)."""
