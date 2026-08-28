@@ -66,7 +66,7 @@ def _ensure_commit_hooks() -> None:
         return
     try:
         subprocess.run(  # nosec B603 B607
-            ["pre-commit", "install", "-t", "pre-commit", "-t", "post-commit"],
+            ["pre-commit", "install", "-f", "-t", "pre-commit", "-t", "post-commit"],
             check=True,
             capture_output=True,
         )
