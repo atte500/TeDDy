@@ -210,7 +210,11 @@ class ConsoleAskLoop:
 
             return content if content else ""
 
-        # Non-blocking: return empty string to continue the loop
+        # GUI editor: fire-and-forget with Popen, return empty string to continue the loop
+        import subprocess  # noqa: PLC0415
+
+        subprocess.Popen(editor_cmd + [temp_path])  # nosec B603
+        self._flush_stdin()
         return ""
 
     def _handle_empty_input(self, prompt: str) -> Optional[str]:

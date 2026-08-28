@@ -255,3 +255,94 @@ class TestSynchronousCliEditorLaunch:
         assert result == updated_content, (
             f"Expected '{updated_content}', got {repr(result)}"
         )
+
+
+class TestGuiEditorLaunchPreservation:
+    """Tests for the GUI editor path of _launch_editor_background.
+
+    When the resolved editor is a known GUI editor (code, sublime, cursor, etc.),
+    _launch_editor_background should call subprocess.Popen and return "" so the
+    interactive loop continues with the harvest-on-Enter pattern.
+    """
+
+    PROD_PREFIX = "teddy_executor.adapters.outbound.console_interactor_ask_loop"
+
+    @pytest.fixture
+    def real_ask_loop(self, mock_system_env, mock_tooling):
+        """Create a ConsoleAskLoop with real dependencies."""
+        return ConsoleAskLoop(mock_system_env, mock_tooling)
+
+    def test_gui_editor_launches_popen_and_returns_empty_string(
+        self, real_ask_loop, tmp_path
+    ):
+        """For a GUI editor (code), _launch_editor_background should call subprocess.Popen
+        with the editor command and temp path, then return "" to continue the loop."""
+
+        # Arrange: set up a known temp file path
+        temp_file = str(tmp_path / "editor_gui.md")
+        real_ask_loop._system_env.create_temp_file.return_value = temp_file
+
+        # Arrange: set up mock_tooling to return a GUI editor
+        real_ask_loop._tooling.find_editor.return_value = ["/usr/local/bin/code", "-w"]
+
+        with (
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch(f"{self.PROD_PREFIX}.ConsoleAskLoop._flush_stdin"),
+            patch("subprocess.Popen") as mock_popen,
+        ):
+            # Act
+            result = real_ask_loop._launch_editor_background("test prompt")
+
+            # Assert: subprocess.Popen was called with the editor command + temp path
+            mock_popen.assert_called_once()
+            call_args, _ = mock_popen.call_args
+            cmd = call_args[0] if isinstance(call_args[0], list) else list(call_args[0])
+            assert temp_file in cmd, f"Temp file path not in command: {cmd}"
+            assert "/usr/local/bin/code" in cmd, f"Code not in command: {cmd}"
+
+        # Assert: returned content is empty string (loop continues)
+        assert result == "", f"Expected empty string, got: {repr(result)}"
+
+        # Assert: _active_editor_path is preserved for later harvest
+        assert real_ask_loop._active_editor_path == temp_file, (
+            f"Expected '{temp_file}', got '{real_ask_loop._active_editor_path}'"
+        )
+
+    def test_gui_editor_reuses_persistent_file(self, real_ask_loop, tmp_path):
+        """When _active_editor_path is already set, a GUI editor should update the file,
+        call subprocess.Popen, and return "" preserving the path for harvest."""
+
+        # Arrange: set up a persistent file path
+        temp_file = str(tmp_path / "persistent_gui.md")
+        real_ask_loop._active_editor_path = temp_file
+
+        # Arrange: write initial content (simulating previous edit)
+        marker = "<!-- Please enter your response above this line. -->"
+        initial_content = f"\n\n{marker}\n\nOld prompt"
+        with open(temp_file, "w", encoding="utf-8") as f:
+            f.write(initial_content)
+
+        # Arrange: set up mock_tooling to return a GUI editor
+        real_ask_loop._tooling.find_editor.return_value = ["code"]
+
+        with (
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch(f"{self.PROD_PREFIX}.ConsoleAskLoop._flush_stdin"),
+            patch("subprocess.Popen") as mock_popen,
+        ):
+            # Act
+            result = real_ask_loop._launch_editor_background("new prompt")
+
+            # Assert: subprocess.Popen was called
+            mock_popen.assert_called_once()
+            call_args, _ = mock_popen.call_args
+            cmd = call_args[0] if isinstance(call_args[0], list) else list(call_args[0])
+            assert temp_file in cmd, f"Temp file path not in command: {cmd}"
+
+        # Assert: returned content is empty string (loop continues)
+        assert result == "", f"Expected empty string, got: {repr(result)}"
+
+        # Assert: _active_editor_path is preserved
+        assert real_ask_loop._active_editor_path == temp_file, (
+            f"Expected '{temp_file}', got '{real_ask_loop._active_editor_path}'"
+        )
