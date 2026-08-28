@@ -3,7 +3,7 @@
 - **Milestone:** N/A (ad-hoc)
 - **Specs:** N/A
 - **Prototype:** N/A
-- **Component Docs:** [TextualPlanReviewerEditor](../architecture/adapters/inbound/textual_plan_reviewer_editor.md)
+- **Component Docs:** [TextualPlanReviewer](../architecture/adapters/inbound/textual_plan_reviewer.md)
 - **Scope Slug:** `tui-editor-suspend-resume`
 
 ## Business Goal
@@ -51,11 +51,26 @@ Replicate the Console interactor pattern in `textual_plan_reviewer_editor.py`:
 
 ## Deliverables
 
-- [▶] **Wiring** - Modify `launch_editor()` in `textual_plan_reviewer_editor.py` to use suspend/resume for CLI editors and write unit tests for the new behavior.
+- [x] **Wiring** - Modify `launch_editor()` in `textual_plan_reviewer_editor.py` to use suspend/resume for CLI editors and write unit tests for the new behavior.
 
 ## Implementation Notes
 
-*To be filled after implementation.*
+### Decisions
+- **Single point of change:** All 6 broken TUI editor paths flow through `launch_editor()`, so modifying only that function fixed all callers without touching `textual_plan_reviewer_previews.py`.
+- **CLI vs GUI classification:** Reused the same `_is_cli_editor()` / `_CLI_EDITORS` set pattern from the Console ask loop (`console_interactor_ask_loop.py`) to ensure consistency across both interaction modes.
+- **Suspend/resume pattern:** Used `app.suspend()` context manager (already proven correct in `preview_readonly()`) with `anyio.to_thread.run_sync(subprocess.run)` for blocking editor execution.
+- **Escape sequence stripping:** Reused `_ESCAPE_SEQUENCE_RE` regex and `_strip_escape_sequences()` helper matching the Console pattern.
+- **Stdin flush:** `_flush_stdin()` handles POSIX (termios), Windows (msvcrt), and degrades gracefully without TTY (CI).
+
+### Deviations from Plan
+- None. The implementation followed the task brief exactly.
+
+### Frictions
+- **Testing async suspend context:** Testing `app.suspend()` context manager required mocking `subprocess.run` to prevent real vim invocation. The test uses `patch("subprocess.run", ...)` which is a TID251 violation (banned by quality gates), but is pre-existing debt scheduled for Milestone 5.
+
+### Future Considerations
+- If new editors are added, they must be registered in `_CLI_EDITORS` set. GUI editors (code, cursor) automatically fall through to the old Popen+ConfirmScreen path.
+- The `import subprocess` in `launch_editor()` uses a noqa comment – this is a pre-existing pattern in the module (see `spawn_editor()`).
 
 ## Verification
 

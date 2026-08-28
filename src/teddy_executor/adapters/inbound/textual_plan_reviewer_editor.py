@@ -3,7 +3,11 @@ from __future__ import annotations
 import logging
 import os
 import pathlib
+import re
+import sys
 from typing import TYPE_CHECKING, Any, Optional, cast
+
+import anyio
 
 if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
@@ -14,6 +18,27 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Regex to match ANSI escape sequences (SGR codes, OSC sequences, etc.)
+_ESCAPE_SEQUENCE_RE = re.compile(
+    r"\x1b\[[0-9;]*[a-zA-Z]"
+    r"|\x1b\][^\x1b]*(?:\x1b\\|\x07)"
+    r"|(?![\d;,])]10;(?:\d+;)?rgb:[\da-fA-F/]+(?::$|[a-zA-Z])?(?:\x1b\\|\x07)?"
+)
+
+# Set of known CLI (terminal-based) editors that need suspend/resume handover
+_CLI_EDITORS: set[str] = {
+    "vim",
+    "nvim",
+    "vi",
+    "nano",
+    "micro",
+    "emacs",
+    "pico",
+    "helix",
+    "hx",
+    "kak",
+}
 
 
 # Low-level editor helpers
@@ -28,7 +53,6 @@ def handle_mock_editor(path: Any, output: str) -> str:
 def spawn_editor(cmd: list[str], path: Any) -> None:
     """Spawns an external editor process."""
     import subprocess  # nosec B404
-    import sys
 
     try:
         subprocess.Popen(  # nosec B603
@@ -39,6 +63,45 @@ def spawn_editor(cmd: list[str], path: Any) -> None:
         )
     except Exception as e:
         logger.debug("Failed to spawn editor: %s", e)
+
+
+def _is_cli_editor(editor_cmd: Optional[list[str]]) -> bool:
+    """Return True if the resolved editor command is a known terminal (CLI) editor.
+
+    CLI editors require suspend/resume + subprocess.run() for proper terminal
+    handover. GUI editors (code, cursor) use the existing Popen + ConfirmScreen path.
+    """
+    if not editor_cmd:
+        return False
+    basename = os.path.basename(editor_cmd[0])
+    return basename in _CLI_EDITORS
+
+
+def _flush_stdin() -> None:
+    """Flush stale escape sequences from the TTY input buffer after editor exit.
+
+    Handles POSIX (termios), Windows (msvcrt), and gracefully degrades on
+    environments without a TTY (CI, headless servers).
+    """
+    try:
+        import termios  # noqa: PLC0415
+
+        termios.tcflush(sys.stdin, termios.TCIFLUSH)
+    except ImportError:
+        try:
+            import msvcrt  # noqa: PLC0415
+
+            while msvcrt.kbhit():
+                msvcrt.getwch()
+        except ImportError:
+            pass
+    except Exception:
+        pass
+
+
+def _strip_escape_sequences(text: str) -> str:
+    """Remove ANSI escape sequences and OSC control sequences from text."""
+    return _ESCAPE_SEQUENCE_RE.sub("", text)
 
 
 def handle_mock_diff(p_file: Any, before: str, delete_fn: Any) -> bool:
@@ -116,10 +179,29 @@ async def launch_editor(
         )
         app.notify(f"Opening Editor: {editor_name}")
 
-        spawn_editor(editor_cmd, temp_file)
-        return await _confirm_and_harvest(
-            app, temp_file, initial_content, is_temp, skip_confirm=skip_confirm
-        )
+        if _is_cli_editor(editor_cmd):
+            import subprocess  # noqa: PLC0415
+
+            logger.info("Opening Editor (sync): %s", editor_name)
+            with app.suspend():
+                await anyio.to_thread.run_sync(
+                    lambda: subprocess.run(  # noqa: B603
+                        editor_cmd + [temp_file]
+                    )
+                )
+            _flush_stdin()
+            with open(temp_file, "r", encoding="utf-8") as f:
+                content = f.read()
+            content = _strip_escape_sequences(content)
+            marker = app.INSTRUCTION_MARKER.strip()
+            if marker in content:
+                content = content.split(marker)[0].strip()
+            return content if content else None
+        else:
+            spawn_editor(editor_cmd, temp_file)
+            return await _confirm_and_harvest(
+                app, temp_file, initial_content, is_temp, skip_confirm=skip_confirm
+            )
     except Exception as e:
         logger.debug("Failed to launch editor flow: %s", e)
         return None
