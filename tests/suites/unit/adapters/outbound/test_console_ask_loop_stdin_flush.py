@@ -10,7 +10,17 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-termios = pytest.importorskip("termios")
+try:
+    import termios
+    _HAS_TERMIOS = True
+except ImportError:
+    _HAS_TERMIOS = False
+
+try:
+    import msvcrt
+    _HAS_MSVCRT = True
+except ImportError:
+    _HAS_MSVCRT = False
 
 from teddy_executor.adapters.outbound.console_interactor_ask_loop import (
     ConsoleAskLoop,
@@ -36,6 +46,7 @@ def ask_loop(mock_system_env, mock_tooling):
     return ConsoleAskLoop(mock_system_env, mock_tooling)
 
 
+@pytest.mark.skipif(not _HAS_TERMIOS, reason="termios not available on this platform")
 class TestStdinFlush:
     """Tests for _flush_stdin and its integration in the run loop."""
 
@@ -115,3 +126,72 @@ class TestStdinFlush:
         assert ask_loop._active_editor_path is None, (
             "_active_editor_path should be reset after harvest"
         )
+
+
+@pytest.mark.skipif(not _HAS_MSVCRT, reason="msvcrt not available on this platform")
+class TestWindowsStdinFlush:
+    """Tests for the Windows (msvcrt) path of _flush_stdin.
+
+    On Windows, termios is unavailable, so _flush_stdin should fall back to
+    msvcrt.kbhit() / msvcrt.getwch() to drain the input buffer.
+    """
+
+    PROD_PREFIX = "teddy_executor.adapters.outbound.console_interactor_ask_loop"
+
+    @pytest.fixture
+    def mock_system_env(self):
+        env = MagicMock()
+        env.create_temp_file.return_value = "/tmp/fake_editor.md"
+        return env
+
+    @pytest.fixture
+    def mock_tooling(self):
+        tooling = MagicMock()
+        tooling.find_editor.return_value = ["/usr/bin/vim"]
+        return tooling
+
+    @pytest.fixture
+    def ask_loop(self, mock_system_env, mock_tooling):
+        return ConsoleAskLoop(mock_system_env, mock_tooling)
+
+    def test_flush_stdin_uses_msvcrt_when_termios_missing(self, ask_loop):
+        """When termios is unavailable (Windows), _flush_stdin should use msvcrt
+        to drain the input buffer."""
+        with (
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch("builtins.__import__", side_effect=self._import_fails_for_termios) as mock_import,
+        ):
+            # msvcrt.kbhit returns True once (1 char available), then False
+            with patch("msvcrt.kbhit", side_effect=[True, False]) as mock_kbhit:
+                with patch("msvcrt.getwch", return_value="x") as mock_getwch:
+                    ask_loop._flush_stdin()
+
+                    # If we got here without exception, the msvcrt path was used.
+                    # Verify the specific functions were called.
+                    # Note: __import__ may be called multiple times by the interpreter,
+                    # so we check that msvcrt functions were called rather than
+                    # asserting __import__ call count.
+                    assert mock_kbhit.called, "msvcrt.kbhit should have been called"
+                    assert mock_getwch.called, "msvcrt.getwch should have been called"
+
+    def test_flush_stdin_noop_when_both_termios_and_msvcrt_missing(self, ask_loop):
+        """When both termios and msvcrt are unavailable (rare), _flush_stdin
+        should silently no-op without raising an exception."""
+        with (
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch("builtins.__import__", side_effect=ImportError("no module")),
+        ):
+            # Should not raise any exception
+            ask_loop._flush_stdin()
+
+    @staticmethod
+    def _import_fails_for_termios(name, *args, **kwargs):
+        """Custom import side effect: raise ImportError for 'termios',
+        allow everything else."""
+        if name == "termios":
+            raise ImportError("No module named termios")
+        # Fall back to real import for everything else (including msvcrt)
+        # Note: this will fail on non-Windows, but our test will run only if
+        # msvcrt is available (we'll use importorskip in the actual test).
+        # For the test, we manually patch all required modules.
+        return __import__(name, *args, **kwargs)

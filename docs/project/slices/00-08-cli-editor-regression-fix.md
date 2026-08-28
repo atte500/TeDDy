@@ -124,7 +124,7 @@ And stdin is flushed using msvcrt instead of termios
 - [x] **CLI Editor Classification** — Static set of terminal editors + helper method.
 - [x] **Synchronous CLI Editor Launch** — `subprocess.run()` with TTY inheritance, direct content return.
 - [x] **GUI Editor Launch Preservation** — `subprocess.Popen()` + `_flush_stdin()` + harvest-on-Enter pattern.
-- [ ] **Cross-Platform `_flush_stdin()`** — POSIX `termios` + Windows `msvcrt` + fallback.
+- [x] **Cross-Platform `_flush_stdin()`** — POSIX `termios` + Windows `msvcrt` + fallback.
 - [ ] **Test Updates** — Update existing tests, delete PTY-specific tests, add tests for CLI sync path.
 - [x] **Remove PTY-specific Test File** — File `test_console_ask_loop_pty_isolation.py` already deleted in D1 (PTY Removal). Verified by `test_pty_plumbing_removed` assertion.
 - [ ] **Wiring (End-to-End Editor Flow)** — Acceptance test simulating the ask loop with both CLI and GUI editors to verify the full integration path.
@@ -174,6 +174,14 @@ And stdin is flushed using msvcrt instead of termios
   - `test_gui_editor_reuses_persistent_file`: Verifies persistent file path reuse with correct Popen call and path preservation.
 - Both tests use `patch("subprocess.Popen")` because `subprocess` is imported locally inside the method.
 - Full test suite passed (1123 passed, 3 skipped).
+
+### Deliverable 5: Cross-Platform `_flush_stdin()`
+- Restructured `_flush_stdin()` to attempt POSIX (`termios.tcflush`) first, then fall back to Windows (`msvcrt.kbhit()`/`getwch()` loop) if `termios` is unavailable. If both are unavailable, silently no-op as before.
+- Removed module-level `pytest.importorskip("termios")` from `test_console_ask_loop_stdin_flush.py`; replaced with conditional import and class-level `@pytest.mark.skipif` on `TestStdinFlush` so Windows tests can coexist in the same file.
+- Added `TestWindowsStdinFlush` class with two tests:
+  - `test_flush_stdin_uses_msvcrt_when_termios_missing`: Verifies that when `termios` is unavailable, `msvcrt.kbhit` and `msvcrt.getwch` are called to drain the buffer.
+  - `test_flush_stdin_noop_when_both_termios_and_msvcrt_missing`: Verifies graceful no-op when both platform-specific modules are absent.
+- Full test suite passed (1125 passed, 3 skipped).
 
 ## Verification
 

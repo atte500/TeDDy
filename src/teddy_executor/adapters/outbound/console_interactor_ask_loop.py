@@ -80,6 +80,9 @@ class ConsoleAskLoop:
         After an editor process exits, the terminal emulator may have written
         escape sequences into the shared stdin buffer. Flushing before the next
         prompt prevents them from being captured as user input.
+
+        Supports both POSIX (termios.tcflush) and Windows (msvcrt.kbhit/getwch).
+        Falls back to no-op if both are unavailable.
         """
         if not self._is_tty():
             return
@@ -87,6 +90,18 @@ class ConsoleAskLoop:
             import termios  # noqa: PLC0415
 
             termios.tcflush(sys.stdin, termios.TCIFLUSH)
+        except ImportError:
+            # Windows path: msvcrt is only available on Windows.
+            # Use an inner try/except so that if msvcrt itself is unavailable
+            # (e.g., running on non-Windows or patched __import__ during tests),
+            # the failure is silently caught rather than propagating.
+            try:
+                import msvcrt  # noqa: PLC0415
+
+                while msvcrt.kbhit():
+                    msvcrt.getwch()  # drain one character (discarded)
+            except ImportError:
+                pass
         except Exception:  # nosec B110
             pass
 
