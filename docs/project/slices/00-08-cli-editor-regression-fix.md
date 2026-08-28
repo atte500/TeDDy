@@ -125,7 +125,7 @@ And stdin is flushed using msvcrt instead of termios
 - [x] **Synchronous CLI Editor Launch** — `subprocess.run()` with TTY inheritance, direct content return.
 - [x] **GUI Editor Launch Preservation** — `subprocess.Popen()` + `_flush_stdin()` + harvest-on-Enter pattern.
 - [x] **Cross-Platform `_flush_stdin()`** — POSIX `termios` + Windows `msvcrt` + fallback.
-- [ ] **Test Updates** — Update existing tests, delete PTY-specific tests, add tests for CLI sync path.
+- [x] **Test Updates** — Update existing tests, delete PTY-specific tests, add tests for CLI sync path.
 - [x] **Remove PTY-specific Test File** — File `test_console_ask_loop_pty_isolation.py` already deleted in D1 (PTY Removal). Verified by `test_pty_plumbing_removed` assertion.
 - [ ] **Wiring (End-to-End Editor Flow)** — Acceptance test simulating the ask loop with both CLI and GUI editors to verify the full integration path.
 
@@ -182,6 +182,16 @@ And stdin is flushed using msvcrt instead of termios
   - `test_flush_stdin_uses_msvcrt_when_termios_missing`: Verifies that when `termios` is unavailable, `msvcrt.kbhit` and `msvcrt.getwch` are called to drain the buffer.
   - `test_flush_stdin_noop_when_both_termios_and_msvcrt_missing`: Verifies graceful no-op when both platform-specific modules are absent.
 - Full test suite passed (1125 passed, 3 skipped).
+
+### Deliverable 6: Test Updates
+- Orientation confirmed that all test updates required by the slice were already satisfied by prior deliverables:
+  - PTY-specific test file (`test_console_ask_loop_pty_isolation.py`) deleted in D1.
+  - CLI sync path tests added in D3 (`TestSynchronousCliEditorLaunch`).
+  - GUI editor tests added in D4 (`TestGuiEditorLaunchPreservation`).
+  - Windows flush tests added in D5 (`TestWindowsStdinFlush`).
+  - PTY references in tests are only present as correct comments confirming removal (`test_pty_plumbing_removed`).
+  - No remaining test code requires updating; full suite passes (1125 passed, 5 skipped).
+- No test code changes were made in this deliverable — all updates were already completed as part of earlier deliverables.
 
 ## Verification
 
