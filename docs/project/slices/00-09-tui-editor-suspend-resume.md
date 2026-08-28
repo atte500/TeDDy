@@ -67,7 +67,8 @@ Replicate the Console interactor pattern in `textual_plan_reviewer_editor.py`:
 
 ### Frictions
 - **Testing async suspend context:** Testing `app.suspend()` context manager required mocking `subprocess.run` to prevent real vim invocation. The test uses `patch("subprocess.run", ...)` which is a TID251 violation (banned by quality gates), but is pre-existing debt scheduled for Milestone 5.
-- **Hotfix (2026-08-28):** Added `app.push_screen_wait(ConfirmScreen())` in the CLI editor branch immediately after reading and stripping content, before returning. This defers harvest and prevents the TUI from freezing (immediately processing content after vim exit). The test was updated to mock `push_screen_wait` as `AsyncMock` and assert it was called. This matches the GUI editor confirmation pattern.
+- **Initial hotfix (2026-08-28, reverted):** Adding `app.push_screen_wait(ConfirmScreen())` inside `launch_editor()` immediately after `app.suspend()` exits caused the TUI to drop to console and hang. Textual screen stack is not stable right after resume, so `push_screen_wait` cannot be used there.
+- **Final design (2026-08-28):** `launch_editor()` returns content directly for CLI editors. The ConfirmScreen is shown in `add_message_handler()` (the only caller that triggers an LLM call after editing) after `launch_editor` returns, when the screen stack is stable. Additionally, `_flush_stdin()` was moved inside the `with app.suspend():` block to flush stdin while still in normal terminal mode, preventing Textual event loop interference.
 
 ### Future Considerations
 - If new editors are added, they must be registered in `_CLI_EDITORS` set. GUI editors (code, cursor) automatically fall through to the old Popen+ConfirmScreen path.

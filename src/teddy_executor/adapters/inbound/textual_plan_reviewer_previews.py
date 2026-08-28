@@ -15,6 +15,9 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
     launch_editor,
     preview_edit_diff_viewer,
 )
+from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+    ConfirmScreen,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -218,9 +221,10 @@ async def view_plan_handler(app: "ReviewerApp") -> None:
 async def add_message_handler(app: "ReviewerApp") -> None:
     """Implementation for adding user instruction message.
 
-    Stores the editor path in app._pending_message_file for deferred harvest
-    on plan submit (s-key). Uses skip_confirm=True to avoid the old
-    ConfirmScreen popup.
+    Uses an external editor to compose the message, then shows a ConfirmScreen
+    before storing. This defers LLM processing (harvest) until the user confirms
+    or cancels, preventing the TUI freeze that occurs when content is processed
+    immediately after editor exit.
     """
     # Create persistent file path if not already set
     if not hasattr(app, "_pending_message_file") or app._pending_message_file is None:
@@ -238,7 +242,12 @@ async def add_message_handler(app: "ReviewerApp") -> None:
         current_message,
         suffix=".md",
         persistent_path=app._pending_message_file,
-        skip_confirm=True,
     )
     if new_message is not None and new_message != current_message:
+        # Show ConfirmScreen to defer LLM processing until user confirms
+        # (GUI pattern: return content first, confirm later)
+        if not app.is_headless:
+            confirmed = await app.push_screen_wait(ConfirmScreen())
+            if not confirmed:
+                return  # Discard message
         app._user_message_cache = new_message
