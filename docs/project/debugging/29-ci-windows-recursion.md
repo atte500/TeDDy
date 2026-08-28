@@ -41,7 +41,9 @@ N/A – This appears to be a pre-existing test design flaw, not a regression fro
 (none yet)
 
 ### Investigation History
-(none yet)
+1. Remote probe triggered via workflow `debug.yml` (run 33154174110, job 98792899329). The probe executed `uv run pytest` on Windows CI. Log output confirmed the `RecursionError: maximum recursion depth exceeded` with the same stack trace as the original CI failure. The root cause is that the test's `_import_fails_for_termios` side effect calls `__import__(name, ...)` for non-`termios` imports, but since `builtins.__import__` is patched, this calls back into the mock, causing infinite recursion. Observation: The bug is fully reproduced on Windows CI. The fix must change the test's side effect to use `builtins.__import__` directly (saving a reference before patching) instead of calling the global `__import__`.
+
+2. Created shadow test file `spikes/debug/shadow_test_console_ask_loop_stdin_flush.py` with fix applied: changed `_import_fails_for_termios` to use `importlib.__import__` to bypass the mocked `builtins.__import__`. Updated probe.sh to run the shadow file. Pending remote probe verification.
 
 ## Solution
 
