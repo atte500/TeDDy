@@ -74,13 +74,15 @@ Four source files and corresponding test files need to be modified, following a 
 
 - [x] **Seam** - Add `_is_cli_editor()` helper to `textual_plan_reviewer_editor.py` (already exists in both `textual_plan_reviewer_editor.py` and `console_interactor_ask_loop.py`).
 - [x] **Contract (Expansion)** - Add `_DIFF_FLAGS` class variable to `ConsoleToolingHelper`. Extend `get_diff_viewer_command()` to use the translation table while keeping the old code path functional. Add `noqa: TID251`-free test mocks for new interface.
-- [ ] **Harness** - Add test fixtures/mocks for no-editor state, CLI editor classification, diff flag verification in existing test files.
+- [x] **Harness** - Add test fixtures/mocks for no-editor state, CLI editor classification, diff flag verification in existing test files.
 - [ ] **Migration** - Update all consumers of `ConsoleToolingHelper` (callers of `find_editor()`, `get_diff_viewer_command()`, `_resolve_editor_cmd()`) to transition to new behavior. Update existing tests that relied on the old return values.
 - [ ] **Wiring** - `preview_edit_diff_viewer` CLI editor suspend/harvest path in `textual_plan_reviewer_editor.py`, `add_message_handler` skip_confirm in `textual_plan_reviewer_previews.py`, `launch_editor` no-editor notification in `textual_plan_reviewer_editor.py`, `_launch_editor_background` no-editor notification in `console_interactor_ask_loop.py`.
 - [ ] **Cleanup (Contraction)** - Remove VS Code special-casing from `_resolve_editor_cmd()`, remove fallback chain from `find_editor()`, remove old code path from `get_diff_viewer_command()`.
 - [ ] **Refactor** - Remove unused imports (`ConfirmScreen` from `textual_plan_reviewer_previews.py` if no longer used), clean up stale comments.
 
 ## Implementation Notes
+
+- **Harness:** The Contract (Expansion) deliverable already added the `TestGetDiffViewerCommand` test class with 11 tests covering diff flag verification and no-editor state. The `_is_cli_editor` classification is tested in `test_tui_editor_suspend_resume.py::TestIsCliEditor`. The ask_loop tests have `mock_system_env`, `mock_tooling`, `ask_loop` fixtures. No additional harness code was needed beyond what was already committed.
 
 - `_DIFF_FLAGS` translation table added as a class variable to `ConsoleToolingHelper` with support for vim, vi, nvim, code, cursor, codium, zed, and idea.
 - `get_diff_viewer_command()` updated to bypass `find_editor()` for diff viewing (to avoid VS Code's `-r --wait` editing flags). Instead, it resolves the editor directly from config/env, checks the translation table, and returns the resolved path + diff flags. This is intentional – the diff viewer command should be clean without editor-specific editing flags.
