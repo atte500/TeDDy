@@ -7,7 +7,7 @@ Verifies that launch_editor() correctly distinguishes CLI editors
 """
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
     _is_cli_editor,
 )
@@ -84,11 +84,15 @@ class TestLaunchEditor:
 
             # Mock subprocess.run to prevent real vim invocation
             with patch("subprocess.run", return_value=MagicMock()):
+                # Mock push_screen_wait to return True (user confirms)
+                app.push_screen_wait = AsyncMock(return_value=True)
                 # Call the function
                 await launch_editor(app, "initial content")
 
             # Assert suspend was entered (context manager)
             app.suspend.assert_called_once()
+            # Assert ConfirmScreen was shown (deferred harvest)
+            app.push_screen_wait.assert_called_once()
 
             # Clean up temp file
             os.remove(temp_path)

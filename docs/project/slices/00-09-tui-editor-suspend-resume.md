@@ -67,6 +67,7 @@ Replicate the Console interactor pattern in `textual_plan_reviewer_editor.py`:
 
 ### Frictions
 - **Testing async suspend context:** Testing `app.suspend()` context manager required mocking `subprocess.run` to prevent real vim invocation. The test uses `patch("subprocess.run", ...)` which is a TID251 violation (banned by quality gates), but is pre-existing debt scheduled for Milestone 5.
+- **Hotfix (2026-08-28):** Added `app.push_screen_wait(ConfirmScreen())` in the CLI editor branch immediately after reading and stripping content, before returning. This defers harvest and prevents the TUI from freezing (immediately processing content after vim exit). The test was updated to mock `push_screen_wait` as `AsyncMock` and assert it was called. This matches the GUI editor confirmation pattern.
 
 ### Future Considerations
 - If new editors are added, they must be registered in `_CLI_EDITORS` set. GUI editors (code, cursor) automatically fall through to the old Popen+ConfirmScreen path.

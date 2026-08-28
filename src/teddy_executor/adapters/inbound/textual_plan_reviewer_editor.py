@@ -196,6 +196,13 @@ async def launch_editor(
             marker = app.INSTRUCTION_MARKER.strip()
             if marker in content:
                 content = content.split(marker)[0].strip()
+
+            # Defer final processing: show ConfirmScreen for user confirmation
+            # (same pattern as GUI editor path via _confirm_and_harvest)
+            if not (app.is_headless or skip_confirm):
+                confirmed = await app.push_screen_wait(ConfirmScreen())
+                return content if confirmed else None
+
             return content if content else None
         else:
             spawn_editor(editor_cmd, temp_file)
