@@ -54,11 +54,11 @@ And no editor is launched
 
 ### Summary of Changes
 
-Four source files and corresponding test files need to be modified:
+Four source files and corresponding test files need to be modified, following a non-breaking expansion -> migration -> contraction sequence:
 
-1. **`textual_plan_reviewer_previews.py`**: `add_message_handler` — pass `skip_confirm=True`, remove post-editor ConfirmScreen block.
-2. **`textual_plan_reviewer_editor.py`**: `launch_editor` — add notification when `find_editor()` returns `None`. `preview_edit_diff_viewer` — add CLI editor suspend/harvest path.
-3. **`console_tooling.py`**: `ConsoleToolingHelper` — add `_DIFF_FLAGS` translation table, update `get_diff_viewer_command()`, remove fallback chain from `find_editor()`, remove VS Code special-casing from `_resolve_editor_cmd()`.
+1. **`console_tooling.py`**: First, add `_DIFF_FLAGS` translation table and extend `get_diff_viewer_command()` to use it (keeping old code path). Then migrate: update consumers to new behavior. Finally, remove fallback chain from `find_editor()` and VS Code special-casing from `_resolve_editor_cmd()`.
+2. **`textual_plan_reviewer_previews.py`**: `add_message_handler` — pass `skip_confirm=True`, remove post-editor ConfirmScreen block.
+3. **`textual_plan_reviewer_editor.py`**: `launch_editor` — add notification when `find_editor()` returns `None`. `preview_edit_diff_viewer` — add CLI editor suspend/harvest path.
 4. **`console_interactor_ask_loop.py`**: `_launch_editor_background` — replace silent fallback `or ["vim"]` with notification when no editor is configured.
 
 ### Test Harness Strategy
@@ -72,12 +72,13 @@ Four source files and corresponding test files need to be modified:
 
 ## Deliverables
 
-- [ ] **Contract** - Update `ConsoleToolingHelper` public interface: `_DIFF_FLAGS`, `get_diff_viewer_command()` signature change, `find_editor()` behavior change (no fallback).
-- [ ] **Harness** - Add test fixtures/mocks for no-editor state, CLI editor classification, diff flag verification.
-- [ ] **Seam** - Add `_is_cli_editor()` helper to `textual_plan_reviewer_editor.py` (already exists).
-- [ ] **Wiring** - `preview_edit_diff_viewer` CLI editor suspend/harvest path, `add_message_handler` skip_confirm, `launch_editor` no-editor notification, `_launch_editor_background` no-editor notification.
-- [ ] **Logic** - `ConsoleToolingHelper._DIFF_FLAGS` translation table, `get_diff_viewer_command()` refactor, `find_editor()` refactor, `_resolve_editor_cmd()` refactor.
-- [ ] **Cleanup** - Remove VS Code special-casing from `_resolve_editor_cmd()`, remove fallback chain from `find_editor()`.
+- [x] **Seam** - Add `_is_cli_editor()` helper to `textual_plan_reviewer_editor.py` (already exists in both `textual_plan_reviewer_editor.py` and `console_interactor_ask_loop.py`).
+- [ ] **Contract (Expansion)** - Add `_DIFF_FLAGS` class variable to `ConsoleToolingHelper`. Extend `get_diff_viewer_command()` to use the translation table while keeping the old code path functional. Add `noqa: TID251`-free test mocks for new interface.
+- [ ] **Harness** - Add test fixtures/mocks for no-editor state, CLI editor classification, diff flag verification in existing test files.
+- [ ] **Migration** - Update all consumers of `ConsoleToolingHelper` (callers of `find_editor()`, `get_diff_viewer_command()`, `_resolve_editor_cmd()`) to transition to new behavior. Update existing tests that relied on the old return values.
+- [ ] **Wiring** - `preview_edit_diff_viewer` CLI editor suspend/harvest path in `textual_plan_reviewer_editor.py`, `add_message_handler` skip_confirm in `textual_plan_reviewer_previews.py`, `launch_editor` no-editor notification in `textual_plan_reviewer_editor.py`, `_launch_editor_background` no-editor notification in `console_interactor_ask_loop.py`.
+- [ ] **Cleanup (Contraction)** - Remove VS Code special-casing from `_resolve_editor_cmd()`, remove fallback chain from `find_editor()`, remove old code path from `get_diff_viewer_command()`.
+- [ ] **Refactor** - Remove unused imports (`ConfirmScreen` from `textual_plan_reviewer_previews.py` if no longer used), clean up stale comments.
 
 ## Implementation Notes
 
