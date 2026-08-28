@@ -5,6 +5,7 @@ missing termios gracefully. Editor-integration flush tests are covered
 by the synchronous editor flow in the escape-stripping test suite.
 """
 
+import importlib
 import sys
 from unittest.mock import MagicMock, patch
 
@@ -187,11 +188,12 @@ class TestWindowsStdinFlush:
     @staticmethod
     def _import_fails_for_termios(name, *args, **kwargs):
         """Custom import side effect: raise ImportError for 'termios',
-        allow everything else."""
+        allow everything else.
+
+        Uses `importlib.__import__` to bypass the mocked `builtins.__import__`
+        and prevent infinite recursion on Windows.
+        """
         if name == "termios":
             raise ImportError("No module named termios")
-        # Fall back to real import for everything else (including msvcrt)
-        # Note: this will fail on non-Windows, but our test will run only if
-        # msvcrt is available (we'll use importorskip in the actual test).
-        # For the test, we manually patch all required modules.
-        return __import__(name, *args, **kwargs)
+        # Use importlib.__import__ directly to bypass the mocked builtins.__import__
+        return importlib.__import__(name, *args, **kwargs)
