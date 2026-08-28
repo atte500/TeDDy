@@ -8,6 +8,8 @@ Fix three issues with the TUI plan reviewer's editor integration: remove unneces
 
 The Textual TUI plan reviewer has three editor-related issues that have been analyzed and approved:
 
+**Issue 4 (ask_loop 'e' key — no editor configured):** The console-based ask_loop (`ConsoleAskLoop._launch_editor_background`) currently uses `self._tooling.find_editor() or ["vim"]`, which silently falls back to vim if no editor is configured. When no editor is found, the ask_loop should print a notification to the user (similar to the TUI's `app.notify`) and return to the prompt without opening an editor.
+
 **Issue 1 ('m' key — save confirmation):** When pressing `m` to add a message, the GUI editor path (`spawn_editor`) uses `_confirm_and_harvest` which pushes a `ConfirmScreen`. The user wants no confirmation — just a notification that the editor is opening, and content is harvested on final submission (pressing `s`). The CLI editor path (vim/nvim) already skips confirmation correctly.
 
 **Issue 2 ('e' EDIT action — CLI editor diff viewer):** `preview_edit_diff_viewer` relies on `get_diff_viewer_command()` which currently only returns a command for VS Code. For CLI editors, the flow breaks. Research (covering vim, nvim, code, cursor, codium, zed, idea, subl, emacs, nano, helix, kak, gedit, kate, notepad++) confirms that `-d` is NOT universal — only vim/nvim support it. The solution is a translation table mapping editor basenames to their diff flags. For editors with diff support, the function returns the command; for others, it returns `None` (falling back to opening proposed content directly).
@@ -22,6 +24,8 @@ The Textual TUI plan reviewer has three editor-related issues that have been ana
 - **[test_console_tooling_editor.py](/tests/suites/unit/adapters/outbound/test_console_tooling_editor.py):** Updates tests for new `get_diff_viewer_command` behavior.
 - **[test_tui_editor_suspend_resume.py](/tests/suites/unit/adapters/inbound/test_tui_editor_suspend_resume.py):** Adds tests for `preview_edit_diff_viewer` CLI editor suspend path.
 - **[test_reviewer_app_core.py](/tests/suites/unit/adapters/inbound/test_reviewer_app_core.py):** Updates existing tests to match new notification/add_message_handler behavior.
+- **[console_interactor_ask_loop.py](/src/teddy_executor/adapters/outbound/console_interactor_ask_loop.py):** `_launch_editor_background` — replace silent fallback `or ["vim"]` with notification when no editor is configured.
+- **[test_console_ask_loop_editor_background.py](/tests/suites/unit/adapters/outbound/test_console_ask_loop_editor_background.py):** Add tests for no-editor notification behavior.
 
 ### Assumptions & Agreements
 
@@ -199,6 +203,34 @@ Note: Remove the `from teddy_executor.adapters.inbound.textual_plan_reviewer_wid
 - **File:** [tests/suites/unit/adapters/inbound/test_reviewer_app_core.py](/tests/suites/unit/adapters/inbound/test_reviewer_app_core.py)
 - **Change:** Update any tests for `add_message_handler` that relied on the old confirm behavior. Ensure tests pass with the new `skip_confirm=True` flow.
 
+### Step 10: Add "No editor configured" notification to ask_loop
+
+- **File:** [src/teddy_executor/adapters/outbound/console_interactor_ask_loop.py](/src/teddy_executor/adapters/outbound/console_interactor_ask_loop.py)
+- **Change:** In `_launch_editor_background()`, replace the silent fallback `self._tooling.find_editor() or ["vim"]` with a check that logs a notification when no editor is found. If `find_editor()` returns `None`, log a notification and return an empty string (continuing the interactive loop without opening an editor).
+
+Replace the line:
+
+```python
+editor_cmd = self._tooling.find_editor() or ["vim"]
+```
+
+with:
+
+```python
+editor_cmd = self._tooling.find_editor()
+if not editor_cmd:
+    logger.info(
+        "No editor configured. Please configure one in .teddy/config.yaml"
+    )
+    return ""
+```
+
+- **File:** [tests/suites/unit/adapters/outbound/test_console_ask_loop_editor_background.py](/tests/suites/unit/adapters/outbound/test_console_ask_loop_editor_background.py)
+- **Change:** Add a new test class or test method that verifies:
+  - When `find_editor()` returns `None`, `_launch_editor_background` returns `""` (empty string) and does NOT invoke `subprocess.run` or `subprocess.Popen`.
+  - A log message with "No editor configured" is generated (use `caplog` or verify `logger.info` was called).
+  - The fallback `or ["vim"]` is no longer present (structural test: the method does not use `or ["vim"]` anywhere).
+
 ## Verification
 
 1. Run the full test suite: `uv run pytest` — all existing tests must pass.
@@ -214,3 +246,7 @@ Note: Remove the `from teddy_executor.adapters.inbound.textual_plan_reviewer_wid
 4. Verify no editor fallback: when no config and no env var, `find_editor()` returns `None` (previously it would fall back to `code` or `nano`).
 5. Verify `get_diff_viewer_command` returns correct commands for known editors (e.g., `["vim", "-d"]`, `["code", "--diff"]`).
 6. Verify `TEDDY_DIFF_TOOL` env var still overrides the translation table.
+7. Run ask_loop tests: `uv run pytest tests/suites/unit/adapters/outbound/test_console_ask_loop_editor_background.py -v`. Verify:
+   - When `find_editor()` returns `None`, `_launch_editor_background` returns `""` and logs a notification.
+   - The old fallback `or ["vim"]` is no longer present in the code.
+   - `subprocess.run` / `subprocess.Popen` are NOT called when no editor is configured.
