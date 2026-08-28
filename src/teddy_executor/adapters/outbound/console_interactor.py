@@ -68,7 +68,6 @@ class ConsoleInteractorAdapter(IUserInteractor):
         Allows falling back to an external editor for multi-line text.
         """
         self._display_ask_header(prompt, resources, agent_name)
-        self._ask_loop.cleanup()
         return self._ask_loop.run(prompt)
 
     def _display_ask_header(

@@ -70,17 +70,13 @@ class TestRealLaunchEditorBackground:
         self, real_ask_loop, tmp_path
     ):
         """_launch_editor_background should create a temp file with initial content, set _active_editor_path,
-        call subprocess.Popen with TTY inheritance, and return an empty string."""
+        and return an empty string (the editor launch is deferred to later deliverable)."""
         # Override create_temp_file to return a known path inside tmp_path
         temp_file = str(tmp_path / "editor_content.md")
         real_ask_loop._system_env.create_temp_file.return_value = temp_file
 
         with (
-            patch("subprocess.Popen", autospec=True) as mock_popen,
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
-            patch(f"{self.PROD_PREFIX}.sys.stdin") as mock_stdin,
-            patch(f"{self.PROD_PREFIX}.sys.stdout") as mock_stdout,
-            patch(f"{self.PROD_PREFIX}.sys.stderr") as mock_stderr,
         ):
             prompt = "test prompt"
             result = real_ask_loop._launch_editor_background(prompt)
@@ -106,21 +102,23 @@ class TestRealLaunchEditorBackground:
                 f"Expected '{temp_file}', got '{real_ask_loop._active_editor_path}'"
             )
 
-            # subprocess.Popen must have been called with the editor command and the temp file path
-            mock_popen.assert_called_once()
-            call_args, call_kwargs = mock_popen.call_args
-            cmd = call_args[0] if isinstance(call_args[0], list) else call_args[0]
-            assert temp_file in cmd, f"Temp file path not in command: {cmd}"
-            # Verify TTY inheritance: stdin/stdout/stderr are fd integers (pty slave),
-            # not sys.stdin/sys.stdout/sys.stderr directly (PTY isolation fix).
-            stdin_val = call_kwargs.get("stdin")
-            stdout_val = call_kwargs.get("stdout")
-            stderr_val = call_kwargs.get("stderr")
-            assert isinstance(stdin_val, int), f"stdin must be an fd (pty slave), got {type(stdin_val)}"
-            assert isinstance(stdout_val, int), f"stdout must be an fd (pty slave), got {type(stdout_val)}"
-            assert isinstance(stderr_val, int), f"stderr must be an fd (pty slave), got {type(stderr_val)}"
-            assert call_kwargs.get("close_fds") is True, "close_fds must be True"
-            assert call_kwargs.get("start_new_session") is True, "start_new_session must be True"
+    def test_pty_plumbing_removed(self, ask_loop):
+        """PTY plumbing must be removed: no _pty_master_fd, _pty_drainer_thread,
+        _pty_drainer(), _launch_editor_in_pty(), _close_pty_master(), or cleanup()."""
+        assert not hasattr(ask_loop, "_pty_master_fd"), (
+            "_pty_master_fd should not exist"
+        )
+        assert not hasattr(ask_loop, "_pty_drainer_thread"), (
+            "_pty_drainer_thread should not exist"
+        )
+        assert not hasattr(ask_loop, "_pty_drainer"), "_pty_drainer should not exist"
+        assert not hasattr(ask_loop, "_launch_editor_in_pty"), (
+            "_launch_editor_in_pty should not exist"
+        )
+        assert not hasattr(ask_loop, "_close_pty_master"), (
+            "_close_pty_master should not exist"
+        )
+        assert not hasattr(ask_loop, "cleanup"), "cleanup should not exist"
 
     def test_stripped_osc_tail_is_cleared_and_harvest_runs(
         self, ask_loop, mock_system_env

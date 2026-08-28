@@ -3,10 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-import select
-import subprocess
 import sys
-import threading
 from typing import TYPE_CHECKING, Optional
 
 from prompt_toolkit.history import InMemoryHistory
@@ -45,8 +42,6 @@ class ConsoleAskLoop:
         self._tooling = tooling
         self._history = InMemoryHistory()
         self._active_editor_path: Optional[str] = None
-        self._pty_master_fd: Optional[int] = None
-        self._pty_drainer_thread: Optional[threading.Thread] = None
 
     def _is_tty(self) -> bool:
         """Check if stdin is a real TTY (vs pipe/test runner)."""
@@ -71,88 +66,6 @@ class ConsoleAskLoop:
     def _strip_escape_sequences(self, text: str) -> str:
         """Remove ANSI escape sequences and OSC control sequences from text."""
         return _ESCAPE_SEQUENCE_RE.sub("", text)
-
-    def _pty_drainer(self, master_fd: int) -> None:
-        """Background thread: continuously drain the pty master to prevent buffer overflow.
-
-        Reads and discards all data from the pty master fd while the editor is running.
-        This prevents the kernel's pty buffer from filling up, which would cause the
-        editor's writes (e.g., OSC queries) to block.
-        """
-        try:
-            while True:
-                r, _, _ = select.select([master_fd], [], [], 1.0)
-                if not r:
-                    continue
-                data = os.read(master_fd, 4096)
-                if not data:
-                    break
-        except (OSError, ValueError):
-            # fd closed or invalid — drainer exits cleanly
-            pass
-
-    def _launch_editor_in_pty(self, temp_path: str) -> None:
-        """Spawn the editor with an isolated pty to prevent terminal contamination.
-
-        Creates a pty pair, spawns the editor subprocess connected to the pty slave,
-        and starts a background thread to drain the pty master. All terminal
-        negotiations (OSC queries/responses) happen inside the isolated pty,
-        never reaching the parent's terminal.
-        """
-        # Close any previous pty master fd before opening a new one
-        self._close_pty_master()
-
-        # 1. Create pty pair
-        master_fd, slave_fd = os.openpty()
-
-        editor_cmd = self._tooling.find_editor() or ["vim"]
-        editor_name = (
-            os.path.basename(editor_cmd[0])
-            if isinstance(editor_cmd, list) and editor_cmd
-            else "editor"
-        )
-        logger.info("Opening Editor (pty): %s", editor_name)
-
-        # 2. Spawn editor with pty slave as its TTY
-        try:
-            subprocess.Popen(  # nosec B603
-                editor_cmd + [temp_path],
-                stdin=slave_fd,
-                stdout=slave_fd,
-                stderr=slave_fd,
-                close_fds=True,
-                start_new_session=True,
-            )
-            # 3. Close slave fd in parent — child has the only copy
-            os.close(slave_fd)
-
-            # 4. Store master fd and start drainer thread
-            self._pty_master_fd = master_fd
-            self._pty_drainer_thread = threading.Thread(
-                target=self._pty_drainer,
-                args=(master_fd,),
-                daemon=True,
-            )
-            self._pty_drainer_thread.start()
-        except Exception:
-            os.close(slave_fd)
-            os.close(master_fd)
-            self._pty_master_fd = None
-            raise
-
-    def _close_pty_master(self) -> None:
-        """Close the pty master fd and wait for the drainer thread to exit."""
-        if self._pty_master_fd is not None:
-            try:
-                os.close(self._pty_master_fd)
-            except OSError:
-                pass
-            self._pty_master_fd = None
-            self._pty_drainer_thread = None
-
-    def cleanup(self) -> None:
-        """Close pty master and clean up editor resources."""
-        self._close_pty_master()
 
     def _pt_prompt(self, prompt_text: str) -> str:
         """Prompt the user using prompt_toolkit (TTY) or input() (non-TTY/pipe)."""
@@ -248,12 +161,6 @@ class ConsoleAskLoop:
         )
         logger.info("Opening Editor: %s", editor_name)
 
-        # Use pty isolation instead of direct TTY inheritance to prevent
-        # terminal emulator OSC sequences from contaminating parent TTY.
-        self._launch_editor_in_pty(temp_path)
-        # Secondary defense: flush main stdin (catches any sequences that
-        # might still leak despite pty isolation)
-        self._flush_stdin()
         # Non-blocking: return empty string to continue the loop
         return ""
 
@@ -264,10 +171,7 @@ class ConsoleAskLoop:
         from the persistent file. Otherwise, prompt for confirmation.
         """
         if self._active_editor_path:
-            # Close the pty master fd first — this ensures any buffered
-            # terminal negotiations are discarded, not read by the parent.
-            self._close_pty_master()
-            # Secondary defense: flush main stdin buffer
+            # Flush main stdin buffer before reading file
             self._flush_stdin()
             try:
                 with open(self._active_editor_path, "r", encoding="utf-8") as f:
