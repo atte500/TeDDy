@@ -1,6 +1,6 @@
 # Slice: CLI Editor Regression Fix — Hybrid Synchronous/Asynchronous Model
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc bug fix — regression introduced by 00-07-editor-subsystem-overhaul)
 - **Scope Slug:** `cli-editor-regression-fix`
 
@@ -120,13 +120,18 @@ And stdin is flushed using msvcrt instead of termios
 
 ### Deliverables
 
-- [ ] **PTY Removal** — Delete `_pty_master_fd`, `_pty_drainer_thread`, `_pty_drainer()`, `_launch_editor_in_pty()`, `_close_pty_master()`, `cleanup()`. Remove `import select`, `import threading`.
+- [▶] **PTY Removal** — Delete `_pty_master_fd`, `_pty_drainer_thread`, `_pty_drainer()`, `_launch_editor_in_pty()`, `_close_pty_master()`, `cleanup()`. Remove `import select`, `import threading`.
 - [ ] **CLI Editor Classification** — Static set of terminal editors + helper method.
 - [ ] **Synchronous CLI Editor Launch** — `subprocess.run()` with TTY inheritance, direct content return.
 - [ ] **GUI Editor Launch Preservation** — Existing `Popen()` + harvest-on-Enter pattern unchanged.
 - [ ] **Cross-Platform `_flush_stdin()`** — POSIX `termios` + Windows `msvcrt` + fallback.
 - [ ] **Test Updates** — Update existing tests, delete PTY-specific tests, add tests for CLI sync path.
 - [ ] **Remove PTY-specific Test File** — Delete `test_console_ask_loop_pty_isolation.py`.
+- [ ] **Wiring (End-to-End Editor Flow)** — Acceptance test simulating the ask loop with both CLI and GUI editors to verify the full integration path.
+
+## Implementation Notes
+
+(To be filled by Developer during implementation)
 
 ## Verification
 
