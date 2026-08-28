@@ -7,7 +7,6 @@ import re
 import sys
 from typing import TYPE_CHECKING, Any, Optional, cast
 
-import anyio
 
 if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
@@ -224,10 +223,8 @@ async def launch_editor(
 
             logger.info("Opening Editor (sync): %s", editor_name)
             with app.suspend():
-                await anyio.to_thread.run_sync(
-                    lambda: subprocess.run(  # noqa: B603
-                        editor_cmd + [temp_file]
-                    )
+                subprocess.run(  # noqa: B603
+                    editor_cmd + [temp_file]
                 )
                 # Restore foreground process group before Textual resumes
                 _restore_foreground_process_group()
