@@ -64,27 +64,29 @@ After the `with` block, it reads the temp file, strips escape sequences, splits 
 
 ## Solution
 ### Root Cause
-In `launch_editor()` (`textual_plan_reviewer_editor.py`, line 197), `_flush_stdin()` was called INSIDE the `with app.suspend():` context manager block. This function calls `termios.tcflush(sys.stdin, termios.TCIFLUSH)` which discards all received-but-unread data from the TTY input buffer.
+In `launch_editor()` (`textual_plan_reviewer_editor.py`), `subprocess.run()` is called inside the `with app.suspend():` block without restoring the foreground process group after the child process (vim) exits. When vim runs with a real TTY, it calls `tcsetpgrp()` to claim the foreground process group. On exit, it should restore the original process group, but macOS may not do this correctly. Textual's `resume_application_mode()` then calls `start_application_mode()`, which performs a NOP `tcsetattr()` check. If the foreground process group is not the Textual process, this check fails with `EIO`, causing `start_application_mode()` to return early without entering the alternate screen. The result is a console drop (no alternate screen) and a hung process (the event loop waits indefinitely for a terminal state that never arrives).
 
-When Textual exits the `app.suspend()` context, it calls `resume_application_mode()`, which sends terminal queries (escape sequences) and reads stdin for the responses. If `tcflush` has already flushed those responses (or other pending data), Textual's resume mechanism hangs indefinitely waiting for data that will never arrive. The alternate screen is never restored, leaving the user at the console with a hung process.
+This explains why `preview_readonly()` works correctly: it uses `app._system_env.run_command()` which passes `stdin=subprocess.DEVNULL`, preventing the child process from ever inheriting the real TTY and calling `tcsetpgrp()`.
 
 ### Fix
-Move `_flush_stdin()` from INSIDE the `with app.suspend():` block to IMMEDIATELY AFTER it. This ensures the flush happens after Textual has fully restored the alternate screen and completed its terminal state queries, so the flush cannot interfere with the resume mechanism.
+Add two restoration functions inside the `app.suspend()` block, after `subprocess.run()` returns and BEFORE Textual's `resume_application_mode()` runs:
+1. `_restore_foreground_process_group()` — calls `os.tcsetpgrp(fd, os.getpgrp())` to explicitly restore the TeDDy process as the foreground process group.
+2. `_restore_terminal_cooked_mode()` — restores `ICANON | ECHO | ICRNL` on the TTY as a secondary safety measure (mirrors the pattern from `SystemEnvironmentAdapter.run_command()`).
+
+`_flush_stdin()` remains OUTSIDE the suspend block (previous fix preserved).
 
 ```python
-# Before (buggy):
+# Fixed code (simplified):
 with app.suspend():
     await anyio.to_thread.run_sync(lambda: subprocess.run(editor_cmd + [temp_file]))
-    _flush_stdin()
-
-# After (fixed):
-with app.suspend():
-    await anyio.to_thread.run_sync(lambda: subprocess.run(editor_cmd + [temp_file]))
+    _restore_foreground_process_group()
+    _restore_terminal_cooked_mode()
 _flush_stdin()
 ```
 
 ### Preventative Measures
-This bug is a class of "terminal state interference during suspend context." To prevent similar issues:
-1. **Never call `tcflush()` or manipulate stdin inside `app.suspend()`.** Any operation that reads, writes, or flushes stdin while Textual's suspend context is active risks interfering with the terminal state restoration.
-2. **Document this rule** in the codebase for any future suspend/resume code.
-3. **Audit for similar patterns:** All `_flush_stdin()` calls in the codebase should be verified to not occur inside Textual's suspend context. Systemic audit confirmed there is currently one call site, which this fix addresses.
+This bug is a class of "terminal process group state interference during suspend context." To prevent similar issues:
+1. **Always restore the foreground process group explicitly** after any subprocess that runs with a real TTY inside `app.suspend()`. Use `os.tcsetpgrp(fd, os.getpgrp())`.
+2. **Prefer `stdin=subprocess.DEVNULL`** when the child process does not need a real TTY (as `run_command()` does). This prevents the child from claiming the foreground process group in the first place.
+3. **Document this rule** in the codebase for any future suspend/resume code.
+4. **Audit for similar patterns:** All `subprocess.run()` calls inside `app.suspend()` should be reviewed for process group restoration. Systemic audit confirmed `launch_editor()` was the only call site without it.

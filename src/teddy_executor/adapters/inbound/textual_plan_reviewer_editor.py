@@ -99,6 +99,46 @@ def _flush_stdin() -> None:
         pass
 
 
+def _restore_terminal_cooked_mode() -> None:
+    """Restore terminal to cooked mode after subprocess.run inside suspend.
+
+    Mirrors the emergency TTY restore found in SystemEnvironmentAdapter.run_command().
+    A child process (like vim) may leave the terminal in raw mode after exit.
+    This ensures cooked mode (ICANON | ECHO) is re-established before
+    Textual's resume_application_mode() runs.
+    """
+    try:
+        if sys.stdin.isatty():
+            fd = sys.stdin.fileno()
+            import termios  # noqa: PLC0415
+
+            attrs = termios.tcgetattr(fd)
+            attrs[0] |= termios.ICRNL
+            attrs[3] |= termios.ICANON | termios.ECHO
+            termios.tcsetattr(fd, termios.TCSAFLUSH, attrs)
+    except Exception:
+        pass
+
+
+def _restore_foreground_process_group() -> None:
+    """Restore the foreground process group after subprocess.run inside suspend.
+
+    When a child process (like vim) runs with a real TTY, it may call
+    tcsetpgrp() to claim the foreground. On exit, it should restore the
+    original pgrp, but macOS may not do this correctly. This function
+    explicitly restores the TeDDy process to the foreground so that
+    Textual's start_application_mode() NOP tcsetattr check can succeed.
+    """
+    if sys.platform == "win32":
+        return
+    try:
+        fd = sys.stdin.fileno()
+        if os.isatty(fd):
+            os.tcsetpgrp(fd, os.getpgrp())
+    except Exception:
+        pass
+
+
 def _strip_escape_sequences(text: str) -> str:
     """Remove ANSI escape sequences and OSC control sequences from text."""
     return _ESCAPE_SEQUENCE_RE.sub("", text)
@@ -189,6 +229,10 @@ async def launch_editor(
                         editor_cmd + [temp_file]
                     )
                 )
+                # Restore foreground process group before Textual resumes
+                _restore_foreground_process_group()
+                # Restore cooked mode as secondary safety measure
+                _restore_terminal_cooked_mode()
             _flush_stdin()
             with open(temp_file, "r", encoding="utf-8") as f:
                 content = f.read()
