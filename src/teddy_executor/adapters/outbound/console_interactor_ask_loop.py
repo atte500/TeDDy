@@ -188,6 +188,28 @@ class ConsoleAskLoop:
         )
         logger.info("Opening Editor: %s", editor_name)
 
+        # Classify editor: synchronous for CLI editors, async for GUI
+        if self._is_cli_editor(editor_cmd):
+            import subprocess  # noqa: PLC0415
+
+            subprocess.run(editor_cmd + [temp_path])  # nosec B603
+            self._flush_stdin()
+
+            # Read harvested content
+            with open(temp_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            content = self._strip_escape_sequences(content)
+            marker = "<!-- Please enter your response above this line. -->"
+            if marker in content:
+                content = content.split(marker)[0].strip()
+
+            # Clean up temp file (if it was newly created, not persistent)
+            if temp_path == self._active_editor_path:
+                self._system_env.delete_file(temp_path)
+                self._active_editor_path = None
+
+            return content if content else ""
+
         # Non-blocking: return empty string to continue the loop
         return ""
 

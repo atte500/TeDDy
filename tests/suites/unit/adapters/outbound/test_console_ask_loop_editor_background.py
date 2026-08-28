@@ -77,29 +77,23 @@ class TestRealLaunchEditorBackground:
 
         with (
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch(f"{self.PROD_PREFIX}.ConsoleAskLoop._flush_stdin"),
+            patch("subprocess.run"),
         ):
             prompt = "test prompt"
             result = real_ask_loop._launch_editor_background(prompt)
 
-            # Method must return empty string (non-blocking)
+            # Method returns empty string because the harvested content is empty
+            # (only marker/prompt content, stripped to nothing before the marker)
             assert result == "", f"Expected empty string, got: {repr(result)}"
 
-            # A temp file must have been created
-            assert os.path.exists(temp_file), f"Temp file not created: {temp_file}"
-            with open(temp_file, "r", encoding="utf-8") as f:
-                content = f.read()
-            # The file should contain the prompt and the marker
-            assert "test prompt" in content, "Prompt not in file content"
-            assert "Please enter your response above this line" in content, (
-                "Marker not in file content"
-            )
-
-            # _active_editor_path must be set to the temp file path
+            # For a CLI editor, the file is cleaned up after harvesting,
+            # so _active_editor_path is reset to None.
             assert hasattr(real_ask_loop, "_active_editor_path"), (
                 "Instance missing _active_editor_path"
             )
-            assert real_ask_loop._active_editor_path == temp_file, (
-                f"Expected '{temp_file}', got '{real_ask_loop._active_editor_path}'"
+            assert real_ask_loop._active_editor_path is None, (
+                f"Expected None, got: {real_ask_loop._active_editor_path}"
             )
 
     def test_pty_plumbing_removed(self, ask_loop):
@@ -159,4 +153,105 @@ class TestRealLaunchEditorBackground:
         assert "8080/8989" not in result, f"OSC tail leaked into result: {repr(result)}"
         assert result == "Bug fix content", (
             f"Expected harvested content 'Bug fix content', got {repr(result)}"
+        )
+
+
+class TestSynchronousCliEditorLaunch:
+    """Tests for the synchronous CLI editor path of _launch_editor_background.
+
+    When the resolved editor is a known terminal/CLI editor (vim, nano, etc.),
+    _launch_editor_background should call subprocess.run synchronously, then
+    read and return the file content.
+    """
+
+    PROD_PREFIX = "teddy_executor.adapters.outbound.console_interactor_ask_loop"
+
+    @pytest.fixture
+    def real_ask_loop(self, mock_system_env, mock_tooling):
+        """Create a ConsoleAskLoop with real dependencies (no mock overrides on the method itself)."""
+        return ConsoleAskLoop(mock_system_env, mock_tooling)
+
+    def test_sync_cli_editor_creates_file_and_returns_content(
+        self, real_ask_loop, tmp_path
+    ):
+        """For a CLI editor (vim), _launch_editor_background should create a temp file,
+        call subprocess.run with the editor command and temp path, then read and return
+        the harvested content."""
+
+        # Arrange: set up a known temp file path
+        temp_file = str(tmp_path / "editor_content.md")
+        real_ask_loop._system_env.create_temp_file.return_value = temp_file
+
+        # Arrange: set up mock_tooling to return a CLI editor
+        real_ask_loop._tooling.find_editor.return_value = ["/usr/bin/vim"]
+
+        # Expected content that the editor would write
+        expected_content = "User typed this in vim"
+
+        # Define a side_effect that writes expected content to the temp file.
+        # This simulates the editor saving and exiting after subprocess.run is called.
+        def write_editor_content(*args, **kwargs):
+            with open(temp_file, "w", encoding="utf-8") as f:
+                f.write(expected_content)
+
+        with (
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch("subprocess.run", side_effect=write_editor_content) as mock_run,
+        ):
+            # Act
+            result = real_ask_loop._launch_editor_background("test prompt")
+
+            # Assert: subprocess.run was called with the editor command + temp path
+            mock_run.assert_called_once()
+            call_args, _ = mock_run.call_args
+            cmd = call_args[0] if isinstance(call_args[0], list) else list(call_args[0])
+            assert temp_file in cmd, f"Temp file path not in command: {cmd}"
+            assert "/usr/bin/vim" in cmd, f"Vim not in command: {cmd}"
+
+        # Assert: returned content is the harvested file content
+        assert result == expected_content, (
+            f"Expected '{expected_content}', got {repr(result)}"
+        )
+
+    def test_sync_cli_editor_reuses_persistent_file(self, real_ask_loop, tmp_path):
+        """When _active_editor_path is already set, a CLI editor should update the file,
+        call subprocess.run, and return the updated content."""
+
+        # Arrange: set up a persistent file path
+        temp_file = str(tmp_path / "persistent_editor.md")
+        real_ask_loop._active_editor_path = temp_file
+
+        # Arrange: write initial content (simulating previous edit)
+        marker = "<!-- Please enter your response above this line. -->"
+        initial_content = f"\n\n{marker}\n\nOld prompt"
+        with open(temp_file, "w", encoding="utf-8") as f:
+            f.write(initial_content)
+
+        # Arrange: set up mock_tooling to return a CLI editor
+        real_ask_loop._tooling.find_editor.return_value = ["/usr/bin/vim"]
+
+        # Updated content that the editor would produce
+        updated_content = "Updated from vim"
+
+        # Define a side_effect that writes updated content to the temp file
+        def write_updated_content(*args, **kwargs):
+            with open(temp_file, "w", encoding="utf-8") as f:
+                f.write(updated_content)
+
+        with (
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch("subprocess.run", side_effect=write_updated_content) as mock_run,
+        ):
+            # Act
+            result = real_ask_loop._launch_editor_background("new prompt")
+
+            # Assert: subprocess.run was called
+            mock_run.assert_called_once()
+            call_args, _ = mock_run.call_args
+            cmd = call_args[0] if isinstance(call_args[0], list) else list(call_args[0])
+            assert temp_file in cmd, f"Temp file path not in command: {cmd}"
+
+        # Assert: returned content is the updated file content
+        assert result == updated_content, (
+            f"Expected '{updated_content}', got {repr(result)}"
         )
