@@ -1,3 +1,4 @@
+import os
 import shlex
 from typing import Optional, List
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
@@ -5,6 +6,20 @@ from teddy_executor.core.ports.outbound.config_service import IConfigService
 
 
 class ConsoleToolingHelper:
+    # Translation table mapping editor basenames to their diff viewer flags.
+    # Only vim/nvim support the universal `-d` flag; GUI editors use their own.
+    # Editors not in this table fall back to returning None (no diff viewer).
+    _DIFF_FLAGS: dict[str, list[str]] = {
+        "vim": ["-d"],
+        "vi": ["-d"],
+        "nvim": ["-d"],
+        "code": ["--diff"],
+        "cursor": ["--diff"],
+        "codium": ["--diff"],
+        "zed": ["--diff"],
+        "idea": ["diff"],
+    }
+
     def __init__(self, system_env: ISystemEnvironment, config_service: IConfigService):
         self._system_env = system_env
         self._config_service = config_service
@@ -19,8 +34,28 @@ class ConsoleToolingHelper:
                 return custom_tool_parts
             return None
 
-        if code_path := self._system_env.which("code"):
-            return [code_path, "-r", "--diff", "--wait"]
+        # 1. Try to resolve editor from config or env directly
+        editor_str = self._config_service.get_setting("editor")
+        if not editor_str:
+            editor_str = self._system_env.get_env("VISUAL") or self._system_env.get_env(
+                "EDITOR"
+            )
+
+        if editor_str:
+            parts = shlex.split(editor_str)
+            tool_path = self._system_env.which(parts[0])
+            if tool_path:
+                basename = os.path.basename(tool_path).lower()
+                if flags := self._DIFF_FLAGS.get(basename):
+                    return [tool_path] + flags
+                return None
+
+        # 2. Fallback: use find_editor() for backward compatibility with old
+        #    fallback chain (code/nano). This will be removed in Cleanup.
+        if editor_cmd := self.find_editor():
+            basename = os.path.basename(editor_cmd[0]).lower()
+            if flags := self._DIFF_FLAGS.get(basename):
+                return [editor_cmd[0]] + flags
         return None
 
     def find_editor(self) -> Optional[List[str]]:
