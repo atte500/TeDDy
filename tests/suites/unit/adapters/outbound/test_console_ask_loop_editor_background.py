@@ -4,7 +4,6 @@ Verifies that typing 'e' in the ask loop calls _launch_editor_background
 instead of _open_editor_blocking, and that the harvest path returns content.
 """
 
-import os
 from unittest.mock import MagicMock, patch
 
 import pytest

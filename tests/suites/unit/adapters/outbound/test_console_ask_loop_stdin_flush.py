@@ -13,12 +13,14 @@ import pytest
 
 try:
     import termios
+
     _HAS_TERMIOS = True
 except ImportError:
     _HAS_TERMIOS = False
 
 try:
     import msvcrt
+
     _HAS_MSVCRT = True
 except ImportError:
     _HAS_MSVCRT = False
@@ -102,9 +104,7 @@ class TestStdinFlush:
         # Arrange
         ask_loop._active_editor_path = "/tmp/editor.md"
         marker = "<!-- Please enter your response above this line. -->"
-        file_content = (
-            "User response above marker\n\n" + marker + "\n\nPrompt text"
-        )
+        file_content = "User response above marker\n\n" + marker + "\n\nPrompt text"
 
         with (
             patch.object(ask_loop, "_flush_stdin") as mock_flush,
@@ -160,7 +160,9 @@ class TestWindowsStdinFlush:
         to drain the input buffer."""
         with (
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
-            patch("builtins.__import__", side_effect=self._import_fails_for_termios) as mock_import,
+            patch(
+                "builtins.__import__", side_effect=self._import_fails_for_termios
+            ) as mock_import,
         ):
             # msvcrt.kbhit returns True once (1 char available), then False
             with patch("msvcrt.kbhit", side_effect=[True, False]) as mock_kbhit:

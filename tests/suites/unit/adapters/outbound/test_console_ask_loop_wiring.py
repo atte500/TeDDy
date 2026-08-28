@@ -50,7 +50,6 @@ class TestWiringEndToEndEditorFlow:
         uses subprocess.run synchronously and returns harvested content.
         The run() loop returns that content immediately without going
         into harvest mode."""
-        import subprocess
 
         # Arrange: set up a known temp path
         temp_file = str(tmp_path / "wiring_cli.md")
@@ -91,7 +90,6 @@ class TestWiringEndToEndEditorFlow:
         uses subprocess.Popen and returns empty string. The run() loop
         continues, and when the user presses Enter, the harvest path
         (_handle_empty_input) reads and returns the file content."""
-        import subprocess
 
         # Arrange: set up a known temp path
         temp_file = str(tmp_path / "wiring_gui.md")
@@ -115,7 +113,8 @@ class TestWiringEndToEndEditorFlow:
         with (
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
             patch(
-                f"{self.PROD_PREFIX}.ptk_prompt", side_effect=lambda *a, **kw: next(prompt_sequence)
+                f"{self.PROD_PREFIX}.ptk_prompt",
+                side_effect=lambda *a, **kw: next(prompt_sequence),
             ),
             patch("subprocess.Popen", side_effect=write_gui_content),
         ):

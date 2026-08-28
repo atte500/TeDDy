@@ -26,9 +26,9 @@ async def test_tui_add_message_harvest_on_submit(env, monkeypatch):
 
     # Ensure create_temp_file returns a real path inside the workspace
     def _create_temp_file(suffix=".txt"):
-        import pathlib
         path = env.workspace / f"message{suffix}"
         return str(path)
+
     system_env.create_temp_file.side_effect = _create_temp_file
 
     console_tooling = MagicMock()
