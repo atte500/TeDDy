@@ -189,7 +189,7 @@ async def launch_editor(
                         editor_cmd + [temp_file]
                     )
                 )
-                _flush_stdin()
+            _flush_stdin()
             with open(temp_file, "r", encoding="utf-8") as f:
                 content = f.read()
             content = _strip_escape_sequences(content)
