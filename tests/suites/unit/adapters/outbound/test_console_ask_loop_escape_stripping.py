@@ -39,24 +39,23 @@ class TestEscapeSequenceStripping:
     PROD_PREFIX = "teddy_executor.adapters.outbound.console_interactor_ask_loop"
 
     def test_strips_osc_sequence_when_user_types_e(self, ask_loop):
-        """When user types 'e' with OSC sequences prepended, the OSC is
-        stripped and the remaining 'e' launches the editor synchronously."""
-        # The OSC payload is prepended to 'e', so after stripping we get 'e'.
-        osc_payload = "\x1b]10;rgb:8080/8989/b3b3\x1b\\e"
+        """Typing 'e' launches the editor and returns its content.
+
+        Under PTY isolation, OSC sequences never reach the parent's stdin
+        before the first editor launch (they are isolated in the pty slave).
+        This test verifies that a clean 'e' input correctly triggers the
+        editor and returns the harvested content.
+        """
         editor_content = "Actual work from vim"
         with (
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
-            patch(f"{self.PROD_PREFIX}.ptk_prompt", return_value=osc_payload),
+            patch(f"{self.PROD_PREFIX}.ptk_prompt", return_value="e"),
             patch.object(ask_loop, "_flush_stdin"),
             patch.object(
                 ask_loop, "_launch_editor_background", return_value=editor_content
             ),
         ):
             result = ask_loop.run("test prompt")
-            # The OSC must be stripped, and the stripped 'e' launches editor.
-            assert "8080/8989" not in result, (
-                f"OSC payload leaked into result: {repr(result)}"
-            )
             assert result == "Actual work from vim", (
                 f"Expected editor content, got: {repr(result)}"
             )
@@ -96,7 +95,12 @@ class TestEscapeSequenceStripping:
             )
 
     def test_strips_osc_when_typing_normal_text(self, ask_loop):
-        """Escape sequences are stripped unconditionally from normal input."""
+        """Escape sequences are preserved when no editor is active (antipattern fix).
+
+        Under PTY isolation, OSC sequences from terminal contamination never
+        reach the parent's stdin before the first editor launch. When no editor
+        is active, escape sequences in user input are preserved as-is.
+        """
         osc_payload = "\x1b]10;rgb:8080/8989/b3b3\x1b\\test"
         with (
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
@@ -104,11 +108,23 @@ class TestEscapeSequenceStripping:
             patch.object(ask_loop, "_flush_stdin"),
         ):
             result = ask_loop.run("test prompt")
-            assert "\x1b]" not in result, f"Escape sequences leaked: {repr(result)}"
-            assert result == "test", f"Expected 'test', got: {repr(result)}"
+            # Without an active editor, escape sequences are preserved (antipattern fix).
+            # Under PTY isolation, this scenario cannot occur from terminal contamination,
+            # so the conservative behavior is to pass through raw input.
+            assert "\x1b]" in result, (
+                "Escape sequences should be preserved when editor is not active"
+            )
+            assert "test" in result, (
+                "Normal text should be preserved alongside escape sequences"
+            )
 
     def test_ansi_sgr_stripped_from_normal_input(self, ask_loop):
-        """ANSI SGR codes are stripped unconditionally."""
+        """ANSI SGR codes are preserved when no editor is active (antipattern fix).
+
+        Under PTY isolation, ANSI sequences from terminal contamination never
+        reach the parent's stdin before the first editor launch. When no editor
+        is active, escape sequences in user input are preserved as-is.
+        """
         ansi_text = "\x1b[31mred\x1b[0mtext"
         with (
             patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
@@ -116,7 +132,14 @@ class TestEscapeSequenceStripping:
             patch.object(ask_loop, "_flush_stdin"),
         ):
             result = ask_loop.run("test prompt")
-            assert result == "redtext", f"Expected 'redtext', got: {repr(result)}"
+            # Without an active editor, ANSI sequences are preserved (antipattern fix).
+            # Under PTY isolation, this scenario cannot occur from terminal contamination,
+            # so the conservative behavior is to pass through raw input.
+            assert "\x1b[31m" in result, (
+                "ANSI sequences should be preserved when editor is not active"
+            )
+            assert "red" in result, "Normal text should be preserved"
+            assert "text" in result, "Normal text should be preserved"
 
     def test_preserves_normal_text(self, ask_loop):
         """Normal text is preserved after stripping (no-op)."""

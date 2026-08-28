@@ -111,10 +111,16 @@ class TestRealLaunchEditorBackground:
             call_args, call_kwargs = mock_popen.call_args
             cmd = call_args[0] if isinstance(call_args[0], list) else call_args[0]
             assert temp_file in cmd, f"Temp file path not in command: {cmd}"
-            # Verify TTY inheritance: stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr
-            assert call_kwargs.get("stdin") is mock_stdin, "stdin not inherited"
-            assert call_kwargs.get("stdout") is mock_stdout, "stdout not inherited"
-            assert call_kwargs.get("stderr") is mock_stderr, "stderr not inherited"
+            # Verify TTY inheritance: stdin/stdout/stderr are fd integers (pty slave),
+            # not sys.stdin/sys.stdout/sys.stderr directly (PTY isolation fix).
+            stdin_val = call_kwargs.get("stdin")
+            stdout_val = call_kwargs.get("stdout")
+            stderr_val = call_kwargs.get("stderr")
+            assert isinstance(stdin_val, int), f"stdin must be an fd (pty slave), got {type(stdin_val)}"
+            assert isinstance(stdout_val, int), f"stdout must be an fd (pty slave), got {type(stdout_val)}"
+            assert isinstance(stderr_val, int), f"stderr must be an fd (pty slave), got {type(stderr_val)}"
+            assert call_kwargs.get("close_fds") is True, "close_fds must be True"
+            assert call_kwargs.get("start_new_session") is True, "start_new_session must be True"
 
     def test_stripped_osc_tail_is_cleared_and_harvest_runs(
         self, ask_loop, mock_system_env
