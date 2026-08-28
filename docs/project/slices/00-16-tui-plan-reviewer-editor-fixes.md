@@ -75,12 +75,14 @@ Four source files and corresponding test files need to be modified, following a 
 - [x] **Seam** - Add `_is_cli_editor()` helper to `textual_plan_reviewer_editor.py` (already exists in both `textual_plan_reviewer_editor.py` and `console_interactor_ask_loop.py`).
 - [x] **Contract (Expansion)** - Add `_DIFF_FLAGS` class variable to `ConsoleToolingHelper`. Extend `get_diff_viewer_command()` to use the translation table while keeping the old code path functional. Add `noqa: TID251`-free test mocks for new interface.
 - [x] **Harness** - Add test fixtures/mocks for no-editor state, CLI editor classification, diff flag verification in existing test files.
-- [ ] **Migration** - Update all consumers of `ConsoleToolingHelper` (callers of `find_editor()`, `get_diff_viewer_command()`, `_resolve_editor_cmd()`) to transition to new behavior. Update existing tests that relied on the old return values.
+- [x] **Migration** - Update all consumers of `ConsoleToolingHelper` (callers of `find_editor()`, `get_diff_viewer_command()`, `_resolve_editor_cmd()`) to transition to new behavior. Update existing tests that relied on the old return values.
 - [ ] **Wiring** - `preview_edit_diff_viewer` CLI editor suspend/harvest path in `textual_plan_reviewer_editor.py`, `add_message_handler` skip_confirm in `textual_plan_reviewer_previews.py`, `launch_editor` no-editor notification in `textual_plan_reviewer_editor.py`, `_launch_editor_background` no-editor notification in `console_interactor_ask_loop.py`.
 - [ ] **Cleanup (Contraction)** - Remove VS Code special-casing from `_resolve_editor_cmd()`, remove fallback chain from `find_editor()`, remove old code path from `get_diff_viewer_command()`.
 - [ ] **Refactor** - Remove unused imports (`ConfirmScreen` from `textual_plan_reviewer_previews.py` if no longer used), clean up stale comments.
 
 ## Implementation Notes
+
+- **Migration:** The Contract (Expansion) deliverable was designed with backward compatibility — `get_diff_viewer_command()` falls back to `find_editor()` when direct config/env resolution finds no editor, preserving the old fallback chain. Consumers (`launch_editor`, `preview_readonly`, `_launch_editor_background`) and existing tests (including `test_vscode_is_used_as_fallback` acceptance test) continue to work without changes. The fallback chain removal and VS Code special-casing removal are deferred to the Cleanup (Contraction) deliverable.
 
 - **Harness:** The Contract (Expansion) deliverable already added the `TestGetDiffViewerCommand` test class with 11 tests covering diff flag verification and no-editor state. The `_is_cli_editor` classification is tested in `test_tui_editor_suspend_resume.py::TestIsCliEditor`. The ask_loop tests have `mock_system_env`, `mock_tooling`, `ask_loop` fixtures. No additional harness code was needed beyond what was already committed.
 
