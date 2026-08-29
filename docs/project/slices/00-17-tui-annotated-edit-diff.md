@@ -59,7 +59,7 @@ The implementation follows the Tracer Bullet Dependency Sequence:
 - [x] **Logic** — Implement `reconstruct_from_diff()` with unit tests
 - [x] **Logic** — Implement `_generate_annotated_diff_content()` with unit tests
 - [x] **Wiring** — Update `preview_edit_diff_viewer()` CLI branch to use annotated diff, add integration test for end-to-end flow
-- [ ] **Migration** — Move `_setup_before_file()` inside GUI branch, update `handle_mock_diff()` to not require `before` parameter
+- [x] **Migration** — Move `_setup_before_file()` inside GUI branch, update `handle_mock_diff()` to not require `before` parameter
 - [ ] **Cleanup** — Remove `_setup_before_file()` and `harvest_edit_diff()` if no longer needed, remove `before` parameter from `handle_mock_diff()`
 
 ## Implementation Notes
@@ -75,6 +75,13 @@ The implementation follows the Tracer Bullet Dependency Sequence:
 - 8 parameterized test cases covering: basic diff, empty diff (identical content), only additions, only deletions, mixed additions/deletions, empty path_str, multiple hunks, and special characters in path.
 - Header includes the "TeDDy Change Preview" title, format explanation, and instructions for the user. The `.diff` extension triggers automatic vim syntax highlighting.
 - No hardcoded dependencies — uses standard library `difflib` module only.
+
+### handle_mock_diff refactor (Migration — Completed)
+- Simplified `handle_mock_diff()` signature from `(p_file, before, delete_fn)` to `(p_file)` - the `before` parameter and `delete_fn` are no longer passed to the mock handler.
+- `handle_mock_diff()` now ONLY writes mock output if `TEDDY_TEST_MOCK_EDITOR_OUTPUT` is set — cleanup responsibility is shifted to the caller.
+- Updated the GUI editor branch in `preview_edit_diff_viewer()` to delete `before` file explicitly after the mock check returns True: `if handle_mock_diff(p_file): app._system_env.delete_file(before); return True`.
+- Both CLI and GUI editor tests continue to pass — no behavioral changes.
+- Note: `_setup_before_file()` was ALREADY moved inside the GUI branch during the Wiring phase (first deliverable). The Migration phase only needed the `handle_mock_diff` refactor.
 
 ### preview_edit_diff_viewer CLI branch (Wiring — Completed)
 - Updated `preview_edit_diff_viewer()` CLI editor (`if _is_cli_editor()`) branch to use the annotated single-file diff flow instead of the old vimdiff two-file flow.

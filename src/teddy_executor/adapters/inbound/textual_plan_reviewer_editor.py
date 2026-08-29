@@ -217,13 +217,16 @@ def _strip_escape_sequences(text: str) -> str:
     return _ESCAPE_SEQUENCE_RE.sub("", text)
 
 
-def handle_mock_diff(p_file: Any, before: str, delete_fn: Any) -> bool:
-    """Helper for mock diff output in tests."""
+def handle_mock_diff(p_file: Any) -> bool:
+    """Helper for mock diff output in tests.
+
+    Writes mock output to the given file if TEDDY_TEST_MOCK_EDITOR_OUTPUT
+    env var is set. The caller is responsible for any file cleanup.
+    """
     mock_out = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
     if mock_out:
         with open(p_file, "w", encoding="utf-8") as f:
             f.write(mock_out)
-        delete_fn(before)
         return True
     return False
 
@@ -427,7 +430,8 @@ async def preview_edit_diff_viewer(
 
         # GUI editor: launch in background, show ConfirmScreen
         before = _setup_before_file(app, path_str, original)
-        if handle_mock_diff(p_file, before, app._system_env.delete_file):
+        if handle_mock_diff(p_file):
+            app._system_env.delete_file(before)
             return True
         prepare_after_file(p_file, proposed)
         try:
@@ -438,7 +442,9 @@ async def preview_edit_diff_viewer(
         except Exception as e:
             logger.debug("Failed to launch diff viewer: %s", e)
 
-        confirmed = True if app.is_headless else await app.push_screen_wait(ConfirmScreen())
+        confirmed = (
+            True if app.is_headless else await app.push_screen_wait(ConfirmScreen())
+        )
         app._system_env.delete_file(before)
         return _process_diff_result(confirmed, action, p_file, original, proposed)
 
