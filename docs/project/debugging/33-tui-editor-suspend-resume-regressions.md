@@ -159,6 +159,7 @@ The fix requires: (1) Adding `_restore_*` calls to `preview_readonly()`, (2) Add
 
 ## Solution
 
+**Commit:** `b78ed1d1`
 ### Root Cause Summary
 
 Three regressions in the TUI plan reviewer's editor invocation flow, all caused by incomplete or inconsistent terminal state management during `app.suspend()` → editor → resume cycles:
