@@ -541,6 +541,7 @@ class TestPreviewEditDiffViewer:
 
         # Predictable path for the annotated diff temp file
         import os  # noqa: PLC0415
+
         annotated_path = f"/tmp/teddy_edit_diff_{os.getpid()}.diff"
 
         with (
@@ -584,6 +585,7 @@ class TestPreviewEditDiffViewer:
                         "-line2\n"
                         "+modified\n"
                     )
+
             mock_run.side_effect = simulate_editor_save
 
             # Act
@@ -601,9 +603,7 @@ class TestPreviewEditDiffViewer:
             assert "vim" in cmd, f"Expected vim in command: {cmd}"
 
             # Assert: the editor receives only the annotated diff path (no -d flag)
-            assert annotated_path in cmd, (
-                f"Expected {annotated_path} in command: {cmd}"
-            )
+            assert annotated_path in cmd, f"Expected {annotated_path} in command: {cmd}"
             # Assert only one file path in the command (not two files)
             file_args = [a for a in cmd if isinstance(a, str) and a != "vim"]
             assert len(file_args) == 1, (
@@ -621,9 +621,7 @@ class TestPreviewEditDiffViewer:
             assert result is True, f"Expected True, got {result}"
 
             # Assert: action params updated if content changed
-            assert "edits" in action.params, (
-                "Expected 'edits' key in action.params"
-            )
+            assert "edits" in action.params, "Expected 'edits' key in action.params"
 
     @pytest.mark.anyio
     async def test_preview_edit_diff_viewer_gui_editor_uses_confirm_screen(self):

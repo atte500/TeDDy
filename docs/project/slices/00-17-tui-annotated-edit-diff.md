@@ -1,5 +1,5 @@
 # Slice: TUI Annotated Edit Diff
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Milestone 4: TUI & UX Enhancements
 - **Specs:** [TUI Plan Reviewer Editor Fixes](/docs/architecture/adapters/inbound/textual_plan_reviewer.md)
 - **Prototype:** [spikes/single_file_diff_spike.py]
@@ -60,7 +60,7 @@ The implementation follows the Tracer Bullet Dependency Sequence:
 - [x] **Logic** — Implement `_generate_annotated_diff_content()` with unit tests
 - [x] **Wiring** — Update `preview_edit_diff_viewer()` CLI branch to use annotated diff, add integration test for end-to-end flow
 - [x] **Migration** — Move `_setup_before_file()` inside GUI branch, update `handle_mock_diff()` to not require `before` parameter
-- [ ] **Cleanup** — Remove `_setup_before_file()` and `harvest_edit_diff()` if no longer needed, remove `before` parameter from `handle_mock_diff()`
+- [x] **Cleanup** — Remove `_setup_before_file()` and `harvest_edit_diff()` if no longer needed, remove `before` parameter from `handle_mock_diff()`
 
 ## Implementation Notes
 
@@ -95,6 +95,16 @@ The implementation follows the Tracer Bullet Dependency Sequence:
   - GUI editor test remains unchanged and continues to pass.
 - Test uses `MagicMock`/`patch` (TID251 violations) — pre-existing pattern in this test file, logged in technical debt.
 
+### Cleanup assessment (Cleanup — Completed, No-op)
+- All candidate functions assessed for removal — none removed:
+  - `_setup_before_file()`: Still needed — called once in the GUI branch of `preview_edit_diff_viewer()`.
+  - `harvest_edit_diff()`: Still needed — called from `_process_diff_result()` for the GUI diff path.
+  - `before` parameter from `handle_mock_diff()`: Already removed in the Migration phase (Turn 31).
+  - `handle_mock_editor()`: Still used by `launch_editor()` for the mock editor output path.
+  - `spawn_editor()`: Still used by the GUI path in `launch_editor()`.
+  - `_process_diff_result()`: Still used by `preview_edit_diff_viewer()` GUI branch.
+- No dead code found. All functions in `textual_plan_reviewer_editor.py` are still actively used.
+
 ### Design Decisions
 - Both functions placed in `textual_plan_reviewer_editor.py` since they're colocated with the diff viewer logic.
 - `_generate_annotated_diff_content` uses `difflib.unified_diff()` directly rather than the existing `generate_unified_diff()` in `diff.py` to keep annotated content generation colocated with editor logic.
@@ -102,11 +112,12 @@ The implementation follows the Tracer Bullet Dependency Sequence:
 
 ## Verification
 
-1. Run unit tests for `reconstruct_from_diff()` — verify all edge cases (empty diff, additions only, deletions only, mixed, modified `-` lines, modified `+` lines)
-2. Run unit tests for `_generate_annotated_diff_content()` — verify header format, unified diff format, edge cases
-3. Run full test suite — all tests must pass
-4. Manually verify in TUI:
+- [x] 1. Run unit tests for `reconstruct_from_diff()` — verify all edge cases (empty diff, additions only, deletions only, mixed, modified `-` lines, modified `+` lines) — **Automated: parametrized unit tests cover 9 cases, all passing (verified in CI).**
+- [x] 2. Run unit tests for `_generate_annotated_diff_content()` — verify header format, unified diff format, edge cases — **Automated: parametrized unit tests cover 8 cases, all passing (verified in CI).**
+- [x] 3. Run full test suite — all tests must pass — **Automated: 1168 passed, 5 skipped (verified multiple times during implementation — Turns 26, 31, 36).**
+- [ ] 4. Manually verify in TUI:
    - Press `e` on an EDIT action with vim/nvim — single `.diff` file opens, `:q` exits cleanly
    - Edit a `+` line — edit appears in reconstructed content
    - Edit a `-` line — edit is discarded
    - GUI editor (code/cursor) — existing `code --diff` flow works unchanged
+   - **Action required:** User needs to manually verify these interactive TUI behaviors.
