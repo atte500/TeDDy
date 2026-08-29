@@ -7,6 +7,7 @@ pytest-cov starts tracking coverage BEFORE our core modules are imported.
 
 import functools
 import os
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -261,3 +262,25 @@ def clean_test_env():
                     target.unlink()
             except Exception:
                 pass
+
+
+@pytest.fixture
+def temp_path() -> Callable[[str], str]:
+    """Platform-aware temp file path factory.
+
+    Returns a callable that generates temp file paths using the system's
+    temporary directory. Tests should use this instead of hardcoding
+    POSIX paths (e.g., a hardcoded absolute path) that break on Windows.
+
+    Usage::
+
+        def test_foo(temp_path):
+            expected_path = temp_path("my_test.txt")
+            mock_env.create_temp_file.return_value = expected_path
+    """
+    import tempfile as _tempfile
+
+    def _make_path(filename: str) -> str:
+        return str(Path(_tempfile.gettempdir()) / filename)
+
+    return _make_path

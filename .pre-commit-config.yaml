@@ -76,6 +76,15 @@ repos:
         types: [python]
         files: ^src/
 
+    -   id: no-hardcoded-tmp-paths
+        name: No Hardcoded /tmp/ Paths in Test Files
+        entry: uv run python .githooks/check_hardcoded_tmp.py
+        language: system
+        types: [text]
+        files: ^tests/
+        pass_filenames: false
+        always_run: true
+
     -   id: post-commit-test-gate
         name: Post-commit test gate
         entry: uv run python .githooks/post-commit.py

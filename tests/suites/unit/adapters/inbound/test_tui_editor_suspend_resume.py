@@ -13,6 +13,9 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
     _is_cli_editor,
 )
 
+import os
+import tempfile
+
 
 class TestIsCliEditor:
     """Unit tests for _is_cli_editor classification."""
@@ -71,10 +74,14 @@ class TestAddMessageHandler:
         app._console_tooling.find_editor.return_value = ["vim"]
         app.INSTRUCTION_MARKER = "---INSTRUCTIONS---"
         app.notify = MagicMock()
-        app._pending_message_file = "/tmp/pending_msg.md"
+        app._pending_message_file = os.path.join(
+            tempfile.gettempdir(), "pending_msg.md"
+        )
         app._user_message_cache = None
         app.plan.metadata = {}
-        app._system_env.create_temp_file.return_value = "/tmp/pending_msg.md"
+        app._system_env.create_temp_file.return_value = os.path.join(
+            tempfile.gettempdir(), "pending_msg.md"
+        )
 
         # Mock launch_editor to return a new message
         with patch(
@@ -119,7 +126,9 @@ class TestLaunchEditor:
         app._console_tooling.find_editor.return_value = None
         app.INSTRUCTION_MARKER = "---INSTRUCTIONS---"
         app.notify = MagicMock()
-        app._system_env.create_temp_file.return_value = "/tmp/fake.txt"
+        app._system_env.create_temp_file.return_value = os.path.join(
+            tempfile.gettempdir(), "fake.txt"
+        )
 
         # Act: call launch_editor with initial content
         result = await launch_editor(app, "initial content")
@@ -524,7 +533,9 @@ class TestPreviewEditDiffViewer:
         app.is_headless = False
         app._console_tooling = MagicMock()
         app._console_tooling.get_diff_viewer_command.return_value = ["vim"]
-        app._system_env.create_temp_file.return_value = "/tmp/wont_be_used.txt"
+        app._system_env.create_temp_file.return_value = os.path.join(
+            tempfile.gettempdir(), "wont_be_used.txt"
+        )
         app._system_env.delete_file = MagicMock()
 
         action = ActionData(
@@ -534,15 +545,14 @@ class TestPreviewEditDiffViewer:
                 "edits": [{"find": "old", "replace": "new"}],
             },
         )
-        action.pending_temp_file = "/tmp/after.test"
+        action.pending_temp_file = os.path.join(tempfile.gettempdir(), "after.test")
 
         original = "line1\nline2\n"
         proposed = "line1\nmodified\n"
 
-        # Predictable path for the annotated diff temp file
-        import os  # noqa: PLC0415
-
-        annotated_path = f"/tmp/teddy_edit_diff_{os.getpid()}.diff"
+        # Use platform-aware temp directory for the annotated diff path
+        # This prevents FileNotFoundError on Windows where /tmp/ does not exist.
+        _tmp_dir = tempfile.gettempdir()
 
         with (
             patch(
@@ -565,6 +575,11 @@ class TestPreviewEditDiffViewer:
                 "._setup_before_file",
             ) as mock_setup_before,
         ):
+            # Create the temp file in the platform-aware temp directory
+            annotated_path = os.path.join(
+                _tmp_dir, f"teddy_edit_diff_{os.getpid()}.diff"
+            )
+
             # Mock the tempfile context manager to return a predictable path
             mock_ntf = MagicMock()
             mock_ntf.name = annotated_path
@@ -573,8 +588,17 @@ class TestPreviewEditDiffViewer:
 
             # Simulate the editor writing the content back to the annotated file
             def simulate_editor_save(args, **kwargs) -> None:
-                """Write mock diff content to simulate user editing."""
-                with open(annotated_path, "w", encoding="utf-8") as f:
+                """Write mock diff content to simulate user editing.
+
+                The file path is extracted from the subprocess.run() call arguments
+                rather than hardcoded, ensuring it works on all platforms.
+                """
+                # Extract the actual temp file path from the subprocess.run call args
+                # args is the list ['vim', '/path/...'] passed to subprocess.run
+                actual_path = args[1] if len(args) > 1 else None
+                if actual_path is None:
+                    return
+                with open(actual_path, "w", encoding="utf-8") as f:
                     f.write(
                         "# TeDDy Change Preview — Single Annotated File\n"
                         "# ... (header)\n"
@@ -642,7 +666,9 @@ class TestPreviewEditDiffViewer:
             "/usr/local/bin/code",
             "--diff",
         ]
-        app._system_env.create_temp_file.return_value = "/tmp/before.test"
+        app._system_env.create_temp_file.return_value = os.path.join(
+            tempfile.gettempdir(), "before.test"
+        )
         app._system_env.delete_file = MagicMock()
         app._system_env.run_command = MagicMock()
         app.push_screen_wait = AsyncMock(return_value=True)
@@ -654,9 +680,9 @@ class TestPreviewEditDiffViewer:
                 "edits": [{"find": "old", "replace": "new"}],
             },
         )
-        action.pending_temp_file = "/tmp/after.test"
+        action.pending_temp_file = os.path.join(tempfile.gettempdir(), "after.test")
 
-        before_path = "/tmp/before.test"
+        before_path = os.path.join(tempfile.gettempdir(), "before.test")
 
         with (
             patch(

@@ -25,6 +25,9 @@ try:
 except ImportError:
     _HAS_MSVCRT = False
 
+import os
+import tempfile
+
 from teddy_executor.adapters.outbound.console_interactor_ask_loop import (
     ConsoleAskLoop,
 )
@@ -33,7 +36,9 @@ from teddy_executor.adapters.outbound.console_interactor_ask_loop import (
 @pytest.fixture
 def mock_system_env():
     env = MagicMock()
-    env.create_temp_file.return_value = "/tmp/fake_editor.md"
+    env.create_temp_file.return_value = os.path.join(
+        tempfile.gettempdir(), "fake_editor.md"
+    )
     return env
 
 
@@ -102,7 +107,7 @@ class TestStdinFlush:
         from unittest.mock import mock_open, patch
 
         # Arrange
-        ask_loop._active_editor_path = "/tmp/editor.md"
+        ask_loop._active_editor_path = os.path.join(tempfile.gettempdir(), "editor.md")
         marker = "<!-- Please enter your response above this line. -->"
         file_content = "User response above marker\n\n" + marker + "\n\nPrompt text"
 
@@ -123,7 +128,9 @@ class TestStdinFlush:
         assert mock_flush.call_count == 2, (
             f"Expected 2 flush calls, got {mock_flush.call_count}"
         )
-        mock_system_env.delete_file.assert_called_once_with("/tmp/editor.md")
+        mock_system_env.delete_file.assert_called_once_with(
+            os.path.join(tempfile.gettempdir(), "editor.md")
+        )
         assert ask_loop._active_editor_path is None, (
             "_active_editor_path should be reset after harvest"
         )
@@ -142,7 +149,9 @@ class TestWindowsStdinFlush:
     @pytest.fixture
     def mock_system_env(self):
         env = MagicMock()
-        env.create_temp_file.return_value = "/tmp/fake_editor.md"
+        env.create_temp_file.return_value = os.path.join(
+            tempfile.gettempdir(), "fake_editor.md"
+        )
         return env
 
     @pytest.fixture

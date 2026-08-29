@@ -1,3 +1,6 @@
+import os
+import tempfile
+
 import pytest
 from unittest.mock import MagicMock, patch
 from teddy_executor.adapters.outbound.console_interactor import ConsoleInteractorAdapter
@@ -12,7 +15,9 @@ def test_confirm_action_supports_m_for_message(monkeypatch):
     # Setup
     mock_env = MagicMock()
     # Mock system_env to avoid real IO
-    mock_env.create_temp_file.return_value = "/tmp/fake.md"
+    mock_env.create_temp_file.return_value = os.path.join(
+        tempfile.gettempdir(), "fake.md"
+    )
     mock_env.get_env.return_value = "nano"
 
     interactor = ConsoleInteractorAdapter(mock_env, MagicMock())

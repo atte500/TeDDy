@@ -12,11 +12,16 @@ from teddy_executor.adapters.outbound.console_interactor_ask_loop import (
     ConsoleAskLoop,
 )
 
+import os
+import tempfile
+
 
 @pytest.fixture
 def mock_system_env():
     env = MagicMock()
-    env.create_temp_file.return_value = "/tmp/fake_editor.md"
+    env.create_temp_file.return_value = os.path.join(
+        tempfile.gettempdir(), "fake_editor.md"
+    )
     return env
 
 
@@ -128,7 +133,9 @@ class TestRealLaunchEditorBackground:
         """
         from unittest.mock import mock_open
 
-        ask_loop._active_editor_path = "/tmp/editor_bug27.md"
+        ask_loop._active_editor_path = os.path.join(
+            tempfile.gettempdir(), "editor_bug27.md"
+        )
         marker = "<!-- Please enter your response above this line. -->"
         file_content = "Bug fix content\n\n" + marker + "\n\nPrompt text"
         tail_input = "]10;rgb:8080/8989/b3b3"
@@ -355,7 +362,9 @@ class TestLaunchEditorBackgroundNoEditor:
     @pytest.fixture
     def mock_system_env(self):
         env = MagicMock()
-        env.create_temp_file.return_value = "/tmp/fake_editor.md"
+        env.create_temp_file.return_value = os.path.join(
+            tempfile.gettempdir(), "fake_editor.md"
+        )
         return env
 
     @pytest.fixture

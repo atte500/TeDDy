@@ -9,6 +9,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import os
+import tempfile
+
 from teddy_executor.adapters.outbound.console_interactor_ask_loop import (
     ConsoleAskLoop,
 )
@@ -17,7 +20,9 @@ from teddy_executor.adapters.outbound.console_interactor_ask_loop import (
 @pytest.fixture
 def mock_system_env():
     env = MagicMock()
-    env.create_temp_file.return_value = "/tmp/fake_editor.md"
+    env.create_temp_file.return_value = os.path.join(
+        tempfile.gettempdir(), "fake_editor.md"
+    )
     return env
 
 
