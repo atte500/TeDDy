@@ -61,15 +61,19 @@ async def test_restoration_functions_called_inside_suspend():
         call_order.append("FLUSH_CALL")
         original_flush()
 
-    with patch(
-        "teddy_executor.adapters.inbound.textual_plan_reviewer_editor._restore_foreground_process_group",
-        side_effect=tracked_fgp,
-    ), patch(
-        "teddy_executor.adapters.inbound.textual_plan_reviewer_editor._restore_terminal_cooked_mode",
-        side_effect=tracked_tty,
-    ), patch(
-        "teddy_executor.adapters.inbound.textual_plan_reviewer_editor._flush_stdin",
-        side_effect=tracked_flush,
+    with (
+        patch(
+            "teddy_executor.adapters.inbound.textual_plan_reviewer_editor._restore_foreground_process_group",
+            side_effect=tracked_fgp,
+        ),
+        patch(
+            "teddy_executor.adapters.inbound.textual_plan_reviewer_editor._restore_terminal_cooked_mode",
+            side_effect=tracked_tty,
+        ),
+        patch(
+            "teddy_executor.adapters.inbound.textual_plan_reviewer_editor._flush_stdin",
+            side_effect=tracked_flush,
+        ),
     ):
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("edited content")

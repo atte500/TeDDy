@@ -57,7 +57,9 @@ def test_find_editor_falls_back_to_env_if_config_executable_invalid(
     assert result == ["/usr/bin/nano"]
 
 
-def test_find_editor_returns_none_when_no_config_and_no_env(helper, mock_env, mock_config):
+def test_find_editor_returns_none_when_no_config_and_no_env(
+    helper, mock_env, mock_config
+):
     """When no editor is configured via config or env vars, find_editor() returns None."""
     mock_config.get_setting.return_value = None
     mock_env.get_env.return_value = None
@@ -81,7 +83,9 @@ def test_find_editor_config_code_returns_without_flags(helper, mock_env, mock_co
     assert result == ["/usr/bin/code"], f"Expected ['/usr/bin/code'], got {result}"
 
 
-def test_diff_viewer_returns_none_when_fallback_not_taken(helper, mock_env, mock_config):
+def test_diff_viewer_returns_none_when_fallback_not_taken(
+    helper, mock_env, mock_config
+):
     """When no config/env is set but which('code') returns a path,
     get_diff_viewer_command() should return None (fallback chain removed)."""
     mock_config.get_setting.return_value = None

@@ -96,8 +96,7 @@ class TestAddMessageHandler:
             for call in app.push_screen_wait.call_args_list:
                 args, _ = call
                 assert not any(
-                    isinstance(a, type) and issubclass(a, ConfirmScreen)
-                    for a in args
+                    isinstance(a, type) and issubclass(a, ConfirmScreen) for a in args
                 ), "push_screen_wait should not be called with ConfirmScreen"
 
         # Assert: _user_message_cache was updated
@@ -304,9 +303,9 @@ class TestPreviewEditDiffViewer:
             # Assert: push_screen_wait was called with ConfirmScreen
             app.push_screen_wait.assert_called_once()
             push_args, _ = app.push_screen_wait.call_args
-            assert any(
-                isinstance(a, ConfirmScreen) for a in push_args
-            ), "Should push ConfirmScreen for GUI editors"
+            assert any(isinstance(a, ConfirmScreen) for a in push_args), (
+                "Should push ConfirmScreen for GUI editors"
+            )
 
             # Assert: harvest_edit_diff was called after confirm
             mock_harvest.assert_called_once()
