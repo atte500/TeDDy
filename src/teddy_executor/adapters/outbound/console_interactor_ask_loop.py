@@ -170,6 +170,17 @@ class ConsoleAskLoop:
         """
         marker = "<!-- Please enter your response above this line. -->"
 
+        # Check for editor availability BEFORE creating a temp file.
+        # If no editor is configured, return early without any file operations.
+        # This prevents a FileNotFoundError on Windows where the mock path
+        # `/tmp/fake_editor.md` is invalid.
+        editor_cmd = self._tooling.find_editor()
+        if not editor_cmd:
+            logger.info(
+                "No editor configured. Please configure one in .teddy/config.yaml"
+            )
+            return ""
+
         if self._active_editor_path:
             # Persistent file reuse: preserve previous edits, update prompt
             temp_path = self._active_editor_path
@@ -194,13 +205,6 @@ class ConsoleAskLoop:
             with open(temp_path, "w", encoding="utf-8") as f:
                 f.write(initial_content)
             self._active_editor_path = temp_path
-
-        editor_cmd = self._tooling.find_editor()
-        if not editor_cmd:
-            logger.info(
-                "No editor configured. Please configure one in .teddy/config.yaml"
-            )
-            return ""
         editor_name = (
             os.path.basename(editor_cmd[0])
             if isinstance(editor_cmd, list) and editor_cmd

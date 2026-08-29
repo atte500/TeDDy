@@ -92,15 +92,15 @@ class ConsoleInteractorAdapter(IUserInteractor):
         if mock_output:
             return mock_output
 
+        editor_cmd = self._tooling.find_editor()
+        if not editor_cmd:
+            typer.echo("Error: No suitable editor found.", err=True)
+            return ""
+
         temp_path = self._system_env.create_temp_file(suffix=".md")
         try:
             with open(temp_path, "w", encoding="utf-8") as f:
                 f.write(initial_content)
-
-            editor_cmd = self._tooling.find_editor()
-            if not editor_cmd:
-                typer.echo("Error: No suitable editor found.", err=True)
-                return ""
 
             cmd = editor_cmd + [temp_path]
             self._system_env.run_command(cmd)
