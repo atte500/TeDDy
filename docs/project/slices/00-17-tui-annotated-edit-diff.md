@@ -58,7 +58,7 @@ The implementation follows the Tracer Bullet Dependency Sequence:
 
 - [x] **Logic** — Implement `reconstruct_from_diff()` with unit tests
 - [x] **Logic** — Implement `_generate_annotated_diff_content()` with unit tests
-- [ ] **Wiring** — Update `preview_edit_diff_viewer()` CLI branch to use annotated diff, add integration test for end-to-end flow
+- [x] **Wiring** — Update `preview_edit_diff_viewer()` CLI branch to use annotated diff, add integration test for end-to-end flow
 - [ ] **Migration** — Move `_setup_before_file()` inside GUI branch, update `handle_mock_diff()` to not require `before` parameter
 - [ ] **Cleanup** — Remove `_setup_before_file()` and `harvest_edit_diff()` if no longer needed, remove `before` parameter from `handle_mock_diff()`
 
@@ -75,6 +75,18 @@ The implementation follows the Tracer Bullet Dependency Sequence:
 - 8 parameterized test cases covering: basic diff, empty diff (identical content), only additions, only deletions, mixed additions/deletions, empty path_str, multiple hunks, and special characters in path.
 - Header includes the "TeDDy Change Preview" title, format explanation, and instructions for the user. The `.diff` extension triggers automatic vim syntax highlighting.
 - No hardcoded dependencies — uses standard library `difflib` module only.
+
+### preview_edit_diff_viewer CLI branch (Wiring — Completed)
+- Updated `preview_edit_diff_viewer()` CLI editor (`if _is_cli_editor()`) branch to use the annotated single-file diff flow instead of the old vimdiff two-file flow.
+- Key changes:
+  - `_setup_before_file()` moved inside the GUI editor branch — CLI editors no longer create an unnecessary `before` temp file.
+  - CLI branch now generates annotated diff content via `_generate_annotated_diff_content()`, writes to a temp `.diff` file, launches the editor with a single file (no `-d` flag), and reconstructs final content via `reconstruct_from_diff()`.
+  - Added `import tempfile` at module level since it's now used by `preview_edit_diff_viewer()`.
+  - Harvest logic is inline (checks if content changed, updates `action.params["edits"]`) rather than using the old `harvest_edit_diff()` function.
+  - Added `finally` block to clean up the annotated temp file.
+  - CLI test updated to verify: `_generate_annotated_diff_content` called with correct args, editor launched with single `.diff` file, `reconstruct_from_diff` processes output, `_setup_before_file` not called.
+  - GUI editor test remains unchanged and continues to pass.
+- Test uses `MagicMock`/`patch` (TID251 violations) — pre-existing pattern in this test file, logged in technical debt.
 
 ### Design Decisions
 - Both functions placed in `textual_plan_reviewer_editor.py` since they're colocated with the diff viewer logic.

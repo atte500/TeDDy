@@ -512,8 +512,9 @@ class TestPreviewEditDiffViewer:
 
     @pytest.mark.anyio
     async def test_preview_edit_diff_viewer_cli_editor_triggers_suspend(self):
-        """When diff viewer is a CLI editor (vim -d), preview_edit_diff_viewer
-        should call app.suspend() and use subprocess.run instead of background + ConfirmScreen."""
+        """When diff viewer is a CLI editor (vim), preview_edit_diff_viewer
+        should generate an annotated .diff file, launch the editor with a single file,
+        and reconstruct the edited content."""
         from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
             preview_edit_diff_viewer,
         )
@@ -522,8 +523,8 @@ class TestPreviewEditDiffViewer:
         app = MagicMock()
         app.is_headless = False
         app._console_tooling = MagicMock()
-        app._console_tooling.get_diff_viewer_command.return_value = ["vim", "-d"]
-        app._system_env.create_temp_file.return_value = "/tmp/before.test"
+        app._console_tooling.get_diff_viewer_command.return_value = ["vim"]
+        app._system_env.create_temp_file.return_value = "/tmp/wont_be_used.txt"
         app._system_env.delete_file = MagicMock()
 
         action = ActionData(
@@ -535,38 +536,94 @@ class TestPreviewEditDiffViewer:
         )
         action.pending_temp_file = "/tmp/after.test"
 
-        before_path = "/tmp/before.test"
+        original = "line1\nline2\n"
+        proposed = "line1\nmodified\n"
+
+        # Predictable path for the annotated diff temp file
+        import os  # noqa: PLC0415
+        annotated_path = f"/tmp/teddy_edit_diff_{os.getpid()}.diff"
 
         with (
             patch(
-                "teddy_executor.adapters.inbound.textual_plan_reviewer_editor._setup_before_file",
-                return_value=before_path,
-            ),
-            patch(
                 "teddy_executor.adapters.inbound.textual_plan_reviewer_editor.prepare_after_file",
             ),
-            patch.object(app._system_env, "delete_file"),
+            patch(
+                "teddy_executor.adapters.inbound.textual_plan_reviewer_editor"
+                "._generate_annotated_diff_content",
+                return_value="mocked annotated diff content",
+            ) as mock_generate,
+            patch(
+                "teddy_executor.adapters.inbound.textual_plan_reviewer_editor"
+                ".reconstruct_from_diff",
+                return_value="line1\nmodified\n",
+            ) as mock_reconstruct,
+            patch("tempfile.NamedTemporaryFile") as mock_tempfile,
             patch("subprocess.run") as mock_run,
+            patch(
+                "teddy_executor.adapters.inbound.textual_plan_reviewer_editor"
+                "._setup_before_file",
+            ) as mock_setup_before,
         ):
+            # Mock the tempfile context manager to return a predictable path
+            mock_ntf = MagicMock()
+            mock_ntf.name = annotated_path
+            mock_ntf.close = MagicMock()
+            mock_tempfile.return_value = mock_ntf
+
+            # Simulate the editor writing the content back to the annotated file
+            def simulate_editor_save(args, **kwargs) -> None:
+                """Write mock diff content to simulate user editing."""
+                with open(annotated_path, "w", encoding="utf-8") as f:
+                    f.write(
+                        "# TeDDy Change Preview — Single Annotated File\n"
+                        "# ... (header)\n"
+                        "--- a/file.test (original)\n"
+                        "+++ b/file.test (proposed)\n"
+                        "@@ -1,2 +1,2 @@\n"
+                        " line1\n"
+                        "-line2\n"
+                        "+modified\n"
+                    )
+            mock_run.side_effect = simulate_editor_save
+
             # Act
             result = await preview_edit_diff_viewer(
-                app, action, ["vim", "-d"], "original content", "proposed content"
+                app, action, ["vim"], original, proposed
             )
 
-            # Assert: subprocess.run was called with vim -d + before + after files
+            # Assert: _generate_annotated_diff_content was called with correct args
+            mock_generate.assert_called_once_with(original, proposed, "file.test")
+
+            # Assert: subprocess.run was called with vim + single .diff file
             mock_run.assert_called_once()
             call_args, _ = mock_run.call_args
             cmd = list(call_args[0])
             assert "vim" in cmd, f"Expected vim in command: {cmd}"
-            assert "-d" in cmd, f"Expected -d in command: {cmd}"
 
-            # Assert: returns True (auto-harvested)
-            assert result is True, (
-                f"Expected True (auto-harvest successful), got {result}"
+            # Assert: the editor receives only the annotated diff path (no -d flag)
+            assert annotated_path in cmd, (
+                f"Expected {annotated_path} in command: {cmd}"
             )
+            # Assert only one file path in the command (not two files)
+            file_args = [a for a in cmd if isinstance(a, str) and a != "vim"]
+            assert len(file_args) == 1, (
+                f"Expected exactly 1 file argument, got {file_args}: {cmd}"
+            )
+            assert "-d" not in cmd, f"Expected no -d flag in command: {cmd}"
 
-            # Assert: before file was deleted after harvest
-            app._system_env.delete_file.assert_called_with(before_path)
+            # Assert: reconstruct_from_diff was called with the edited content
+            mock_reconstruct.assert_called_once()
+
+            # Assert: _setup_before_file was NOT called (no before file needed)
+            mock_setup_before.assert_not_called()
+
+            # Assert: returns True
+            assert result is True, f"Expected True, got {result}"
+
+            # Assert: action params updated if content changed
+            assert "edits" in action.params, (
+                "Expected 'edits' key in action.params"
+            )
 
     @pytest.mark.anyio
     async def test_preview_edit_diff_viewer_gui_editor_uses_confirm_screen(self):

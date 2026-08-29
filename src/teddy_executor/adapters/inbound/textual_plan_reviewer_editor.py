@@ -5,6 +5,7 @@ import os
 import pathlib
 import re
 import sys
+import tempfile
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 
@@ -356,49 +357,93 @@ async def preview_edit_diff_viewer(
     proposed: str,
 ) -> bool:
     path_str = cast(str, action.params.get("path", ""))
-    before = _setup_before_file(app, path_str, original)
     p_file = action.pending_temp_file
 
     if p_file and isinstance(p_file, (str, os.PathLike)):
-        if handle_mock_diff(p_file, before, app._system_env.delete_file):
-            return True
-        prepare_after_file(p_file, proposed)
-
+        # For CLI editors, use the annotated single-file diff flow.
+        # The 'before' file is NOT created — annotated diff replaces it.
         if _is_cli_editor(diff_viewer):
             import subprocess  # noqa: PLC0415
 
+            # Handle mock output first (before creating any temp files)
+            mock_out = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
+            if mock_out:
+                with open(p_file, "w", encoding="utf-8") as f:
+                    f.write(mock_out)
+                return True
+
+            prepare_after_file(p_file, proposed)
+
+            # Generate annotated diff content
+            diff_content = _generate_annotated_diff_content(
+                original, proposed, path_str
+            )
+
+            # Create temp .diff file with annotated content
+            annotated_file = tempfile.NamedTemporaryFile(
+                mode="w",
+                suffix=".diff",
+                prefix="teddy_edit_diff_",
+                delete=False,
+                encoding="utf-8",
+            )
+            annotated_path = annotated_file.name
+            annotated_file.write(diff_content)
+            annotated_file.close()
+
             try:
                 with app.suspend():
-                    # Run CLI diff viewer in foreground (vim -d, nvim -d)
+                    # Use editor WITHOUT diff flags — single annotated file
                     subprocess.run(  # noqa: B603
-                        diff_viewer + [str(before), str(p_file)]
+                        diff_viewer[:1] + [annotated_path]
                     )
                     _restore_foreground_process_group()
                     _restore_terminal_cooked_mode()
-                # [FIX] Flush stdin after suspend to prevent stale keystrokes from
-                # leaking into Textual's event loop. Mirrors the pattern in launch_editor().
+                # Flush stdin after suspend to prevent stale keystrokes from
+                # leaking into Textual's event loop.
                 _flush_stdin()
-                # Auto-harvest: no ConfirmScreen needed for CLI editors
-                harvest_edit_diff(action, p_file, original, proposed)
-                app._system_env.delete_file(before)
+
+                # Read back and reconstruct
+                with open(annotated_path, "r", encoding="utf-8") as f:
+                    edited_content = f.read()
+                final_content = reconstruct_from_diff(edited_content)
+
+                # Harvest if content changed
+                if final_content and final_content != proposed:
+                    action.params["edits"] = [
+                        {"find": original, "replace": final_content}
+                    ]
+                    action.params.pop("content", None)
+
                 return True
             except Exception as e:
-                logger.debug("Failed to run CLI diff viewer: %s", e)
-                app._system_env.delete_file(before)
+                logger.debug("Failed to run annotated diff editor: %s", e)
                 return False
-        else:
-            # GUI editor: launch in background, show ConfirmScreen
-            try:
-                app._system_env.run_command(
-                    diff_viewer + [str(before), str(p_file)],
-                    background=True,
-                )
-            except Exception as e:
-                logger.debug("Failed to launch diff viewer: %s", e)
+            finally:
+                try:
+                    os.unlink(annotated_path)
+                except OSError:
+                    pass
 
-    confirmed = True if app.is_headless else await app.push_screen_wait(ConfirmScreen())
-    app._system_env.delete_file(before)
-    return _process_diff_result(confirmed, action, p_file, original, proposed)
+        # GUI editor: launch in background, show ConfirmScreen
+        before = _setup_before_file(app, path_str, original)
+        if handle_mock_diff(p_file, before, app._system_env.delete_file):
+            return True
+        prepare_after_file(p_file, proposed)
+        try:
+            app._system_env.run_command(
+                diff_viewer + [str(before), str(p_file)],
+                background=True,
+            )
+        except Exception as e:
+            logger.debug("Failed to launch diff viewer: %s", e)
+
+        confirmed = True if app.is_headless else await app.push_screen_wait(ConfirmScreen())
+        app._system_env.delete_file(before)
+        return _process_diff_result(confirmed, action, p_file, original, proposed)
+
+    # No pending_temp_file — return False without cleanup
+    return False
 
 
 def _setup_before_file(app: ReviewerApp, path: str, content: str) -> str:
