@@ -77,7 +77,7 @@ Four source files and corresponding test files need to be modified, following a 
 - [x] **Harness** - Add test fixtures/mocks for no-editor state, CLI editor classification, diff flag verification in existing test files.
 - [x] **Migration** - Update all consumers of `ConsoleToolingHelper` (callers of `find_editor()`, `get_diff_viewer_command()`, `_resolve_editor_cmd()`) to transition to new behavior. Update existing tests that relied on the old return values.
 - [x] **Wiring** - `preview_edit_diff_viewer` CLI editor suspend/harvest path in `textual_plan_reviewer_editor.py`, `add_message_handler` skip_confirm in `textual_plan_reviewer_previews.py`, `launch_editor` no-editor notification in `textual_plan_reviewer_editor.py`, `_launch_editor_background` no-editor notification in `console_interactor_ask_loop.py`.
-- [ ] **Cleanup (Contraction)** - Remove VS Code special-casing from `_resolve_editor_cmd()`, remove fallback chain from `find_editor()`, remove old code path from `get_diff_viewer_command()`.
+- [x] **Cleanup (Contraction)** - Remove VS Code special-casing from `_resolve_editor_cmd()`, remove fallback chain from `find_editor()`, remove old code path from `get_diff_viewer_command()`.
 - [ ] **Refactor** - Remove unused imports (`ConfirmScreen` from `textual_plan_reviewer_previews.py` if no longer used), clean up stale comments.
 
 ## Implementation Notes
@@ -100,6 +100,18 @@ Four source files and corresponding test files need to be modified, following a 
 - **Sub-item 4 (CLI diff viewer suspend):** Updated `preview_edit_diff_viewer()` to detect CLI editors via `_is_cli_editor()` and use `app.suspend()` + `subprocess.run()` + auto-harvest, skipping `ConfirmScreen`. GUI editors keep the existing background + ConfirmScreen path. Added `TestPreviewEditDiffViewer` test class with CLI and GUI regression tests.
 - **Test file cleanup:** Rewrote `test_tui_editor_suspend_resume.py` to fix structural corruption (Turn 23's bad EDIT). Properly separated `TestIsCliEditor`, `TestAddMessageHandler`, `TestLaunchEditor`, and `TestPreviewEditDiffViewer` classes.
 - **Notification language:** Both TUI (`app.notify`) and console (`logger.info`) use the message: `"No editor configured. Please configure one in .teddy/config.yaml"`.
+
+### Cleanup (Contraction) Deliverable
+
+- **Removed fallback chain:** `find_editor()` no longer falls back to hardcoded `code`/`nano` if config and env vars are absent. It now returns `None` when neither is set.
+- **Removed VS Code special-casing:** `_resolve_editor_cmd()` no longer appends `-r` and `--wait` flags for VS Code. The command is returned as resolved from `which()`.
+- **Removed old fallback in `get_diff_viewer_command()`:** The method no longer calls `find_editor()` as a fallback when direct config/env resolution returns `None`. It goes directly to config/env resolution using the `_DIFF_FLAGS` translation table.
+- **Removed acceptance test:** `test_vscode_is_used_as_fallback` was removed from `test_change_preview_feature.py` as it tested the old fallback behavior. Replaced with a comment documenting the removal.
+- **Test updates in `test_console_tooling_editor.py`:**
+  - Removed 3 tests: `test_find_editor_falls_back_to_code_then_nano`, `test_find_editor_falls_back_to_code_with_flags`, `test_resolve_editor_cmd_appends_vscode_flags`.
+  - Added 3 new tests: `test_find_editor_returns_none_when_no_config_and_no_env`, `test_find_editor_config_code_returns_without_flags`, `test_diff_viewer_returns_none_when_fallback_not_taken`.
+- **Full suite regression:** 1151 tests pass after Cleanup. The removal of the fallback chain has no downstream impact because all production consumers of `find_editor()` already handle `None` return (no-editor notification was implemented in Wiring).
+- **Debt:** `get_diff_viewer_command()` and `find_editor()` share duplicate editor resolution logic (config → env resolution). This could be extracted to a private helper method, but is left as-is to keep the Cleanup changes minimal and focused on removing the deprecated behavior.
 
 ## Verification
 

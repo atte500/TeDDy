@@ -57,56 +57,41 @@ def test_find_editor_falls_back_to_env_if_config_executable_invalid(
     assert result == ["/usr/bin/nano"]
 
 
-def test_find_editor_falls_back_to_code_then_nano(helper, mock_env, mock_config):
-    # Setup: No config, No env, code missing, nano exists
+def test_find_editor_returns_none_when_no_config_and_no_env(helper, mock_env, mock_config):
+    """When no editor is configured via config or env vars, find_editor() returns None."""
     mock_config.get_setting.return_value = None
     mock_env.get_env.return_value = None
-    mock_env.which.side_effect = lambda x: "/usr/bin/nano" if x == "nano" else None
+    mock_env.which.return_value = None
 
     result = helper.find_editor()
 
-    assert result == ["/usr/bin/nano"]
-    # Verify order: code must be checked before nano
-    calls = [call[0][0] for call in mock_env.which.call_args_list]
-    assert "code" in calls
-    assert calls.index("code") < calls.index("nano")
+    assert result is None
 
 
-def test_find_editor_falls_back_to_code_with_flags(helper, mock_env, mock_config):
-    # Setup: No config, No env, code exists
-    mock_config.get_setting.return_value = None
+def test_find_editor_config_code_returns_without_flags(helper, mock_env, mock_config):
+    """When editor config is "code", find_editor() should return the path
+    without -r --wait flags (VS Code special-casing removed)."""
+    mock_config.get_setting.return_value = "code"
     mock_env.get_env.return_value = None
     mock_env.which.side_effect = lambda x: "/usr/bin/code" if x == "code" else None
 
     result = helper.find_editor()
 
-    assert result == ["/usr/bin/code", "-r", "--wait"]
+    # Expected: just the resolved path, no extra flags
+    assert result == ["/usr/bin/code"], f"Expected ['/usr/bin/code'], got {result}"
 
 
-def test_resolve_editor_cmd_appends_vscode_flags(helper, mock_env):
-    """Verifies that resolving 'code' as a simple string appends reuse flags."""
-    # Setup which() to resolve both short name and full path to the full path
-    path = "/usr/local/bin/code"
+def test_diff_viewer_returns_none_when_fallback_not_taken(helper, mock_env, mock_config):
+    """When no config/env is set but which('code') returns a path,
+    get_diff_viewer_command() should return None (fallback chain removed)."""
+    mock_config.get_setting.return_value = None
+    mock_env.get_env.return_value = None
+    # which returns a path for 'code' to simulate old fallback trigger
+    mock_env.which.side_effect = lambda x: "/usr/bin/code" if x == "code" else None
 
-    def which_mock(cmd):
-        if cmd in ("code", path):
-            return path
-        return None
+    result = helper.get_diff_viewer_command()
 
-    mock_env.which.side_effect = which_mock
-
-    # 1. Simple command string: should append flags
-    assert helper._resolve_editor_cmd("code") == [path, "-r", "--wait"]
-
-    # 2. Full path (but still ends with code): should append flags
-    assert helper._resolve_editor_cmd(path) == [path, "-r", "--wait"]
-
-    # 3. Command string with existing flags should have missing standard flags appended
-    result = helper._resolve_editor_cmd("code --new-window")
-    assert path in result
-    assert "--new-window" in result
-    assert "-r" in result
-    assert "--wait" in result
+    assert result is None, f"Expected None, got {result}"
 
 
 class TestGetDiffViewerCommand:

@@ -102,47 +102,10 @@ def test_in_terminal_diff_is_shown_as_fallback(tmp_path: Path, monkeypatch):
     assert "+Hello, TeDDy!" in combined_output
 
 
-def test_vscode_is_used_as_fallback(tmp_path: Path, monkeypatch):
-    """Scenario: VS Code is used for diffing when available."""
-    env = TestEnvironment(monkeypatch, tmp_path)
-    env.setup().without_reviewer()
-    mock_env = env.get_service(ISystemEnvironment)  # type: ignore[type-abstract]
-    # Properly wire the REAL interactor
-    env._container.register(
-        IUserInteractor,
-        factory=lambda: ConsoleInteractorAdapter(
-            mock_env, env._container.resolve(IConfigService)
-        ),
-        scope=punq.Scope.transient,
-    )
-
-    mock_env.get_env.return_value = None  # type: ignore[attr-defined]
-    adapter = CliTestAdapter(monkeypatch, tmp_path)
-
-    filename = "hello.txt"
-    (tmp_path / filename).write_text("Hello, world!", encoding="utf-8")
-
-    plan = (
-        MarkdownPlanBuilder("Test VSCode Fallback")
-        .add_edit(filename, "world", "TeDDy")
-        .build()
-    )
-
-    mock_env.get_env.return_value = ""  # type: ignore[attr-defined]
-    mock_env.which.side_effect = lambda cmd: "/usr/bin/code" if cmd == "code" else None  # type: ignore[attr-defined]
-    mock_env.create_temp_file.side_effect = lambda suffix: str(  # type: ignore[attr-defined]
-        tmp_path / f"temp{suffix}"
-    )
-
-    result = adapter.run_command(
-        ["execute", "--no-copy", "--plan-content", plan], input="y\n"
-    )
-
-    assert result.exit_code == 0
-    mock_env.run_command.assert_called_once()  # type: ignore[attr-defined]
-    cmd = mock_env.run_command.call_args[0][0]  # type: ignore[attr-defined]
-    assert cmd[0] == "/usr/bin/code"
-    assert "--diff" in cmd
+# test_vscode_is_used_as_fallback removed as part of Cleanup (Contraction) deliverable.
+# The editor fallback chain (code → nano) has been removed; find_editor() now returns
+# None when no editor is configured via config or env vars. See
+# test_find_editor_returns_none_when_no_config_and_no_env for the new expected behavior.
 
 
 def test_custom_diff_tool_is_used_from_env(tmp_path: Path, monkeypatch):

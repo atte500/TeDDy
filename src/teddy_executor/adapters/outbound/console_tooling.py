@@ -34,7 +34,7 @@ class ConsoleToolingHelper:
                 return custom_tool_parts
             return None
 
-        # 1. Try to resolve editor from config or env directly
+        # Resolve editor from config or env directly
         editor_str = self._config_service.get_setting("editor")
         if not editor_str:
             editor_str = self._system_env.get_env("VISUAL") or self._system_env.get_env(
@@ -48,14 +48,6 @@ class ConsoleToolingHelper:
                 basename = os.path.basename(tool_path).lower()
                 if flags := self._DIFF_FLAGS.get(basename):
                     return [tool_path] + flags
-                return None
-
-        # 2. Fallback: use find_editor() for backward compatibility with old
-        #    fallback chain (code/nano). This will be removed in Cleanup.
-        if editor_cmd := self.find_editor():
-            basename = os.path.basename(editor_cmd[0]).lower()
-            if flags := self._DIFF_FLAGS.get(basename):
-                return [editor_cmd[0]] + flags
         return None
 
     def find_editor(self) -> Optional[List[str]]:
@@ -70,14 +62,6 @@ class ConsoleToolingHelper:
         if cmd := self._resolve_editor_cmd(env_editor):
             return cmd
 
-        # 3. Discovery Fallback
-        for fallback in ["code", "nano"]:
-            if path := self._system_env.which(fallback):
-                cmd = [path]
-                if fallback == "code":
-                    cmd.extend(["-r", "--wait"])
-                return cmd
-
         return None
 
     def _resolve_editor_cmd(self, editor_str: Optional[str]) -> Optional[List[str]]:
@@ -88,10 +72,5 @@ class ConsoleToolingHelper:
 
         if tool_path := self._system_env.which(parts[0]):
             parts[0] = tool_path
-            # If the tool is VS Code, ensure reuse and wait flags are present
-            if parts[0].endswith("code") and "code" in parts[0].lower():
-                for flag in ["-r", "--wait"]:
-                    if flag not in parts:
-                        parts.append(flag)
             return parts
         return None
