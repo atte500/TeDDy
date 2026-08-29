@@ -15,9 +15,6 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
     launch_editor,
     preview_edit_diff_viewer,
 )
-from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
-    ConfirmScreen,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -242,12 +239,7 @@ async def add_message_handler(app: "ReviewerApp") -> None:
         current_message,
         suffix=".md",
         persistent_path=app._pending_message_file,
+        skip_confirm=True,
     )
     if new_message is not None and new_message != current_message:
-        # Show ConfirmScreen to defer LLM processing until user confirms
-        # (GUI pattern: return content first, confirm later)
-        if not app.is_headless:
-            confirmed = await app.push_screen_wait(ConfirmScreen())
-            if not confirmed:
-                return  # Discard message
         app._user_message_cache = new_message

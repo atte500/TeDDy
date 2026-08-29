@@ -195,7 +195,12 @@ class ConsoleAskLoop:
                 f.write(initial_content)
             self._active_editor_path = temp_path
 
-        editor_cmd = self._tooling.find_editor() or ["vim"]
+        editor_cmd = self._tooling.find_editor()
+        if not editor_cmd:
+            logger.info(
+                "No editor configured. Please configure one in .teddy/config.yaml"
+            )
+            return ""
         editor_name = (
             os.path.basename(editor_cmd[0])
             if isinstance(editor_cmd, list) and editor_cmd

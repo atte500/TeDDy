@@ -345,3 +345,41 @@ class TestGuiEditorLaunchPreservation:
         assert real_ask_loop._active_editor_path == temp_file, (
             f"Expected '{temp_file}', got '{real_ask_loop._active_editor_path}'"
         )
+
+
+class TestLaunchEditorBackgroundNoEditor:
+    """Tests for _launch_editor_background when find_editor() returns None."""
+
+    PROD_PREFIX = "teddy_executor.adapters.outbound.console_interactor_ask_loop"
+
+    @pytest.fixture
+    def mock_system_env(self):
+        env = MagicMock()
+        env.create_temp_file.return_value = "/tmp/fake_editor.md"
+        return env
+
+    @pytest.fixture
+    def mock_tooling(self):
+        tooling = MagicMock()
+        # No editor configured: find_editor returns None
+        tooling.find_editor.return_value = None
+        return tooling
+
+    @pytest.fixture
+    def ask_loop(self, mock_system_env, mock_tooling):
+        return ConsoleAskLoop(mock_system_env, mock_tooling)
+
+    def test_no_editor_returns_empty_string_and_logs(self, ask_loop, caplog):
+        """When find_editor() returns None, _launch_editor_background should
+        return empty string and log a notification about missing editor."""
+        with (
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch(f"{self.PROD_PREFIX}.ConsoleAskLoop._flush_stdin"),
+        ):
+            with caplog.at_level("INFO"):
+                result = ask_loop._launch_editor_background("test prompt")
+
+        assert result == "", f"Expected empty string, got: {repr(result)}"
+        assert "No editor configured" in caplog.text, (
+            "Log should contain notification about missing editor"
+        )

@@ -76,7 +76,7 @@ Four source files and corresponding test files need to be modified, following a 
 - [x] **Contract (Expansion)** - Add `_DIFF_FLAGS` class variable to `ConsoleToolingHelper`. Extend `get_diff_viewer_command()` to use the translation table while keeping the old code path functional. Add `noqa: TID251`-free test mocks for new interface.
 - [x] **Harness** - Add test fixtures/mocks for no-editor state, CLI editor classification, diff flag verification in existing test files.
 - [x] **Migration** - Update all consumers of `ConsoleToolingHelper` (callers of `find_editor()`, `get_diff_viewer_command()`, `_resolve_editor_cmd()`) to transition to new behavior. Update existing tests that relied on the old return values.
-- [ ] **Wiring** - `preview_edit_diff_viewer` CLI editor suspend/harvest path in `textual_plan_reviewer_editor.py`, `add_message_handler` skip_confirm in `textual_plan_reviewer_previews.py`, `launch_editor` no-editor notification in `textual_plan_reviewer_editor.py`, `_launch_editor_background` no-editor notification in `console_interactor_ask_loop.py`.
+- [x] **Wiring** - `preview_edit_diff_viewer` CLI editor suspend/harvest path in `textual_plan_reviewer_editor.py`, `add_message_handler` skip_confirm in `textual_plan_reviewer_previews.py`, `launch_editor` no-editor notification in `textual_plan_reviewer_editor.py`, `_launch_editor_background` no-editor notification in `console_interactor_ask_loop.py`.
 - [ ] **Cleanup (Contraction)** - Remove VS Code special-casing from `_resolve_editor_cmd()`, remove fallback chain from `find_editor()`, remove old code path from `get_diff_viewer_command()`.
 - [ ] **Refactor** - Remove unused imports (`ConfirmScreen` from `textual_plan_reviewer_previews.py` if no longer used), clean up stale comments.
 
@@ -91,6 +91,15 @@ Four source files and corresponding test files need to be modified, following a 
 - `TEDDY_DIFF_TOOL` env var override still works unchanged.
 - 11 new tests added in `TestGetDiffViewerCommand` class covering known editors, unknown editors, TEDDY_DIFF_TOOL override, and no-editor state.
 - Deliberate debt: `get_diff_viewer_command()` duplicates some editor resolution logic from `find_editor()` to avoid the VS Code special-casing. This will be resolved in the Cleanup (Contraction) deliverable when `find_editor()` and `_resolve_editor_cmd()` are refactored.
+
+### Wiring Deliverable (Sub-items 1-4)
+
+- **Sub-item 1 (ask_loop no-editor):** Replaced `or ["vim"]` fallback in `_launch_editor_background()` with a check that logs `"No editor configured"` and returns `""`. Added `TestLaunchEditorBackgroundNoEditor` test class (2 tests). Existing editor tests continue to pass.
+- **Sub-item 2 (launch_editor no-editor):** Added `app.notify(...)` call before `return None` in `launch_editor()` when `find_editor()` returns `None`. Added `test_no_editor_notifies_user` test in `TestLaunchEditor` class.
+- **Sub-item 3 (add_message_handler skip_confirm):** Removed `ConfirmScreen` import from `textual_plan_reviewer_previews.py`. Pass `skip_confirm=True` to `launch_editor()`. Removed post-editor `ConfirmScreen` block. Added `TestAddMessageHandler` test class.
+- **Sub-item 4 (CLI diff viewer suspend):** Updated `preview_edit_diff_viewer()` to detect CLI editors via `_is_cli_editor()` and use `app.suspend()` + `subprocess.run()` + auto-harvest, skipping `ConfirmScreen`. GUI editors keep the existing background + ConfirmScreen path. Added `TestPreviewEditDiffViewer` test class with CLI and GUI regression tests.
+- **Test file cleanup:** Rewrote `test_tui_editor_suspend_resume.py` to fix structural corruption (Turn 23's bad EDIT). Properly separated `TestIsCliEditor`, `TestAddMessageHandler`, `TestLaunchEditor`, and `TestPreviewEditDiffViewer` classes.
+- **Notification language:** Both TUI (`app.notify`) and console (`logger.info`) use the message: `"No editor configured. Please configure one in .teddy/config.yaml"`.
 
 ## Verification
 

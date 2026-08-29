@@ -205,6 +205,9 @@ async def launch_editor(
 
         editor_cmd = app._console_tooling.find_editor()
         if not editor_cmd:
+            app.notify(
+                "No editor configured. Please configure one in .teddy/config.yaml"
+            )
             return None
 
         if os.path.exists(temp_file):
@@ -283,13 +286,35 @@ async def preview_edit_diff_viewer(
         if handle_mock_diff(p_file, before, app._system_env.delete_file):
             return True
         prepare_after_file(p_file, proposed)
-        try:
-            app._system_env.run_command(
-                diff_viewer + [str(before), str(p_file)],
-                background=True,
-            )
-        except Exception as e:
-            logger.debug("Failed to launch diff viewer: %s", e)
+
+        if _is_cli_editor(diff_viewer):
+            import subprocess  # noqa: PLC0415
+
+            try:
+                with app.suspend():
+                    # Run CLI diff viewer in foreground (vim -d, nvim -d)
+                    subprocess.run(  # noqa: B603
+                        diff_viewer + [str(before), str(p_file)]
+                    )
+                    _restore_foreground_process_group()
+                    _restore_terminal_cooked_mode()
+                # Auto-harvest: no ConfirmScreen needed for CLI editors
+                harvest_edit_diff(action, p_file, original, proposed)
+                app._system_env.delete_file(before)
+                return True
+            except Exception as e:
+                logger.debug("Failed to run CLI diff viewer: %s", e)
+                app._system_env.delete_file(before)
+                return False
+        else:
+            # GUI editor: launch in background, show ConfirmScreen
+            try:
+                app._system_env.run_command(
+                    diff_viewer + [str(before), str(p_file)],
+                    background=True,
+                )
+            except Exception as e:
+                logger.debug("Failed to launch diff viewer: %s", e)
 
     confirmed = True if app.is_headless else await app.push_screen_wait(ConfirmScreen())
     app._system_env.delete_file(before)
