@@ -140,6 +140,13 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
         logger.debug("Failed to read resource for preview: %s", e)
         content = f"--- Content for {resource} could not be retrieved ---"
 
+    # Check for editor availability BEFORE creating a temp file.
+    # If no editor is configured, return early without any file operations.
+    # This prevents unnecessary file creation and potential Windows crashes.
+    editor_cmd = app._console_tooling.find_editor()
+    if not editor_cmd:
+        return
+
     temp_file = app._system_env.create_temp_file(
         suffix=pathlib.Path(resource).suffix or ".txt"
     )
@@ -148,13 +155,11 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
             f.write(content)
         # Lock file as read-only
         os.chmod(temp_file, 0o444)
-        editor_cmd = app._console_tooling.find_editor()
-        if editor_cmd:
-            # We don't use the deferred harvest pattern for READ as they are truly read-only
-            with app.suspend():
-                await anyio.to_thread.run_sync(
-                    app._system_env.run_command, editor_cmd + [temp_file]
-                )
+        # We don't use the deferred harvest pattern for READ as they are truly read-only
+        with app.suspend():
+            await anyio.to_thread.run_sync(
+                app._system_env.run_command, editor_cmd + [temp_file]
+            )
     finally:
         app._system_env.delete_file(temp_file)
 

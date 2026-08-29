@@ -184,10 +184,10 @@ async def launch_editor(
 ) -> Optional[str]:
     """Launches an external editor non-blockingly and waits for TUI confirmation."""
     mock_out = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
-    temp_file = persistent_path or app._system_env.create_temp_file(suffix=suffix)
-    is_temp = persistent_path is None
 
     if mock_out:
+        temp_file = persistent_path or app._system_env.create_temp_file(suffix=suffix)
+        is_temp = persistent_path is None
         handle_mock_editor(temp_file, mock_out)
         confirmed = (
             True
@@ -196,19 +196,25 @@ async def launch_editor(
         )
         return mock_out if confirmed else None
 
+    # Check for editor availability BEFORE creating a temp file.
+    # If no editor is configured, notify and return early without any file operations.
+    # This prevents a FileNotFoundError on Windows where /tmp does not exist.
+    editor_cmd = app._console_tooling.find_editor()
+    if not editor_cmd:
+        app.notify(
+            "No editor configured. Please configure one in .teddy/config.yaml"
+        )
+        return None
+
+    temp_file = persistent_path or app._system_env.create_temp_file(suffix=suffix)
+    is_temp = persistent_path is None
+
     try:
         if is_temp or (
             not os.path.exists(temp_file) or os.path.getsize(temp_file) == 0
         ):
             with open(temp_file, "w", encoding="utf-8") as f:
                 f.write(str(initial_content))
-
-        editor_cmd = app._console_tooling.find_editor()
-        if not editor_cmd:
-            app.notify(
-                "No editor configured. Please configure one in .teddy/config.yaml"
-            )
-            return None
 
         if os.path.exists(temp_file):
             os.chmod(temp_file, 0o644)
