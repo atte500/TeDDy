@@ -3,9 +3,9 @@ from __future__ import annotations
 import logging
 import os
 import pathlib
+import sys
 from typing import TYPE_CHECKING, Any, Optional, cast
 
-import anyio
 
 if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
@@ -155,11 +155,28 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
             f.write(content)
         # Lock file as read-only
         os.chmod(temp_file, 0o444)
-        # We don't use the deferred harvest pattern for READ as they are truly read-only
+        # We don't use the deferred harvest pattern for READ as they are truly read-only.
+        # [FIX] Use direct subprocess.run() with proper TTY stdin instead of run_command()'s
+        # stdin=subprocess.DEVNULL. Add terminal restoration calls after subprocess exits.
         with app.suspend():
-            await anyio.to_thread.run_sync(
-                app._system_env.run_command, editor_cmd + [temp_file]
+            import subprocess  # noqa: PLC0415
+
+            subprocess.run(  # noqa: B603
+                editor_cmd + [temp_file],
+                stdin=sys.stdin,
+                stdout=sys.stdout,
+                stderr=sys.stderr,
             )
+            # [FIX] Restore foreground process group and terminal cooked mode
+            # after the child process exits, mirroring launch_editor() and
+            # preview_edit_diff_viewer().
+            from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
+                _restore_foreground_process_group,
+                _restore_terminal_cooked_mode,
+            )
+
+            _restore_foreground_process_group()
+            _restore_terminal_cooked_mode()
     finally:
         app._system_env.delete_file(temp_file)
 

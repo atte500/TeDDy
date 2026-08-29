@@ -115,8 +115,8 @@ def _restore_terminal_cooked_mode() -> None:
             attrs[0] |= termios.ICRNL
             attrs[3] |= termios.ICANON | termios.ECHO
             termios.tcsetattr(fd, termios.TCSAFLUSH, attrs)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Failed to restore terminal cooked mode: %s", e)
 
 
 def _restore_foreground_process_group() -> None:
@@ -134,8 +134,8 @@ def _restore_foreground_process_group() -> None:
         fd = sys.stdin.fileno()
         if os.isatty(fd):
             os.tcsetpgrp(fd, os.getpgrp())
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Failed to restore foreground process group: %s", e)
 
 
 def _strip_escape_sequences(text: str) -> str:
@@ -201,9 +201,7 @@ async def launch_editor(
     # This prevents a FileNotFoundError on Windows where /tmp does not exist.
     editor_cmd = app._console_tooling.find_editor()
     if not editor_cmd:
-        app.notify(
-            "No editor configured. Please configure one in .teddy/config.yaml"
-        )
+        app.notify("No editor configured. Please configure one in .teddy/config.yaml")
         return None
 
     temp_file = persistent_path or app._system_env.create_temp_file(suffix=suffix)
@@ -304,6 +302,9 @@ async def preview_edit_diff_viewer(
                     )
                     _restore_foreground_process_group()
                     _restore_terminal_cooked_mode()
+                # [FIX] Flush stdin after suspend to prevent stale keystrokes from
+                # leaking into Textual's event loop. Mirrors the pattern in launch_editor().
+                _flush_stdin()
                 # Auto-harvest: no ConfirmScreen needed for CLI editors
                 harvest_edit_diff(action, p_file, original, proposed)
                 app._system_env.delete_file(before)
