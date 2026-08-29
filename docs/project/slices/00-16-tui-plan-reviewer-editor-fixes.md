@@ -78,7 +78,7 @@ Four source files and corresponding test files need to be modified, following a 
 - [x] **Migration** - Update all consumers of `ConsoleToolingHelper` (callers of `find_editor()`, `get_diff_viewer_command()`, `_resolve_editor_cmd()`) to transition to new behavior. Update existing tests that relied on the old return values.
 - [x] **Wiring** - `preview_edit_diff_viewer` CLI editor suspend/harvest path in `textual_plan_reviewer_editor.py`, `add_message_handler` skip_confirm in `textual_plan_reviewer_previews.py`, `launch_editor` no-editor notification in `textual_plan_reviewer_editor.py`, `_launch_editor_background` no-editor notification in `console_interactor_ask_loop.py`.
 - [x] **Cleanup (Contraction)** - Remove VS Code special-casing from `_resolve_editor_cmd()`, remove fallback chain from `find_editor()`, remove old code path from `get_diff_viewer_command()`.
-- [ ] **Refactor** - Remove unused imports (`ConfirmScreen` from `textual_plan_reviewer_previews.py` if no longer used), clean up stale comments.
+- [x] **Refactor** - Remove unused imports (`ConfirmScreen` from `textual_plan_reviewer_previews.py` if no longer used), clean up stale comments.
 
 ## Implementation Notes
 
@@ -112,6 +112,13 @@ Four source files and corresponding test files need to be modified, following a 
   - Added 3 new tests: `test_find_editor_returns_none_when_no_config_and_no_env`, `test_find_editor_config_code_returns_without_flags`, `test_diff_viewer_returns_none_when_fallback_not_taken`.
 - **Full suite regression:** 1151 tests pass after Cleanup. The removal of the fallback chain has no downstream impact because all production consumers of `find_editor()` already handle `None` return (no-editor notification was implemented in Wiring).
 - **Debt:** `get_diff_viewer_command()` and `find_editor()` share duplicate editor resolution logic (config → env resolution). This could be extracted to a private helper method, but is left as-is to keep the Cleanup changes minimal and focused on removing the deprecated behavior.
+
+### Refactor Deliverable
+
+- **No code changes needed:** The primary task (removing unused `ConfirmScreen` import from `textual_plan_reviewer_previews.py`) was already completed during the Wiring deliverable (sub-item 3). The import was removed when `skip_confirm=True` was implemented and the post-editor `ConfirmScreen` block was removed.
+- **Stale comments audit:** Grep for "Discovery Fallback", "fallback chain", "VS Code special-casing", "old code path", and stale numbered steps across all production files returned no results. All comments in `console_tooling.py`, `textual_plan_reviewer_editor.py`, `textual_plan_reviewer_previews.py`, and `console_interactor_ask_loop.py` are accurate and reflect the current code state.
+- **Final search:** Comprehensive grep confirmed no stale comments remain. The Refactor deliverable is satisfied with zero code changes.
+- **As-built update skipped:** `docs/architecture/adapters/outbound/console_tooling.md` does not exist in the repository. The ConsoleTooling doc references in the slice metadata are stale; the component doc was never created. This is noted as a documentation gap for the Architect.
 
 ## Verification
 
