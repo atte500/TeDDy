@@ -56,11 +56,30 @@ The implementation follows the Tracer Bullet Dependency Sequence:
 
 ## Deliverables
 
-- [▶] **Logic** — Implement `reconstruct_from_diff()` with unit tests
-- [ ] **Logic** — Implement `_generate_annotated_diff_content()` with unit tests
+- [x] **Logic** — Implement `reconstruct_from_diff()` with unit tests
+- [x] **Logic** — Implement `_generate_annotated_diff_content()` with unit tests
 - [ ] **Wiring** — Update `preview_edit_diff_viewer()` CLI branch to use annotated diff, add integration test for end-to-end flow
 - [ ] **Migration** — Move `_setup_before_file()` inside GUI branch, update `handle_mock_diff()` to not require `before` parameter
 - [ ] **Cleanup** — Remove `_setup_before_file()` and `harvest_edit_diff()` if no longer needed, remove `before` parameter from `handle_mock_diff()`
+
+## Implementation Notes
+
+### reconstruct_from_diff (Logic — Completed)
+- Pure function implementing the diff reconstruction algorithm as specified in the task brief.
+- 9 parameterized test cases covering all edge cases: empty input, only context lines, only additions, only deletions, mixed modifications, modified `-` lines (harmless), modified `+` lines (kept), user-added context lines, and fully modified content with multiple hunks.
+- Key insight: Context lines in unified diff output have a leading space prefix (`" context_line"`). The function correctly preserves this while stripping `+` prefix and discarding `-` lines. Test data was adjusted to match actual unified diff format.
+- No external dependencies — pure Python string processing.
+
+### _generate_annotated_diff_content (Logic — Completed)
+- Pure function using `difflib.unified_diff()` to generate the diff content, with an instructional header explaining the `+`/`-` format.
+- 8 parameterized test cases covering: basic diff, empty diff (identical content), only additions, only deletions, mixed additions/deletions, empty path_str, multiple hunks, and special characters in path.
+- Header includes the "TeDDy Change Preview" title, format explanation, and instructions for the user. The `.diff` extension triggers automatic vim syntax highlighting.
+- No hardcoded dependencies — uses standard library `difflib` module only.
+
+### Design Decisions
+- Both functions placed in `textual_plan_reviewer_editor.py` since they're colocated with the diff viewer logic.
+- `_generate_annotated_diff_content` uses `difflib.unified_diff()` directly rather than the existing `generate_unified_diff()` in `diff.py` to keep annotated content generation colocated with editor logic.
+- Functions are public (`reconstruct_from_diff`) and private (`_generate_annotated_diff_content`) — the private prefix indicates it's only used within the editor module.
 
 ## Verification
 

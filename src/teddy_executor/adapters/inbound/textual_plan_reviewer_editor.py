@@ -40,6 +40,79 @@ _CLI_EDITORS: set[str] = {
 }
 
 
+def reconstruct_from_diff(edited_text: str) -> str:
+    """Reconstruct the final content from an annotated diff file.
+
+    Rules:
+    - Lines starting with '---' or '+++' (file headers): ignored
+    - Lines starting with '@@': ignored (hunk headers)
+    - Lines starting with '-': REMOVED LINES -- discarded entirely.
+        Even if the user modified them, they don't appear in output.
+    - Lines starting with '+': ADDED LINES -- kept, with the '+' prefix stripped.
+    - Lines with NO prefix: CONTEXT LINES -- kept as-is.
+    """
+    result: list[str] = []
+    for line in edited_text.splitlines(keepends=True):
+        if line.startswith("---") or line.startswith("+++"):
+            continue
+        if line.startswith("@@"):
+            continue
+        if line.startswith("-"):
+            continue
+        if line.startswith("+"):
+            result.append(line[1:])  # strip '+'
+        else:
+            result.append(line)  # context lines kept
+    return "".join(result)
+
+
+def _generate_annotated_diff_content(
+    original: str,
+    proposed: str,
+    path_str: str = "",
+) -> str:
+    """Generate a single annotated diff file content with instructional header.
+
+    Produces a unified diff with a header explaining the '+'/'-' format,
+    designed for single-file editing in any editor.
+    """
+    import difflib  # noqa: PLC0415
+
+    diff_lines = list(
+        difflib.unified_diff(
+            original.splitlines(keepends=True),
+            proposed.splitlines(keepends=True),
+            fromfile=f"{path_str} (original)",
+            tofile=f"{path_str} (proposed)",
+        )
+    )
+    diff_text = "".join(diff_lines)
+
+    header = """# TeDDy Change Preview — Single Annotated File
+#
+# This file shows what changed between the original and proposed version.
+# You can BOTH review the changes AND edit the content in one view.
+#
+# FORMAT:
+#   @@ ... @@  = Hunk header (ignore)
+#   - ....     = Removed line (IGNORED on save — editing these is harmless)
+#   + ....     = Added line (KEPT on save — prefix stripped automatically)
+#   no prefix  = Context line (kept as-is)
+#
+# INSTRUCTIONS:
+#   - View changes: `-` prefix = removed, `+` prefix = added
+#   - Edit content: Modify `+` lines to change the proposed content
+#   - To add new content: Write it without a prefix (context) or with `+`
+#   - Modified `-` lines? Harmless — they get discarded automatically
+#   - Exit: :q  (single file = single exit, NO vimdiff confusion)
+# ==========================================================================
+# Below is the diff. Edit freely. Only `-` lines are discarded on save.
+# ==========================================================================
+
+"""
+    return header + diff_text
+
+
 # Low-level editor helpers
 def handle_mock_editor(path: Any, output: str) -> str:
     """Helper for mock editor output in tests."""
