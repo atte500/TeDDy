@@ -22,9 +22,6 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
     preview_edit_diff_viewer,
     spawn_editor,
 )
-from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
-    ConfirmScreen,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -203,7 +200,7 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
     if _is_cli_editor(editor_cmd):
         import subprocess  # noqa: PLC0415
 
-        logger.info("Opening READ file (CLI editor): %s", temp_path)
+        logger.debug("Opening READ file (CLI editor): %s", temp_path)
         with app.suspend():
             subprocess.run(  # noqa: B603
                 editor_cmd + [temp_path],
@@ -215,7 +212,7 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
             _restore_terminal_cooked_mode()
         _flush_stdin()
     else:
-        logger.info("Opening READ file (GUI editor): %s", temp_path)
+        logger.debug("Opening READ file (GUI editor): %s", temp_path)
         spawn_editor(editor_cmd, temp_path)
         # No ConfirmScreen for READ — content is not harvestable and
         # the user is viewing, not editing.
