@@ -12,8 +12,16 @@ if TYPE_CHECKING:
     from teddy_executor.core.domain.models.plan import ActionData
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
+    _flush_stdin,
+    _is_cli_editor,
+    _restore_foreground_process_group,
+    _restore_terminal_cooked_mode,
     launch_editor,
     preview_edit_diff_viewer,
+    spawn_editor,
+)
+from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+    ConfirmScreen,
 )
 
 logger = logging.getLogger(__name__)
@@ -130,57 +138,56 @@ async def preview_text_action(app: ReviewerApp, action: ActionData, node: Any) -
 
 
 async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
-    """Handle non-blocking preview for READ (read-only)."""
-    if not app._file_system:
-        return
-    resource = action.params.get("resource") or action.params.get("path", "")
-    try:
-        content = app._file_system.read_file(resource)
-    except Exception as e:
-        logger.debug("Failed to read resource for preview: %s", e)
-        content = f"--- Content for {resource} could not be retrieved ---"
+    """Handle non-blocking preview for READ (read-only).
 
-    # Check for editor availability BEFORE creating a temp file.
-    # If no editor is configured, return early without any file operations.
-    # This prevents unnecessary file creation and potential Windows crashes.
+    Fix: Opens the REAL file directly instead of a temp copy.
+    Uses proper CLI/GUI editor branching matching launch_editor():
+    - CLI editors: subprocess.run() inside app.suspend() on the real file
+    - GUI editors: Popen + ConfirmScreen on the real file
+    Removed: temp file creation/deletion, os.chmod(0o444), content reading.
+    """
+    resource = action.params.get("resource") or action.params.get("path", "")
+    if not resource:
+        return
+
+    # Check for editor availability
     editor_cmd = app._console_tooling.find_editor()
     if not editor_cmd:
+        app.notify("No editor configured. Please configure one in .teddy/config.yaml")
         return
 
-    temp_file = app._system_env.create_temp_file(
-        suffix=pathlib.Path(resource).suffix or ".txt"
-    )
-    try:
-        with open(temp_file, "w", encoding="utf-8") as f:
-            f.write(content)
-        # Lock file as read-only
-        os.chmod(temp_file, 0o444)
-        editor_name = os.path.basename(editor_cmd[0])
-        app.notify(f"Opening Editor: {editor_name}")
-        # We don't use the deferred harvest pattern for READ as they are truly read-only.
-        # [FIX] Use direct subprocess.run() with proper TTY stdin instead of run_command()'s
-        # stdin=subprocess.DEVNULL. Add terminal restoration calls after subprocess exits.
-        with app.suspend():
-            import subprocess  # noqa: PLC0415
+    editor_name = os.path.basename(editor_cmd[0])
+    app.notify(f"Opening Editor: {editor_name}")
 
+    # Check if the file exists before opening
+    if not os.path.exists(resource):
+        app.notify(f"Resource not found: {resource}")
+        return
+
+    if _is_cli_editor(editor_cmd):
+        import subprocess  # noqa: PLC0415
+
+        logger.info("Opening READ file (CLI editor): %s", resource)
+        with app.suspend():
             subprocess.run(  # noqa: B603
-                editor_cmd + [temp_file],
+                editor_cmd + [resource],
                 stdin=sys.stdin,
                 stdout=sys.stdout,
                 stderr=sys.stderr,
             )
-            # [FIX] Restore foreground process group and terminal cooked mode
-            # after the child process exits, mirroring launch_editor() and
-            # preview_edit_diff_viewer().
-            from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
-                _restore_foreground_process_group,
-                _restore_terminal_cooked_mode,
-            )
-
             _restore_foreground_process_group()
             _restore_terminal_cooked_mode()
-    finally:
-        app._system_env.delete_file(temp_file)
+        _flush_stdin()
+    else:
+        logger.info("Opening READ file (GUI editor): %s", resource)
+        spawn_editor(editor_cmd, resource)
+        # Show ConfirmScreen to keep TUI alive while the GUI editor is open.
+        # For READ, we don't harvest content since the real file is opened directly.
+        confirmed = (
+            True if app.is_headless else await app.push_screen_wait(ConfirmScreen())
+        )
+        if not confirmed:
+            logger.debug("READ preview cancelled by user")
 
 
 async def view_details_handler(app: "ReviewerApp") -> None:
