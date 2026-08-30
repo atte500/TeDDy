@@ -155,6 +155,8 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
             f.write(content)
         # Lock file as read-only
         os.chmod(temp_file, 0o444)
+        editor_name = os.path.basename(editor_cmd[0])
+        app.notify(f"Opening Editor: {editor_name}")
         # We don't use the deferred harvest pattern for READ as they are truly read-only.
         # [FIX] Use direct subprocess.run() with proper TTY stdin instead of run_command()'s
         # stdin=subprocess.DEVNULL. Add terminal restoration calls after subprocess exits.

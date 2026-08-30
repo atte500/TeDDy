@@ -323,13 +323,8 @@ class TestGenerateAnnotatedDiffContent:
     # ------------------------------------------------------------------ #
 
     def _assert_contains_header(self, result: str) -> None:
-        """Assert that the result starts with the TeDDy header prefix."""
-        assert result.startswith("# TeDDy Change Preview"), (
-            f"Expected header prefix, got:\n{result[:100]}"
-        )
-        assert "TeDDy Change Preview" in result, (
-            f"Expected header 'TeDDy Change Preview' in output, got:\n{result}"
-        )
+        """Assert that the result starts with a file header line."""
+        assert result.startswith("---"), f"Expected header prefix, got:\n{result[:100]}"
 
     def _assert_contains_path(self, result: str, path_str: str) -> None:
         """Assert that the path string appears in the result."""
@@ -392,7 +387,7 @@ class TestGenerateAnnotatedDiffContent:
                 "same content\n",
                 "file.py",
                 {
-                    "contains_header": True,
+                    "contains_header": False,
                     "contains_path": False,
                     "contains_diff_markers": False,
                     "has_addition_lines": False,
@@ -448,7 +443,7 @@ class TestGenerateAnnotatedDiffContent:
                 "unchanged\n",
                 "",
                 {
-                    "contains_header": True,
+                    "contains_header": False,
                     "contains_path": False,
                     "contains_diff_markers": False,
                     "has_addition_lines": False,
@@ -497,8 +492,9 @@ class TestGenerateAnnotatedDiffContent:
 
         result = _generate_annotated_diff_content(original, proposed, path_str)
 
-        # Every output must start with the TeDDy header
-        self._assert_contains_header(result)
+        # Every output must start with a diff header (--- ... )
+        if assertions.get("contains_header"):
+            self._assert_contains_header(result)
 
         if assertions.get("contains_path"):
             self._assert_contains_path(result, path_str)

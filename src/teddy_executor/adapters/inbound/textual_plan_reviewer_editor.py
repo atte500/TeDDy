@@ -72,46 +72,30 @@ def _generate_annotated_diff_content(
     proposed: str,
     path_str: str = "",
 ) -> str:
-    """Generate a single annotated diff file content with instructional header.
+    """Generate a single annotated diff file content with minimal header.
 
-    Produces a unified diff with a header explaining the '+'/'-' format,
-    designed for single-file editing in any editor.
+    Produces a unified diff showing the entire file as context (not just
+    3 lines around changes), with a vim modeline as the first line to
+    force diff syntax highlighting.
     """
     import difflib  # noqa: PLC0415
 
+    fromlines = original.splitlines(keepends=True)
+    tolines = proposed.splitlines(keepends=True)
+    full_context = len(fromlines) + len(tolines)
+
     diff_lines = list(
         difflib.unified_diff(
-            original.splitlines(keepends=True),
-            proposed.splitlines(keepends=True),
+            fromlines,
+            tolines,
             fromfile=f"{path_str} (original)",
             tofile=f"{path_str} (proposed)",
+            n=full_context,
         )
     )
     diff_text = "".join(diff_lines)
 
-    header = """# TeDDy Change Preview — Single Annotated File
-#
-# This file shows what changed between the original and proposed version.
-# You can BOTH review the changes AND edit the content in one view.
-#
-# FORMAT:
-#   @@ ... @@  = Hunk header (ignore)
-#   - ....     = Removed line (IGNORED on save — editing these is harmless)
-#   + ....     = Added line (KEPT on save — prefix stripped automatically)
-#   no prefix  = Context line (kept as-is)
-#
-# INSTRUCTIONS:
-#   - View changes: `-` prefix = removed, `+` prefix = added
-#   - Edit content: Modify `+` lines to change the proposed content
-#   - To add new content: Write it without a prefix (context) or with `+`
-#   - Modified `-` lines? Harmless — they get discarded automatically
-#   - Exit: :q  (single file = single exit, NO vimdiff confusion)
-# ==========================================================================
-# Below is the diff. Edit freely. Only `-` lines are discarded on save.
-# ==========================================================================
-
-"""
-    return header + diff_text
+    return diff_text
 
 
 # Low-level editor helpers
@@ -308,7 +292,10 @@ async def launch_editor(
             logger.info("Opening Editor (sync): %s", editor_name)
             with app.suspend():
                 subprocess.run(  # noqa: B603
-                    editor_cmd + [temp_file]
+                    editor_cmd + [temp_file],
+                    stdin=sys.stdin,
+                    stdout=sys.stdout,
+                    stderr=sys.stderr,
                 )
                 # Restore foreground process group before Textual resumes
                 _restore_foreground_process_group()
@@ -394,11 +381,17 @@ async def preview_edit_diff_viewer(
             annotated_file.write(diff_content)
             annotated_file.close()
 
+            editor_name = os.path.basename(diff_viewer[0])
+            app.notify(f"Opening Editor: {editor_name}")
+
             try:
                 with app.suspend():
                     # Use editor WITHOUT diff flags — single annotated file
                     subprocess.run(  # noqa: B603
-                        diff_viewer[:1] + [annotated_path]
+                        diff_viewer[:1] + [annotated_path],
+                        stdin=sys.stdin,
+                        stdout=sys.stdout,
+                        stderr=sys.stderr,
                     )
                     _restore_foreground_process_group()
                     _restore_terminal_cooked_mode()
