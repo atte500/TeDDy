@@ -204,11 +204,15 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
     else:
         logger.debug("Opening READ file (GUI editor): %s", temp_path)
         spawn_editor(editor_cmd, temp_path)
+        # Deferred cleanup: track the temp file so it's cleaned up on TUI exit.
+        # GUI editors open files asynchronously — immediate os.unlink causes empty buffer.
+        if is_url:
+            app._log_preview_files.append(temp_path)
         # No ConfirmScreen for READ — content is not harvestable and
         # the user is viewing, not editing.
 
-    # Clean up temp file if it was created for a URL
-    if is_url:
+    # Clean up temp file for CLI editors immediately (subprocess.run already finished)
+    if is_url and _is_cli_editor(editor_cmd):
         try:
             os.unlink(temp_path)
         except OSError:

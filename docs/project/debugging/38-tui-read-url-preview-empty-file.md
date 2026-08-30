@@ -1,5 +1,5 @@
 # Bug: TUI READ URL Preview Shows Empty File When Using GUI Editor
-- **Status:** Unresolved
+- **Status:** Resolved
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Vertical Slice:** N/A
 - **Specs:** N/A

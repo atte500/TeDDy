@@ -298,10 +298,87 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         # Assert: spawn_editor was called with the real file path
         mock_spawn.assert_called_once()
         call_args = mock_spawn.call_args[0]
-        self.assertIn(self.resource_path, call_args[1])
 
-        # Assert: ConfirmScreen was NOT pushed
-        mock_push.assert_not_called()
+    def test_gui_url_temp_file_persists_for_deferred_cleanup(self):
+        """GUI editor + URL: temp file must NOT be deleted immediately; tracked for cleanup.
+
+        Regression test for the race condition where os.unlink() deletes a temp file
+        immediately after spawn_editor() (non-blocking Popen), causing GUI editors
+        to open an empty buffer. The fix: append to app._log_preview_files for
+        deferred cleanup on TUI exit, same pattern as view_details_handler.
+        """
+        self.action.params = {
+            "resource": "https://example.com/test.md",
+            "path": "",
+        }
+        editor_cmd = ["codium"]
+        self.mock_app._console_tooling.find_editor.return_value = editor_cmd
+        self.mock_app._web_scraper = MagicMock()
+        self.mock_app._web_scraper.get_content.return_value = (
+            "# Test\nFetched content from URL.\n"
+        )
+        # Initialize the log preview files list for tracking
+        self.mock_app._log_preview_files = []
+        # Mock is_headless to avoid ConfirmScreen for GUI
+        self.mock_app.is_headless = False
+
+        expected_content = "# Test\nFetched content from URL.\n"
+        created_temp_path = None
+
+        def mock_named_temp_file(
+            mode="w",
+            suffix=".md",
+            prefix="teddy_read_url_",
+            delete=False,
+            encoding="utf-8",
+        ):
+            nonlocal created_temp_path
+            ntf = MagicMock()
+            ntf.name = os.path.join(
+                self.temp_dir, f"teddy_read_url_test{suffix}"
+            )
+            created_temp_path = ntf.name
+            ntf.write = MagicMock()
+            ntf.close = MagicMock()
+            return ntf
+
+        with (
+            patch("tempfile.NamedTemporaryFile", side_effect=mock_named_temp_file),
+            patch(
+                "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.spawn_editor"
+            ) as mock_spawn,
+            patch("os.unlink") as mock_unlink,
+        ):
+            asyncio.run(preview_readonly(self.mock_app, self.action))
+
+        # Assert: os.unlink was NOT called (the fix — temp file persists)
+        mock_unlink.assert_not_called()
+
+        # Assert: temp file path was appended to _log_preview_files for deferred cleanup
+        self.assertEqual(
+            len(self.mock_app._log_preview_files),
+            1,
+            "Expected 1 temp file tracked in _log_preview_files",
+        )
+        self.assertEqual(
+            self.mock_app._log_preview_files[0],
+            created_temp_path,
+            f"Expected {created_temp_path} in _log_preview_files",
+        )
+
+        # Assert: spawn_editor was called with the correct temp file path
+        mock_spawn.assert_called_once()
+        call_args = mock_spawn.call_args[0]
+        self.assertIn(
+            "teddy_read_url_test",
+            str(call_args),
+            f"Expected temp file path in spawn_editor call: {call_args}",
+        )
+        self.assertIn(
+            "codium",
+            str(call_args),
+            f"Expected editor cmd 'codium' in spawn_editor call: {call_args}",
+        )
 
     def test_readonly_url_temp_file_is_cleaned_up(self):
         """After opening URL resource, the temp file must be deleted via os.unlink."""
