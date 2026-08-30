@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import os
 import pathlib
-import sys
 import tempfile
 from typing import TYPE_CHECKING, Any, Optional, cast
 
@@ -13,10 +12,7 @@ if TYPE_CHECKING:
     from teddy_executor.core.domain.models.plan import ActionData
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
-    _flush_stdin,
     _is_cli_editor,
-    _restore_foreground_process_group,
-    _restore_terminal_cooked_mode,
     launch_editor,
     preview_edit_diff_viewer,
     spawn_editor,
@@ -135,6 +131,43 @@ async def preview_text_action(app: ReviewerApp, action: ActionData, node: Any) -
         app._refresh_node(node)
 
 
+def _resolve_read_resource(app: ReviewerApp, resource: str) -> Optional[dict]:
+    """Resolve a READ resource: fetch URL content or validate file path.
+
+    Returns a dict with keys 'content' (str), 'path' (str), 'is_url' (bool),
+    or None on failure (error already notified).
+    """
+    is_url = resource.startswith(("http://", "https://"))
+    if is_url:
+        if app._web_scraper is None:
+            app.notify("No web scraper configured. Cannot fetch URL content.")
+            return None
+        try:
+            content = app._web_scraper.get_content(resource)
+        except Exception:
+            app.notify(f"Failed to fetch URL: {resource}")
+            return None
+        if not content or not content.strip():
+            app.notify(f"No content extracted from URL: {resource}")
+            return None
+        temp_file = tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".md",
+            prefix="teddy_read_url_",
+            delete=False,
+            encoding="utf-8",
+        )
+        temp_file.write(content)
+        temp_path = temp_file.name
+        temp_file.close()
+        return {"content": content, "path": temp_path, "is_url": True}
+    else:
+        if not os.path.exists(resource):
+            app.notify(f"Resource not found: {resource}")
+            return None
+        return {"content": "", "path": resource, "is_url": False}
+
+
 async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
     """Handle non-blocking preview for READ (read-only).
 
@@ -157,50 +190,40 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
     editor_name = os.path.basename(editor_cmd[0])
     app.notify(f"Opening Editor: {editor_name}")
 
-    # Handle URL resources: fetch via the existing WebScraper port and write to temp file
-    is_url = resource.startswith(("http://", "https://"))
-    if is_url:
-        if app._web_scraper is None:
-            app.notify("No web scraper configured. Cannot fetch URL content.")
-            return
-        try:
-            content = app._web_scraper.get_content(resource)
-        except Exception:
-            app.notify(f"Failed to fetch URL: {resource}")
-            return
-        if not content or not content.strip():
-            app.notify(f"No content extracted from URL: {resource}")
-            return
-        temp_file = tempfile.NamedTemporaryFile(
-            mode="w",
-            suffix=".md",
-            prefix="teddy_read_url_",
-            delete=False,
-            encoding="utf-8",
-        )
-        temp_file.write(content)
-        temp_path = temp_file.name
-        temp_file.close()
-    else:
-        if not os.path.exists(resource):
-            app.notify(f"Resource not found: {resource}")
-            return
-        temp_path = resource
+    # Resolve resource: fetch URL content via WebScraper or validate file path
+    resolved = _resolve_read_resource(app, resource)
+    if resolved is None:
+        return
+
+    content = resolved["content"]
+    temp_path = resolved["path"]
+    is_url = resolved["is_url"]
 
     if _is_cli_editor(editor_cmd):
-        import subprocess  # noqa: PLC0415
-
-        logger.debug("Opening READ file (CLI editor): %s", temp_path)
-        with app.suspend():
-            subprocess.run(  # noqa: B603
-                editor_cmd + [temp_path],
-                stdin=sys.stdin,
-                stdout=sys.stdout,
-                stderr=sys.stderr,
+        if is_url:
+            logger.debug(
+                "Opening READ URL (CLI editor via launch_editor): %s", resource
             )
-            _restore_foreground_process_group()
-            _restore_terminal_cooked_mode()
-        _flush_stdin()
+            # launch_editor creates its own temp file, applies vim color flags, and cleans up
+            await launch_editor(
+                app,
+                content,
+                suffix=".md",
+                skip_confirm=True,
+            )
+        else:
+            logger.debug(
+                "Opening READ file (CLI editor via launch_editor): %s", temp_path
+            )
+            # Route through launch_editor to get vim color flags, stdin flush, terminal restoration.
+            # persistent_path=temp_path (the real file) — launch_editor won't modify or delete it.
+            # skip_confirm=True keeps it read-only (no ConfirmScreen).
+            await launch_editor(
+                app,
+                "",
+                persistent_path=temp_path,
+                skip_confirm=True,
+            )
     else:
         logger.debug("Opening READ file (GUI editor): %s", temp_path)
         spawn_editor(editor_cmd, temp_path)
@@ -208,15 +231,8 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
         # GUI editors open files asynchronously — immediate os.unlink causes empty buffer.
         if is_url:
             app._log_preview_files.append(temp_path)
-        # No ConfirmScreen for READ — content is not harvestable and
-        # the user is viewing, not editing.
-
-    # Clean up temp file for CLI editors immediately (subprocess.run already finished)
-    if is_url and _is_cli_editor(editor_cmd):
-        try:
-            os.unlink(temp_path)
-        except OSError:
-            pass
+    # For GUI editors, deferred cleanup via app._log_preview_files handles it.
+    # No additional cleanup needed here.
 
 
 async def view_details_handler(app: "ReviewerApp") -> None:

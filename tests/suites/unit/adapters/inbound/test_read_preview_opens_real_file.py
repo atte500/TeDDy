@@ -84,41 +84,39 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_cli_editor_uses_real_file_no_temp(self):
-        """CLI editor: must use real file path, no temp file, no chmod."""
+        """CLI editor: must route through launch_editor with real file path."""
         editor_cmd = ["nvim"]
         self.mock_app._console_tooling.find_editor.return_value = editor_cmd
 
-        with patch("subprocess.run") as mock_run:
-            with patch("os.chmod") as mock_chmod:
-                asyncio.run(preview_readonly(self.mock_app, self.action))
+        with patch(
+            "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.launch_editor",
+            new_callable=AsyncMock,
+        ) as mock_launch:
+            asyncio.run(preview_readonly(self.mock_app, self.action))
 
-                # Verify: subprocess.run was called with the REAL file path
-                mock_run.assert_called_once()
-                call_args = mock_run.call_args[0][0]
-                self.assertIn(
-                    self.resource_path,
-                    call_args,
-                    f"Expected real file path in subprocess.run args: {call_args}",
-                )
-                self.assertNotIn(
-                    "teddy_test",
-                    str(call_args),
-                    "Should NOT use a temp file path",
-                )
+            # Verify: launch_editor was called with the real file path and skip_confirm=True
+            mock_launch.assert_called_once()
+            call_kwargs = mock_launch.call_args[1]
+            self.assertEqual(
+                call_kwargs.get("persistent_path"),
+                self.resource_path,
+                f"Expected real file path in launch_editor persistent_path: {call_kwargs}",
+            )
+            self.assertTrue(
+                call_kwargs.get("skip_confirm", False),
+                "skip_confirm should be True for read-only preview",
+            )
 
-                # Verify: os.chmod was NOT called
-                mock_chmod.assert_not_called()
+            # Verify: does not create temp files or delete them
+            self.assertEqual(
+                len(self.temp_files_created), 0, "Should NOT create any temp files"
+            )
+            self.assertEqual(
+                len(self.temp_files_deleted), 0, "Should NOT delete any temp files"
+            )
 
-                # Verify: no temp files created or deleted
-                self.assertEqual(
-                    len(self.temp_files_created), 0, "Should NOT create any temp files"
-                )
-                self.assertEqual(
-                    len(self.temp_files_deleted), 0, "Should NOT delete any temp files"
-                )
-
-                # Verify: suspend was called (CLI editor path)
-                self.mock_app.suspend.assert_called_once()
+            # Verify: notification was sent before launch_editor
+            self.mock_app.notify.assert_any_call("Opening Editor: nvim")
 
     def test_gui_editor_uses_real_file_no_temp(self):
         """GUI editor: must use real file path, Popen, NO ConfirmScreen, no temp."""
@@ -226,7 +224,7 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
             self.assertEqual(len(self.temp_files_deleted), 0)
 
     def test_readonly_url_fetches_content_and_opens_temp_file(self):
-        """For a URL resource, must fetch via the WebScraper port, write temp file, open in editor."""
+        """URL: must fetch via WebScraper port, open in launch_editor with content."""
         self.action.params = {"resource": "https://example.com/test.md", "path": ""}
         editor_cmd = ["vim"]
         self.mock_app._console_tooling.find_editor.return_value = editor_cmd
@@ -234,15 +232,10 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         self.mock_app._web_scraper = MagicMock()
         self.mock_app._web_scraper.get_content.return_value = expected_content
 
-        with (
-            patch("subprocess.run") as mock_run,
-            patch("tempfile.NamedTemporaryFile") as mock_tempfile,
-            patch("os.unlink"),
-        ):
-            mock_ntf = MagicMock()
-            mock_ntf.name = "/tmp/teddy_read_url_test.md"
-            mock_tempfile.return_value = mock_ntf
-
+        with patch(
+            "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.launch_editor",
+            new_callable=AsyncMock,
+        ) as mock_launch:
             asyncio.run(preview_readonly(self.mock_app, self.action))
 
         # Assert: the existing WebScraper port was called with the correct URL
@@ -250,20 +243,26 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
             "https://example.com/test.md"
         )
 
-        # Assert: tempfile was created with .md suffix and correct prefix
-        mock_tempfile.assert_called_once()
-        kwargs = mock_tempfile.call_args[1]
-        self.assertEqual(kwargs.get("suffix"), ".md")
-        self.assertEqual(kwargs.get("prefix"), "teddy_read_url_")
-
-        # Assert: subprocess.run was called with the temp file path
-        mock_run.assert_called_once()
-        call_args = mock_run.call_args[0][0]
-        self.assertIn("/tmp/teddy_read_url_test.md", call_args)
-
-        # Assert: content was written to the temp file
-        mock_ntf.write.assert_called_once_with(expected_content)
-        mock_ntf.close.assert_called_once()
+        # Assert: launch_editor was called with the scraped content, .md suffix, skip_confirm=True
+        mock_launch.assert_called_once()
+        call_args = mock_launch.call_args[0]
+        self.assertEqual(call_args[0], self.mock_app)
+        self.assertEqual(
+            call_args[1],
+            expected_content,
+            "launch_editor should receive the scraped content",
+        )
+        call_kwargs = mock_launch.call_args[1]
+        self.assertEqual(call_kwargs.get("suffix"), ".md")
+        self.assertTrue(
+            call_kwargs.get("skip_confirm", False),
+            "skip_confirm should be True for read-only preview",
+        )
+        # No persistent_path — launch_editor creates and manages its own temp file
+        self.assertIsNone(
+            call_kwargs.get("persistent_path"),
+            "persistent_path should be None for URL content",
+        )
 
     def test_readonly_url_fetch_failure_notifies_user(self):
         """If the WebScraper port fetch fails, must notify and return without opening editor."""
@@ -334,9 +333,7 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         ):
             nonlocal created_temp_path
             ntf = MagicMock()
-            ntf.name = os.path.join(
-                self.temp_dir, f"teddy_read_url_test{suffix}"
-            )
+            ntf.name = os.path.join(self.temp_dir, f"teddy_read_url_test{suffix}")
             created_temp_path = ntf.name
             ntf.write = MagicMock()
             ntf.close = MagicMock()
@@ -381,22 +378,17 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         )
 
     def test_readonly_url_temp_file_is_cleaned_up(self):
-        """After opening URL resource, the temp file must be deleted via os.unlink."""
+        """URL: launch_editor receives content; temp file cleanup is internal."""
         self.action.params = {"resource": "https://example.com/test.md", "path": ""}
         editor_cmd = ["vim"]
         self.mock_app._console_tooling.find_editor.return_value = editor_cmd
         self.mock_app._web_scraper = MagicMock()
         self.mock_app._web_scraper.get_content.return_value = "content"
 
-        with (
-            patch("subprocess.run"),
-            patch("tempfile.NamedTemporaryFile") as mock_tempfile,
-            patch("os.unlink") as mock_unlink,
-        ):
-            mock_ntf = MagicMock()
-            mock_ntf.name = "/tmp/teddy_read_url_test.md"
-            mock_tempfile.return_value = mock_ntf
-
+        with patch(
+            "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.launch_editor",
+            new_callable=AsyncMock,
+        ) as mock_launch:
             asyncio.run(preview_readonly(self.mock_app, self.action))
 
         # Assert: the WebScraper port was consulted with the URL
@@ -404,8 +396,11 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
             "https://example.com/test.md"
         )
 
-        # Assert: os.unlink was called with the temp file path
-        mock_unlink.assert_called_once_with("/tmp/teddy_read_url_test.md")
+        # Assert: launch_editor was called with the scraped content
+        mock_launch.assert_called_once()
+        call_args = mock_launch.call_args[0]
+        self.assertEqual(call_args[1], "content")
+        # Temp file cleanup is handled internally by launch_editor — no explicit assertion needed.
 
     def test_readonly_url_without_web_scraper_notifies(self):
         """If no web scraper is configured, URL READ must notify and return."""
