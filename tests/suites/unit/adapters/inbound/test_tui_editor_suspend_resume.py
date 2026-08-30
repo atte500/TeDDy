@@ -110,6 +110,33 @@ class TestAddMessageHandler:
         assert app._user_message_cache == "new message content"
 
 
+class TestIsVimEditor:
+    """Unit tests for _is_vim_editor classification."""
+
+    @pytest.mark.parametrize(
+        ("cmd", "expected"),
+        [
+            (["vim"], True),
+            (["nvim", "--clean"], True),
+            (["vi"], True),
+            (["Vim"], True),  # case-insensitive basename
+            (["nano"], False),
+            (["micro"], False),
+            (["code"], False),
+            (["helix"], False),
+            (["emacs", "-nw"], False),
+            (None, False),
+            ([], False),
+        ],
+    )
+    def test_is_vim_editor(self, cmd, expected):
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
+            _is_vim_editor,
+        )
+
+        assert _is_vim_editor(cmd) is expected, f"{cmd} -> expected {expected}"
+
+
 class TestLaunchEditor:
     """Tests for launch_editor suspend/resume behavior."""
 
@@ -141,6 +168,58 @@ class TestLaunchEditor:
         app.notify.assert_called_once_with(
             "No editor configured. Please configure one in .teddy/config.yaml"
         )
+
+    @pytest.mark.anyio
+    async def test_vim_editor_triggers_suspend_with_syntax_flags(self):
+        """For vim editor, subprocess.run must receive syntax-on flags."""
+        import os
+        import tempfile
+        from unittest.mock import patch, MagicMock
+
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
+            launch_editor,
+        )
+
+        mock_out = os.environ.pop("TEDDY_TEST_MOCK_EDITOR_OUTPUT", None)
+        try:
+            app = MagicMock()
+            app.is_headless = False
+            app._console_tooling.find_editor.return_value = ["vim"]
+            app.INSTRUCTION_MARKER = "---INSTRUCTIONS---"
+            app.notify = MagicMock()
+
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".txt", delete=False
+            ) as f:
+                f.write("edited content")
+                temp_path = f.name
+            app._system_env.create_temp_file.return_value = temp_path
+            app._system_env.delete_file = MagicMock()
+
+            # Mock subprocess.run to capture arguments
+            with patch("subprocess.run") as mock_run:
+                await launch_editor(app, "initial content")
+
+            # Assert subprocess was called with syntax flags
+            mock_run.assert_called_once()
+            call_args, _ = mock_run.call_args
+            cmd = list(call_args[0])
+            assert "vim" in cmd, f"Expected vim in command: {cmd}"
+            assert "-c" in cmd, f"Expected -c flag in command: {cmd}"
+            assert "syntax on" in cmd, f"Expected 'syntax on' in command: {cmd}"
+            assert "filetype plugin on" in cmd, (
+                f"Expected 'filetype plugin on' in command: {cmd}"
+            )
+            # The file path must be after the flags
+            cmd_str = " ".join(str(a) for a in cmd)
+            assert "syntax on" in cmd_str and "filetype plugin on" in cmd_str, (
+                f"Both flags must be present in command: {cmd}"
+            )
+
+            os.remove(temp_path)
+        finally:
+            if mock_out is not None:
+                os.environ["TEDDY_TEST_MOCK_EDITOR_OUTPUT"] = mock_out
 
     @pytest.mark.anyio
     async def test_cli_editor_triggers_suspend(self):
@@ -586,12 +665,12 @@ class TestPreviewEditDiffViewer:
             def simulate_editor_save(args, **kwargs) -> None:
                 """Write mock diff content to simulate user editing.
 
-                The file path is extracted from the subprocess.run() call arguments
-                rather than hardcoded, ensuring it works on all platforms.
+                The file path is always the last argument in the command list,
+                regardless of any flags prepended by _is_vim_editor or similar.
                 """
                 # Extract the actual temp file path from the subprocess.run call args
-                # args is the list ['vim', '/path/...'] passed to subprocess.run
-                actual_path = args[1] if len(args) > 1 else None
+                # args is the list ['vim', ... flags ..., '/path/...']
+                actual_path = args[-1] if args else None
                 if actual_path is None:
                     return
                 with open(actual_path, "w", encoding="utf-8") as f:
@@ -622,14 +701,20 @@ class TestPreviewEditDiffViewer:
             cmd = list(call_args[0])
             assert "vim" in cmd, f"Expected vim in command: {cmd}"
 
-            # Assert: the editor receives only the annotated diff path (no -d flag)
+            # Assert: the editor receives the vim syntax flags before the file path
             assert annotated_path in cmd, f"Expected {annotated_path} in command: {cmd}"
-            # Assert only one file path in the command (not two files)
-            file_args = [a for a in cmd if isinstance(a, str) and a != "vim"]
-            assert len(file_args) == 1, (
-                f"Expected exactly 1 file argument, got {file_args}: {cmd}"
-            )
+            # Assert no -d flag (two-file diff) is present
             assert "-d" not in cmd, f"Expected no -d flag in command: {cmd}"
+            # Assert syntax-on flags are present for vim editors
+            assert "-c" in cmd, f"Expected -c flag in command: {cmd}"
+            assert "syntax on" in cmd, f"Expected 'syntax on' in command: {cmd}"
+            assert "filetype plugin on" in cmd, (
+                f"Expected 'filetype plugin on' in command: {cmd}"
+            )
+            # The file path must be the last argument (after flags)
+            assert cmd[-1] == annotated_path, (
+                f"Expected file path to be last argument, got: {cmd}"
+            )
 
             # Assert: reconstruct_from_diff was called with the edited content
             mock_reconstruct.assert_called_once()

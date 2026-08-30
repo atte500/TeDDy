@@ -134,6 +134,19 @@ def _is_cli_editor(editor_cmd: Optional[list[str]]) -> bool:
     return basename in _CLI_EDITORS
 
 
+def _is_vim_editor(editor_cmd: Optional[list[str]]) -> bool:
+    """Return True if the editor is a vim variant (vim, nvim, vi).
+
+    Vim/Neovim require explicit `syntax on` and `filetype plugin on` to enable
+    syntax highlighting by default. This function detects vim-based editors so
+    we can append the necessary -c flags.
+    """
+    if not editor_cmd:
+        return False
+    basename = os.path.basename(editor_cmd[0])
+    return basename.lower() in {"vim", "nvim", "vi"}
+
+
 def _flush_stdin() -> None:
     """Flush stale escape sequences from the TTY input buffer after editor exit.
 
@@ -290,9 +303,14 @@ async def launch_editor(
             import subprocess  # noqa: PLC0415
 
             logger.info("Opening Editor (sync): %s", editor_name)
+            # Build command: add vim-specific flags to enable syntax highlighting
+            cmd = list(editor_cmd)
+            if _is_vim_editor(cmd):
+                cmd.extend(["-c", "syntax on", "-c", "filetype plugin on"])
+            cmd.append(temp_file)
             with app.suspend():
                 subprocess.run(  # noqa: B603
-                    editor_cmd + [temp_file],
+                    cmd,
                     stdin=sys.stdin,
                     stdout=sys.stdout,
                     stderr=sys.stderr,
@@ -386,9 +404,13 @@ async def preview_edit_diff_viewer(
 
             try:
                 with app.suspend():
-                    # Use editor WITHOUT diff flags — single annotated file
+                    # Build command: use editor WITHOUT diff flags — single annotated file
+                    cmd = list(diff_viewer[:1])
+                    if _is_vim_editor(cmd):
+                        cmd.extend(["-c", "syntax on", "-c", "filetype plugin on"])
+                    cmd.append(annotated_path)
                     subprocess.run(  # noqa: B603
-                        diff_viewer[:1] + [annotated_path],
+                        cmd,
                         stdin=sys.stdin,
                         stdout=sys.stdout,
                         stderr=sys.stderr,
