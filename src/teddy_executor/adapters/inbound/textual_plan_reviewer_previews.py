@@ -5,7 +5,6 @@ import os
 import pathlib
 import sys
 import tempfile
-import urllib.request
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 
@@ -136,21 +135,6 @@ async def preview_text_action(app: ReviewerApp, action: ActionData, node: Any) -
         app._refresh_node(node)
 
 
-def _fetch_url_content(url: str) -> str:
-    """Fetch content from a URL using urllib.
-
-    Falls back gracefully on network errors. Used by preview_readonly()
-    to open URL-based READ action resources in an external editor.
-    """
-    try:
-        with urllib.request.urlopen(url, timeout=10) as response:
-            content = response.read().decode("utf-8", errors="replace")
-        return content
-    except Exception as e:
-        logger.debug("Failed to fetch URL content for READ preview: %s", e)
-        raise
-
-
 async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
     """Handle non-blocking preview for READ (read-only).
 
@@ -173,13 +157,19 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
     editor_name = os.path.basename(editor_cmd[0])
     app.notify(f"Opening Editor: {editor_name}")
 
-    # Handle URL resources: fetch content and write to a temp file
+    # Handle URL resources: fetch via the existing WebScraper port and write to temp file
     is_url = resource.startswith(("http://", "https://"))
     if is_url:
+        if app._web_scraper is None:
+            app.notify("No web scraper configured. Cannot fetch URL content.")
+            return
         try:
-            content = _fetch_url_content(resource)
+            content = app._web_scraper.get_content(resource)
         except Exception:
             app.notify(f"Failed to fetch URL: {resource}")
+            return
+        if not content or not content.strip():
+            app.notify(f"No content extracted from URL: {resource}")
             return
         temp_file = tempfile.NamedTemporaryFile(
             mode="w",

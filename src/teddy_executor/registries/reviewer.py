@@ -36,6 +36,7 @@ def register_reviewer(container: punq.Container, ui_mode: str | None = None) -> 
         from teddy_executor.core.ports.outbound import (
             IFileSystemManager,
             ISystemEnvironment,
+            IWebScraper,
         )
         from teddy_executor.adapters.outbound.console_tooling import (
             ConsoleToolingHelper,
@@ -52,6 +53,7 @@ def register_reviewer(container: punq.Container, ui_mode: str | None = None) -> 
                 file_system=container.resolve(IFileSystemManager),
                 console_tooling=container.resolve(ConsoleToolingHelper),
                 action_dispatcher=container.resolve(ActionDispatcher),
+                web_scraper=container.resolve(IWebScraper),
             )
 
         container.register(IPlanReviewer, factory=tui_factory)

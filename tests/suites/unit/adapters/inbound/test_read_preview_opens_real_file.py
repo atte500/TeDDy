@@ -53,6 +53,8 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         self.mock_app.suspend.return_value = suspend_cm
         self.mock_app.push_screen_wait = AsyncMock(return_value=True)
         self.mock_app._console_tooling = MagicMock()
+        # Web scraper port (WebScraper) — None by default; URL tests configure it
+        self.mock_app._web_scraper = None
 
         # Track temp file operations
         self.temp_files_created = []
@@ -224,22 +226,15 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
             self.assertEqual(len(self.temp_files_deleted), 0)
 
     def test_readonly_url_fetches_content_and_opens_temp_file(self):
-        """For a URL resource, must fetch content, write to a temp file, open in editor."""
-        from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
-            _fetch_url_content,
-        )
-
+        """For a URL resource, must fetch via the WebScraper port, write temp file, open in editor."""
         self.action.params = {"resource": "https://example.com/test.md", "path": ""}
         editor_cmd = ["vim"]
         self.mock_app._console_tooling.find_editor.return_value = editor_cmd
         expected_content = "# Test\nFetched content from URL.\n"
+        self.mock_app._web_scraper = MagicMock()
+        self.mock_app._web_scraper.get_content.return_value = expected_content
 
         with (
-            patch(
-                "teddy_executor.adapters.inbound.textual_plan_reviewer_previews"
-                "._fetch_url_content",
-                return_value=expected_content,
-            ) as mock_fetch,
             patch("subprocess.run") as mock_run,
             patch("tempfile.NamedTemporaryFile") as mock_tempfile,
             patch("os.unlink"),
@@ -250,8 +245,10 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
 
             asyncio.run(preview_readonly(self.mock_app, self.action))
 
-        # Assert: _fetch_url_content was called with the correct URL
-        mock_fetch.assert_called_once_with("https://example.com/test.md")
+        # Assert: the existing WebScraper port was called with the correct URL
+        self.mock_app._web_scraper.get_content.assert_called_once_with(
+            "https://example.com/test.md"
+        )
 
         # Assert: tempfile was created with .md suffix and correct prefix
         mock_tempfile.assert_called_once()
@@ -269,19 +266,14 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         mock_ntf.close.assert_called_once()
 
     def test_readonly_url_fetch_failure_notifies_user(self):
-        """If URL fetch fails, must notify and return without opening editor."""
+        """If the WebScraper port fetch fails, must notify and return without opening editor."""
         self.action.params = {"resource": "https://example.com/fail.md", "path": ""}
         editor_cmd = ["vim"]
         self.mock_app._console_tooling.find_editor.return_value = editor_cmd
+        self.mock_app._web_scraper = MagicMock()
+        self.mock_app._web_scraper.get_content.side_effect = Exception("Network error")
 
-        with (
-            patch(
-                "teddy_executor.adapters.inbound.textual_plan_reviewer_previews"
-                "._fetch_url_content",
-                side_effect=Exception("Network error"),
-            ),
-            patch("subprocess.run") as mock_run,
-        ):
+        with patch("subprocess.run") as mock_run:
             asyncio.run(preview_readonly(self.mock_app, self.action))
 
         # notify is called twice: "Opening Editor: vim" and the failure message.
@@ -316,13 +308,10 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         self.action.params = {"resource": "https://example.com/test.md", "path": ""}
         editor_cmd = ["vim"]
         self.mock_app._console_tooling.find_editor.return_value = editor_cmd
+        self.mock_app._web_scraper = MagicMock()
+        self.mock_app._web_scraper.get_content.return_value = "content"
 
         with (
-            patch(
-                "teddy_executor.adapters.inbound.textual_plan_reviewer_previews"
-                "._fetch_url_content",
-                return_value="content",
-            ),
             patch("subprocess.run"),
             patch("tempfile.NamedTemporaryFile") as mock_tempfile,
             patch("os.unlink") as mock_unlink,
@@ -333,8 +322,28 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
 
             asyncio.run(preview_readonly(self.mock_app, self.action))
 
+        # Assert: the WebScraper port was consulted with the URL
+        self.mock_app._web_scraper.get_content.assert_called_once_with(
+            "https://example.com/test.md"
+        )
+
         # Assert: os.unlink was called with the temp file path
         mock_unlink.assert_called_once_with("/tmp/teddy_read_url_test.md")
+
+    def test_readonly_url_without_web_scraper_notifies(self):
+        """If no web scraper is configured, URL READ must notify and return."""
+        self.action.params = {"resource": "https://example.com/test.md", "path": ""}
+        editor_cmd = ["vim"]
+        self.mock_app._console_tooling.find_editor.return_value = editor_cmd
+        self.mock_app._web_scraper = None
+
+        with patch("subprocess.run") as mock_run:
+            asyncio.run(preview_readonly(self.mock_app, self.action))
+
+        self.mock_app.notify.assert_any_call(
+            "No web scraper configured. Cannot fetch URL content."
+        )
+        mock_run.assert_not_called()
 
 
 if __name__ == "__main__":

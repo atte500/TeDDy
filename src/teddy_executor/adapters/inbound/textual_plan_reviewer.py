@@ -14,6 +14,7 @@ if TYPE_CHECKING:
         IFileSystemManager,
     )
     from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
+    from teddy_executor.core.ports.outbound.web_scraper import WebScraper
     from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
 
@@ -28,11 +29,13 @@ class TextualPlanReviewer(IPlanReviewer):
         file_system: IFileSystemManager,
         console_tooling: ConsoleToolingHelper,
         action_dispatcher: ActionDispatcher,
+        web_scraper: Optional[WebScraper] = None,
     ):
         self._system_env = system_env
         self._file_system = file_system
         self._console_tooling = console_tooling
         self._action_dispatcher = action_dispatcher
+        self._web_scraper = web_scraper
 
     def review(
         self, plan: Plan, project_context: Optional[ProjectContext] = None
@@ -69,6 +72,7 @@ class TextualPlanReviewer(IPlanReviewer):
             action_dispatcher=self._action_dispatcher,
             file_system=self._file_system,
             project_context=project_context,
+            web_scraper=self._web_scraper,
         )
         result = app.run()
         if os.getenv("TEDDY_DEBUG") and result:
