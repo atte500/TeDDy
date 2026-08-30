@@ -119,7 +119,7 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
                 self.mock_app.suspend.assert_called_once()
 
     def test_gui_editor_uses_real_file_no_temp(self):
-        """GUI editor: must use real file path, Popen, ConfirmScreen, no temp."""
+        """GUI editor: must use real file path, Popen, NO ConfirmScreen, no temp."""
         editor_cmd = ["code"]
         self.mock_app._console_tooling.find_editor.return_value = editor_cmd
         self.mock_app.is_headless = False
@@ -156,8 +156,8 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
                     len(self.temp_files_deleted), 0, "Should NOT delete any temp files"
                 )
 
-                # Verify: ConfirmScreen was shown
-                self.mock_app.push_screen_wait.assert_called_once()
+                # Verify: ConfirmScreen was NOT shown (read-only, no save needed)
+                self.mock_app.push_screen_wait.assert_not_called()
 
     def test_resource_not_found_returns_early(self):
         """Missing file: must return early without editor launch."""
@@ -222,6 +222,119 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
             mock_run.assert_not_called()
             self.assertEqual(len(self.temp_files_created), 0)
             self.assertEqual(len(self.temp_files_deleted), 0)
+
+    def test_readonly_url_fetches_content_and_opens_temp_file(self):
+        """For a URL resource, must fetch content, write to a temp file, open in editor."""
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
+            _fetch_url_content,
+        )
+
+        self.action.params = {"resource": "https://example.com/test.md", "path": ""}
+        editor_cmd = ["vim"]
+        self.mock_app._console_tooling.find_editor.return_value = editor_cmd
+        expected_content = "# Test\nFetched content from URL.\n"
+
+        with (
+            patch(
+                "teddy_executor.adapters.inbound.textual_plan_reviewer_previews"
+                "._fetch_url_content",
+                return_value=expected_content,
+            ) as mock_fetch,
+            patch("subprocess.run") as mock_run,
+            patch("tempfile.NamedTemporaryFile") as mock_tempfile,
+            patch("os.unlink"),
+        ):
+            mock_ntf = MagicMock()
+            mock_ntf.name = "/tmp/teddy_read_url_test.md"
+            mock_tempfile.return_value = mock_ntf
+
+            asyncio.run(preview_readonly(self.mock_app, self.action))
+
+        # Assert: _fetch_url_content was called with the correct URL
+        mock_fetch.assert_called_once_with("https://example.com/test.md")
+
+        # Assert: tempfile was created with .md suffix and correct prefix
+        mock_tempfile.assert_called_once()
+        kwargs = mock_tempfile.call_args[1]
+        self.assertEqual(kwargs.get("suffix"), ".md")
+        self.assertEqual(kwargs.get("prefix"), "teddy_read_url_")
+
+        # Assert: subprocess.run was called with the temp file path
+        mock_run.assert_called_once()
+        call_args = mock_run.call_args[0][0]
+        self.assertIn("/tmp/teddy_read_url_test.md", call_args)
+
+        # Assert: content was written to the temp file
+        mock_ntf.write.assert_called_once_with(expected_content)
+        mock_ntf.close.assert_called_once()
+
+    def test_readonly_url_fetch_failure_notifies_user(self):
+        """If URL fetch fails, must notify and return without opening editor."""
+        self.action.params = {"resource": "https://example.com/fail.md", "path": ""}
+        editor_cmd = ["vim"]
+        self.mock_app._console_tooling.find_editor.return_value = editor_cmd
+
+        with (
+            patch(
+                "teddy_executor.adapters.inbound.textual_plan_reviewer_previews"
+                "._fetch_url_content",
+                side_effect=Exception("Network error"),
+            ),
+            patch("subprocess.run") as mock_run,
+        ):
+            asyncio.run(preview_readonly(self.mock_app, self.action))
+
+        # notify is called twice: "Opening Editor: vim" and the failure message.
+        # Assert that the failure message was present in any call.
+        self.mock_app.notify.assert_any_call(
+            "Failed to fetch URL: https://example.com/fail.md"
+        )
+        mock_run.assert_not_called()
+
+    def test_readonly_gui_editor_does_not_show_confirm_screen(self):
+        """GUI editor: must NOT push ConfirmScreen, just spawn editor and return."""
+        self.mock_app._console_tooling.find_editor.return_value = ["code"]
+
+        with (
+            patch(
+                "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.spawn_editor"
+            ) as mock_spawn,
+            patch.object(self.mock_app, "push_screen_wait") as mock_push,
+        ):
+            asyncio.run(preview_readonly(self.mock_app, self.action))
+
+        # Assert: spawn_editor was called with the real file path
+        mock_spawn.assert_called_once()
+        call_args = mock_spawn.call_args[0]
+        self.assertIn(self.resource_path, call_args[1])
+
+        # Assert: ConfirmScreen was NOT pushed
+        mock_push.assert_not_called()
+
+    def test_readonly_url_temp_file_is_cleaned_up(self):
+        """After opening URL resource, the temp file must be deleted via os.unlink."""
+        self.action.params = {"resource": "https://example.com/test.md", "path": ""}
+        editor_cmd = ["vim"]
+        self.mock_app._console_tooling.find_editor.return_value = editor_cmd
+
+        with (
+            patch(
+                "teddy_executor.adapters.inbound.textual_plan_reviewer_previews"
+                "._fetch_url_content",
+                return_value="content",
+            ),
+            patch("subprocess.run"),
+            patch("tempfile.NamedTemporaryFile") as mock_tempfile,
+            patch("os.unlink") as mock_unlink,
+        ):
+            mock_ntf = MagicMock()
+            mock_ntf.name = "/tmp/teddy_read_url_test.md"
+            mock_tempfile.return_value = mock_ntf
+
+            asyncio.run(preview_readonly(self.mock_app, self.action))
+
+        # Assert: os.unlink was called with the temp file path
+        mock_unlink.assert_called_once_with("/tmp/teddy_read_url_test.md")
 
 
 if __name__ == "__main__":

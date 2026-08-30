@@ -4,6 +4,8 @@ import logging
 import os
 import pathlib
 import sys
+import tempfile
+import urllib.request
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 
@@ -137,14 +139,29 @@ async def preview_text_action(app: ReviewerApp, action: ActionData, node: Any) -
         app._refresh_node(node)
 
 
+def _fetch_url_content(url: str) -> str:
+    """Fetch content from a URL using urllib.
+
+    Falls back gracefully on network errors. Used by preview_readonly()
+    to open URL-based READ action resources in an external editor.
+    """
+    try:
+        with urllib.request.urlopen(url, timeout=10) as response:
+            content = response.read().decode("utf-8", errors="replace")
+        return content
+    except Exception as e:
+        logger.debug("Failed to fetch URL content for READ preview: %s", e)
+        raise
+
+
 async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
     """Handle non-blocking preview for READ (read-only).
 
-    Fix: Opens the REAL file directly instead of a temp copy.
-    Uses proper CLI/GUI editor branching matching launch_editor():
-    - CLI editors: subprocess.run() inside app.suspend() on the real file
-    - GUI editors: Popen + ConfirmScreen on the real file
-    Removed: temp file creation/deletion, os.chmod(0o444), content reading.
+    Opens the resource in an external editor without harvesting content.
+    Resources can be local file paths or URLs (http/https).
+    - CLI editors: subprocess.run() inside app.suspend()
+    - GUI editors: Popen (background) — no ConfirmScreen (read-only, no save needed)
+    - URLs: content is fetched and written to a temp file for viewing
     """
     resource = action.params.get("resource") or action.params.get("path", "")
     if not resource:
@@ -159,18 +176,37 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
     editor_name = os.path.basename(editor_cmd[0])
     app.notify(f"Opening Editor: {editor_name}")
 
-    # Check if the file exists before opening
-    if not os.path.exists(resource):
-        app.notify(f"Resource not found: {resource}")
-        return
+    # Handle URL resources: fetch content and write to a temp file
+    is_url = resource.startswith(("http://", "https://"))
+    if is_url:
+        try:
+            content = _fetch_url_content(resource)
+        except Exception:
+            app.notify(f"Failed to fetch URL: {resource}")
+            return
+        temp_file = tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".md",
+            prefix="teddy_read_url_",
+            delete=False,
+            encoding="utf-8",
+        )
+        temp_file.write(content)
+        temp_path = temp_file.name
+        temp_file.close()
+    else:
+        if not os.path.exists(resource):
+            app.notify(f"Resource not found: {resource}")
+            return
+        temp_path = resource
 
     if _is_cli_editor(editor_cmd):
         import subprocess  # noqa: PLC0415
 
-        logger.info("Opening READ file (CLI editor): %s", resource)
+        logger.info("Opening READ file (CLI editor): %s", temp_path)
         with app.suspend():
             subprocess.run(  # noqa: B603
-                editor_cmd + [resource],
+                editor_cmd + [temp_path],
                 stdin=sys.stdin,
                 stdout=sys.stdout,
                 stderr=sys.stderr,
@@ -179,15 +215,17 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
             _restore_terminal_cooked_mode()
         _flush_stdin()
     else:
-        logger.info("Opening READ file (GUI editor): %s", resource)
-        spawn_editor(editor_cmd, resource)
-        # Show ConfirmScreen to keep TUI alive while the GUI editor is open.
-        # For READ, we don't harvest content since the real file is opened directly.
-        confirmed = (
-            True if app.is_headless else await app.push_screen_wait(ConfirmScreen())
-        )
-        if not confirmed:
-            logger.debug("READ preview cancelled by user")
+        logger.info("Opening READ file (GUI editor): %s", temp_path)
+        spawn_editor(editor_cmd, temp_path)
+        # No ConfirmScreen for READ — content is not harvestable and
+        # the user is viewing, not editing.
+
+    # Clean up temp file if it was created for a URL
+    if is_url:
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            pass
 
 
 async def view_details_handler(app: "ReviewerApp") -> None:
