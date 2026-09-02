@@ -381,8 +381,95 @@ class TestGetContextCacheIntegration:
             "Failed URL should appear as FILE NOT FOUND in result"
         )
 
-        # Assert: cache file should NOT contain the failed URL
+        # Assert: cache file should contain the failed URL with empty string sentinel (fixed behavior)
         cache_path = Path(cache_dir) / ".web_cache.json"
         assert cache_path.exists(), "Cache file should exist (created empty)"
         stored = json.loads(cache_path.read_text(encoding="utf-8"))
-        assert url not in stored, f"Failed URL {url!r} should NOT be cached: {stored}"
+        assert url in stored, (
+            f"Failed URL {url!r} should be cached with empty string sentinel: {stored}"
+        )
+        assert stored[url] == "", (
+            f"Failed URL {url!r} should have empty string sentinel, got {stored[url]!r}"
+        )
+
+
+class TestCacheFailureRegression:
+    """Regression tests for Bug 39 — cache failure persistence.
+
+    These tests verify the fix: failed URLs are now cached as empty string
+    sentinel, preventing repeated re-fetches.
+    """
+
+    def test_calls_scraper_twice_when_url_not_cached(self, tmp_path):
+        """Current bug: failed URL is NOT cached, so scraper is called again on second fetch."""
+        url = "http://fail.example.com"
+        cache_dir = str(tmp_path / "session_cache")
+        web_scraper = Mock(spec=IWebScraper)
+        web_scraper.get_content.side_effect = RuntimeError("Simulated failure")
+
+        repo_tree = Mock(spec=IRepoTreeGenerator)
+        repo_tree.generate_tree.return_value = ""
+        env_inspector = Mock(spec=IEnvironmentInspector)
+        env_inspector.get_environment_info.return_value = {}
+        env_inspector.get_git_status.return_value = None
+        llm_client = Mock(spec=ILlmClient)
+        llm_client.get_text_token_count.return_value = 0
+        file_system_manager = Mock(spec=IFileSystemManager)
+        file_system_manager.read_files_in_vault.return_value = {}
+
+        service = ContextService(
+            file_system_manager, repo_tree, env_inspector, llm_client, web_scraper
+        )
+
+        context_files = {"Test": [url]}
+
+        # First fetch
+        service.get_context(context_files=context_files, cache_dir=cache_dir)
+        first_count = web_scraper.get_content.call_count
+
+        # Second fetch — currently will call scraper AGAIN (BUG)
+        service.get_context(context_files=context_files, cache_dir=cache_dir)
+        second_count = web_scraper.get_content.call_count
+
+        # GREEN assertion: scraper should be called once, then cached (second fetch doesn't call scraper)
+        assert second_count == first_count, (
+            f"FIX: Scraper called {first_count} then {second_count} times. "
+            "After fix, both calls equal because failed URL is cached after first attempt."
+        )
+
+    def test_failed_url_not_present_in_cache(self, tmp_path):
+        """Current bug: failed URL does NOT appear in .web_cache.json."""
+        url = "http://fail.example.com"
+        cache_dir = str(tmp_path / "session_cache")
+        web_scraper = Mock(spec=IWebScraper)
+        web_scraper.get_content.side_effect = RuntimeError("Simulated failure")
+
+        repo_tree = Mock(spec=IRepoTreeGenerator)
+        repo_tree.generate_tree.return_value = ""
+        env_inspector = Mock(spec=IEnvironmentInspector)
+        env_inspector.get_environment_info.return_value = {}
+        env_inspector.get_git_status.return_value = None
+        llm_client = Mock(spec=ILlmClient)
+        llm_client.get_text_token_count.return_value = 0
+        file_system_manager = Mock(spec=IFileSystemManager)
+        file_system_manager.read_files_in_vault.return_value = {}
+
+        service = ContextService(
+            file_system_manager, repo_tree, env_inspector, llm_client, web_scraper
+        )
+
+        context_files = {"Test": [url]}
+
+        service.get_context(context_files=context_files, cache_dir=cache_dir)
+
+        cache_path = Path(cache_dir) / ".web_cache.json"
+        assert cache_path.exists(), "Cache file should exist after fetch"
+        stored = json.loads(cache_path.read_text(encoding="utf-8"))
+        # GREEN assertion: URL should be in cache with empty string sentinel (fixed behavior)
+        assert url in stored, (
+            f"FIX: URL {url!r} should be in cache: {stored}. "
+            "Expected with empty string sentinel."
+        )
+        assert stored[url] == "", (
+            f"FIX: URL {url!r} should have empty string sentinel, got {stored[url]!r}."
+        )

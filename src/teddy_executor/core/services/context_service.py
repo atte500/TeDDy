@@ -78,6 +78,11 @@ class ContextService(IGetContextUseCase):
                         self._save_web_cache(cache_dir, web_cache)
                 except Exception:
                     file_contents[url] = None
+                    # Cache the failed URL as empty string sentinel
+                    # to prevent re-fetching on subsequent turns.
+                    web_cache[url] = ""
+                    if cache_dir:
+                        self._save_web_cache(cache_dir, web_cache)
 
         content = self._format_content(
             repo_tree, scoped_paths, file_contents, full_git_status

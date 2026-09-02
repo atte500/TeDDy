@@ -1,3 +1,5 @@
+import logging
+
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 
@@ -218,11 +220,14 @@ class WebScraperAdapter(WebScraper):
                 last_error = e
                 continue
 
-        # Final Resort: Trafilatura's internal fetcher
-        html_content = self._get_trafilatura().fetch_url(url)
-        if not html_content and last_error:
+        # FIX: Skip trafilatura fetch_url if we already have a last_error.
+        # Calling trafilatura.fetch_url on a URL that already failed will
+        # log "not a 200 response" to stderr, which we want to prevent.
+        if last_error is not None:
             raise last_error
 
+        # Final Resort: Trafilatura's internal fetcher
+        html_content = self._get_trafilatura().fetch_url(url)
         return html_content
 
     def _handle_github_raw(self, url: str) -> str | None:
@@ -310,6 +315,16 @@ class WebScraperAdapter(WebScraper):
         Returns:
             The extracted text content.
         """
+        # Suppress logging below CRITICAL to prevent trafilatura's internal
+        # LOGGER.error messages from reaching the terminal.
+        logging.disable(logging.CRITICAL)
+        try:
+            return self._get_content_impl(url, **_kwargs)
+        finally:
+            logging.disable(logging.NOTSET)
+
+    def _get_content_impl(self, url: str, **_kwargs) -> str:
+        """Internal implementation of get_content (extracted for logging suppression wrapper)."""
         # 1. Specialized handling for GitHub raw content
         raw_github_content = self._handle_github_raw(url)
         if raw_github_content is not None:
