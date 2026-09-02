@@ -98,6 +98,10 @@ class _PeekableStream:
 
 def normalize_path(path: str) -> str:
     result = path.replace("\\", "/")
+    # Preserve URLs intact — percent-encoded symbols (%20, %23, %3F, etc.)
+    # have structural meaning in URLs and must not be decoded.
+    if result.startswith(("http://", "https://")):
+        return result
     return unquote(result)
 
 

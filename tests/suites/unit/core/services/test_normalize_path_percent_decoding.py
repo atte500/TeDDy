@@ -40,3 +40,29 @@ class TestNormalizePathDecoding:
         result = normalize_path("folder\\sub%20dir\\file.txt")
         assert result == "folder/sub dir/file.txt", f"Unexpected: {result!r}"
         assert "%20" not in result, f"Decode failed: {result!r}"
+
+    def test_url_http_preserves_percent20(self):
+        """HTTP URLs with %20 are not decoded (structural URL encoding)."""
+        result = normalize_path("http://example.com/path%20with%20spaces")
+        assert result == "http://example.com/path%20with%20spaces", (
+            f"URL decoded: {result!r}"
+        )
+
+    def test_url_https_preserves_percent20(self):
+        """HTTPS URLs with %20 are not decoded."""
+        result = normalize_path("https://example.com/file%20name.txt")
+        assert result == "https://example.com/file%20name.txt", (
+            f"URL decoded: {result!r}"
+        )
+
+    def test_url_preserves_percent23(self):
+        """URLs with %23 (#) are preserved (fragment identifier encoding)."""
+        result = normalize_path("http://example.com/doc%23section")
+        assert result == "http://example.com/doc%23section", f"URL decoded: {result!r}"
+
+    def test_url_preserves_percent2F(self):
+        """URLs with %2F (/) are preserved (path segment encoding)."""
+        result = normalize_path("http://example.com/api%2Fv1/resource")
+        assert result == "http://example.com/api%2Fv1/resource", (
+            f"URL decoded: {result!r}"
+        )
