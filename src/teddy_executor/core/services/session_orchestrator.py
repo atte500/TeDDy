@@ -185,7 +185,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             project_context=project_context,
         )
 
-    def execute(  # noqa: PLR0913, C901
+    def execute(  # noqa: PLR0913, PLR0915, PLR0912, C901
         self,
         plan: Optional[Plan] = None,
         plan_content: Optional[str] = None,
@@ -334,20 +334,9 @@ class SessionOrchestrator(IRunPlanUseCase):
                     )
                     return None  # type: ignore
 
-            # Print user message after all actions executed (only for session mode)
-            # Uses plan.metadata["user_request"] which is populated by _dispatch_single_action
-            # when the user provides a reply during execution.
-            # Also extracts MESSAGE action replies from action_logs as a fallback
-            # (see Bug 17: Bug 16's guard prevents MESSAGE replies from being stored
-            # in plan.metadata["user_request"]).
-            if is_session:
-                user_reply = plan.metadata.get("user_request", "") if plan else ""
-                action_logs = report.action_logs if report else []
-                _print_user_message(
-                    user_reply, is_session, plan=plan, action_logs=action_logs
-                )
-
-            # 4. Turn Transition
+            # 4. Turn Transition — handle abort FIRST, then print user message
+            # (Bug 40: _handle_aborted_session captures the abort message from user;
+            #  _print_user_message must run after to print it to terminal.)
             if is_session and plan_path:
                 report = self._handle_aborted_session(report, plan)
                 if report is None:
@@ -361,6 +350,20 @@ class SessionOrchestrator(IRunPlanUseCase):
                     return None  # type: ignore
 
                 self._lifecycle_manager.finalize_turn(plan_path, report, plan=plan)
+
+            # Print user message after all actions executed (only for session mode)
+            # Uses plan.metadata["user_request"] which is populated by _dispatch_single_action
+            # when the user provides a reply during execution.
+            # Also extracts MESSAGE action replies from action_logs as a fallback
+            # (see Bug 17: Bug 16's guard prevents MESSAGE replies from being stored
+            # in plan.metadata["user_request"]).
+            # Note: runs after _handle_aborted_session so abort-captured messages are printed.
+            if is_session:
+                user_reply = plan.metadata.get("user_request", "") if plan else ""
+                action_logs = report.action_logs if report else []
+                _print_user_message(
+                    user_reply, is_session, plan=plan, action_logs=action_logs
+                )
 
             return report
 
