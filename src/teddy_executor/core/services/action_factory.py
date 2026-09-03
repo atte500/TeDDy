@@ -61,7 +61,7 @@ class ActionFactory(IActionFactory):
                     try:
                         return self._scraper.get_content(url=kwargs["path"])
                     except Exception as e:
-                        logging.getLogger(__name__).warning(
+                        logging.getLogger(__name__).debug(
                             "Failed to fetch URL '%s': %s", kwargs.get("path"), e
                         )
                         return f"Error: Failed to fetch URL ({e})"
