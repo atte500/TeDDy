@@ -54,7 +54,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             return reviewed_plan
         return plan
 
-    def _process_plan_actions(self, plan: Plan, interactive: bool) -> list[ActionLog]:
+    def _process_plan_actions(
+        self, plan: Plan, interactive: bool, pipeline: bool = False
+    ) -> list[ActionLog]:
         """Iterates through actions and dispatches them."""
         # Reset file hashes at the start of each plan execution to prevent
         # stale hashes from previous turns from causing false pre-check failures.
@@ -64,7 +66,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         halt_execution = False
         for action in plan.actions:
             action_log, should_halt = self._handle_action_in_loop(
-                action, plan, interactive, halt_execution
+                action, plan, interactive, halt_execution, pipeline
             )
             action_logs.append(action_log)
             if should_halt:
@@ -72,7 +74,12 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         return action_logs
 
     def _handle_action_in_loop(
-        self, action: ActionData, plan: Plan, interactive: bool, halt_execution: bool
+        self,
+        action: ActionData,
+        plan: Plan,
+        interactive: bool,
+        halt_execution: bool,
+        pipeline: bool = False,
     ) -> tuple[ActionLog, bool]:
         """Logic for processing a single action within the execution loop."""
         if halt_execution:
@@ -100,7 +107,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
         try:
             action_log, captured_message = self._dispatch_single_action(
-                action, plan, interactive
+                action, plan, interactive, pipeline
             )
         except Exception as e:
             action_log = self._action_executor.handle_failed_action(action, str(e))
@@ -119,7 +126,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         return action_log, should_halt
 
     def _dispatch_single_action(
-        self, action: Any, plan: Plan, interactive: bool
+        self, action: Any, plan: Plan, interactive: bool, pipeline: bool = False
     ) -> tuple[ActionLog, str]:
         """Handles the review and dispatch of a single action."""
         agent_name = plan.metadata.get("Agent") or plan.metadata.get("agent")
@@ -153,6 +160,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 agent_name=agent_name,
                 is_session=plan.is_session,
                 skip_isolation=True,
+                pipeline=pipeline,
             )
             return action_log, dispatch_message or captured_message
 
@@ -163,6 +171,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             total_actions=len(plan.actions),
             agent_name=agent_name,
             is_session=plan.is_session,
+            pipeline=pipeline,
         )
 
     def _resolve_plan(
@@ -240,6 +249,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         interactive: bool = True,
         message: Optional[str] = None,
         project_context: Optional[Any] = None,
+        pipeline: bool = False,
     ) -> ExecutionReport:
         import os
 
@@ -265,7 +275,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             if reviewed_plan is None:
                 return self._handle_aborted_execution(plan, start_time, message)
 
-            action_logs = self._process_plan_actions(reviewed_plan, interactive)
+            action_logs = self._process_plan_actions(
+                reviewed_plan, interactive, pipeline
+            )
             return self._report_assembler.assemble(
                 ReportAssemblyData(
                     plan=reviewed_plan,

@@ -174,6 +174,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         session_name: str,
         interactive: bool = True,
         project_context: Optional[Any] = None,
+        pipeline: bool = False,
     ):
         """
         Implements the 'resume' state machine.
@@ -183,6 +184,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             self,
             interactive,
             project_context=project_context,
+            pipeline=pipeline,
         )
 
     def execute(  # noqa: PLR0913, PLR0915, PLR0912, C901
@@ -193,6 +195,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         interactive: bool = True,
         message: Optional[str] = None,
         project_context: Optional[Any] = None,
+        pipeline: bool = False,
     ) -> ExecutionReport:
         # Empty message signals session termination (no report.md created).
         if message is not None and not message.strip():
@@ -308,6 +311,7 @@ class SessionOrchestrator(IRunPlanUseCase):
                 interactive=interactive,
                 message=message,
                 project_context=project_context,
+                pipeline=pipeline,
             )
 
             # 4a. Empty user reply after communication turn → terminate session immediately (no report.md)

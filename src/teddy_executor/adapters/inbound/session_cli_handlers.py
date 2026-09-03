@@ -192,6 +192,7 @@ def _orchestrate_session_loop(
         session_name, report = orchestrator.resume(
             session_name=session_name,
             interactive=interactive,
+            pipeline=pipeline,
         )
         if report is None:
             break

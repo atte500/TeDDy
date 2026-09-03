@@ -99,6 +99,7 @@ def test_orchestrator_falls_back_to_legacy_interaction_if_no_reviewer(
         total_actions=1,
         agent_name=None,
         is_session=False,
+        pipeline=False,
     )
 
 

@@ -20,6 +20,7 @@ class IRunPlanUseCase(ABC):
         interactive: bool = True,
         message: Optional[str] = None,
         project_context: Optional["ProjectContext"] = None,
+        pipeline: bool = False,
     ) -> ExecutionReport:
         """
         Executes a plan and returns a report.

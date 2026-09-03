@@ -123,6 +123,7 @@ class ActionExecutor:
         agent_name: Optional[str] = None,
         is_session: bool = False,
         skip_isolation: bool = False,
+        pipeline: bool = False,
     ) -> tuple[ActionLog, str]:
         """Handles user confirmation and dispatches a single action."""
         # Capture the change set BEFORE execution for diff reporting
@@ -132,6 +133,22 @@ class ActionExecutor:
         # Communication actions (MESSAGE) bypass the interactive confirmation
         # to ensure a fluid conversational flow.
         is_communication = action.type.upper() == "MESSAGE"
+
+        # Pipeline mode short-circuit: produce synthetic ActionLog without dispatching,
+        # preventing the blocking ask_question call (which reads stdin).
+        # Only fires when pipeline=True (not in YOLO mode which also sets interactive=False).
+        if is_communication and pipeline:
+            content = action.params.get("content", action.params.get("prompt", ""))
+            log_params = action.params.copy()
+            if action.description:
+                log_params["Description"] = action.description
+            action_log = ActionLog(
+                status=ActionStatus.SUCCESS,
+                action_type="MESSAGE",
+                params=log_params,
+                details=content,
+            )
+            return (action_log, "")
 
         if interactive and not is_communication:
             should_dispatch, reason = self._get_interactive_confirmation(action)

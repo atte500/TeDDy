@@ -48,5 +48,5 @@ def test_trigger_new_plan_uses_ask_question(mocks):
     # Assert
     # Verify delegation to lifecycle manager
     mocks["lifecycle_manager"].resume.assert_called_once_with(
-        "session_name", orchestrator, True, project_context=None
+        "session_name", orchestrator, True, project_context=None, pipeline=False
     )

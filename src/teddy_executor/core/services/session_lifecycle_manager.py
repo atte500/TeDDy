@@ -45,6 +45,7 @@ class SessionLifecycleManager:
         orchestrator: IRunPlanUseCase,
         interactive: bool = True,
         project_context: Optional[Any] = None,
+        pipeline: bool = False,
     ) -> tuple[str, Optional[ExecutionReport]]:
         """Implements the 'resume' state machine.
 
@@ -62,6 +63,7 @@ class SessionLifecycleManager:
                 plan_path=plan_path,
                 interactive=interactive,
                 project_context=project_context,
+                pipeline=pipeline,
             )
             return (session_name, report)
 
@@ -71,6 +73,7 @@ class SessionLifecycleManager:
                 orchestrator,
                 interactive,
                 project_context=project_context,
+                pipeline=pipeline,
             )
 
         if state == SessionState.COMPLETE_TURN:
@@ -92,6 +95,7 @@ class SessionLifecycleManager:
         orchestrator: IRunPlanUseCase,
         interactive: bool,
         project_context: Optional[Any] = None,
+        pipeline: bool = False,
     ) -> tuple[str, Optional[ExecutionReport]]:
         """Triggers planning for a turn and then executes the resulting plan.
 
@@ -141,6 +145,7 @@ class SessionLifecycleManager:
                 plan_path=f"{actual_turn_path}/plan.md",
                 interactive=interactive,
                 project_context=project_context,
+                pipeline=pipeline,
             )
             return (new_name, report)
         finally:

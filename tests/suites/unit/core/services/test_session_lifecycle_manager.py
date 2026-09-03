@@ -131,6 +131,7 @@ def test_resume_returns_tuple_with_session_name_and_report(manager):
         session_name="my-session",
         orchestrator=mock_orchestrator,
         interactive=False,
+        pipeline=False,
     )
 
     # Assert result is a tuple (session_name, report)
