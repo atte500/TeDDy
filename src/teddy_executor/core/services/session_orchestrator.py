@@ -363,11 +363,26 @@ class SessionOrchestrator(IRunPlanUseCase):
             # in plan.metadata["user_request"]).
             # Note: runs after _handle_aborted_session so abort-captured messages are printed.
             if is_session:
-                user_reply = plan.metadata.get("user_request", "") if plan else ""
-                action_logs = report.action_logs if report else []
-                _print_user_message(
-                    user_reply, is_session, plan=plan, action_logs=action_logs
-                )
+                if pipeline and report:
+                    # Pipeline mode: print agent's MESSAGE under correct header
+                    # instead of "User Message:" (which is semantically incorrect
+                    # in pipeline mode since no real user provided input).
+                    for log in report.action_logs:
+                        log_type = (getattr(log, "action_type", "") or "").upper()
+                        if log_type == "MESSAGE":
+                            content = (getattr(log, "details", "") or "").strip()
+                            if content:
+                                typer.secho("")
+                                typer.secho("--- MESSAGE from TeDDy ---", fg=typer.colors.CYAN)
+                                typer.secho(content)
+                            break
+                else:
+                    # Non-pipeline mode (interactive, YOLO): existing behavior unchanged
+                    user_reply = plan.metadata.get("user_request", "") if plan else ""
+                    action_logs = report.action_logs if report else []
+                    _print_user_message(
+                        user_reply, is_session, plan=plan, action_logs=action_logs
+                    )
 
             return report
 
