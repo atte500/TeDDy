@@ -325,8 +325,6 @@ class SessionOrchestrator(IRunPlanUseCase):
                     None,
                 )
                 if user_reply is not None and not user_reply.strip():
-                    import typer
-
                     typer.secho(
                         "\nSession terminated (empty message).",
                         fg=typer.colors.RED,
@@ -344,8 +342,6 @@ class SessionOrchestrator(IRunPlanUseCase):
             if is_session and plan_path:
                 report = self._handle_aborted_session(report, plan)
                 if report is None:
-                    import typer
-
                     typer.secho("\nSession terminated.", fg=typer.colors.RED, err=True)
                     typer.secho(
                         "To continue the session, use `teddy resume [session_path]`.",
@@ -419,8 +415,6 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         if report.run_summary.status != RunStatus.ABORTED:
             return report
-
-        import typer
 
         typer.secho("Plan aborted by user.", fg=typer.colors.YELLOW, err=True)
 
