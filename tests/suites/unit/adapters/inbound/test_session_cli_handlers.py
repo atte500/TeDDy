@@ -381,7 +381,7 @@ def test_handle_new_session_starts_background_check_thread(monkeypatch):
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
-        lambda container, session_name, interactive, no_copy: None,
+        lambda container, session_name, interactive, no_copy, **kwargs: None,
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._echo_config_success",
@@ -478,7 +478,7 @@ def test_handle_resume_session_starts_background_check_thread(monkeypatch):
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
-        lambda container, session_name, interactive, no_copy: None,
+        lambda container, session_name, interactive, no_copy, **kwargs: None,
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._sync_and_display_session_meta",

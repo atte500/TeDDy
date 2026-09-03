@@ -155,6 +155,7 @@ def _orchestrate_session_loop(
     session_name: str,
     interactive: bool,
     no_copy: bool,
+    pipeline: bool = False,
 ) -> None:
     """Shared turn loop for start and resume commands."""
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
@@ -214,6 +215,16 @@ def _orchestrate_session_loop(
                 typer.secho(lines[1])
             break
 
+        # Pipeline mode: exit cleanly after the first ## Message
+        if pipeline and report.action_logs:
+            for log_entry in report.action_logs:
+                action_type = getattr(log_entry, "action_type", None) or ""
+                if action_type.upper() == "MESSAGE":
+                    break  # break inner for
+            else:
+                continue  # no MESSAGE found, continue outer loop
+            break  # MESSAGE found, exit session loop
+
 
 def _display_update_notification(cache_path: Path) -> None:
     """Check the update cache and display a non-blocking notification
@@ -256,6 +267,7 @@ def handle_new_session(  # noqa: PLR0913
     interactive: bool = True,
     no_copy: bool = False,
     message: Optional[str] = None,
+    pipeline: bool = False,
     additional_context: Optional[list[str]] = None,
     model: Optional[str] = None,
     provider: Optional[str] = None,
@@ -275,10 +287,16 @@ def handle_new_session(  # noqa: PLR0913
     _display_update_notification(cache_path)
 
     try:
-        # 0. Ensure project is initialized
+        # 0. Pipeline mode requires an initial message
+        if pipeline and message is None:
+            raise ValueError(
+                "Pipeline mode requires an initial message via -m/--message."
+            )
+
+        # 1. Ensure project is initialized
         container.resolve(IInitUseCase).ensure_initialized()
 
-        # 1. Health checks (advisory, non-blocking)
+        # 2. Health checks (advisory, non-blocking)
         _run_health_checks()
 
         # 2. Pre-flight checks (Fail-fast before user interaction)
@@ -315,6 +333,7 @@ def handle_new_session(  # noqa: PLR0913
             session_name=Path(session_dir).name,
             interactive=interactive,
             no_copy=no_copy,
+            pipeline=pipeline,
         )
 
     except Exception as e:

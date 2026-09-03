@@ -124,6 +124,12 @@ def start(  # noqa: PLR0913
     yolo: bool = typer.Option(
         False, "--yolo", "-y", help="Auto-approve all actions (non-interactive mode)."
     ),
+    pipeline: bool = typer.Option(
+        False,
+        "--pipeline",
+        "-p",
+        help="Pipeline mode: auto-approve all actions, requires -m, exits after first ## Message.",
+    ),
     yes: bool = typer.Option(False, "--yes", hidden=True),
     no_interactive: bool = typer.Option(False, "--no-interactive", hidden=True),
     non_interactive: bool = typer.Option(False, "--non-interactive", hidden=True),
@@ -162,9 +168,10 @@ def start(  # noqa: PLR0913
         container=container,
         name=name,
         agent=agent,
-        interactive=not (yolo or yes or no_interactive or non_interactive),
+        interactive=not (yolo or pipeline or yes or no_interactive or non_interactive),
         no_copy=no_copy,
         message=message,
+        pipeline=pipeline,
         additional_context=additional_context,
         model=model,
         provider=provider,
