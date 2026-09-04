@@ -116,6 +116,7 @@ teddy resume
 - `--agent` / `-a` – Choose an agent persona (e.g., `pathfinder`, `architect`, `developer`).
 - `--context` / `-c` – Pass additional context files or directories.
 - `--model` / `-m` – Override the default model.
+- `--pipeline` / `-p` – Pipeline mode: auto-approves all actions, requires `--message` / `-m`, exits after the first `## Message`.
 
 #### Browser chat usage
 
