@@ -2,7 +2,7 @@
 
 ## 1. Purpose / Responsibility
 
-The `IConfigService` port defines a technology-agnostic interface for retrieving application configuration, including settings and secrets like API keys. It abstracts the underlying storage mechanism (e.g., YAML file, environment variables) from the core application logic.
+The `IConfigService` port defines a technology-agnostic interface for retrieving and persisting application configuration, including settings and secrets like API keys. It abstracts the underlying storage mechanism (e.g., YAML file, environment variables) from the core application logic.
 
 ## 2. Ports
 
@@ -26,6 +26,18 @@ This is an interface and contains no implementation logic.
     -   If the key does not exist and a `default` is provided, the `default` value is returned.
     -   If the key does not exist and no `default` is provided, `None` is returned.
 -   **Exception/Error States:** None. The contract guarantees a return value.
+
+### `set_setting(self, key: str, value: Any) -> None`
+
+-   **Description:** Sets a configuration value by its key and persists to the underlying storage (e.g., YAML file). Supports dot-notation for nested keys.
+-   **Preconditions:**
+    -   `key` must be a non-empty string.
+-   **Postconditions:**
+    -   The value for the given key is updated and persisted.
+    -   The in-memory cache is updated to reflect the change immediately.
+-   **Exception/Error States:**
+    -   May raise `OSError` if the config file cannot be written (e.g., insufficient permissions).
+    -   May raise `yaml.YAMLError` if the config file becomes corrupted during write.
 
 ## 5. Standard Configuration Keys
 

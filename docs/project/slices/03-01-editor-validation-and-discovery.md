@@ -2,7 +2,7 @@
 - **Status:** Planned
 - **Milestone:** [03-Foundational-Refactors](/docs/project/milestones/03-foundational-refactors.md)
 - **Specs:** [Editor Validation & Discovery](/docs/project/specs/editor-validation-and-discovery.md)
-- **Component Docs:** ConsoleToolingHelper (add), YamlConfigAdapter (update), IConfigService (update), session_cli_handlers (update)
+- **Component Docs:** [ConsoleToolingHelper](/docs/architecture/adapters/outbound/console_tooling.md) (add), [YamlConfigAdapter](/docs/architecture/adapters/outbound/yaml_config_adapter.md) (update), [IConfigService](/docs/architecture/core/ports/outbound/config_service.md) (update), [CLI Adapter](/docs/architecture/adapters/inbound/cli.md) (update)
 - **Scope Slug:** `editor-validation-and-discovery`
 
 ## Business Goal
