@@ -1,5 +1,5 @@
 # Bug: trafilatura logs "discarding data: None" warning during web scraping
-- **Status:** Unresolved
+- **Status:** Resolved
 - **Milestone:** N/A
 - **Vertical Slice:** N/A
 - **Specs:** N/A
@@ -43,4 +43,16 @@ Not a regression — this behavior has existed since the web scraper adapter sta
 7. Read `ActionFactory._create_read_action()` → READ URLs route through `WebScraperAdapter.get_content()`, which has the logging suppression wrapper.
 
 ## Solution
-[To be filled]
+
+**Root Cause:** `WebScraperAdapter._get_content_impl()` called `trafilatura.extract()` **without** passing the `url` parameter. When trafilatura's `bare_extraction()` fails (e.g., empty/invalid HTML, content too short, language mismatch), it catches `ValueError`/`TypeError` and logs `options.source` — which is `None` because `Extractor._set_source(None, None)` sets `self.source = None`.
+
+**Fix:** Added `url=url` to the `trafilatura.extract()` call at line 348 of `web_scraper_adapter.py`. Now if the warning appears, it shows the actual URL (e.g., `"discarding data: https://example.com/page"`) instead of `"None"`.
+
+**Preventative Measures:**
+- Passing the `url` parameter is a low-cost defensive practice: even if `logging.disable()` fails to suppress trafilatura's warning, the log now conveys actionable diagnostic information (the failing URL) rather than a confusing `"None"`.
+- For future use of third-party extractors, always pass all available context parameters (URL, metadata) to ensure logs are meaningful.
+- The existing `logging.disable(logging.CRITICAL)` wrapper remains in place as a secondary guard; the primary fix is the `url` parameter.
+
+**Files Changed:**
+- `src/teddy_executor/adapters/outbound/web_scraper_adapter.py` — Added `url=url` to `trafilatura.extract()` call.
+- `tests/suites/integration/adapters/outbound/test_web_scraper_trafilatura_warning.py` — New regression test verifying that the warning (if emitted) includes the URL instead of "None".

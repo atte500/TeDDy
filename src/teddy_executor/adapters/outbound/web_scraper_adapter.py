@@ -347,6 +347,7 @@ class WebScraperAdapter(WebScraper):
         trafilatura = self._get_trafilatura()
         markdown_content = trafilatura.extract(
             html_content,
+            url=url,
             output_format="markdown",
             include_links=True,
             include_formatting=True,
