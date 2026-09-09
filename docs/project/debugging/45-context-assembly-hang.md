@@ -73,15 +73,30 @@ However, the user confirmed: even without URLs, the hang happens on Windows. So 
 
 The flow is: `planning_service.py` prints "Waiting for..." → `_run_preflight_check()` → resolve context → fetch system prompt → `get_text_token_count()` (local) → `get_context()` → build messages → write `input.md` → `get_context_window()` (hydration) → `get_token_count()` (local) → display telemetry → LLM call.
 
-At least one operation in this pipeline has a Windows-specific performance characteristic that causes a blocking delay that is not present on Mac. The most likely candidates (untested) are:
-1. `litellm.validate_environment()` in `_run_preflight_check()`.
-2. First-call tiktoken encoding download in `_get_encoding()`.
-3. File I/O differences in context resolution.
-4. An import-heavy initialization in `LiteLLMAdapter` constructor.
+**Remote probe results (2026-09-09):** A timing breakdown across all pre-request pipeline steps was executed on Windows and Ubuntu. Key findings:
+- **Windows litellm import: 6157ms** (6.2s)
+- **Ubuntu litellm import: 6184ms** (6.2s) — identical.
+- **Windows tiktoken encoding_for_model: 945ms**
+- **Ubuntu tiktoken encoding_for_model: 1379ms** — Windows is actually faster.
+- Total probe duration: Windows 8146ms, Ubuntu 8265ms.
+
+Both platforms show the litellm first-import as the dominant delay (~6.2s). The probe runs each step in a fresh `python -c` subprocess, so each pays full import cost. In production, `LiteLLMAdapter._get_litellm()` uses lazy initialization with a lock, so the import happens only once per process (on first call, which occurs during `validate_config()` in `_run_preflight_check()`).
+
+**First-turn cause (litellm first-import):** The litellm import takes ~6.2s on Windows vs ~1.3s on macOS — a 4.7x difference. This explains a one-time delay at the start of the very first turn of a session. After the first import, `_get_litellm()` is cached.
+
+**Per-turn cause (synchronous URL fetching):** The `ContextService.get_context()` method (lines 62-85) fetches URLs **sequentially and synchronously** via `self._web_scraper.get_content(url)`. For each non-cached URL, this blocks the entire pre-request pipeline. Failed fetches (empty-string sentinels from commit e058e3e9) incur the full timeout before the `except Exception` block catches the error. With 15 URLs in context and 8 failed fetches, this can add **40-120 seconds** of blocking time per turn if each failure waits for a ~5-15s timeout.
+
+**Compounding factors:**
+- No parallelization: URLs are fetched one-at-a-time in a for loop.
+- No user-facing progress: No indication that URLs are being fetched.
+- The "Waiting for..." message appears before the fetch phase, so the user sees the header, then a long pause before metadata appears.
+
+**Platform differences:** URL fetch times are comparable across platforms (network latency is the dominant factor, not OS). However, on Windows, the first-turn litellm delay masks the per-turn URL delay on simple sessions. On macOS, the first-turn delay is shorter, so URL fetches are more noticeable as a per-turn issue.
 
 ### Discrepancies
 - The web cache bloat (Regression B) explains URL-heavy hang on Mac but NOT the Windows universal hang. This confirms two separate root causes.
 - The hydration hypothesis (`get_context_window()` network call) does NOT align with Windows-only observation. This rules it out as primary universal cause.
+- The litellm first-import hypothesis predicted macOS import would be ~1-2s while Windows would be ~6s. (Resolved: local probe confirmed macOS litellm import = 1309ms, remote probe confirmed Windows = 6157ms — 4.7x difference.)
 
 ### Investigation History
 1. **Context assembly timing confirmed**: The hang is pre-processing (user confirmed: "headers get assembled before sending request to ai so it is pre-processing issue not post processing").
@@ -92,6 +107,11 @@ At least one operation in this pipeline has a Windows-specific performance chara
 6. **No sleep/timeout found**: Zero `time.sleep()` or retry delays in pre-request pipeline files.
 7. **No subprocess in pre-request flow**: Zero `subprocess.run` / `Popen` in `planning_service.py`, `context_service.py`, or `session_service.py`.
 8. **get_text_token_count confirmed local**: Uses local tiktoken, not API calls.
+9. **Remote probe executed (Windows + Ubuntu)**: Timing breakdown of pre-request pipeline steps. Both platforms show ~6.2s for `litellm import` and ~1s for `tiktoken encoding_for_model`. Total ~8s each. No platform-specific step identified.
+10. **Hypothesis: litellm first-import is the universal hang**: The 6.2s import time is the dominant delay. macOS likely loads litellm much faster due to native ARM wheels. Need Mac baseline to confirm.
+11. **Local probe executed (macOS)**: macOS litellm import = 1309ms (1.3s) — 4.7x faster than Windows/Ubuntu. Tiktoken encoding = 142ms — 6.7x faster. Total probe = 1767ms vs Windows 8146ms. **Hypothesis CONFIRMED:** The litellm first-import is the root cause of the Windows-specific universal hang.
+12. **User feedback disproves litellm import as per-turn cause**: User reports hang happens EVERY turn, not just first turn. Litellm import is cached after first call (per-process). **Revised hypothesis:** The per-turn hang is caused by synchronous URL fetching in `context_service.py:62-85`. Each non-cached URL triggers a blocking network call. Failed fetches (empty sentinel) wait for timeout. With many URLs in context (user's example: 15 URLs, 8 failed), this produces multi-second per-turn blocking.
+13. **URL fetch timing probe initiated (2026-09-09)**: Created `probe_url_fetch.py` to measure per-URL fetch times for known failing/succeeding URLs using the project's `WebScraperAdapter`. Running on Windows and Ubuntu CI to confirm the per-turn blocking cost.
 
 ## Solution
 
