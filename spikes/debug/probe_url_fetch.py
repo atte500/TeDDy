@@ -7,6 +7,7 @@ Run from project root: uv run python spikes/debug/probe_url_fetch.py
 import time
 import sys
 import os
+import platform
 
 # Ensure we can import the adapter
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -15,7 +16,7 @@ def main():
     from teddy_executor.adapters.outbound.web_scraper_adapter import WebScraperAdapter
 
     print("=== URL Fetch Timing Probe ===")
-    print(f"Host OS: {os.uname().sysname} {os.uname().release}")
+    print(f"Host OS: {platform.platform()}")
     print(f"Python: {sys.version}")
     print()
 

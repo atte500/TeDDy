@@ -112,6 +112,7 @@ Both platforms show the litellm first-import as the dominant delay (~6.2s). The 
 11. **Local probe executed (macOS)**: macOS litellm import = 1309ms (1.3s) — 4.7x faster than Windows/Ubuntu. Tiktoken encoding = 142ms — 6.7x faster. Total probe = 1767ms vs Windows 8146ms. **Hypothesis CONFIRMED:** The litellm first-import is the root cause of the Windows-specific universal hang.
 12. **User feedback disproves litellm import as per-turn cause**: User reports hang happens EVERY turn, not just first turn. Litellm import is cached after first call (per-process). **Revised hypothesis:** The per-turn hang is caused by synchronous URL fetching in `context_service.py:62-85`. Each non-cached URL triggers a blocking network call. Failed fetches (empty sentinel) wait for timeout. With many URLs in context (user's example: 15 URLs, 8 failed), this produces multi-second per-turn blocking.
 13. **URL fetch timing probe initiated (2026-09-09)**: Created `probe_url_fetch.py` to measure per-URL fetch times for known failing/succeeding URLs using the project's `WebScraperAdapter`. Running on Windows and Ubuntu CI to confirm the per-turn blocking cost.
+14. **Remote probe failure (2026-09-09)**: Windows job failed with exit code 1 at ~39s. Root cause: `os.uname()` is Unix-only (AttributeError on Windows). Ubuntu job completed but logs not yet retrieved. Fixed by replacing `os.uname()` with `platform.platform()`.
 
 ## Solution
 
