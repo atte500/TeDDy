@@ -45,7 +45,7 @@ jobs:
         echo "::endgroup::"
 
         if [ -f spikes/debug/probe.sh ]; then
-          bash spikes/debug/probe.sh
+          uv run bash spikes/debug/probe.sh
         else
           echo "[ERROR] spikes/debug/probe.sh not found."
           exit 1
@@ -87,7 +87,7 @@ jobs:
         echo "::endgroup::"
 
         if [ -f spikes/debug/probe.sh ]; then
-          bash spikes/debug/probe.sh
+          uv run bash spikes/debug/probe.sh
         else
           echo "[ERROR] spikes/debug/probe.sh not found."
           exit 1
