@@ -41,6 +41,21 @@ _CLI_EDITORS: set[str] = {
 }
 
 
+def _run_editor_process(cmd: list[str], **kwargs: Any) -> None:
+    """Run subprocess.run with platform-appropriate flags.
+
+    On Windows, adds subprocess.CREATE_NO_WINDOW to suppress the console popup
+    that occurs when spawning GUI editor batch wrappers (e.g. codium.CMD).
+    On Unix, runs subprocess.run normally.
+    """
+    import subprocess as _sp  # noqa: PLC0415
+
+    if sys.platform == "win32":
+        _sp.run(cmd, creationflags=_sp.CREATE_NO_WINDOW, **kwargs)
+    else:
+        _sp.run(cmd, **kwargs)
+
+
 def reconstruct_from_diff(edited_text: str) -> str:
     """Reconstruct the final content from an annotated diff file.
 
@@ -108,15 +123,23 @@ def handle_mock_editor(path: Any, output: str) -> str:
 
 
 def spawn_editor(cmd: list[str], path: Any) -> None:
-    """Spawns an external editor process."""
+    """Spawns an external editor process in the background.
+
+    On Windows, adds subprocess.CREATE_NO_WINDOW flag to suppress the
+    console popup that occurs with batch-wrapped GUI editors (codium.CMD).
+    """
     import subprocess  # nosec B404
 
     try:
+        kwargs: dict[str, Any] = {}
+        if sys.platform == "win32":
+            kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
         subprocess.Popen(  # nosec B603
             cmd + [str(path)],
             stdin=sys.stdin,
             stdout=sys.stdout,
             stderr=sys.stderr,
+            **kwargs,
         )
     except Exception as e:
         logger.debug("Failed to spawn editor: %s", e)
@@ -307,38 +330,34 @@ async def launch_editor(
             cmd.extend(["-c", "syntax on", "-c", "filetype plugin on"])
         cmd.append(temp_file)
 
-        if sys.platform == "win32":
-            # Windows: spawn without suspend, use CREATE_NO_WINDOW to suppress popup
-            subprocess.run(  # noqa: B603
-                cmd,
-                stdin=sys.stdin,
-                stdout=sys.stdout,
-                stderr=sys.stderr,
-                creationflags=subprocess.CREATE_NO_WINDOW,
-            )
-            _flush_stdin()
-        elif _is_cli_editor(editor_cmd):
-            # Unix CLI editor: suspend and run properly
-            logger.info("Opening Editor (sync): %s", editor_name)
-            with app.suspend():
-                subprocess.run(  # noqa: B603
-                    cmd,
-                    stdin=sys.stdin,
-                    stdout=sys.stdout,
-                    stderr=sys.stderr,
+        # ---- Refactored branching: CLI vs GUI ----
+        if _is_cli_editor(editor_cmd):
+            if sys.platform == "win32":
+                # Windows CLI editor: synchronous run, no suspend, with CREATE_NO_WINDOW
+                _run_editor_process(
+                    cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr
                 )
-                # Restore foreground process group before Textual resumes
-                _restore_foreground_process_group()
-                # Restore cooked mode as secondary safety measure
-                _restore_terminal_cooked_mode()
-            _flush_stdin()
+                _flush_stdin()
+            else:
+                # Unix CLI editor: suspend + run + restore
+                logger.info("Opening Editor (sync): %s", editor_name)
+                with app.suspend():
+                    _run_editor_process(
+                        cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr
+                    )
+                    # Restore foreground process group before Textual resumes
+                    _restore_foreground_process_group()
+                    # Restore cooked mode as secondary safety measure
+                    _restore_terminal_cooked_mode()
+                _flush_stdin()
         else:
+            # GUI editor (any platform): background Popen + ConfirmScreen
             spawn_editor(editor_cmd, temp_file)
             return await _confirm_and_harvest(
                 app, temp_file, initial_content, is_temp, skip_confirm=skip_confirm
             )
 
-        # Read back content after editor exits
+        # Read back content after editor exits (for CLI editors only)
         with open(temp_file, "r", encoding="utf-8") as f:
             content = f.read()
         content = _strip_escape_sequences(content)
@@ -418,17 +437,13 @@ async def preview_edit_diff_viewer(
 
             try:
                 if sys.platform == "win32":
-                    # Windows: spawn without suspend, use CREATE_NO_WINDOW to suppress popup
+                    # Windows: spawn without suspend, use CREATE_NO_WINDOW
                     cmd = list(diff_viewer[:1])
                     if _is_vim_editor(cmd):
                         cmd.extend(["-c", "syntax on", "-c", "filetype plugin on"])
                     cmd.append(annotated_path)
-                    subprocess.run(  # noqa: B603
-                        cmd,
-                        stdin=sys.stdin,
-                        stdout=sys.stdout,
-                        stderr=sys.stderr,
-                        creationflags=subprocess.CREATE_NO_WINDOW,
+                    _run_editor_process(
+                        cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr
                     )
                     _restore_foreground_process_group()
                     _restore_terminal_cooked_mode()
@@ -439,11 +454,8 @@ async def preview_edit_diff_viewer(
                         if _is_vim_editor(cmd):
                             cmd.extend(["-c", "syntax on", "-c", "filetype plugin on"])
                         cmd.append(annotated_path)
-                        subprocess.run(  # noqa: B603
-                            cmd,
-                            stdin=sys.stdin,
-                            stdout=sys.stdout,
-                            stderr=sys.stderr,
+                        _run_editor_process(
+                            cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr
                         )
                         _restore_foreground_process_group()
                         _restore_terminal_cooked_mode()

@@ -812,7 +812,7 @@ class TestWindowsPlatformHandling:
 
     @pytest.mark.anyio
     async def test_launch_editor_windows_use_create_no_window(self) -> None:
-        """On Windows, launch_editor must NOT call app.suspend() and
+        """On Windows, CLI editor must NOT call app.suspend() and
         must pass creationflags=CREATE_NO_WINDOW to subprocess.run."""
         from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
             launch_editor,
@@ -868,6 +868,91 @@ class TestWindowsPlatformHandling:
         assert kwargs["creationflags"] == 0x08000000, (
             f"Expected creationflags=0x08000000, got {kwargs.get('creationflags')}"
         )
+
+        # Clean up temp file
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            pass
+
+    @pytest.mark.anyio
+    async def test_launch_editor_windows_gui_editor_uses_spawn(self) -> None:
+        """On Windows, a GUI editor (codium.CMD) must use background Popen + ConfirmScreen,
+        NOT synchronous subprocess.run. Verifies spawn_editor is called and
+        push_screen_wait is invoked."""
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
+            launch_editor,
+        )
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+            ConfirmScreen,
+        )
+        import subprocess as _sp
+
+        # Ensure subprocess.CREATE_NO_WINDOW exists on non-Windows hosts
+        if not hasattr(_sp, "CREATE_NO_WINDOW"):
+            _sp.CREATE_NO_WINDOW = 0x08000000
+
+        with tempfile.NamedTemporaryFile(
+            suffix=".txt", delete=False, mode="w", encoding="utf-8"
+        ) as f:
+            temp_path = f.name
+
+        app = MagicMock()
+        app._system_env.create_temp_file.return_value = temp_path
+        # Use a GUI editor: codium.CMD is NOT in _CLI_EDITORS set
+        app._console_tooling.find_editor.return_value = ["codium.CMD"]
+        app.is_headless = False
+        app.INSTRUCTION_MARKER = "### INSTRUCTIONS"
+        app.notify = MagicMock()
+        app.suspend = MagicMock()
+        app.push_screen_wait = AsyncMock(return_value=True)
+        app._system_env.delete_file = MagicMock()
+
+        subprocess_run_calls: list = []
+        subprocess_popen_calls: list = []
+
+        def tracking_run(*args: object, **kwargs: object) -> MagicMock:
+            subprocess_run_calls.append((args, kwargs))
+            return MagicMock(returncode=0)
+
+        def tracking_popen(*args: object, **kwargs: object) -> MagicMock:
+            subprocess_popen_calls.append((args, kwargs))
+            return MagicMock()
+
+        with patch("sys.platform", "win32"):
+            with patch("subprocess.run", tracking_run):
+                with patch("subprocess.Popen", tracking_popen):
+                    result = await launch_editor(app, "initial content")
+
+        # Assert app.suspend was NOT called (no suspend on Windows)
+        app.suspend.assert_not_called()
+
+        # Assert subprocess.run was NOT called (GUI editor should not use run)
+        assert len(subprocess_run_calls) == 0, (
+            f"Expected 0 subprocess.run calls for GUI editor, got {len(subprocess_run_calls)}"
+        )
+
+        # Assert subprocess.Popen was called once with creationflags
+        assert len(subprocess_popen_calls) == 1, (
+            f"Expected 1 Popen call, got {len(subprocess_popen_calls)}"
+        )
+        _, popen_kwargs = subprocess_popen_calls[0]
+        assert "creationflags" in popen_kwargs, (
+            f"No creationflags in Popen kwargs: {popen_kwargs}"
+        )
+        assert popen_kwargs["creationflags"] == 0x08000000, (
+            f"Expected creationflags=0x08000000, got {popen_kwargs.get('creationflags')}"
+        )
+
+        # Assert push_screen_wait was called with ConfirmScreen
+        app.push_screen_wait.assert_called_once()
+        push_args, _ = app.push_screen_wait.call_args
+        assert any(isinstance(a, ConfirmScreen) for a in push_args), (
+            "Should push ConfirmScreen for GUI editors"
+        )
+
+        # Result should be the content from the temp file (harvested after confirm)
+        assert result is not None, "Expected non-None result from confirmed GUI editor"
 
         # Clean up temp file
         try:
