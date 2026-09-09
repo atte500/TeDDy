@@ -54,6 +54,7 @@ def test_web_scraper_disables_high_recall_flags_and_truncates_lines():
     # 1. Verify the correct flags were passed
     mock_trafilatura.extract.assert_called_once_with(
         "<html>Dummy</html>",
+        url="http://example.com",
         output_format="markdown",
         include_links=True,
         include_formatting=True,
