@@ -63,6 +63,11 @@ A centralized helper `_run_editor_process()` adds `subprocess.CREATE_NO_WINDOW` 
 7. **Systemic Audit (Turn 15):** Grep found two `with app.suspend():` locations: `launch_editor()` (line 311) and `preview_edit_diff_viewer()` (line 406). Both lack Windows platform guards. The same platform branching fix applied to both.
 8. **First Fix (Turn 19):** Added `sys.platform == "win32"` branching but placed it BEFORE the CLI/GUI check, routing ALL editors on Windows through synchronous `subprocess.run(creationflags=CREATE_NO_WINDOW)`. This broke GUI editors (e.g. codium.CMD) which needed background Popen + ConfirmScreen.
 9. **DRY/KISS Refactoring (Turn 27):** Added `_run_editor_process()` helper that centralizes `creationflags` logic. Updated `spawn_editor()` to add `CREATE_NO_WINDOW` on Windows for GUI editors. Refactored `launch_editor()` to check CLI vs GUI FIRST, then platform: CLI editors on Windows use sync `_run_editor_process()`, GUI editors on any platform use `spawn_editor()` + ConfirmScreen. `preview_edit_diff_viewer()` updated to use the helper. Regression tests added for both CLI and GUI editors on Windows.
+10. **CI Test Fixes (Turn 31):** Windows CI reported 5 test failures caused by existing tests assuming Unix-only suspend/resume behavior:
+    - `test_view_plan_works_with_no_path_but_in_memory_content` — Popen assertion missing `creationflags` on Windows; updated to conditionally include it.
+    - `test_flush_called_after_suspend_exit` and `test_flush_called_after_suspend_exit_with_exception` — marked `skipif(win32)` since they test suspend/flush ordering not applicable on Windows.
+    - `test_restoration_functions_called_inside_suspend` — marked `skipif(win32)` since Windows doesn't use `app.suspend()`.
+    - `test_cli_editor_triggers_suspend` — marked `skipif(win32)` since CLI editors on Windows use synchronous `_run_editor_process()` without `app.suspend()`.
 
 ## Solution
 

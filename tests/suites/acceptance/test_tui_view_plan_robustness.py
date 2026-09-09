@@ -1,4 +1,6 @@
+import sys
 import pytest
+import subprocess
 from unittest.mock import ANY, MagicMock, patch
 from contextlib import contextmanager
 
@@ -71,10 +73,11 @@ async def test_view_plan_works_with_no_path_but_in_memory_content(env):
 
     # The application code calls Popen and then delete_file
 
+    expected_kwargs: dict = {"stdin": ANY, "stdout": ANY, "stderr": ANY}
+    if sys.platform == "win32":
+        expected_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
     mock_popen.assert_called_once_with(
         ["mock-editor", str(temp_file_path)],
-        stdin=ANY,
-        stdout=ANY,
-        stderr=ANY,
+        **expected_kwargs,
     )
     mock_env.delete_file.assert_called_once_with(str(temp_file_path))

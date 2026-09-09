@@ -56,13 +56,20 @@ def main() -> None:
             "Run 'uv sync --group dev' to install test dependencies.",
         )
 
-    # Run the full test suite (capture exit code; do not use check=True)
+    # Run the full test suite (capture exit code; capture output for display)
     result = subprocess.run(
         ["uv", "run", "pytest", "--tb=short", "-q"],
+        capture_output=True,
+        text=True,
     )
 
     if result.returncode != 0:
-        _fail("TESTS FAILED \u2014 Reverting commit")
+        detail = ""
+        if result.stdout:
+            detail += "\n--- pytest stdout ---\n" + result.stdout[-2048:]
+        if result.stderr:
+            detail += "\n--- pytest stderr ---\n" + result.stderr[-2048:]
+        _fail("TESTS FAILED \u2014 Reverting commit", detail)
 
 
 if __name__ == "__main__":

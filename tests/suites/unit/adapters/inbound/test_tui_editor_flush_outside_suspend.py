@@ -10,6 +10,7 @@ If a future refactor moves _flush_stdin back inside suspend, this test fails.
 """
 
 import os
+import sys
 import tempfile
 from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
@@ -23,8 +24,10 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
 
 
 @pytest.mark.anyio
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows does not use app.suspend()")
 async def test_flush_called_after_suspend_exit():
-    """Verify that _flush_stdin() is called after the app.suspend() context exits."""
+    """Verify that _flush_stdin() is called after the app.suspend() context exits.
+    Skipped on Windows: Windows CLI editors use synchronous subprocess.run without app.suspend()."""
     call_order: list[str] = []
 
     app = MagicMock()
@@ -79,8 +82,10 @@ async def test_flush_called_after_suspend_exit():
 
 
 @pytest.mark.anyio
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows does not use app.suspend()")
 async def test_flush_called_after_suspend_exit_with_exception():
-    """If an exception occurs inside suspend, ensure flush is NOT called (no false positive)."""
+    """If an exception occurs inside suspend, ensure flush is NOT called (no false positive).
+    Skipped on Windows: Windows CLI editors use synchronous subprocess.run without app.suspend()."""
     call_order: list[str] = []
 
     app = MagicMock()
