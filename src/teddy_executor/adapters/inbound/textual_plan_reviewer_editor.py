@@ -136,9 +136,6 @@ def spawn_editor(cmd: list[str], path: Any) -> None:
             kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
         subprocess.Popen(  # nosec B603
             cmd + [str(path)],
-            stdin=sys.stdin,
-            stdout=sys.stdout,
-            stderr=sys.stderr,
             **kwargs,
         )
     except Exception as e:
@@ -322,8 +319,6 @@ async def launch_editor(
         )
         app.notify(f"Opening Editor: {editor_name}")
 
-        import subprocess  # noqa: PLC0415
-
         # Build command: add vim-specific flags to enable syntax highlighting
         cmd = list(editor_cmd)
         if _is_vim_editor(cmd):
@@ -334,17 +329,13 @@ async def launch_editor(
         if _is_cli_editor(editor_cmd):
             if sys.platform == "win32":
                 # Windows CLI editor: synchronous run, no suspend, with CREATE_NO_WINDOW
-                _run_editor_process(
-                    cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr
-                )
+                _run_editor_process(cmd)
                 _flush_stdin()
             else:
                 # Unix CLI editor: suspend + run + restore
                 logger.info("Opening Editor (sync): %s", editor_name)
                 with app.suspend():
-                    _run_editor_process(
-                        cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr
-                    )
+                    _run_editor_process(cmd)
                     # Restore foreground process group before Textual resumes
                     _restore_foreground_process_group()
                     # Restore cooked mode as secondary safety measure
@@ -404,8 +395,6 @@ async def preview_edit_diff_viewer(
         # For CLI editors, use the annotated single-file diff flow.
         # The 'before' file is NOT created — annotated diff replaces it.
         if _is_cli_editor(diff_viewer):
-            import subprocess  # noqa: PLC0415
-
             # Handle mock output first (before creating any temp files)
             mock_out = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
             if mock_out:
@@ -442,9 +431,7 @@ async def preview_edit_diff_viewer(
                     if _is_vim_editor(cmd):
                         cmd.extend(["-c", "syntax on", "-c", "filetype plugin on"])
                     cmd.append(annotated_path)
-                    _run_editor_process(
-                        cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr
-                    )
+                    _run_editor_process(cmd)
                     _restore_foreground_process_group()
                     _restore_terminal_cooked_mode()
                 else:
@@ -454,9 +441,7 @@ async def preview_edit_diff_viewer(
                         if _is_vim_editor(cmd):
                             cmd.extend(["-c", "syntax on", "-c", "filetype plugin on"])
                         cmd.append(annotated_path)
-                        _run_editor_process(
-                            cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr
-                        )
+                        _run_editor_process(cmd)
                         _restore_foreground_process_group()
                         _restore_terminal_cooked_mode()
                 # Flush stdin after suspend to prevent stale keystrokes from

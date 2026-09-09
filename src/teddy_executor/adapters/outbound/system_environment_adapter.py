@@ -23,9 +23,6 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
             # We don't wait for the result
             subprocess.Popen(  # nosec B603
                 args,
-                stdin=sys.stdin,
-                stdout=sys.stdout,
-                stderr=sys.stderr,
             )
             return
 

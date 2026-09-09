@@ -1,7 +1,7 @@
 import sys
 import pytest
 import subprocess
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import MagicMock, patch
 from contextlib import contextmanager
 
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
@@ -73,7 +73,7 @@ async def test_view_plan_works_with_no_path_but_in_memory_content(env):
 
     # The application code calls Popen and then delete_file
 
-    expected_kwargs: dict = {"stdin": ANY, "stdout": ANY, "stderr": ANY}
+    expected_kwargs: dict = {}
     if sys.platform == "win32":
         expected_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
     mock_popen.assert_called_once_with(

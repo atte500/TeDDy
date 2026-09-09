@@ -77,8 +77,20 @@ def test_get_content_suppresses_trafilatura_logging_on_403(monkeypatch, capsys):
     logger may have NullHandler locally). It asserts that the fix does not
     introduce new stderr output and that the call completes without error.
     """
+    import requests
+    import trafilatura
+
     adapter = WebScraperAdapter()
     url = "https://httpbin.org/status/403"
+
+    def mock_get(url, **kwargs):
+        return MockResponse("Forbidden", 403)
+
+    def mock_fetch(url):
+        return "<html><body>Fallback Content</body></html>"
+
+    monkeypatch.setattr(requests, "get", mock_get)
+    monkeypatch.setattr(trafilatura, "fetch_url", mock_fetch)
 
     adapter.get_content(url)
 

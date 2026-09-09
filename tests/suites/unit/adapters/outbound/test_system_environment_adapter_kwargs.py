@@ -21,15 +21,13 @@ def test_run_command_foreground_isolates_stdin():
 
 
 def test_run_command_background_isolates_stdin():
-    """Verify background Popen does NOT use DEVNULL for stdin or any stream.
+    """Verify background Popen does NOT pass explicit stdin/stdout/stderr kwargs.
 
-    After the fix for Bug #23, background editor/diff launching must inherit
-    the parent process's stdin/stdout/stderr to allow terminal-based tools
-    (vim, nvim, nano) to attach to the TTY. This test verifies that stdin
-    is sys.stdin (not DEVNULL), confirming the stream inheritance works.
+    After the fix for Bug #48, background editor/diff launching must NOT pass
+    explicit stdin/stdout/stderr kwargs to Popen. In Textual's TUI, sys.stdin
+    lacks fileno() and passing it raises AttributeError. The child process
+    inherits the parent's actual console handles automatically.
     """
-    import sys
-
     adapter = SystemEnvironmentAdapter()
 
     with patch("subprocess.Popen") as mock_popen:
@@ -37,64 +35,105 @@ def test_run_command_background_isolates_stdin():
 
     mock_popen.assert_called_once()
     _, kwargs = mock_popen.call_args
-    assert "stdin" in kwargs, "stdin missing from background Popen call"
-    assert kwargs["stdin"] is sys.stdin, (
-        "stdin must be sys.stdin (inherited from parent) for background "
-        "editor/diff launching, not DEVNULL"
+    # These kwargs must NOT be present (fix for Bug #48)
+    assert "stdin" not in kwargs, (
+        "stdin must NOT be passed explicitly — child inherits from parent"
     )
-    assert "stdout" in kwargs, "stdout missing from background Popen call"
-    assert kwargs["stdout"] is sys.stdout, (
-        "stdout must be sys.stdout (inherited from parent)"
+    assert "stdout" not in kwargs, (
+        "stdout must NOT be passed explicitly — child inherits from parent"
     )
-    assert "stderr" in kwargs, "stderr missing from background Popen call"
-    assert kwargs["stderr"] is sys.stderr, (
-        "stderr must be sys.stderr (inherited from parent)"
+    assert "stderr" not in kwargs, (
+        "stderr must NOT be passed explicitly — child inherits from parent"
     )
 
 
 def test_background_launch_inherits_std_streams():
-    """Background editor launch must inherit parent std streams for TTY access.
+    """Background editor launch must NOT pass explicit stdio kwargs to Popen.
 
-    When running terminal-based editors (vim, nvim, nano) in background mode,
-    the subprocess must inherit stdin/stdout/stderr from the parent process
-    instead of binding them to DEVNULL. This ensures the editor can attach to
-    the TTY and display its UI.
+    After the fix for Bug #48, the subprocess inherits the parent's console
+    handles automatically — no explicit stdin/stdout/stderr should be passed.
+    This ensures the editor can attach to the TTY even when sys.stdin lacks
+    fileno() (as in Textual's TUI).
     """
-    import sys
-
     adapter = SystemEnvironmentAdapter()
 
     with patch("subprocess.Popen") as mock_popen:
-        adapter.run_command(["vim", "/tmp/test.txt"], background=True)
+        adapter.run_command(["vim", "test.txt"], background=True)
 
+    # Popen should be called with args only, no stdio kwargs
     mock_popen.assert_called_once_with(
-        ["vim", "/tmp/test.txt"],
-        stdin=sys.stdin,
-        stdout=sys.stdout,
-        stderr=sys.stderr,
+        ["vim", "test.txt"],
     )
 
 
 def test_background_launch_does_not_use_devnull():
     """Background mode must NOT pass DEVNULL for any std stream.
 
-    Negative assertion: confirm DEVNULL is not passed as stdin, stdout, or stderr.
+    After the fix for Bug #48, no explicit stdio kwargs are passed at all,
+    so DEVNULL cannot appear in the call kwargs.
     """
     adapter = SystemEnvironmentAdapter()
 
     with patch("subprocess.Popen") as mock_popen:
-        adapter.run_command(["nano", "/tmp/test.txt"], background=True)
+        adapter.run_command(["nano", "test.txt"], background=True)
 
     call_kwargs = mock_popen.call_args[1]
-    assert call_kwargs.get("stdin") is not subprocess.DEVNULL, (
-        "stdin must not be DEVNULL — editor needs TTY"
+    # After the fix, stdin/stdout/stderr should not appear in kwargs
+    assert "stdin" not in call_kwargs, (
+        "stdin must not be passed explicitly — child inherits from parent"
     )
-    assert call_kwargs.get("stdout") is not subprocess.DEVNULL, (
-        "stdout must not be DEVNULL — editor needs TTY"
+    assert "stdout" not in call_kwargs, (
+        "stdout must not be passed explicitly — child inherits from parent"
     )
-    assert call_kwargs.get("stderr") is not subprocess.DEVNULL, (
-        "stderr must not be DEVNULL — editor needs TTY"
+    assert "stderr" not in call_kwargs, (
+        "stderr must not be passed explicitly — child inherits from parent"
     )
+
+
+def test_run_command_background_no_explicit_stdin_when_dummy_fileno():
+    """Run_command(background=True) must not pass stdin/stdout/stderr when fileno missing.
+
+    Regression test for Bug 48: In Textual TUI, sys.stdin lacks fileno().
+    Passing stdin=sys.stdin to Popen raises AttributeError. The fix removes
+    these kwargs entirely, letting Popen inherit handles.
+    """
+    import sys
+
+    original_stdin = sys.stdin
+    try:
+        # Create a dummy stdin that lacks fileno (simulates Textual's wrapper)
+        class DummyStdinNoFileno:
+            def isatty(self):
+                return False
+
+            def fileno(self):
+                raise AttributeError("DummyStdin has no fileno")
+
+        sys.stdin = DummyStdinNoFileno()
+
+        adapter = SystemEnvironmentAdapter()
+        with patch("subprocess.Popen") as mock_popen:
+            import pytest
+
+            try:
+                adapter.run_command(["echo", "test"], background=True)
+            except Exception as e:
+                pytest.fail(
+                    f"run_command(background=True) raised an exception unexpectedly: {e}"
+                )
+            assert mock_popen.called, "Popen was not called"
+            call_kwargs = mock_popen.call_args[1]
+            assert "stdin" not in call_kwargs, (
+                f"Popen should not receive stdin kwarg, got: {call_kwargs}"
+            )
+            assert "stdout" not in call_kwargs, (
+                f"Popen should not receive stdout kwarg, got: {call_kwargs}"
+            )
+            assert "stderr" not in call_kwargs, (
+                f"Popen should not receive stderr kwarg, got: {call_kwargs}"
+            )
+    finally:
+        sys.stdin = original_stdin
 
 
 def test_synchronous_run_unchanged():
