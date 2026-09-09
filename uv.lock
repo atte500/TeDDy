@@ -2952,7 +2952,7 @@ requires-dist = [
     { name = "textual", specifier = ">=8.1.0,<9" },
     { name = "tld", specifier = ">=0.10,<1.0" },
     { name = "trafilatura", specifier = ">=2.0.0,<3" },
-    { name = "typer", extras = ["all"] },
+    { name = "typer" },
     { name = "urllib3", specifier = ">=2.7.0,<3" },
 ]
 
