@@ -1,5 +1,5 @@
 # Bug: Context assembly hang (pre-request, after turn header)
-- **Status:** Unresolved
+- **Status:** Resolved
 - **Milestone:** N/A (Ad-hoc regression from recent commits)
 - **Vertical Slice:** N/A
 - **Specs:** N/A
@@ -117,19 +117,19 @@ Both platforms show the litellm first-import as the dominant delay (~6.2s). The 
 ## Solution
 
 ### Root Cause
-**Regression A (Windows-specific universal hang):** Root cause UNKNOWN. The pre-request pipeline between "Waiting for..." and the actual LLM call contains at least one operation with Windows-specific blocking behavior. Candidate operations not yet investigated:
-- `litellm.validate_environment()` in `_run_preflight_check()`.
-- `LiteLLMAdapter._get_encoding()` first-call tiktoken initialization.
-- File I/O in `ContextService.get_context()` file resolution.
-- Heavy imports or system calls during adapter initialization.
+**Regression A (First‑turn Windows delay – LiteLLM import):** The `litellm` library first‑import takes **~6.2s on Windows** vs **~1.3s on macOS** (4.7× slower). This is a one‑time cost per process that currently occurs during the first turn's preflight check, *after* the "Waiting for…" message is printed.
 
-**Regression B (Cross-platform URL-sensitive hang):** Web cache bloat from failed URL sentinel caching (commit `e058e3e9`). `.web_cache.json` grows unboundedly with empty string entries for failed URLs, and the entire cache is read/written synchronously on every context assembly.
+**Regression B (Per‑turn universal hang – Synchronous URL fetching):** `ContextService.get_context()` iterates over every URL in `turn.context` **sequentially** via blocking `self._web_scraper.get_content(url)` calls. Failed fetches (empty‑string sentinels from commit `e058e3e9`) block for the **full adapter timeout** (20–30s) before the `except Exception` block fires. With many URLs (user example: 15 URLs, 8 failures) this produces multi‑minute per‑turn delays.
 
 ### Proven Fix
-TBD by Debugger investigation. For Regression A, profile the pre-request pipeline on Windows to identify the blocking operation. For Regression B, implement cache size limits, TTL, or background/non-blocking cache writes.
+Per user directives:
+1. **Pre‑warm LiteLLM import** during `teddy start` / `teddy resume` at the "Checking configurations…" message, so the 6.2s Windows import is paid during startup (not during the first turn).
+2. **Parallelize URL fetching** in `context_service.py` using `concurrent.futures.ThreadPoolExecutor(max_workers=5)` – reduces serial timeouts from N×timeout to ~1×timeout.
+3. **Reduce URL fetch timeout** to 5s in `web_scraper_adapter.py` (from 20s in `_fetch_with_ua` and 30s in `_handle_github_raw`).
+4. **No message reordering** – keep "Waiting for…" before telemetry as originally placed.
+5. **No cache size limit** – omit per user request.
 
 ### Systemic Prevention
-- Add a performance regression test that measures pre-request pipeline latency (from "Waiting for..." to metadata display) on a reference session with known context size.
-- Add Windows CI job that runs basic session start/response timing probes.
-- Add size limit and TTL to web cache; write cache asynchronously (non-blocking).
-- Profile all pre-request operations for platform-dependent performance characteristics.
+- Add a performance regression test that measures pre-request pipeline latency on a reference session with known URLs.
+- Add a `timeout` parameter to `IWebScraper.get_content()` for per-URL timeout configuration (future).
+- Pre-warm heavy imports in the startup flow to defer platform‑specific costs to session initialization.

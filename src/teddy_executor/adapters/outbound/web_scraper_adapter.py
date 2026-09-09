@@ -171,7 +171,7 @@ class WebScraperAdapter(WebScraper):
 
         for attempt in range(max_retries):
             try:
-                response = requests.get(url, headers=headers, timeout=20)
+                response = requests.get(url, headers=headers, timeout=5)
                 response.raise_for_status()
                 return response.text
             except requests.exceptions.HTTPError as e:
@@ -262,7 +262,7 @@ class WebScraperAdapter(WebScraper):
                     headers={
                         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, Gecko) Chrome/124.0.0.0 Safari/537.36"
                     },
-                    timeout=30,
+                    timeout=5,
                 )
                 response.raise_for_status()
                 return response.text

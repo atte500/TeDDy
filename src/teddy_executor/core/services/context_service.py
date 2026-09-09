@@ -64,25 +64,41 @@ class ContextService(IGetContextUseCase):
 
         file_contents = self._file_system_manager.read_files_in_vault(local_paths)
 
-        # Fetch remote content with session-level caching
-        web_cache = self._load_web_cache(cache_dir)
-        for url in urls:
-            if url in web_cache:
+        # Fetch remote content with session-level caching (parallelized)
+        if urls:
+            web_cache = self._load_web_cache(cache_dir)
+            # Partition: already cached vs. fresh
+            cached_urls = [url for url in urls if url in web_cache]
+            uncached_urls = [url for url in urls if url not in web_cache]
+
+            # Fill cached entries immediately
+            for url in cached_urls:
                 file_contents[url] = web_cache[url]
-            else:
-                try:
-                    content = self._web_scraper.get_content(url)
-                    file_contents[url] = content
-                    web_cache[url] = content
-                    if cache_dir:
-                        self._save_web_cache(cache_dir, web_cache)
-                except Exception:
+
+            # Fetch uncached URLs in parallel
+            if uncached_urls:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                    future_to_url = {
+                        executor.submit(
+                            self._fetch_and_cache_url, url, web_cache, cache_dir
+                        ): url
+                        for url in uncached_urls
+                    }
+                    for future in concurrent.futures.as_completed(future_to_url):
+                        url = future_to_url[future]
+                        try:
+                            content = future.result()
+                            file_contents[url] = content
+                        except Exception:
+                            file_contents[url] = None
+
+            # Normalize empty-string sentinels to None for downstream formatting
+            for url in urls:
+                stored = file_contents.get(url)
+                if stored == "":
                     file_contents[url] = None
-                    # Cache the failed URL as empty string sentinel
-                    # to prevent re-fetching on subsequent turns.
-                    web_cache[url] = ""
-                    if cache_dir:
-                        self._save_web_cache(cache_dir, web_cache)
+        else:
+            web_cache = {}
 
         content = self._format_content(
             repo_tree, scoped_paths, file_contents, full_git_status
@@ -190,6 +206,26 @@ class ContextService(IGetContextUseCase):
     def _is_url(self, path: str) -> bool:
         """Determines if a path is a remote URL."""
         return path.startswith("http://") or path.startswith("https://")
+
+    def _fetch_and_cache_url(
+        self, url: str, web_cache: Dict[str, str], cache_dir: Optional[str]
+    ) -> str:
+        """Fetch a single URL, cache the result, and save atomically.
+
+        On failure, caches an empty string sentinel and re-raises so the
+        caller can decide how to handle the error.
+        """
+        try:
+            content = self._web_scraper.get_content(url)
+            web_cache[url] = content
+            if cache_dir:
+                self._save_web_cache(cache_dir, web_cache)
+            return content
+        except Exception:
+            web_cache[url] = ""
+            if cache_dir:
+                self._save_web_cache(cache_dir, web_cache)
+            raise
 
     def _collect_items(
         self,

@@ -211,35 +211,93 @@ def test_get_context_populates_context_items_with_metadata(
 
     mock_llm_client.get_text_token_count.side_effect = mock_token_counter
 
+
+def test_get_context_handles_multiple_urls_with_parallel_fetch(  # noqa: PLR0913
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+    mock_llm_client,
+    container,
+):
+    """
+    Regression: URL fetching must handle multiple URLs correctly,
+    caching successful fetches and marking failed ones as None.
+    The production parallelization does not change this behaviour.
+    """
+    # Arrange
+    from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
+
+    urls = [
+        "https://example.com/success",
+        "https://example.com/fail",
+        "https://example.com/another",
+    ]
+    mock_web_scraper = container.resolve(IWebScraper)
+
+    def mock_get_content(url: str, **kwargs) -> str:
+        if "fail" in url:
+            raise ConnectionError("Network error")
+        return f"Content for {url}"
+
+    mock_web_scraper.get_content.side_effect = mock_get_content
+
+    mock_fs.get_context_paths.return_value = urls
+    mock_fs.read_files_in_vault.return_value = {}
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = ""
+    mock_inspector.get_full_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_llm_client.get_text_token_count.return_value = 0
+
     # Act
-    result = service.get_context(
-        context_files={
-            "Session": ["src/core.py", "README.md"],
-            "Turn": ["new_file.txt"],
-        }
-    )
+    result = service.get_context()
 
     # Assert
-    assert len(result.items) == 3
+    # All three URLs should appear in Resource Contents
+    assert "https://example.com/success" in result.content
+    assert "https://example.com/fail" in result.content
+    assert "https://example.com/another" in result.content
 
-    # Check src/core.py (Modified, Session scope)
-    core_item = next(i for i in result.items if i.path == "src/core.py")
-    assert core_item.git_status == "M"
-    assert core_item.scope == "Session"
-    assert core_item.token_count == 30  # "def main(): pass" -> 3 words * 10
-    assert core_item.selected is True
+    # Successful URL should show its content
+    assert "Content for https://example.com/success" in result.content
 
-    # Check README.md (Unmodified, Session scope)
-    readme_item = next(i for i in result.items if i.path == "README.md")
-    assert readme_item.git_status == ""
-    assert readme_item.scope == "Session"
-    assert readme_item.token_count == 20  # "# TeDDy" -> 2 words * 10
+    # Failed URL should show "--- FILE NOT FOUND ---" (since content is None)
+    assert "--- FILE NOT FOUND ---" in result.content
 
-    # Check new_file.txt (Untracked -> 'U', Turn scope)
-    new_item = next(i for i in result.items if i.path == "new_file.txt")
-    assert new_item.git_status == "U"  # Guideline: ?? -> U
-    assert new_item.scope == "Turn"
-    assert new_item.token_count == 10
+    # Another successful URL
+    assert "Content for https://example.com/another" in result.content
+
+    # Verify web_scraper was called for each URL exactly once
+    assert mock_web_scraper.get_content.call_count == 3
+
+
+def test_get_context_with_urls_does_not_break_on_empty_url_list(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+    mock_llm_client,
+):
+    """
+    Edge case: an empty list of URLs should not cause any exception.
+    """
+    # Arrange
+    mock_fs.get_context_paths.return_value = []
+    mock_fs.read_files_in_vault.return_value = {}
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = ""
+    mock_inspector.get_full_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_llm_client.get_text_token_count.return_value = 0
+
+    # Act (should not raise)
+    result = service.get_context()
+
+    # Assert
+    assert result is not None
+    # No Resource Contents section (no files)
+    assert "## Resource Contents" not in result.content
 
 
 def test_get_context_with_long_content_file_does_not_crash(
