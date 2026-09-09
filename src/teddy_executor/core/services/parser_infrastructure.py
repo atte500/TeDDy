@@ -96,11 +96,25 @@ class _PeekableStream:
         return current_item
 
 
+# Regex to detect bare domain URLs (e.g., "www.example.com/path") that lack
+# a scheme but are clearly web addresses. Matches:
+#   - "www." prefix followed by a domain-like pattern (alphanumeric + dots)
+#   - Common protocols not already covered by startswith: ftp://, file://
+_BARE_URL_RE = re.compile(r"^www\.[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}")
+
+
+def _looks_like_url(path: str) -> bool:
+    """Check if a path looks like a URL (full scheme or bare www. domain)."""
+    if path.startswith(("http://", "https://", "ftp://", "file://")):
+        return True
+    return bool(_BARE_URL_RE.match(path))
+
+
 def normalize_path(path: str) -> str:
     result = path.replace("\\", "/")
     # Preserve URLs intact — percent-encoded symbols (%20, %23, %3F, etc.)
     # have structural meaning in URLs and must not be decoded.
-    if result.startswith(("http://", "https://")):
+    if _looks_like_url(result):
         return result
     return unquote(result)
 
