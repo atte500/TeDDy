@@ -348,8 +348,17 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         ):
             asyncio.run(preview_readonly(self.mock_app, self.action))
 
-        # Assert: os.unlink was NOT called (the fix — temp file persists)
-        mock_unlink.assert_not_called()
+        # Assert: os.unlink was NOT called on our temp file (benign calls from
+        # other modules, e.g., update_checker cleanup, are tolerated)
+        unlinked_paths = [
+            args[0] if args else None for args in mock_unlink.call_args_list
+        ]
+        for path in unlinked_paths:
+            self.assertNotIn(
+                "teddy_read_url_test",
+                str(path),
+                f"os.unlink unexpectedly called on {path}",
+            )
 
         # Assert: temp file path was appended to _log_preview_files for deferred cleanup
         self.assertEqual(

@@ -27,9 +27,9 @@ This section defines the conventions for our project management artifacts.
     2. **Release Notes:** Create a new file at `docs/project/releases/v<new_version>.md` summarizing features and fixes from the commit log.
     3. **Version Bump:** Update the `version` field in `pyproject.toml`.
     4. **Approval Gate:** Present the proposed release notes and version bump to the user for review and approval.
-    5. **Commit:** Stage changes and commit with `chore(release): bump version to <new_version>`.
-    6. **Tag:** Create a local tag with `git tag -a v<new_version> -m "TeDDy v<new_version>"` and push it with `git push origin v<new_version>`.
-    7. **Publish:** Create a GitHub Release using `gh release create v<new_version> --title "TeDDy v<new_version>" --notes-file docs/project/releases/v<new_version>.md`.
+    5. **Commit:** Stage changes (including `uv.lock` if it was modified by the version bump build) and commit with `chore(release): bump version to <new_version>`.
+    6. **Tag:** Create a local tag with `git tag -a v<new_version> -m "v<new_version>"` and push it with `git push origin v<new_version>`.
+    7. **Publish:** Create a GitHub Release using `gh release create v<new_version> --title "v<new_version>" --notes-file docs/project/releases/v<new_version>.md`.
 
 ## Roadmap
 
@@ -142,6 +142,19 @@ This section defines the conventions for our project management artifacts.
   - **2026-08-26:** `--no-verify` was used for the Bug #23 editor TTY fix commit to bypass pre-existing TID251 violations (`unittest.mock.patch` and `MagicMock` banned in test files) in `test_tui_view_plan_robustness.py` and `test_system_environment_adapter_kwargs.py`. These violations are pre-existing (both files used `patch`/`MagicMock` before this bug fix) and are scheduled for resolution in Milestone 5 (Quality Gate & Debt Reconciliation). The staged changes include the actual fix (3 lines in 2 production files), updated regression tests, and this case file.
 
   - **2026-08-27:** `--no-verify` was used for the Bug #24 escape sequence flush fix commit to bypass TID251 violations (`MagicMock` and `patch` banned) in the new regression test `test_console_ask_loop_stdin_flush.py`. The test uses the same pattern as pre-existing tests in the same directory. Bandit B110 (bare except) was also suppressed with `# nosec B110`. Both are scheduled for resolution in Milestone 5. Use `make commit` for standard VCP workflow.
+
+### Failed Release Recovery
+
+If a release needs to be redone (e.g., CI failures, missing assets):
+1. **Delete** the GitHub release: `gh release delete v<version> --yes`
+2. **Delete** the local and remote tags:
+   ```shell
+   git tag -d v<version>
+   git push --delete origin v<version>
+   ```
+3. **Fix** the underlying issues (CI config, test failures, missing files).
+4. **Ensure** `uv.lock` is staged alongside other changes to avoid a separate cleanup commit.
+5. **Re-tag and release** following the standard Release Process from step 5 onward (commit, tag, push, publish).
 
 - **2026-08-27:** Used `--no-verify` for the Wiring (Console) deliverable commit to bypass pre-existing TID251 violations (MagicMock/patch in new and existing test files) and bandit B605/B607 violations (os.system calls in `console_interactor_ask_loop.py`, lines 173-174). These issues are pre-existing and scheduled for resolution in Milestone 5 (Quality Gate & Debt Reconciliation).
 
