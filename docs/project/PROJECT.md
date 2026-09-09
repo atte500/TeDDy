@@ -22,6 +22,14 @@ This section defines the conventions for our project management artifacts.
 - **Artifact Lifecycle:** Work flows from `Spec` -> `Milestone` -> `Slice`.
 - **Numbering:** Artifacts are numbered sequentially using an `MM-NN-name.md` format, where `MM` represents the target Milestone number and `NN` represents the specific Slice or Case File number. For ad-hoc tasks not tied to an active milestone, `00` is used as the Milestone prefix (e.g., `00-01-ad-hoc-feature.md`). Ad-hoc slices are NOT tracked in Milestone documents or the Roadmap.
 - **Archiving Policy:** Once a feature slice or milestone is fully implemented and merged, its active planning artifacts can be deleted. The Git history serves as the official, permanent archive.
+- **Release Process:** The release process follows these steps:
+    1. **Triage:** Determine the scope (patch, minor, major) by reviewing `git log v<last_tag>..HEAD` for conventional commits.
+    2. **Release Notes:** Create a new file at `docs/project/releases/v<new_version>.md` summarizing features and fixes from the commit log.
+    3. **Version Bump:** Update the `version` field in `pyproject.toml`.
+    4. **Approval Gate:** Present the proposed release notes and version bump to the user for review and approval.
+    5. **Commit:** Stage changes and commit with `chore(release): bump version to <new_version>`.
+    6. **Tag:** Create a local tag with `git tag -a v<new_version> -m "TeDDy v<new_version>"` and push it with `git push origin v<new_version>`.
+    7. **Publish:** Create a GitHub Release using `gh release create v<new_version> --title "TeDDy v<new_version>" --notes-file docs/project/releases/v<new_version>.md`.
 
 ## Roadmap
 
