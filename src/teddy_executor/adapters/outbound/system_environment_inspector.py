@@ -22,6 +22,25 @@ class SystemEnvironmentInspector(IEnvironmentInspector):
     def __init__(self, run_func: Optional[Callable[..., Any]] = None):
         self._run_func = run_func or subprocess.run
 
+    def _detect_shell(self) -> str:
+        """Detect the current shell, with cross-platform support.
+
+        On Unix, returns the value of $SHELL environment variable.
+        On Windows, checks COMSPEC (cmd.exe) first, then PowerShell.
+        Falls back to "unknown" if none are found.
+        """
+        shell = os.getenv("SHELL")
+        if shell:
+            return shell
+
+        if sys.platform == "win32":
+            # Default shell is cmd.exe on Windows — report it via COMSPEC.
+            comspec = os.getenv("COMSPEC")
+            if comspec:
+                return comspec
+
+        return "unknown"
+
     def get_environment_info(self) -> dict[str, str]:
         """
         Gathers key information about the system environment.
@@ -32,7 +51,7 @@ class SystemEnvironmentInspector(IEnvironmentInspector):
             "os_version": platform.release(),
             "python_version": sys.version,
             "cwd": os.getcwd(),
-            "shell": os.getenv("SHELL", "unknown"),
+            "shell": self._detect_shell(),
             "current_date": now.strftime("%Y-%m-%d"),
             "current_time": now.strftime("%H:%M:%S"),
         }
