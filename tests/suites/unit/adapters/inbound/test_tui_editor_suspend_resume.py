@@ -805,3 +805,72 @@ class TestPreviewEditDiffViewer:
 
         # Assert: before file was deleted
         app._system_env.delete_file.assert_called_with(before_path)
+
+
+class TestWindowsPlatformHandling:
+    """Regression tests for Windows platform handling in launch_editor."""
+
+    @pytest.mark.anyio
+    async def test_launch_editor_windows_use_create_no_window(self) -> None:
+        """On Windows, launch_editor must NOT call app.suspend() and
+        must pass creationflags=CREATE_NO_WINDOW to subprocess.run."""
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
+            launch_editor,
+        )
+        import subprocess as _sp
+
+        # Ensure subprocess.CREATE_NO_WINDOW exists on non-Windows hosts
+        if not hasattr(_sp, "CREATE_NO_WINDOW"):
+            _sp.CREATE_NO_WINDOW = 0x08000000
+
+        with tempfile.NamedTemporaryFile(
+            suffix=".txt", delete=False, mode="w", encoding="utf-8"
+        ) as f:
+            temp_path = f.name
+
+        app = MagicMock()
+        app._system_env.create_temp_file.return_value = temp_path
+        app._console_tooling.find_editor.return_value = ["vim"]
+        app.is_headless = False
+        app.INSTRUCTION_MARKER = "### INSTRUCTIONS"
+        app.notify = MagicMock()
+
+        # Track app.suspend
+        app.suspend = MagicMock()
+        suspend_cm = MagicMock()
+        suspend_cm.__aenter__ = AsyncMock()
+        suspend_cm.__aexit__ = AsyncMock()
+        app.suspend.return_value = suspend_cm
+
+        subprocess_run_calls: list = []
+
+        def tracking_run(*args: object, **kwargs: object) -> MagicMock:
+            subprocess_run_calls.append((args, kwargs))
+            cmd = args[0]
+            filepath = cmd[-1]
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write("test content")
+            return MagicMock(returncode=0)
+
+        with patch("sys.platform", "win32"):
+            with patch("subprocess.run", tracking_run):
+                result = await launch_editor(app, "initial content")
+
+        # Assert app.suspend was NOT called
+        app.suspend.assert_not_called()
+
+        # Assert subprocess.run was called once with creationflags
+        assert len(subprocess_run_calls) == 1, (
+            f"Expected 1 run call, got {len(subprocess_run_calls)}"
+        )
+        _, kwargs = subprocess_run_calls[0]
+        assert "creationflags" in kwargs, f"No creationflags in kwargs: {kwargs}"
+        assert kwargs["creationflags"] == 0x08000000, (
+            f"Expected creationflags=0x08000000, got {kwargs.get('creationflags')}"
+        )
+
+        # Clean up temp file
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            pass

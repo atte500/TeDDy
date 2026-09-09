@@ -369,7 +369,9 @@ class SessionOrchestrator(IRunPlanUseCase):
                             content = (getattr(log, "details", "") or "").strip()
                             if content:
                                 typer.secho("")
-                                typer.secho("--- MESSAGE from TeDDy ---", fg=typer.colors.CYAN)
+                                typer.secho(
+                                    "--- MESSAGE from TeDDy ---", fg=typer.colors.CYAN
+                                )
                                 typer.secho(content)
                             break
                 else:

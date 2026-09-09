@@ -299,15 +299,27 @@ async def launch_editor(
         )
         app.notify(f"Opening Editor: {editor_name}")
 
-        if _is_cli_editor(editor_cmd):
-            import subprocess  # noqa: PLC0415
+        import subprocess  # noqa: PLC0415
 
+        # Build command: add vim-specific flags to enable syntax highlighting
+        cmd = list(editor_cmd)
+        if _is_vim_editor(cmd):
+            cmd.extend(["-c", "syntax on", "-c", "filetype plugin on"])
+        cmd.append(temp_file)
+
+        if sys.platform == "win32":
+            # Windows: spawn without suspend, use CREATE_NO_WINDOW to suppress popup
+            subprocess.run(  # noqa: B603
+                cmd,
+                stdin=sys.stdin,
+                stdout=sys.stdout,
+                stderr=sys.stderr,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            _flush_stdin()
+        elif _is_cli_editor(editor_cmd):
+            # Unix CLI editor: suspend and run properly
             logger.info("Opening Editor (sync): %s", editor_name)
-            # Build command: add vim-specific flags to enable syntax highlighting
-            cmd = list(editor_cmd)
-            if _is_vim_editor(cmd):
-                cmd.extend(["-c", "syntax on", "-c", "filetype plugin on"])
-            cmd.append(temp_file)
             with app.suspend():
                 subprocess.run(  # noqa: B603
                     cmd,
@@ -320,18 +332,20 @@ async def launch_editor(
                 # Restore cooked mode as secondary safety measure
                 _restore_terminal_cooked_mode()
             _flush_stdin()
-            with open(temp_file, "r", encoding="utf-8") as f:
-                content = f.read()
-            content = _strip_escape_sequences(content)
-            marker = app.INSTRUCTION_MARKER.strip()
-            if marker in content:
-                content = content.split(marker)[0].strip()
-            return content if content else None
         else:
             spawn_editor(editor_cmd, temp_file)
             return await _confirm_and_harvest(
                 app, temp_file, initial_content, is_temp, skip_confirm=skip_confirm
             )
+
+        # Read back content after editor exits
+        with open(temp_file, "r", encoding="utf-8") as f:
+            content = f.read()
+        content = _strip_escape_sequences(content)
+        marker = app.INSTRUCTION_MARKER.strip()
+        if marker in content:
+            content = content.split(marker)[0].strip()
+        return content if content else None
     except Exception as e:
         logger.debug("Failed to launch editor flow: %s", e)
         return None
@@ -403,8 +417,8 @@ async def preview_edit_diff_viewer(
             app.notify(f"Opening Editor: {editor_name}")
 
             try:
-                with app.suspend():
-                    # Build command: use editor WITHOUT diff flags — single annotated file
+                if sys.platform == "win32":
+                    # Windows: spawn without suspend, use CREATE_NO_WINDOW to suppress popup
                     cmd = list(diff_viewer[:1])
                     if _is_vim_editor(cmd):
                         cmd.extend(["-c", "syntax on", "-c", "filetype plugin on"])
@@ -414,9 +428,25 @@ async def preview_edit_diff_viewer(
                         stdin=sys.stdin,
                         stdout=sys.stdout,
                         stderr=sys.stderr,
+                        creationflags=subprocess.CREATE_NO_WINDOW,
                     )
                     _restore_foreground_process_group()
                     _restore_terminal_cooked_mode()
+                else:
+                    with app.suspend():
+                        # Build command: use editor WITHOUT diff flags — single annotated file
+                        cmd = list(diff_viewer[:1])
+                        if _is_vim_editor(cmd):
+                            cmd.extend(["-c", "syntax on", "-c", "filetype plugin on"])
+                        cmd.append(annotated_path)
+                        subprocess.run(  # noqa: B603
+                            cmd,
+                            stdin=sys.stdin,
+                            stdout=sys.stdout,
+                            stderr=sys.stderr,
+                        )
+                        _restore_foreground_process_group()
+                        _restore_terminal_cooked_mode()
                 # Flush stdin after suspend to prevent stale keystrokes from
                 # leaking into Textual's event loop.
                 _flush_stdin()
