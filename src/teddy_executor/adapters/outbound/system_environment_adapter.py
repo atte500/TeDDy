@@ -21,8 +21,17 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
 
         if background:
             # We don't wait for the result
+            # Mirrors spawn_editor() in textual_plan_reviewer_editor.py: on
+            # Windows, detach fire-and-forget GUI launches (diff viewers,
+            # editors) from the parent console so their launcher chains cannot
+            # mutate our console input mode while an interactive prompt is
+            # live. CREATE_NO_WINDOW gives the child its own invisible console.
+            popen_kwargs: dict = {}
+            if sys.platform == "win32":
+                popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
             subprocess.Popen(  # nosec B603
                 args,
+                **popen_kwargs,
             )
             return
 

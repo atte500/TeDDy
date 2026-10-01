@@ -353,6 +353,36 @@ class TestGuiEditorLaunchPreservation:
             f"Expected '{temp_file}', got '{real_ask_loop._active_editor_path}'"
         )
 
+    def test_gui_editor_popen_detaches_console_on_windows(
+        self, real_ask_loop, tmp_path
+    ):
+        """Regression: the GUI fire-and-forget Popen must pass CREATE_NO_WINDOW
+        on Windows so the editor launcher chain (e.g. codium.CMD -> cmd.exe ->
+        node -> Electron) gets its own console and cannot mutate the parent
+        console input mode while a prompt session is live."""
+        import subprocess
+        import sys
+
+        temp_file = str(tmp_path / "editor_gui_detach.md")
+        real_ask_loop._system_env.create_temp_file.return_value = temp_file
+        real_ask_loop._tooling.find_editor.return_value = ["codium.CMD"]
+
+        with (
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch(f"{self.PROD_PREFIX}.ConsoleAskLoop._flush_stdin"),
+            patch("subprocess.Popen") as mock_popen,
+        ):
+            result = real_ask_loop._launch_editor_background("test prompt")
+
+        assert result == ""
+        _, kwargs = mock_popen.call_args
+        if sys.platform == "win32":
+            assert kwargs.get("creationflags") == subprocess.CREATE_NO_WINDOW, (
+                "GUI Popen must detach from the parent console on Windows"
+            )
+        else:
+            assert "creationflags" not in kwargs
+
 
 class TestLaunchEditorBackgroundNoEditor:
     """Tests for _launch_editor_background when find_editor() returns None."""

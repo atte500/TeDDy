@@ -38,3 +38,28 @@ def test_execute_background_isolates_stdin(container):
     assert kwargs["stdin"] == subprocess.DEVNULL, (
         "stdin must be DEVNULL for background tasks"
     )
+
+
+def test_execute_background_detaches_console_on_windows(container):
+    """
+    On Windows, background spawns must pass CREATE_NO_WINDOW so fire-and-forget
+    children cannot mutate the parent console input mode while an interactive
+    prompt session is live. On POSIX, start_new_session remains the isolation
+    mechanism.
+    """
+    import sys
+
+    adapter = container.resolve(IShellExecutor)
+    mock_process = MagicMock()
+    mock_process.pid = 4242
+
+    with patch.object(adapter, "_popen", return_value=mock_process) as mock_popen:
+        adapter.execute("sleep 10", background=True)
+
+    _, kwargs = mock_popen.call_args
+    if sys.platform == "win32":
+        assert kwargs.get("creationflags") == subprocess.CREATE_NO_WINDOW, (
+            "background Popen must detach from the parent console on Windows"
+        )
+    else:
+        assert kwargs.get("start_new_session") is True

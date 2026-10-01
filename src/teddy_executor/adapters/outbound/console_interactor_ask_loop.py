@@ -237,7 +237,18 @@ class ConsoleAskLoop:
         # GUI editor: fire-and-forget with Popen, return empty string to continue the loop
         import subprocess  # noqa: PLC0415
 
-        subprocess.Popen(editor_cmd + [temp_path])  # nosec B603
+        # Mirrors spawn_editor() in textual_plan_reviewer_editor.py: spawn the
+        # GUI editor's launcher chain (e.g. codium.CMD -> cmd.exe -> node ->
+        # Electron) detached from OUR console. Without this, the chain's console
+        # init can mutate the shared console input mode mid-prompt-session
+        # (clearing ENABLE_VIRTUAL_TERMINAL_INPUT), leaving prompt_toolkit's
+        # capability-selected Vt100ConsoleInputReader in the inconsistent state
+        # where arrow-key '\x00' VK records are silently dropped. On Windows,
+        # CREATE_NO_WINDOW gives the chain its own invisible console.
+        popen_kwargs: dict = {}
+        if sys.platform == "win32":
+            popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+        subprocess.Popen(editor_cmd + [temp_path], **popen_kwargs)  # nosec B603
         self._flush_stdin()
         return ""
 

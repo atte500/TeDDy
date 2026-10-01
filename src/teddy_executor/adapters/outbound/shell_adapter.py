@@ -263,6 +263,14 @@ class ShellAdapter(IShellExecutor):
         """Executes the command in a subprocess and handles errors."""
         try:
             if background:
+                # Mirrors spawn_editor() in textual_plan_reviewer_editor.py:
+                # on Windows, detach fire-and-forget background spawns from the
+                # parent console (start_new_session is POSIX-only and is
+                # silently ignored there, so without this flag background
+                # children could mutate our console input mode mid-prompt).
+                background_kwargs: dict = {}
+                if sys.platform == "win32":
+                    background_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
                 process = self._popen(  # nosec B602
                     command_args,
                     shell=use_shell,  # nosec B604
@@ -272,6 +280,7 @@ class ShellAdapter(IShellExecutor):
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     start_new_session=True,
+                    **background_kwargs,
                 )
                 return {
                     "stdout": f"[SUCCESS: Background process started with PID {process.pid}]",

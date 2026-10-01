@@ -53,17 +53,29 @@ def test_background_launch_inherits_std_streams():
     After the fix for Bug #48, the subprocess inherits the parent's console
     handles automatically — no explicit stdin/stdout/stderr should be passed.
     This ensures the editor can attach to the TTY even when sys.stdin lacks
-    fileno() (as in Textual's TUI).
+    fileno() (as in Textual's TUI). On Windows, a CREATE_NO_WINDOW flag is
+    additionally passed to detach the child's launcher chain from the parent
+    console.
     """
+    import sys
+
     adapter = SystemEnvironmentAdapter()
 
     with patch("subprocess.Popen") as mock_popen:
         adapter.run_command(["vim", "test.txt"], background=True)
 
-    # Popen should be called with args only, no stdio kwargs
-    mock_popen.assert_called_once_with(
-        ["vim", "test.txt"],
-    )
+    mock_popen.assert_called_once()
+    args, kwargs = mock_popen.call_args
+    assert args == (["vim", "test.txt"],), f"Unexpected Popen args: {args}"
+    assert "stdin" not in kwargs, "stdin must not be passed explicitly"
+    assert "stdout" not in kwargs, "stdout must not be passed explicitly"
+    assert "stderr" not in kwargs, "stderr must not be passed explicitly"
+    if sys.platform == "win32":
+        assert kwargs.get("creationflags") == subprocess.CREATE_NO_WINDOW, (
+            "background Popen must detach from the parent console on Windows"
+        )
+    else:
+        assert "creationflags" not in kwargs
 
 
 def test_background_launch_does_not_use_devnull():
@@ -150,3 +162,22 @@ def test_synchronous_run_unchanged():
     mock_run.assert_called_once_with(
         ["cat", "/dev/null"], check=True, stdin=subprocess.DEVNULL
     )
+
+
+def test_run_command_background_detaches_console_on_windows():
+    """On Windows, background Popen must pass CREATE_NO_WINDOW so GUI launcher
+    chains cannot mutate the parent console input mode mid-prompt."""
+    import sys
+
+    adapter = SystemEnvironmentAdapter()
+
+    with patch("subprocess.Popen") as mock_popen:
+        adapter.run_command(["codium", "diff.md"], background=True)
+
+    _, kwargs = mock_popen.call_args
+    if sys.platform == "win32":
+        assert kwargs.get("creationflags") == subprocess.CREATE_NO_WINDOW, (
+            "background Popen must detach from the parent console on Windows"
+        )
+    else:
+        assert "creationflags" not in kwargs
