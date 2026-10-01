@@ -82,12 +82,23 @@ class SessionLifecycleManager:
             return (session_name, report)
 
         if state == SessionState.EMPTY:
+            if message:
+                turn_name = Path(turn_path).name
+                if turn_name.isdigit():
+                    parent = Path(turn_path).parent
+                    prev_turn = str(parent / f"{int(turn_name) - 1:02d}")
+                    prev_report = self._session_service.to_root_relative(
+                        Path(prev_turn), "report.md"
+                    )
+                    if self._file_system_manager.path_exists(prev_report):
+                        self._append_user_request(prev_turn, message)
             return self._handle_planning_and_execution(
                 turn_path,
                 orchestrator,
                 interactive,
                 project_context=project_context,
                 pipeline=pipeline,
+                message=message,
             )
 
         if state == SessionState.COMPLETE_TURN:
