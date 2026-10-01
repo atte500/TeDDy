@@ -10,6 +10,7 @@ from typing import Sequence
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import SessionState
 from teddy_executor.core.utils.io import Tee as _Tee
+from teddy_executor.core.utils.markdown import get_fence_for_content
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,8 @@ class SessionLifecycleManager:
             )
 
         if state == SessionState.COMPLETE_TURN:
+            if message:
+                self._append_user_request(turn_path, message)
             next_turn_dir = self._session_service.transition_to_next_turn(
                 plan_path=f"{turn_path}/plan.md"
             )
@@ -102,6 +105,26 @@ class SessionLifecycleManager:
             )
 
         return (session_name, None)
+
+    def _append_user_request(self, turn_path: str, message: str) -> None:
+        """Appends a smart-fenced `## User Request` section to the turn report.
+
+        Mirrors the execution_report.md.j2 User Request format (heading +
+        smart-fenced codeblock whose opening fence carries the "text"
+        language suffix and whose closing fence is bare) so session_service's
+        `^## User Request` detection regex recognizes the turn as a
+        user-request turn.
+        """
+        report_path = self._session_service.to_root_relative(
+            Path(turn_path), "report.md"
+        )
+        assert self._file_system_manager.path_exists(report_path), (
+            f"Cannot append user request: report not found at {report_path}"
+        )
+        content = str(self._file_system_manager.read_file(report_path))
+        fence = get_fence_for_content(message)
+        content += f"\n## User Request\n{fence}text\n{message}\n{fence}\n"
+        self._file_system_manager.write_file(report_path, content)
 
     def _consume_awaiting_reply(
         self,

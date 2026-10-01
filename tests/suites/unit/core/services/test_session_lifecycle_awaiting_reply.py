@@ -32,6 +32,7 @@ from teddy_executor.core.services.session_lifecycle_manager import (
 )
 from teddy_executor.core.services.session_planner import SessionPlanner
 from teddy_executor.core.services.session_replanner import SessionReplanner
+from teddy_executor.core.utils.markdown import get_fence_for_content
 from tests.harness.setup.mocking import register_mock
 
 AWAITING_TURN = ".teddy/sessions/20260417_120000-feature/01"
@@ -242,3 +243,143 @@ class TestCompleteTurnMessageResume:
             NEXT_TURN, message="new request"
         )
         assert result[0] == "feature"
+
+
+class TestCompleteTurnUserRequestAppend:
+    """COMPLETE_TURN + -m appends a smart-fenced `## User Request` section.
+
+    The section is appended to the latest turn's report.md BEFORE the
+    transition, matching the execution_report.md.j2 User Request format
+    (heading + smart-fenced codeblock; the opening fence carries the
+    "text" language suffix, the closing fence is bare) so
+    session_service's `^## User Request` detection regex recognizes the
+    turn as a user-request turn.
+    """
+
+    def test_appends_user_request_section_to_latest_report(self, manager) -> None:
+        # Arrange
+        existing_report = "# Turn 1 Report\n\nAll actions succeeded.\n"
+        manager._session_service.get_session_state.side_effect = [
+            (SessionState.COMPLETE_TURN, AWAITING_TURN),
+            (SessionState.PENDING_PLAN, NEXT_TURN),
+        ]
+        manager._session_service.transition_to_next_turn.return_value = NEXT_TURN
+        manager._session_service.to_root_relative.return_value = (
+            f"{AWAITING_TURN}/report.md"
+        )
+        manager._file_system_manager.path_exists.return_value = True
+        manager._file_system_manager.read_file.return_value = existing_report
+        manager._session_planner.trigger_new_plan.return_value = ("feature", None)
+        orchestrator = _orchestrator_with_report()
+
+        # Act
+        manager.resume(
+            session_name="feature",
+            orchestrator=orchestrator,
+            interactive=True,
+            message="new request",
+        )
+
+        # Assert: the report is rewritten with the appended section.
+        fence = get_fence_for_content("new request")
+        expected = existing_report + (
+            f"\n## User Request\n{fence}text\nnew request\n{fence}\n"
+        )
+        manager._file_system_manager.write_file.assert_called_once_with(
+            f"{AWAITING_TURN}/report.md", expected
+        )
+
+    def test_append_lands_before_transition_to_next_turn(self, manager) -> None:
+        # Arrange
+        order: list[str] = []
+
+        def _record_write(*args, **kwargs):
+            order.append("write")
+
+        def _record_transition(*args, **kwargs):
+            order.append("transition")
+            return NEXT_TURN
+
+        manager._file_system_manager.write_file.side_effect = _record_write
+        manager._session_service.transition_to_next_turn.side_effect = (
+            _record_transition
+        )
+        manager._session_service.get_session_state.side_effect = [
+            (SessionState.COMPLETE_TURN, AWAITING_TURN),
+            (SessionState.PENDING_PLAN, NEXT_TURN),
+        ]
+        manager._session_service.to_root_relative.return_value = (
+            f"{AWAITING_TURN}/report.md"
+        )
+        manager._file_system_manager.path_exists.return_value = True
+        manager._file_system_manager.read_file.return_value = "# Report\n"
+        manager._session_planner.trigger_new_plan.return_value = ("feature", None)
+        orchestrator = _orchestrator_with_report()
+
+        # Act
+        manager.resume(
+            session_name="feature",
+            orchestrator=orchestrator,
+            interactive=True,
+            message="new request",
+        )
+
+        # Assert: the report rewrite precedes the turn transition.
+        assert order == ["write", "transition"]
+
+    def test_append_smart_fence_escalates_for_nested_backtick_runs(
+        self, manager
+    ) -> None:
+        # Arrange
+        message = "Use `code` and ```fenced``` blocks here"
+        existing_report = "# Report\n"
+        manager._session_service.get_session_state.side_effect = [
+            (SessionState.COMPLETE_TURN, AWAITING_TURN),
+            (SessionState.PENDING_PLAN, NEXT_TURN),
+        ]
+        manager._session_service.transition_to_next_turn.return_value = NEXT_TURN
+        manager._session_service.to_root_relative.return_value = (
+            f"{AWAITING_TURN}/report.md"
+        )
+        manager._file_system_manager.path_exists.return_value = True
+        manager._file_system_manager.read_file.return_value = existing_report
+        manager._session_planner.trigger_new_plan.return_value = ("feature", None)
+        orchestrator = _orchestrator_with_report()
+
+        # Act
+        manager.resume(
+            session_name="feature",
+            orchestrator=orchestrator,
+            interactive=True,
+            message=message,
+        )
+
+        # Assert: fence length = longest backtick run in the message + 1.
+        fence = get_fence_for_content(message)
+        assert fence == "````"
+        expected = existing_report + (
+            f"\n## User Request\n{fence}text\n{message}\n{fence}\n"
+        )
+        manager._file_system_manager.write_file.assert_called_once_with(
+            f"{AWAITING_TURN}/report.md", expected
+        )
+
+    def test_resume_without_message_does_not_touch_report(self, manager) -> None:
+        # Arrange: COMPLETE_TURN resume WITHOUT an injected message.
+        manager._session_service.get_session_state.side_effect = [
+            (SessionState.COMPLETE_TURN, AWAITING_TURN),
+            (SessionState.PENDING_PLAN, NEXT_TURN),
+        ]
+        manager._session_service.transition_to_next_turn.return_value = NEXT_TURN
+        manager._session_planner.trigger_new_plan.return_value = ("feature", None)
+        orchestrator = _orchestrator_with_report()
+
+        # Act
+        manager.resume(
+            session_name="feature",
+            orchestrator=orchestrator,
+            interactive=True,
+        )
+
+        # Assert: the existing report is left untouched.
+        manager._file_system_manager.write_file.assert_not_called()
