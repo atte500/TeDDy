@@ -91,7 +91,7 @@ This section defines the conventions for our project management artifacts.
     - **MOVE & DELETE Actions:** Add `MOVE` and `DELETE` action types. Both should update context manifest files as well (renaming path/file name if moved, removing if deleted). `MOVE` can also be used for renaming. Both apply to files and folders.
     - **Configurable Limits:** Add `--max-turns` and `--max-cost` with sensible defaults (99 turns or $5 spent — set in config.yaml). These only apply in `-y` mode and are not cumulative (on `teddy resume`, start counting from 0).
     - **Configurable Tree Depth:** Add `max-project-tree-depth` config setting with omission indicators for truncated directories.
-    - **Session Interrupt:** Add a way to interrupt a session (e.g., press `q`, then confirm with Enter).
+    - **Session Interrupt:** Add a way to interrupt a session (e.g., press `q`, then confirm with Enter). Partially delivered ad-hoc via [00-21-session-interrupt-resume-message.md](/docs/project/tasks/00-21-session-interrupt-resume-message.md) (Ctrl+C two-phase interrupt, pipeline MESSAGE suppression, `resume -m`); TUI `q`-during-execution remains here.
     - **`--yolo` as Default:** Make `--yolo` mode a configurable default setting.
     - **Deprecate `--console`:** Mark `--console` mode as deprecated. Remove related dead code in a follow-up milestone.
 - **Proposed Vertical Slices:**
