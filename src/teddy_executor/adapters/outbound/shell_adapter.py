@@ -121,6 +121,10 @@ class ShellAdapter(IShellExecutor):
 
             # ISOLATION: Severing stdin from the TTY is required to prevent SIGTTIN
             # suspension when running in a new process group.
+            # WINDOWS (best-effort): win32 has no POSIX process-group equivalent,
+            # so a terminal Ctrl+C may still reach the child. Graceful handling
+            # is flag-based only; the second-signal force-kill is the escape
+            # hatch for hung children.
 
             def preexec_fn():
                 # Create a new session to detach from controlling terminal.
