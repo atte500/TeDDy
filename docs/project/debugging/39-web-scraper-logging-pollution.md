@@ -76,7 +76,7 @@ The caching gap is also pre-existing: the ContextService web cache only persists
 3. This ensures that once a URL fails, it is never re-fetched within the session. The cache persists across turns.
 
 ### Preventative Measures
-- **Systemic Pattern:** All outbound adapters that use libraries with noisy logging should implement `logging.disable(logging.CRITICAL)` suppression around their public methods.
+- **Systemic Pattern (SUPERSEDED 2026-10-01 — see [docs/project/debugging/52-web-scraper-discard-data-logs.md](/docs/project/debugging/52-web-scraper-discard-data-logs.md)):** The bare `logging.disable(logging.CRITICAL)` enter/restore toggle originally recommended here is process-global and racy under concurrent callers (the first caller to exit re-opens the threshold while siblings are still inside noisy third-party calls). Suppression scopes reachable from concurrent contexts MUST use the counted, lock-guarded helper (`src/teddy_executor/adapters/outbound/suppressed_logging.py`) instead — never a bare toggle.
 - **Code Review:** When adding new adapters using third-party HTTP/scraping libraries, ensure logging suppression is applied.
 - **Web Cache Design:** All caching layers should persist failures (as empty/none) to prevent repeated failed attempts.
 - **Consideration:** A more robust long-term fix would be to replace the `trafilatura.fetch_url` fallback with our own requests-based fetch, giving us full control over error handling and logging. This is logged as technical debt.
