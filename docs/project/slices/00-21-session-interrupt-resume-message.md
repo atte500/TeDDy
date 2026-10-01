@@ -93,9 +93,16 @@ Key code touch points (verified in Task Brief):
 
 Test strategy: Unit tests drive all logic (pipeline suppression regression, state machine, smart fencing, InterruptGuard phase behavior via self-signaling). A final acceptance Wiring deliverable covers the end-to-end pipeline suppression and `resume -m` flows via the CLI test driver. Anti-mock poisoning: constructor-injected fakes only.
 
+Plan Audit findings (Orientation, pre-implementation):
+- `SessionRepository.save_meta`/`load_meta` are generic yaml dict round-trips — no new repository code required; the Contract deliverable pins the boolean round-trip (and the asymmetric signatures: `load_meta(turn_dir)` vs `save_meta(path, data)`) as a characterization test.
+- `SessionOrchestrator` does NOT inject `ISessionRepository`, and `SessionService` exposes NO public meta API (its repository usage is internal). Rather than break the orchestrator's Shared Seam constructor (container.py + 8 test construction sites), meta persistence is delivered as a non-breaking Seam expansion: public repository-backed wrappers on `SessionService`, which is already Constructor-Injected into both `SessionOrchestrator` and `SessionLifecycleManager` (via `SessionPorts`).
+- CLI resume handlers already access the repository via the container (`load_meta` → modify → `save_meta` idiom) — the `-m` threading deliverable needs no meta seam.
+- Deliverable 7 (interrupt phases in `ExecutionOrchestrator`) requires Constructor Injection of the `InterruptGuard`; `ExecutionOrchestrator(` has 7 construction sites (container + harness + 5 test files), so its Orientation MUST re-partition into Seam (inject guard + container update) → Migration (update construction sites) before wiring.
+
 ## Deliverables
 - [ ] **Contract** - Add `awaiting_reply` flag support to the session meta repository (save/load round-trip) — unit tests.
-- [ ] **Logic** - Suppress turn finalization for pipeline MESSAGE turns in `SessionOrchestrator.execute` (skip `finalize_turn`, persist `awaiting_reply: true`, keep terminal printing, return report) — unit regression tests including the non-pipeline control.
+- [ ] **Seam** - Expose repository-backed turn-meta load/save on `SessionService` as public wrappers over `ISessionRepository.load_meta`/`save_meta` so core consumers persist meta via Constructor-Injected dependencies without hand-rolled yaml serialization — unit tests.
+- [ ] **Logic** - Suppress turn finalization for pipeline MESSAGE turns in `SessionOrchestrator.execute` (skip `finalize_turn`, persist `awaiting_reply: true` via the SessionService turn-meta API, keep terminal printing, return report) — unit regression tests including the non-pipeline control.
 - [ ] **Contract** - Add `--message/-m` flag to the `resume` CLI command and thread it through `handle_resume_session` / `_orchestrate_session_loop` into the orchestrator resume chain — unit tests.
 - [ ] **Logic** - Extend the resume state machine for AWAITING_REPLY turns (no re-execution; `-m` → clear flag, transition, plan with message; interactive → prompt for reply; non-interactive without message → clean exit with guidance) and skip the interactive prompt for COMPLETE_TURN + `-m` — unit tests.
 - [ ] **Logic** - Append a smart-fenced `## User Request` section to the latest `report.md` on COMPLETE_TURN resume with an injected message (extend the smart-fencing helper in `core/utils/markdown.py` for longest-backtick-run computation if needed) — unit tests.
