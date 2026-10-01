@@ -50,8 +50,7 @@ class SessionService(ISessionManager):
         """
         timestamp = self._time_service.now().strftime("%Y%m%d_%H%M%S")
         clean_name = slugify(options.name) or "session"
-        prefixed_name = f"{timestamp}-{clean_name}"
-        session_root = f".teddy/sessions/{prefixed_name}"
+        session_root = self._claim_session_root(f"{timestamp}-{clean_name}")
         turn_dir = f"{session_root}/01"
 
         self._repository.create_turn_directory(turn_dir)

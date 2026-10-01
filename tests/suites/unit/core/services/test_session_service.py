@@ -749,3 +749,81 @@ def test_claim_session_root_stops_at_first_success(env):
     # Assert
     assert result == ".teddy/sessions/20260417_120000-feat-x-3"
     assert mock_fs.create_directory_exclusive.call_count == 3
+
+
+def test_create_session_claims_distinct_root_when_base_occupied(env):
+    """A collision on the base root forces create_session to claim the -2 root."""
+    # Arrange
+    mock_time = env.mock_port(ITimeService)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    mock_time.now.return_value = datetime(2026, 4, 17, 12, 0, 0)
+    mock_time.now_utc.return_value = datetime(2026, 4, 17, 12, 0, 0)
+    mock_fs.read_file.side_effect = lambda p: {
+        ".teddy/init.context": "README.md",
+        ".teddy/prompts/pathfinder.xml": "<prompt/>",
+    }.get(p, "")
+    mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": ["pathfinder.xml"],
+    }.get(d, [])
+    # Occupy the base root; every other candidate (e.g., -2) is free.
+    mock_fs.create_directory_exclusive.side_effect = lambda p: (
+        not p.endswith(".teddy/sessions/20260417_120000-feat-x")
+    )
+
+    # Act
+    service.create_session(SessionOptions(name="feat-x", agent_name="pathfinder"))
+
+    # Assert: the base name was attempted, then -2 was claimed
+    mock_fs.find_call_by_path(
+        "create_directory_exclusive", ".teddy/sessions/20260417_120000-feat-x"
+    )
+    mock_fs.find_call_by_path(
+        "create_directory_exclusive", ".teddy/sessions/20260417_120000-feat-x-2"
+    )
+    # Session artifacts land under the -2 root
+    mock_fs.find_call_by_path(
+        "write_file", ".teddy/sessions/20260417_120000-feat-x-2/session.context"
+    )
+    mock_fs.find_call_by_path(
+        "write_file", ".teddy/sessions/20260417_120000-feat-x-2/pathfinder.xml"
+    )
+    mock_fs.find_call_by_path(
+        "write_file", ".teddy/sessions/20260417_120000-feat-x-2/01/meta.yaml"
+    )
+
+
+def test_create_session_collision_leaves_first_session_untouched(env):
+    """The first session's ledger files are never written by the colliding creator."""
+    # Arrange
+    mock_time = env.mock_port(ITimeService)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    mock_time.now.return_value = datetime(2026, 4, 17, 12, 0, 0)
+    mock_time.now_utc.return_value = datetime(2026, 4, 17, 12, 0, 0)
+    mock_fs.read_file.side_effect = lambda p: {
+        ".teddy/init.context": "README.md",
+        ".teddy/prompts/pathfinder.xml": "<prompt/>",
+    }.get(p, "")
+    mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": ["pathfinder.xml"],
+    }.get(d, [])
+    mock_fs.create_directory_exclusive.side_effect = lambda p: (
+        not p.endswith(".teddy/sessions/20260417_120000-feat-x")
+    )
+
+    # Act
+    service.create_session(SessionOptions(name="feat-x", agent_name="pathfinder"))
+
+    # Assert: no write touches the base (first session's) root
+    base_root = ".teddy/sessions/20260417_120000-feat-x"
+    with pytest.raises(AssertionError):
+        mock_fs.find_call_by_path("write_file", f"{base_root}/session.context")
+    with pytest.raises(AssertionError):
+        mock_fs.find_call_by_path("write_file", f"{base_root}/pathfinder.xml")
+    with pytest.raises(AssertionError):
+        mock_fs.find_call_by_path("write_file", f"{base_root}/01/meta.yaml")
