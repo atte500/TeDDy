@@ -64,3 +64,31 @@ def test_init_command_calls_prewarm_imports(monkeypatch):
         f"got {len(call_tracker)}. Before the fix, the init command "
         f"uses inline imports instead of calling prewarm_imports()."
     )
+
+
+def test_prewarm_imports_prewarms_tiktoken_encoding(monkeypatch):
+    """Logic: prewarm_imports must warm tiktoken's cl100k_base encoding.
+
+    The adapter's token-counting fallback uses this encoding
+    (litellm_adapter.get_text_token_count); the cold load costs ~2s on
+    Windows CI. A sys.modules-based assertion would false-pass (litellm
+    transitively imports the tiktoken module), so the observable unit
+    is the encoding warm itself.
+    """
+    import tiktoken
+
+    calls = []
+    real_get_encoding = tiktoken.get_encoding
+
+    def recording_get_encoding(name):
+        calls.append(name)
+        return real_get_encoding(name)
+
+    monkeypatch.setattr(tiktoken, "get_encoding", recording_get_encoding)
+
+    prewarm_imports()
+
+    assert calls == ["cl100k_base"], (
+        "prewarm_imports must warm tiktoken's cl100k_base encoding "
+        "(the adapter's fallback encoding) at init time"
+    )

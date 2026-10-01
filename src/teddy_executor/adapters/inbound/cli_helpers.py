@@ -260,5 +260,14 @@ def prewarm_imports() -> None:
         import pyperclip  # noqa: F401
         from bs4 import BeautifulSoup  # noqa: F401
         from ddgs import DDGS  # noqa: F401
+        import tiktoken  # noqa: F401
+
+        try:
+            tiktoken.get_encoding("cl100k_base")
+        except Exception:
+            logger.warning(
+                "Failed to prewarm tiktoken encoding (best-effort)",
+                exc_info=True,
+            )
     except ImportError:
         pass
