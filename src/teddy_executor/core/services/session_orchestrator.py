@@ -339,7 +339,21 @@ class SessionOrchestrator(IRunPlanUseCase):
             # 4. Turn Transition — handle abort FIRST, then print user message
             # (Bug 40: _handle_aborted_session captures the abort message from user;
             #  _print_user_message must run after to print it to terminal.)
-            if is_session and plan_path:
+            if (
+                is_session
+                and plan_path
+                and self._is_pipeline_message_stop(pipeline, plan, report)
+            ):
+                # Pipeline MESSAGE turn: the agent is talking to the user, so
+                # the turn stays un-finalized (no report.md, no next turn) and
+                # is flagged awaiting_reply so `teddy resume` can inject the
+                # user's reply. Terminal printing below still fires and the
+                # report is returned unchanged so the CLI pipeline break fires.
+                turn_dir = str(Path(plan_path).parent)
+                turn_meta = self._session_service.load_turn_meta(turn_dir)
+                turn_meta["awaiting_reply"] = True
+                self._session_service.save_turn_meta(turn_dir, turn_meta)
+            elif is_session and plan_path:
                 report = self._handle_aborted_session(report, plan)
                 if report is None:
                     typer.secho("\nSession terminated.", fg=typer.colors.RED, err=True)
@@ -390,6 +404,32 @@ class SessionOrchestrator(IRunPlanUseCase):
                     _tee.__exit__(None, None, None)
                 except Exception:
                     logger.exception("Failed to clean up Tee during session execute")
+
+    def _is_pipeline_message_stop(
+        self,
+        pipeline: bool,
+        plan: Optional[Plan],
+        report: Optional[ExecutionReport],
+    ) -> bool:
+        """Detects a pipeline turn that must stop WITHOUT finalizing.
+
+        A pipeline (-p) session turn whose report carries a non-empty MESSAGE
+        action is the agent talking to the user: the turn must remain
+        un-finalized (no report.md, no next turn) and be flagged
+        `awaiting_reply` so `teddy resume` can inject the reply. Mirrors the
+        detection idiom of the "4a. Empty user reply" termination block, so an
+        EMPTY pipeline MESSAGE never reaches this guard (Bug 15 terminates
+        first) and non-pipeline MESSAGE turns finalize normally.
+        """
+        if not pipeline or plan is None or not report:
+            return False
+        if not plan.is_communication_turn():
+            return False
+        user_reply = next(
+            (log.details for log in report.action_logs if log.action_type == "MESSAGE"),
+            None,
+        )
+        return user_reply is not None and bool(user_reply.strip())
 
     def _harvest_context(
         self,
