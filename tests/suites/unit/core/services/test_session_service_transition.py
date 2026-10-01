@@ -224,3 +224,84 @@ def test_transition_to_next_turn_handles_no_parent_user_request(env):
     meta_data = yaml.safe_load(meta_call.args[1])
     assert meta_data.get("is_replan") is True
     assert "user_request" not in meta_data
+
+
+def setup_migration_harness(env):
+    """Arrangement for turn-99 migration transition tests (continuation root feat-x-2)."""
+    mock_fs = env.get_mock_filesystem()
+    plan_path = ".teddy/sessions/feat-x/99/plan.md"
+    valid_paths = {
+        ".teddy/sessions/feat-x/99/meta.yaml",
+        ".teddy/sessions/feat-x/pathfinder.xml",
+        ".teddy/sessions/feat-x/99/turn.context",
+        ".teddy/sessions/feat-x/session.context",
+    }
+    mock_fs.path_exists.side_effect = lambda p: p in valid_paths
+    mock_fs.read_file.side_effect = lambda path: {
+        ".teddy/sessions/feat-x/99/meta.yaml": yaml.dump(
+            {"turn_id": "99", "agent_name": "pathfinder"}
+        ),
+        ".teddy/sessions/feat-x/pathfinder.xml": "system prompt content",
+        ".teddy/sessions/feat-x/99/turn.context": "file_a.py",
+        ".teddy/sessions/feat-x/session.context": "ctx.md",
+    }.get(path, "")
+    return plan_path
+
+
+def test_migration_claims_continuation_root_when_occupied(env):
+    """Turn-99 migration must exclusive-claim the continuation root; an occupied
+    root retries to -N+1 and ALL persistence lands on the claimed root."""
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+    plan_path = setup_migration_harness(env)
+
+    # Occupy the continuation root (sibling session feat-x-2 exists); -3 is free.
+    mock_fs.create_directory_exclusive.side_effect = lambda p: (
+        not p.endswith(".teddy/sessions/feat-x-2")
+    )
+
+    # Act
+    result = service.transition_to_next_turn(plan_path)
+
+    # Assert: migration claimed the next free continuation root and used it
+    # for the returned turn directory and all persistence.
+    assert result == ".teddy/sessions/feat-x-3/01"
+    mock_fs.find_call_by_path("create_directory_exclusive", ".teddy/sessions/feat-x-2")
+    mock_fs.find_call_by_path("create_directory_exclusive", ".teddy/sessions/feat-x-3")
+    mock_fs.find_call_by_path("create_directory", ".teddy/sessions/feat-x-3/01")
+
+    # The occupied sibling's tree must remain untouched.
+    for c in mock_fs.mock_calls:
+        name = c[0].split(".")[-1]
+        if (
+            name in ("write_file", "create_file", "create_directory", "edit_file")
+            and c.args
+            and isinstance(c.args[0], str)
+        ):
+            path = c.args[0].replace("\\", "/")
+            assert "sessions/feat-x-2/" not in path, (
+                f"Sibling session polluted via {name}: {path}"
+            )
+
+
+def test_migration_claims_root_before_persistence(env):
+    """The migration path must exclusive-claim the continuation root BEFORE any
+    persistence (create_turn_directory / writes) targets the claimed tree."""
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+    plan_path = setup_migration_harness(env)
+
+    # Act (root is free: harness happy-path default returns True)
+    result = service.transition_to_next_turn(plan_path)
+
+    # Assert
+    assert result == ".teddy/sessions/feat-x-2/01"
+    mock_fs.find_call_by_path("create_directory_exclusive", ".teddy/sessions/feat-x-2")
+    order = [c[0].split(".")[-1] for c in mock_fs.mock_calls]
+    claim_index = order.index("create_directory_exclusive")
+    first_persistence_index = next(
+        i for i, name in enumerate(order) if name in ("create_directory", "write_file")
+    )
+    assert claim_index < first_persistence_index

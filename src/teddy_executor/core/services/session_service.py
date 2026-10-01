@@ -242,6 +242,11 @@ class SessionService(ISessionManager):
         # 1. Resolve current state
         meta = self._repository.load_meta(cur_dir.as_posix())
         next_id, next_session_dir, is_migration = self._resolve_next_turn_path(cur_dir)
+        if is_migration:
+            # Atomically claim the continuation root BEFORE any persistence so
+            # a concurrent migration can never write into an occupied sibling.
+            claimed_root = self._claim_session_root(next_session_dir.name)
+            next_session_dir = Path(claimed_root)
         next_dir = (next_session_dir / next_id).as_posix()
 
         # 2. Setup next directory
@@ -262,21 +267,7 @@ class SessionService(ISessionManager):
 
         # FIX: Apply pruning BEFORE execution effects so READ/CREATE/EDIT can re-add files.
         if pruned_paths:
-            for p in pruned_paths:
-                paths.discard(p)
-            # Also prune from session.context if present
-            session_context_path = (next_session_dir / "session.context").as_posix()
-            if self._file_system_manager.path_exists(session_context_path):
-                session_paths = self._repository.read_context_file(session_context_path)
-                modified = False
-                for p in pruned_paths:
-                    if p in session_paths:
-                        session_paths.discard(p)
-                        modified = True
-                if modified:
-                    self._file_system_manager.write_file(
-                        session_context_path, "\n".join(sorted(list(session_paths)))
-                    )
+            self._prune_context_paths(paths, pruned_paths, next_session_dir)
 
         self._apply_execution_effects(paths, execution_report)
 
@@ -303,6 +294,30 @@ class SessionService(ISessionManager):
             f"{next_dir}/turn.context", "\n".join(sorted(list(paths)))
         )
         return next_dir
+
+    def _prune_context_paths(
+        self,
+        paths: set[str],
+        pruned_paths: list[str],
+        next_session_dir: Path,
+    ) -> None:
+        """Discards pruned paths from the next turn's context set and, if present,
+        from the session's persisted session.context."""
+        for p in pruned_paths:
+            paths.discard(p)
+        # Also prune from session.context if present
+        session_context_path = (next_session_dir / "session.context").as_posix()
+        if self._file_system_manager.path_exists(session_context_path):
+            session_paths = self._repository.read_context_file(session_context_path)
+            modified = False
+            for p in pruned_paths:
+                if p in session_paths:
+                    session_paths.discard(p)
+                    modified = True
+            if modified:
+                self._file_system_manager.write_file(
+                    session_context_path, "\n".join(sorted(list(session_paths)))
+                )
 
     def _is_preserved_turn(self, cur_dir: Path) -> bool:
         """Checks if the current turn should be preserved in session.context.
