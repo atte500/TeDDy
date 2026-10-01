@@ -1,5 +1,4 @@
-import logging
-
+from teddy_executor.adapters.outbound.suppressed_logging import suppressed_logging
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 
@@ -316,12 +315,14 @@ class WebScraperAdapter(WebScraper):
             The extracted text content.
         """
         # Suppress logging below CRITICAL to prevent trafilatura's internal
-        # LOGGER.error messages from reaching the terminal.
-        logging.disable(logging.CRITICAL)
-        try:
+        # LOGGER messages from reaching the terminal. A counted, thread-safe
+        # scope is required: get_content() runs concurrently (ContextService
+        # fetches context URLs via a ThreadPoolExecutor), and a bare
+        # logging.disable() enter/restore toggle is racy — the first caller
+        # to exit re-opens the process-global threshold while siblings are
+        # still inside trafilatura.extract(), letting their WARNINGs escape.
+        with suppressed_logging():
             return self._get_content_impl(url, **_kwargs)
-        finally:
-            logging.disable(logging.NOTSET)
 
     def _get_content_impl(self, url: str, **_kwargs) -> str:
         """Internal implementation of get_content (extracted for logging suppression wrapper)."""

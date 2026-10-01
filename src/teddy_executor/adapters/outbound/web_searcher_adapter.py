@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Callable, List, Optional
+from teddy_executor.adapters.outbound.suppressed_logging import suppressed_logging
 from teddy_executor.core.domain.models import (
     QueryResult,
     SearchResult,
@@ -108,8 +109,11 @@ class WebSearcherAdapter(IWebSearcher):
 
         # Globally disable logging (CRITICAL and below) to silence noisy
         # third-party HTTP clients (urllib3, httpx, curl_cffi) used by DDGS.
-        logging.disable(logging.CRITICAL)
-        try:
+        # A counted, thread-safe scope is required: a bare logging.disable()
+        # enter/restore toggle is racy under concurrent callers — the first
+        # caller to exit re-opens the process-global threshold while siblings
+        # are still inside their noisy third-party calls.
+        with suppressed_logging():
             with factory() as ddgs_client:
                 for query in queries:
                     result = self._execute_single_query(
@@ -118,5 +122,3 @@ class WebSearcherAdapter(IWebSearcher):
                     all_query_results.append(result)
 
             return {"query_results": all_query_results}
-        finally:
-            logging.disable(logging.NOTSET)
