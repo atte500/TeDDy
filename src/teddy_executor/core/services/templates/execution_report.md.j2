@@ -133,24 +133,32 @@
 {{ report.user_request | fence }}
 {% endif %}
 
-{# Extract logs that should display resource content #}
-{% set report_ns = namespace(content_logs=[]) %}
+{# Classify content-bearing logs ONCE — the single source of truth deciding
+   where each log's content renders:
+     - resource_logs: rendered under `## Resource Contents` (non-session only)
+     - inline_logs:   rendered fenced inline inside the Action Log entry
+   Downstream sections MUST consult these lists via membership and MUST NOT
+   re-derive the gating conditions, so the render-path policy cannot drift
+   apart (root cause of the execute-mode READ content duplication). #}
+{% set report_ns = namespace(resource_logs=[], inline_logs=[]) %}
 {% for log in report.action_logs %}
   {% if log.details and log.details is mapping and log.details.get('content') %}
-    {# Always include content for failed actions or successful READ actions (unless in a session). #}
     {% set is_read = log.action_type.lower() == 'read' %}
     {% set is_success = log.status.value == 'SUCCESS' %}
     {% set is_failure = log.status.value == 'FAILURE' %}
+    {% set is_line_scoped_read = is_read and (log.params or {}).get('lines') %}
 
-    {% if is_failure or (is_read and is_success) %}
-      {% set report_ns.content_logs = report_ns.content_logs + [log] %}
+    {% if is_failure or (is_read and is_success and not is_line_scoped_read) %}
+      {% set report_ns.resource_logs = report_ns.resource_logs + [log] %}
+    {% elif is_line_scoped_read and is_success %}
+      {% set report_ns.inline_logs = report_ns.inline_logs + [log] %}
     {% endif %}
   {% endif %}
 {% endfor -%}
 
-{% if report_ns.content_logs and not is_session %}
+{% if report_ns.resource_logs and not is_session %}
 ## Resource Contents
-{% for log in report_ns.content_logs %}
+{% for log in report_ns.resource_logs %}
 {% set res_path = log.params.get('File Path') or log.params.get('Resource') or log.params.get('resource') or log.params.get('path') %}
 {{ render_resource(res_path, log.details.content) }}
 {% endfor %}
@@ -191,7 +199,7 @@
 {% endif -%}
 {% set log_status = log.status.value | default(log.status) -%}
 - **Status:** {{ log_status }}
-{% if action_type == 'READ' and not params.get('lines') %}
+{% if action_type == 'READ' and log in report_ns.resource_logs %}
 - **Note:** Up-to-date contents are provided under `Resource Contents`.
 {% endif %}
 {% if action_type in ['CREATE', 'EDIT'] -%}
@@ -271,7 +279,7 @@
 _**Hint:** NOW you MUST use READ on the most promising results_
 {% endif %}
 
-{% if action_type == 'READ' and log.details and log.details is mapping and log.details.get('content') and params.get('lines') %}
+{% if log in report_ns.inline_logs %}
 {{ log.details.content | trim | fence }}
 {{ log.details.content | trim }}
 {{ log.details.content | trim | fence }}

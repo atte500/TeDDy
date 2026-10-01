@@ -1,5 +1,6 @@
 """Acceptance tests for EXECUTE Tail override and READ Lines range (Slice 00-24)."""
 
+import re
 import sys
 from pathlib import Path
 
@@ -50,7 +51,11 @@ class TestExecuteReadAdhocParams:
         assert "truncated" in stdout.lower(), "Expected truncation hint"
 
     def test_read_lines_range(self, real_env, monkeypatch) -> None:
-        """Verify READ with Lines=10-20 returns only that range."""
+        """Verify READ with Lines=10-20 returns only that range.
+
+        Line-scoped READ content renders inline inside its Action Log entry,
+        exactly once, and is NOT duplicated under `## Resource Contents`.
+        """
         # Arrange: create a file with 30 lines
         workspace = Path(real_env.workspace)
         file_path = workspace / "sample.txt"
@@ -76,17 +81,20 @@ class TestExecuteReadAdhocParams:
 
         # Assert
         assert report.summary.get("Overall Status") == "SUCCESS"
+        # Line-scoped READ content renders inline inside its Action Log entry
+        # and must NOT be duplicated under Resource Contents (render-placement
+        # contract; see test_report_read_render_placement.py).
         resource_contents = report.extract_resource_contents()
-        # The resource key in the report should be "sample.txt" (relative path)
-        content = resource_contents.get("sample.txt", "")
-        lines = content.splitlines()
-        # Expect exactly 11 lines (10 through 20 inclusive)
-        expected_lines = [f"Line {i}" for i in range(10, 21)]
-        assert len(lines) == len(expected_lines), (
-            f"Expected {len(expected_lines)} lines, got {len(lines)}"
+        assert "sample.txt" not in resource_contents, (
+            "Line-scoped READ content must not be rendered under Resource Contents"
         )
-        for expected in expected_lines:
-            assert expected in lines, f"Expected '{expected}' in output"
-        # Should NOT contain lines 1 or 30
-        assert "Line 1" not in lines, "Line 1 should NOT appear"
-        assert "Line 30" not in lines, "Line 30 should NOT appear"
+        # Extract every full content line ("Line N") rendered in the report.
+        # Line-anchored matching prevents "Line 1" from substring-matching
+        # "Line 10".."Line 19"; duplicates would indicate the content was
+        # rendered more than once.
+        rendered_numbers = re.findall(r"(?m)^Line (\d+)$", report.stdout)
+        rendered_lines = sorted(int(n) for n in rendered_numbers)
+        # Expect exactly lines 10-20, each rendered exactly once
+        assert rendered_lines == list(range(10, 21)), (
+            f"Expected exactly lines 10-20 once each, got {rendered_lines}"
+        )
