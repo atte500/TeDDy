@@ -112,6 +112,12 @@ The CLI adapter performs editor validation during session startup (`handle_new_s
 
 Editor validation is skipped entirely in non-interactive modes (`--yolo`, `--pipeline`, `--yes`).
 
+### Startup Health Checks (`_run_health_checks`)
+
+`_run_health_checks()` runs two advisory checks on session start/resume (`handle_new_session`, `handle_resume_session`): `_ensure_commit_hooks()` and `_check_git_initialized()`.
+
+**`_ensure_commit_hooks` compare-and-skip (Slice 00-20):** before spawning `pre-commit install -f -t pre-commit -t post-commit`, the guard verifies each requested shim PER HOOK TYPE (pre-commit installs ONE shim per hook type; each declares only its OWN `--hook-type=<type>`): the shim exists in the resolved hooks directory (`.git/hooks` or `core.hooksPath`), contains `hook-impl`, declares `--config=.pre-commit-config.yaml`, declares its own `--hook-type=`, and embeds an existing `INSTALL_PYTHON` path. All shims valid → the subprocess is skipped and the green notification still shows. Any failure (missing shim, dead interpreter, foreign content) → the real install runs exactly as before (safety never reduced). Byte-comparison is explicitly rejected: shims are deterministic functions of (template, INSTALL_PYTHON, args), but install methods (pipx/uv/pip) produce distinct valid hashes, so byte-comparison would trigger a wasteful reinstall on every interpreter change.
+
 ### Utility Command: `init`
 
 **Status:** Implemented
@@ -122,7 +128,7 @@ Creates the `.teddy/` directory with default files (config, gitignore, init.cont
 - **No options** (kept simple).
 - **Behavior:**
   1. Calls the existing `InitService.ensure_initialized()` to create `.teddy/` and seed default files.
-  2. Pre-warms heavy imports (`litellm`, `trafilatura`, `pyperclip`, `bs4`, `ddgs`) by importing them.
+  2. Pre-warms heavy imports (`litellm`, `trafilatura`, `pyperclip`, `bs4`, `ddgs`, `tiktoken`) by importing them. The tiktoken prewarm eliminates the cold encoding load from the first session turn (2.03s on Windows CI).
   3. Echoes a success message: `"TeDDy initialized in .teddy folder."`
   4. Checks `.teddy/credentials.yaml`. If missing or empty, echoes `"No credentials found. Launching login to OpenRouter..."` and auto-launches the OAuth login browser flow.
   5. **Idempotent:** Safe to run multiple times.

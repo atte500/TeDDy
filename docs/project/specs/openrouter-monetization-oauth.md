@@ -160,5 +160,19 @@ Before implementing the client-side authentication flow, the TeDDy project maint
    Locate and copy the generated public **Client ID** (e.g. `teddy-cli-prod`).
    - *Note:* Since the TeDDy CLI is a distributed public application, it is classified as a "Public Client." It cannot securely guard a client secret. Therefore, **no client secret is required or used**; the OAuth flow will utilize strictly PKCE (Proof Key for Code Exchange) with the public Client ID.
 
-5. **Store the Client ID in Codebase:**
+5.  **Store this public Client ID in Codebase:**
    Save this public Client ID string as a constant inside TeDDy (such as in `src/teddy_executor/adapters/inbound/session_cli_handlers.py`) to serve as the default client identifier during the browser-based authorization flow.
+
+---
+
+## 8. Model Registry Persistent Cache
+
+Models NOT present in litellm's built-in registry (e.g., the README default `openrouter/deepseek/deepseek-v4-flash:nitro`) trigger a synchronous OpenRouter catalog fetch (`https://openrouter.ai/api/v1/models`, 10s timeout) via `OpenRouterMetadataHydrator`. To avoid re-paying this network fetch in every fresh process, the hydrator persists the catalog (validated in Slice 00-20).
+
+- **Path:** `.teddy/.model_registry_cache.json` (dotfile = machine state). Covered by the shipped `.teddy/.gitignore` template (bare `*` rule — verified via `git check-ignore`).
+- **Payload:** `{"version": 1, "fetched_at_epoch": <int epoch seconds>, "models": [...]}` (raw OpenRouter catalog entries).
+- **TTL:** 7 days default (configurable via `IConfigService`). Boundary semantics: `now - fetched_at_epoch >= ttl` is expired; the next pre-emptive hydration refetches once and rewrites the cache.
+- **Failure handling:** corrupt, unparsable, or missing cache files are treated as an empty cache → refetch. Corrupt data must never produce wrong telemetry ("???" sentinels are preferred over wrong values).
+- **Write discipline:** atomic write (write to `<name>.tmp`, then `os.replace`) — no partial reads, no `.tmp` residue.
+- **Injection:** the cache loader/path is injected into `OpenRouterMetadataHydrator` via Constructor Injection at the single construction site in `registries/infrastructure.py` (singleton scope). No mid-logic environment checks.
+- **Pre-emptive hydration is retained:** first-turn telemetry must display real context-window/pricing values, never "???".

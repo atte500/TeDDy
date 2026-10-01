@@ -45,3 +45,11 @@ The final solution must successfully support the following scenarios without any
 -   **Given** a plan with one action:
     1.  `EXECUTE` the command `git commit -m "feat: A great new feature\n\nThis is the detailed body of the commit message."`
 -   **Then** a `git commit` must be created successfully with both a subject and a body.
+
+## 4. Per-Turn Context Gathering (Single-Gather Contract)
+
+Project context MUST be gathered exactly once per session turn. `PlanningService.generate_plan` is the single gather point: it assembles the `ProjectContext` (env info, git status spawns, repo tree walk, file reads, token counts) and writes `input.md`.
+
+**Wiring contract:** the already-gathered `ProjectContext` is returned by `generate_plan` (additively extending the `(plan_path, turn_cost)` return) and threaded through `SessionPlanner.trigger_new_plan` → `SessionLifecycleManager._handle_planning_and_execution` → `SessionOrchestrator.execute`, which propagates it to `ExecutionOrchestrator`. The re-gather branch in `SessionOrchestrator.execute` is a fallback-only path, hit only when `project_context` is not provided.
+
+**Call-site audit (empirically verified, Slice 00-20):** of the five `orchestrator.execute` call sites, only the session paths funneling through `SessionLifecycleManager._handle_planning_and_execution` (start path and resume-next-turn path) exhibited a double gather; both are fixed by the threading above. The PENDING_PLAN resume branch is single-gather by design. Both manual execute sites (`teddy execute`, `execute_valid_plan`) never gather. Residual: the replan path (validation failures) re-gathers once on the next session-loop iteration, because the context cannot cross the session-loop boundary as a parameter; this bounded residual is accepted by design (rare validation-failure turns only).

@@ -35,3 +35,18 @@ Refactor `src/teddy_executor/container.py` and `registries/` to support tiered r
 1. **Performance Target:** Total initialization time (from `main` to `use_case.execute`) should be < 80ms on standard hardware (excluding Python/Poetry startup overhead).
 2. **Boundary Preservation:** Do NOT introduce DI framework dependencies into the core services.
 3. **Verification:** Use the `spikes/profile_startup.py` script to verify improvements.
+
+## 5. Startup Hot-Path Optimizations (Slice 00-20)
+
+### 5.1 Pre-commit Compare-and-Skip (`_ensure_commit_hooks`)
+`_ensure_commit_hooks` previously spawned `pre-commit install -f -t pre-commit -t post-commit` unconditionally on every `teddy start`/`teddy resume` — 2.96s on Windows CI vs 0.20s macOS — purely to write two hook shims.
+
+**Guard design (empirically validated against pre-commit 4.6.0):**
+- Resolve the hooks directory first (`.git/hooks` or `core.hooksPath`).
+- The guard is **per shim**: pre-commit installs ONE shim per hook type, and each shim declares only its OWN `--hook-type=<type>`. For each requested hook type, the shim must: exist, contain `hook-impl` in its ARGS, declare `--config=.pre-commit-config.yaml`, declare its own `--hook-type=<type>`, and embed an `INSTALL_PYTHON` path that exists on disk.
+- **Byte-comparison is rejected:** shim regeneration is a deterministic function of (template, INSTALL_PYTHON, hook-type args) — reconstruction is byte-identical to real shims — but pipx/uv/pip install methods produce distinct valid hashes (only INSTALL_PYTHON varies), so byte-comparison would trigger a wasteful reinstall on every interpreter change.
+- **Fallback:** any guard failure (missing shim, dead interpreter, foreign/hand-edited content, missing config flag) falls back to the existing unconditional install — safety is never reduced.
+- The green "pre-commit hooks installed" notification still shows when skipping.
+
+### 5.2 Prewarm Coverage
+`prewarm_imports` covers `litellm`, `trafilatura`, `pyperclip`, `bs4`, `ddgs` — and MUST also prewarm `tiktoken`'s encoding to eliminate the cold token-counter load on the first turn (2.03s Windows CI / 0.66s Linux).

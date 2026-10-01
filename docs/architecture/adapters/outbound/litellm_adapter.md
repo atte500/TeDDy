@@ -53,3 +53,14 @@ This adapter implements the methods defined in the `ILlmClient` port contract:
 
 ### `get_completion_cost(completion_response) -> float`
 -   **Description:** Uses `litellm.completion_cost` to calculate the precise USD cost of a response.
+
+## 5. OpenRouterMetadataHydrator: Persistent Registry Cache (Slice 00-20)
+
+`OpenRouterMetadataHydrator` (implements `IOpenRouterHydrator`) fetches the OpenRouter catalog for models not present in `litellm.model_cost`. It gains a **persistent cache**:
+
+- **Storage:** JSON at `.teddy/.model_registry_cache.json`; payload `{"version": 1, "fetched_at_epoch": <int>, "models": [...]}`. The path is covered by the shipped `.teddy/.gitignore` template (bare `*` rule).
+- **TTL:** 7 days default (configurable via `IConfigService`); `now - fetched_at_epoch >= ttl` → expired → one refetch on the next hydration, then rewrite.
+- **Failure handling:** missing/corrupt cache → treated as empty → refetch; never serve wrong metadata.
+- **Writes:** atomic (`<name>.tmp` + `os.replace`).
+- **Injection:** the cache loader/path is constructor-injected at the `registries/infrastructure.py` factory (the hydrator is registered with singleton scope). Per-instance in-memory memoization is unchanged.
+- Pre-emptive hydration (via `get_context_window` in `PlanningService.generate_plan`) is retained so first-turn telemetry shows real values.
