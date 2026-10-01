@@ -112,14 +112,25 @@ This section defines the conventions for our project management artifacts.
     - **Fix Pre-existing C901 Complexity:** Refactor the `parse` method in `markdown_plan_parser.py` (cyclomatic complexity 10, threshold 9) by extracting preamble stripping, normalization, and AST validation steps into smaller helper methods.
     - **Audit Quality Gate Bypasses in Git History:** Check for any `--no-verify` commits logged in Technical Debt and verify the bypasses are still justified or can be resolved.
 
+## Failed Release Recovery
+
+If a release needs to be redone (e.g., CI failures, missing assets):
+1. **Delete** the GitHub release: `gh release delete v<version> --yes`
+2. **Delete** the local and remote tags:
+   ```shell
+   git tag -d v<version>
+   git push --delete origin v<version>
+   ```
+3. **Fix** the underlying issues (CI config, test failures, missing files).
+4. **Ensure** `uv.lock` is staged alongside other changes to avoid a separate cleanup commit.
+5. **Re-tag and release** following the standard Release Process from step 5 onward (commit, tag, push, publish).
+
 ## Technical Debt
 
 - Create a reusable pytest fixture (`ports_fixture`) in `tests/harness/setup/` that provides pre-configured port mocks with sensible defaults for `ISessionManager`, `IFileSystemManager`, etc. This reduces the risk of "mock poisoning" (bare MagicMock instances missing required `return_value` configurations) in test setup.
 - `detect-secrets` falsely flags the API key placeholder (`api_key: ""`) in `README.md` as a "Secret Keyword". This is a pre-existing false positive in the documentation example config. To suppress it, the `.secrets.baseline` would need to be updated. For README-only changes, use `--no-verify` to bypass the false positive gate.
 - **Silent error swallowing (Failure Transparency):** The Systemic Audit for Bug #07 revealed numerous `except` blocks across the codebase that silently catch `OSError`, `json.JSONDecodeError`, and other broad exception types without logging or re-raising. Affected files include: `cli_helpers.py`, `local_file_system_adapter.py`, `shell_adapter.py`, `web_scraper_adapter.py`, `yaml_config_adapter.py`, `action_executor.py`, `context_service.py`, `session_pruning_service.py`, `session_repository.py`, `update_checker.py`, `io.py`. While many of these are legitimate "safe to ignore" cases (cleaning up temp files, closing resources), several would benefit from debug-level logging before swallowing, consistent with the architectural standard of Failure Transparency.
-- `perform_upgrade` and `should_update` in `update_checker.py` were removed as dead code (the update system is now notification-only). Upgrade instructions now use `uv tool upgrade teddy-cli`.
-- The startup notification (`_display_update_notification`) was wired in both `handle_new_session` and `handle_resume_session` to display a non-blocking update notification after the background check thread starts.
-- `auto_update` config key was removed from `config.yaml` as dead config (never read by production code).
+- **Completed cleanups (informational):** `perform_upgrade`/`should_update` were removed as dead code (the update system is notification-only; upgrade via `uv tool upgrade teddy-cli`); the startup notification (`_display_update_notification`) is wired in `handle_new_session` and `handle_resume_session` after the background check thread starts; the dead `auto_update` config key was removed from `config.yaml`.
 - **Pre-existing Mypy errors in three files (block pre-commit Mypy hook):**
   - `src/teddy_executor/core/services/action_executor.py:191` — Incompatible return value type (tuple[ActionLog, Any | str | None] vs tuple[ActionLog, str]).
   - `src/teddy_executor/core/services/session_orchestrator.py:251` — Item "DataclassInstance" has no attribute "agent_name" (union-attr).
@@ -137,23 +148,7 @@ This section defines the conventions for our project management artifacts.
 
   - **Pre-existing PLR0911 in `coerce_param`:** The `coerce_param` function in `parser_infrastructure.py` has 9 return statements, exceeding Ruff's PLR0911 threshold of 6. This blocks the pre-commit Ruff linter hook for all commits that touch this file (or trigger a full lint scan on staged files with the same project-level lint). This is a pre-existing issue, not introduced by any recent change. Scheduled for resolution in Milestone 5 (Quality Gate & Debt Reconciliation).
 
-### Failed Release Recovery
-
-If a release needs to be redone (e.g., CI failures, missing assets):
-1. **Delete** the GitHub release: `gh release delete v<version> --yes`
-2. **Delete** the local and remote tags:
-   ```shell
-   git tag -d v<version>
-   git push --delete origin v<version>
-   ```
-3. **Fix** the underlying issues (CI config, test failures, missing files).
-4. **Ensure** `uv.lock` is staged alongside other changes to avoid a separate cleanup commit.
-5. **Re-tag and release** following the standard Release Process from step 5 onward (commit, tag, push, publish).
-
-- **2026-10-01 (consolidated):** Historical `--no-verify` bypass log (2026-08-24 to 2026-10-01): every bypassed commit to date (v0.1.13 release bump, Bug #23 editor TTY fix, Bug #24 escape flush fix, Wiring console deliverable, slugify fix, `-f` flag, READ preview/URL wiring, console-detachment fix) was bypassed solely due to PRE-EXISTING quality-gate violations unrelated to the committed changes — TID251 (`MagicMock`/`patch` ban in test files), pre-existing Mypy errors (`action_executor.py:191`, `session_orchestrator.py`, `console_interactor_ask_loop.py`, `textual_plan_reviewer_app.py:381`, `openrouter_hydrator.py:17`), bandit B404/B603/B605/B607/B110, and pip-audit false positives — all scheduled for resolution in Milestone 5 (Quality Gate & Debt Reconciliation). Per-commit references remain in git history; Milestone 5's 'Audit Quality Gate Bypasses in Git History' requirement verifies them there.
-
-- **2026-10-01:** EditMatcher design limitation formalized as Case File 50 ([docs/project/debugging/50-editmatcher-multiline-fragment-anchoring.md](/docs/project/debugging/50-editmatcher-multiline-fragment-anchoring.md)): the matcher's substring boost (`_apply_substring_boost`) and Tier-3 anchor enumeration are single-line-only, so multi-line FIND blocks whose lines are partial fragments of long single lines (e.g., Case File Investigation History entries) degenerate to fragment/line-length similarity scores (observed 0.12 against the 0.95 threshold). Discovered during the Case File 49 user-requested harness meta-audit; scheduled for Milestone 5 (Quality Gate & Debt Reconciliation).
-
-- **2026-10-01:** The Debugger's standardized VCP execution codeblock uses POSIX-only shell constructs (`#` comment lines and the `|| [ -z "$(git remote)" ]` fallback) that are unparseable by cmd.exe on Windows hosts (`: was unexpected at this time.`), aborting the commit cycle before any command executes. Workaround used for Case File 49: split the VCP into individual, shell-agnostic `git` EXECUTE actions with `Allow Failure` replacing `|| true`. Candidate for the VCP/Makefile workflow improvement in Milestone 5 (Quality Gate & Debt Reconciliation).
-
-- **2026-10-01:** The console-detachment fix commit's pre-commit run surfaced two additional pre-existing quality-gate violations in touched files, both bypassed with `--no-verify`: **PLR0913** (too many arguments, 6 > 5) on `ShellAdapter.execute` (`shell_adapter.py:333` — the signature predates this change; no parameters were added by it), and **Mypy `attr-defined`** on `termios.tcflush`/`termios.TCIFLUSH` in `console_interactor_ask_loop.py:92` (Windows-host Mypy cannot resolve the POSIX-only `termios` module — same class as the pre-existing 2026-08-28 termios debt entry, now at shifted line numbers). Scheduled for resolution in Milestone 5 (Quality Gate & Debt Reconciliation).
+- **EditMatcher multi-line fragment anchoring limitation:** formalized as [Case File 50](/docs/project/debugging/50-editmatcher-multiline-fragment-anchoring.md) — the substring boost (`_apply_substring_boost`) and Tier-3 anchor enumeration are single-line-only, so multi-line FIND blocks whose lines are partial fragments of long single lines (e.g., Case File Investigation History entries) degenerate to fragment/line-length similarity scores (observed 0.12 against the 0.95 threshold). Discovered during the Case File 49 harness meta-audit; scheduled for resolution in Milestone 5 (Quality Gate & Debt Reconciliation).
+- **VCP POSIX-shell friction:** the Debugger's standardized VCP execution codeblock uses POSIX-only shell constructs (`#` comment lines, `|| [ -z "$(git remote)" ]`) that cmd.exe cannot parse on Windows hosts (`: was unexpected at this time.`). Workaround: split the VCP into individual, shell-agnostic single-line `git` commands with `Allow Failure` replacing `|| true`. Candidate for the VCP/Makefile workflow improvement in Milestone 5.
+- **PLR0913 on `ShellAdapter.execute`** (`shell_adapter.py:333`, 6 > 5 arguments — pre-existing signature, unchanged by recent fixes) and **Mypy `attr-defined` on `termios.tcflush`/`termios.TCIFLUSH`** in `console_interactor_ask_loop.py:92` (Windows-host Mypy cannot resolve the POSIX-only `termios` module). Both surfaced by the console-detachment fix commit's pre-commit run; scheduled for resolution in Milestone 5 (Quality Gate & Debt Reconciliation).
+- Historical `--no-verify` bypasses (2026-08-24 through 2026-10-01) were all caused by pre-existing quality-gate violations (TID251 mock ban, pre-existing Mypy errors, bandit B404/B603/B605/B607/B110, pip-audit false positives) unrelated to the committed changes. Per-commit references remain in git history and are covered by Milestone 5's "Audit Quality Gate Bypasses in Git History" requirement.
