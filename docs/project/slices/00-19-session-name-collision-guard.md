@@ -74,7 +74,8 @@ All uncertainties were resolved during the Task Brief investigation; none block 
 - [x] **Logic** - Implement `create_directory_exclusive` in `LocalFileSystemAdapter` (atomic `mkdir(parents=True)` without `exist_ok`; `FileExistsError` returns `False`; other errors re-raised) driven by unit contract tests (TDD).
 - [x] **Logic** - Add `_claim_session_root` suffix-retry helper to `SessionService` driven by unit tests (claims base name when free; retries `-2`, `-3`; stops at first success).
 - [x] **Migration** - Wire `_claim_session_root` into `create_session` (exclusive root claim, then tolerant `01/` creation) with collision unit tests (identical `{timestamp}-{name}` produces a distinct `-2` root; first session's files untouched).
-- [ ] **Migration** - Wire exclusive claiming into the `create_next_turn` turn-100 migration path with migration-collision unit tests (occupied continuation root migrates to `-N+1`; claimed name used for all persistence).
+- [▶] **Logic** - Generalize `_claim_session_root`'s retry chain to follow the continuation-name convention via `_calculate_continuation_name` (an occupied `{name}-N` candidate retries `{name}-N+1`; suffix-free bases still yield `-2`, `-3`, ...), with unit tests.
+- [ ] **Migration** - Wire `_claim_session_root` into the turn-100 migration path of `transition_to_next_turn` (exclusive claim of the continuation root before `_clone_session_artifacts`; claimed name used for all persistence) with migration-collision unit tests (occupied continuation root migrates to `-N+1`; first sibling's files untouched).
 - [ ] **Wiring** - Sibling-integrity integration test covering both call sites (pre-existing sibling's `session.context`, prompt file, and `01/meta.yaml` byte-identical before/after the second session's creation/migration).
 
 ## Implementation Notes
