@@ -1,11 +1,16 @@
+import time
 from pathlib import Path
 from typing import Any
+
+import pytest
 
 from teddy_executor.adapters.outbound.openrouter_hydrator import (
     OpenRouterMetadataHydrator,
 )
 from teddy_executor.core.ports.outbound import IConfigService
 from tests.harness.setup.mocking import POSIXPathMock
+from tests.harness.setup.model_registry_cache import FakeRegistryCache
+from tests.harness.setup.openrouter_mock_data import OPENROUTER_MODELS_RESPONSE
 
 
 def test_hydrator_resolves_exact_match(openrouter_mock: Any):
@@ -145,3 +150,128 @@ def test_hydrator_handles_string_typed_pricing(httpserver: Any):
     # to float, preventing downstream crashes in LiteLLM's internal cost
     # calculation logic.
     assert metadata is None
+
+
+class TestPersistentRegistryCache:
+    """Logic: persistent registry cache behind the injected cache_path.
+
+    Payload {version, fetched_at_epoch, models}; TTL 7 days default via
+    IConfigService (boundary: now - fetched_at_epoch >= ttl is expired);
+    corrupt/missing -> empty -> refetch; atomic writes (no .tmp
+    residue); network fetch only on miss/expiry. cache_path=None
+    preserves the legacy network-only behavior.
+    """
+
+    MODEL_ID = "deepseek/deepseek-v4-flash"
+    DEFAULT_TTL_SECONDS = 7 * 24 * 3600
+
+    @pytest.fixture
+    def cache(self):
+        with FakeRegistryCache() as fake:
+            yield fake
+
+    @pytest.fixture
+    def config(self):
+        config = POSIXPathMock(spec=IConfigService)
+        config.get_setting.return_value = None
+        return config
+
+    def _hydrator(self, cache, config, httpserver):
+        hydrator = OpenRouterMetadataHydrator(
+            cache_path=cache.cache_path, config_service=config
+        )
+        hydrator.API_URL = httpserver.url_for("/api/v1/models")
+        return hydrator
+
+    def test_fresh_cache_served_without_network(self, cache, config, httpserver):
+        cache.write_fresh(OPENROUTER_MODELS_RESPONSE["data"])
+        hydrator = self._hydrator(cache, config, httpserver)
+
+        metadata = hydrator.get_metadata(self.MODEL_ID)
+
+        assert metadata is not None
+        assert metadata["context_window"] == 1048576
+        assert httpserver.log == []
+
+    def test_missing_cache_fetches_network_and_persists_catalog(
+        self, cache, config, httpserver
+    ):
+        httpserver.expect_request("/api/v1/models").respond_with_json(
+            OPENROUTER_MODELS_RESPONSE
+        )
+        hydrator = self._hydrator(cache, config, httpserver)
+
+        metadata = hydrator.get_metadata(self.MODEL_ID)
+
+        assert metadata is not None
+        payload = cache.read_payload()
+        assert set(payload) == {"version", "fetched_at_epoch", "models"}
+        assert payload["models"] == OPENROUTER_MODELS_RESPONSE["data"]
+        assert int(time.time()) - payload["fetched_at_epoch"] < self.DEFAULT_TTL_SECONDS
+
+    def test_cache_write_is_atomic_no_tmp_residue(self, cache, config, httpserver):
+        httpserver.expect_request("/api/v1/models").respond_with_json(
+            OPENROUTER_MODELS_RESPONSE
+        )
+        hydrator = self._hydrator(cache, config, httpserver)
+
+        hydrator.get_metadata(self.MODEL_ID)
+
+        assert cache.cache_path.exists()
+        assert list(cache.teddy_dir.glob("*.tmp")) == []
+
+    def test_expired_cache_refetches_and_rewrites(self, cache, config, httpserver):
+        httpserver.expect_request("/api/v1/models").respond_with_json(
+            OPENROUTER_MODELS_RESPONSE
+        )
+        cache.write_fresh(OPENROUTER_MODELS_RESPONSE["data"])
+        cache.expire(ttl_seconds=self.DEFAULT_TTL_SECONDS)
+        hydrator = self._hydrator(cache, config, httpserver)
+
+        metadata = hydrator.get_metadata(self.MODEL_ID)
+
+        assert metadata is not None
+        fetched = cache.read_payload()["fetched_at_epoch"]
+        assert int(time.time()) - fetched < self.DEFAULT_TTL_SECONDS
+
+    def test_corrupt_cache_treated_as_empty_and_refetched(
+        self, cache, config, httpserver
+    ):
+        httpserver.expect_request("/api/v1/models").respond_with_json(
+            OPENROUTER_MODELS_RESPONSE
+        )
+        cache.corrupt()
+        hydrator = self._hydrator(cache, config, httpserver)
+
+        metadata = hydrator.get_metadata(self.MODEL_ID)
+
+        assert metadata is not None
+        assert cache.read_payload()["models"] == OPENROUTER_MODELS_RESPONSE["data"]
+
+    def test_configured_ttl_extends_freshness(self, cache, httpserver):
+        config = POSIXPathMock(spec=IConfigService)
+        config.get_setting.side_effect = lambda key, default=None: (
+            3650 if key == "llm.registry_cache_ttl_days" else default
+        )
+        cache.write_fresh(
+            OPENROUTER_MODELS_RESPONSE["data"],
+            fetched_at=int(time.time()) - 8 * 24 * 3600,
+        )
+        hydrator = self._hydrator(cache, config, httpserver)
+
+        metadata = hydrator.get_metadata(self.MODEL_ID)
+
+        assert metadata is not None
+        assert httpserver.log == []
+
+    def test_zero_arg_construction_keeps_legacy_network_behavior(self, httpserver):
+        httpserver.expect_request("/api/v1/models").respond_with_json(
+            OPENROUTER_MODELS_RESPONSE
+        )
+        hydrator = OpenRouterMetadataHydrator()
+        hydrator.API_URL = httpserver.url_for("/api/v1/models")
+
+        metadata = hydrator.get_metadata(self.MODEL_ID)
+
+        assert metadata is not None
+        assert metadata["context_window"] == 1048576
