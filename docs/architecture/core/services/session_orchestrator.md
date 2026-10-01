@@ -48,6 +48,7 @@ The `SessionOrchestrator` is a decorator-style service that wraps the stateless 
 ### `execute(...) -> ExecutionReport`
 -   **Description:** Implements the `IRunPlanUseCase`. If `plan_path` is present, it layers stateful session side-effects over the core execution.
 -   **Cache Integration:** When in session mode (`plan_path` present), derives `cache_dir = str(Path(plan_path).parent.parent)` and passes it to `ContextService.get_context(cache_dir=cache_dir)` to enable web content caching.
+-   **Single-Gather Contract (fallback-only re-gather):** `execute` accepts the planning-gathered `project_context` and propagates it unchanged to `ExecutionOrchestrator` (project context is gathered exactly once per turn by `PlanningService.generate_plan`). The in-execute re-gather is a fallback-only path, hit ONLY when `project_context is None` (e.g., the PENDING_PLAN resume branch passes `None`); the guard is an explicit identity check (`project_context is None`), never a truthiness check, so a provided context is never re-gathered. The fallback body (manifest resolution, agent-name patch, gather, optional pruning) is extracted into the private helper `_gather_fallback_context`.
 
 ### `resume(session_name: str, interactive: bool = True)`
 -   **Description:** Implements the session state machine. Detects the state of the latest turn (EMPTY, PENDING_PLAN, COMPLETE_TURN) and triggers the appropriate action.

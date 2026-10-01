@@ -201,6 +201,57 @@ def test_session_orchestrator_resolves_context_when_non_interactive(
     orchestrator._pruning_service.prune.assert_called_once()
 
 
+def test_execute_regather_branch_is_fallback_only_never_hits_provided_context(
+    orchestrator,
+    mock_run_plan,
+    mock_fs,
+    mock_plan_parser,
+    mock_plan_validator,
+):
+    """Refactor pin: the in-execute context re-gather must be a
+    fallback-only path — NEVER hit when `project_context` is provided,
+    even if the provided value is falsy. The provided instance must
+    reach ExecutionOrchestrator unchanged (the Wiring contract: the
+    planning-gathered context feeds execution directly).
+    """
+
+    class FalsyContext:
+        def __bool__(self) -> bool:
+            return False
+
+    # Arrange
+    from teddy_executor.core.domain.models import Plan
+    from tests.harness.setup.mocking import POSIXPathMock
+
+    mock_plan = POSIXPathMock(spec=Plan)
+    mock_plan.metadata = {"Status": "SUCCESS 🟢"}
+    mock_plan.is_session = True
+
+    mock_plan_parser.parse.return_value = mock_plan
+    mock_plan_validator.validate.return_value = []
+    mock_fs.path_exists.return_value = True  # For is_session_mode
+
+    provided_context = FalsyContext()
+
+    # Act
+    orchestrator.execute(
+        plan_path="path/to/01/plan.md",
+        interactive=True,
+        project_context=provided_context,
+    )
+
+    # Assert
+    orchestrator._context_service.get_context.assert_not_called()
+    passed_context = orchestrator._execution_orchestrator.execute.call_args.kwargs.get(
+        "project_context"
+    )
+    assert passed_context is provided_context, (
+        "The provided project_context must reach ExecutionOrchestrator "
+        "unchanged; the re-gather branch must never run when a context "
+        "is provided"
+    )
+
+
 def test_session_orchestrator_passes_plan_to_trigger_replan_on_validation_failure(
     orchestrator,
     mock_fs,

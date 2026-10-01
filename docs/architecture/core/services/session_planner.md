@@ -21,6 +21,6 @@ The `SessionPlanner` handles the interactive turn planning process. It orchestra
 
 ## 4. Data Contracts / Methods
 
-### `trigger_new_plan(turn_dir: str, message: Optional[str] = None) -> Optional[str]`
+### `trigger_new_plan(turn_dir: str, message: Optional[str] = None) -> tuple[str, Optional[ProjectContext]]`
 -   **Description:** Orchestrates the planning turn.
--   **Returns:** The session name if successful, or "CANCELLED".
+-   **Returns:** `(session_name, gathered_context)` — the session name if successful, or `("CANCELLED", None)`. The `ProjectContext` gathered by `PlanningService.generate_plan` is threaded to the caller (the `SessionLifecycleManager` funnel, which passes it to `SessionOrchestrator.execute`) instead of being discarded, enforcing the single-gather-per-turn contract.

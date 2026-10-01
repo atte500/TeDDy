@@ -37,15 +37,15 @@ The `PlanningService` is responsible for generating an AI plan based on a user m
 
 ## 4. Data Contracts / Methods
 
-### `generate_plan(user_message: str, turn_dir: str, context_files: Optional[Dict[str, Sequence[str]]] = None) -> str`
+### `generate_plan(user_message: str, turn_dir: str, context_files: Optional[Dict[str, Sequence[str]]] = None) -> tuple[str, float, ProjectContext]`
 
--   **Description:** Generates a new `plan.md` file in the specified directory. **Defensive Design:** If `context_files` is omitted, it auto-resolves session/turn manifests from `turn_dir` via `SessionManager`.
+-   **Description:** Generates a new `plan.md` file in the specified directory. **Defensive Design:** If `context_files` is omitted, it auto-resolves session/turn manifests from `turn_dir` via `SessionManager`. **Single-Gather Point:** the `ProjectContext` assembled here is returned (not discarded) so callers thread it to execution — project context is gathered exactly once per turn.
 -   **Preconditions:**
     -   `turn_dir` must exist.
     -   The agent prompt file (`[agent_name].xml`) must exist in `turn_dir`.
 -   **Postconditions:**
     -   A valid `plan.md` is written to `turn_dir`.
-    -   Returns the path to the generated plan.
+    -   Returns `(plan_path, turn_cost, project_context)` — the gathered `ProjectContext` (identity of the context produced by `IGetContextUseCase.get_context`) is threaded to the caller.
 -   **Exceptions:**
     -   `ConfigurationError`: Raised if API keys or environment variables are missing or invalid.
     -   `LlmCommunicationError`: Raised if the LLM client fails.

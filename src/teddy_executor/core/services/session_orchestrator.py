@@ -1,4 +1,5 @@
 import logging
+from dataclasses import is_dataclass, replace
 from pathlib import Path
 from typing import Any, Optional, cast
 
@@ -236,57 +237,8 @@ class SessionOrchestrator(IRunPlanUseCase):
 
             # 2. Context Preparation (Gather, Prune, Harvest)
             # We must harvest context BEFORE validation so that pruned paths persist across replans
-            if is_session and plan_path and not project_context:
-                context_files = self._session_service.resolve_context_paths(plan_path)
-                agent_name = (
-                    plan.metadata.get("Agent")
-                    or plan.metadata.get("agent")
-                    or (
-                        self._lifecycle_manager.get_agent_name(plan_path)
-                        if hasattr(self._lifecycle_manager, "get_agent_name")
-                        else "Unknown"
-                    )
-                )
-                total_window = self._llm_client.get_context_window()
-
-                cache_dir = str(Path(plan_path).parent.parent)
-                # Compute system prompt token count BEFORE context construction so the
-                # ProjectContext DTO is born with correct data (no post-hoc patching needed).
-                system_prompt = self._prompt_manager.fetch_system_prompt(
-                    agent_name, Path(plan_path).parent
-                )
-                model = str(self._config_service.get_setting("llm.model") or "")
-                try:
-                    system_token_count = self._llm_client.get_text_token_count(
-                        system_prompt, model=model
-                    )
-                except Exception:
-                    system_token_count = 0
-
-                project_context = self._context_service.get_context(
-                    context_files=context_files,
-                    agent_name=agent_name,
-                    total_window=total_window,
-                    cache_dir=cache_dir,
-                    system_prompt_tokens=system_token_count,
-                )
-                from dataclasses import is_dataclass
-
-                if (
-                    is_dataclass(project_context)
-                    and agent_name != project_context.agent_name
-                ):
-                    from dataclasses import replace
-
-                    project_context = replace(
-                        cast(Any, project_context),
-                        agent_name=agent_name,
-                    )
-                if self._pruning_service:
-                    status = plan.metadata.get("Status") if plan else None
-                    project_context = self._pruning_service.prune(
-                        project_context, current_status=status
-                    )
+            if is_session and plan_path and project_context is None:
+                project_context = self._gather_fallback_context(plan, plan_path)
 
             self._harvest_context(
                 is_session=is_session,
@@ -433,6 +385,61 @@ class SessionOrchestrator(IRunPlanUseCase):
         )
         return user_reply is not None and bool(user_reply.strip())
 
+    def _gather_fallback_context(self, plan: Plan, plan_path: str) -> Any:
+        """Gathers context for a session turn that arrived without one.
+
+        Fallback-only path: NEVER hit when `project_context` is provided
+        (the Wiring threads the planning-gathered context through the
+        lifecycle funnel). This remains the single gather for turns that
+        enter execute() without a context (PENDING_PLAN resume / replan
+        path).
+        """
+        context_files = self._session_service.resolve_context_paths(plan_path)
+        agent_name = (
+            plan.metadata.get("Agent")
+            or plan.metadata.get("agent")
+            or (
+                self._lifecycle_manager.get_agent_name(plan_path)
+                if hasattr(self._lifecycle_manager, "get_agent_name")
+                else "Unknown"
+            )
+        )
+        total_window = self._llm_client.get_context_window()
+
+        cache_dir = str(Path(plan_path).parent.parent)
+        # Compute system prompt token count BEFORE context construction so the
+        # ProjectContext DTO is born with correct data (no post-hoc patching needed).
+        system_prompt = self._prompt_manager.fetch_system_prompt(
+            agent_name, Path(plan_path).parent
+        )
+        model = str(self._config_service.get_setting("llm.model") or "")
+        try:
+            system_token_count = self._llm_client.get_text_token_count(
+                system_prompt, model=model
+            )
+        except Exception:
+            system_token_count = 0
+
+        project_context = self._context_service.get_context(
+            context_files=context_files,
+            agent_name=agent_name,
+            total_window=total_window,
+            cache_dir=cache_dir,
+            system_prompt_tokens=system_token_count,
+        )
+
+        if is_dataclass(project_context) and agent_name != project_context.agent_name:
+            project_context = replace(
+                cast(Any, project_context),
+                agent_name=agent_name,
+            )
+        if self._pruning_service:
+            status = plan.metadata.get("Status") if plan else None
+            project_context = self._pruning_service.prune(
+                project_context, current_status=status
+            )
+        return project_context
+
     def _harvest_context(
         self,
         is_session: bool,
@@ -454,7 +461,6 @@ class SessionOrchestrator(IRunPlanUseCase):
         self, report: ExecutionReport, plan: Optional[Plan]
     ) -> ExecutionReport:
         """Handles user interaction and metadata updates when a session is aborted."""
-        from dataclasses import replace
         from teddy_executor.core.domain.models import RunStatus
 
         if report.run_summary.status != RunStatus.ABORTED:
