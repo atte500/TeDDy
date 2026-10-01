@@ -100,7 +100,7 @@ Plan Audit findings (Orientation, pre-implementation):
 - Deliverable 7 (interrupt phases in `ExecutionOrchestrator`) requires Constructor Injection of the `InterruptGuard`; `ExecutionOrchestrator(` has 7 construction sites (container + harness + 5 test files), so its Orientation MUST re-partition into Seam (inject guard + container update) → Migration (update construction sites) before wiring.
 
 ## Deliverables
-- [ ] **Contract** - Add `awaiting_reply` flag support to the session meta repository (save/load round-trip) — unit tests.
+- [x] **Contract** - Add `awaiting_reply` flag support to the session meta repository (save/load round-trip) — unit tests.
 - [ ] **Seam** - Expose repository-backed turn-meta load/save on `SessionService` as public wrappers over `ISessionRepository.load_meta`/`save_meta` so core consumers persist meta via Constructor-Injected dependencies without hand-rolled yaml serialization — unit tests.
 - [ ] **Logic** - Suppress turn finalization for pipeline MESSAGE turns in `SessionOrchestrator.execute` (skip `finalize_turn`, persist `awaiting_reply: true` via the SessionService turn-meta API, keep terminal printing, return report) — unit regression tests including the non-pipeline control.
 - [ ] **Contract** - Add `--message/-m` flag to the `resume` CLI command and thread it through `handle_resume_session` / `_orchestrate_session_loop` into the orchestrator resume chain — unit tests.
@@ -112,7 +112,8 @@ Plan Audit findings (Orientation, pre-implementation):
 - [ ] **Wiring** - Acceptance test: end-to-end pipeline MESSAGE turn suppression and `resume -m` flows via the CLI test driver (final behavioral gate for the Gherkin scenarios).
 
 ## Implementation Notes
-(filled by Developer as deliverables are implemented)
+- **Contract (awaiting_reply meta round-trip):** Delivered as a characterization contract test (`tests/suites/unit/core/services/test_session_repository_meta_contract.py`) with ZERO production changes. Audit finding confirmed empirically: `SessionRepository.save_meta`/`load_meta` are already generic yaml dict round-trips that fully satisfy the `awaiting_reply` semantics — a boolean flag survives save→load (`yaml.dump` → `yaml.safe_load`), and an absent flag reads falsy via `meta.get("awaiting_reply")`. The asymmetric signatures are pinned by the tests: `load_meta(turn_dir)` appends `/meta.yaml` internally, while `save_meta(path, data)` takes the full file path. First-run Green (3 passed: 2 parametrized round-trip cases + absent-flag case) is the intended outcome for a characterization deliverable; any failure would have exposed a genuine contract defect (e.g., `scrub_dict_for_serialization` mangling booleans) requiring investigation before downstream work.
+- **Test double decision:** No in-memory `IFileSystemManager` fake exists in `tests/harness/setup/`, so a minimal dict-backed fake was defined locally in the test file, Constructor-Injected into `SessionRepository` (anti-mock poisoning: no bare MagicMock). This is the FIRST instance of an in-memory filesystem fake; per rule-of-three, extract it to the harness when a third consumer appears (consistent with the existing harness-fake boilerplate debt framing in PROJECT.md).
 
 ## Verification
 - [ ] `uv run pytest tests/suites/unit/core/services/test_pipeline_message_break.py tests/suites/unit/core/services/test_session_lifecycle_manager.py tests/suites/unit/core/utils/test_interrupt_guard.py` — all green.
