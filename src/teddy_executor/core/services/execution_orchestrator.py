@@ -18,6 +18,10 @@ from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPor
 
 logger = logging.getLogger(__name__)
 
+# Two-phase Ctrl+C drain reason: matches the session-loop boundary's
+# termination notice so the audit trail reads consistently.
+INTERRUPT_REASON = "Interrupted by user (Ctrl+C)."
+
 
 class ExecutionOrchestrator(IRunPlanUseCase):
     def __init__(
@@ -75,6 +79,19 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 # sites keep the exact pre-wiring behavior.
                 stack.enter_context(self._interrupt_guard.enter_executing())
             for action in plan.actions:
+                guard = self._interrupt_guard
+                if guard is not None and guard.interrupted.is_set():
+                    # Two-phase Ctrl+C drain: the signal arrived while the
+                    # previous action was in flight. Every remaining action
+                    # is skipped with the interrupt reason and the loop
+                    # exits normally so the report keeps the full audit
+                    # trail (finalize_turn still runs at the boundary).
+                    action_logs.append(
+                        self._action_executor.handle_skipped_action(
+                            action, INTERRUPT_REASON
+                        )
+                    )
+                    continue
                 action_log, should_halt = self._handle_action_in_loop(
                     action, plan, interactive, halt_execution, pipeline
                 )
