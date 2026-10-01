@@ -39,3 +39,15 @@ def test_write_file_multiline_content_has_no_platform_translation(tmp_path):
     adapter.write_file("multi.context", content)
 
     assert (tmp_path / "multi.context").read_bytes() == b"line1\nline2\nline3\n"
+
+
+def test_open_file_for_append_emits_lf_verbatim_bytes(tmp_path):
+    """Appended content is written verbatim (LF) on every platform."""
+    adapter = _make_adapter(tmp_path)
+
+    with adapter.open_file_for_append("session.log") as f:
+        f.write("entry1\n")
+    with adapter.open_file_for_append("session.log") as f:
+        f.write("entry2\n")
+
+    assert (tmp_path / "session.log").read_bytes() == b"entry1\nentry2\n"

@@ -24,7 +24,9 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
 
 
 @pytest.mark.anyio
-@pytest.mark.skipif(sys.platform == "win32", reason="Windows does not use app.suspend()")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Windows does not use app.suspend()"
+)
 async def test_flush_called_after_suspend_exit():
     """Verify that _flush_stdin() is called after the app.suspend() context exits.
     Skipped on Windows: Windows CLI editors use synchronous subprocess.run without app.suspend()."""
@@ -82,7 +84,9 @@ async def test_flush_called_after_suspend_exit():
 
 
 @pytest.mark.anyio
-@pytest.mark.skipif(sys.platform == "win32", reason="Windows does not use app.suspend()")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Windows does not use app.suspend()"
+)
 async def test_flush_called_after_suspend_exit_with_exception():
     """If an exception occurs inside suspend, ensure flush is NOT called (no false positive).
     Skipped on Windows: Windows CLI editors use synchronous subprocess.run without app.suspend()."""

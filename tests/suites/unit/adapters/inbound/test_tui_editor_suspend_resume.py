@@ -223,8 +223,10 @@ class TestLaunchEditor:
                 os.environ["TEDDY_TEST_MOCK_EDITOR_OUTPUT"] = mock_out
 
     @pytest.mark.anyio
-    @pytest.mark.skipif(sys.platform == "win32",
-                        reason="Windows CLI editors use synchronous subprocess.run without app.suspend()")
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="Windows CLI editors use synchronous subprocess.run without app.suspend()",
+    )
     async def test_cli_editor_triggers_suspend(self):
         """For a CLI editor (vim), app.suspend() must be called.
         Skipped on Windows: Windows CLI editors use subprocess.run(creationflags=CREATE_NO_WINDOW) without app.suspend()."""

@@ -190,7 +190,9 @@ def write_update_cache(cache_path: Path, latest_version: str) -> None:
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = cache_path.with_suffix(".tmp")
     try:
-        tmp_path.write_text(json.dumps(cache_data, indent=2), encoding="utf-8")
+        tmp_path.write_text(
+            json.dumps(cache_data, indent=2), encoding="utf-8", newline=""
+        )
         tmp_path.rename(cache_path)
     except OSError as e:
         import logging

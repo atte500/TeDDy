@@ -178,10 +178,14 @@ class LocalFileSystemAdapter(IFileSystemManager):
         """
         Opens a file for appending, creating parent directories if needed.
         Returns a TextIO file-like object for writing.
+
+        Newline-deterministic: ``newline=""`` disables platform newline
+        translation, so appended content is emitted verbatim (LF) on every
+        OS, matching the write_file contract.
         """
         file_path = self._resolve_path(path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        return open(file_path, "a", encoding="utf-8")
+        return open(file_path, "a", encoding="utf-8", newline="")
 
     def read_files_in_vault(self, paths: list[str]) -> dict[str, str | None]:
         """

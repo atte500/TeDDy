@@ -27,7 +27,9 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
 
 
 @pytest.mark.anyio
-@pytest.mark.skipif(sys.platform == "win32", reason="Windows does not use app.suspend()")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Windows does not use app.suspend()"
+)
 async def test_restoration_functions_called_inside_suspend():
     """Verify that _restore_foreground_process_group and
     _restore_terminal_cooked_mode are called INSIDE the suspend block,

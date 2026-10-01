@@ -132,7 +132,7 @@ class MarkdownPlanParser(IPlanParser):
                 except Exception:
                     current_disk = None
                 if current_disk is not None and current_disk.rstrip() != clean_content:
-                    path_obj.write_text(clean_content, encoding="utf-8")
+                    path_obj.write_text(clean_content, encoding="utf-8", newline="")
 
             return plan
         except InvalidPlanError as e:

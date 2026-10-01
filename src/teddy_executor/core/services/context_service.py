@@ -444,7 +444,9 @@ class ContextService(IGetContextUseCase):
         cache_dir_path.mkdir(parents=True, exist_ok=True)
         target = cache_dir_path / self.CACHE_FILENAME
         tmp = cache_dir_path / f"{self.CACHE_FILENAME}.tmp"
-        tmp.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
+        tmp.write_text(
+            json.dumps(cache, ensure_ascii=False), encoding="utf-8", newline=""
+        )
         tmp.replace(target)
 
     def _format_session_history(
