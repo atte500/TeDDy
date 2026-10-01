@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from teddy_executor.core.domain.models import ExecutionReport
 from teddy_executor.core.ports.outbound.session_manager import (
@@ -51,6 +51,12 @@ class DummyManager:
 
     def get_cumulative_cost(self, session_name: str) -> float:
         return 0.0
+
+    def load_turn_meta(self, turn_dir: str) -> dict[str, Any]:
+        return {}
+
+    def save_turn_meta(self, turn_dir: str, meta: dict[str, Any]) -> None:
+        return None
 
 
 def test_session_manager_contract_accepts_new_parameters():

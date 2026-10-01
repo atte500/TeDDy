@@ -293,6 +293,9 @@ def _orchestrate_session_loop(
             pipeline=pipeline,
             message=message,
         )
+        # The injected reply is consumed by the first resume; a stale
+        # message must NOT re-plan later COMPLETE_TURNs.
+        message = None
         if report is None:
             break
 

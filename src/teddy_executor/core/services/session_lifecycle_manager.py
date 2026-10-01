@@ -59,6 +59,18 @@ class SessionLifecycleManager:
         state, turn_path = self._session_service.get_session_state(session_name)
 
         if state == SessionState.PENDING_PLAN:
+            turn_meta = self._session_service.load_turn_meta(turn_path)
+            if turn_meta.get("awaiting_reply"):
+                return self._consume_awaiting_reply(
+                    turn_path,
+                    turn_meta,
+                    session_name,
+                    orchestrator,
+                    interactive,
+                    project_context=project_context,
+                    pipeline=pipeline,
+                    message=message,
+                )
             plan_path = f"{turn_path}/plan.md"
             report = orchestrator.execute(
                 plan_path=plan_path,
@@ -86,9 +98,60 @@ class SessionLifecycleManager:
                 orchestrator,
                 interactive,
                 project_context=project_context,
+                message=message,
             )
 
         return (session_name, None)
+
+    def _consume_awaiting_reply(
+        self,
+        turn_path: str,
+        turn_meta: dict[str, Any],
+        session_name: str,
+        orchestrator: IRunPlanUseCase,
+        interactive: bool,
+        project_context: Optional[Any] = None,
+        pipeline: bool = False,
+        message: Optional[str] = None,
+    ) -> tuple[str, Optional[ExecutionReport]]:
+        """Consumes an awaiting-reply turn without re-executing its plan.
+
+        A pipeline MESSAGE turn stops before finalization (plan.md present,
+        no report.md, awaiting_reply flagged). The user's reply — injected
+        via `resume -m` or prompted interactively (mirroring the abort
+        flow) — drives the next turn's planning; the awaiting_reply flag is
+        cleared on consumption via load-modify-save.
+        """
+        reply = message
+        if not reply and interactive:
+            reply = self._user_interactor.ask_question(
+                "The agent is awaiting your reply. How do you want to proceed?"
+            )
+            if not reply:
+                # Empty reply terminates the session (abort-flow idiom);
+                # the awaiting state is preserved (flag NOT cleared).
+                return (session_name, None)
+        if not reply:
+            self._user_interactor.display_message(
+                "This session is awaiting your reply. Re-run interactively "
+                "or inject one with: teddy resume -m '<your reply>'"
+            )
+            return (session_name, None)
+        consumed_meta = {
+            key: value for key, value in turn_meta.items() if key != "awaiting_reply"
+        }
+        self._session_service.save_turn_meta(turn_path, consumed_meta)
+        next_turn_dir = self._session_service.transition_to_next_turn(
+            plan_path=f"{turn_path}/plan.md"
+        )
+        return self._handle_planning_and_execution(
+            next_turn_dir,
+            orchestrator,
+            interactive,
+            project_context=project_context,
+            pipeline=pipeline,
+            message=reply,
+        )
 
     def _handle_planning_and_execution(
         self,
@@ -97,8 +160,12 @@ class SessionLifecycleManager:
         interactive: bool,
         project_context: Optional[Any] = None,
         pipeline: bool = False,
+        message: Optional[str] = None,
     ) -> tuple[str, Optional[ExecutionReport]]:
         """Triggers planning for a turn and then executes the resulting plan.
+
+        An injected message (resume -m / prompted reply) is threaded into
+        trigger_new_plan so planning skips the interactive prompt.
 
         Tee is installed before planning to capture all output (turn headers,
         metadata, planning logs) into history.log. The installation is guarded
@@ -139,7 +206,7 @@ class SessionLifecycleManager:
             if Path(turn_dir).name == "01":
                 _print_initial_request(None, True, plan_path=Path(turn_dir).as_posix())
             new_name, gathered_context = self._session_planner.trigger_new_plan(
-                turn_dir
+                turn_dir, message=message
             )
             if not new_name or new_name == "CANCELLED":
                 return (turn_dir, None)

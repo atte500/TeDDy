@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Protocol, runtime_checkable
+from typing import Any, Optional, Protocol, runtime_checkable
 from teddy_executor.core.domain.models import ExecutionReport
 from teddy_executor.core.domain.models.session import SessionOptions
 
@@ -48,6 +48,18 @@ class ISessionManager(Protocol):
     def get_cumulative_cost(self, session_name: str) -> float:
         """
         Retrieves the total cumulative cost for the session from the latest turn's metadata.
+        """
+        ...
+
+    def load_turn_meta(self, turn_dir: str) -> dict[str, Any]:
+        """
+        Loads the turn's meta.yaml as a dictionary (empty dict if absent).
+        """
+        ...
+
+    def save_turn_meta(self, turn_dir: str, meta: dict[str, Any]) -> None:
+        """
+        Persists the turn's meta.yaml dictionary.
         """
         ...
 
