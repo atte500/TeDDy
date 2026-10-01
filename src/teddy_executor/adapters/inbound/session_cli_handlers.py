@@ -1,8 +1,9 @@
 import logging
 import shutil
+import signal
 import subprocess  # nosec B404
 from pathlib import Path
-from typing import Dict, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 import typer
 from punq import Container
@@ -17,6 +18,7 @@ from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+from teddy_executor.core.utils.interrupt_guard import InterruptGuard
 from teddy_executor.core.utils.string import slugify
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.adapters.inbound.cli_helpers import (
@@ -284,49 +286,66 @@ def _orchestrate_session_loop(
         ISessionLoopGuard, initial_turn=initial_turn, initial_cost=initial_cost
     )
 
-    turn_count = 0
-    while True:
-        turn_count += 1
-        session_name, report = orchestrator.resume(
-            session_name=session_name,
-            interactive=interactive,
-            pipeline=pipeline,
-            message=message,
-        )
-        # The injected reply is consumed by the first resume; a stale
-        # message must NOT re-plan later COMPLETE_TURNs.
-        message = None
-        if report is None:
-            break
+    # Two-phase Ctrl+C interrupt (tracer bullet): the container shares ONE
+    # guard instance (punq.Scope.singleton — documented exception: signal
+    # disposition is process-global) between this boundary and the
+    # orchestrator's action-dispatch loop. The handler is installed for the
+    # whole turn loop; the boundary restores the previous disposition on exit.
+    interrupt_guard = container.resolve(InterruptGuard)
+    previous_handler: Any = interrupt_guard.install()
+    try:
+        turn_count = 0
+        while True:
+            turn_count += 1
+            session_name, report = orchestrator.resume(
+                session_name=session_name,
+                interactive=interactive,
+                pipeline=pipeline,
+                message=message,
+            )
+            # The injected reply is consumed by the first resume; a stale
+            # message must NOT re-plan later COMPLETE_TURNs.
+            message = None
+            if report is None:
+                break
 
-        # In session mode, we do NOT exit on validation failure
-        # because the orchestrator triggers an automatic re-plan.
-        handle_report_output(
-            container, report, no_copy, silent=True, exit_on_failure=False
-        )
+            # In session mode, we do NOT exit on validation failure
+            # because the orchestrator triggers an automatic re-plan.
+            handle_report_output(
+                container, report, no_copy, silent=True, exit_on_failure=False
+            )
 
-        cumulative_cost = float(report.metadata.get("cumulative_cost", 0.0))
-        should_continue, guard_reason = loop_guard.should_continue(
-            turn_count, cumulative_cost, interactive
-        )
-        if not should_continue:
-            reason = guard_reason or "YOLO guardrail limit reached."
-            lines = reason.lstrip("\n").split("\n", 1)
-            typer.secho("")
-            typer.secho(lines[0], fg=typer.colors.RED)
-            if len(lines) > 1:
-                typer.secho(lines[1])
-            break
+            cumulative_cost = float(report.metadata.get("cumulative_cost", 0.0))
+            should_continue, guard_reason = loop_guard.should_continue(
+                turn_count, cumulative_cost, interactive
+            )
+            if not should_continue:
+                reason = guard_reason or "YOLO guardrail limit reached."
+                lines = reason.lstrip("\n").split("\n", 1)
+                typer.secho("")
+                typer.secho(lines[0], fg=typer.colors.RED)
+                if len(lines) > 1:
+                    typer.secho(lines[1])
+                break
 
-        # Pipeline mode: exit cleanly after the first ## Message
-        if pipeline and report.action_logs:
-            for log_entry in report.action_logs:
-                action_type = getattr(log_entry, "action_type", None) or ""
-                if action_type.upper() == "MESSAGE":
-                    break  # break inner for
-            else:
-                continue  # no MESSAGE found, continue outer loop
-            break  # MESSAGE found, exit session loop
+            # Pipeline mode: exit cleanly after the first ## Message
+            if pipeline and report.action_logs:
+                for log_entry in report.action_logs:
+                    action_type = getattr(log_entry, "action_type", None) or ""
+                    if action_type.upper() == "MESSAGE":
+                        break  # break inner for
+                else:
+                    continue  # no MESSAGE found, continue outer loop
+                break  # MESSAGE found, exit session loop
+    except KeyboardInterrupt:
+        # Immediate-exit semantics (Task Brief): Ctrl+C while nothing is in
+        # flight (prompts, planning) terminates the session with a notice —
+        # no report is generated and nothing is mutated.
+        typer.secho("Interrupted by user (Ctrl+C).", fg=typer.colors.YELLOW)
+    finally:
+        # Caller-owned restoration contract: restore the SIGINT disposition
+        # that preceded the guard's install() when the turn loop ends.
+        signal.signal(signal.SIGINT, previous_handler)
 
 
 def _display_update_notification(cache_path: Path) -> None:

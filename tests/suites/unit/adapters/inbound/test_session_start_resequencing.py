@@ -1,3 +1,4 @@
+import time
 from unittest.mock import Mock, create_autospec
 from punq import Container
 from teddy_executor.adapters.inbound.session_cli_handlers import handle_new_session
@@ -31,6 +32,18 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
     container.register(ILlmClient, instance=mock_llm_client)
     container.register(IConfigService, instance=mock_config_service)
     container.register(ISessionLoopGuard, instance=mock_loop_guard)
+
+    # The wired session loop resolves InterruptGuard at the boundary —
+    # register a real guard (dedicated config double returning the 2.0
+    # grace-window default; the shared mock_config_service is unconfigured).
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+
+    guard_config = Mock(spec=IConfigService)
+    guard_config.get_setting.return_value = 2.0
+    container.register(
+        InterruptGuard,
+        instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
+    )
 
     # Default: valid config
     mock_llm_client.validate_config.return_value = []
@@ -97,6 +110,18 @@ def test_handle_new_session_prompts_even_when_non_interactive():
     container.register(ILlmClient, instance=mock_llm_client)
     container.register(IConfigService, instance=mock_config_service)
     container.register(ISessionLoopGuard, instance=mock_loop_guard)
+
+    # The wired session loop resolves InterruptGuard at the boundary —
+    # register a real guard (dedicated config double returning the 2.0
+    # grace-window default; the shared mock_config_service is unconfigured).
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+
+    guard_config = Mock(spec=IConfigService)
+    guard_config.get_setting.return_value = 2.0
+    container.register(
+        InterruptGuard,
+        instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
+    )
 
     mock_llm_client.validate_config.return_value = []
     mock_user_interactor.ask_question.return_value = "Do something non-interactive"

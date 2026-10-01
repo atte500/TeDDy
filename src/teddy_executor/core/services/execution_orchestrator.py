@@ -1,4 +1,5 @@
 import logging
+from contextlib import ExitStack
 from datetime import datetime
 
 from typing import Any, Optional
@@ -65,13 +66,21 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
         action_logs = []
         halt_execution = False
-        for action in plan.actions:
-            action_log, should_halt = self._handle_action_in_loop(
-                action, plan, interactive, halt_execution, pipeline
-            )
-            action_logs.append(action_log)
-            if should_halt:
-                halt_execution = True
+        with ExitStack() as stack:
+            if self._interrupt_guard is not None:
+                # EXECUTING phase (two-phase Ctrl+C): a signal during dispatch
+                # sets the guard's drain flag instead of raising, letting the
+                # in-flight action finish; the session-loop boundary owns the
+                # handler lifecycle. Guard-optional: None-guard construction
+                # sites keep the exact pre-wiring behavior.
+                stack.enter_context(self._interrupt_guard.enter_executing())
+            for action in plan.actions:
+                action_log, should_halt = self._handle_action_in_loop(
+                    action, plan, interactive, halt_execution, pipeline
+                )
+                action_logs.append(action_log)
+                if should_halt:
+                    halt_execution = True
         return action_logs
 
     def _handle_action_in_loop(

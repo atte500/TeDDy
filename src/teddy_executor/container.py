@@ -154,13 +154,18 @@ def _register_orchestration_services(container: punq.Container) -> None:
     )
     from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
 
+    # Documented exception to the transient-scope rule (ARCHITECTURE.md DI
+    # Scopes): the InterruptGuard owns the process-global SIGINT disposition,
+    # so the session-loop boundary (session_cli_handlers) and the
+    # OrchestratorPorts factory MUST resolve the SAME instance to share the
+    # WAITING/EXECUTING phase state and the interrupted drain flag.
     container.register(
         InterruptGuard,
         factory=lambda: InterruptGuard(
             config_service=container.resolve(IConfigService),
             monotonic=time.monotonic,
         ),
-        scope=punq.Scope.transient,
+        scope=punq.Scope.singleton,
     )
     container.register(
         OrchestratorPorts,

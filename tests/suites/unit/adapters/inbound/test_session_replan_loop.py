@@ -1,3 +1,5 @@
+import time
+
 from punq import Container
 from datetime import datetime, timezone
 from teddy_executor.core.domain.models.execution_report import (
@@ -50,6 +52,18 @@ def test_handle_new_session_loops_multiple_turns_when_non_interactive():
     container.register(IConfigService, instance=mock_config_service)
     container.register(ISessionLoopGuard, instance=mock_loop_guard)
     container.register(IMarkdownReportFormatter, MockFormatter)
+
+    # The wired session loop resolves InterruptGuard at the boundary —
+    # register a real guard (dedicated config double returning the 2.0
+    # grace-window default; the shared mock_config_service is unconfigured).
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+
+    guard_config = Mock(spec=IConfigService)
+    guard_config.get_setting.return_value = 2.0
+    container.register(
+        InterruptGuard,
+        instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
+    )
 
     mock_llm_client.validate_config.return_value = []
     mock_user_interactor.ask_question.return_value = "Do multiple turns"
@@ -112,6 +126,18 @@ def test_handle_resume_session_loops_multiple_turns_when_non_interactive():
         instance=mock_session_repo,
     )
     mock_config_service.get_setting.return_value = "unknown"
+
+    # The wired session loop resolves InterruptGuard at the boundary —
+    # register a real guard with a dedicated config double (the shared
+    # mock_config_service returns "unknown", which would break float()).
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+
+    guard_config = Mock(spec=IConfigService)
+    guard_config.get_setting.return_value = 2.0
+    container.register(
+        InterruptGuard,
+        instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
+    )
 
     mock_llm_client.validate_config.return_value = []
     mock_session_manager.resolve_session_from_path.return_value = "my-session"
@@ -184,6 +210,16 @@ def test_termination_message_printed_when_guard_stops(capsys):
     container.register(ISessionLoopGuard, instance=mock_loop_guard)
     container.register(IMarkdownReportFormatter, MockFormatter)
     container.register(IUserInteractor, Mock(spec=IUserInteractor))
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+
+    from teddy_executor.core.ports.outbound.config_service import IConfigService as _ICS
+
+    guard_config = Mock(spec=_ICS)
+    guard_config.get_setting.return_value = 2.0
+    container.register(
+        InterruptGuard,
+        instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
+    )
 
     # Guard returns (False, reason) on first check — stops immediately
     mock_loop_guard.should_continue.return_value = (
@@ -237,6 +273,16 @@ def test_guard_reason_split_with_leading_newline(capsys):
     container.register(ISessionLoopGuard, instance=mock_loop_guard)
     container.register(IMarkdownReportFormatter, MockFormatter)
     container.register(IUserInteractor, Mock(spec=IUserInteractor))
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+
+    from teddy_executor.core.ports.outbound.config_service import IConfigService as _ICS
+
+    guard_config = Mock(spec=_ICS)
+    guard_config.get_setting.return_value = 2.0
+    container.register(
+        InterruptGuard,
+        instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
+    )
 
     # Guard returns a reason with leading newline + two sentences
     mock_loop_guard.should_continue.return_value = (
