@@ -1,7 +1,11 @@
+from pathlib import Path
 from typing import Any
+
 from teddy_executor.adapters.outbound.openrouter_hydrator import (
     OpenRouterMetadataHydrator,
 )
+from teddy_executor.core.ports.outbound import IConfigService
+from tests.harness.setup.mocking import POSIXPathMock
 
 
 def test_hydrator_resolves_exact_match(openrouter_mock: Any):
@@ -62,6 +66,46 @@ def test_hydrator_handles_api_failure(httpserver: Any):
 
     # Assert
     assert metadata is None
+
+
+class TestConstructorInjectionSeam:
+    """Seam: optional cache dependencies enter via Constructor Injection.
+
+    Zero-arg construction must preserve the legacy behavior exactly
+    (no persistent cache, no config dependency). The factory in
+    registries/infrastructure.py passes the real values. The persistent
+    cache BEHAVIOR is driven out by the Logic deliverable; this seam
+    only establishes the injection surface.
+    """
+
+    def test_cache_path_constant_matches_spec(self):
+        assert OpenRouterMetadataHydrator.CACHE_PATH == Path(
+            ".teddy/.model_registry_cache.json"
+        )
+
+    def test_zero_arg_construction_defaults_cache_path_to_none(self):
+        hydrator = OpenRouterMetadataHydrator()
+
+        assert hydrator.cache_path is None
+
+    def test_zero_arg_construction_defaults_config_service_to_none(self):
+        hydrator = OpenRouterMetadataHydrator()
+
+        assert hydrator.config_service is None
+
+    def test_injected_cache_path_is_stored_verbatim(self):
+        custom_path = Path("custom/.model_registry_cache.json")
+
+        hydrator = OpenRouterMetadataHydrator(cache_path=custom_path)
+
+        assert hydrator.cache_path is custom_path
+
+    def test_injected_config_service_is_stored_verbatim(self):
+        config_double: Any = POSIXPathMock(spec=IConfigService)
+
+        hydrator = OpenRouterMetadataHydrator(config_service=config_double)
+
+        assert hydrator.config_service is config_double
 
 
 def test_hydrator_handles_string_typed_pricing(httpserver: Any):

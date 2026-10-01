@@ -121,7 +121,10 @@ def register_infrastructure(container: punq.Container) -> None:
     )
     container.register(
         IOpenRouterHydrator,
-        factory=lambda: OpenRouterMetadataHydrator(),
+        factory=lambda: OpenRouterMetadataHydrator(
+            cache_path=OpenRouterMetadataHydrator.CACHE_PATH,
+            config_service=container.resolve(IConfigService),
+        ),
         scope=punq.Scope.singleton,
     )
     container.register(

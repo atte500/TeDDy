@@ -22,6 +22,22 @@ def test_litellm_adapter_is_wired_with_hydrator(container):
     assert isinstance(llm_client._hydrator, OpenRouterMetadataHydrator)
 
 
+def test_hydrator_is_wired_with_persistent_cache_dependencies(container):
+    """
+    Ensures the factory injects the REAL cache dependencies into the
+    container-resolved hydrator (Constructor Injection at the single
+    construction site in registries/infrastructure.py).
+    """
+    # Act
+    llm_client = container.resolve(ILlmClient)
+    hydrator = llm_client._hydrator
+
+    # Assert
+    assert isinstance(hydrator, OpenRouterMetadataHydrator)
+    assert hydrator.cache_path == OpenRouterMetadataHydrator.CACHE_PATH
+    assert hydrator.config_service is not None
+
+
 def test_validation_then_retry_wiring(container, monkeypatch):
     """
     Integration test for the full validation-then-retry flow:

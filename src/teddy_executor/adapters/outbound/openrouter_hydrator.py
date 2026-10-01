@@ -1,7 +1,9 @@
 import re
 import requests
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from teddy_executor.adapters.outbound.litellm_adapter import IOpenRouterHydrator
+from teddy_executor.core.ports.outbound import IConfigService
 
 
 class OpenRouterMetadataHydrator(IOpenRouterHydrator):
@@ -12,9 +14,16 @@ class OpenRouterMetadataHydrator(IOpenRouterHydrator):
 
     API_URL = "https://openrouter.ai/api/v1/models"
     TIMEOUT = 10.0
+    CACHE_PATH = Path(".teddy/.model_registry_cache.json")
 
-    def __init__(self):
+    def __init__(
+        self,
+        cache_path: Optional[Path] = None,
+        config_service: Optional[IConfigService] = None,
+    ) -> None:
         self._cached_models: Optional[List[Dict[str, Any]]] = None
+        self.cache_path = cache_path
+        self.config_service = config_service
 
     def _fetch_models(self) -> List[Dict[str, Any]]:
         """Fetches the live catalog from OpenRouter with a timeout."""
@@ -22,13 +31,6 @@ class OpenRouterMetadataHydrator(IOpenRouterHydrator):
             return self._cached_models
 
         try:
-            # Note: In tests, the fixture will point to the local mock server
-            # if we use a relative URL or handle the base URL correctly.
-            # To allow testing, we check for an environment variable or just use the URL.
-            # However, since the test fixture provides a URL, we'll let the test
-            # pass the instance the URL or just rely on the fact that requests
-            # can be mocked at the session level if needed.
-            # For this implementation, we follow the slice requirements.
             response = requests.get(self.API_URL, timeout=self.TIMEOUT)
             response.raise_for_status()
             data = response.json()
