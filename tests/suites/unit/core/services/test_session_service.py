@@ -827,3 +827,59 @@ def test_create_session_collision_leaves_first_session_untouched(env):
         mock_fs.find_call_by_path("write_file", f"{base_root}/pathfinder.xml")
     with pytest.raises(AssertionError):
         mock_fs.find_call_by_path("write_file", f"{base_root}/01/meta.yaml")
+
+
+def test_claim_session_root_retries_via_continuation_name_when_digit_suffix_occupied(
+    env,
+):
+    """An occupied digit-suffixed base retries via the continuation chain (-N+1), not a fresh -2 suffix."""
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    # Occupy the digit-suffixed base; every other candidate (including -3) is free.
+    mock_fs.create_directory_exclusive.side_effect = lambda p: (
+        not p.endswith("20260417_120000-feat-x-2")
+    )
+
+    # Act
+    result = service._claim_session_root("20260417_120000-feat-x-2")
+
+    # Assert: the chain walked base -> -3 via the continuation convention
+    assert result == ".teddy/sessions/20260417_120000-feat-x-3"
+    mock_fs.find_call_by_path(
+        "create_directory_exclusive", ".teddy/sessions/20260417_120000-feat-x-2"
+    )
+    mock_fs.find_call_by_path(
+        "create_directory_exclusive", ".teddy/sessions/20260417_120000-feat-x-3"
+    )
+    # The legacy fresh-suffix candidate (base-2-2) must never fire
+    with pytest.raises(AssertionError):
+        mock_fs.find_call_by_path(
+            "create_directory_exclusive", ".teddy/sessions/20260417_120000-feat-x-2-2"
+        )
+
+
+def test_claim_session_root_continuation_chain_walks_multiple_hops(env):
+    """The retry chain keeps incrementing through the continuation convention until a free root is claimed."""
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    # First two candidates occupied, third wins (ordinal outcomes so the
+    # loop terminates under both the legacy and generalized behaviors).
+    outcomes = [False, False, True]
+    mock_fs.create_directory_exclusive.side_effect = lambda p: outcomes.pop(0)
+
+    # Act
+    result = service._claim_session_root("20260417_120000-foo-2")
+
+    # Assert: the chain walked -2 -> -3 -> -4
+    assert result == ".teddy/sessions/20260417_120000-foo-4"
+    assert mock_fs.create_directory_exclusive.call_count == 3
+    mock_fs.find_call_by_path(
+        "create_directory_exclusive", ".teddy/sessions/20260417_120000-foo-3"
+    )
+    mock_fs.find_call_by_path(
+        "create_directory_exclusive", ".teddy/sessions/20260417_120000-foo-4"
+    )

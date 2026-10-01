@@ -495,8 +495,9 @@ class SessionService(ISessionManager):
         """
         Atomically claims an unoccupied session root via exclusive creation.
 
-        Attempts candidates in order: base_name, base_name-2, base_name-3, ...
-        (same trailing-suffix convention as _calculate_continuation_name).
+        Attempts the base name first; retries follow the continuation-name
+        convention via _calculate_continuation_name (an occupied {name}-N
+        candidate retries {name}-N+1; suffix-free bases yield -2, -3, ...).
         Each claim is a single atomic OS operation, so exactly one process can
         win any race for a given candidate.
 
@@ -505,13 +506,11 @@ class SessionService(ISessionManager):
             first candidate whose exclusive creation succeeded.
         """
         candidate = base_name
-        suffix = 2
         while True:
             root = f".teddy/sessions/{candidate}"
             if self._file_system_manager.create_directory_exclusive(root):
                 return root
-            candidate = f"{base_name}-{suffix}"
-            suffix += 1
+            candidate = self._calculate_continuation_name(candidate)
 
     def _clone_session_artifacts(
         self,
