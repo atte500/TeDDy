@@ -196,6 +196,9 @@ class TestEnvironment(RealAdapterMixin):
         mock.get_context_paths.return_value = {}
         mock.read_files_in_vault.return_value = {}
         mock.read_file.return_value = ""
+        # Happy-path default: exclusive creation succeeds (claim won).
+        # Collision tests override this explicitly via side_effect.
+        mock.create_directory_exclusive.return_value = True
 
     def _apply_reviewer_defaults(self, mock: Any) -> None:
         mock.review.side_effect = lambda p, **kwargs: p

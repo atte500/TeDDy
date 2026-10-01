@@ -33,6 +33,9 @@ def mock_fs(container) -> Any:
     mock.read_files_in_vault.return_value = {}
     mock.is_dir.return_value = False
     mock.list_directory_recursive.return_value = []
+    # Happy-path default: exclusive creation succeeds (claim won).
+    # Collision tests override this explicitly via side_effect.
+    mock.create_directory_exclusive.return_value = True
     return mock
 
 

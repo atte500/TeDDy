@@ -100,3 +100,26 @@ def test_test_environment_mock_port_registers_and_returns_posix_path_mock(monkey
     # 3. Assert: It is registered in the container
     resolved = env.get_service(IShellExecutor)
     assert resolved == mock
+
+
+def test_mock_fs_fixture_defaults_create_directory_exclusive_to_true(mock_fs):
+    """
+    Harness: the mock_fs fixture MUST default create_directory_exclusive to
+    the happy path (True = claim succeeds). Collision tests override the
+    default explicitly via side_effect.
+    """
+    assert mock_fs.create_directory_exclusive.return_value is True
+
+
+def test_apply_fs_defaults_sets_create_directory_exclusive_to_true(monkeypatch):
+    """
+    Harness: TestEnvironment._apply_fs_defaults MUST default
+    create_directory_exclusive to the happy path (True = claim succeeds).
+    """
+    env = TestEnvironment(monkeypatch)
+    env.setup()
+    try:
+        mock = env.get_mock_filesystem()
+        assert mock.create_directory_exclusive.return_value is True
+    finally:
+        env.teardown()
