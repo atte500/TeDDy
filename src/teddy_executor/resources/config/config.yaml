@@ -11,6 +11,13 @@ execution:
   similarity_threshold: 0.95 # 1.00 means exact match required (ignoring relative indentation).
   max_output_lines: 100 # Caps EXECUTE output to the last X lines.
 
+# Two-Phase Ctrl+C Interrupt Settings
+# `grace_window_seconds` is how long a second Ctrl+C during action
+# execution is treated as an escalation (immediate force-kill) instead of
+# a new graceful-drain request.
+interrupt:
+  grace_window_seconds: 2.0
+
 # File Read Settings
 read:
   max_lines: 1000 # Caps READ action output to the first X lines.
