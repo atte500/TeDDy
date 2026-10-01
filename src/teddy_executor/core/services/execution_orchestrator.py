@@ -30,6 +30,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         self._report_assembler = ports.report_assembler
         self._user_interactor = ports.user_interactor
         self._plan_reviewer = ports.plan_reviewer
+        self._interrupt_guard = ports.interrupt_guard
 
     def _perform_interactive_review(
         self,

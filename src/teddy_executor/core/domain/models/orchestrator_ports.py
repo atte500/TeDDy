@@ -11,6 +11,7 @@ if TYPE_CHECKING:
         IExecutionReportAssembler,
     )
     from teddy_executor.core.services.action_executor import ActionExecutor
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
 
 
 @dataclass(frozen=True)
@@ -24,3 +25,4 @@ class OrchestratorPorts:
     report_assembler: IExecutionReportAssembler
     user_interactor: IUserInteractor
     plan_reviewer: Optional[IPlanReviewer] = None
+    interrupt_guard: Optional[InterruptGuard] = None

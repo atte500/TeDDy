@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 import punq
 
 
@@ -140,6 +142,7 @@ def _register_orchestration_services(container: punq.Container) -> None:
     from teddy_executor.core.services.execution_report_assembler import (
         ExecutionReportAssembler,
     )
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
     from teddy_executor.core.services.init_service import InitService
     from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
     from teddy_executor.core.services.prompt_manager import PromptManager
@@ -152,6 +155,14 @@ def _register_orchestration_services(container: punq.Container) -> None:
     from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
 
     container.register(
+        InterruptGuard,
+        factory=lambda: InterruptGuard(
+            config_service=container.resolve(IConfigService),
+            monotonic=time.monotonic,
+        ),
+        scope=punq.Scope.transient,
+    )
+    container.register(
         OrchestratorPorts,
         factory=lambda: OrchestratorPorts(
             plan_parser=container.resolve(IPlanParser),
@@ -161,6 +172,7 @@ def _register_orchestration_services(container: punq.Container) -> None:
             report_assembler=container.resolve(IExecutionReportAssembler),
             user_interactor=container.resolve(IUserInteractor),
             plan_reviewer=container.resolve(IPlanReviewer),
+            interrupt_guard=container.resolve(InterruptGuard),
         ),
         scope=punq.Scope.transient,
     )
