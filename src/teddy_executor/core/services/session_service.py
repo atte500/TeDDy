@@ -145,19 +145,11 @@ class SessionService(ISessionManager):
             rel_path = str(
                 self.to_root_relative(Path(session_root), "initial_request.md")
             )
-            if rel_path not in clean_lines:
-                clean_lines.append(rel_path)
+            clean_lines.append(rel_path)
 
-        # Deduplicate preserving insertion order
-        seen = set()
-        deduped = []
-        for line in clean_lines:
-            if line not in seen:
-                seen.add(line)
-                deduped.append(line)
-
-        clean_context = "\n".join(deduped)
-        return clean_context
+        # Deduplicate preserving insertion order (dict preserves insertion order)
+        deduped = list(dict.fromkeys(clean_lines))
+        return "\n".join(deduped)
 
     def _initialize_meta_data(self, options: SessionOptions) -> Dict[str, Any]:
         """Creates the initial metadata dictionary."""
@@ -499,6 +491,28 @@ class SessionService(ISessionManager):
             base = current_name[: suffix_match.start()]
             return f"{base}-{count + 1}"
         return f"{current_name}-2"
+
+    def _claim_session_root(self, base_name: str) -> str:
+        """
+        Atomically claims an unoccupied session root via exclusive creation.
+
+        Attempts candidates in order: base_name, base_name-2, base_name-3, ...
+        (same trailing-suffix convention as _calculate_continuation_name).
+        Each claim is a single atomic OS operation, so exactly one process can
+        win any race for a given candidate.
+
+        Returns:
+            The claimed root path (".teddy/sessions/{candidate}") for the
+            first candidate whose exclusive creation succeeded.
+        """
+        candidate = base_name
+        suffix = 2
+        while True:
+            root = f".teddy/sessions/{candidate}"
+            if self._file_system_manager.create_directory_exclusive(root):
+                return root
+            candidate = f"{base_name}-{suffix}"
+            suffix += 1
 
     def _clone_session_artifacts(
         self,

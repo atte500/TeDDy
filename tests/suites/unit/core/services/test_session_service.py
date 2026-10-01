@@ -694,3 +694,58 @@ def test_create_session_does_not_raise_when_prompt_exists(env):
     )
     assert result is not None  # session root returned
     assert session_name in result  # session root contains the session name
+
+
+def test_claim_session_root_claims_base_name_when_free(env):
+    """_claim_session_root claims the base name when the root is free."""
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+    mock_fs.create_directory_exclusive.return_value = True
+
+    # Act
+    result = service._claim_session_root("20260417_120000-feat-x")
+
+    # Assert
+    assert result == ".teddy/sessions/20260417_120000-feat-x"
+    assert mock_fs.create_directory_exclusive.call_count == 1
+    mock_fs.find_call_by_path(
+        "create_directory_exclusive", ".teddy/sessions/20260417_120000-feat-x"
+    )
+
+
+def test_claim_session_root_retries_with_suffix_when_occupied(env):
+    """Occupied base root forces a -2 suffix retry."""
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+    mock_fs.create_directory_exclusive.side_effect = lambda p: {
+        ".teddy/sessions/20260417_120000-feat-x-2": True,
+    }.get(p, False)
+
+    # Act
+    result = service._claim_session_root("20260417_120000-feat-x")
+
+    # Assert
+    assert result == ".teddy/sessions/20260417_120000-feat-x-2"
+    mock_fs.find_call_by_path(
+        "create_directory_exclusive", ".teddy/sessions/20260417_120000-feat-x"
+    )
+    mock_fs.find_call_by_path(
+        "create_directory_exclusive", ".teddy/sessions/20260417_120000-feat-x-2"
+    )
+
+
+def test_claim_session_root_stops_at_first_success(env):
+    """The retry loop stops incrementing as soon as a claim succeeds."""
+    # Arrange
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+    mock_fs.create_directory_exclusive.side_effect = lambda p: p.endswith("-3")
+
+    # Act
+    result = service._claim_session_root("20260417_120000-feat-x")
+
+    # Assert
+    assert result == ".teddy/sessions/20260417_120000-feat-x-3"
+    assert mock_fs.create_directory_exclusive.call_count == 3
