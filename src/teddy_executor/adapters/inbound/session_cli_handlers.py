@@ -438,7 +438,7 @@ def handle_plan_generation(container: Container, message: Optional[str]):
         context_files = detect_session_context()
         cwd = Path.cwd()
 
-        plan_path, _ = planning_service.generate_plan(
+        plan_path, _, _ = planning_service.generate_plan(
             user_message=message, turn_dir=str(cwd), context_files=context_files
         )
         typer.echo(f"Plan generated at: {plan_path}")

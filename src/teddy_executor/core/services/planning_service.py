@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
+from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 
 
@@ -24,7 +25,7 @@ class PlanningService(IPlanningUseCase):
         user_message: Optional[str],
         turn_dir: str,
         context_files: Optional[Dict[str, Sequence[str]]] = None,
-    ) -> tuple[str, float]:
+    ) -> tuple[str, float, ProjectContext]:
         """Generates a new plan.md file."""
         import re
 
@@ -128,7 +129,7 @@ class PlanningService(IPlanningUseCase):
             meta, response, token_count, turn_cost, meta_file_path
         )
 
-        return plan_path, cost_val
+        return plan_path, cost_val, context
 
     def _perform_generation_with_retry(
         self,

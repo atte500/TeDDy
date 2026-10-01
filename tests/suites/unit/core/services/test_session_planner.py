@@ -32,7 +32,7 @@ def test_trigger_new_plan_delegates_to_planning_if_no_message_anywhere(
     # Arrange: No CLI message, no previous report
     turn_dir = "sessions/my-session/01"
     mock_deps["fs"].path_exists.return_value = False
-    mock_deps["planning"].generate_plan.return_value = ("plan.md", 0.0)
+    mock_deps["planning"].generate_plan.return_value = ("plan.md", 0.0, None)
 
     # Act
     planner.trigger_new_plan(turn_dir, message=None)
@@ -59,7 +59,7 @@ def test_trigger_new_plan_delegates_to_planning_if_report_request_section_is_emp
     mock_deps["fs"].read_file.side_effect = lambda p: (
         report_content if p == prev_report_path else "{}"
     )
-    mock_deps["planning"].generate_plan.return_value = ("plan.md", 0.0)
+    mock_deps["planning"].generate_plan.return_value = ("plan.md", 0.0, None)
 
     # Act
     planner.trigger_new_plan(turn_dir, message=None)
@@ -77,7 +77,7 @@ def test_trigger_new_plan_no_longer_displays_telemetry_directly(planner, mock_de
     # Arrange
     turn_dir = "sessions/my-session/01"
     mock_deps["fs"].path_exists.return_value = False
-    mock_deps["planning"].generate_plan.return_value = ("plan.md", 0.05)
+    mock_deps["planning"].generate_plan.return_value = ("plan.md", 0.05, None)
 
     # Act
     planner.trigger_new_plan(turn_dir, message=None)
@@ -103,7 +103,7 @@ def test_trigger_new_plan_passes_none_for_context_files_allowing_service_resolut
     """
     # Arrange
     turn_dir = "sessions/S1/01"
-    mock_deps["planning"].generate_plan.return_value = ("plan.md", 0.0)
+    mock_deps["planning"].generate_plan.return_value = ("plan.md", 0.0, None)
 
     # Act
     planner.trigger_new_plan(turn_dir, message="test")

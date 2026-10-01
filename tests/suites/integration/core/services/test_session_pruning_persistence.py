@@ -65,7 +65,7 @@ def test_pruning_persistence_in_interactive_execution(container, tmp_path):
 
     # Mock Planning
     mock_planning = register_mock(container, IPlanningUseCase)
-    mock_planning.generate_plan.return_value = ("Corrected Plan", 0.0)
+    mock_planning.generate_plan.return_value = ("Corrected Plan", 0.0, None)
     container.register(IPlanningUseCase, instance=mock_planning)
 
     orchestrator = container.resolve(IRunPlanUseCase)
@@ -118,7 +118,7 @@ def test_pruning_persistence_in_replan_loop(container, tmp_path):
 
     # Mock Planning
     mock_planning = register_mock(container, IPlanningUseCase)
-    mock_planning.generate_plan.return_value = ("Corrected Plan", 0.0)
+    mock_planning.generate_plan.return_value = ("Corrected Plan", 0.0, None)
 
     orchestrator = container.resolve(IRunPlanUseCase)
     session_dir, turn_01_dir = setup_session_workspace(tmp_path)
@@ -170,7 +170,7 @@ def test_deduplication_prevents_aggressive_pruning(container, tmp_path):
 
     # Mock Planning
     mock_planning = register_mock(container, IPlanningUseCase)
-    mock_planning.generate_plan.return_value = ("Corrected Plan", 0.0)
+    mock_planning.generate_plan.return_value = ("Corrected Plan", 0.0, None)
 
     orchestrator = container.resolve(IRunPlanUseCase)
     session_dir, turn_01_dir = setup_session_workspace(tmp_path)

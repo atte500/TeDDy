@@ -71,6 +71,38 @@ def test_generate_plan_delegates_to_llm_client(env):
     assert "model" in kwargs  # Now explicitly passed for override support
 
 
+def test_generate_plan_returns_plan_path_cost_and_project_context(env):
+    # Arrange
+    mock_prompt_manager = env.mock_port(IPromptManager)
+    env.mock_port(ILlmClient)
+    mock_context_service = env.mock_port(IGetContextUseCase)
+
+    service = env.get_service(PlanningService)
+
+    mock_prompt_manager.resolve_message.return_value = "test-message"
+    mock_prompt_manager.resolve_agent_metadata.return_value = (
+        "pathfinder",
+        {},
+        "meta.yaml",
+    )
+    mock_prompt_manager.fetch_system_prompt.return_value = "system-prompt"
+    expected_context = ProjectContext(
+        header="H", content="C", scoped_paths={}, git_status=""
+    )
+    mock_context_service.get_context.return_value = expected_context
+
+    # Act
+    result = service.generate_plan(user_message="test", turn_dir="01")
+
+    # Assert: contract returns (plan_path, turn_cost, project_context),
+    # and the context is the EXACT instance produced by get_context
+    # (identity — no copy, no re-gather).
+    plan_path, turn_cost, project_context = result
+    assert plan_path == "01/plan.md"
+    assert project_context is expected_context
+    assert mock_context_service.get_context.call_count == 1
+
+
 def test_generate_plan_writes_standardized_input_md(env):
     # Arrange
     mock_context_service = env.mock_port(IGetContextUseCase)

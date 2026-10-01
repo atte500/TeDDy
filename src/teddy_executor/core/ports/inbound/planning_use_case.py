@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Sequence
 
+from teddy_executor.core.domain.models import ProjectContext
+
 
 class IPlanningUseCase(ABC):
     """
@@ -13,7 +15,7 @@ class IPlanningUseCase(ABC):
         user_message: Optional[str],
         turn_dir: str,
         context_files: Optional[Dict[str, Sequence[str]]] = None,
-    ) -> tuple[str, float]:
+    ) -> tuple[str, float, ProjectContext]:
         """
         Generates a new plan.md file based on context and user message.
 
@@ -25,6 +27,6 @@ class IPlanningUseCase(ABC):
                 from turn_dir.
 
         Returns:
-            The path to the generated plan.md.
+            A tuple of (plan_path, turn_cost, project_context).
         """
         pass

@@ -2,6 +2,7 @@
 
 import pytest
 
+from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.services.session_replanner import SessionReplanner
 
 
@@ -18,8 +19,14 @@ class DummyFileSystemManager:
 class DummyPlanningService:
     """Test double for planning service that does nothing."""
 
-    def generate_plan(self, user_message: str, turn_dir: str) -> None:
-        pass
+    def generate_plan(
+        self, user_message: str, turn_dir: str
+    ) -> tuple[str, float, ProjectContext]:
+        return (
+            "",
+            0.0,
+            ProjectContext(header="", content="", scoped_paths={}, git_status=""),
+        )
 
 
 @pytest.fixture

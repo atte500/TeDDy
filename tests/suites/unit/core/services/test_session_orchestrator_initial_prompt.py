@@ -13,7 +13,7 @@ def mocks():
     )
 
     ps = Mock()
-    ps.generate_plan.return_value = ("path/to/plan.md", 0.0)
+    ps.generate_plan.return_value = ("path/to/plan.md", 0.0, None)
 
     ss = Mock()
     ss.get_session_state.return_value = (SessionState.EMPTY, "session/01")

@@ -31,7 +31,7 @@ class SessionPlanner:
         resolved_message = message
         # We pass it to generate_plan which handles the resolution and hint.
 
-        plan_path, turn_cost = self._planning_service.generate_plan(
+        plan_path, _, _ = self._planning_service.generate_plan(
             user_message=resolved_message,
             turn_dir=turn_dir,
         )

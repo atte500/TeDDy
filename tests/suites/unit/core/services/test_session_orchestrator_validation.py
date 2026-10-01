@@ -50,7 +50,7 @@ def test_execute_triggers_replan_on_validation_failure(  # noqa: PLR0913
         "Turn": [],
     }
     mock_session_manager.transition_to_next_turn.return_value = "02"
-    mock_planning_service.generate_plan.return_value = ("02/plan.md", 0.0)
+    mock_planning_service.generate_plan.return_value = ("02/plan.md", 0.0, None)
 
     plan_path = "01/plan.md"
 

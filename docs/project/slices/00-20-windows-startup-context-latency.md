@@ -95,7 +95,7 @@ Root-cause evidence and full stage-level measurements live in the source Case Fi
 
 ## Deliverables
 
-- [▶] **Contract** - Extend `generate_plan`'s return to `(plan_path, turn_cost, project_context)` in `PlanningService` and the `IPlanningUseCase` port (the `ProjectContext` is already gathered at planning_service.py:73); in the SAME atomic green-to-green transition, mechanically adapt all consumers to the new arity (`SessionPlanner.trigger_new_plan`, `session_cli_handlers.handle_plan_generation`; `SessionReplanner` ignores the return) and update every affected test stub/mock from 2-tuple to 3-tuple — zero behavioral change (the context is not yet consumed).
+- [x] **Contract** - Extend `generate_plan`'s return to `(plan_path, turn_cost, project_context)` in `PlanningService` and the `IPlanningUseCase` port (the `ProjectContext` is already gathered at planning_service.py:73); in the SAME atomic green-to-green transition, mechanically adapt all consumers to the new arity (`SessionPlanner.trigger_new_plan`, `session_cli_handlers.handle_plan_generation`; `SessionReplanner` ignores the return) and update every affected test stub/mock from 2-tuple to 3-tuple — zero behavioral change (the context is not yet consumed).
 - [ ] **Harness** - Add registered test fakes/mocks for hook-shim filesystem state and a fake persistent cache loader (via the designated mock registration helper; no bare mocks).
 - [ ] **Seam** - Inject a cache path/loader into `OpenRouterMetadataHydrator` at the `registries/infrastructure.py` factory (Constructor Injection; corrupt/missing cache = empty cache).
 - [ ] **Wiring** - Thread `project_context` from `generate_plan` through `SessionPlanner.trigger_new_plan` → `SessionLifecycleManager` → `orchestrator.execute`; behavioral test asserting exactly one `get_context` call per turn.
@@ -106,7 +106,16 @@ Root-cause evidence and full stage-level measurements live in the source Case Fi
 
 ## Implementation Notes
 
-*(Filled by the Developer during implementation.)*
+### Contract — `generate_plan` returns `(plan_path, turn_cost, project_context)`
+
+- **Red (unit layer):** Added `test_generate_plan_returns_plan_path_cost_and_project_context` to `tests/suites/unit/core/services/test_planning_service.py`. Asserts the 3-tuple return and that the third element is the EXACT `ProjectContext` instance produced by `IGetContextUseCase.get_context` (identity assertion `is expected_context`, plus `get_context.call_count == 1` to pin the single-gather invariant early). Confirmed failing with `ValueError: not enough values to unpack (expected 3, got 2)` — the exact predicted failure, no incidental setup noise.
+- **Green:** `PlanningService.generate_plan` now returns the already-in-scope `context` local (the gather at planning_service.py:73) as the third element — zero additional gathering. Port `IPlanningUseCase.generate_plan` annotation extended to `tuple[str, float, ProjectContext]` (import + docstring updated) for mypy consistency with the return statement.
+- **Mechanical consumer adaptation (same atomic transition):** `SessionPlanner.trigger_new_plan` and `session_cli_handlers.handle_plan_generation` now unpack `plan_path, _, _` — neither consumer reads `turn_cost` or the context yet; consuming the context is the Wiring deliverable's behavioral change. `SessionReplanner.trigger_replan_turn` discards the return by design — untouched.
+- **Test stub census (9 × 2-tuple → 3-tuple with `None` placeholder):** `test_session_planner.py` ×4, `test_session_pruning_persistence.py` ×3 (integration), `test_session_orchestrator_initial_prompt.py` ×1, `test_session_orchestrator_validation.py` (unit) ×1. The `None` third element is safe because no consumer reads it yet; these placeholders are the seam the Wiring deliverable will replace where consumers begin consuming the context.
+- **Audit resolution:** the integration-layer stub `POSIXPathMock(return_value="Corrected Plan")` (test_session_orchestrator_validation.py:52) flows through `SessionReplanner`, which discards the return — proven to need no adaptation.
+- **Refactor:** aligned the Protocol-style fake `DummyPlanningService` in `test_session_replanner.py` to the real contract (annotation `tuple[str, float, ProjectContext]`, body returns a real `ProjectContext`) — behavior-neutral (the return is discarded) but keeps the fake's type honesty under mypy. Repo-wide sweep for stale `tuple[str, float]` annotations found exactly one other site, `edit_simulator.py:24` — that is EditSimulator's own edit-result contract (content + match score), unrelated to planning; left untouched.
+- **Integration gate:** full unfiltered suite green (1254 passed, 5 skipped); the workspace held exactly this deliverable's 10 files (4 src, 6 test).
+- **Wiring handoff:** the Wiring deliverable threads the real context through `trigger_new_plan` → `SessionLifecycleManager._handle_planning_and_execution` → `orchestrator.execute`; its behavioral gate is exactly one `get_context` call per turn.
 
 ## Verification
 
