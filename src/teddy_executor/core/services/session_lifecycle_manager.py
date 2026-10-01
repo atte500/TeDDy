@@ -137,14 +137,20 @@ class SessionLifecycleManager:
 
             if Path(turn_dir).name == "01":
                 _print_initial_request(None, True, plan_path=Path(turn_dir).as_posix())
-            new_name = self._session_planner.trigger_new_plan(turn_dir)
+            new_name, gathered_context = self._session_planner.trigger_new_plan(
+                turn_dir
+            )
             if not new_name or new_name == "CANCELLED":
                 return (turn_dir, None)
             _, actual_turn_path = self._session_service.get_session_state(new_name)
             report = orchestrator.execute(
                 plan_path=f"{actual_turn_path}/plan.md",
                 interactive=interactive,
-                project_context=project_context,
+                project_context=(
+                    gathered_context
+                    if gathered_context is not None
+                    else project_context
+                ),
                 pipeline=pipeline,
             )
             return (new_name, report)

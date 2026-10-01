@@ -1,4 +1,5 @@
 import pytest
+from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
@@ -114,3 +115,30 @@ def test_trigger_new_plan_passes_none_for_context_files_allowing_service_resolut
     assert kwargs.get("context_files") is None, (
         "SessionPlanner should delegate context resolution to PlanningService"
     )
+
+
+def test_trigger_new_plan_returns_session_name_and_gathered_context(planner, mock_deps):
+    """Wiring Red: trigger_new_plan must return (session_name, gathered_context).
+
+    The context gathered by PlanningService.generate_plan is the single
+    per-turn gather; SessionPlanner must thread it to the caller (the
+    lifecycle funnel) instead of discarding it.
+    """
+    # Arrange
+    turn_dir = "sessions/my-session/01"
+    mock_deps["fs"].path_exists.return_value = False
+    gathered_context = ProjectContext(
+        header="", content="", scoped_paths={}, git_status=""
+    )
+    mock_deps["planning"].generate_plan.return_value = (
+        "plan.md",
+        0.0,
+        gathered_context,
+    )
+
+    # Act
+    session_name, context = planner.trigger_new_plan(turn_dir, message=None)
+
+    # Assert
+    assert session_name == "my-session"
+    assert context is gathered_context

@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
 logger = logging.getLogger(__name__)
@@ -24,20 +25,25 @@ class SessionPlanner:
 
     def trigger_new_plan(
         self, turn_dir: str, message: Optional[str] = None
-    ) -> Optional[str]:
-        """Prompts user and triggers planning. Returns session name on success."""
+    ) -> tuple[str, Optional[ProjectContext]]:
+        """Prompts user and triggers planning.
+
+        Returns (session_name, gathered_context): the context gathered
+        during planning is threaded to the caller (the lifecycle funnel)
+        instead of being discarded.
+        """
         # Note: PlanningService.generate_plan handles tiered message resolution
         # via PromptManager (CLI -> initial_request.md -> Prompt).
         resolved_message = message
         # We pass it to generate_plan which handles the resolution and hint.
 
-        plan_path, _, _ = self._planning_service.generate_plan(
+        plan_path, _, gathered_context = self._planning_service.generate_plan(
             user_message=resolved_message,
             turn_dir=turn_dir,
         )
 
         # Handle planning cancellation/empty input
         if plan_path is None:
-            return "CANCELLED"
+            return "CANCELLED", None
 
-        return Path(turn_dir).parent.name
+        return Path(turn_dir).parent.name, gathered_context

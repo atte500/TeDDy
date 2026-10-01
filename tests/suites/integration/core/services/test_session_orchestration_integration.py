@@ -324,10 +324,9 @@ Testing append mode - first turn.
     history_log = session_dir / "history.log"
     assert history_log.exists(), "history.log should exist after first turn"
 
-    # Read content after first turn
-    content_after_first = history_log.read_text(encoding="utf-8")
-    # Note: first turn may produce zero-length log if no console output;
-    # the important thing is that it exists and grows on the second turn.
+    # The first turn may produce a zero-length history log (no console
+    # output yet); what matters is that the log exists here and grows on
+    # the second turn below — no read is needed after the first turn.
 
     # Set up second turn (turn 02 should have been created by the turn transition)
     turn2_dir = session_dir / "02"
@@ -756,4 +755,93 @@ def test_history_log_contains_planning_output(tmp_path, monkeypatch, env):
     )
     assert "• Session Cost:" in log_content, (
         f"Session Cost metadata line not found in history.log. Content:\n{log_content}"
+    )
+
+
+def test_context_gathered_exactly_once_per_turn(tmp_path, monkeypatch, env):
+    """Wiring Red (behavioral): exactly one get_context call per turn.
+
+    PlanningService.generate_plan is the single gather point; the context
+    it produces must be threaded to orchestrator.execute instead of being
+    re-gathered (the double gather the Wiring eliminates). The drive is
+    the SUCCESS path — one turn planned, validated, and executed — so the
+    accepted replan residual (a second planning gather on validation
+    failure) cannot masquerade as the double gather.
+    """
+    from teddy_executor.core.domain.models import ProjectContext
+    from teddy_executor.core.domain.models.execution_report import RunStatus
+    from teddy_executor.core.ports.inbound.get_context_use_case import (
+        IGetContextUseCase,
+    )
+    from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+
+    # Use the standard mock environment with real filesystem/shell.
+    # Set workspace BEFORE enabling real filesystem to ensure the adapter
+    # uses the correct base path.
+    env.workspace = tmp_path
+    env.with_real_filesystem()
+    env.with_real_shell()
+    monkeypatch.chdir(tmp_path)
+
+    # Provision a VALID plan via the suite's mandated MarkdownPlanBuilder:
+    # hand-written raw Markdown drifts from the validated plan format
+    # (the previous hardcoded shape failed parsing — indented metadata
+    # lines and an EXECUTE block without a shell fence — keeping the
+    # drive on the replan path, where the residual re-gather masks the
+    # double gather). A valid plan drives exactly one turn through
+    # planning AND execution, isolating the double gather.
+    from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
+
+    plan_content = (
+        MarkdownPlanBuilder("Single Gather Turn")
+        .add_execute('echo "single-gather-ok"')
+        .build()
+    )
+    llm_client = env.get_service(ILlmClient)
+    llm_client.get_completion.return_value = make_mock_response(plan_content)
+
+    # Create session directory structure for an EMPTY turn 01.
+    session_name = "test-single-gather"
+    session_dir = tmp_path / ".teddy" / "sessions" / session_name
+    turn_dir = session_dir / "01"
+    turn_dir.mkdir(parents=True)
+
+    # Required files for a session turn (EMPTY state = no plan.md)
+    (session_dir / "session.context").write_text("", encoding="utf-8")
+    (turn_dir / "turn.context").write_text("", encoding="utf-8")
+    (turn_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
+    (session_dir / "initial_request.md").write_text("My goal", encoding="utf-8")
+    (turn_dir / "pathfinder.xml").write_text(
+        "You are a Pathfinder agent.\n", encoding="utf-8"
+    )
+
+    # The counting double: a designated auto-specced mock registered into
+    # the env container via the harness's mock_port helper (the same
+    # Constructor-Injection surface the unit suites use), registered BEFORE
+    # the orchestrator is resolved so both PlanningService and the
+    # re-gather branch receive the same strictly-bound double.
+    context_use_case = env.mock_port(IGetContextUseCase)
+    context_use_case.get_context.return_value = ProjectContext(
+        header="", content="", scoped_paths={}, git_status=""
+    )
+
+    orchestrator = env.get_service(IRunPlanUseCase)
+
+    # Act: one resume turn (EMPTY state -> planning -> execution).
+    actual_name, report = orchestrator.resume(
+        session_name=session_name,
+        interactive=False,
+    )
+
+    # Assert
+    assert actual_name == session_name, f"Unexpected session name: {actual_name}"
+    assert report is not None, "Resume must return a report"
+    assert report.run_summary.status != RunStatus.VALIDATION_FAILED, (
+        "The drive must be the SUCCESS path: the replan residual legitimately "
+        "gathers a second time (accepted edge case) and would mask the "
+        "double gather this test isolates"
+    )
+    assert context_use_case.get_context.call_count == 1, (
+        f"Context must be gathered exactly once per turn, got "
+        f"{context_use_case.get_context.call_count} calls"
     )

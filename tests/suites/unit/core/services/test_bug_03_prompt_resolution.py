@@ -70,7 +70,7 @@ class TestLifecyclePrintsInitialRequest:
             ports.report_formatter = MagicMock()
             ports.user_interactor = MagicMock()
             ports.session_planner = MagicMock()
-            ports.session_planner.trigger_new_plan.return_value = "test"
+            ports.session_planner.trigger_new_plan.return_value = ("test", None)
             ports.replanner = MagicMock()
 
             lifecycle = SessionLifecycleManager(ports)
@@ -102,7 +102,7 @@ class TestLifecyclePrintsInitialRequest:
             ports.report_formatter = MagicMock()
             ports.user_interactor = MagicMock()
             ports.session_planner = MagicMock()
-            ports.session_planner.trigger_new_plan.return_value = "test"
+            ports.session_planner.trigger_new_plan.return_value = ("test", None)
             ports.replanner = MagicMock()
             ports.session_service = MagicMock()
             ports.session_service.get_session_state.return_value = (

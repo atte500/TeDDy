@@ -229,9 +229,9 @@ def test_auto_pruning_heuristics_acceptance(env, monkeypatch):
         nonlocal call_count
         call_count += 1
         if call_count > 1:
-            return "CANCELLED"
+            return "CANCELLED", None
         env.workspace.joinpath(f"{turn_dir}/plan.md").write_text(turn_03_plan)
-        return "20260511_120000-regression"
+        return "20260511_120000-regression", None
 
     planner.trigger_new_plan.side_effect = mock_planning
 

@@ -120,7 +120,7 @@ def test_resume_returns_tuple_with_session_name_and_report(manager):
     )
 
     # Configure trigger_new_plan to return the new session name
-    manager._session_planner.trigger_new_plan.return_value = "my-session-2"
+    manager._session_planner.trigger_new_plan.return_value = ("my-session-2", None)
 
     # Configure orchestrator.execute to return a report
     mock_report = create_autospec(ExecutionReport, instance=True)
@@ -182,7 +182,7 @@ class TestInitialRequestOrdering:
             turn_dir,
         )
 
-        manager._session_planner.trigger_new_plan.return_value = "session-name"
+        manager._session_planner.trigger_new_plan.return_value = ("session-name", None)
 
         manager._handle_planning_and_execution(turn_dir, mock_orch, interactive=False)
 
@@ -229,12 +229,17 @@ class TestTeeTiming:
         # the mock that has itself as side_effect).
         call_log = []
 
-        mock_tee.__enter__.side_effect = lambda: (
-            call_log.append("tee_enter") or mock_tee
-        )
-        manager._session_planner.trigger_new_plan.side_effect = lambda *a, **kw: (
-            call_log.append("trigger_new_plan") or "session-name"
-        )
+        def _enter_tee_and_log(*args, **kwargs):
+            call_log.append("tee_enter")
+            return mock_tee
+
+        mock_tee.__enter__.side_effect = _enter_tee_and_log
+
+        def _record_and_return_tuple(*args, **kwargs):
+            call_log.append("trigger_new_plan")
+            return ("session-name", None)
+
+        manager._session_planner.trigger_new_plan.side_effect = _record_and_return_tuple
 
         manager._handle_planning_and_execution(turn_dir, mock_orch, interactive=False)
 
@@ -268,10 +273,14 @@ class TestTeeTiming:
         )
 
         captured_active = [None]
-        manager._session_planner.trigger_new_plan.side_effect = lambda *a, **kw: (
-            captured_active.__setitem__(0, manager.tee_active) or "session-name"
-        )
 
+        def _capture_tee_and_return_tuple(*args, **kwargs):
+            captured_active[0] = manager.tee_active
+            return ("session-name", None)
+
+        manager._session_planner.trigger_new_plan.side_effect = (
+            _capture_tee_and_return_tuple
+        )
         manager._handle_planning_and_execution(turn_dir, mock_orch, interactive=False)
 
         # During planning, tee_active should be True
@@ -297,7 +306,7 @@ class TestTeeTiming:
 
         turn_dir = "/root/session/turns/01"
         mock_orch = MagicMock(spec=IRunPlanUseCase)
-        manager._session_planner.trigger_new_plan.return_value = "CANCELLED"
+        manager._session_planner.trigger_new_plan.return_value = ("CANCELLED", None)
 
         result = manager._handle_planning_and_execution(
             turn_dir, mock_orch, interactive=False
@@ -313,4 +322,43 @@ class TestTeeTiming:
         )
         assert manager.tee_active is False, (
             "tee_active must be False after cancellation cleanup"
+        )
+
+
+class TestContextThreading:
+    """Wiring: the ProjectContext gathered during planning must flow to
+    orchestrator.execute instead of being re-gathered."""
+
+    def test_handle_planning_and_execution_threads_gathered_context_to_execute(
+        self, manager
+    ) -> None:
+        from unittest.mock import MagicMock
+
+        from teddy_executor.core.domain.models import ProjectContext
+        from teddy_executor.core.ports.outbound.session_manager import SessionState
+
+        # Arrange
+        turn_dir = "/root/session/turns/01"
+        gathered_context = ProjectContext(
+            header="", content="", scoped_paths={}, git_status=""
+        )
+        manager._session_service.get_session_state.return_value = (
+            SessionState.PENDING_PLAN,
+            turn_dir,
+        )
+        manager._session_planner.trigger_new_plan.return_value = (
+            "session-name",
+            gathered_context,
+        )
+        mock_orch = MagicMock(spec=IRunPlanUseCase)
+        mock_orch.execute.return_value = None
+
+        # Act
+        manager._handle_planning_and_execution(turn_dir, mock_orch, interactive=False)
+
+        # Assert
+        kwargs = mock_orch.execute.call_args.kwargs
+        assert kwargs.get("project_context") is gathered_context, (
+            "The context gathered during planning must be threaded to "
+            "orchestrator.execute, not discarded"
         )
