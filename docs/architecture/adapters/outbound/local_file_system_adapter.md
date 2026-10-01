@@ -19,7 +19,7 @@ The adapter will leverage Python's built-in `pathlib` and `open()` functions for
 *   **File Creation (`create_file`):** To satisfy the port's requirement for exclusive creation (failing if a file already exists), the `create_file` method will use the `'x'` (exclusive creation) mode when calling `open()`.
 *   **Error Handling (`create_file`):** If `open()` is called with `'x'` mode on a path that already exists, it will raise a standard `FileExistsError`. The adapter must catch this and re-raise it as the domain-specific `FileAlreadyExistsError`, attaching the file path to the exception, to fulfill the port's contract.
 *   **File Reading (`read_file`):** The `read_file` method will use the standard `'r'` (read) mode with `utf-8` encoding. It must catch `FileNotFoundError` if the path does not exist and `UnicodeDecodeError` for non-text files, propagating these as failures.
-*   **File Writing (`write_file`):** The `write_file` method will use Python's `pathlib.Path.write_text()`. This conveniently handles both creating a new file and overwriting an existing one, fulfilling the "upsert" requirement of the port.
+*   **File Writing (`write_file`):** The `write_file` method will use Python's `pathlib.Path.write_text()` with `newline=""`. This conveniently handles both creating a new file and overwriting an existing one, fulfilling the "upsert" requirement of the port. The `newline=""` argument disables platform newline translation, making writes **newline-deterministic** (LF-verbatim) on every OS — required for byte-exact persistence contracts such as session ledger migration, which must behave identically on POSIX and Windows. (User-facing file mutation via `create_file`/`edit_file` deliberately retains platform round-trip semantics so user project files never receive whole-file line-ending rewrites.)
 *   **File Editing (`edit_file`):** Delegates string manipulation to the `IEditSimulator` using the provided `similarity_threshold`, ensuring that the same resilience applied during validation is respected during execution.
 *   **Path Existence (`path_exists`):** This will be implemented using `pathlib.Path.exists()`, which correctly checks for both files and directories.
 *   **Directory Creation (`create_directory`):** This will use `pathlib.Path.mkdir()` with the `parents=True` and `exist_ok=True` flags. This ensures the method is idempotent and can create parent directories as needed.
@@ -66,10 +66,10 @@ def read_file(self, path: str) -> str:
 from pathlib import Path
 
 def write_file(self, path: str, content: str) -> None:
-    try:
-        Path(path).write_text(content, encoding="utf-8")
-    except IOError as e:
-        raise IOError(f"Failed to write to file at {path}: {e}") from e
+    # newline="" disables platform newline translation: content is written
+    # verbatim (LF) on every OS, keeping byte-exact persistence contracts
+    # platform-agnostic (see Case File 53 / ARCHITECTURE.md encoding law).
+    Path(path).write_text(content, encoding="utf-8", newline="")
 ```
 
 ### `edit_file`

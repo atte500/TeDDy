@@ -243,8 +243,13 @@ class LocalFileSystemAdapter(IFileSystemManager):
         """
         Writes content to a file, creating it if it doesn't exist
         and overwriting it if it does.
+
+        Newline-deterministic: ``newline=""`` disables platform newline
+        translation, so content is emitted verbatim (LF line endings) on
+        every OS. This makes byte-exact persistence contracts (e.g. session
+        ledger migration) hold identically on POSIX and Windows.
         """
-        self._resolve_path(path).write_text(content, encoding="utf-8")
+        self._resolve_path(path).write_text(content, encoding="utf-8", newline="")
 
     def create_file(self, path: str, content: str, overwrite: bool = False) -> None:
         """
