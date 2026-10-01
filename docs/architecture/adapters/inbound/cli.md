@@ -93,12 +93,13 @@ This adapter is a "driving" adapter that uses inbound ports to interact with the
 
 Initializes a new session.
 
-*   **Signature:** `teddy start [NAME] [--agent AGENT] [--model MODEL] [--provider PROVIDER] [--api-key KEY]`
+*   **Signature:** `teddy start [NAME] [--agent AGENT] [--context PATH]... [--model MODEL] [--provider PROVIDER] [--api-key KEY]`
 *   **Behavior:**
     1.  Creates a new session directory in `.teddy/sessions/`.
     2.  If `NAME` is omitted, it uses a temporary ISO-timestamped name.
     3.  Automatically Renames: If created with a timestamped name, the session is renamed to a slugified version of the first generated plan's H1 title.
     4.  Triggers immediate planning and enters the interactive execution loop.
+    5.  `--context` / `-c` is repeatable: each occurrence adds one path (e.g., `-c a.py -c b.md`). Comma-separated values within a single occurrence are also split for backward compatibility (`-c "a.py,b.md"`). Limitation: paths containing a literal comma cannot be expressed.
 
 ### Editor Validation Preflight
 

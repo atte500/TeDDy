@@ -98,3 +98,111 @@ def test_start_command_short_flags_aliases(tmp_path: Path, monkeypatch):
     assert "-a" in result.stdout
     assert "--context" in result.stdout
     assert "-c" in result.stdout
+
+
+def test_start_command_accepts_repeated_context_flags(tmp_path: Path, monkeypatch):
+    # Arrange
+    TestEnvironment(
+        monkeypatch, tmp_path
+    ).setup().with_real_shell().with_real_filesystem().with_real_init_service()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
+    first_file = tmp_path / "first.py"
+    first_file.write_text("# first context")
+    second_file = tmp_path / "second.md"
+    second_file.write_text("# second context")
+
+    # Act: pass two distinct paths via repeated -c occurrences
+    result = adapter.run_cli_command(
+        [
+            "start",
+            "repeated-context-session",
+            "-a",
+            "developer",
+            "-m",
+            "Test repeated context flags",
+            "-c",
+            str(first_file),
+            "-c",
+            str(second_file),
+        ],
+        input="n\n",
+    )
+
+    # Assert
+    assert result.exit_code == 0
+
+    sessions_path = tmp_path / ".teddy/sessions"
+    session_dirs = [
+        d
+        for d in sessions_path.iterdir()
+        if d.is_dir() and "repeated-context-session" in d.name
+    ]
+    assert session_dirs, (
+        f"Session directory not found in {sessions_path}. Found: {list(sessions_path.iterdir())}"
+    )
+    session_root = session_dirs[0]
+
+    session_context = (session_root / "session.context").read_text()
+    normalized_first = str(first_file).replace("\\", "/").lstrip("/")
+    normalized_second = str(second_file).replace("\\", "/").lstrip("/")
+    assert normalized_first in session_context, (
+        f"First repeated context path missing from session.context:\n{session_context}"
+    )
+    assert normalized_second in session_context, (
+        f"Second repeated context path missing from session.context:\n{session_context}"
+    )
+
+
+def test_start_command_accepts_comma_separated_context(tmp_path: Path, monkeypatch):
+    # Backward-compatibility guard: a single -c occurrence with comma-separated
+    # values must continue to expand into multiple context paths.
+    # Arrange
+    TestEnvironment(
+        monkeypatch, tmp_path
+    ).setup().with_real_shell().with_real_filesystem().with_real_init_service()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
+    first_file = tmp_path / "comma_first.py"
+    first_file.write_text("# comma first context")
+    second_file = tmp_path / "comma_second.md"
+    second_file.write_text("# comma second context")
+
+    # Act: single -c occurrence with comma-separated values
+    result = adapter.run_cli_command(
+        [
+            "start",
+            "comma-context-session",
+            "-a",
+            "developer",
+            "-m",
+            "Test comma-separated context",
+            "-c",
+            f"{first_file},{second_file}",
+        ],
+        input="n\n",
+    )
+
+    # Assert
+    assert result.exit_code == 0
+
+    sessions_path = tmp_path / ".teddy/sessions"
+    session_dirs = [
+        d
+        for d in sessions_path.iterdir()
+        if d.is_dir() and "comma-context-session" in d.name
+    ]
+    assert session_dirs, (
+        f"Session directory not found in {sessions_path}. Found: {list(sessions_path.iterdir())}"
+    )
+    session_root = session_dirs[0]
+
+    session_context = (session_root / "session.context").read_text()
+    normalized_first = str(first_file).replace("\\", "/").lstrip("/")
+    normalized_second = str(second_file).replace("\\", "/").lstrip("/")
+    assert normalized_first in session_context, (
+        f"First comma-separated path missing from session.context:\n{session_context}"
+    )
+    assert normalized_second in session_context, (
+        f"Second comma-separated path missing from session.context:\n{session_context}"
+    )

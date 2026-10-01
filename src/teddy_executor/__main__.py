@@ -138,11 +138,14 @@ def start(  # noqa: PLR0913
     message: Optional[str] = typer.Option(
         None, "-m", "--message", help="Instruction for the first turn."
     ),
-    context: Optional[str] = typer.Option(
+    context: Optional[list[str]] = typer.Option(
         None,
         "--context",
         "-c",
-        help="Comma-separated list of additional files/dirs for context.",
+        help=(
+            "Additional files/dirs for context. Repeatable (-c a.py -c b.md); "
+            'comma-separated values are also accepted (-c "a.py,b.md").'
+        ),
     ),
     model: Optional[str] = typer.Option(None, "--model", help="LLM model override."),
     provider: Optional[str] = typer.Option(
@@ -162,7 +165,16 @@ def start(  # noqa: PLR0913
     if ui_mode is not None:
         _apply_ui_mode_override(container, ui_mode)
 
-    additional_context = context.split(",") if context else None
+    additional_context = (
+        [
+            path.strip()
+            for occurrence in context
+            for path in occurrence.split(",")
+            if path.strip()
+        ]
+        if context
+        else None
+    )
 
     handle_new_session(
         container=container,
