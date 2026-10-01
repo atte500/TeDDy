@@ -207,8 +207,10 @@ def _apply_substring_boost(
     window: List[str], find_lines: List[str], current_ratio: float
 ) -> tuple[List[str], float, bool]:
     """
-    Applies Substring Boost: If a single-line block matches a substring exactly,
-    ratio is 1.0. This handles surgical intra-line replacements.
+    Applies Substring Boost: If the FIND text appears verbatim inside the
+    window, ratio is 1.0. Single-line FINDs match intra-line fragments
+    (surgical replacement); multi-line FINDs must match as a LITERAL
+    contiguous block (text-editor find & replace semantics).
     """
     ratio = current_ratio
     match_lines = window
@@ -222,6 +224,19 @@ def _apply_substring_boost(
             match_lines = [find_text]
             if match_count > 1:
                 # Intra-line ambiguity detected
+                is_ambiguous = True
+    elif ratio < 1.0 and len(find_lines) > 1 and len(window) == len(find_lines):
+        # Text-editor semantics: the multi-line FIND block must appear
+        # VERBATIM as a contiguous substring of the window, like a literal
+        # find in a text editor. A mid-line fragment followed by a newline
+        # does NOT match, because the file line continues after the fragment.
+        find_text = "".join(find_lines)
+        window_str = "".join(window)
+        if find_text and find_text in window_str:
+            ratio = 1.0
+            match_lines = [find_text]
+            if window_str.count(find_text) > 1:
+                # Literal multi-line block occurring twice within one window
                 is_ambiguous = True
 
     return match_lines, ratio, is_ambiguous
