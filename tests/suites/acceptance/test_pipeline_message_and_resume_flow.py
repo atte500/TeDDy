@@ -107,3 +107,81 @@ def test_pipeline_message_turn_and_resume_m_round_trip(tmp_path, monkeypatch):
     )
     assert (session_dir / "02" / "plan.md").exists()
     assert (session_dir / "02" / "report.md").exists()
+
+
+@pytest.mark.timeout(30)
+def test_resume_m_on_completed_turn_appends_user_request(tmp_path, monkeypatch):
+    """Scenario: `resume -m` on a fully completed turn appends the request.
+
+    As a script author, I want `teddy resume -m` on a session whose
+    latest turn is complete to append a smart-fenced `## User Request`
+    section to the turn's report and continue into the next turn without
+    an interactive prompt, so injected requests join the audit trail
+    exactly like a normal user request.
+    """
+    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    setup_robust_env(tmp_path)
+
+    first_plan = MarkdownPlanBuilder("First").add_execute("echo 1").build()
+    second_plan = MarkdownPlanBuilder("Second").add_execute("echo 2").build()
+
+    mock_llm = env.get_service(ILlmClient)
+    mock_llm.get_completion.return_value = make_mock_response(first_plan)
+
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
+    # Phase 1: complete turn 01 normally (plan.md + report.md on disk).
+    start_result = adapter.run_start(["completed-session"], input="prompt\ny\n")
+    assert start_result.exit_code == 0
+
+    session_dirs = list((tmp_path / ".teddy" / "sessions").glob("20260417_120000-*"))
+    assert session_dirs, "No session directory found under .teddy/sessions"
+    session_dir = session_dirs[0]
+    turn01 = session_dir / "01"
+    assert (turn01 / "report.md").exists()
+    before = (turn01 / "report.md").read_text(encoding="utf-8")
+    # The initial-request report may already carry a User Request section;
+    # the distinguishing invariant is the COUNT increase plus the injected
+    # message content, not section absence.
+    assert "Now refactor the parser" not in before
+
+    # Phase 2: resume -m must append the smart-fenced request to the
+    # completed turn's report and plan the next turn WITHOUT an
+    # interactive prompt (the injected message drives planning).
+    mock_llm.get_completion.return_value = make_mock_response(second_plan)
+    resume_result = adapter.run_cli_command(
+        [
+            "resume",
+            f".teddy/sessions/{session_dir.name}",
+            "--no-copy",
+            "-m",
+            "Now refactor the parser",
+        ],
+        input="prompt\ny\ny\ny\n",
+    )
+    assert resume_result.exit_code == 0
+
+    after = (turn01 / "report.md").read_text(encoding="utf-8")
+    assert after.count("## User Request") == before.count("## User Request") + 1, (
+        "resume -m on a COMPLETE_TURN must append exactly one new "
+        "## User Request section to the latest report."
+    )
+    assert "Now refactor the parser" in after, (
+        "The appended User Request section must carry the injected message."
+    )
+    assert "```text" in after, (
+        "The appended User Request must use a smart-fenced codeblock."
+    )
+
+    plan02 = (session_dir / "02" / "plan.md").read_text(encoding="utf-8")
+    assert "# Second" in plan02, (
+        "The next turn must be planned from the injected message, not an "
+        "interactive prompt."
+    )
+    assert (session_dir / "02" / "report.md").exists()

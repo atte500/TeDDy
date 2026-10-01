@@ -198,6 +198,17 @@ The application exits with a non-zero status code if any action in the `execute`
 
 The `cli_formatter.py` module contains a `format_project_context` function. This function takes the `ProjectContext` DTO and renders its `header` and `content` attributes into a single string. The logic for constructing the detailed content of these strings now resides within the `ContextService`, simplifying the adapter's responsibility to pure presentation.
 
+## 4a. Session Loop Wiring: Interrupt Guard & Message Injection (As-Built, 2026-10-01)
+
+### Session-Loop Interrupt Wiring
+The shared session loop (`_orchestrate_session_loop`) resolves the container-composed `InterruptGuard` at the boundary, installs its SIGINT handler around the turn loop, and restores the previous disposition once the loop exits (the boundary owns the handler lifecycle). A `KeyboardInterrupt` escaping the turn loop (the WAITING-phase immediate-exit path: prompts and the planning LLM call) is caught at the boundary and surfaced as the `Interrupted by user (Ctrl+C)` termination notice — nothing is mutated, no report is generated, the process exits cleanly. The guard is a singleton-scope registration so the boundary's guard and the `OrchestratorPorts` factory's guard are the same instance, sharing the WAITING/EXECUTING phase state and the drain flag.
+
+### `teddy resume -m` Message Injection
+The `resume` command accepts `--message/-m` (injected user request/reply without interactive prompting). The flag threads append-only through `handle_resume_session` → `_orchestrate_session_loop` → `orchestrator.resume(..., message=...)` into the lifecycle state machine. The loop clears the injected message to `None` after the first report-bearing iteration so a stale reply cannot re-plan later turns. Consumption semantics: an awaiting-reply turn consumes the message as the user's reply (no plan re-execution, flag cleared, next turn planned with the message); a completed turn gets a smart-fenced `## User Request` appended to the latest report before transitioning.
+
+### Pipeline `start` Message Requirement
+`teddy start --pipeline/-p` requires an initial message via `-m/--message`; invoking pipeline mode without one exits with code 1 and the `Pipeline mode requires an initial message via -m/--message.` error. A pipeline turn ending with a MESSAGE action suppresses turn finalization (see `session_orchestrator.md`) and breaks the loop after the report is returned.
+
 ## 5. Plan Parser Factory
 
 The `execute` command is designed to parse plan files written in Markdown. The logic for this resides in the `create_parser_for_plan` factory function within `main.py`, which instantiates the `MarkdownPlanParser`. Legacy support for YAML-based plans has been deprecated and removed.

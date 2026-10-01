@@ -83,3 +83,9 @@ Prints the user message after all actions execute.
 - **Output**: `\nUser Message:\n{message}\n`
 
 All helpers are guarded at their call sites in `execute()`: `_print_initial_request` and `_print_user_message` are wrapped with `if is_session and message and message.strip():`, and `_print_header_bar` is wrapped with `if is_session:`. This ensures no unnecessary function invocations occur in non-session or empty-message modes. Each helper also has internal guards as defense-in-depth.
+
+## Pipeline MESSAGE Suppression (As-Built, 2026-10-01)
+
+In pipeline mode (`pipeline=True`), a session turn whose plan is a communication turn ending with a non-empty MESSAGE action is NOT finalized: `finalize_turn` is skipped entirely (no `report.md`, no next-turn directory) and the current turn's `meta.yaml` is flagged with `awaiting_reply: true` via a load-modify-save over the turn-meta seam (`SessionService.load_turn_meta` / `save_turn_meta`). The report is still returned so the CLI loop's existing MESSAGE break fires and the `--- MESSAGE from TeDDy ---` terminal printing is preserved. Non-pipeline MESSAGE turns (interactive/YOLO) and pipeline turns without a MESSAGE keep the existing finalization behavior. MESSAGE-action detection iterates `report.action_logs` (see PROJECT.md Technical Debt: the iteration is duplicated with the empty-reply "4a" termination block; a shared detector is a Milestone 5 candidate).
+
+The `resume` entry point threads an optional injected `message` (from `teddy resume -m`) through to `SessionLifecycleManager.resume` as an append-only keyword parameter, enabling the awaiting-reply and EMPTY/COMPLETE_TURN message-consumption paths without interactive prompting.
