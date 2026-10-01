@@ -35,6 +35,93 @@ from teddy_executor.core.services.update_checker import (
 logger = logging.getLogger(__name__)
 
 
+_HOOK_TYPES = ("pre-commit", "post-commit")
+_HOOK_IMPL_FLAG = "hook-impl"
+_HOOK_CONFIG_FLAG = "--config=.pre-commit-config.yaml"
+
+
+def _resolve_hooks_dir() -> Optional[Path]:
+    """Resolve the git hooks directory using git's own answer.
+
+    Returns None when unresolvable (not a repository, git CLI failure,
+    or an unexpected result shape) — the caller falls back to the real
+    install. Using git's own resolution guarantees the guard inspects
+    the same directory `pre-commit install` writes to. Relative output
+    is anchored against the current working directory (git semantics).
+    """
+    try:
+        result = subprocess.run(  # nosec B603 B607
+            ["git", "rev-parse", "--git-path", "hooks"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (subprocess.CalledProcessError, OSError, ValueError):
+        logger.debug("hooks directory resolution failed", exc_info=True)
+        return None
+    # Test doubles may return None or Mock stdout; treat any non-string
+    # result as unresolvable so the caller falls back safely.
+    stdout = getattr(result, "stdout", None)
+    if not isinstance(stdout, str) or not stdout.strip():
+        return None
+    hooks_path = Path(stdout.strip())
+    if not hooks_path.is_absolute():
+        hooks_path = Path.cwd() / hooks_path
+    return hooks_path
+
+
+def _parse_shim_properties(lines: list[str]) -> tuple[Optional[str], Optional[str]]:
+    """Extracts (install_python, args) from shim lines.
+
+    Returns (None, None) when either the INSTALL_PYTHON or the ARGS
+    declaration is absent (foreign or malformed shim content).
+    """
+    install_line = next(
+        (line for line in lines if line.startswith("INSTALL_PYTHON=")), None
+    )
+    args_line = next(
+        (
+            line
+            for line in lines
+            if line.startswith("ARGS=(") and line.rstrip().endswith(")")
+        ),
+        None,
+    )
+    if install_line is None or args_line is None:
+        return None, None
+    install_python = install_line.removeprefix("INSTALL_PYTHON=").strip()
+    args = args_line.removeprefix("ARGS=(").rstrip().removesuffix(")")
+    return install_python, args
+
+
+def _shim_is_current(hooks_dir: Path, hook_type: str) -> bool:
+    """Per-shim property check (prototype-validated).
+
+    Each shim must: exist, embed an INSTALL_PYTHON path that exists on
+    disk, declare hook-impl, declare --config=.pre-commit-config.yaml,
+    and declare its OWN --hook-type=<type>. Byte-comparison is rejected
+    (install methods vary only in the interpreter path); any mismatch
+    means the real install must run.
+    """
+    shim = hooks_dir / hook_type
+    if not shim.is_file():
+        return False
+    try:
+        lines = shim.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError):
+        return False
+    install_python, args = _parse_shim_properties(lines)
+    if install_python is None or args is None:
+        return False
+    if not install_python or not Path(install_python).exists():
+        return False
+    return (
+        _HOOK_IMPL_FLAG in args
+        and _HOOK_CONFIG_FLAG in args
+        and f"--hook-type={hook_type}" in args
+    )
+
+
 def _ensure_commit_hooks() -> None:
     """Install pre-commit hooks if config exists and CLI is available.
     Shows green notification on success, yellow warning if config missing,
@@ -61,6 +148,16 @@ def _ensure_commit_hooks() -> None:
         typer.secho(
             "⚠ pre-commit CLI not found",
             fg=typer.colors.YELLOW,
+            err=True,
+        )
+        return
+    hooks_dir = _resolve_hooks_dir()
+    if hooks_dir is not None and all(
+        _shim_is_current(hooks_dir, hook_type) for hook_type in _HOOK_TYPES
+    ):
+        typer.secho(
+            "✓ pre-commit hooks installed",
+            fg=typer.colors.GREEN,
             err=True,
         )
         return
