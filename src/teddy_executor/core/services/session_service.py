@@ -205,6 +205,14 @@ class SessionService(ISessionManager):
         meta = self._repository.load_meta(latest_turn_path)
         return float(meta.get("cumulative_cost", 0.0))
 
+    def load_turn_meta(self, turn_dir: str) -> Dict[str, Any]:
+        """Loads the metadata of a turn via the injected repository."""
+        return self._repository.load_meta(turn_dir)
+
+    def save_turn_meta(self, turn_dir: str, data: Dict[str, Any]) -> None:
+        """Persists the metadata of a turn via the injected repository."""
+        self._repository.save_meta(f"{turn_dir}/meta.yaml", data)
+
     def _extract_resource_path(self, resource_str: str) -> str:
         """
         Extracts the path from a Markdown link or returns the string if not a link.

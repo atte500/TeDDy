@@ -7,8 +7,11 @@ flag. The asymmetric signatures are deliberate and pinned here:
 takes the full file path.
 """
 
+from typing import cast
+
 import pytest
 
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.services.session_repository import SessionRepository
 
 
@@ -33,7 +36,11 @@ class InMemoryFileSystem:
 
 @pytest.fixture
 def repository() -> SessionRepository:
-    return SessionRepository(InMemoryFileSystem())
+    # The fake deliberately implements only the file-I/O surface the meta
+    # load/save path exercises; the wide IFileSystemManager protocol is
+    # satisfied at the construction site via an explicit cast.
+    fs = cast(IFileSystemManager, InMemoryFileSystem())
+    return SessionRepository(fs)
 
 
 @pytest.mark.parametrize("flag", [True, False])
