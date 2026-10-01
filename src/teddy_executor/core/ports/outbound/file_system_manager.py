@@ -30,6 +30,25 @@ class IFileSystemManager(Protocol):
         """
         ...
 
+    def create_directory_exclusive(self, path: str) -> bool:
+        """
+        Atomically creates a directory (including any necessary parent
+        directories) and fails if it already exists.
+
+        The existence check and creation are a single atomic OS operation,
+        making this safe for concurrent processes racing to claim the same
+        path (exactly one caller wins).
+
+        Returns:
+            True if the directory was created by this call.
+            False if the directory already existed (FileExistsError caught).
+
+        Raises:
+            Any error other than FileExistsError is re-raised
+            (Failure Transparency).
+        """
+        ...
+
     def write_file(self, path: str, content: str) -> None:
         """
         Writes content to a file, creating it if it doesn't exist

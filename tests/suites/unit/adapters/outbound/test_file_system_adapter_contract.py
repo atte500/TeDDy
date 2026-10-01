@@ -2,6 +2,7 @@ from teddy_executor.adapters.outbound.local_file_system_adapter import (
     LocalFileSystemAdapter,
 )
 from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from tests.harness.setup.mocking import POSIXPathMock
 
 
@@ -34,3 +35,13 @@ def test_is_dir_returns_false_for_non_existent_path():
 
     # Act & Assert
     assert adapter.is_dir("non_existent_path_999") is False
+
+
+def test_file_system_manager_defines_create_directory_exclusive():
+    # Arrange / Act
+    method = getattr(IFileSystemManager, "create_directory_exclusive", None)
+
+    # Assert
+    assert callable(method), (
+        "IFileSystemManager must define create_directory_exclusive(path: str) -> bool"
+    )

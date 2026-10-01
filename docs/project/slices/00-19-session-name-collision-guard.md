@@ -69,7 +69,7 @@ All uncertainties were resolved during the Task Brief investigation; none block 
 
 ## Deliverables
 
-- [▶] **Contract** - Add `create_directory_exclusive(path: str) -> bool` to the `IFileSystemManager` port and update the port contract doc (atomicity guarantee; session-root-claiming intent).
+- [x] **Contract** - Add `create_directory_exclusive(path: str) -> bool` to the `IFileSystemManager` port and update the port contract doc (atomicity guarantee; session-root-claiming intent).
 - [ ] **Harness** - Configure happy-path `create_directory_exclusive` defaults (`return_value = True`) on the spec-based `IFileSystemManager` mock in the `mock_fs` fixture (`tests/harness/setup/mocks.py`) and `TestEnvironment._apply_fs_defaults` (`tests/harness/setup/test_environment.py`).
 - [ ] **Logic** - Implement `create_directory_exclusive` in `LocalFileSystemAdapter` (atomic `mkdir(parents=True)` without `exist_ok`; `FileExistsError` returns `False`; other errors re-raised) driven by unit contract tests (TDD).
 - [ ] **Logic** - Add `_claim_session_root` suffix-retry helper to `SessionService` driven by unit tests (claims base name when free; retries `-2`, `-3`; stops at first success).
@@ -80,6 +80,7 @@ All uncertainties were resolved during the Task Brief investigation; none block 
 ## Implementation Notes
 
 - **Plan Audit (Orientation):** `IFileSystemManager` confirmed as `typing.Protocol` (not ABC): port additions are runtime-safe, spec-based mocks auto-gain methods, and no Green-to-Green re-partitioning is needed. Harness surface audited: no hand-rolled fakes exist for the port (the only Fake class is the unrelated `FakeHTTPResponse`); the port is provisioned exclusively via `register_mock`/`POSIXPathMock(spec=...)` in the `mocks.py` fixtures and `TestEnvironment._apply_fs_defaults`. Harness deliverable reworded accordingly. Semantic dedup confirmed: no existing collision/exclusive-create coverage; lifecycle-manager and orchestration keyword matches are incidental.
+- **Contract deliverable:** Red test took the port-surface form (`getattr(IFileSystemManager, "create_directory_exclusive", None)` + callable assertion) rather than behavioral adapter tests, because the behavioral True/False/parents/re-raise cases belong to the following Logic deliverable against `LocalFileSystemAdapter` (unit contract-test layer, same file). Green added the Protocol method after `create_directory` with a docstring mirroring the contract exactly: atomic single-OS-operation create (no check-then-act window), `True` on creation, `False` iff `FileExistsError`, everything else re-raised (Failure Transparency). The port doc section was inserted between `create_directory` and `get_mtime` with an explicit "Intended Use" for session-root claiming. Full-suite Integration gate: 1238 passed, 5 skipped — zero regressions, confirming the runtime-safety prediction for the Protocol addition.
 
 ## Verification
 

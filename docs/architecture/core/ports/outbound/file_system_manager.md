@@ -108,6 +108,21 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
 
 ---
 
+### `create_directory_exclusive`
+**Status:** Implemented
+
+*   **Description:** Atomically creates a directory (including any necessary parent directories) and fails if it already exists. The existence check and creation are a single atomic OS operation (no check-then-act window), making this safe for concurrent processes racing to claim the same path on both POSIX and Windows — exactly one caller wins.
+*   **Signature:** `create_directory_exclusive(path: str) -> bool`
+*   **Preconditions:**
+    *   `path` must be a valid path for a directory.
+*   **Postconditions:**
+    *   Returns `True` if the directory was created by this call.
+    *   Returns `False` if the directory already existed (`FileExistsError` caught).
+    *   Any error other than `FileExistsError` (e.g., permission denied) is re-raised (Failure Transparency).
+*   **Intended Use:** Claiming session roots (`.teddy/sessions/{timestamp}-{name}`) so concurrent session creation and turn-100 migration can never silently overwrite an existing session's audit ledger.
+
+---
+
 ### `get_mtime`
 **Status:** Implemented
 
