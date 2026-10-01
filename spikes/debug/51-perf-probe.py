@@ -12,6 +12,7 @@ so results can be diffed across platforms.
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -25,6 +26,15 @@ RESULTS: list[tuple[str, float, str]] = []
 CONTAINER = None
 CONTEXT_SERVICE = None
 TREE = None
+LLM = None
+PROMPT_MANAGER = None
+SESSION_MANAGER = None
+TURN_DIR = None
+AGENT_NAME = None
+META = None
+SYSTEM_PROMPT = None
+CTX_FILES = None
+FULL_CONTEXT = None
 
 
 def timed(name, fn):
@@ -143,6 +153,116 @@ def stage_cli_end_to_end_version():
     )
 
 
+def stage_which_precommit():
+    shutil.which("pre-commit")
+
+
+def stage_precommit_install():
+    # Mirrors _ensure_commit_hooks() in session_cli_handlers.py, executed on
+    # EVERY `teddy start`. Full Python interpreter + pre-commit framework.
+    subprocess.run(
+        ["pre-commit", "install", "-f", "-t", "pre-commit", "-t", "post-commit"],
+        capture_output=True,
+        check=True,
+        cwd=str(REPO_ROOT),
+    )
+
+
+def stage_which_git():
+    shutil.which("git")
+
+
+def stage_resolve_llm():
+    global LLM
+    from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+
+    LLM = CONTAINER.resolve(ILlmClient)
+
+
+def stage_validate_config():
+    # Mirrors _run_cli_preflight_check (local-only validation).
+    LLM.validate_config(include_remote=False)
+
+
+def stage_prompt_lookup():
+    from teddy_executor.prompts import find_prompt_content
+
+    find_prompt_content("pathfinder")
+
+
+def stage_resolve_prompt_manager():
+    global PROMPT_MANAGER
+    from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+
+    PROMPT_MANAGER = CONTAINER.resolve(IPromptManager)
+
+
+def stage_resolve_session_manager():
+    global SESSION_MANAGER
+    from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+
+    SESSION_MANAGER = CONTAINER.resolve(ISessionManager)
+
+
+def stage_fixture_create():
+    """Create a minimal session/turn fixture in a temp dir (mirrors create_session output)."""
+    global TURN_DIR
+    import tempfile
+
+    base = Path(tempfile.mkdtemp(prefix="teddy-probe-"))
+    session_dir = base / "20260101_000000-probe"
+    TURN_DIR = session_dir / "01"
+    TURN_DIR.mkdir(parents=True)
+    (TURN_DIR / "meta.yaml").write_text(
+        "agent_name: pathfinder\nmodel: openrouter/openai/gpt-4o-mini\n",
+        encoding="utf-8",
+    )
+    (TURN_DIR / "plan.md").write_text("# Plan\n", encoding="utf-8")
+    (TURN_DIR / "turn.context").write_text("README.md\n", encoding="utf-8")
+    (session_dir / "session.context").write_text("README.md\n", encoding="utf-8")
+
+
+def stage_resolve_agent_metadata():
+    global AGENT_NAME, META
+    AGENT_NAME, META, _meta_path = PROMPT_MANAGER.resolve_agent_metadata(TURN_DIR)
+
+
+def stage_fetch_system_prompt():
+    global SYSTEM_PROMPT
+    SYSTEM_PROMPT = PROMPT_MANAGER.fetch_system_prompt(AGENT_NAME, TURN_DIR)
+
+
+def stage_system_token_count():
+    # PlanningService counts the system prompt EVERY turn before building context.
+    LLM.get_text_token_count(SYSTEM_PROMPT, model=str(META.get("model") or ""))
+
+
+def stage_resolve_context_paths():
+    global CTX_FILES
+    CTX_FILES = SESSION_MANAGER.resolve_context_paths(str(TURN_DIR / "plan.md"))
+
+
+def stage_planning_get_context():
+    # The full context assembly that precedes every input.md write.
+    global FULL_CONTEXT
+    ctx = CONTEXT_SERVICE.get_context(
+        context_files=CTX_FILES,
+        agent_name=AGENT_NAME,
+        current_turn=TURN_DIR.name,
+        system_prompt_tokens=0,
+        cache_dir=str(TURN_DIR.parent),
+    )
+    FULL_CONTEXT = f"{ctx.header}\n{ctx.content}"
+
+
+def stage_write_input_md():
+    (TURN_DIR / "input.md").write_text(FULL_CONTEXT, encoding="utf-8")
+
+
+def stage_get_context_window():
+    LLM.get_context_window()
+
+
 def main():
     print("platform: {} | python: {}".format(sys.platform, sys.version.split()[0]))
 
@@ -173,6 +293,26 @@ def main():
     timed("get-context-no-tokens", stage_get_context_no_tokens)
     timed("get-context-with-tokens", stage_get_context_with_tokens)
     report("PASS 2 (warm / per-turn steady state)")
+
+    # PASS 3: startup bootstrap (handle_new_session health checks) +
+    # planning pre-LLM pipeline (the per-turn input.md assembly path).
+    timed("which-pre-commit", stage_which_precommit)
+    timed("pre-commit-install", stage_precommit_install)
+    timed("which-git", stage_which_git)
+    timed("resolve-llm", stage_resolve_llm)
+    timed("validate-config-local", stage_validate_config)
+    timed("prompt-lookup", stage_prompt_lookup)
+    timed("resolve-prompt-manager", stage_resolve_prompt_manager)
+    timed("resolve-session-manager", stage_resolve_session_manager)
+    timed("fixture-create", stage_fixture_create)
+    timed("resolve-agent-metadata", stage_resolve_agent_metadata)
+    timed("fetch-system-prompt", stage_fetch_system_prompt)
+    timed("system-token-count", stage_system_token_count)
+    timed("resolve-context-paths", stage_resolve_context_paths)
+    timed("planning-get-context", stage_planning_get_context)
+    timed("write-input-md", stage_write_input_md)
+    timed("get-context-window", stage_get_context_window)
+    report("PASS 3 (bootstrap + planning pre-LLM pipeline)")
 
 
 if __name__ == "__main__":
