@@ -66,5 +66,34 @@ def test_resume_delegates_to_lifecycle_manager(orchestrator, mock_lifecycle_mana
 
     # Assert
     mock_lifecycle_manager.resume.assert_called_once_with(
-        session_name, orchestrator, True, project_context=None, pipeline=False
+        session_name,
+        orchestrator,
+        True,
+        project_context=None,
+        pipeline=False,
+        message=None,
+    )
+
+
+def test_resume_threads_message_to_lifecycle_manager(
+    orchestrator, mock_lifecycle_manager
+):
+    """
+    SessionOrchestrator.resume must thread the injected message to
+    SessionLifecycleManager.resume (append-only, after pipeline).
+    """
+    # Arrange
+    session_name = "test-session"
+
+    # Act
+    orchestrator.resume(session_name, message="reply")
+
+    # Assert
+    mock_lifecycle_manager.resume.assert_called_once_with(
+        session_name,
+        orchestrator,
+        True,
+        project_context=None,
+        pipeline=False,
+        message="reply",
     )

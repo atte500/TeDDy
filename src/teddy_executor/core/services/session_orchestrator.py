@@ -175,6 +175,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         interactive: bool = True,
         project_context: Optional[Any] = None,
         pipeline: bool = False,
+        message: Optional[str] = None,
     ):
         """
         Implements the 'resume' state machine.
@@ -184,6 +185,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             self,
             interactive,
             project_context=project_context,
+            message=message,
             pipeline=pipeline,
         )
 

@@ -1,0 +1,124 @@
+"""Unit tests: `--message/-m` threading through the resume CLI handlers.
+
+Verifies that a message injected via `handle_resume_session(message=...)`
+reaches the orchestrator resume chain (`_orchestrate_session_loop` ->
+`orchestrator.resume`) as an append-only keyword parameter, so the
+lifecycle state machine can consume it without interactive prompting.
+The session loop is driven to immediate termination by having the
+orchestrator double return `(session_name, None)` — no module patching.
+"""
+
+from types import SimpleNamespace
+from unittest.mock import Mock
+
+from teddy_executor.adapters.inbound.session_cli_handlers import (
+    handle_resume_session,
+)
+from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+from teddy_executor.core.ports.outbound.config_service import IConfigService
+from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
+from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+
+
+class _ContainerStub:
+    """Hand-rolled punq-compatible container double (no bare MagicMock)."""
+
+    def __init__(self, mapping: dict[type, object]) -> None:
+        self._mapping = mapping
+
+    def resolve(self, service_type: type, **kwargs: object) -> object:
+        service = self._mapping.get(service_type)
+        if service is None:
+            return Mock()
+        return service
+
+
+def _build_resume_harness() -> SimpleNamespace:
+    """Builds the resume-handler harness with strictly bound doubles.
+
+    Mirrors the established resume-handler test recipes: spec-bound mocks
+    for every resolved service, inert defaults for the meta-sync and
+    preflight surfaces, and an orchestrator double whose resume returns
+    (session_name, None) so the shared turn loop breaks immediately.
+    """
+    session_manager = Mock(spec=ISessionManager)
+    session_manager.get_latest_turn.return_value = ".teddy/sessions/test-session/01"
+    session_manager.get_cumulative_cost.return_value = 0.0
+    session_manager.resolve_session_from_path.return_value = "test-session"
+
+    config_service = Mock(spec=IConfigService)
+    config_service.get_setting.side_effect = lambda key, default="unknown": default
+    config_service.get_config_path.return_value = ".teddy/config.yaml"
+
+    repository = Mock(spec=ISessionRepository)
+    repository.load_meta.return_value = {
+        "agent_name": "assistant",
+        "model": "test-model",
+    }
+
+    llm_client = Mock(spec=ILlmClient)
+    llm_client.validate_config.return_value = []
+
+    orchestrator = Mock(spec=IRunPlanUseCase)
+    orchestrator.resume.return_value = ("test-session", None)
+
+    container = _ContainerStub(
+        {
+            IRunPlanUseCase: orchestrator,
+            ISessionManager: session_manager,
+            IConfigService: config_service,
+            ISessionRepository: repository,
+            ILlmClient: llm_client,
+            ISessionLoopGuard: Mock(spec=ISessionLoopGuard),
+        }
+    )
+    return SimpleNamespace(
+        container=container,
+        orchestrator=orchestrator,
+        session_manager=session_manager,
+    )
+
+
+class TestResumeMessageThreading:
+    """Injected resume messages must reach the orchestrator resume chain."""
+
+    def test_injected_message_reaches_orchestrator_resume(self) -> None:
+        # Arrange
+        h = _build_resume_harness()
+
+        # Act
+        handle_resume_session(
+            container=h.container,
+            path="test-session",
+            interactive=False,
+            no_copy=True,
+            message="reply",
+        )
+
+        # Assert
+        h.orchestrator.resume.assert_called_once_with(
+            session_name="test-session",
+            interactive=False,
+            pipeline=False,
+            message="reply",
+        )
+
+    def test_resume_without_message_passes_none(self) -> None:
+        # Arrange
+        h = _build_resume_harness()
+
+        # Act
+        handle_resume_session(
+            container=h.container,
+            path="test-session",
+            interactive=False,
+            no_copy=True,
+        )
+
+        # Assert: the default path threads message=None (no interactive
+        # prompting difference; consumption semantics land in the Logic
+        # deliverables).
+        assert h.orchestrator.resume.call_count == 1
+        assert h.orchestrator.resume.call_args.kwargs.get("message") is None

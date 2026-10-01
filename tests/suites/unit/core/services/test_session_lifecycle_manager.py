@@ -144,6 +144,41 @@ def test_resume_returns_tuple_with_session_name_and_report(manager):
     assert report is mock_report, "Report should be the one returned by orchestrator"
 
 
+def test_resume_accepts_injected_message_and_preserves_flow(manager):
+    """resume() must accept the injected message parameter (append-only Contract).
+
+    The message is the Contract surface for the resume state machine; its
+    consumption semantics (awaiting-reply handling, prompt skipping) are
+    delivered by the Logic deliverable. This test pins that the terminal
+    land-site accepts the keyword without disturbing the existing flow.
+    """
+    # Arrange: mirror the established resume flow recipe
+    manager._session_service.get_session_state.side_effect = [
+        (SessionState.COMPLETE_TURN, "/root/my-session/turns/99"),
+        (SessionState.PENDING_PLAN, "/root/my-session-2/turns/01"),
+    ]
+    manager._session_service.transition_to_next_turn.return_value = (
+        "/root/my-session-2/turns/01"
+    )
+    manager._session_planner.trigger_new_plan.return_value = ("my-session-2", None)
+
+    mock_report = create_autospec(ExecutionReport, instance=True)
+    mock_orchestrator = create_autospec(IRunPlanUseCase, instance=True)
+    mock_orchestrator.execute.return_value = mock_report
+
+    # Act
+    result = manager.resume(
+        session_name="my-session",
+        orchestrator=mock_orchestrator,
+        interactive=False,
+        pipeline=False,
+        message="reply",
+    )
+
+    # Assert: the existing flow completes with the message accepted
+    assert result == ("my-session-2", mock_report)
+
+
 class TestTeeActiveContract:
     """Tests for the tee_active contract on SessionLifecycleManager."""
 

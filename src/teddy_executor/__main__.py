@@ -399,6 +399,12 @@ def resume(  # noqa: PLR0913
     api_key: Optional[str] = typer.Option(
         None, "--api-key", help="LLM API key override."
     ),
+    message: Optional[str] = typer.Option(
+        None,
+        "--message",
+        "-m",
+        help="Inject a user request/reply without interactive prompting.",
+    ),
 ):
     """
     Intelligently resumes the last turn of a session or starts a new one.
@@ -421,6 +427,7 @@ def resume(  # noqa: PLR0913
         model=model,
         provider=provider,
         api_key=api_key,
+        message=message,
     )
 
 

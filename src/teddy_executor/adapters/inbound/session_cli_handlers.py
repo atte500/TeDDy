@@ -253,6 +253,7 @@ def _orchestrate_session_loop(
     interactive: bool,
     no_copy: bool,
     pipeline: bool = False,
+    message: Optional[str] = None,
 ) -> None:
     """Shared turn loop for start and resume commands."""
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
@@ -290,6 +291,7 @@ def _orchestrate_session_loop(
             session_name=session_name,
             interactive=interactive,
             pipeline=pipeline,
+            message=message,
         )
         if report is None:
             break
@@ -627,6 +629,7 @@ def handle_resume_session(  # noqa: PLR0913
     model: Optional[str] = None,
     provider: Optional[str] = None,
     api_key: Optional[str] = None,
+    message: Optional[str] = None,
 ):
     """Logic for the 'resume' command."""
     import threading
@@ -667,6 +670,7 @@ def handle_resume_session(  # noqa: PLR0913
             session_name=session_name,
             interactive=interactive,
             no_copy=no_copy,
+            message=message,
         )
 
     except Exception as e:

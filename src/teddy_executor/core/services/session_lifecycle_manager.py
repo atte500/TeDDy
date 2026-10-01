@@ -46,6 +46,7 @@ class SessionLifecycleManager:
         interactive: bool = True,
         project_context: Optional[Any] = None,
         pipeline: bool = False,
+        message: Optional[str] = None,
     ) -> tuple[str, Optional[ExecutionReport]]:
         """Implements the 'resume' state machine.
 
