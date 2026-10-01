@@ -42,3 +42,5 @@ Audit and fix all unnecessary inline quality suppression comments (`# noqa`, `# 
 > 5. C901 complexity refactor (markdown_plan_parser.py)
 > 6. Git history bypass audit
 > 7. CI enforcement for future quality bypasses
+> 8. Report template consolidation: merge the two separate `## Resource Contents` render sites in `execution_report.md.j2` (`report.failed_resources` + the classified `resource_logs` pass) into the single classification pass. They currently cover disjoint execution paths (verified during the execute-mode READ duplication investigation), but a future change bridging the paths could re-introduce the divergent-duplicate-gating bug class. See the `[DEBT]` entry in `docs/project/PROJECT.md`.
+> 9. ReportParser inline content extraction: extend `tests/harness/observers/report_parser.py` (currently extracts only `stdout`/`stderr` blocks) with structured extraction of inline fenced content blocks in Action Log entries, so observers can assert on inline render placement without raw-regex fallbacks. See the `[DEBT]` entry in `docs/project/PROJECT.md`.
