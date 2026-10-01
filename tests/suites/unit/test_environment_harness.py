@@ -123,3 +123,26 @@ def test_apply_fs_defaults_sets_create_directory_exclusive_to_true(monkeypatch):
         assert mock.create_directory_exclusive.return_value is True
     finally:
         env.teardown()
+
+
+def test_without_reviewer_supplies_real_interrupt_guard(monkeypatch, container):
+    """Migration: the harness factory override must supply the real guard.
+
+    without_reviewer() hand-builds OrchestratorPorts to clear the plan
+    reviewer; it must still carry the container-composed InterruptGuard
+    (real guard over the harness config mock), mirroring the guarded
+    container factory — otherwise harness-driven acceptance flows
+    silently resolve an orchestrator with _interrupt_guard=None.
+    """
+    from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+
+    env = TestEnvironment(monkeypatch)
+    env.setup()
+    env.without_reviewer()
+
+    orchestrator = env.get_service(IRunPlanUseCase)
+
+    assert isinstance(orchestrator._interrupt_guard, InterruptGuard)
+
+    env.teardown()

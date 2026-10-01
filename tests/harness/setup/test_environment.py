@@ -306,6 +306,7 @@ class TestEnvironment(RealAdapterMixin):
         from teddy_executor.core.domain.models.orchestrator_ports import (
             OrchestratorPorts,
         )
+        from teddy_executor.core.utils.interrupt_guard import InterruptGuard
 
         self._container.register(
             IRunPlanUseCase,
@@ -318,6 +319,7 @@ class TestEnvironment(RealAdapterMixin):
                     report_assembler=self._container.resolve(IExecutionReportAssembler),
                     user_interactor=self._container.resolve(IUserInteractor),
                     plan_reviewer=None,
+                    interrupt_guard=self._container.resolve(InterruptGuard),
                 )
             ),
         )
