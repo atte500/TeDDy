@@ -51,11 +51,12 @@ All uncertainties were resolved during the Task Brief investigation; none block 
 - [x] [Technical] Guard mechanism: exists-check-then-retry vs atomic exclusive-create – Atomic exclusive-create (`mkdir()` without `exist_ok`) chosen: check-and-create is a single OS operation, eliminating the TOCTOU race where two processes both observe a free path.
 - [x] [Technical] Suffix-convention compatibility with `_calculate_continuation_name` – Verified: the `-(\d+)$` regex handles collision suffixes (`...-foo-2` migrates to `...-foo-3`), so one shared uniqueness mechanism cleanly covers both call sites.
 - [x] [Functional] Sub-second timestamps to avoid intra-second collisions – Deliberately rejected to keep session names readable/sortable; the trailing `-N` retry convention covers intra-second collisions instead.
+- [x] [Technical] `IFileSystemManager` enforcement style (ABC vs Protocol) – Resolved during Discovery: it is a `typing.Protocol`, not runtime-enforced. Adding a method is runtime-safe for all implementers, and `register_mock` uses `POSIXPathMock(spec=...)`, so spec-based mocks auto-gain the new method. No Green-to-Green re-partitioning required.
 
 ## Implementation Plan
 
 1. **Contract:** extend `IFileSystemManager` with `create_directory_exclusive(path: str) -> bool` (atomic create with parents; `True` on success; `False` iff `FileExistsError`; re-raise everything else) and update the port's contract doc with the atomicity guarantee and session-root-claiming intent.
-2. **Harness:** teach every in-memory `IFileSystemManager` fake (`tests/harness/setup/mocks.py`, `tests/harness/setup/mocking.py`) the same exclusive-create semantics via the designated mock registration helper (no bare dynamic mocks).
+2. **Harness:** configure happy-path `create_directory_exclusive` defaults (`return_value = True`) on the spec-based `IFileSystemManager` mock in the `mock_fs` fixture (`tests/harness/setup/mocks.py`) and `TestEnvironment._apply_fs_defaults` (`tests/harness/setup/test_environment.py`). Audit finding: there are NO hand-rolled in-memory fakes for this port — the harness exclusively uses `register_mock` (`POSIXPathMock(spec=IFileSystemManager)`), which auto-gains the new Protocol method, so no fake classes need teaching. Collision tests configure occupancy explicitly via `side_effect`.
 3. **Adapter:** implement `create_directory_exclusive` in `LocalFileSystemAdapter` via `self._resolve_path(path).mkdir(parents=True)` inside a `try/except FileExistsError` returning `False` (`True` on success); never `exist_ok=True`; no broad except.
 4. **Service helper:** add `SessionService._claim_session_root(base_name)` looping candidates `base_name`, `base_name-2`, `base_name-3`, ... against `create_directory_exclusive(f".teddy/sessions/{candidate}")`, returning the first claimed root path.
 5. **Consumer wiring (`create_session`):** replace the bare `session_root = f".teddy/sessions/{prefixed_name}"` bootstrap with a `_claim_session_root(f"{timestamp}-{clean_name}")` claim, then derive `turn_dir = f"{session_root}/01"` and create it via the existing tolerant `create_turn_directory` (safe: root is exclusively owned by this process).
@@ -64,12 +65,12 @@ All uncertainties were resolved during the Task Brief investigation; none block 
 
 **Test Harness strategy:** Red-first unit tests for the port contract (`tests/suites/unit/adapters/outbound/test_file_system_adapter_contract.py`) and for the helper/collision/migration behaviors (`tests/suites/unit/core/services/test_session_service.py`); sibling-integrity integration tests in `tests/suites/integration/core/services/test_session_service.py`. All workspaces use OS-designated temp dirs (`tempfile.mkdtemp()`); doubles injected via Constructor Injection through the existing fakes; strictly bound registration helpers only.
 
-**Green-to-Green audit note:** the post-commit hook runs the full suite on every commit. During Discovery the Plan Audit MUST verify `IFileSystemManager`'s enforcement style (ABC with `@abstractmethod` vs `typing.Protocol`). If abstract-enforced, re-partition so the port addition and all implementer updates (fakes, real adapter) land within green commits.
+**Green-to-Green audit verdict (Discovery complete):** `IFileSystemManager` is a `typing.Protocol` — not runtime-enforced — so the port addition cannot break implementers at runtime and NO re-partitioning is required. The pre-commit Mypy hook checks staged files only, so the port-only Contract commit stays green; the real adapter implements the method in the immediately-following Logic deliverable. Semantic deduplication check confirmed: keyword matches in `test_session_lifecycle_manager.py` and `test_session_orchestration_integration.py` are incidental (continuation migration flows without collision assertions); no existing coverage of exclusive-create or sibling-collision semantics.
 
 ## Deliverables
 
-- [ ] **Contract** - Add `create_directory_exclusive(path: str) -> bool` to the `IFileSystemManager` port and update the port contract doc (atomicity guarantee; session-root-claiming intent).
-- [ ] **Harness** - Add `create_directory_exclusive` semantics to all in-memory `IFileSystemManager` fakes in `tests/harness/setup/mocks.py` and `tests/harness/setup/mocking.py` via the designated mock registration helper.
+- [▶] **Contract** - Add `create_directory_exclusive(path: str) -> bool` to the `IFileSystemManager` port and update the port contract doc (atomicity guarantee; session-root-claiming intent).
+- [ ] **Harness** - Configure happy-path `create_directory_exclusive` defaults (`return_value = True`) on the spec-based `IFileSystemManager` mock in the `mock_fs` fixture (`tests/harness/setup/mocks.py`) and `TestEnvironment._apply_fs_defaults` (`tests/harness/setup/test_environment.py`).
 - [ ] **Logic** - Implement `create_directory_exclusive` in `LocalFileSystemAdapter` (atomic `mkdir(parents=True)` without `exist_ok`; `FileExistsError` returns `False`; other errors re-raised) driven by unit contract tests (TDD).
 - [ ] **Logic** - Add `_claim_session_root` suffix-retry helper to `SessionService` driven by unit tests (claims base name when free; retries `-2`, `-3`; stops at first success).
 - [ ] **Migration** - Wire `_claim_session_root` into `create_session` (exclusive root claim, then tolerant `01/` creation) with collision unit tests (identical `{timestamp}-{name}` produces a distinct `-2` root; first session's files untouched).
@@ -77,6 +78,8 @@ All uncertainties were resolved during the Task Brief investigation; none block 
 - [ ] **Wiring** - Sibling-integrity integration test covering both call sites (pre-existing sibling's `session.context`, prompt file, and `01/meta.yaml` byte-identical before/after the second session's creation/migration).
 
 ## Implementation Notes
+
+- **Plan Audit (Orientation):** `IFileSystemManager` confirmed as `typing.Protocol` (not ABC): port additions are runtime-safe, spec-based mocks auto-gain methods, and no Green-to-Green re-partitioning is needed. Harness surface audited: no hand-rolled fakes exist for the port (the only Fake class is the unrelated `FakeHTTPResponse`); the port is provisioned exclusively via `register_mock`/`POSIXPathMock(spec=...)` in the `mocks.py` fixtures and `TestEnvironment._apply_fs_defaults`. Harness deliverable reworded accordingly. Semantic dedup confirmed: no existing collision/exclusive-create coverage; lifecycle-manager and orchestration keyword matches are incidental.
 
 ## Verification
 
