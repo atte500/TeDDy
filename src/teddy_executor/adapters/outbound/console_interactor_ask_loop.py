@@ -12,6 +12,7 @@ from prompt_toolkit.shortcuts import prompt as ptk_prompt
 from teddy_executor.adapters.outbound.console_interactor_helpers import (
     restore_terminal_mode,
 )
+from teddy_executor.core.utils.stdin_ownership import stdin_owned
 
 if TYPE_CHECKING:
     from teddy_executor.adapters.outbound.console_tooling import (
@@ -132,38 +133,39 @@ class ConsoleAskLoop:
         opens an external editor synchronously. After the editor exits, the
         file content is read and returned if non-empty.
         """
-        while True:
-            if self._active_editor_path:
-                prompt_text = (
-                    "Editor opened. Terminal reply or [Enter] to confirm editor › "
-                )
-            else:
-                prompt_text = "Response (type 'e' for editor) › "
-            raw_input = self._pt_prompt(prompt_text).strip()
-            # Gate stripping: only strip when editor is active
-            # (prevents antipattern of stripping intentional escape sequences
-            # from direct user input)
-            if self._active_editor_path:
-                user_input = self._strip_escape_sequences(raw_input)
-            else:
-                user_input = raw_input
+        with stdin_owned():
+            while True:
+                if self._active_editor_path:
+                    prompt_text = (
+                        "Editor opened. Terminal reply or [Enter] to confirm editor › "
+                    )
+                else:
+                    prompt_text = "Response (type 'e' for editor) › "
+                raw_input = self._pt_prompt(prompt_text).strip()
+                # Gate stripping: only strip when editor is active
+                # (prevents antipattern of stripping intentional escape sequences
+                # from direct user input)
+                if self._active_editor_path:
+                    user_input = self._strip_escape_sequences(raw_input)
+                else:
+                    user_input = raw_input
 
-            if user_input.lower() == "e":
-                content = self._launch_editor_background(prompt)
-                if content:
-                    return content
-                # FIX: flush stale terminal escape sequences immediately after
-                # the editor spawn, BEFORE the next prompt reads from stdin.
-                self._flush_stdin()
-                # Empty editor content: back to normal prompt
-                continue
+                if user_input.lower() == "e":
+                    content = self._launch_editor_background(prompt)
+                    if content:
+                        return content
+                    # FIX: flush stale terminal escape sequences immediately after
+                    # the editor spawn, BEFORE the next prompt reads from stdin.
+                    self._flush_stdin()
+                    # Empty editor content: back to normal prompt
+                    continue
 
-            if user_input:
-                return user_input
+                if user_input:
+                    return user_input
 
-            response = self._handle_empty_input(prompt)
-            if response is not None:
-                return response
+                response = self._handle_empty_input(prompt)
+                if response is not None:
+                    return response
 
     def _launch_editor_background(self, prompt: str) -> str:
         """Opens an external editor in the background and returns the harvested content.

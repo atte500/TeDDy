@@ -13,6 +13,7 @@ from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
+from teddy_executor.core.utils.stdin_ownership import stdin_owned
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
 from teddy_executor.adapters.outbound.console_interactor_ask_loop import (
     ConsoleAskLoop,
@@ -39,7 +40,8 @@ class ConsoleInteractorAdapter(IUserInteractor):
 
     def prompt(self, text: str, default: str = "") -> str:
         """Prompts the user using typer.prompt."""
-        return typer.prompt(text, default=default, show_default=False, err=True)
+        with stdin_owned():
+            return typer.prompt(text, default=default, show_default=False, err=True)
 
     def prompt_for_message(
         self, initial_message: Optional[str] = None
@@ -51,7 +53,8 @@ class ConsoleInteractorAdapter(IUserInteractor):
         if mock_output:
             return mock_output
 
-        return self._launch_editor_synchronous(initial_message or "")
+        with stdin_owned():
+            return self._launch_editor_synchronous(initial_message or "")
 
     def display_message(self, message: str) -> None:
         """Displays a message using Rich console to ensure consistent coloring."""
@@ -119,7 +122,10 @@ class ConsoleInteractorAdapter(IUserInteractor):
         echo_plan_summary(plan)
         try:
             prompt = "\nExecute this plan? (y/n): "
-            response = typer.prompt(prompt, default="n", show_default=False, err=True)
+            with stdin_owned():
+                response = typer.prompt(
+                    prompt, default="n", show_default=False, err=True
+                )
             return response.lower().strip().startswith("y")
         except (EOFError, typer.Abort):
             return False
@@ -164,23 +170,24 @@ class ConsoleInteractorAdapter(IUserInteractor):
                     self._restore_terminal()
 
             message = ""
-            while True:
-                prompt = f"{action_prompt}\nApprove? (y/n/m): "
-                # Use typer.prompt which handles echoing to stderr correctly
-                response = (
-                    typer.prompt(prompt, default="n", show_default=False, err=True)
-                    .lower()
-                    .strip()
-                )
+            with stdin_owned():
+                while True:
+                    prompt = f"{action_prompt}\nApprove? (y/n/m): "
+                    # Use typer.prompt which handles echoing to stderr correctly
+                    response = (
+                        typer.prompt(prompt, default="n", show_default=False, err=True)
+                        .lower()
+                        .strip()
+                    )
 
-                if response.startswith("y"):
-                    return True, message
+                    if response.startswith("y"):
+                        return True, message
 
-                if response.startswith("m"):
-                    message = self._launch_editor_synchronous("")
-                    continue
+                    if response.startswith("m"):
+                        message = self._launch_editor_synchronous("")
+                        continue
 
-                return False, ""
+                    return False, ""
         except (EOFError, typer.Abort):
             # If input stream is closed (e.g., in non-interactive script),
             # default to denying the action.
@@ -206,6 +213,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
         message: str,
     ) -> tuple[bool, str]:
         """Displays a handoff request and asks for confirmation."""
-        return display_handoff_and_confirm(
-            action_type, target_agent, resources, message
-        )
+        with stdin_owned():
+            return display_handoff_and_confirm(
+                action_type, target_agent, resources, message
+            )
