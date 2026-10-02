@@ -122,7 +122,7 @@ class ConsoleAskLoop:
                 return ""
         try:
             return ptk_prompt(prompt_text, history=self._history)
-        except (EOFError, KeyboardInterrupt):
+        except EOFError:
             return ""
 
     def run(self, prompt: str) -> str:
