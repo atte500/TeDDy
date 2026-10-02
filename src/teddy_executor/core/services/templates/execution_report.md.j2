@@ -125,13 +125,6 @@
 {{ render_resource(path, content) }}
 {% endfor %}
 {%- endif %}
-{% if report.user_request %}
-
-## User Request
-{{ report.user_request | fence }}text
-{{ report.user_request }}
-{{ report.user_request | fence }}
-{% endif %}
 
 {# Classify content-bearing logs ONCE — the single source of truth deciding
    where each log's content renders:
@@ -295,4 +288,11 @@ _**Hint:** NOW you MUST use READ on the most promising results_
 1. Identify the root cause of the failure based on your system instructions (MRP) & context.
 2. Submit a corrected plan focusing strictly on the failed/problematic action(s).
 3. Defer the remaining steps of the original plan to subsequent turns.
+{% endif %}
+{% if report.user_request %}
+
+## User Request
+{{ report.user_request | fence }}text
+{{ report.user_request }}
+{{ report.user_request | fence }}
 {% endif %}
