@@ -4,6 +4,7 @@ import subprocess  # nosec
 import tempfile
 from typing import List, Optional
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
+from teddy_executor.core.utils.terminal import restore_cooked_mode
 
 
 class SystemEnvironmentAdapter(ISystemEnvironment):
@@ -38,27 +39,10 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
         try:
             subprocess.run(args, check=check, stdin=subprocess.DEVNULL)  # nosec B603
         finally:
-            # Emergency TTY restore for Darwin/Linux.
-            # We guard against running during tests to prevent SIGTTOU hangs in CI workers.
-            if (
-                sys.platform != "win32"
-                and sys.stdin.isatty()
-                and "PYTEST_CURRENT_TEST" not in os.environ
-            ):
-                try:
-                    import termios
-
-                    fd = sys.stdin.fileno()
-                    attrs = termios.tcgetattr(fd)
-                    attrs[0] |= termios.ICRNL
-                    attrs[3] |= (
-                        termios.ICANON | termios.ECHO | termios.ISIG | termios.IEXTEN
-                    )
-                    termios.tcsetattr(fd, termios.TCSAFLUSH, attrs)
-                except Exception as e:
-                    import logging
-
-                    logging.getLogger(__name__).debug("Failed to restore TTY: %s", e)
+            # Emergency TTY restore for Darwin/Linux, delegated to the shared
+            # helper (the single source of truth; the TTY/test guard lives inside
+            # it so no SIGTTOU hangs occur under the CI workers).
+            restore_cooked_mode()
 
     def create_temp_file(self, suffix: str = "", mode: str = "w") -> str:
         with tempfile.NamedTemporaryFile(mode=mode, suffix=suffix, delete=False) as tf:

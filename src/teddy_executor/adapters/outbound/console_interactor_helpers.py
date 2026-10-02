@@ -1,5 +1,3 @@
-import logging
-import sys
 from typing import List, Optional
 
 import typer
@@ -9,39 +7,16 @@ from teddy_executor.adapters.inbound.cli_formatter import (
     echo_skipped_action,
 )
 from teddy_executor.core.domain.models.change_set import ChangeSet
-
-logger = logging.getLogger(__name__)
+from teddy_executor.core.utils.terminal import restore_cooked_mode
 
 
 def restore_terminal_mode():
-    """Restores stdin to canonical/echo mode (Unix only)."""
-    import os
+    """Restores stdin to canonical/echo mode (Unix only).
 
-    if (
-        sys.platform == "win32"
-        or "PYTEST_CURRENT_TEST" in os.environ
-        or not sys.stdin.isatty()
-    ):
-        return
-
-    try:
-        import termios
-
-        try:
-            fd = sys.stdin.fileno()
-        except Exception:
-            return
-        attrs = termios.tcgetattr(fd)
-        # iflags: Ensure ICRNL is set (Map CR to NL on input)
-        attrs[0] = attrs[0] | termios.ICRNL
-        # lflags: Re-enable canonical mode (ICANON) and echo (ECHO)
-        attrs[3] = (
-            attrs[3] | termios.ICANON | termios.ECHO | termios.ISIG | termios.IEXTEN
-        )
-        # Apply changes and FLUSH the input buffer
-        termios.tcsetattr(fd, termios.TCSAFLUSH, attrs)
-    except Exception as e:
-        logger.debug("Failed to restore terminal mode: %s", e)
+    Delegates to the shared TTY-guarded ``restore_cooked_mode`` helper (the
+    single source of truth for the cooked-mode restore concern).
+    """
+    restore_cooked_mode()
 
 
 def prepare_external_preview_files(

@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ConfirmScreen,
 )
+from teddy_executor.core.utils.terminal import restore_cooked_mode
 
 logger = logging.getLogger(__name__)
 
@@ -192,23 +193,12 @@ def _flush_stdin() -> None:
 def _restore_terminal_cooked_mode() -> None:
     """Restore terminal to cooked mode after subprocess.run inside suspend.
 
-    Mirrors the emergency TTY restore found in SystemEnvironmentAdapter.run_command().
-    A child process (like vim) may leave the terminal in raw mode after exit.
-    This ensures cooked mode (ICANON | ECHO | ISIG | IEXTEN) is re-established
-    before Textual's resume_application_mode() runs, so Ctrl+C keeps
-    GENERATING SIGINT.
+    Delegates to the shared TTY-guarded ``restore_cooked_mode`` helper (the
+    single source of truth) so cooked mode (ICANON | ECHO | ISIG | IEXTEN) is
+    re-established before Textual's resume_application_mode() runs and Ctrl+C
+    keeps GENERATING SIGINT.
     """
-    try:
-        if sys.stdin.isatty():
-            fd = sys.stdin.fileno()
-            import termios  # noqa: PLC0415
-
-            attrs = termios.tcgetattr(fd)
-            attrs[0] |= termios.ICRNL
-            attrs[3] |= termios.ICANON | termios.ECHO | termios.ISIG | termios.IEXTEN
-            termios.tcsetattr(fd, termios.TCSAFLUSH, attrs)
-    except Exception as e:
-        logger.debug("Failed to restore terminal cooked mode: %s", e)
+    restore_cooked_mode()
 
 
 def _restore_foreground_process_group() -> None:
