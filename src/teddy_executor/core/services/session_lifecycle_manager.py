@@ -174,6 +174,23 @@ class SessionLifecycleManager:
                 # Empty reply terminates the session (abort-flow idiom);
                 # the awaiting state is preserved (flag NOT cleared).
                 return (session_name, None)
+        if not reply and pipeline:
+            # Case 2 stop-again: re-print the agent's MESSAGE and exit,
+            # preserving the awaiting state (no meta mutation, no
+            # finalization, no next turn) so a later `resume -p -m` can
+            # inject the reply.
+            report = self._synthesize_message_report(turn_path)
+            message_logs = [
+                log for log in report.action_logs if log.action_type == "MESSAGE"
+            ]
+            assert message_logs, (
+                "Synthesized message report must carry a MESSAGE action log."
+            )
+            content = str(message_logs[0].params.get("content", ""))
+            self._user_interactor.display_message(
+                f"--- MESSAGE from TeDDy ---\n{content}"
+            )
+            return (session_name, report)
         if not reply:
             self._user_interactor.display_message(
                 "This session is awaiting your reply. Re-run interactively "
