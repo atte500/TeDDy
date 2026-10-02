@@ -35,8 +35,9 @@ def test_pipeline_message_turn_and_resume_m_round_trip(tmp_path, monkeypatch):
 
     As a script author, I want a `-p` session whose turn ends with a
     MESSAGE action to stop without finalizing the turn, so that I can
-    inject the reply via `teddy resume -m` and the session continues
-    without re-executing the message turn's plan.
+    inject the reply via `teddy resume -m`: the session finalizes the
+    interrupted turn as a standard message-turn report (no User Request
+    section) and continues from there.
     """
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
@@ -102,8 +103,16 @@ def test_pipeline_message_turn_and_resume_m_round_trip(tmp_path, monkeypatch):
     assert "awaiting_reply" not in meta_after, (
         "The awaiting_reply flag must be cleared once the reply is consumed."
     )
-    assert not (turn01 / "report.md").exists(), (
-        "The awaiting-reply plan must NOT be re-executed on resume."
+    assert (turn01 / "report.md").exists(), (
+        "The reply must finalize the interrupted turn's report."
+    )
+    report01 = (turn01 / "report.md").read_text(encoding="utf-8")
+    assert "Hi! How are you?" in report01, (
+        "The finalized report must carry the agent's MESSAGE content."
+    )
+    assert "## User Request" not in report01, (
+        "The consumption path must not append a User Request section — "
+        "the append applies only when a prior report already exists."
     )
     assert (session_dir / "02" / "plan.md").exists()
     assert (session_dir / "02" / "report.md").exists()

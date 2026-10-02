@@ -3,7 +3,14 @@ from pathlib import Path
 from typing import Any, Optional, TYPE_CHECKING
 
 import yaml
-from teddy_executor.core.domain.models.execution_report import ExecutionReport
+from teddy_executor.core.domain.models.execution_report import (
+    ActionLog,
+    ActionStatus,
+    ExecutionReport,
+    RunStatus,
+    RunSummary,
+)
+from teddy_executor.core.domain.models.plan import ActionType
 
 from typing import Sequence
 
@@ -177,9 +184,8 @@ class SessionLifecycleManager:
             key: value for key, value in turn_meta.items() if key != "awaiting_reply"
         }
         self._session_service.save_turn_meta(turn_path, consumed_meta)
-        next_turn_dir = self._session_service.transition_to_next_turn(
-            plan_path=f"{turn_path}/plan.md"
-        )
+        report = self._synthesize_message_report(turn_path)
+        next_turn_dir = self.finalize_turn(f"{turn_path}/plan.md", report)
         return self._handle_planning_and_execution(
             next_turn_dir,
             orchestrator,
@@ -187,6 +193,53 @@ class SessionLifecycleManager:
             project_context=project_context,
             pipeline=pipeline,
             message=reply,
+        )
+
+    def _synthesize_message_report(self, turn_path: str) -> ExecutionReport:
+        """Synthesizes the standard message-turn report from the interrupted plan.
+
+        A pipeline MESSAGE turn stops before finalization, so its report is
+        reconstructed from plan.md on consumption: the plan is parsed via
+        the injected IPlanParser, the MESSAGE action's content becomes the
+        report's single MESSAGE action log, and the injected ITimeService
+        timestamps the run summary. The standard formatter renders it —
+        the same shape any finalized message turn produces (NO
+        ## User Request section: the consumption path never appends; the
+        interrupted turn has no prior report).
+        """
+        assert self._plan_parser is not None, (
+            "SessionPorts.plan_parser must be injected to synthesize the "
+            "awaiting-reply turn's report."
+        )
+        assert self._time_service is not None, (
+            "SessionPorts.time_service must be injected to synthesize the "
+            "awaiting-reply turn's report."
+        )
+        plan_path = f"{turn_path}/plan.md"
+        plan = self._plan_parser.parse(
+            str(self._file_system_manager.read_file(plan_path))
+        )
+        message_actions = [
+            action for action in plan.actions if action.type == ActionType.MESSAGE
+        ]
+        assert message_actions, (
+            f"Awaiting-reply turn's plan at {plan_path} must contain a MESSAGE action."
+        )
+        content = str(message_actions[0].params.get("content", ""))
+        timestamp = self._time_service.now_utc()
+        return ExecutionReport(
+            run_summary=RunSummary(
+                status=RunStatus.SUCCESS, start_time=timestamp, end_time=timestamp
+            ),
+            plan_title=plan.title,
+            action_logs=[
+                ActionLog(
+                    status=ActionStatus.SUCCESS,
+                    action_type="MESSAGE",
+                    params={"content": content},
+                    details=content,
+                )
+            ],
         )
 
     def _handle_planning_and_execution(

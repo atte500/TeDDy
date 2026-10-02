@@ -5,18 +5,23 @@ A pipeline MESSAGE turn ends with `plan.md`, NO `report.md`, and
 that turn as PENDING_PLAN, which would wrongly RE-EXECUTE the message
 plan. The state machine must consult the meta flag at the top of
 `resume`: the awaiting turn is consumed (flag cleared via the
-session-manager port), the session transitions to the next turn, and
+session-manager port), the interrupted turn is FINALIZED (the standard
+message-turn report is synthesized from its plan via the injected plan
+parser and time service and written through finalize_turn), and
 planning receives the user's reply — injected via `resume -m` or
 prompted interactively (mirroring the abort flow). Non-awaiting turns
 keep the exact existing resume behavior.
 """
 
-from unittest.mock import create_autospec
+from typing import cast
+from unittest.mock import Mock, create_autospec
 
 import pytest
 
 from teddy_executor.core.domain.models.execution_report import ExecutionReport
+from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.domain.models.planning_ports import SessionPorts
+from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
@@ -26,6 +31,7 @@ from teddy_executor.core.ports.outbound.session_manager import (
     ISessionManager,
     SessionState,
 )
+from teddy_executor.core.ports.outbound.time_service import ITimeService
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.services.session_lifecycle_manager import (
     SessionLifecycleManager,
@@ -38,11 +44,32 @@ from tests.harness.setup.mocking import register_mock
 AWAITING_TURN = ".teddy/sessions/20260417_120000-feature/01"
 NEXT_TURN = ".teddy/sessions/20260417_120000-feature/02"
 REPLY = "I am great, tell me a joke"
+AGENT_MESSAGE = "Hi there! How are you doing today?"
+PLAN_CONTENT = "# Greet User and Check In\n\n## Action Plan\n\n### MESSAGE\n..."
+META_CONTENT = "agent_name: assistant\nturn_cost: 0.0\n"
+FORMATTED_REPORT = (
+    "# Execution Report: Greet User and Check In\n\n## Action Log\n\n"
+    "### `MESSAGE`\n- **User Reply:**\n```\n" + AGENT_MESSAGE + "\n```\n"
+)
 
 
 @pytest.fixture
 def manager(container):
-    """SessionLifecycleManager with auto-specced port doubles."""
+    """SessionLifecycleManager with auto-specced port doubles plus the
+    consumption doubles riding the Seam's optional ports."""
+    plan_parser = cast(IPlanParser, Mock(spec=IPlanParser))
+    plan_parser.parse.return_value = Plan(
+        title="Greet User and Check In",
+        rationale="Communication turn",
+        actions=[
+            ActionData(
+                type="MESSAGE",
+                params={"content": AGENT_MESSAGE},
+                description="Message to user",
+            )
+        ],
+    )
+    time_service = cast(ITimeService, Mock(spec=ITimeService))
     ports = SessionPorts(
         session_service=register_mock(container, ISessionManager),
         file_system_manager=register_mock(container, IFileSystemManager),
@@ -50,6 +77,8 @@ def manager(container):
         user_interactor=register_mock(container, IUserInteractor),
         session_planner=register_mock(container, SessionPlanner),
         replanner=register_mock(container, SessionReplanner),
+        plan_parser=plan_parser,
+        time_service=time_service,
     )
     return SessionLifecycleManager(ports=ports)
 
@@ -78,12 +107,32 @@ def _arrange_awaiting_reply(manager) -> None:
     manager._session_planner.trigger_new_plan.return_value = ("feature", None)
 
 
+def _arrange_finalization_surface(manager) -> None:
+    """Arms the finalize_turn surface for the approved finalize semantics.
+
+    finalize_turn reads the turn meta via the filesystem port (path-keyed:
+    meta yaml vs plan markdown), formats the synthesized report, and writes
+    it to <turn>/report.md via to_root_relative.
+    """
+    manager._session_service.to_root_relative.side_effect = lambda turn_dir, filename: (
+        f"{turn_dir}/{filename}"
+    )
+    manager._file_system_manager.path_exists.side_effect = lambda path: str(
+        path
+    ).endswith("meta.yaml")
+    manager._file_system_manager.read_file.side_effect = lambda path: (
+        PLAN_CONTENT if str(path).endswith("plan.md") else META_CONTENT
+    )
+    manager._report_formatter.format.return_value = FORMATTED_REPORT
+
+
 class TestAwaitingReplyStateMachine:
     """An awaiting-reply turn must be consumed, never re-executed."""
 
     def test_injected_message_clears_flag_transitions_and_plans(self, manager) -> None:
         # Arrange
         _arrange_awaiting_reply(manager)
+        _arrange_finalization_surface(manager)
         orchestrator = _orchestrator_with_report()
 
         # Act
@@ -103,10 +152,16 @@ class TestAwaitingReplyStateMachine:
         manager._session_service.save_turn_meta.assert_called_once_with(
             AWAITING_TURN, {"agent_name": "assistant"}
         )
-        # The session transitions before planning the reply.
-        manager._session_service.transition_to_next_turn.assert_called_once_with(
-            plan_path=f"{AWAITING_TURN}/plan.md"
-        )
+        # The interrupted turn is FINALIZED (approved semantics): the
+        # transition is routed through finalize_turn, which carries the
+        # synthesized execution report alongside the plan path.
+        transition_call = manager._session_service.transition_to_next_turn.call_args
+        assert transition_call.kwargs["plan_path"] == f"{AWAITING_TURN}/plan.md"
+        assert "execution_report" in transition_call.kwargs
+        # The finalized report lands at 01/report.md via finalize_turn.
+        manager._file_system_manager.write_file.assert_called_once()
+        written_path = str(manager._file_system_manager.write_file.call_args.args[0])
+        assert written_path.endswith("01/report.md"), written_path
         manager._session_planner.trigger_new_plan.assert_called_once_with(
             NEXT_TURN, message=REPLY
         )
@@ -117,6 +172,7 @@ class TestAwaitingReplyStateMachine:
     ) -> None:
         # Arrange
         _arrange_awaiting_reply(manager)
+        _arrange_finalization_surface(manager)
         manager._user_interactor.ask_question.return_value = "my prompted reply"
         orchestrator = _orchestrator_with_report()
 
