@@ -70,7 +70,9 @@ class SessionLifecycleManager:
 
         if state == SessionState.PENDING_PLAN:
             turn_meta = self._session_service.load_turn_meta(turn_path)
-            if turn_meta.get("awaiting_reply"):
+            if turn_meta.get("awaiting_reply") or (
+                message and self._is_communication_turn(turn_path)
+            ):
                 return self._consume_awaiting_reply(
                     turn_path,
                     turn_meta,
@@ -125,6 +127,23 @@ class SessionLifecycleManager:
             )
 
         return (session_name, None)
+
+    def _is_communication_turn(self, turn_path: str) -> bool:
+        """Reports whether the pending turn's plan is a MESSAGE-only turn.
+
+        An interactively-interrupted MESSAGE turn lands in PENDING_PLAN
+        WITHOUT the awaiting_reply flag (only the pipeline-stop path sets
+        it). Such a turn is semantically awaiting a reply, so an injected
+        `resume -m` reply must be consumed (mirroring
+        `_consume_awaiting_reply`) rather than dropped while the MESSAGE
+        plan is re-executed and re-prompts the user. Unparseable or
+        non-communication plans degrade gracefully to the re-execute path.
+        """
+        try:
+            plan = self._parse_awaiting_plan(turn_path)
+        except Exception:
+            return False
+        return plan.is_communication_turn()
 
     def _append_user_request(self, turn_path: str, message: str) -> None:
         """Appends a smart-fenced `## User Request` section to the turn report.
