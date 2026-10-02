@@ -51,7 +51,9 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
                     fd = sys.stdin.fileno()
                     attrs = termios.tcgetattr(fd)
                     attrs[0] |= termios.ICRNL
-                    attrs[3] |= termios.ICANON | termios.ECHO
+                    attrs[3] |= (
+                        termios.ICANON | termios.ECHO | termios.ISIG | termios.IEXTEN
+                    )
                     termios.tcsetattr(fd, termios.TCSAFLUSH, attrs)
                 except Exception as e:
                     import logging

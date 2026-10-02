@@ -194,8 +194,9 @@ def _restore_terminal_cooked_mode() -> None:
 
     Mirrors the emergency TTY restore found in SystemEnvironmentAdapter.run_command().
     A child process (like vim) may leave the terminal in raw mode after exit.
-    This ensures cooked mode (ICANON | ECHO) is re-established before
-    Textual's resume_application_mode() runs.
+    This ensures cooked mode (ICANON | ECHO | ISIG | IEXTEN) is re-established
+    before Textual's resume_application_mode() runs, so Ctrl+C keeps
+    GENERATING SIGINT.
     """
     try:
         if sys.stdin.isatty():
@@ -204,7 +205,7 @@ def _restore_terminal_cooked_mode() -> None:
 
             attrs = termios.tcgetattr(fd)
             attrs[0] |= termios.ICRNL
-            attrs[3] |= termios.ICANON | termios.ECHO
+            attrs[3] |= termios.ICANON | termios.ECHO | termios.ISIG | termios.IEXTEN
             termios.tcsetattr(fd, termios.TCSAFLUSH, attrs)
     except Exception as e:
         logger.debug("Failed to restore terminal cooked mode: %s", e)
