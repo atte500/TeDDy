@@ -264,7 +264,15 @@ def test_resume_pipeline_message_finalizes_interrupted_turn(tmp_path, monkeypatc
     assert (turn01 / "report.md").exists()
     report01 = (turn01 / "report.md").read_text(encoding="utf-8")
     assert "**User Reply:**" in report01
-    assert "I am great, tell me a joke" in report01
+    user_reply_section = report01[report01.index("**User Reply:**") :]
+    assert "I am great, tell me a joke" in user_reply_section, (
+        "The finalized report must render the USER's injected reply under "
+        "`- **User Reply:**`."
+    )
+    assert "Hi! How are you?" not in user_reply_section, (
+        "The finalized report must NEVER mislabel the agent's own message as "
+        "the user's reply (Bug 54 / defect 4b)."
+    )
     assert "## User Request" not in report01
     meta01 = (turn01 / "meta.yaml").read_text(encoding="utf-8")
     assert "awaiting_reply" not in meta01
@@ -320,13 +328,35 @@ def test_resume_pipeline_without_message_stays_awaiting(tmp_path, monkeypatch):
         ],
     )
     assert resume_result.exit_code == 0
-    # The agent's message is re-printed on the stop-again path. The
-    # re-print presents through the injected interactor (the stop-again
-    # Logic deliverable routes it through `display_message`), whose
-    # agent-message channel is stderr; assert against the full captured
-    # terminal output so the scenario is verified faithfully regardless
-    # of channel.
-    assert "Hi! How are you?" in (resume_result.stdout + resume_result.stderr)
+
+    # Bug 54 / defect 4a: the stop-again re-print must present the SAME
+    # status header + `--- MESSAGE from TeDDy ---` framing as the initial
+    # pipeline stop. Both paths route through the shared MESSAGE-rendering
+    # helpers, which write to stdout via `typer.secho`.
+    def _status_header(output: str, title: str = "Greeting") -> str:
+        for line in output.splitlines():
+            stripped = line.strip()
+            if stripped == title or (
+                len(stripped) > len(title)
+                and stripped.endswith(title)
+                and stripped[0] in "🟢🟡🔴"
+            ):
+                return stripped
+        return ""
+
+    start_output = start_result.stdout + start_result.stderr
+    resume_output = resume_result.stdout + resume_result.stderr
+    start_header = _status_header(start_output)
+    assert start_header, (
+        "The initial pipeline stop must present the plan status header."
+    )
+    assert _status_header(resume_output) == start_header, (
+        "The stop-again re-print must present the SAME status header as the "
+        "initial pipeline stop (Bug 54 / defect 4a)."
+    )
+    assert start_output.count("--- MESSAGE from TeDDy ---") == 1
+    assert resume_output.count("--- MESSAGE from TeDDy ---") == 1
+    assert "Hi! How are you?" in resume_output
     # No turn 02, no finalization, awaiting flag preserved.
     assert not (session_dir / "02").exists()
     assert not (turn01 / "report.md").exists()
