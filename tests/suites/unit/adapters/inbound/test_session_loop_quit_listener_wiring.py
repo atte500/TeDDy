@@ -24,26 +24,14 @@ from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListene
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+from tests.harness.setup.container_stub import ContainerStub
 from tests.harness.setup.fake_quit_key_listener import FakeQuitKeyListener
-
-
-class _ContainerStub:
-    """Hand-rolled punq-compatible container double (no bare MagicMock)."""
-
-    def __init__(self, mapping: dict[type, object]) -> None:
-        self._mapping = mapping
-
-    def resolve(self, service_type: type, **kwargs: object) -> object:
-        service = self._mapping.get(service_type)
-        if service is None:
-            return Mock()
-        return service
 
 
 def _build_quit_listener_harness(
     listener: FakeQuitKeyListener,
     resume_side_effect: object,
-) -> _ContainerStub:
+) -> ContainerStub:
     """Container stub wiring the boundary's dependencies behind a fake listener.
 
     The InterruptGuard is a REAL guard over a spec-bound config double (the
@@ -67,7 +55,7 @@ def _build_quit_listener_harness(
 
     guard = InterruptGuard(config_service=config_service, monotonic=time.monotonic)
 
-    return _ContainerStub(
+    return ContainerStub(
         {
             IRunPlanUseCase: orchestrator,
             ISessionManager: session_manager,

@@ -32,19 +32,7 @@ from teddy_executor.core.ports.outbound.markdown_report_formatter import (
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
-
-
-class _ContainerStub:
-    """Hand-rolled punq-compatible container double (no bare MagicMock)."""
-
-    def __init__(self, mapping: dict[type, object]) -> None:
-        self._mapping = mapping
-
-    def resolve(self, service_type: type, **kwargs: object) -> object:
-        service = self._mapping.get(service_type)
-        if service is None:
-            return Mock()
-        return service
+from tests.harness.setup.container_stub import ContainerStub
 
 
 def _build_resume_harness() -> SimpleNamespace:
@@ -82,7 +70,7 @@ def _build_resume_harness() -> SimpleNamespace:
     report_formatter = Mock(spec=IMarkdownReportFormatter)
     report_formatter.format.return_value = "# Report"
 
-    container = _ContainerStub(
+    container = ContainerStub(
         {
             IRunPlanUseCase: orchestrator,
             ISessionManager: session_manager,

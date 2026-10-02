@@ -22,24 +22,12 @@ from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.utils.interrupt_guard import InterruptGuard
-
-
-class _ContainerStub:
-    """Hand-rolled punq-compatible container double (no bare MagicMock)."""
-
-    def __init__(self, mapping: dict[type, object]) -> None:
-        self._mapping = mapping
-
-    def resolve(self, service_type: type, **kwargs: object) -> object:
-        service = self._mapping.get(service_type)
-        if service is None:
-            return Mock()
-        return service
+from tests.harness.setup.container_stub import ContainerStub
 
 
 def _build_interrupt_harness(
     resume_side_effect: object = KeyboardInterrupt,
-) -> tuple[_ContainerStub, Mock]:
+) -> tuple[ContainerStub, Mock]:
     """Container stub + orchestrator double for the interrupt wiring.
 
     The InterruptGuard is a REAL guard over a spec-bound config double
@@ -63,7 +51,7 @@ def _build_interrupt_harness(
 
     guard = InterruptGuard(config_service=config_service, monotonic=time.monotonic)
 
-    container = _ContainerStub(
+    container = ContainerStub(
         {
             IRunPlanUseCase: orchestrator,
             ISessionManager: session_manager,
