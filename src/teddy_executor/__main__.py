@@ -113,6 +113,12 @@ OPT_NO_COPY = typer.Option(
 OPT_UI_MODE = typer.Option(
     None, "--tui/--console", help="Force TUI or Console mode.", show_default=False
 )
+OPT_PIPELINE = typer.Option(
+    False,
+    "--pipeline",
+    "-p",
+    help="Pipeline mode: auto-approve all actions, requires -m, exits after first ## Message.",
+)
 
 
 @app.command()
@@ -124,12 +130,7 @@ def start(  # noqa: PLR0913
     yolo: bool = typer.Option(
         False, "--yolo", "-y", help="Auto-approve all actions (non-interactive mode)."
     ),
-    pipeline: bool = typer.Option(
-        False,
-        "--pipeline",
-        "-p",
-        help="Pipeline mode: auto-approve all actions, requires -m, exits after first ## Message.",
-    ),
+    pipeline: bool = OPT_PIPELINE,
     yes: bool = typer.Option(False, "--yes", hidden=True),
     no_interactive: bool = typer.Option(False, "--no-interactive", hidden=True),
     non_interactive: bool = typer.Option(False, "--non-interactive", hidden=True),
@@ -405,6 +406,7 @@ def resume(  # noqa: PLR0913
         "-m",
         help="Inject a user request/reply without interactive prompting.",
     ),
+    pipeline: bool = OPT_PIPELINE,
 ):
     """
     Intelligently resumes the last turn of a session or starts a new one.
@@ -422,12 +424,13 @@ def resume(  # noqa: PLR0913
     handle_resume_session(
         container=container,
         path=path,
-        interactive=not (yolo or yes or no_interactive or non_interactive),
+        interactive=not (yolo or pipeline or yes or no_interactive or non_interactive),
         no_copy=no_copy,
         model=model,
         provider=provider,
         api_key=api_key,
         message=message,
+        pipeline=pipeline,
     )
 
 

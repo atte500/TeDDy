@@ -652,6 +652,7 @@ def handle_resume_session(  # noqa: PLR0913
     provider: Optional[str] = None,
     api_key: Optional[str] = None,
     message: Optional[str] = None,
+    pipeline: bool = False,
 ):
     """Logic for the 'resume' command."""
     import threading
@@ -693,6 +694,7 @@ def handle_resume_session(  # noqa: PLR0913
             interactive=interactive,
             no_copy=no_copy,
             message=message,
+            pipeline=pipeline,
         )
 
     except Exception as e:

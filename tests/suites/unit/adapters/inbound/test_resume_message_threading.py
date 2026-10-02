@@ -1,11 +1,14 @@
-"""Unit tests: `--message/-m` threading through the resume CLI handlers.
+"""Unit tests: `--message/-m` and `--pipeline/-p` threading through the
+resume CLI handlers.
 
 Verifies that a message injected via `handle_resume_session(message=...)`
-reaches the orchestrator resume chain (`_orchestrate_session_loop` ->
-`orchestrator.resume`) as an append-only keyword parameter, so the
-lifecycle state machine can consume it without interactive prompting.
-The session loop is driven to immediate termination by having the
-orchestrator double return `(session_name, None)` — no module patching.
+and the pipeline flag injected via `handle_resume_session(pipeline=...)`
+reach the orchestrator resume chain (`_orchestrate_session_loop` ->
+`orchestrator.resume`) as append-only keyword parameters, so the
+lifecycle state machine can consume the reply without interactive
+prompting and drive the pipeline stop semantics. The session loop is
+driven to immediate termination by having the orchestrator double
+return `(session_name, None)` — no module patching.
 """
 
 from datetime import datetime, timezone
@@ -180,3 +183,30 @@ class TestResumeMessageThreading:
         first_call, second_call = h.orchestrator.resume.call_args_list
         assert first_call.kwargs["message"] == "reply"
         assert second_call.kwargs["message"] is None
+
+
+class TestResumePipelineThreading:
+    """The injected pipeline flag must reach the orchestrator resume chain."""
+
+    def test_injected_pipeline_reaches_orchestrator_resume(self) -> None:
+        # Arrange
+        h = _build_resume_harness()
+
+        # Act
+        handle_resume_session(
+            container=h.container,
+            path="test-session",
+            interactive=False,
+            no_copy=True,
+            pipeline=True,
+        )
+
+        # Assert: the pipeline flag threads through the handler into the
+        # orchestrator resume chain as an append-only keyword parameter,
+        # mirroring the established --message/-m threading precedent.
+        h.orchestrator.resume.assert_called_once_with(
+            session_name="test-session",
+            interactive=False,
+            pipeline=True,
+            message=None,
+        )
