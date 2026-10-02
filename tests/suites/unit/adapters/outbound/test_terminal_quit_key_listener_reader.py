@@ -20,6 +20,7 @@ import time
 
 import pytest
 
+import teddy_executor.adapters.outbound.terminal_quit_key_listener as reader_module
 from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
     QUIT_KEY,
     TerminalQuitKeyListener,
@@ -106,11 +107,6 @@ def _force_posix_tty(monkeypatch, *, isatty=True):
     monkeypatch.setattr(sys.stdin, "fileno", lambda: 0)
 
 
-_ORIGINAL_LFLAG = (
-    _FakeTermios.ICANON | _FakeTermios.ECHO | _FakeTermios.ISIG | _FakeTermios.IEXTEN
-)
-
-
 # --- TTY gate ---
 
 
@@ -147,20 +143,26 @@ def test_enter_noncanonical_mode_keeps_isig_and_sets_vmin_vtime(
     assert attrs[6][_FakeTermios.VTIME] == 0
 
 
-def test_restore_mode_reinstates_the_saved_attrs(fake_termios, monkeypatch):
-    """The strict save/restore context must reinstate the original mode."""
+def test_stop_delegates_restore_to_shared_helper(fake_termios, monkeypatch):
+    """stop() must route the terminal restore through the shared helper.
+
+    The reader owns no independent restore logic; it must be a consumer of the
+    single hardened "restore cooked mode" helper so a future edit cannot
+    re-introduce the Bug #56 ISIG omission.
+    """
     _force_posix_tty(monkeypatch)
+    recorder = _Recorder()
+    monkeypatch.setattr(reader_module, "restore_cooked_mode", recorder)
     listener = TerminalQuitKeyListener()
     listener._enter_noncanonical_mode()
 
-    listener._restore_mode()
+    listener.stop()
 
-    _fd, _when, restored = fake_termios.tcsetattr_calls[-1]
-    assert restored[3] == _ORIGINAL_LFLAG
+    assert recorder.calls == 1, "stop() must delegate the restore to the shared helper"
 
 
 def test_start_and_stop_manage_mode_and_daemon_thread(fake_termios, monkeypatch):
-    """start() enters the mode and runs a daemon thread; stop() restores."""
+    """start() enters the mode and runs a daemon thread; stop() joins it."""
     _force_posix_tty(monkeypatch)
     listener = TerminalQuitKeyListener()
     monkeypatch.setattr(listener, "_read_loop", lambda: None, raising=False)
@@ -173,7 +175,7 @@ def test_start_and_stop_manage_mode_and_daemon_thread(fake_termios, monkeypatch)
     finally:
         listener.stop()
 
-    assert fake_termios.tcsetattr_calls[-1][2][3] == _ORIGINAL_LFLAG
+    assert listener._thread is None
 
 
 # --- byte detection ---

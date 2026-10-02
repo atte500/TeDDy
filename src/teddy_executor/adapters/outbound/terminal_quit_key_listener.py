@@ -23,6 +23,7 @@ from typing import Any, Optional, cast
 
 from teddy_executor.core.ports.outbound.quit_key_listener import QuitCallback
 from teddy_executor.core.utils.stdin_ownership import is_stdin_owned
+from teddy_executor.core.utils.terminal import restore_cooked_mode
 
 # The ASCII code of the bare quit key (`q`).
 QUIT_KEY = 0x71
@@ -43,7 +44,6 @@ class TerminalQuitKeyListener:
         self._on_quit = on_quit
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
-        self._saved_attrs: Optional[list[Any]] = None
 
     # --- lifecycle ---
 
@@ -57,13 +57,13 @@ class TerminalQuitKeyListener:
         self._thread.start()
 
     def stop(self) -> None:
-        """Stop listening and restore the terminal's saved cooked mode."""
+        """Stop listening and restore cooked mode via the shared helper."""
         self._stop_event.set()
         thread = self._thread
         if thread is not None:
             thread.join()
             self._thread = None
-        self._restore_mode()
+        restore_cooked_mode()
 
     # --- terminal mode (POSIX) ---
 
@@ -74,22 +74,12 @@ class TerminalQuitKeyListener:
         termios = cast(Any, importlib.import_module("termios"))
         fd = sys.stdin.fileno()
         attrs = termios.tcgetattr(fd)
-        self._saved_attrs = list(attrs)
         # Disable canonical line editing and echo, but KEEP ISIG so a real
         # Ctrl+C still generates SIGINT alongside the bare-`q` trigger.
         attrs[3] &= ~(termios.ICANON | termios.ECHO)
         attrs[6][termios.VMIN] = 1
         attrs[6][termios.VTIME] = 0
         termios.tcsetattr(fd, termios.TCSAFLUSH, attrs)
-
-    def _restore_mode(self) -> None:
-        """Reinstate the terminal mode saved by ``_enter_noncanonical_mode``."""
-        if sys.platform == "win32" or self._saved_attrs is None:
-            return
-        termios = cast(Any, importlib.import_module("termios"))
-        fd = sys.stdin.fileno()
-        termios.tcsetattr(fd, termios.TCSAFLUSH, self._saved_attrs)
-        self._saved_attrs = None
 
     # --- reader ---
 
