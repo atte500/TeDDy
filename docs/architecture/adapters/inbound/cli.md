@@ -209,6 +209,9 @@ The `resume` command accepts `--message/-m` (injected user request/reply without
 ### Pipeline `start` Message Requirement
 `teddy start --pipeline/-p` requires an initial message via `-m/--message`; invoking pipeline mode without one exits with code 1 and the `Pipeline mode requires an initial message via -m/--message.` error. A pipeline turn ending with a MESSAGE action suppresses turn finalization (see `session_orchestrator.md`) and breaks the loop after the report is returned.
 
+### `teddy resume --pipeline/-p` (As-Built, 2026-10-02)
+The `resume` command also accepts `--pipeline/-p`, threaded append-only through `handle_resume_session` → `_orchestrate_session_loop` into the orchestrator resume chain (mirroring the `--message/-m` precedent). On an interrupted pipeline MESSAGE turn (awaiting_reply): `resume -p -m "reply"` finalizes turn 01's report (standard message-turn shape, no `## User Request` section), clears the flag, and continues in pipeline mode; `resume -p` without `-m` re-prints the agent MESSAGE (`--- MESSAGE from TeDDy ---`), creates no next turn, and exits again with the flag preserved.
+
 ## 5. Plan Parser Factory
 
 The `execute` command is designed to parse plan files written in Markdown. The logic for this resides in the `create_parser_for_plan` factory function within `main.py`, which instantiates the `MarkdownPlanParser`. Legacy support for YAML-based plans has been deprecated and removed.

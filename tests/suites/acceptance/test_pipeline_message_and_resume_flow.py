@@ -194,3 +194,136 @@ def test_resume_m_on_completed_turn_appends_user_request(tmp_path, monkeypatch):
         "interactive prompt."
     )
     assert (session_dir / "02" / "report.md").exists()
+
+
+@pytest.mark.timeout(30)
+def test_resume_pipeline_message_finalizes_interrupted_turn(tmp_path, monkeypatch):
+    """Scenario: `resume -p -m` finalizes an interrupted pipeline turn.
+
+    As a script author, I want `teddy resume -p -m` on a session whose
+    latest turn is an interrupted pipeline MESSAGE turn (awaiting_reply)
+    to finalize that turn's report as the standard message-turn shape
+    (no `## User Request` section), clear the awaiting_reply flag, and
+    continue in pipeline mode from the injected reply.
+    """
+    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    setup_robust_env(tmp_path)
+
+    message_plan = (
+        MarkdownPlanBuilder("Greeting").with_message("Hi! How are you?").build()
+    )
+    followup_plan = (
+        MarkdownPlanBuilder("Follow-up").with_message("Great, thanks!").build()
+    )
+
+    mock_llm = env.get_service(ILlmClient)
+    mock_llm.get_completion.return_value = make_mock_response(message_plan)
+
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
+    # Phase 1: interrupt a pipeline MESSAGE turn.
+    start_result = adapter.run_start(
+        ["--pipeline", "-m", "Say hi and ask how I am", "pipe-resume"]
+    )
+    assert start_result.exit_code == 0
+
+    sessions_root = tmp_path / ".teddy" / "sessions"
+    session_dirs = list(sessions_root.glob("20260417_120000-*"))
+    assert session_dirs, f"No session directory found in {sessions_root}"
+    session_dir = session_dirs[0]
+    turn01 = session_dir / "01"
+    assert (turn01 / "plan.md").exists()
+    assert not (turn01 / "report.md").exists()
+    assert not (session_dir / "02").exists()
+
+    # Phase 2: resume -p -m finalizes turn 01 and continues in pipeline mode.
+    mock_llm.get_completion.return_value = make_mock_response(followup_plan)
+    resume_result = adapter.run_cli_command(
+        [
+            "resume",
+            f".teddy/sessions/{session_dir.name}",
+            "--no-copy",
+            "--pipeline",
+            "-m",
+            "I am great, tell me a joke",
+        ],
+    )
+    assert resume_result.exit_code == 0
+
+    # Turn 01 is finalized: standard message-turn report, no User Request.
+    assert (turn01 / "report.md").exists()
+    report01 = (turn01 / "report.md").read_text(encoding="utf-8")
+    assert "Hi! How are you?" in report01
+    assert "## User Request" not in report01
+    meta01 = (turn01 / "meta.yaml").read_text(encoding="utf-8")
+    assert "awaiting_reply" not in meta01
+
+    # The reply drives the next turn's planning in pipeline mode.
+    assert (session_dir / "02" / "plan.md").exists()
+
+
+@pytest.mark.timeout(30)
+def test_resume_pipeline_without_message_stays_awaiting(tmp_path, monkeypatch):
+    """Scenario: `resume -p` (no message) re-prints and stays awaiting.
+
+    As a script author, I want `teddy resume -p` with no injected message
+    on an interrupted pipeline MESSAGE turn to re-print the agent's
+    message and exit WITHOUT creating turn 02 or finalizing, leaving the
+    awaiting_reply flag intact for a later reply injection.
+    """
+    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    setup_robust_env(tmp_path)
+
+    message_plan = (
+        MarkdownPlanBuilder("Greeting").with_message("Hi! How are you?").build()
+    )
+    mock_llm = env.get_service(ILlmClient)
+    mock_llm.get_completion.return_value = make_mock_response(message_plan)
+
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
+    start_result = adapter.run_start(
+        ["--pipeline", "-m", "Say hi and ask how I am", "pipe-noop"]
+    )
+    assert start_result.exit_code == 0
+
+    sessions_root = tmp_path / ".teddy" / "sessions"
+    session_dirs = list(sessions_root.glob("20260417_120000-*"))
+    assert session_dirs, f"No session directory found in {sessions_root}"
+    session_dir = session_dirs[0]
+    turn01 = session_dir / "01"
+
+    # Act: resume in pipeline mode WITHOUT a message.
+    resume_result = adapter.run_cli_command(
+        [
+            "resume",
+            f".teddy/sessions/{session_dir.name}",
+            "--no-copy",
+            "--pipeline",
+        ],
+    )
+    assert resume_result.exit_code == 0
+    # The agent's message is re-printed on the stop-again path. The
+    # re-print presents through the injected interactor (the stop-again
+    # Logic deliverable routes it through `display_message`), whose
+    # agent-message channel is stderr; assert against the full captured
+    # terminal output so the scenario is verified faithfully regardless
+    # of channel.
+    assert "Hi! How are you?" in (resume_result.stdout + resume_result.stderr)
+    # No turn 02, no finalization, awaiting flag preserved.
+    assert not (session_dir / "02").exists()
+    assert not (turn01 / "report.md").exists()
+    meta01 = (turn01 / "meta.yaml").read_text(encoding="utf-8")
+    assert "awaiting_reply: true" in meta01
