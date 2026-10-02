@@ -143,6 +143,10 @@ def _register_orchestration_services(container: punq.Container) -> None:
         ExecutionReportAssembler,
     )
     from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+    from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
+    from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
+        TerminalQuitKeyListener,
+    )
     from teddy_executor.core.services.init_service import InitService
     from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
     from teddy_executor.core.services.prompt_manager import PromptManager
@@ -165,6 +169,15 @@ def _register_orchestration_services(container: punq.Container) -> None:
             config_service=container.resolve(IConfigService),
             monotonic=time.monotonic,
         ),
+        scope=punq.Scope.singleton,
+    )
+    # Documented exception to the transient-scope rule, mirroring the
+    # InterruptGuard precedent: the quit-key listener is a process-global
+    # resource whose start()/stop() lifecycle the session-loop boundary owns,
+    # so ONE instance serves the boundary's install/restore window.
+    container.register(
+        IQuitKeyListener,
+        factory=lambda: TerminalQuitKeyListener(),
         scope=punq.Scope.singleton,
     )
     container.register(
