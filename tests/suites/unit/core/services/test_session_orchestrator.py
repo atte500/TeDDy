@@ -558,6 +558,29 @@ class TestConsoleVisibilityHelpers:
         assert self.secho_calls == expected_calls
 
     # ------------------------------------------------------------------ #
+    # _print_message_from_teddy
+    # ------------------------------------------------------------------ #
+
+    def test_print_message_from_teddy(self):
+        """_print_message_from_teddy renders a blank separator, the CYAN
+        `--- MESSAGE from TeDDy ---` framing, then the agent's message body —
+        the single source of truth shared by the pipeline-start MESSAGE print
+        and the `resume -p` stop-again re-print (Bug 54 / defect 4a)."""
+        import typer
+
+        from teddy_executor.core.services.session_orchestrator import (
+            _print_message_from_teddy,
+        )
+
+        _print_message_from_teddy("Hello there")
+
+        assert self.secho_calls == [
+            ("", {}),
+            ("--- MESSAGE from TeDDy ---", {"fg": typer.colors.CYAN}),
+            ("Hello there", {}),
+        ]
+
+    # ------------------------------------------------------------------ #
     # _print_user_message
     # ------------------------------------------------------------------ #
 

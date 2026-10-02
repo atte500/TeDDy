@@ -178,8 +178,17 @@ class SessionLifecycleManager:
             # Case 2 stop-again: re-print the agent's MESSAGE and exit,
             # preserving the awaiting state (no meta mutation, no
             # finalization, no next turn) so a later `resume -p -m` can
-            # inject the reply.
-            report = self._synthesize_message_report(turn_path)
+            # inject the reply. The re-print reuses the SAME shared
+            # rendering as the pipeline-start path (status header + CYAN
+            # framing + body) so the two presentations match
+            # (Bug 54 / defect 4a).
+            from teddy_executor.core.services.session_orchestrator import (
+                _print_header_bar,
+                _print_message_from_teddy,
+            )
+
+            plan = self._parse_awaiting_plan(turn_path)
+            report = self._synthesize_message_report(turn_path, plan=plan)
             message_logs = [
                 log for log in report.action_logs if log.action_type == "MESSAGE"
             ]
@@ -187,9 +196,8 @@ class SessionLifecycleManager:
                 "Synthesized message report must carry a MESSAGE action log."
             )
             content = str(message_logs[0].params.get("content", ""))
-            self._user_interactor.display_message(
-                f"--- MESSAGE from TeDDy ---\n{content}"
-            )
+            _print_header_bar(plan, True)
+            _print_message_from_teddy(content)
             return (session_name, report)
         if not reply:
             self._user_interactor.display_message(
@@ -212,19 +220,40 @@ class SessionLifecycleManager:
             message=reply,
         )
 
+    def _parse_awaiting_plan(self, turn_path: str) -> "Plan":
+        """Parse the interrupted turn's plan.md.
+
+        A pipeline MESSAGE turn stops before finalization; its plan is
+        re-parsed on consumption for BOTH the report synthesis and, on the
+        stop-again path, the status header. Shared by the consumption
+        branches so plan.md is parsed exactly once per resume.
+        """
+        assert self._plan_parser is not None, (
+            "SessionPorts.plan_parser must be injected to synthesize the "
+            "awaiting-reply turn's report."
+        )
+        plan_path = f"{turn_path}/plan.md"
+        return self._plan_parser.parse(
+            str(self._file_system_manager.read_file(plan_path))
+        )
+
     def _synthesize_message_report(
-        self, turn_path: str, reply: Optional[str] = None
+        self,
+        turn_path: str,
+        reply: Optional[str] = None,
+        plan: Optional["Plan"] = None,
     ) -> ExecutionReport:
         """Synthesizes the standard message-turn report from the interrupted plan.
 
         A pipeline MESSAGE turn stops before finalization, so its report is
         reconstructed from plan.md on consumption: the plan is parsed via
-        the injected IPlanParser, the MESSAGE action's content becomes the
-        report's single MESSAGE action log, and the injected ITimeService
-        timestamps the run summary. The standard formatter renders it —
-        the same shape any finalized message turn produces (NO
-        ## User Request section: the consumption path never appends; the
-        interrupted turn has no prior report).
+        the injected IPlanParser (or supplied by the caller to avoid a
+        second parse), the MESSAGE action's content becomes the report's
+        single MESSAGE action log, and the injected ITimeService timestamps
+        the run summary. The standard formatter renders it — the same shape
+        any finalized message turn produces (NO ## User Request section: the
+        consumption path never appends; the interrupted turn has no prior
+        report).
 
         Canonical `details` semantics: a MESSAGE ActionLog's `details` holds
         the USER's reply (rendered under `- **User Reply:**`), while the
@@ -233,18 +262,13 @@ class SessionLifecycleManager:
         path passes none (no user reply yet, `details` stays empty so the
         agent's message is never mislabeled as the user's reply).
         """
-        assert self._plan_parser is not None, (
-            "SessionPorts.plan_parser must be injected to synthesize the "
-            "awaiting-reply turn's report."
-        )
         assert self._time_service is not None, (
             "SessionPorts.time_service must be injected to synthesize the "
             "awaiting-reply turn's report."
         )
+        if plan is None:
+            plan = self._parse_awaiting_plan(turn_path)
         plan_path = f"{turn_path}/plan.md"
-        plan = self._plan_parser.parse(
-            str(self._file_system_manager.read_file(plan_path))
-        )
         message_actions = [
             action for action in plan.actions if action.type == ActionType.MESSAGE
         ]

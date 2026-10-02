@@ -83,6 +83,21 @@ def _print_header_bar(plan: Any, is_session: bool) -> None:
         typer.secho(" ".join(parts))
 
 
+def _print_message_from_teddy(content: str) -> None:
+    """Print the agent's MESSAGE under the shared TeDDy framing.
+
+    Renders a blank separator, the CYAN `--- MESSAGE from TeDDy ---`
+    framing, then the message body. This is the single source of truth
+    shared by the pipeline-start MESSAGE print
+    (`SessionOrchestrator.execute`) and the `resume -p` stop-again
+    re-print (`SessionLifecycleManager._consume_awaiting_reply`), so the
+    two presentations stay byte-identical (Bug 54 / defect 4a).
+    """
+    typer.secho("")
+    typer.secho("--- MESSAGE from TeDDy ---", fg=typer.colors.CYAN)
+    typer.secho(content)
+
+
 def _print_user_message(
     message: Optional[str],
     is_session: bool,
@@ -336,11 +351,7 @@ class SessionOrchestrator(IRunPlanUseCase):
                         if log_type == "MESSAGE":
                             content = (getattr(log, "details", "") or "").strip()
                             if content:
-                                typer.secho("")
-                                typer.secho(
-                                    "--- MESSAGE from TeDDy ---", fg=typer.colors.CYAN
-                                )
-                                typer.secho(content)
+                                _print_message_from_teddy(content)
                             break
                 else:
                     # Non-pipeline mode (interactive, YOLO): existing behavior unchanged

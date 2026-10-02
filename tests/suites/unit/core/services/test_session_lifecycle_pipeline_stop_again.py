@@ -15,6 +15,7 @@ from typing import cast
 from unittest.mock import Mock, create_autospec
 
 import pytest
+import typer
 
 from teddy_executor.core.domain.models.planning_ports import SessionPorts
 from teddy_executor.core.domain.models.plan import ActionData, Plan
@@ -118,6 +119,19 @@ def _arrange_awaiting_reply(manager) -> None:
 class TestPipelineNoMessageStopAgain:
     """`resume -p` without a message re-triggers the MESSAGE and exits again."""
 
+    @pytest.fixture(autouse=True)
+    def _capture_message_rendering(self, monkeypatch):
+        """Capture the shared MESSAGE-rendering helpers' `typer.secho` output."""
+        self.secho_calls = []
+
+        def _fake_secho(text, **kwargs):
+            self.secho_calls.append((text, kwargs))
+
+        monkeypatch.setattr(
+            "teddy_executor.core.services.session_orchestrator.typer.secho",
+            _fake_secho,
+        )
+
     def test_stop_again_reprints_message_and_preserves_awaiting_state(
         self, manager
     ) -> None:
@@ -134,11 +148,27 @@ class TestPipelineNoMessageStopAgain:
             message=None,
         )
 
-        # Assert: the agent's MESSAGE is re-printed via the interactor —
-        # exactly once (no interactive guidance on the pipeline path).
-        manager._user_interactor.display_message.assert_called_once()
-        printed = str(manager._user_interactor.display_message.call_args.args[0])
-        assert AGENT_MESSAGE in printed
+        # Assert: the agent's MESSAGE is re-printed through the shared
+        # MESSAGE-rendering path (`_print_header_bar` + the
+        # `_print_message_from_teddy` framing) — NOT the bare, un-styled
+        # `display_message` channel — so the stop-again presentation matches
+        # the pipeline-start presentation (Bug 54 / defect 4a).
+        manager._user_interactor.display_message.assert_not_called()
+        rendered = [call[0] for call in self.secho_calls]
+        assert "Greet User and Check In" in rendered, rendered
+        frame_calls = [
+            call for call in self.secho_calls if call[0] == "--- MESSAGE from TeDDy ---"
+        ]
+        assert len(frame_calls) == 1, rendered
+        assert frame_calls[0][1].get("fg") == typer.colors.CYAN, frame_calls
+        assert AGENT_MESSAGE in rendered, rendered
+        # The status header precedes the framing, which precedes the body.
+        assert rendered.index("Greet User and Check In") < rendered.index(
+            "--- MESSAGE from TeDDy ---"
+        )
+        assert rendered.index("--- MESSAGE from TeDDy ---") < rendered.index(
+            AGENT_MESSAGE
+        )
         # Assert: no interactive prompt on the pipeline path.
         manager._user_interactor.ask_question.assert_not_called()
         # Assert: the synthesized message-turn report is returned so the
