@@ -61,7 +61,7 @@ The `SessionOrchestrator` is a decorator-style service that wraps the stateless 
 
 ## Console Visibility Helpers
 
-Three helper functions are defined in this module to improve user visibility during session execution:
+Four helper functions are defined in this module to improve user visibility during session execution:
 
 ### `_print_initial_request(message, is_session)`
 Prints the initial user request before the turn header/telemetry block.
@@ -82,7 +82,14 @@ Prints the user message after all actions execute.
 - **Behavior**: Only prints when `is_session=True` and `message` is non-empty.
 - **Output**: `\nUser Message:\n{message}\n`
 
-All helpers are guarded at their call sites in `execute()`: `_print_initial_request` and `_print_user_message` are wrapped with `if is_session and message and message.strip():`, and `_print_header_bar` is wrapped with `if is_session:`. This ensures no unnecessary function invocations occur in non-session or empty-message modes. Each helper also has internal guards as defense-in-depth.
+### `_print_message_from_teddy(content)`
+Prints the agent's MESSAGE in the canonical presentation: a blank separator, a CYAN `--- MESSAGE from TeDDy ---` frame, then the message body (As-Built, 2026-10-02; Bug 54 / defect 4a).
+- **Input**: `content` (str)
+- **Behavior**: Always prints (the caller owns the gating). Uses `typer.secho` (stdout) so both display paths share one rendering.
+- **Output**: `\n` + CYAN frame + body.
+- **Consumers**: the orchestrator's pipeline MESSAGE print AND `SessionLifecycleManager._consume_awaiting_reply`'s `resume -p` no-message stop-again branch — the two paths compose this helper with `_print_header_bar` so their output is byte-identical and the framing literal is single-sourced (interior core helper; no `IUserInteractor` Port change).
+
+All helpers are guarded at their call sites in `execute()`: `_print_initial_request` and `_print_user_message` are wrapped with `if is_session and message and message.strip():`, `_print_header_bar` is wrapped with `if is_session:`, and `_print_message_from_teddy` is invoked only on the pipeline MESSAGE path. This ensures no unnecessary function invocations occur in non-session or empty-message modes. Each helper also has internal guards as defense-in-depth.
 
 ## Pipeline MESSAGE Suppression (As-Built, 2026-10-01)
 

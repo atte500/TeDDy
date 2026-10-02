@@ -7,10 +7,9 @@ from teddy_executor.core.domain.models.execution_report import (
     ActionLog,
     ActionStatus,
     ExecutionReport,
-    RunStatus,
-    RunSummary,
 )
 from teddy_executor.core.domain.models.plan import ActionType
+from teddy_executor.core.domain.models.report_assembly_data import ReportAssemblyData
 
 from typing import Sequence
 
@@ -47,6 +46,7 @@ class SessionLifecycleManager:
         self._replanner = ports.replanner
         self._plan_parser = ports.plan_parser
         self._time_service = ports.time_service
+        self._report_assembler = ports.report_assembler
         self.tee_active = False
 
     def resume(
@@ -249,11 +249,13 @@ class SessionLifecycleManager:
         reconstructed from plan.md on consumption: the plan is parsed via
         the injected IPlanParser (or supplied by the caller to avoid a
         second parse), the MESSAGE action's content becomes the report's
-        single MESSAGE action log, and the injected ITimeService timestamps
-        the run summary. The standard formatter renders it — the same shape
-        any finalized message turn produces (NO ## User Request section: the
-        consumption path never appends; the interrupted turn has no prior
-        report).
+        single MESSAGE action log, and the injected
+        IExecutionReportAssembler builds the report from that plan and log
+        (the injected ITimeService supplies the start timestamp). The
+        standard message-turn shape is therefore guaranteed by the SAME
+        assembler every other finalized turn uses (NO ## User Request
+        section: the consumption path never appends; the interrupted turn
+        has no prior report).
 
         Canonical `details` semantics: a MESSAGE ActionLog's `details` holds
         the USER's reply (rendered under `- **User Reply:**`), while the
@@ -264,6 +266,10 @@ class SessionLifecycleManager:
         """
         assert self._time_service is not None, (
             "SessionPorts.time_service must be injected to synthesize the "
+            "awaiting-reply turn's report."
+        )
+        assert self._report_assembler is not None, (
+            "SessionPorts.report_assembler must be injected to synthesize the "
             "awaiting-reply turn's report."
         )
         if plan is None:
@@ -277,19 +283,19 @@ class SessionLifecycleManager:
         )
         content = str(message_actions[0].params.get("content", ""))
         timestamp = self._time_service.now_utc()
-        return ExecutionReport(
-            run_summary=RunSummary(
-                status=RunStatus.SUCCESS, start_time=timestamp, end_time=timestamp
-            ),
-            plan_title=plan.title,
-            action_logs=[
-                ActionLog(
-                    status=ActionStatus.SUCCESS,
-                    action_type="MESSAGE",
-                    params={"content": content},
-                    details=reply,
-                )
-            ],
+        return self._report_assembler.assemble(
+            ReportAssemblyData(
+                plan=plan,
+                action_logs=[
+                    ActionLog(
+                        status=ActionStatus.SUCCESS,
+                        action_type="MESSAGE",
+                        params={"content": content},
+                        details=reply,
+                    )
+                ],
+                start_time=timestamp,
+            )
         )
 
     def _handle_planning_and_execution(

@@ -33,6 +33,9 @@ from teddy_executor.core.ports.outbound.session_manager import (
 )
 from teddy_executor.core.ports.outbound.time_service import ITimeService
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
+from teddy_executor.core.services.execution_report_assembler import (
+    ExecutionReportAssembler,
+)
 from teddy_executor.core.services.session_lifecycle_manager import (
     SessionLifecycleManager,
 )
@@ -79,6 +82,7 @@ def manager(container):
         replanner=register_mock(container, SessionReplanner),
         plan_parser=plan_parser,
         time_service=time_service,
+        report_assembler=ExecutionReportAssembler(),
     )
     return SessionLifecycleManager(ports=ports)
 

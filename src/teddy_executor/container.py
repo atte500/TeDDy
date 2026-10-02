@@ -309,6 +309,9 @@ def _register_orchestration(container: punq.Container) -> None:
 
     from teddy_executor.core.domain.models.planning_ports import SessionPorts
     from teddy_executor.core.ports.outbound.time_service import ITimeService
+    from teddy_executor.core.ports.outbound.execution_report_assembler import (
+        IExecutionReportAssembler,
+    )
 
     container.register(
         SessionPorts,
@@ -321,6 +324,7 @@ def _register_orchestration(container: punq.Container) -> None:
             replanner=container.resolve(SessionReplanner),
             plan_parser=container.resolve(IPlanParser),
             time_service=container.resolve(ITimeService),
+            report_assembler=container.resolve(IExecutionReportAssembler),
         ),
         scope=punq.Scope.transient,
     )

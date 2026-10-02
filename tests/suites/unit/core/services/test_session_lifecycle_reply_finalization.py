@@ -12,7 +12,7 @@ reply. This applies across ALL resume modes (pipeline or not).
 """
 
 from datetime import datetime, timezone
-from typing import cast
+from typing import Any, cast
 from unittest.mock import Mock, create_autospec
 
 import pytest
@@ -20,8 +20,12 @@ import pytest
 from teddy_executor.core.domain.models.execution_report import ExecutionReport
 from teddy_executor.core.domain.models.planning_ports import SessionPorts
 from teddy_executor.core.domain.models.plan import ActionData, Plan
+from teddy_executor.core.domain.models.report_assembly_data import ReportAssemblyData
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+from teddy_executor.core.ports.outbound.execution_report_assembler import (
+    IExecutionReportAssembler,
+)
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
@@ -32,6 +36,9 @@ from teddy_executor.core.ports.outbound.session_manager import (
 )
 from teddy_executor.core.ports.outbound.time_service import ITimeService
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
+from teddy_executor.core.services.execution_report_assembler import (
+    ExecutionReportAssembler,
+)
 from teddy_executor.core.services.markdown_report_formatter import (
     MarkdownReportFormatter,
 )
@@ -54,10 +61,14 @@ FORMATTED_REPORT = (
 )
 
 
-def _build_manager(container, report_formatter):
+def _build_manager(container, report_formatter, report_assembler=None):
     """Assemble a SessionLifecycleManager around a caller-supplied report
     formatter — a spec-bound double for field-level assertions, or the REAL
-    MarkdownReportFormatter for rendering regressions."""
+    MarkdownReportFormatter for rendering regressions.
+
+    The optional `report_assembler` seam is injected only when a test
+    exercises it, so the surrounding synthesis tests stay unchanged.
+    """
     plan_parser = cast(IPlanParser, Mock(spec=IPlanParser))
     plan_parser.parse.return_value = Plan(
         title="Greet User and Check In",
@@ -77,6 +88,16 @@ def _build_manager(container, report_formatter):
     time_service.now_utc.return_value = datetime(
         2026, 10, 2, 12, 0, 0, tzinfo=timezone.utc
     )
+    # The assembler seam is ALWAYS supplied — a caller-supplied double when a
+    # test exercises it, otherwise the REAL assembler — so the synthesis
+    # delegation resolves under every construction.
+    seam_kwargs: dict[str, Any] = {
+        "report_assembler": (
+            report_assembler
+            if report_assembler is not None
+            else ExecutionReportAssembler()
+        ),
+    }
     ports = SessionPorts(
         session_service=register_mock(container, ISessionManager),
         file_system_manager=register_mock(container, IFileSystemManager),
@@ -86,6 +107,7 @@ def _build_manager(container, report_formatter):
         replanner=register_mock(container, SessionReplanner),
         plan_parser=plan_parser,
         time_service=time_service,
+        **seam_kwargs,
     )
     return SessionLifecycleManager(ports=ports)
 
@@ -215,3 +237,48 @@ def test_finalized_report_renders_user_reply_not_agent_message(container) -> Non
     user_reply_section = rendered[rendered.index("**User Reply:**") :]
     assert REPLY in user_reply_section
     assert AGENT_MESSAGE not in user_reply_section
+
+
+def test_synthesis_routes_through_report_assembler(container) -> None:
+    """Refactor (Bug 54 / hand-rolled synthesis consolidation): the
+    message-turn report synthesis delegates to the injected
+    ExecutionReportAssembler so the finalized shape cannot drift from the
+    standard template contract, while preserving the 4b semantics — the USER
+    reply in the MESSAGE log's `details`, the agent text in `params`."""
+    assembler = cast(IExecutionReportAssembler, Mock(spec=IExecutionReportAssembler))
+    sentinel = create_autospec(ExecutionReport, instance=True)
+    assembler.assemble.return_value = sentinel
+    manager = _build_manager(
+        container,
+        register_mock(container, IMarkdownReportFormatter),
+        report_assembler=assembler,
+    )
+    _arrange_awaiting_reply(manager)
+    orchestrator = _orchestrator_with_report()
+
+    # Act
+    result = manager.resume(
+        session_name="feature",
+        orchestrator=orchestrator,
+        interactive=False,
+        message=REPLY,
+    )
+
+    # Assert: the synthesis delegated to the assembler with the canonical DTO.
+    assembler.assemble.assert_called_once()
+    data = assembler.assemble.call_args.args[0]
+    assert isinstance(data, ReportAssemblyData)
+    assert data.plan.title == "Greet User and Check In"
+    assert len(data.action_logs) == 1
+    assert data.action_logs[0].action_type == "MESSAGE"
+    # 4b semantics preserved: USER reply in `details`, agent text in `params`.
+    assert data.action_logs[0].details == REPLY
+    assert data.action_logs[0].params["content"] == AGENT_MESSAGE
+    # No `## User Request` section on the consumption path.
+    assert data.message is None
+    # The injected time service still feeds the DTO's start timestamp (DI purity).
+    assert data.start_time == datetime(2026, 10, 2, 12, 0, 0, tzinfo=timezone.utc)
+    # The synthesized report IS the assembler's output (not hand-rolled).
+    transition_call = manager._session_service.transition_to_next_turn.call_args
+    assert transition_call.kwargs.get("execution_report") is sentinel
+    assert result[0] == "feature"

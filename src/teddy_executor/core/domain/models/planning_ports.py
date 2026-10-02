@@ -9,6 +9,9 @@ if TYPE_CHECKING:
         IMarkdownReportFormatter,
     )
     from teddy_executor.core.ports.outbound.time_service import ITimeService
+    from teddy_executor.core.ports.outbound.execution_report_assembler import (
+        IExecutionReportAssembler,
+    )
     from teddy_executor.core.services.session_planner import SessionPlanner
     from teddy_executor.core.services.session_replanner import SessionReplanner
 
@@ -45,3 +48,4 @@ class SessionPorts:
     replanner: SessionReplanner
     plan_parser: Optional[IPlanParser] = None
     time_service: Optional[ITimeService] = None
+    report_assembler: Optional[IExecutionReportAssembler] = None
