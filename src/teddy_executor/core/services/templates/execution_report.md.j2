@@ -20,22 +20,9 @@
 {{ content | fence }}
 {% endmacro %}
 
-{% macro render_action_details(log) %}
-{# Handle MESSAGE actions first: render content in a fenced codeblock #}
-{% if log.action_type.upper() == 'MESSAGE' and log.details %}
-{% if log.details is mapping and log.details.get('content') %}
-- **User Reply:**
-{{ log.details.content | trim | fence }}
-{{ log.details.content | trim }}
-{{ log.details.content | trim | fence }}
-{% else %}
-- **User Reply:**
-{{ log.details | trim | fence }}
-{{ log.details | trim }}
-{{ log.details | trim | fence }}
-{% endif %}
-
-{% elif log.details -%}
+{% macro render_action_summary(log) %}
+{# Scalar, status-adjacent metadata rendered directly after `- **Status:**`. #}
+{% if log.action_type.upper() != 'MESSAGE' and log.details -%}
 {% if log.details is mapping -%}
 {% if log.details.get("error") -%}
 - **Error:** {{ log.details.error }}
@@ -61,6 +48,32 @@
 - **Similarity Score:** {{ "%.2f" | format(log.details.get("similarity_score")) }}
 
 {% endif -%}
+{# Render generic details if no specific fields matched, but avoid rendering if it's just content #}
+{% if not log.details.get("error") and not log.details.get("return_code") and not log.details.get("stdout") and not log.details.get("stderr") and not log.details.get("content") and not log.details.get("diff") and not log.details.get("failed_command") and not log.details.get("similarity_scores") and not log.details.get("similarity_score") and not log.details.get("query_results") %}
+- **Details:** `{{ log.details }}`
+{% endif -%}
+{% else -%}
+- **Details:** `{{ log.details }}`
+{% endif -%}
+{% endif %}
+{% endmacro -%}
+
+{% macro render_action_blocks(log) %}
+{# Multi-line diagnostic blocks + MESSAGE reply content (rendered at block end). #}
+{% if log.action_type.upper() == 'MESSAGE' and log.details %}
+{% if log.details is mapping and log.details.get('content') %}
+- **User Reply:**
+{{ log.details.content | trim | fence }}
+{{ log.details.content | trim }}
+{{ log.details.content | trim | fence }}
+{% else %}
+- **User Reply:**
+{{ log.details | trim | fence }}
+{{ log.details | trim }}
+{{ log.details | trim | fence }}
+{% endif %}
+
+{% elif log.details and log.details is mapping -%}
 {% if log.details.get("stdout") -%}
 #### `stdout`
 {{ log.details.stdout | trim | fence }}text
@@ -81,13 +94,6 @@
 {{ log.details.diff | trim }}
 {{ log.details.diff | trim | fence }}
 
-{% endif -%}
-{# Render generic details if no specific fields matched, but avoid rendering if it's just content #}
-{% if not log.details.get("error") and not log.details.get("return_code") and not log.details.get("stdout") and not log.details.get("stderr") and not log.details.get("content") and not log.details.get("diff") and not log.details.get("failed_command") and not log.details.get("similarity_scores") and not log.details.get("similarity_score") and not log.details.get("query_results") %}
-- **Details:** `{{ log.details }}`
-{% endif -%}
-{% else -%}
-- **Details:** `{{ log.details }}`
 {% endif -%}
 {% endif %}
 {% endmacro -%}
@@ -192,6 +198,7 @@
 {% endif -%}
 {% set log_status = log.status.value | default(log.status) -%}
 - **Status:** {{ log_status }}
+{{ render_action_summary(log) }}
 {% if action_type == 'READ' and log in report_ns.resource_logs %}
 - **Note:** Up-to-date contents are provided under `Resource Contents`.
 {% endif %}
@@ -278,7 +285,7 @@ _**Hint:** NOW you MUST use READ on the most promising results_
 {{ log.details.content | trim | fence }}
 {% endif %}
 
-{{ render_action_details(log) }}
+{{ render_action_blocks(log) }}
 {% else %}
 *(No actions were executed.)*
 {% endfor %}

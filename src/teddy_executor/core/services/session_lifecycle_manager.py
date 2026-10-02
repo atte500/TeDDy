@@ -141,9 +141,9 @@ class SessionLifecycleManager:
         assert self._file_system_manager.path_exists(report_path), (
             f"Cannot append user request: report not found at {report_path}"
         )
-        content = str(self._file_system_manager.read_file(report_path))
+        content = str(self._file_system_manager.read_file(report_path)).rstrip("\n")
         fence = get_fence_for_content(message)
-        content += f"\n## User Request\n{fence}text\n{message}\n{fence}\n"
+        content += f"\n\n## User Request\n{fence}text\n{message}\n{fence}\n"
         self._file_system_manager.write_file(report_path, content)
 
     def _consume_awaiting_reply(
