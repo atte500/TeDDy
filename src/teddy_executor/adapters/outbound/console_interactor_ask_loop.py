@@ -9,6 +9,10 @@ from typing import TYPE_CHECKING, Optional
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.shortcuts import prompt as ptk_prompt
 
+from teddy_executor.adapters.outbound.console_interactor_helpers import (
+    restore_terminal_mode,
+)
+
 if TYPE_CHECKING:
     from teddy_executor.adapters.outbound.console_tooling import (
         ConsoleToolingHelper,
@@ -217,6 +221,11 @@ class ConsoleAskLoop:
             import subprocess  # noqa: PLC0415
 
             subprocess.run(editor_cmd + [temp_path])  # nosec B603
+            # An external CLI editor may exit in raw mode; mirror
+            # ConsoleInteractorAdapter._launch_editor_synchronous and restore
+            # the terminal cooked mode (re-enabling ISIG|IEXTEN so Ctrl+C keeps
+            # generating SIGINT) before returning to the interactive loop.
+            restore_terminal_mode()
             self._flush_stdin()
 
             # Read harvested content
