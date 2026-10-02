@@ -149,7 +149,12 @@ class TestPipelineNoMessageStopAgain:
             log for log in result[1].action_logs if log.action_type == "MESSAGE"
         ]
         assert len(message_logs) == 1
-        assert AGENT_MESSAGE in (message_logs[0].details or "")
+        # The stop-again path carries NO user reply: the agent's own text is
+        # preserved in `params["content"]` (the re-print source), while
+        # `details` stays empty so the template never mislabels the agent's
+        # message as the user's reply.
+        assert message_logs[0].params["content"] == AGENT_MESSAGE
+        assert message_logs[0].details is None
         # Assert: the interrupted plan was parsed for the synthesis.
         manager._plan_parser.parse.assert_called_once()
         # Assert: the awaiting_reply flag is PRESERVED — no meta mutation,

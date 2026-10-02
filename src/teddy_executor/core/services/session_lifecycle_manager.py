@@ -201,7 +201,7 @@ class SessionLifecycleManager:
             key: value for key, value in turn_meta.items() if key != "awaiting_reply"
         }
         self._session_service.save_turn_meta(turn_path, consumed_meta)
-        report = self._synthesize_message_report(turn_path)
+        report = self._synthesize_message_report(turn_path, reply=reply)
         next_turn_dir = self.finalize_turn(f"{turn_path}/plan.md", report)
         return self._handle_planning_and_execution(
             next_turn_dir,
@@ -212,7 +212,9 @@ class SessionLifecycleManager:
             message=reply,
         )
 
-    def _synthesize_message_report(self, turn_path: str) -> ExecutionReport:
+    def _synthesize_message_report(
+        self, turn_path: str, reply: Optional[str] = None
+    ) -> ExecutionReport:
         """Synthesizes the standard message-turn report from the interrupted plan.
 
         A pipeline MESSAGE turn stops before finalization, so its report is
@@ -223,6 +225,13 @@ class SessionLifecycleManager:
         the same shape any finalized message turn produces (NO
         ## User Request section: the consumption path never appends; the
         interrupted turn has no prior report).
+
+        Canonical `details` semantics: a MESSAGE ActionLog's `details` holds
+        the USER's reply (rendered under `- **User Reply:**`), while the
+        agent's own text lives in `params["content"]` (render-ignored). The
+        injected `reply` is therefore stored in `details`; the stop-again
+        path passes none (no user reply yet, `details` stays empty so the
+        agent's message is never mislabeled as the user's reply).
         """
         assert self._plan_parser is not None, (
             "SessionPorts.plan_parser must be injected to synthesize the "
@@ -254,7 +263,7 @@ class SessionLifecycleManager:
                     status=ActionStatus.SUCCESS,
                     action_type="MESSAGE",
                     params={"content": content},
-                    details=content,
+                    details=reply,
                 )
             ],
         )
