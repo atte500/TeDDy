@@ -15,12 +15,9 @@ from teddy_executor.core.domain.models import (
 from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
+from teddy_executor.core.utils.interrupt_guard import INTERRUPT_REASON
 
 logger = logging.getLogger(__name__)
-
-# Two-phase Ctrl+C drain reason: matches the session-loop boundary's
-# termination notice so the audit trail reads consistently.
-INTERRUPT_REASON = "Interrupted by user (Ctrl+C)."
 
 
 class ExecutionOrchestrator(IRunPlanUseCase):

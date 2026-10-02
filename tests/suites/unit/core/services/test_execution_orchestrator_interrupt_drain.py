@@ -211,3 +211,12 @@ class TestInterruptDrain:
         assembled = h.assembler.assemble.call_args.args[0].action_logs
         assert all(a is d for a, d in zip(assembled, dispatched))
         assert all(log.status == ActionStatus.SUCCESS for log in assembled)
+
+
+def test_interrupt_reason_is_the_reworded_notice():
+    """The drain reason must carry the reworded notice (Bug 56 rewording).
+
+    The reason is the single shared interrupt notice; the now-inaccurate
+    "(Ctrl+C)" fragment was dropped so it matches the boundary notice.
+    """
+    assert INTERRUPT_REASON == "Interrupted by user."

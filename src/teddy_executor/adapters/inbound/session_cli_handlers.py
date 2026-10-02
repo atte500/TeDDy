@@ -18,7 +18,7 @@ from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
-from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+from teddy_executor.core.utils.interrupt_guard import INTERRUPT_REASON, InterruptGuard
 from teddy_executor.core.utils.string import slugify
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.adapters.inbound.cli_helpers import (
@@ -350,7 +350,7 @@ def _orchestrate_session_loop(
         # Immediate-exit semantics (Task Brief): Ctrl+C while nothing is in
         # flight (prompts, planning) terminates the session with a notice —
         # no report is generated and nothing is mutated.
-        typer.secho("Interrupted by user (Ctrl+C).", fg=typer.colors.YELLOW)
+        typer.secho(INTERRUPT_REASON, fg=typer.colors.YELLOW)
     finally:
         # Caller-owned restoration contract: restore the SIGINT disposition
         # that preceded the guard's install() when the turn loop ends. Stop the

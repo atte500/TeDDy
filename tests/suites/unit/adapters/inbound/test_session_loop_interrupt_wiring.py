@@ -90,9 +90,11 @@ def test_session_loop_catches_keyboard_interrupt_with_termination_notice(capsys)
         no_copy=True,
     )
 
-    # Assert: the boundary converts the signal into the termination notice.
+    # Assert: the boundary converts the signal into the termination notice,
+    # now WITHOUT the inaccurate "(Ctrl+C)" fragment (Bug 56 rewording).
     captured = capsys.readouterr()
-    assert "Interrupted by user (Ctrl+C)" in captured.out
+    assert "Interrupted by user." in captured.out
+    assert "(Ctrl+C)" not in captured.out
 
 
 def test_handler_installed_during_the_turn_loop(monkeypatch):

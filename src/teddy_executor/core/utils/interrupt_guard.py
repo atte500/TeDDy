@@ -29,6 +29,11 @@ from teddy_executor.core.ports.outbound.config_service import IConfigService
 GRACE_WINDOW_KEY = "interrupt.grace_window_seconds"
 GRACE_WINDOW_DEFAULT = 2.0
 
+# The single shared session-interrupt notice (Bug 56): the now-inaccurate
+# "(Ctrl+C)" fragment was dropped so the user-visible boundary notice and the
+# audit-trail drain reason render identically from one source of truth.
+INTERRUPT_REASON = "Interrupted by user."
+
 
 class InterruptGuard:
     """Installs the SIGINT handler and tracks the WAITING/EXECUTING phase.
