@@ -1,12 +1,14 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
+    from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
     from teddy_executor.core.ports.outbound.session_manager import ISessionManager
     from teddy_executor.core.ports.outbound.markdown_report_formatter import (
         IMarkdownReportFormatter,
     )
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
     from teddy_executor.core.services.session_planner import SessionPlanner
     from teddy_executor.core.services.session_replanner import SessionReplanner
 
@@ -41,3 +43,5 @@ class SessionPorts:
     user_interactor: IUserInteractor
     session_planner: SessionPlanner
     replanner: SessionReplanner
+    plan_parser: Optional[IPlanParser] = None
+    time_service: Optional[ITimeService] = None
