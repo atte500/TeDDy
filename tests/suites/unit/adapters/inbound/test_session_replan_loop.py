@@ -64,6 +64,12 @@ def test_handle_new_session_loops_multiple_turns_when_non_interactive():
         InterruptGuard,
         instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
     )
+    from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
+    from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
+        TerminalQuitKeyListener,
+    )
+
+    container.register(IQuitKeyListener, instance=TerminalQuitKeyListener())
 
     mock_llm_client.validate_config.return_value = []
     mock_user_interactor.ask_question.return_value = "Do multiple turns"
@@ -138,6 +144,12 @@ def test_handle_resume_session_loops_multiple_turns_when_non_interactive():
         InterruptGuard,
         instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
     )
+    from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
+    from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
+        TerminalQuitKeyListener,
+    )
+
+    container.register(IQuitKeyListener, instance=TerminalQuitKeyListener())
 
     mock_llm_client.validate_config.return_value = []
     mock_session_manager.resolve_session_from_path.return_value = "my-session"
@@ -220,6 +232,12 @@ def test_termination_message_printed_when_guard_stops(capsys):
         InterruptGuard,
         instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
     )
+    from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
+    from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
+        TerminalQuitKeyListener,
+    )
+
+    container.register(IQuitKeyListener, instance=TerminalQuitKeyListener())
 
     # Guard returns (False, reason) on first check — stops immediately
     mock_loop_guard.should_continue.return_value = (
@@ -283,6 +301,12 @@ def test_guard_reason_split_with_leading_newline(capsys):
         InterruptGuard,
         instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
     )
+    from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
+    from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
+        TerminalQuitKeyListener,
+    )
+
+    container.register(IQuitKeyListener, instance=TerminalQuitKeyListener())
 
     # Guard returns a reason with leading newline + two sentences
     mock_loop_guard.should_continue.return_value = (

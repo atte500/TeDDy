@@ -259,6 +259,7 @@ def _orchestrate_session_loop(
 ) -> None:
     """Shared turn loop for start and resume commands."""
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
+    from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
 
     orchestrator = container.resolve(IRunPlanUseCase)
     session_manager = container.resolve(ISessionManager)
@@ -293,6 +294,14 @@ def _orchestrate_session_loop(
     # whole turn loop; the boundary restores the previous disposition on exit.
     interrupt_guard = container.resolve(InterruptGuard)
     previous_handler: Any = interrupt_guard.install()
+
+    # The quit-key listener is a process-global resource whose start()/stop()
+    # lifecycle this boundary owns (mirroring the InterruptGuard precedent): a
+    # single bare `q` self-delivers SIGINT so the shared guard runs the SAME
+    # WAITING/EXECUTING branch. It is started alongside the handler install and
+    # stopped in the finally below before the disposition is restored.
+    quit_listener = container.resolve(IQuitKeyListener)
+    quit_listener.start()
     try:
         turn_count = 0
         while True:
@@ -344,7 +353,9 @@ def _orchestrate_session_loop(
         typer.secho("Interrupted by user (Ctrl+C).", fg=typer.colors.YELLOW)
     finally:
         # Caller-owned restoration contract: restore the SIGINT disposition
-        # that preceded the guard's install() when the turn loop ends.
+        # that preceded the guard's install() when the turn loop ends. Stop the
+        # quit-key listener first so no keystrokes are read during restoration.
+        quit_listener.stop()
         signal.signal(signal.SIGINT, previous_handler)
 
 

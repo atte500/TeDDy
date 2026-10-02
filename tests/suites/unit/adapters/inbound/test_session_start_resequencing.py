@@ -44,6 +44,12 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
         InterruptGuard,
         instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
     )
+    from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
+    from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
+        TerminalQuitKeyListener,
+    )
+
+    container.register(IQuitKeyListener, instance=TerminalQuitKeyListener())
 
     # Default: valid config
     mock_llm_client.validate_config.return_value = []
@@ -122,6 +128,12 @@ def test_handle_new_session_prompts_even_when_non_interactive():
         InterruptGuard,
         instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
     )
+    from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
+    from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
+        TerminalQuitKeyListener,
+    )
+
+    container.register(IQuitKeyListener, instance=TerminalQuitKeyListener())
 
     mock_llm_client.validate_config.return_value = []
     mock_user_interactor.ask_question.return_value = "Do something non-interactive"
