@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ConfirmScreen,
 )
+from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
 from teddy_executor.core.utils.terminal import restore_cooked_mode
 
 logger = logging.getLogger(__name__)
@@ -153,6 +154,23 @@ def _is_cli_editor(editor_cmd: Optional[list[str]]) -> bool:
         return False
     basename = os.path.basename(editor_cmd[0])
     return basename in _CLI_EDITORS
+
+
+def _uses_annotated_diff_path(diff_viewer: Optional[list[str]]) -> bool:
+    """Return True when the diff viewer should use the annotated single-file flow.
+
+    Known CLI editors (vim/nvim) always use the annotated flow. Known GUI
+    editors registered in the console tooling's ``_DIFF_FLAGS`` table use the
+    GUI before/after flow. Any editor NOT registered in that table is treated
+    as unknown and routed to the annotated flow, because the annotated
+    unified-diff format works with any editor regardless of diff-flag support.
+    """
+    if _is_cli_editor(diff_viewer):
+        return True
+    if not diff_viewer:
+        return False
+    basename = os.path.basename(diff_viewer[0]).lower()
+    return basename not in ConsoleToolingHelper._DIFF_FLAGS
 
 
 def _is_vim_editor(editor_cmd: Optional[list[str]]) -> bool:
@@ -383,9 +401,11 @@ async def preview_edit_diff_viewer(
     p_file = action.pending_temp_file
 
     if p_file and isinstance(p_file, (str, os.PathLike)):
-        # For CLI editors, use the annotated single-file diff flow.
-        # The 'before' file is NOT created — annotated diff replaces it.
-        if _is_cli_editor(diff_viewer):
+        # For known CLI editors AND unknown editors (not registered in
+        # _DIFF_FLAGS), use the annotated single-file diff flow: it works with
+        # any editor. The 'before' file is NOT created — annotated diff
+        # replaces it.
+        if _uses_annotated_diff_path(diff_viewer):
             # Handle mock output first (before creating any temp files)
             mock_out = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
             if mock_out:

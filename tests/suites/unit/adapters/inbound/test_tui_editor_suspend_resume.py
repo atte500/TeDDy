@@ -812,6 +812,59 @@ class TestPreviewEditDiffViewer:
         # Assert: before file was deleted
         app._system_env.delete_file.assert_called_with(before_path)
 
+    @pytest.mark.anyio
+    async def test_preview_edit_diff_viewer_unknown_editor_routes_to_annotated_diff(
+        self, monkeypatch
+    ):
+        """An unknown editor (basename NOT in _DIFF_FLAGS) MUST route through the
+        annotated single-file diff path, NOT the GUI before/after path.
+
+        The annotated unified-diff format works with any editor, whereas the GUI
+        before/after path assumes diff-flag support and background launching.
+        """
+        from teddy_executor.adapters.inbound import textual_plan_reviewer_editor as ed
+        from teddy_executor.core.domain.models.plan import ActionData
+
+        monkeypatch.delenv("TEDDY_TEST_MOCK_EDITOR_OUTPUT", raising=False)
+
+        app = MagicMock()
+        app.is_headless = False
+        app.push_screen_wait = AsyncMock(return_value=True)
+
+        action = ActionData(
+            type="EDIT",
+            params={"path": "file.test", "edits": [{"find": "old", "replace": "new"}]},
+        )
+        action.pending_temp_file = os.path.join(tempfile.gettempdir(), "after.test")
+
+        annotated_cmd: list = []
+        monkeypatch.setattr(ed, "prepare_after_file", lambda *a, **k: None)
+        monkeypatch.setattr(
+            ed, "_generate_annotated_diff_content", lambda *a, **k: "annotated diff"
+        )
+        monkeypatch.setattr(ed, "reconstruct_from_diff", lambda text: text)
+        monkeypatch.setattr(ed, "_flush_stdin", lambda: None)
+        monkeypatch.setattr(
+            ed, "_run_editor_process", lambda cmd: annotated_cmd.append(list(cmd))
+        )
+        monkeypatch.setattr(
+            ed,
+            "_setup_before_file",
+            lambda *a, **k: os.path.join(tempfile.gettempdir(), "unused.before"),
+        )
+
+        # Act
+        result = await ed.preview_edit_diff_viewer(
+            app, action, ["/opt/bin/my_editor"], "original content", "proposed content"
+        )
+
+        # Assert: unknown editor took the annotated path (sync single-file edit).
+        assert result is True
+        assert annotated_cmd, "unknown editor must take the annotated diff path"
+        assert annotated_cmd[0][0] == "/opt/bin/my_editor"
+        # Assert: the GUI before/after path was NOT taken.
+        app._system_env.run_command.assert_not_called()
+
 
 class TestWindowsPlatformHandling:
     """Regression tests for Windows platform handling in launch_editor."""
