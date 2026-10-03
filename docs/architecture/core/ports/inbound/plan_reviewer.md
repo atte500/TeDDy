@@ -1,10 +1,10 @@
 **Status:** Implemented
 
 ## 1. Purpose / Responsibility
-Defines the contract for the interactive review and modification of a `Plan` domain object. This component bridges the gap between the static plan and its final execution by allowing a human-in-the-loop to selective enable/disable actions or modify their parameters. It supports both bulk review (TUI) and sequential review (Console).
+Defines the contract for the interactive review and modification of a `Plan` domain object. This component bridges the gap between the static plan and its final execution by allowing a human-in-the-loop to selectively enable/disable actions or modify their parameters. Interactive review is provided by the Textual TUI, the sole plan reviewer.
 
 ## 2. Ports
-This component is an **Inbound Port**. It is implemented by primary adapters that provide a User Interface (e.g., TUI or CLI).
+This component is an **Inbound Port**. It is implemented by a primary adapter that provides a User Interface (the Textual TUI).
 
 ## 3. Implementation Details
 The implementation should:
@@ -23,6 +23,6 @@ The implementation should:
   - Returns a `Plan` object containing the user's modifications and selections.
   - Returns `None` if the user cancels or quits the review process.
 
-### `review_action(self, action: ActionData, total_actions: int, agent_name: str | None = None) -> bool`
+### `review_action(self, action: ActionData, total_actions: int, agent_name: str | None = None) -> tuple[bool, str]`
 - **Description:** Initiates a sequential interactive review for a single action.
-- **Returns:** `True` if the action should be executed, `False` if skipped.
+- **Returns:** A tuple of `(should_execute, captured_message)`; `should_execute` is `True` if the action should be executed, `False` if skipped.
