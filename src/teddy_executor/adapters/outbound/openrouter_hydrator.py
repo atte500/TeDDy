@@ -146,13 +146,22 @@ class OpenRouterMetadataHydrator(IOpenRouterHydrator):
                 try:
                     input_cost = float(pricing.get("prompt", 0))
                     output_cost = float(pricing.get("completion", 0))
+                    cache_read = float(pricing.get("input_cache_read", 0))
+                    cache_write = float(pricing.get("input_cache_write", 0))
                 except (ValueError, TypeError):
                     return None
+                formatted_pricing: Dict[str, Any] = {
+                    "input_cost_per_token": input_cost,
+                    "output_cost_per_token": output_cost,
+                }
+                # Broadcast cache rates ONLY when present and positive: a 0.0
+                # rate would reproduce the cached-tokens-billed-at-$0 defect.
+                if cache_read > 0:
+                    formatted_pricing["cache_read_input_token_cost"] = cache_read
+                if cache_write > 0:
+                    formatted_pricing["cache_creation_input_token_cost"] = cache_write
                 return {
                     "context_window": m.get("context_length", 0),
-                    "pricing": {
-                        "input_cost_per_token": input_cost,
-                        "output_cost_per_token": output_cost,
-                    },
+                    "pricing": formatted_pricing,
                 }
         return None

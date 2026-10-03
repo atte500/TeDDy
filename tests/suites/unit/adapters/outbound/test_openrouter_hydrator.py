@@ -275,3 +275,65 @@ class TestPersistentRegistryCache:
 
         assert metadata is not None
         assert metadata["context_window"] == 1048576
+
+
+def test_hydrator_broadcasts_cache_pricing_rates(openrouter_mock: Any):
+    """Should map catalog cache rates to litellm cache-cost keys as floats."""
+    # Arrange
+    hydrator = OpenRouterMetadataHydrator()
+    hydrator.API_URL = f"{openrouter_mock}api/v1/models"
+
+    # Act
+    metadata = hydrator.get_metadata("deepseek/deepseek-v4-flash")
+
+    # Assert
+    assert metadata is not None
+    pricing = metadata["pricing"]
+    assert pricing.get("cache_read_input_token_cost") == 0.0000001
+    assert pricing.get("cache_creation_input_token_cost") == 0.00000125
+
+
+def test_hydrator_omits_cache_pricing_when_absent(openrouter_mock: Any):
+    """Should omit cache-cost keys when the catalog entry carries no cache rates."""
+    # Arrange
+    hydrator = OpenRouterMetadataHydrator()
+    hydrator.API_URL = f"{openrouter_mock}api/v1/models"
+
+    # Act
+    metadata = hydrator.get_metadata("google/gemini-2.0-flash-001")
+
+    # Assert
+    assert metadata is not None
+    pricing = metadata["pricing"]
+    assert "cache_read_input_token_cost" not in pricing
+    assert "cache_creation_input_token_cost" not in pricing
+
+
+def test_hydrator_returns_none_for_non_numeric_cache_rate(httpserver: Any):
+    """Should degrade safely to None when a cache rate cannot be float-parsed."""
+    # Arrange
+    url = httpserver.url_for("/api/v1/models")
+    httpserver.expect_request("/api/v1/models").respond_with_json(
+        {
+            "data": [
+                {
+                    "id": "test/model-with-bad-cache-pricing",
+                    "context_length": 64000,
+                    "pricing": {
+                        "prompt": "0.000001",
+                        "completion": "0.000002",
+                        "input_cache_read": "$0.0000001",
+                    },
+                }
+            ]
+        },
+        status=200,
+    )
+    hydrator = OpenRouterMetadataHydrator()
+    hydrator.API_URL = url
+
+    # Act
+    metadata = hydrator.get_metadata("test/model-with-bad-cache-pricing")
+
+    # Assert
+    assert metadata is None
