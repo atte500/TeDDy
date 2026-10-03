@@ -388,3 +388,38 @@ def test_preflight_check_value_error_without_available_agents(env):
         _run_cli_preflight_check(container=env.container, agent="badagent")
     # Additionally verify that the message does not contain agent names
     # (e.g., no comma-separated list)
+
+
+# ---------------------------------------------------------------------------
+# Interactive gating of the editor-validation gate (merged Migration deliverable)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "interactive, expected_calls",
+    [(True, 1), (False, 0)],
+)
+def test_preflight_check_gates_editor_validation_on_interactive_flag(
+    env, monkeypatch, interactive, expected_calls
+):
+    """The preflight editor gate runs ONLY in interactive mode (spec §4).
+
+    Non-interactive runs (--yolo/--pipeline) and one-shot commands must never
+    block on an editor prompt, so ``_validate_editor_config`` is invoked solely
+    when ``interactive`` is True.
+    """
+    # Arrange - no config errors so the gate is reached on the success path.
+    mock_llm = env.mock_port(ILlmClient)
+    mock_llm.validate_config.return_value = []
+
+    editor_calls = []
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._validate_editor_config",
+        lambda container: editor_calls.append(container),
+    )
+
+    # Act
+    _run_cli_preflight_check(container=env.container, interactive=interactive)
+
+    # Assert - the gate is invoked exactly when interactive is True.
+    assert len(editor_calls) == expected_calls

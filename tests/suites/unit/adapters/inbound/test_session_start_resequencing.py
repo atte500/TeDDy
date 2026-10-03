@@ -63,6 +63,20 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
     )
     mock_orchestrator.resume.return_value = ("session_name", None)  # Stop loop
 
+    # The interactive preflight path now runs the editor gate, so the bare
+    # container must provide ISystemEnvironment and pin the editor to the
+    # "disabled" sentinel (mirroring the harness default) so the gate is inert
+    # and never prompts. Every other key returns a truthy mock, matching the
+    # behaviour of the bare config mock before the gate was introduced.
+    from teddy_executor.core.ports.outbound.system_environment import (
+        ISystemEnvironment,
+    )
+
+    container.register(ISystemEnvironment, instance=Mock(spec=ISystemEnvironment))
+    mock_config_service.get_setting.side_effect = lambda key, default=None: (
+        "disabled" if key == "editor" else Mock()
+    )
+
     # Act
     handle_new_session(
         container=container,

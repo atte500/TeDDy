@@ -444,7 +444,7 @@ def handle_new_session(  # noqa: PLR0913
 
         # 2. Pre-flight checks (Fail-fast before user interaction)
         typer.echo("Checking configurations...", err=True)
-        _run_cli_preflight_check(container, agent=agent)
+        _run_cli_preflight_check(container, agent=agent, interactive=interactive)
         _echo_config_success(container, agent, model=model)
 
         session_manager: ISessionManager = container.resolve(ISessionManager)
@@ -523,8 +523,18 @@ def _echo_config_success(
     typer.echo(msg, err=True)
 
 
-def _run_cli_preflight_check(container: Container, agent: Optional[str] = None) -> None:
-    """Ensures system is configured before starting/resuming a session."""
+def _run_cli_preflight_check(
+    container: Container,
+    agent: Optional[str] = None,
+    interactive: bool = True,
+) -> None:
+    """Ensures system is configured before starting/resuming a session.
+
+    When ``interactive`` is True, an additional editor-configuration gate runs
+    on the success path so a missing or unconfigured editor is discovered and
+    persisted at startup. Non-interactive runs (``--yolo``/``--pipeline``) and
+    one-shot commands pass ``interactive=False`` and never block on a prompt.
+    """
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
     from teddy_executor.core.domain.models.exceptions import ConfigurationError
     from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
@@ -548,6 +558,10 @@ def _run_cli_preflight_check(container: Container, agent: Optional[str] = None) 
             errors.insert(0, agent_error)
 
     if not errors:
+        # Editor validation only runs interactively (spec 4); a non-interactive
+        # run must never prompt, so the gate is skipped entirely.
+        if interactive:
+            _validate_editor_config(container)
         return
 
     error_msg = f"Configuration Error: {', '.join(errors)}"
@@ -712,7 +726,7 @@ def handle_plan_generation(container: Container, message: Optional[str]):
     """Logic for the 'plan' command."""
     try:
         # Note: 'plan' command uses the default 'pathfinder' agent if not in a session
-        _run_cli_preflight_check(container, agent="pathfinder")
+        _run_cli_preflight_check(container, agent="pathfinder", interactive=False)
         _echo_config_success(container)
 
         planning_service: IPlanningUseCase = container.resolve(IPlanningUseCase)
@@ -833,7 +847,7 @@ def handle_resume_session(  # noqa: PLR0913
 
         # 2. Pre-flight checks
         typer.echo("Checking configurations...", err=True)
-        _run_cli_preflight_check(container)
+        _run_cli_preflight_check(container, interactive=interactive)
 
         # 2. Resolve session name
         session_name = _resolve_session_name(container, path)
