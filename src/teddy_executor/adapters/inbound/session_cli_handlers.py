@@ -648,6 +648,51 @@ def _prompt_for_custom_editor(
         typer.secho(f"'{raw}' was not found in PATH.", fg=typer.colors.RED, err=True)
 
 
+def _validate_editor_config(container: Container) -> None:
+    """Validates editor configuration during the interactive preflight check.
+
+    Returns early when the editor is set to the "disabled" sentinel or when a
+    configured editor resolves on PATH. Otherwise emits a branch-appropriate
+    warning and hands off to the discovery prompt helpers, which persist the
+    user's selection to .teddy/config.yaml.
+    """
+    from teddy_executor.core.ports.outbound.system_environment import (
+        ISystemEnvironment,
+    )
+
+    config_service = container.resolve(IConfigService)
+    system_env = container.resolve(ISystemEnvironment)
+    helper = ConsoleToolingHelper(system_env, config_service)
+
+    editor_str = config_service.get_setting("editor") or ""
+
+    # "disabled" sentinel — the user explicitly disabled the editor.
+    if editor_str.strip().lower() == "disabled":
+        return
+
+    if editor_str:
+        if helper.find_editor():
+            return  # Configured editor resolves on PATH.
+        typer.secho(
+            f"\u26a0 Configured editor '{editor_str}' not found in PATH. "
+            "Discovering alternatives...",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+    else:
+        typer.secho(
+            "No editor configured. Scanning for available editors in PATH...",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+
+    available = helper.discover_editors()
+    if available:
+        _prompt_for_editor_selection(config_service, helper, available)
+    else:
+        _prompt_for_custom_editor(config_service, helper)
+
+
 def detect_session_context() -> Optional[Dict[str, Sequence[str]]]:
     """Helper to detect turn and session context files."""
     cwd = Path.cwd()

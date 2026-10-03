@@ -2,6 +2,7 @@ import pytest
 import typer
 from teddy_executor.adapters.inbound.session_cli_handlers import (
     _run_cli_preflight_check,
+    _validate_editor_config,
     _prompt_for_editor_selection,
     _prompt_for_custom_editor,
     handle_new_session,
@@ -36,6 +37,21 @@ def _patch_prompt(monkeypatch, values):
 def _editor_helper(mock_env, mock_config):
     """Build a real ConsoleToolingHelper over auto-specced env/config doubles."""
     return ConsoleToolingHelper(mock_env, mock_config)
+
+
+def _configure_editor(mock_config, value):
+    """Drive ``get_setting('editor')`` past the harness default side_effect.
+
+    ``TestEnvironment._apply_config_defaults`` installs a ``get_setting``
+    side_effect (which returns the caller's ``default``); a callable
+    ``side_effect`` takes precedence over any later ``return_value`` assignment,
+    so ``return_value`` alone is inert. Overriding the side_effect is the
+    harness-sanctioned way to make a mocked ``IConfigService`` return a
+    specific value.
+    """
+    mock_config.get_setting.side_effect = lambda key, default=None: (
+        value if key == "editor" else default
+    )
 
 
 def test_prompt_for_editor_selection_saves_resolved_path_for_number(monkeypatch):
@@ -132,6 +148,87 @@ def test_prompt_for_custom_editor_saves_disabled_on_empty_input(monkeypatch):
     _patch_prompt(monkeypatch, [""])
 
     _prompt_for_custom_editor(mock_config, helper)
+
+    mock_config.set_setting.assert_called_once_with("editor", "disabled")
+
+
+# ---------------------------------------------------------------------------
+# Editor validation orchestrator: _validate_editor_config(container)
+# ---------------------------------------------------------------------------
+
+
+def test_validate_editor_config_returns_early_when_disabled(env):
+    """The 'disabled' sentinel skips discovery and prompting entirely."""
+    mock_config = env.mock_port(IConfigService)
+    mock_env = env.mock_port(ISystemEnvironment)
+    _configure_editor(mock_config, "disabled")
+
+    _validate_editor_config(env.container)
+
+    # No PATH scan and no persistence on the disabled path.
+    mock_env.which.assert_not_called()
+    mock_config.set_setting.assert_not_called()
+
+
+def test_validate_editor_config_returns_early_when_configured_editor_found(env):
+    """A configured editor that resolves on PATH needs no prompting."""
+    mock_config = env.mock_port(IConfigService)
+    mock_env = env.mock_port(ISystemEnvironment)
+    _configure_editor(mock_config, "nvim")
+    mock_env.which.side_effect = lambda name: (
+        "/usr/bin/nvim" if name == "nvim" else None
+    )
+
+    _validate_editor_config(env.container)
+
+    mock_config.set_setting.assert_not_called()
+
+
+def test_validate_editor_config_prompts_discovery_when_no_editor_configured(
+    env, monkeypatch
+):
+    """An unconfigured editor falls through to discovery and persists the choice."""
+    mock_config = env.mock_port(IConfigService)
+    mock_env = env.mock_port(ISystemEnvironment)
+    _configure_editor(mock_config, "")
+    mock_env.which.side_effect = lambda name: (
+        "/usr/bin/nvim" if name == "nvim" else None
+    )
+    _patch_prompt(monkeypatch, ["1"])
+
+    _validate_editor_config(env.container)
+
+    mock_config.set_setting.assert_called_once_with("editor", "/usr/bin/nvim")
+
+
+def test_validate_editor_config_prompts_discovery_when_configured_editor_missing(
+    env, monkeypatch
+):
+    """A configured-but-missing editor warns and falls through to discovery."""
+    mock_config = env.mock_port(IConfigService)
+    mock_env = env.mock_port(ISystemEnvironment)
+    _configure_editor(mock_config, "code")
+    mock_env.which.side_effect = lambda name: (
+        "/usr/bin/nvim" if name == "nvim" else None
+    )
+    _patch_prompt(monkeypatch, ["1"])
+
+    _validate_editor_config(env.container)
+
+    mock_config.set_setting.assert_called_once_with("editor", "/usr/bin/nvim")
+
+
+def test_validate_editor_config_prompts_custom_when_nothing_discovered(
+    env, monkeypatch
+):
+    """With no editors discovered, the custom-only prompt persists the result."""
+    mock_config = env.mock_port(IConfigService)
+    mock_env = env.mock_port(ISystemEnvironment)
+    _configure_editor(mock_config, "")
+    mock_env.which.return_value = None
+    _patch_prompt(monkeypatch, [""])
+
+    _validate_editor_config(env.container)
 
     mock_config.set_setting.assert_called_once_with("editor", "disabled")
 
