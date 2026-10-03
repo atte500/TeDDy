@@ -11,9 +11,11 @@ Request section) and plan/execute the NEXT turn from the reply. The
 pre-fix behaviour re-executed the interrupted MESSAGE plan, DROPPED the
 reply, and re-prompted the user.
 
-Scope guard: an injected reply on a NON-communication PENDING_PLAN turn
-must keep the pre-existing re-execute behaviour, and a resume with NO
-injected reply must be unchanged.
+A resume with NO injected reply must be unchanged. The NON-communication
+PENDING_PLAN turn is covered by its own suite
+(`test_session_lifecycle_pending_plan_non_communication_resume.py`); Bug 60
+changed that branch to seed the injected reply onto the parsed pending plan
+(before executing it) instead of dropping it.
 """
 
 from datetime import datetime, timezone
@@ -64,21 +66,6 @@ def _communication_plan() -> Plan:
                 type="MESSAGE",
                 params={"content": AGENT_MESSAGE},
                 description="Message to user",
-            )
-        ],
-    )
-
-
-def _action_plan() -> Plan:
-    """A non-communication turn (single EXECUTE action)."""
-    return Plan(
-        title="Follow-up",
-        rationale="Action turn",
-        actions=[
-            ActionData(
-                type="EXECUTE",
-                params={"command": "echo 1"},
-                description="Do something",
             )
         ],
     )
@@ -210,34 +197,3 @@ class TestPendingPlanCommunicationResume:
         manager._session_planner.trigger_new_plan.assert_not_called()
         manager._user_interactor.ask_question.assert_not_called()
         assert result[0] == "say-ask"
-
-
-class TestPendingPlanNonCommunicationResumeScope:
-    """Scope guard: a reply on a NON-communication pending turn re-executes."""
-
-    def test_injected_reply_on_action_turn_still_reexecutes(self, container) -> None:
-        # Arrange: a pending turn whose plan is a single EXECUTE action.
-        manager = _build_manager(container, _action_plan())
-        manager._session_service.get_session_state.return_value = (
-            SessionState.PENDING_PLAN,
-            TURN03,
-        )
-        manager._session_service.load_turn_meta.return_value = {
-            "agent_name": "assistant"
-        }
-        orchestrator = _orchestrator_with_report()
-
-        # Act
-        manager.resume(
-            session_name="say-ask",
-            orchestrator=orchestrator,
-            interactive=True,
-            message=REPLY,
-        )
-
-        # Assert: the non-communication plan is re-executed (unchanged scope).
-        orchestrator.execute.assert_called_once()
-        executed_plan = orchestrator.execute.call_args.kwargs["plan_path"]
-        assert TURN03 in executed_plan
-        manager._session_service.transition_to_next_turn.assert_not_called()
-        manager._session_planner.trigger_new_plan.assert_not_called()

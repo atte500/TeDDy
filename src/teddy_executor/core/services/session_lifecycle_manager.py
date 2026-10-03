@@ -13,6 +13,7 @@ from teddy_executor.core.domain.models.report_assembly_data import ReportAssembl
 
 from typing import Sequence
 
+from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import SessionState
 from teddy_executor.core.utils.io import Tee as _Tee
@@ -70,9 +71,7 @@ class SessionLifecycleManager:
 
         if state == SessionState.PENDING_PLAN:
             turn_meta = self._session_service.load_turn_meta(turn_path)
-            if turn_meta.get("awaiting_reply") or (
-                message and self._is_communication_turn(turn_path)
-            ):
+            if self._should_consume_awaiting_reply(turn_meta, turn_path, message):
                 return self._consume_awaiting_reply(
                     turn_path,
                     turn_meta,
@@ -84,25 +83,27 @@ class SessionLifecycleManager:
                     message=message,
                 )
             plan_path = f"{turn_path}/plan.md"
-            report = orchestrator.execute(
-                plan_path=plan_path,
-                interactive=interactive,
-                project_context=project_context,
-                pipeline=pipeline,
-            )
+            plan = self._seed_pending_plan(turn_path, plan_path, message)
+            if plan is not None:
+                report = orchestrator.execute(
+                    plan=plan,
+                    plan_path=plan_path,
+                    interactive=interactive,
+                    project_context=project_context,
+                    pipeline=pipeline,
+                )
+            else:
+                report = orchestrator.execute(
+                    plan_path=plan_path,
+                    interactive=interactive,
+                    project_context=project_context,
+                    pipeline=pipeline,
+                )
             return (session_name, report)
 
         if state == SessionState.EMPTY:
             if message:
-                turn_name = Path(turn_path).name
-                if turn_name.isdigit():
-                    parent = Path(turn_path).parent
-                    prev_turn = str(parent / f"{int(turn_name) - 1:02d}")
-                    prev_report = self._session_service.to_root_relative(
-                        Path(prev_turn), "report.md"
-                    )
-                    if self._file_system_manager.path_exists(prev_report):
-                        self._append_user_request(prev_turn, message)
+                self._append_message_to_previous_turn(turn_path, message)
             return self._handle_planning_and_execution(
                 turn_path,
                 orchestrator,
@@ -144,6 +145,67 @@ class SessionLifecycleManager:
         except Exception:
             return False
         return plan.is_communication_turn()
+
+    def _should_consume_awaiting_reply(
+        self, turn_meta: dict[str, Any], turn_path: str, message: Optional[str]
+    ) -> bool:
+        """Reports whether the pending turn's reply must be consumed.
+
+        A reply is consumed when the turn carries the ``awaiting_reply``
+        flag (pipeline stop) or when an injected reply lands on a MESSAGE-
+        only communication turn (an interactively-interrupted communication
+        turn lacks the flag but is semantically awaiting a reply). A plain
+        pending action turn with no reply falls through to re-execution.
+        """
+        return bool(turn_meta.get("awaiting_reply")) or (
+            bool(message) and self._is_communication_turn(turn_path)
+        )
+
+    def _seed_pending_plan(
+        self, turn_path: str, plan_path: str, message: Optional[str]
+    ) -> Optional["Plan"]:
+        """Parses the pending plan (WITH its path) and seeds the injected reply.
+
+        Parsing WITH ``plan_path`` preserves ``Plan.is_session`` /
+        ``Plan.plan_path`` — ``execute(plan=...)`` short-circuits
+        re-resolution from the path. Returns ``None`` when no reply is
+        injected or when the plan is unparseable, so the caller falls back to
+        the bare re-execute path. The reply is seeded onto the plan's
+        metadata (never forwarded as ``message``) so a TUI edit can still
+        override it.
+        """
+        if not message:
+            return None
+        try:
+            plan = self._parse_awaiting_plan(turn_path, plan_path=plan_path)
+        except InvalidPlanError:
+            logger.debug(
+                "Pending plan at %s is unparseable; falling back to the "
+                "re-execute path.",
+                plan_path,
+            )
+            return None
+        plan.metadata["user_request"] = message
+        return plan
+
+    def _append_message_to_previous_turn(self, turn_path: str, message: str) -> None:
+        """Appends the injected reply to the previous turn's report if present.
+
+        The EMPTY state's turn is the successor pre-created by the previous
+        turn's finalization; the injected reply is appended to that previous
+        turn's report when it exists. Turn ``01`` (or a missing report) is a
+        no-op — planning still carries the message.
+        """
+        turn_name = Path(turn_path).name
+        if not turn_name.isdigit():
+            return
+        parent = Path(turn_path).parent
+        prev_turn = str(parent / f"{int(turn_name) - 1:02d}")
+        prev_report = self._session_service.to_root_relative(
+            Path(prev_turn), "report.md"
+        )
+        if self._file_system_manager.path_exists(prev_report):
+            self._append_user_request(prev_turn, message)
 
     def _append_user_request(self, turn_path: str, message: str) -> None:
         """Appends a smart-fenced `## User Request` section to the turn report.
@@ -239,22 +301,30 @@ class SessionLifecycleManager:
             message=reply,
         )
 
-    def _parse_awaiting_plan(self, turn_path: str) -> "Plan":
+    def _parse_awaiting_plan(
+        self, turn_path: str, plan_path: Optional[str] = None
+    ) -> "Plan":
         """Parse the interrupted turn's plan.md.
 
         A pipeline MESSAGE turn stops before finalization; its plan is
         re-parsed on consumption for BOTH the report synthesis and, on the
         stop-again path, the status header. Shared by the consumption
         branches so plan.md is parsed exactly once per resume.
+
+        When ``plan_path`` is supplied it is forwarded to the parser so
+        ``Plan.plan_path``/``Plan.is_session`` survive a parse whose result
+        is later handed to ``orchestrator.execute(plan=...)`` (which
+        short-circuits re-resolution from the path). Existing callers omit
+        it and keep the original path-less behaviour byte-identical.
         """
         assert self._plan_parser is not None, (
             "SessionPorts.plan_parser must be injected to synthesize the "
             "awaiting-reply turn's report."
         )
-        plan_path = f"{turn_path}/plan.md"
-        return self._plan_parser.parse(
-            str(self._file_system_manager.read_file(plan_path))
-        )
+        content = str(self._file_system_manager.read_file(f"{turn_path}/plan.md"))
+        if plan_path is None:
+            return self._plan_parser.parse(content)
+        return self._plan_parser.parse(content, plan_path=plan_path)
 
     def _synthesize_message_report(
         self,
