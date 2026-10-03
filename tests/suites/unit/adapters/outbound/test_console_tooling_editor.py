@@ -198,17 +198,19 @@ class TestGetDiffViewerCommand:
 
         assert result == ["/usr/bin/idea", "diff"]
 
-    def test_diff_viewer_returns_none_for_unknown_editor(
+    def test_diff_viewer_returns_editor_path_for_unknown_editor(
         self, helper, mock_env, mock_config
     ):
-        """For nano (not in translation table), get_diff_viewer_command returns None."""
+        """For a resolved editor absent from the translation table (e.g. nano),
+        get_diff_viewer_command returns the editor path with no flags, so the
+        caller can open both files as separate arguments."""
         mock_config.get_setting.return_value = "nano"
         mock_env.get_env.side_effect = lambda x: None
         mock_env.which.side_effect = lambda x: "/usr/bin/nano" if x == "nano" else None
 
         result = helper.get_diff_viewer_command()
 
-        assert result is None
+        assert result == ["/usr/bin/nano"]
 
     def test_diff_viewer_returns_none_when_no_editor_found(
         self, helper, mock_env, mock_config

@@ -129,21 +129,21 @@ class ConsoleToolingHelper:
                 return custom_tool_parts
             return None
 
-        # Resolve editor from config or env directly
-        editor_str = self._config_service.get_setting("editor")
-        if not editor_str:
-            editor_str = self._system_env.get_env("VISUAL") or self._system_env.get_env(
-                "EDITOR"
-            )
+        # Resolve the editor via the canonical resolver (honours the config
+        # value, the "disabled" sentinel, and the VISUAL/EDITOR env fallback),
+        # then map its basename to the translation table.
+        editor_cmd = self.find_editor()
+        if not editor_cmd:
+            return None
 
-        if editor_str:
-            parts = shlex.split(editor_str)
-            tool_path = self._system_env.which(parts[0])
-            if tool_path:
-                basename = os.path.basename(tool_path).lower()
-                if flags := self._DIFF_FLAGS.get(basename):
-                    return [tool_path] + flags
-        return None
+        basename = os.path.basename(editor_cmd[0]).lower()
+        if flags := self._DIFF_FLAGS.get(basename):
+            return editor_cmd[:1] + flags
+
+        # Unknown editor fallback: return the editor path with no flags. The
+        # caller passes both file paths as separate arguments, so the editor
+        # opens both files in separate tabs (reliable, no-guess fallback).
+        return editor_cmd[:1]
 
     def find_editor(self) -> Optional[List[str]]:
         editor_str = self._config_service.get_setting("editor")

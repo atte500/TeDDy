@@ -147,7 +147,7 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 - [x] **Wiring** — Modify `find_editor()` to handle "disabled" sentinel (returns None immediately, bypasses env fallback)
 - [x] **Wiring** — Extend `_DIFF_FLAGS` translation table with all entries from spec 2d (add idea, webstorm, phpstorm, pycharm, rubymine, goland, clion, fleet)
 - [x] **Logic** — Implement `YamlConfigAdapter.set_setting()` with dot-notation support, file creation, cache update, and YAML persistence
-- [ ] **Logic** — Implement `get_diff_viewer_command()` unknown editor fallback: return `[editor_path]` with no flags when editor not in `_DIFF_FLAGS`
+- [x] **Logic** — Implement `get_diff_viewer_command()` unknown editor fallback: return `[editor_path]` with no flags when editor not in `_DIFF_FLAGS`
 - [ ] **Logic** — Implement `get_diff_viewer_command()` `diff_flags` config override: use config value instead of `_DIFF_FLAGS` when `diff_flags` key is set
 - [ ] **Migration** — Add `_validate_editor_config(container)` function to `session_cli_handlers.py` with discovery and prompting flow
 - [ ] **Migration** — Add `_prompt_for_editor_selection()` and `_prompt_for_custom_editor()` prompting functions with `typer.prompt()` input validation
@@ -197,6 +197,13 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 - **Green-to-Green confirmed:** the table extension is purely additive — adding dict keys cannot change any existing lookup result, so no Migration sweep was needed and the full suite stayed green.
 - **Spike-backed convention:** the bare `"diff"` token (no dash) is mechanically sound — `probe_ku2` observed the launcher argv `["diff", <file1>, <file2>]` through `subprocess.run` for the live `idea` entry and for all eight simulated JetBrains additions (see Prototype Findings, KU2).
 - **Tests:** one parametrized unit test added to `tests/suites/unit/adapters/outbound/test_console_tooling_editor.py` (`test_diff_flags_translation_table_includes_jetbrains_editors`) asserting each new key maps to `["diff"]`. No new `[DEBT]`.
+
+### Deliverable #9 (Logic) — `get_diff_viewer_command()` unknown-editor fallback (2026-10-03)
+- **Change (spec §2c):** the method's editor-resolution tail was replaced with the canonical `self.find_editor()` call (removing the inline duplicate of `get_setting("editor")` + `VISUAL`/`EDITOR` + `which`). On a translation-table miss (basename absent from `_DIFF_FLAGS`), it now returns `editor_cmd[:1]` — the resolved editor path with no flags — instead of `None`, so the caller passes both file paths as separate arguments and the editor opens them in separate tabs.
+- **Side effect (free consequence, no separate deliverable):** because the tail now routes through `find_editor()`, `get_diff_viewer_command()` also honours the "disabled" sentinel (returns `None` when disabled) and the `VISUAL`/`EDITOR` env fallback — matching spec §5's "consumers of find_editor() handle None gracefully".
+- **Not in scope (kept atomic):** the `diff_flags` config override (spec §2c step 0) is NOT added here; it is the next Logic deliverable (#10).
+- **Green-to-Green confirmed:** the only observable behaviour change is the intended fallback. The `TEDDY_DIFF_TOOL` branch is untouched; known editors (`vim`/`nvim`/`code`/`cursor`/`zed`/`idea`) keep returning `[path] + flags`; a resolved-but-unknown editor now returns `[path]`; an unresolved editor still returns `None`.
+- **Tests:** the existing `test_diff_viewer_returns_none_for_unknown_editor` was repurposed (Migration) into `test_diff_viewer_returns_editor_path_for_unknown_editor`, repinning the contract to `["/usr/bin/nano"]` rather than adding a duplicate. No new `[DEBT]`.
 
 ## Verification
 - [ ] Start a new interactive session with no editor configured → see discovery prompt
