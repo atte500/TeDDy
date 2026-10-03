@@ -117,6 +117,12 @@ class TerminalQuitKeyListener:
         ready, _, _ = select.select([fd], [], [], _POLL_INTERVAL)
         if not ready:
             return None
+        # Re-check ownership AFTER the fd is readable but BEFORE consuming a
+        # byte: a concurrent reader (the console ask prompt) can claim stdin
+        # between the loop's guard and this read. Backing off here leaves its
+        # bytes (e.g. prompt_toolkit's CPR reply) intact.
+        if is_stdin_owned():
+            return None
         try:
             data = os.read(fd, 1)
         except OSError:
@@ -129,6 +135,9 @@ class TerminalQuitKeyListener:
         """Read one byte via msvcrt (Windows); no terminal-mode change."""
         msvcrt = cast(Any, importlib.import_module("msvcrt"))
         if not msvcrt.kbhit():
+            return None
+        # Same re-check before consuming the key (see _read_one_byte_posix).
+        if is_stdin_owned():
             return None
         return ord(msvcrt.getwch())
 
