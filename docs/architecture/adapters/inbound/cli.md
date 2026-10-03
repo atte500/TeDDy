@@ -108,8 +108,8 @@ The CLI adapter performs editor validation during session startup (`handle_new_s
 1. Checks if the editor is set to `"disabled"` — if so, skips all validation.
 2. Checks if the configured editor exists in `PATH` via `ConsoleToolingHelper.find_editor()`. If found, validation passes.
 3. If the editor is missing or unconfigured, displays a warning and discovers available editors via `ConsoleToolingHelper.discover_editors()`.
-4. Prompts the user to select from a numbered list of discovered editors, enter a custom command, or leave empty to disable.
-5. Persists the selection to `.teddy/config.yaml` via `IConfigService.set_setting()`.
+4. Renders the discovery block: an always-present `Editor Setup` header, then a **bracket**-numbered list (`[1] nvim`, resolved paths hidden), then a single prompt `Select an editor [1-{n}] (number, custom command, or empty to disable): `. A valid number persists the editor's resolved absolute path. A custom command is validated with `which()` and re-prompted if unavailable — it is never accepted without passing validation. Empty input persists `"disabled"`. Invalid/out-of-range input re-prompts.
+5. Persists the selection to `.teddy/config.yaml` via `IConfigService.set_setting()` and prints the green confirmation `Editor preference saved to .teddy/config.yaml.`. The full render specification (colours, the fallback branch, and the exact message strings) lives in [spec §4](/docs/project/specs/editor-validation-and-discovery.md).
 
 Editor validation is skipped entirely in non-interactive modes (`--yolo`, `--pipeline`, `--yes`).
 

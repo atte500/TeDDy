@@ -1,15 +1,43 @@
-# Spike: Editor Validation & Discovery (Slice 03-01 Technical Key Unknowns)
+# Prototype: Editor Validation & Discovery (Slice 03-01)
 
-Standalone probe for the three unresolved `[Technical]` Key Unknowns of
-Slice 03-01. It imports production code read-only (never modifies `src/`).
+Standalone prototype for Slice 03-01. `spike.py` resolves the three
+`[Technical]` Key Unknowns; `editors_demo.py` resolves the `[Functional]`
+console editor-selection UI Key Unknown. Both import production code
+read-only and never modify `src/` or `tests/`.
 
 ## Run
+
+### Technical-key-unknown probe (`spike.py`)
 
 ```
 uv run python spikes/prototypes/editor-validation-and-discovery/spike.py
 ```
 
 Exit code 0 == all assertions pass; raw evidence is printed to stdout.
+
+### Console editor-selection UI demo (`editors_demo.py`)
+
+Interactive — tune the rendered preflight UI exactly as a user would see it:
+
+```
+uv run python spikes/prototypes/editor-validation-and-discovery/editors_demo.py
+```
+
+Self-verifying battery (18 assertions):
+
+```
+uv run python spikes/prototypes/editor-validation-and-discovery/editors_demo.py --selftest
+```
+
+Scripted / non-TTY (feed canned inputs, comma-separated; an empty segment == Enter):
+
+```
+uv run python spikes/prototypes/editor-validation-and-discovery/editors_demo.py --inputs "99,2"
+```
+
+Knobs: `--list-format {bare,bracket}`, `--show-paths`, `--no-color`, `--prompt`,
+`--invalid-mode {silent,message}`, `--header`, `--discovery-mode
+{missing,unconfigured}`, `--no-editors-found`, `--which-map`, `--editors`.
 
 ## What each probe verifies
 
@@ -35,6 +63,7 @@ Exit code 0 == all assertions pass; raw evidence is printed to stdout.
 
 ## Files
 
-- `spike.py` — the probe + assertions (self-verifying).
+- `spike.py` — the Technical probe + assertions (self-verifying).
 - `set_setting_shadow.py` — shadow `set_setting` implementation (spec-proposed
   and corrected variants).
+- `editors_demo.py` — interactive console editor-selection UI demo + `--selftest`.

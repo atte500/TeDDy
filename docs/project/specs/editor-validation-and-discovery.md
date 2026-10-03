@@ -276,24 +276,30 @@ def _validate_editor_config(container: Container) -> None:
         _prompt_for_custom_editor(config_service, helper)
 ```
 
-The prompting functions (`_prompt_for_editor_selection`, `_prompt_for_custom_editor`) use `typer.prompt()` directly to avoid circular DI concerns with `IUserInteractor`. The prompting flow:
+The prompting functions (`_prompt_for_editor_selection`, `_prompt_for_custom_editor`) use `typer.prompt()` directly to avoid circular DI concerns with `IUserInteractor`. The **finalized console UI** below was validated interactively against the prototype `spikes/prototypes/editor-validation-and-discovery/editors_demo.py` (`--selftest` → 18/18 pass; its `--list-format` / `--show-paths` / `--prompt` / `--invalid-mode` / `--header` knobs were used to select these values).
 
-**`_prompt_for_editor_selection`**:
-1. Display numbered list of discovered editors
-2. Show "Or type a custom editor command (leave empty to disable):"
-3. User input:
-   - Number → save the resolved path to config
-   - Custom command → `which()` validation; loop on failure
-   - Empty → save `"disabled"` to config
-4. Always persist to config via `config_service.set_setting("editor", value)`
-5. Log where it was saved: `"Editor preference saved to .teddy/config.yaml. Edit it directly at any time."`
+**Editor-found branch (`_prompt_for_editor_selection`)** — rendered top-to-bottom, entirely on **stderr**:
 
-**`_prompt_for_custom_editor`** (when no editors found):
-1. Display "No known editors found. Enter a custom editor command (leave empty to disable):"
-2. User input:
-   - Custom command → `which()` validation; loop on failure
-   - Empty → save `"disabled"` to config
-3. Always persist to config
+1. A yellow warning line — the branch-appropriate status string from Step 4 above.
+2. Blank line.
+3. An **always-present** header line `Editor Setup` (cyan, bold). It is shown on BOTH branches (editors found AND nothing found).
+4. Blank line.
+5. The discovered editors, one per line, in **bracket** format with the resolved path **hidden**: `[1] nvim`, `[2] vim`, … (only the name is shown; the reader does not need the path).
+6. Blank line.
+7. A **single primary selection prompt** (a number, a custom command, and empty are all accepted here):
+   `Select an editor [1-{n}] (number, custom command, or empty to disable): ` (`{n}` = the discovered count).
+
+Primary-prompt input handling:
+
+- **Valid in-range number** → persist the selected editor's **resolved absolute path** to config, then a blank line and the green confirmation `Editor preference saved to .teddy/config.yaml.`
+- **Out-of-range / non-numeric number** → the red message `'{raw}' is not a valid selection. Choose 1-{n}.` then re-prompt the primary prompt.
+- **Custom command** → validate the first token with `which()`. If available, persist the command **exactly as typed** (so flags such as `code --wait` are preserved); if NOT available, the red message `'{raw}' was not found in PATH.` then re-prompt. A custom command is **never** accepted without passing `which()`.
+- **Empty input** → persist `"disabled"` to config (then the green confirmation).
+- **EOF / closed input** → persist `"disabled"`.
+
+**Nothing-found branch (`_prompt_for_custom_editor`)** — when `discover_editors()` returns nothing: the warning, blank line, and the `Editor Setup` header still render, followed by the single prompt `No known editors found. Enter a custom editor command (leave empty to disable):`. The same `which()`-validation loop applies (unavailable → `'{raw}' was not found in PATH.` + re-prompt), as do empty→`"disabled"` and EOF→`"disabled"`.
+
+**Rendering conventions:** yellow warning, cyan header, green confirmation, red invalid messages, emitted via `typer.secho(..., fg=..., err=True)` in keeping with the codebase's existing console style. All editor-selection output goes to **stderr** (never stdout).
 
 The `_run_cli_preflight_check()` function should be modified to accept an `interactive` parameter:
 
