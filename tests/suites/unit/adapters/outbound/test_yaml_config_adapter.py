@@ -157,6 +157,34 @@ def test_auto_pruning_defaults_are_present(fs, container):
     assert adapter.get_setting("auto_pruning.preserve_message_turns") is True
 
 
+def test_editor_default_is_empty_in_baseline(fs, container):
+    """
+    Tests that the bundled baseline ships an empty editor default and no
+    diff_flags override (Slice 03-01 Contract).
+
+    An empty editor default ensures the preflight discovery prompt is the
+    single source of editor configuration instead of a hardcoded fallback,
+    and the commented-out diff_flags key means no override is active.
+    """
+    # Arrange - Map the real baseline file into the fake filesystem
+    from importlib import resources
+
+    res_path = resources.files("teddy_executor.resources.config").joinpath(
+        "config.yaml"
+    )
+    fs.add_real_file(str(res_path))
+
+    # Ensure no user config overrides the baseline
+    fs.create_dir(".teddy")
+    fs.create_file(".teddy/config.yaml", contents="{}")
+
+    adapter = container.resolve(IConfigService)
+
+    # Act & Assert
+    assert adapter.get_setting("editor") == ""
+    assert adapter.get_setting("diff_flags") is None
+
+
 def test_set_setting_persists_value_and_syncs_cache(fs, container):
     """set_setting persists to the user config AND updates the in-memory cache."""
     # Arrange

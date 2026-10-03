@@ -139,7 +139,7 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 ## Deliverables
 
 - [x] **Contract** — Add `set_setting(key: str, value: Any) -> None` abstract method to `IConfigService` protocol in `config_service.py` (MUST land atomically with the `set_setting` Logic deliverable below — declaring the abstract method alone leaves `YamlConfigAdapter` uninstantiable and reds every adapter-constructing test; see Impact Audit)
-- [ ] **Contract** — Change default editor from `"code"` to `""` in `config.yaml` with updated comments (add `diff_flags` section)
+- [x] **Contract** — Change default editor from `"code"` to `""` in `config.yaml` with updated comments (add `diff_flags` section)
 - [ ] **Harness** — Add `KNOWN_EDITORS` fixture and mock `discover_editors` patterns to `test_console_tooling_editor.py`
 - [ ] **Harness** — Update `IConfigService` mock in test harness (mocking.py, composition.py) to implement `set_setting()`
 - [ ] **Seam** — Add `KNOWN_EDITORS: list[str]` class-level constant to `ConsoleToolingHelper` (as specified in spec 2a)
@@ -164,6 +164,11 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 - **Atomicity:** the `IConfigService.set_setting` abstract member and the `YamlConfigAdapter.set_setting` implementation landed as ONE green-to-green unit (Impact Audit). Declaring the member alone makes `YamlConfigAdapter` uninstantiable (`TypeError: Can't instantiate abstract class ... with abstract method set_setting`), which would red every adapter-constructing test (`test_yaml_config_adapter*.py`, `test_config_defaults.py`, `tests/harness/setup/real_adapter_mixin.py`). A census confirmed `YamlConfigAdapter` is the sole production implementer and every test double is an auto-specced mock, so no other class needed the member.
 - **`set_setting` body (spike-verified, `probe_ku1`):** both mandatory fixes are implemented — (a) `os.makedirs(os.path.dirname(self._config_path), exist_ok=True)` runs BEFORE the write (guards the `root_dir`-based `.teddy/` parent case); (b) the in-memory merged `_config` cache is updated in place AFTER the disk write (a disk-only write left the cache stale). Dot-notation traversal, config-file + parent-directory creation, comment-stripping persistence (user file only; baseline never written), and preservation of unrelated keys all behave per spec §3.
 - **Tests:** four unit tests added to `tests/suites/unit/adapters/outbound/test_yaml_config_adapter.py` — persistence + cache sync, file + parent-dir creation, dot-notation nesting, and unrelated-key preservation. No new `[DEBT]`.
+
+### Deliverable #2 (Contract) — Baseline default editor `""` + commented `diff_flags` (2026-10-03)
+- **Change (spec §1):** `src/teddy_executor/resources/config/config.yaml` baseline `editor` changed `"code"` → `""`, with a `# Fallback chain: Config -> VISUAL/EDITOR env vars -> discovery prompt.` comment and a new commented-out `diff_flags` block (`# Example: ["--diff", "--wait"]` / `# diff_flags: []`). Because the `diff_flags` section is intentionally commented out, its ABSENCE is the contract surface for this deliverable — the later `get_diff_viewer_command()` Logic deliverable reads it as unset until a user opts in.
+- **Green-to-Green confirmed:** the `git grep` census showed the only baseline dependency on `"code"` was this file; every test hit (`test_console_tooling_editor.py`, `test_read_preview_opens_real_file.py`, etc.) passes `"code"` as a MOCKED config input rather than reading the baseline. No test or production consumer asserted the baseline editor default, so the change required no Migration sweep and the full suite stayed green.
+- **Tests:** one baseline-default test added to `test_yaml_config_adapter.py` (`test_editor_default_is_empty_in_baseline`), reusing the `fs.add_real_file(resources.files(...))` + empty-user-config idiom from the adjacent `test_auto_pruning_defaults_are_present` to prevent a divergent fake-fs setup. No new `[DEBT]`.
 
 ## Verification
 - [ ] Start a new interactive session with no editor configured → see discovery prompt

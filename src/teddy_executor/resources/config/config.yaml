@@ -2,7 +2,13 @@
 
 # The preferred external editor for reviewing and modifying plans/messages.
 # Supports arbitrary command strings (e.g., "code --wait", "nvim -R", "zed").
-editor: "code"
+# Fallback chain: Config -> VISUAL/EDITOR env vars -> discovery prompt.
+editor: ""
+
+# Optional diff viewer flags override. If set, these flags are used instead
+# of the built-in translation table for this editor.
+# Example: ["--diff", "--wait"]
+# diff_flags: []
 
 # Execution Settings
 execution:
