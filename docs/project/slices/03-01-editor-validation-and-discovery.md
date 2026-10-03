@@ -145,7 +145,7 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 - [x] **Seam** — Add `KNOWN_EDITORS: list[str]` class-level constant to `ConsoleToolingHelper` (as specified in spec 2a)
 - [x] **Wiring** — Add `discover_editors() -> list[tuple[str, str]]` method to `ConsoleToolingHelper` with PATH scanning and deduplication
 - [x] **Wiring** — Modify `find_editor()` to handle "disabled" sentinel (returns None immediately, bypasses env fallback)
-- [ ] **Wiring** — Extend `_DIFF_FLAGS` translation table with all entries from spec 2d (add idea, webstorm, phpstorm, pycharm, rubymine, goland, clion, fleet)
+- [x] **Wiring** — Extend `_DIFF_FLAGS` translation table with all entries from spec 2d (add idea, webstorm, phpstorm, pycharm, rubymine, goland, clion, fleet)
 - [x] **Logic** — Implement `YamlConfigAdapter.set_setting()` with dot-notation support, file creation, cache update, and YAML persistence
 - [ ] **Logic** — Implement `get_diff_viewer_command()` unknown editor fallback: return `[editor_path]` with no flags when editor not in `_DIFF_FLAGS`
 - [ ] **Logic** — Implement `get_diff_viewer_command()` `diff_flags` config override: use config value instead of `_DIFF_FLAGS` when `diff_flags` key is set
@@ -191,6 +191,12 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 - **Test-layer note:** although the slice labels this deliverable `Wiring`, it is a discrete core-logic rule on an adapter; per the spec's Test Strategy it is unit-tested in the existing `tests/suites/unit/adapters/outbound/test_console_tooling_editor.py` alongside the five sibling `find_editor()` tests (no acceptance boundary exercises `find_editor()` end-to-end until the later preflight Migration deliverable).
 - **Green-to-Green confirmed:** the guard is additive — none of the five pre-existing `find_editor()` tests pass `"disabled"` as the config, so their behaviour is unchanged; the full suite stayed green with no Migration sweep.
 - **Tests:** one parametrized test added (`test_find_editor_returns_none_for_disabled_sentinel`) covering `"disabled"`, `"DISABLED"`, and `"  Disabled  "`, asserting both `result is None` and that `get_env` is NEVER called (pinning the env-bypass). No new `[DEBT]`.
+
+### Deliverable #8 (Wiring) — `_DIFF_FLAGS` JetBrains-family expansion (2026-10-03)
+- **Change (spec §2d):** extended the class-level `_DIFF_FLAGS` translation table on `ConsoleToolingHelper` with the eight JetBrains-family editors — `idea.sh`, `webstorm`, `phpstorm`, `pycharm`, `rubymine`, `goland`, `clion`, `fleet` — each mapped to the bare `["diff"]` subcommand token. The pre-existing entries (`vim`/`vi`/`nvim` `["-d"]`, `code`/`cursor`/`codium`/`zed` `["--diff"]`, `idea` `["diff"]`) are unchanged.
+- **Green-to-Green confirmed:** the table extension is purely additive — adding dict keys cannot change any existing lookup result, so no Migration sweep was needed and the full suite stayed green.
+- **Spike-backed convention:** the bare `"diff"` token (no dash) is mechanically sound — `probe_ku2` observed the launcher argv `["diff", <file1>, <file2>]` through `subprocess.run` for the live `idea` entry and for all eight simulated JetBrains additions (see Prototype Findings, KU2).
+- **Tests:** one parametrized unit test added to `tests/suites/unit/adapters/outbound/test_console_tooling_editor.py` (`test_diff_flags_translation_table_includes_jetbrains_editors`) asserting each new key maps to `["diff"]`. No new `[DEBT]`.
 
 ## Verification
 - [ ] Start a new interactive session with no editor configured → see discovery prompt

@@ -400,3 +400,22 @@ def test_discover_editors_returns_empty_list_when_none_found(helper, mock_env):
 
     # Assert
     assert result == []
+
+
+@pytest.mark.parametrize(
+    "editor",
+    [
+        "idea.sh",
+        "webstorm",
+        "phpstorm",
+        "pycharm",
+        "rubymine",
+        "goland",
+        "clion",
+        "fleet",
+    ],
+)
+def test_diff_flags_translation_table_includes_jetbrains_editors(editor):
+    """The _DIFF_FLAGS translation table registers the JetBrains-family editors
+    (spec 2d) with their bare 'diff' subcommand token."""
+    assert ConsoleToolingHelper._DIFF_FLAGS.get(editor) == ["diff"]

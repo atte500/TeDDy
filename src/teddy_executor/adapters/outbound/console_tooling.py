@@ -88,6 +88,14 @@ class ConsoleToolingHelper:
         "codium": ["--diff"],
         "zed": ["--diff"],
         "idea": ["diff"],
+        "idea.sh": ["diff"],
+        "webstorm": ["diff"],
+        "phpstorm": ["diff"],
+        "pycharm": ["diff"],
+        "rubymine": ["diff"],
+        "goland": ["diff"],
+        "clion": ["diff"],
+        "fleet": ["diff"],
     }
 
     def __init__(self, system_env: ISystemEnvironment, config_service: IConfigService):
