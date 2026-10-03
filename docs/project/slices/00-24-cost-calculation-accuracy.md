@@ -82,11 +82,22 @@ Semantic deduplication (census, turns 5-6): no existing test asserts cache-prici
 
 ## Deliverables
 
-- [ ] **Harness** - Extend the OpenRouter mock catalog (`tests/harness/setup/openrouter_mock_data.py`): add string-valued cache-pricing keys (`input_cache_read`, `input_cache_write`) to one model (`deepseek/deepseek-v4-flash`) and keep a second model (`google/gemini-2.0-flash-001`) WITHOUT cache keys, so the hydrator Logic tests can assert both cache-key flow and defensive omission.
+- [x] **Harness** - Extend the OpenRouter mock catalog (`tests/harness/setup/openrouter_mock_data.py`): add string-valued cache-pricing keys (`input_cache_read`, `input_cache_write`) to one model (`deepseek/deepseek-v4-flash`) and keep a second model (`google/gemini-2.0-flash-001`) WITHOUT cache keys, so the hydrator Logic tests can assert both cache-key flow and defensive omission.
 - [ ] **Logic** - Broadcast cache-pricing rates from `OpenRouterMetadataHydrator._find_model` (`cache_read_input_token_cost`/`cache_creation_input_token_cost`, present-and-`> 0` gating, defensive `.get()`, preserved `ValueError`/`TypeError` guard) — bundle the unit tests (cache keys flow with correct floats; entry without cache keys omits them; non-numeric cache values degrade safely).
 - [ ] **Logic** - Tiered cost-failure logging in `LiteLLMAdapter.get_completion_cost` (module logger + `_log_cost_failure` helper extracting model identity and a defensive usage summary; DEBUG for unpriced models, WARNING for priced models; `exc_info=True`; `0.0` return contract unchanged) — bundle the unit tests.
 - [ ] **Logic** - Accumulate retry costs in `PlanningService._perform_generation_with_retry` (`turn_cost += attempt_cost`, computed into a local first) — bundle the unit tests (multi-attempt sum; single-attempt billed once).
 - [ ] **Wiring** - Final behavioral gate: end-to-end session cost accrual through the CLI boundary (a retried turn's `turn_cost`/`cumulative_cost` reflects the SUM of all billed attempts) — acceptance test via the CLI test driver.
+
+## Implementation Notes
+
+### Harness — Extend the OpenRouter mock catalog (deliverable 1/5)
+
+- Added string-valued cache-pricing keys to the `deepseek/deepseek-v4-flash` entry in `tests/harness/setup/openrouter_mock_data.py`: `"input_cache_read": "0.0000001"` and `"input_cache_write": "0.00000125"`. The values are deliberately strings to mirror the catalog's real string-number shape, so the hydrator Logic tests (deliverable 2/5) can assert the `float()` conversion path.
+- Left `google/gemini-2.0-flash-001` WITHOUT cache keys by design, so the hydrator Logic deliverable can pin the defensive-omission behavior (absent keys ⇒ no `cache_read_input_token_cost`/`cache_creation_input_token_cost`).
+- Extended the existing harness self-test `tests/suites/unit/adapters/outbound/test_openrouter_harness.py` with `test_openrouter_mock_catalog_carries_cache_pricing` rather than creating a parallel file. The Test Harness is a first-class boundary requiring its own unit tests (ARCHITECTURE.md §1), and the house convention places harness self-tests under `tests/suites/unit/` (cf. `test_openrouter_harness.py`, `test_llm_harness.py`, `test_environment_harness.py`).
+- Equality-safety verified during Orientation (t9): every consumer of `OPENROUTER_MODELS_RESPONSE` compares by identity (`payload["models"] == OPENROUTER_MODELS_RESPONSE["data"]` in `test_openrouter_hydrator.py:209/249`; `cache.write_fresh(...["data"])`), never against a hardcoded literal pricing dict — so the additive cache keys cannot break an existing assertion.
+- Refactor evaluated clean (Scope Heuristic): the new test pins exact string literals rather than importing the served constant (comparing against the served constant would be a tautology); the pre-existing `test_openrouter_mock_fixture` asserts a distinct concern and is not made redundant; the two-test urlopen/json preamble does not meet the rule of three, so extraction is premature. No `[DEBT]` harvested.
+- Verification: full suite GREEN — `1481 passed, 5 skipped`.
 
 ## Verification
 
