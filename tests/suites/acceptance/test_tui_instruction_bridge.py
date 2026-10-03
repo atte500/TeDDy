@@ -102,9 +102,9 @@ echo "hello"
 
     # Run execute in interactive mode (no -y)
     # We simulate pressing 'm' (to add message), then 'y' (to approve)
-    # We force --console mode because CliRunner cannot drive Textual TUI apps.
+    # The harness reviewer handles review (CliRunner cannot drive the Textual TUI).
     result = adapter.run_cli_command(
-        ["execute", "plan.md", "--no-copy", "--console"], input="m\ny\n"
+        ["execute", "plan.md", "--no-copy"], input="m\ny\n"
     )
     # Assert: Check for ## User Request section in the report
     assert "## User Request" in result.stdout

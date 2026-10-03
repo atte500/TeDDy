@@ -241,14 +241,6 @@ def handle_report_output(
             raise typer.Exit(code=1)
 
 
-def apply_ui_mode_override(container: Container, ui_mode_bool: bool) -> None:
-    """Applies a UI mode override to the container."""
-    from teddy_executor.container import register_reviewer
-
-    mode = "tui" if ui_mode_bool else "console"
-    register_reviewer(container, ui_mode=mode)
-
-
 def prewarm_imports() -> None:
     """
     Pre-warm heavy imports to reduce first-run latency.

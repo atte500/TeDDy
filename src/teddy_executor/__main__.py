@@ -42,13 +42,6 @@ def get_container():
     return _get_container()
 
 
-def _apply_ui_mode_override(container, ui_mode_bool: bool) -> None:
-    from teddy_executor.container import register_reviewer
-
-    mode = "tui" if ui_mode_bool else "console"
-    register_reviewer(container, ui_mode=mode)
-
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(message)s",
@@ -110,9 +103,6 @@ def _ensure_project_initialized(container, root_dir: str | None = None) -> None:
 OPT_NO_COPY = typer.Option(
     False, "--no-copy", help="Do not copy the output to the clipboard."
 )
-OPT_UI_MODE = typer.Option(
-    None, "--tui/--console", help="Force TUI or Console mode.", show_default=False
-)
 OPT_PIPELINE = typer.Option(
     False,
     "--pipeline",
@@ -135,7 +125,6 @@ def start(  # noqa: PLR0913
     no_interactive: bool = typer.Option(False, "--no-interactive", hidden=True),
     non_interactive: bool = typer.Option(False, "--non-interactive", hidden=True),
     no_copy: bool = OPT_NO_COPY,
-    ui_mode: Optional[bool] = OPT_UI_MODE,
     message: Optional[str] = typer.Option(
         None, "-m", "--message", help="Instruction for the first turn."
     ),
@@ -163,8 +152,6 @@ def start(  # noqa: PLR0913
 
     container = get_container()
     _ensure_project_initialized(container)
-    if ui_mode is not None:
-        _apply_ui_mode_override(container, ui_mode)
 
     additional_context = (
         [
@@ -392,7 +379,6 @@ def resume(  # noqa: PLR0913
     no_interactive: bool = typer.Option(False, "--no-interactive", hidden=True),
     non_interactive: bool = typer.Option(False, "--non-interactive", hidden=True),
     no_copy: bool = OPT_NO_COPY,
-    ui_mode: Optional[bool] = OPT_UI_MODE,
     model: Optional[str] = typer.Option(None, "--model", help="LLM model override."),
     provider: Optional[str] = typer.Option(
         None, "--provider", help="LLM provider override."
@@ -411,15 +397,12 @@ def resume(  # noqa: PLR0913
     """
     Intelligently resumes the last turn of a session or starts a new one.
     """
-    from teddy_executor.adapters.inbound.cli_helpers import apply_ui_mode_override
     from teddy_executor.adapters.inbound.session_cli_handlers import (
         handle_resume_session,
     )
 
     container = get_container()
     _ensure_project_initialized(container)
-    if ui_mode is not None:
-        apply_ui_mode_override(container, ui_mode)
 
     handle_resume_session(
         container=container,
@@ -449,7 +432,6 @@ def execute(  # noqa: PLR0913
     plan_content: Optional[str] = typer.Option(
         None, "--plan-content", help="Plan content.", show_default=False
     ),
-    ui_mode: Optional[bool] = OPT_UI_MODE,
     message: Optional[str] = typer.Option(
         None, "-m", "--message", help="Optional instruction for the report."
     ),
@@ -458,7 +440,6 @@ def execute(  # noqa: PLR0913
     Executes a Markdown plan file (from path or clipboard) and generates an execution report.
     """
     from teddy_executor.adapters.inbound.cli_helpers import (
-        apply_ui_mode_override,
         get_plan_content,
         handle_report_output,
     )
@@ -471,8 +452,6 @@ def execute(  # noqa: PLR0913
 
     container = get_container()
     _ensure_project_initialized(container)
-    if ui_mode is not None:
-        apply_ui_mode_override(container, ui_mode)
 
     try:
         final_plan_content = get_plan_content(plan_content, plan_file)
