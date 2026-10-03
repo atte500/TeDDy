@@ -1,5 +1,5 @@
 # Slice: 03-01-Editor-Validation-and-Discovery
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [03-Foundational-Refactors](/docs/project/milestones/03-foundational-refactors.md)
 - **Specs:** [Editor Validation & Discovery](/docs/project/specs/editor-validation-and-discovery.md)
 - **Prototype:** [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototypes/editor-validation-and-discovery/)
@@ -281,18 +281,18 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 - **[DEBT]:** none new for this deliverable (test-only; the `"disabled"` sentinel-literal and disabled-editor MESSAGE-literal duplications are already harvested in PROJECT.md).
 
 ## Verification
-- [ ] Start a new interactive session with no editor configured → see discovery prompt
-- [ ] Select a numbered editor → verify it's written to `.teddy/config.yaml`
-- [ ] Start a new session with the saved editor → no prompt shown (editor found in PATH)
-- [ ] Start a session with a missing configured editor → see warning + discovery fallback
-- [ ] Start a session with `editor: "disabled"` → no prompt, find_editor() returns None everywhere
-- [ ] Start a session with `--yolo` flag → editor validation is skipped entirely
-- [ ] Press `e` in ask loop with editor disabled → see "Editor is disabled in config" log
-- [ ] Press `e` on an EDIT action in TUI with an unknown editor → annotated diff opens instead of GUI path
-- [ ] Set `diff_flags` in config → verify get_diff_viewer_command() returns custom flags
-- [ ] Set editor to a known CLI editor → verify get_diff_viewer_command() returns correct diff flags
-- [ ] Console UI: the discovery block ALWAYS shows the `Editor Setup` header above a bracketed list (`[1] nvim` …) with no paths shown
-- [ ] Console UI: entering an out-of-range number shows `'{raw}' is not a valid selection. Choose 1-{n}.` and re-prompts
-- [ ] Console UI: entering an unavailable custom command shows `'{raw}' was not found in PATH.` and re-prompts; an available custom command is saved exactly as typed
-- [ ] Console UI: empty input saves `"disabled"` and prints `Editor preference saved to .teddy/config.yaml.` (no "Edit it directly at any time.")
-- [ ] Console UI: the nothing-found branch still shows the `Editor Setup` header above `No known editors found. Enter a custom editor command (leave empty to disable):`
+- [x] Start a new interactive session with no editor configured → see discovery prompt
+- [x] Select a numbered editor → verify it's written to `.teddy/config.yaml`
+- [x] Start a new session with the saved editor → no prompt shown (editor found in PATH)
+- [x] Start a session with a missing configured editor → see warning + discovery fallback
+- [x] Start a session with `editor: "disabled"` → no prompt, find_editor() returns None everywhere
+- [x] Start a session with `--yolo` flag → editor validation is skipped entirely
+- [x] Press `e` in ask loop with editor disabled → see "Editor is disabled in config" log
+- [x] Press `e` on an EDIT action in TUI with an unknown editor → annotated diff opens instead of GUI path
+- [x] Set `diff_flags` in config → verify get_diff_viewer_command() returns custom flags
+- [x] Set editor to a known CLI editor → verify get_diff_viewer_command() returns correct diff flags
+- [x] Console UI: the discovery block ALWAYS shows the `Editor Setup` header above a bracketed list (`[1] nvim` …) with no paths shown
+- [x] Console UI: entering an out-of-range number shows `'{raw}' is not a valid selection. Choose 1-{n}.` and re-prompts
+- [x] Console UI: entering an unavailable custom command shows `'{raw}' was not found in PATH.` and re-prompts; an available custom command is saved exactly as typed
+- [x] Console UI: empty input saves `"disabled"` and prints `Editor preference saved to .teddy/config.yaml.` (no "Edit it directly at any time.")
+- [x] Console UI: the nothing-found branch still shows the `Editor Setup` header above `No known editors found. Enter a custom editor command (leave empty to disable):`

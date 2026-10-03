@@ -53,6 +53,6 @@ Extract the shared Markdown Response Protocol (response format + common general 
     - Replace blueprint removal with a brief inline directive: e.g., `"Use the [Component Design template](/docs/templates/component-design.md) when creating blueprint artifacts."`
 
 ## Vertical Slices
-- [ ] **03-01-Editor-Validation-and-Discovery** — Editor discovery, early PATH validation, interactive selection prompt, persistence to config, "disabled" sentinel handling, and diff flags fallback for unknown editors. See the [specification](/docs/project/specs/editor-validation-and-discovery.md) for full details.
+- [x] **03-01-Editor-Validation-and-Discovery** — Editor discovery, early PATH validation, interactive selection prompt, persistence to config, "disabled" sentinel handling, and diff flags fallback for unknown editors. See the [specification](/docs/project/specs/editor-validation-and-discovery.md) for full details.
 - [ ] **03-02-Templates-and-Init** — Template files, `teddy init templates` subcommand, InitService changes, and blueprint removal from agent XMLs. See the [slice definition](/docs/project/slices/03-01-templates-and-init.md) for deliverables and scenarios.
 - [ ] **03-03-MRP-Base-Prompt** — MRP.xml creation, PromptManager injection logic, and removal of shared general_rules/response_format from agent XMLs. See the [slice definition](/docs/project/slices/03-02-mrp-base-prompt.md) for deliverables and scenarios.
