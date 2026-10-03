@@ -19,3 +19,23 @@ def test_harness_config_mock_returns_caller_default_for_ui_mode(monkeypatch):
         assert config.get_setting("ui_mode", default="sentinel") == "sentinel"
     finally:
         env.teardown()
+
+
+def test_harness_config_mock_returns_disabled_for_editor(monkeypatch):
+    """The harness config mock pins ``editor`` to the ``"disabled"`` sentinel.
+
+    Preflight editor validation reads ``get_setting("editor")``; resolving the
+    sentinel by default makes that validation inert for CLI-driving tests, so
+    the editor gate never blocks them. Tests that exercise editor behaviour
+    override the setting explicitly (e.g. ``_configure_editor``).
+    """
+    env = TestEnvironment(monkeypatch)
+    try:
+        env.setup()
+        config = env.get_service(IConfigService)
+
+        assert config.get_setting("editor") == "disabled"
+        # Every other key still mirrors IConfigService.get_setting.
+        assert config.get_setting("some_other_key", default="sentinel") == "sentinel"
+    finally:
+        env.teardown()

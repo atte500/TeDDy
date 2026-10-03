@@ -213,9 +213,19 @@ class TestEnvironment(RealAdapterMixin):
 
     def _apply_config_defaults(self, mock: Any) -> None:
         mock.get_config_path.return_value = ".teddy/config.yaml"
-        # No config key is special-cased: the harness mock returns the
-        # caller-supplied default, mirroring IConfigService.get_setting.
-        mock.get_setting.side_effect = lambda k, default=None: default
+
+        # The harness mock pins `editor` to the "disabled" sentinel so that
+        # preflight editor validation is inert for CLI-driving tests (it never
+        # prompts). Every other key mirrors IConfigService.get_setting by
+        # returning the caller-supplied default. Tests that exercise editor
+        # behaviour override this explicitly (e.g. the `_configure_editor`
+        # get_setting.side_effect helper).
+        def _get_setting(key: str, default: Any = None) -> Any:
+            if key == "editor":
+                return "disabled"
+            return default
+
+        mock.get_setting.side_effect = _get_setting
 
     def _apply_shell_defaults(self, mock: Any) -> None:
         mock.execute.return_value = {"stdout": "", "stderr": "", "return_code": 0}
