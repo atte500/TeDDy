@@ -85,6 +85,13 @@ repos:
         pass_filenames: false
         always_run: true
 
+    -   id: no-unguarded-posix-patches
+        name: No Unguarded POSIX-Only Symbol Patches in Tests
+        entry: uv run python .githooks/check_posix_only_patches.py
+        language: system
+        types: [python]
+        files: ^tests/
+
     -   id: post-commit-test-gate
         name: Post-commit test gate
         entry: uv run python .githooks/post-commit.py

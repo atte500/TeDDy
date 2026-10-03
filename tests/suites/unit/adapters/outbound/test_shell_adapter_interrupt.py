@@ -8,7 +8,10 @@ marked ``interrupted=True`` with the partial output.
 
 import os
 import signal
+import sys
 import time
+
+import pytest
 
 from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
 from teddy_executor.core.utils.interrupt_guard import InterruptGuard
@@ -37,6 +40,9 @@ def _real_guard() -> InterruptGuard:
 
 
 def test_await_process_terminates_group_and_reports_interrupt(monkeypatch):
+    if sys.platform == "win32":
+        pytest.skip("killpg is POSIX only")
+
     guard = _real_guard()
     guard.interrupted.set()
 
