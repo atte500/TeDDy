@@ -264,6 +264,25 @@ def clean_test_env():
                 pass
 
 
+@pytest.fixture(autouse=True)
+def reset_pyfakefs_use_original():
+    """Poka-Yoke: neutralize a leaked pyfakefs global flag between tests.
+
+    pyfakefs's ``use_original_os()`` context manager toggles the process-global
+    class attribute ``pyfakefs.fake_os.FakeOsModule.use_original`` and resets it
+    in a ``finally``. If a test leaves it ``True`` (e.g. via an interrupted
+    context), the NEXT test that requests the ``fs`` fixture crashes during
+    ``Patcher()`` SETUP with ``AttributeError: module 'os' has no attribute
+    'dir'``. Resetting the flag around every test makes the suite robust to any
+    trigger of the leak, regardless of origin.
+    """
+    from pyfakefs import fake_os
+
+    fake_os.FakeOsModule.use_original = False
+    yield
+    fake_os.FakeOsModule.use_original = False
+
+
 @pytest.fixture
 def temp_path() -> Callable[[str], str]:
     """Platform-aware temp file path factory.
