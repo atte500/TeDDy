@@ -25,7 +25,7 @@ class HarnessPlanReviewer(IPlanReviewer):
     """
     Test-harness double for the console plan reviewer.
 
-    Mirrors the removed production ``ConsolePlanReviewer`` so CliRunner-based
+    Mirrors the removed production console reviewer so CliRunner-based
     acceptance tests (which cannot drive the Textual TUI) still exercise the
     sequential review path through the real ``ConsoleInteractorAdapter``.
     """
