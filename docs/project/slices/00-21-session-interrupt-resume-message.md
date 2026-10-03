@@ -68,7 +68,27 @@ Then the process exits immediately
 And no report.md or turn transition artifacts are created
 ```
 
+> As a user who interrupted a session on a pending plan turn, I want `resume -m "..."` to honor my message so that I can steer the stalled session.
+
+```gherkin
+Given a session whose latest turn has plan.md, NO report.md, and NO awaiting_reply flag, and whose plan is NOT a MESSAGE-only turn
+When I run teddy resume -m "next instruction" -y
+Then the pending non-communication plan is executed in place
+And the finalized report renders my message under the "## User Request" section
+```
+
+```gherkin
+Given the same pending non-communication turn
+When I run teddy resume -m "next instruction" without -y
+Then the plan-review TUI opens with my message pre-loaded as the pending message
+And opening the message editor (`m`) shows the message verbatim
+And if I edit and confirm, the edited message replaces the injected one in the final report
+```
+
 ## Edge Cases
+- **Bug 60 — unparseable pending plan**: If `resume -m` hits a non-communication `PENDING_PLAN` turn whose plan.md cannot be parsed, then fall back to the existing re-execute path, in order to preserve the pre-fix InvalidPlanError-to-replan flow and avoid a new crash from the resume state machine.
+- **Bug 60 — path precision**: If the pending plan is parsed for seeding, then it MUST be parsed WITH its `plan_path` (preserving `Plan.is_session`/`Plan.plan_path`), because a path-less parse silently drops both (`execute(plan=...)` short-circuits `_resolve_plan`), in order to preserve session-mode report behavior.
+- **Bug 60 — TUI edit overrides the injected message**: If the user edits the pre-seeded message and confirms, then the edited text MUST win over the injected `-m`, in order to honor the user's on-screen edit (achieved by NOT forwarding `message=` into `execute`, since `data.message` would otherwise win in the assembler).
 - **Non-pipeline MESSAGE turn**: If the session is NOT in pipeline mode and the turn ends with a MESSAGE, then the turn MUST still be finalized normally (report.md + next turn), in order to preserve the interactive audit trail.
 - **Interactive resume of awaiting-reply turn**: If the latest turn is awaiting-reply and no `-m` is provided, then the user is prompted for the reply (mirroring `_handle_aborted_session`), in order to keep the flow usable without scripting.
 - **Non-interactive resume of awaiting-reply turn without -m**: If resume is non-interactive with no message, then exit cleanly with guidance, in order to avoid hanging automation.
@@ -98,6 +118,8 @@ Plan Audit findings (Orientation, pre-implementation):
 - `SessionOrchestrator` does NOT inject `ISessionRepository`, and `SessionService` exposes NO public meta API (its repository usage is internal). Rather than break the orchestrator's Shared Seam constructor (container.py + 8 test construction sites), meta persistence is delivered as a non-breaking Seam expansion: public repository-backed wrappers on `SessionService`, which is already Constructor-Injected into both `SessionOrchestrator` and `SessionLifecycleManager` (via `SessionPorts`).
 - CLI resume handlers already access the repository via the container (`load_meta` → modify → `save_meta` idiom) — the `-m` threading deliverable needs no meta seam.
 - Deliverable 7 (interrupt phases in `ExecutionOrchestrator`) requires Constructor Injection of the `InterruptGuard`; `ExecutionOrchestrator(` has 7 construction sites (container + harness + 5 test files), so its Orientation MUST re-partition into Seam (inject guard + container update) → Migration (update construction sites) before wiring.
+
+**Bug 60 — `resume -m` on a NON-communication PENDING_PLAN turn (Debugger, 2026-10-03):** The `PENDING_PLAN` non-communication branch of `SessionLifecycleManager.resume` dropped an injected `-m` by calling `orchestrator.execute(plan_path=..., ...)` without threading the message — the only dispatch site in the resume machine that discards it (Bug 57 fixed the communication sub-branch only). The fix seeds the pending plan's `metadata["user_request"]` (parsing it WITH its path) before execution and deliberately does NOT forward `message=`: the assembler resolves `user_request = data.message or plan.metadata["user_request"]` (`execution_report_assembler.py:38`), so seeding satisfies the `-y` report facet while NOT forwarding preserves a TUI edit's override (a forwarded `message` would win and discard the harvest). Root cause CONFIRMED and fix PROVEN zero-touch via `spikes/debug/shadow_session_lifecycle_manager.py` + `spikes/debug/60-resume-m-pending-plan-mre.py` (RED rc=1 → GREEN rc=0). The durable systemic fix (a single source of truth for the "interrupted-at-a-reply" state, set on BOTH stop paths) remains a Milestone-5 debt and is out of scope.
 
 ## Deliverables
 - [x] **Contract** - Add `awaiting_reply` flag support to the session meta repository (save/load round-trip) — unit tests.
@@ -144,6 +166,11 @@ Plan Audit findings (Orientation, pre-implementation):
 - [x] **Refactor** - Route the reader's terminal save/restore through the single shared "restore cooked mode" helper (the C1 Refactor above) so the new reader is another consumer of the hardened restore and cannot re-introduce the Bug #56 omission — unit tests.
 - [x] **Logic** - Reword the session-interrupt notice: drop the now-inaccurate "(Ctrl+C)" from the user-visible boundary notice (`session_cli_handlers.py`) AND the audit-trail drain reason (`INTERRUPT_REASON` in `execution_orchestrator.py`) to "Interrupted by user."; single-source the literal through one shared constant so the two sites stay in lockstep (retires the PROJECT.md duplicated-`INTERRUPT_REASON` debt) — unit tests asserting the new wording at both sites.
 - [x] **Refactor** - `_ContainerStub` duplicated between the two session-loop wiring Unit suites. `tests/suites/unit/adapters/inbound/test_session_loop_quit_listener_wiring.py` carries a hand-rolled punq-compatible `_ContainerStub` near-identical to the sibling `tests/suites/unit/adapters/inbound/test_session_loop_interrupt_wiring.py`'s copy (the only difference is the injected `IQuitKeyListener` mapping). Extract a shared punq-compatible container stub to `tests/harness/setup/`.
+
+**Bug 60 — `resume -m` on a NON-communication PENDING_PLAN turn (appended 2026-10-03, debugger handoff):**
+- [ ] **Logic** - Honor an injected `resume -m` reply on a NON-communication `PENDING_PLAN` turn (plan.md present, report.md absent, no `awaiting_reply` flag). In `SessionLifecycleManager.resume`'s `PENDING_PLAN` branch, when `message` is supplied: parse the pending plan WITH its `plan_path` (so `Plan.is_session`/`Plan.plan_path` survive — a path-less parse silently drops both because `execute(plan=...)` short-circuits `_resolve_plan`), seed `plan.metadata["user_request"] = message`, and call `orchestrator.execute(plan=plan, plan_path=plan_path, interactive=..., project_context=..., pipeline=...)` WITHOUT `message=` (a forwarded `message` WINS in the assembler over `plan.metadata["user_request"]`, discarding a TUI harvest). If the pending plan is unparseable, fall back to the existing re-execute path. The no-message re-execute path and the Bug 57 communication-turn route are unchanged. — unit tests (both modes seed the plan metadata; no-message path re-executes unchanged; communication turn routes unchanged; unparseable fallback) + a lifecycle-boundary behavioral test mirroring `tests/suites/unit/core/services/test_session_lifecycle_pending_plan_communication_resume.py`.
+- [ ] **Wiring** - Behavioral gate: extend the resume acceptance coverage (`tests/suites/acceptance/test_pipeline_message_and_resume_flow.py` or its sibling) so `resume -m -y` on a NON-communication `PENDING_PLAN` turn executes the pending plan in place and renders the injected reply under the finalized report's `## User Request` section (the `-y` facet observable end-to-end). — acceptance test.
+- [ ] **Refactor** - `_is_communication_turn(turn_path)` and the new message branch both parse `plan.md`; consolidate so the pending plan is parsed at most once on the resume path.
 
 ## Implementation Notes
 - **Contract (awaiting_reply meta round-trip):** Delivered as a characterization contract test (`tests/suites/unit/core/services/test_session_repository_meta_contract.py`) with ZERO production changes. Audit finding confirmed empirically: `SessionRepository.save_meta`/`load_meta` are already generic yaml dict round-trips that fully satisfy the `awaiting_reply` semantics — a boolean flag survives save→load (`yaml.dump` → `yaml.safe_load`), and an absent flag reads falsy via `meta.get("awaiting_reply")`. The asymmetric signatures are pinned by the tests: `load_meta(turn_dir)` appends `/meta.yaml` internally, while `save_meta(path, data)` takes the full file path. First-run Green (3 passed: 2 parametrized round-trip cases + absent-flag case) is the intended outcome for a characterization deliverable; any failure would have exposed a genuine contract defect (e.g., `scrub_dict_for_serialization` mangling booleans) requiring investigation before downstream work.
