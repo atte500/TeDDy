@@ -54,15 +54,13 @@ def test_handle_new_session_loops_multiple_turns_when_non_interactive():
     container.register(IMarkdownReportFormatter, MockFormatter)
 
     # The wired session loop resolves InterruptGuard at the boundary —
-    # register a real guard (dedicated config double returning the 2.0
-    # grace-window default; the shared mock_config_service is unconfigured).
+    # register a real guard (monotonic clock; the grace window is now a
+    # code constant, no config dependency).
     from teddy_executor.core.utils.interrupt_guard import InterruptGuard
 
-    guard_config = Mock(spec=IConfigService)
-    guard_config.get_setting.return_value = 2.0
     container.register(
         InterruptGuard,
-        instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
+        instance=InterruptGuard(monotonic=time.monotonic),
     )
     from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
     from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
@@ -134,15 +132,13 @@ def test_handle_resume_session_loops_multiple_turns_when_non_interactive():
     mock_config_service.get_setting.return_value = "unknown"
 
     # The wired session loop resolves InterruptGuard at the boundary —
-    # register a real guard with a dedicated config double (the shared
-    # mock_config_service returns "unknown", which would break float()).
+    # register a real guard (monotonic clock; the grace window is now a
+    # code constant, no config dependency).
     from teddy_executor.core.utils.interrupt_guard import InterruptGuard
 
-    guard_config = Mock(spec=IConfigService)
-    guard_config.get_setting.return_value = 2.0
     container.register(
         InterruptGuard,
-        instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
+        instance=InterruptGuard(monotonic=time.monotonic),
     )
     from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
     from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
@@ -224,13 +220,9 @@ def test_termination_message_printed_when_guard_stops(capsys):
     container.register(IUserInteractor, Mock(spec=IUserInteractor))
     from teddy_executor.core.utils.interrupt_guard import InterruptGuard
 
-    from teddy_executor.core.ports.outbound.config_service import IConfigService as _ICS
-
-    guard_config = Mock(spec=_ICS)
-    guard_config.get_setting.return_value = 2.0
     container.register(
         InterruptGuard,
-        instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
+        instance=InterruptGuard(monotonic=time.monotonic),
     )
     from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
     from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
@@ -293,13 +285,9 @@ def test_guard_reason_split_with_leading_newline(capsys):
     container.register(IUserInteractor, Mock(spec=IUserInteractor))
     from teddy_executor.core.utils.interrupt_guard import InterruptGuard
 
-    from teddy_executor.core.ports.outbound.config_service import IConfigService as _ICS
-
-    guard_config = Mock(spec=_ICS)
-    guard_config.get_setting.return_value = 2.0
     container.register(
         InterruptGuard,
-        instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
+        instance=InterruptGuard(monotonic=time.monotonic),
     )
     from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
     from teddy_executor.adapters.outbound.terminal_quit_key_listener import (

@@ -1,5 +1,6 @@
 """Unit tests for pipeline mode wiring in session_cli_handlers."""
 
+import time
 from typing import List
 from unittest.mock import Mock
 from datetime import datetime
@@ -13,6 +14,8 @@ from teddy_executor.core.domain.models.execution_report import (
     RunSummary,
     RunStatus,
 )
+from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+from tests.harness.setup.fake_quit_key_listener import FakeQuitKeyListener
 
 
 def _make_report(action_logs: List[ActionLog]) -> ExecutionReport:
@@ -68,6 +71,13 @@ def _build_mock_container_for_orchestrate() -> tuple[Mock, Mock]:
     # loop_guard.should_continue returns (True, None) to not break
     mock_loop_guard.should_continue.return_value = (True, None)
 
+    # The session-loop boundary resolves the process-global InterruptGuard and
+    # the quit-key listener. Register a REAL guard (drain flag unset, so the
+    # loop proceeds normally) and the shared conformance fake listener; a bare
+    # Mock's truthy `.interrupted.is_set()` would otherwise exit after turn 1.
+    real_guard = InterruptGuard(monotonic=time.monotonic)
+    fake_listener = FakeQuitKeyListener()
+
     def mock_resolve(iface, **kwargs):
         iface_name = iface.__name__ if hasattr(iface, "__name__") else str(iface)
         if "RunPlanUseCase" in iface_name:
@@ -76,6 +86,10 @@ def _build_mock_container_for_orchestrate() -> tuple[Mock, Mock]:
             return mock_session_manager
         elif "SessionLoopGuard" in iface_name:
             return mock_loop_guard
+        elif "InterruptGuard" in iface_name:
+            return real_guard
+        elif "QuitKeyListener" in iface_name:
+            return fake_listener
         return Mock()
 
     mock_container = Mock()

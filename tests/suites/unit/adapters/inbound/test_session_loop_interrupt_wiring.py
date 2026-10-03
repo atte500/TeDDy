@@ -30,11 +30,11 @@ def _build_interrupt_harness(
 ) -> tuple[ContainerStub, Mock]:
     """Container stub + orchestrator double for the interrupt wiring.
 
-    The InterruptGuard is a REAL guard over a spec-bound config double
-    (the guard is core logic — real domain objects, not mock stand-ins);
-    by default the orchestrator double raises KeyboardInterrupt from
-    resume() to simulate a Ctrl+C escaping the turn loop; tests pinning
-    the handler lifecycle inject a capturing side_effect instead.
+    The InterruptGuard is a REAL guard over the monotonic clock (the guard
+    is core logic — real domain objects, not mock stand-ins); by default
+    the orchestrator double raises KeyboardInterrupt from resume() to
+    simulate a Ctrl+C escaping the turn loop; tests pinning the handler
+    lifecycle inject a capturing side_effect instead.
     """
     config_service = Mock(spec=IConfigService)
     config_service.get_setting.side_effect = lambda key, default=None: default
@@ -49,7 +49,7 @@ def _build_interrupt_harness(
     orchestrator = Mock(spec=IRunPlanUseCase)
     orchestrator.resume.side_effect = resume_side_effect
 
-    guard = InterruptGuard(config_service=config_service, monotonic=time.monotonic)
+    guard = InterruptGuard(monotonic=time.monotonic)
 
     container = ContainerStub(
         {

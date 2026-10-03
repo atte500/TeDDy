@@ -96,7 +96,12 @@ class ActionDispatcher:
         status = ActionStatus.SUCCESS
         if isinstance(result, dict) and "return_code" in result:
             shell_output: ShellOutput = result  # type: ignore
-            if shell_output["return_code"] != 0:
+            if shell_output.get("interrupted"):
+                # A user interrupt terminated the in-flight command; the
+                # (negative) return code produced by the kill must NOT be
+                # reported as a plain failure.
+                status = ActionStatus.INTERRUPTED
+            elif shell_output["return_code"] != 0:
                 status = ActionStatus.FAILURE
         return result, status
 

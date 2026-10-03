@@ -18,7 +18,6 @@ import pytest
 from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
-from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.execution_report_assembler import (
     IExecutionReportAssembler,
 )
@@ -52,15 +51,11 @@ def _build_ports(interrupt_guard: Optional[InterruptGuard] = None) -> Orchestrat
 
 @pytest.fixture
 def guard() -> InterruptGuard:
-    """A REAL InterruptGuard over a spec-bound config double.
+    """A REAL InterruptGuard over the monotonic clock.
 
-    The real constructor exercises the documented config read path
-    (get_setting("interrupt.grace_window_seconds", 2.0)) so the storage
-    tests inject a genuine guard instance, not a mock stand-in.
+    The storage tests inject a genuine guard instance, not a mock stand-in.
     """
-    config = Mock(spec=IConfigService)
-    config.get_setting.return_value = 2.0
-    return InterruptGuard(config_service=config, monotonic=time.monotonic)
+    return InterruptGuard(monotonic=time.monotonic)
 
 
 class TestOrchestratorPortsInterruptGuardSeam:

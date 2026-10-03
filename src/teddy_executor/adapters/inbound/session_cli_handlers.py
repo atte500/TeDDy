@@ -324,6 +324,15 @@ def _orchestrate_session_loop(
                 container, report, no_copy, silent=True, exit_on_failure=False
             )
 
+            # Graceful interrupt drain (Bug 58 Option B): a bare `q`/Ctrl+C
+            # during action execution terminated the in-flight action and
+            # skipped the rest; the turn's report.md was already finalized by
+            # the orchestrator's turn-transition path. EXIT the session so the
+            # user regains control instead of auto-advancing to the next turn.
+            if interrupt_guard.interrupted.is_set():
+                typer.secho(INTERRUPT_REASON, fg=typer.colors.YELLOW)
+                break
+
             cumulative_cost = float(report.metadata.get("cumulative_cost", 0.0))
             should_continue, guard_reason = loop_guard.should_continue(
                 turn_count, cumulative_cost, interactive

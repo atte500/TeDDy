@@ -166,7 +166,6 @@ def _register_orchestration_services(container: punq.Container) -> None:
     container.register(
         InterruptGuard,
         factory=lambda: InterruptGuard(
-            config_service=container.resolve(IConfigService),
             monotonic=time.monotonic,
         ),
         scope=punq.Scope.singleton,

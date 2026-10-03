@@ -34,11 +34,11 @@ def _build_quit_listener_harness(
 ) -> ContainerStub:
     """Container stub wiring the boundary's dependencies behind a fake listener.
 
-    The InterruptGuard is a REAL guard over a spec-bound config double (the
-    guard is core logic) so the boundary exercises the real install/restore
-    path; the quit-key listener is the shared ``FakeQuitKeyListener``
-    conformance double, whose ``lifecycle`` records the start()/stop() pairing
-    around the turn loop.
+    The InterruptGuard is a REAL guard over the monotonic clock (the guard is
+    core logic) so the boundary exercises the real install/restore path; the
+    quit-key listener is the shared ``FakeQuitKeyListener`` conformance double,
+    whose ``lifecycle`` records the start()/stop() pairing around the turn
+    loop.
     """
     config_service = Mock(spec=IConfigService)
     config_service.get_setting.side_effect = lambda key, default=None: default
@@ -53,7 +53,7 @@ def _build_quit_listener_harness(
     orchestrator = Mock(spec=IRunPlanUseCase)
     orchestrator.resume.side_effect = resume_side_effect
 
-    guard = InterruptGuard(config_service=config_service, monotonic=time.monotonic)
+    guard = InterruptGuard(monotonic=time.monotonic)
 
     return ContainerStub(
         {

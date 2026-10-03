@@ -51,6 +51,13 @@ class ExecutionReportAssembler(IExecutionReportAssembler):
         if ActionStatus.FAILURE in statuses:
             return RunStatus.FAILURE
 
+        # A user interrupt takes precedence over success: if any action was
+        # interrupted by the user the run is reported INTERRUPTED, even when
+        # other actions completed successfully (the interrupt is the headline
+        # outcome for the turn).
+        if ActionStatus.INTERRUPTED in statuses:
+            return RunStatus.INTERRUPTED
+
         # Success takes precedence: if any action succeeded, the run is a success.
         if ActionStatus.SUCCESS in statuses:
             return RunStatus.SUCCESS

@@ -32,6 +32,7 @@ Implements the `IPlanReviewer` port using the `Textual` TUI framework. It provid
    - When a user selects "Modify/Preview" (key `p`), the adapter uses the `ISystemEnvironment` to open a temporary file in the user's editor.
    - Upon editor close, the adapter parses the temporary file (or uses the returned path) to update the `ActionData` in-memory.
 4. **Return Path:** The `app.run()` call returns the final `Plan` object.
+5. **Stdin Ownership (Bug 58):** While the TUI runs, the reviewer claims `stdin_owned()` for the duration of `app.run()`, so the persistent session-level quit-key reader (`IQuitKeyListener`) backs off and the TUI's own `q`-to-cancel binding keeps working.
 
 ## 4. Data Contracts / Methods
 Refer to the [IPlanReviewer](/docs/architecture/core/ports/inbound/plan_reviewer.md) port for method signatures.

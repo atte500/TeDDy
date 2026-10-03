@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
+from teddy_executor.core.utils.stdin_ownership import stdin_owned
 
 if TYPE_CHECKING:
     from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
@@ -74,7 +75,12 @@ class TextualPlanReviewer(IPlanReviewer):
             project_context=project_context,
             web_scraper=self._web_scraper,
         )
-        result = app.run()
+        # The session-level quit-key reader polls stdin for the whole turn
+        # loop; Textual owns the keyboard for the app's lifetime, so claim
+        # stdin ownership here (the reader backs off), keeping the TUI's own
+        # `q`-to-cancel binding working while the persistent reader is live.
+        with stdin_owned():
+            result = app.run()
         if os.getenv("TEDDY_DEBUG") and result:
             print(
                 f"\n[DEBUG] ReviewerApp.run() returned plan with {len(result.actions)} actions."

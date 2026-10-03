@@ -1,7 +1,8 @@
 import os
 import subprocess  # nosec
 import sys
-from typing import Optional, Dict, List, Any
+import time
+from typing import Optional, Dict, List, Any, cast
 
 from teddy_executor.core.domain.models.shell_output import ShellOutput
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
@@ -9,6 +10,11 @@ from teddy_executor.adapters.outbound.shell_command_builder import ShellCommandB
 from teddy_executor.core.utils.string import truncate_lines
 
 import re
+
+# How often the shell adapter polls the interrupt guard while a command is in
+# flight, so a bare `q`/Ctrl+C terminates the running process promptly. A code
+# constant (not configurable) per explicit product decision.
+_POLL_INTERVAL_SECONDS = 0.1
 
 
 class ShellAdapter(IShellExecutor):
@@ -19,10 +25,17 @@ class ShellAdapter(IShellExecutor):
         self,
         command_builder: ShellCommandBuilder = None,  # type: ignore
         max_execute_lines: int = 100,
+        interrupt_guard: Any = None,
     ):
         self._command_builder = command_builder or ShellCommandBuilder()
         self.max_execute_lines = max_execute_lines
         self._popen = subprocess.Popen
+        # Optional two-phase interrupt guard (Bug 58 Option B): when injected, an
+        # in-flight command is terminated promptly on a user interrupt; when
+        # absent (None) the legacy single blocking communicate() is used, so
+        # guard-less construction sites keep their exact prior behaviour.
+        self._interrupt_guard = interrupt_guard
+        self._poll_interval_seconds = _POLL_INTERVAL_SECONDS
 
     def _sanitize_output(self, text: str) -> str:
         """Strips ALL ANSI escape sequences to prevent playback corruption and garbled reports."""
@@ -180,6 +193,68 @@ class ShellAdapter(IShellExecutor):
             "return_code": self.TIMEOUT_EXIT_CODE,
         }
 
+    def _terminate_process_group(self, process: subprocess.Popen) -> None:
+        """Terminate the child's isolated process group (POSIX) or the child.
+
+        Mirrors ``_handle_timeout``: the child was launched into its own session
+        (``preexec_fn`` -> ``os.setsid()``) so its process-group id equals its
+        pid and ``killpg`` reaches the whole command tree.
+        """
+        if sys.platform != "win32":
+            import signal
+
+            try:
+                # Anti-suicide guard: never signal our own process group.
+                if not isinstance(process.pid, int) or process.pid <= 1:
+                    process.kill()
+                else:
+                    os.killpg(process.pid, signal.SIGKILL)
+            except OSError:
+                pass
+        else:
+            process.kill()
+
+    def _await_process(
+        self, process: subprocess.Popen, timeout: Optional[float]
+    ) -> tuple[str, str, bool]:
+        """Await the child, polling the interrupt guard between slices.
+
+        Returns ``(stdout, stderr, interrupted)``. With no injected guard the
+        call is a single blocking ``communicate`` (legacy behaviour). With a
+        guard, the wait is sliced by the poll-interval constant so a set drain
+        flag terminates the in-flight child's isolated process group and returns
+        its partial output promptly (``interrupted=True``).
+        """
+        guard = self._interrupt_guard
+        if guard is None:
+            comm_res = process.communicate(timeout=timeout)
+            stdout, stderr = cast(tuple[str, str], comm_res)
+            return stdout, stderr, False
+
+        poll_interval = self._poll_interval_seconds
+        deadline = None if timeout is None else time.monotonic() + timeout
+        while True:
+            if guard.interrupted.is_set():
+                self._terminate_process_group(process)
+                try:
+                    comm_res = process.communicate(timeout=1.0)
+                    stdout, stderr = cast(tuple[str, str], comm_res)
+                except subprocess.TimeoutExpired:
+                    stdout, stderr = "", ""
+                return stdout, stderr, True
+            slice_timeout: float = poll_interval
+            if deadline is not None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise subprocess.TimeoutExpired(process.args, timeout or 0)
+                slice_timeout = min(poll_interval, remaining)
+            try:
+                comm_res = process.communicate(timeout=slice_timeout)
+                stdout, stderr = cast(tuple[str, str], comm_res)
+                return stdout, stderr, False
+            except subprocess.TimeoutExpired:
+                continue
+
     def _process_execution_results(
         self,
         stdout: str,
@@ -304,12 +379,7 @@ class ShellAdapter(IShellExecutor):
             # No input data is written to the pipe, so children see empty stdin.
 
             try:
-                # Type cast is required because Mypy cannot infer str types when
-                # text=True is passed via **kwargs.
-                from typing import cast
-
-                comm_res = process.communicate(timeout=timeout)
-                stdout, stderr = cast(tuple[str, str], comm_res)
+                stdout, stderr, interrupted = self._await_process(process, timeout)
             except subprocess.TimeoutExpired:
                 return self._handle_timeout(process, timeout or 0)
 
@@ -322,9 +392,12 @@ class ShellAdapter(IShellExecutor):
                 )
             )
 
-            return self._process_execution_results(
+            output = self._process_execution_results(
                 stdout, stderr, process.returncode, max_lines=max_lines
             )
+            if interrupted:
+                output["interrupted"] = True
+            return output
         except (FileNotFoundError, OSError) as e:
             self._log_debug_error(e)
             return {

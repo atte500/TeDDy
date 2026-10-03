@@ -11,6 +11,7 @@ driven to immediate termination by having the orchestrator double
 return `(session_name, None)` — no module patching.
 """
 
+import time
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -30,9 +31,12 @@ from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
+from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+from teddy_executor.core.utils.interrupt_guard import InterruptGuard
 from tests.harness.setup.container_stub import ContainerStub
+from tests.harness.setup.fake_quit_key_listener import FakeQuitKeyListener
 
 
 def _build_resume_harness() -> SimpleNamespace:
@@ -79,6 +83,8 @@ def _build_resume_harness() -> SimpleNamespace:
             ILlmClient: llm_client,
             ISessionLoopGuard: loop_guard,
             IMarkdownReportFormatter: report_formatter,
+            InterruptGuard: InterruptGuard(monotonic=time.monotonic),
+            IQuitKeyListener: FakeQuitKeyListener(),
         }
     )
     return SimpleNamespace(

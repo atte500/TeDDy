@@ -5,11 +5,10 @@ EXECUTING phase context managers plus an `interrupted` threading.Event.
 Phase semantics (Task-Brief-approved): in WAITING (prompts, planning
 LLM call) a signal raises KeyboardInterrupt immediately — nothing is in
 flight. In EXECUTING the first signal sets the flag so the in-flight
-action can drain gracefully; a second signal within the config-driven
-grace window escalates to immediate termination. The grace window is
-read from the centralized configuration layer (no magic numbers) and
-the monotonic clock is Constructor-Injected for deterministic
-escalation tests (no sleeps).
+action can drain gracefully; a second signal within the grace window
+escalates to immediate termination. The grace window is a module
+constant and the monotonic clock is Constructor-Injected for
+deterministic escalation tests (no sleeps).
 """
 
 import os
@@ -19,12 +18,7 @@ import threading
 
 import pytest
 
-from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.utils.interrupt_guard import InterruptGuard
-from tests.harness.setup.mocking import register_mock
-
-GRACE_KEY = "interrupt.grace_window_seconds"
-GRACE_DEFAULT = 2.0
 
 
 class _FakeClock:
@@ -41,30 +35,17 @@ class _FakeClock:
 
 
 @pytest.fixture
-def config(container):
-    """IConfigService double serving the documented grace-window default."""
-    config_service = register_mock(container, IConfigService)
-    config_service.get_setting.return_value = GRACE_DEFAULT
-    return config_service
-
-
-@pytest.fixture
 def clock():
     return _FakeClock()
 
 
 @pytest.fixture
-def guard(container, config, clock):
-    return InterruptGuard(config_service=config, monotonic=clock)
+def guard(clock):
+    return InterruptGuard(monotonic=clock)
 
 
 class TestInterruptGuardContract:
-    """Construction and configuration contract."""
-
-    def test_grace_window_read_from_central_config(self, guard, config) -> None:
-        # Assert: the grace window comes from the centralized config layer
-        # with the documented default — no magic number lives in the guard.
-        config.get_setting.assert_called_once_with(GRACE_KEY, GRACE_DEFAULT)
+    """Construction contract."""
 
     def test_interrupted_event_initially_unset(self, guard) -> None:
         # Assert: the guard exposes a threading.Event, unset before any signal.

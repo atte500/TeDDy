@@ -3,7 +3,6 @@ import sys
 import pytest
 from unittest.mock import MagicMock, patch  # noqa: TID251
 from teddy_executor.adapters.outbound.shell_adapter import ShellAdapter
-from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 
 
 @pytest.mark.anyio
@@ -33,7 +32,7 @@ async def test_execute_timeout_does_not_reset_terminal():
             )
 
 
-def test_execute_respects_timeout(container):
+def test_execute_respects_timeout():
     """
     Asserts that the timeout parameter is passed correctly to process.communicate.
     """
@@ -44,7 +43,7 @@ def test_execute_respects_timeout(container):
         mock_process.returncode = 0
         mock_popen.return_value = mock_process
 
-        adapter = container.resolve(IShellExecutor)
+        adapter = ShellAdapter()
 
         # Act
         timeout_threshold = 10
@@ -54,7 +53,7 @@ def test_execute_respects_timeout(container):
         mock_process.communicate.assert_called_once_with(timeout=timeout_threshold)
 
 
-def test_execute_works_without_timeout(container):
+def test_execute_works_without_timeout():
     """
     Asserts that the adapter still works without a timeout (defaults to None).
     """
@@ -65,13 +64,13 @@ def test_execute_works_without_timeout(container):
         mock_process.returncode = 0
         mock_popen.return_value = mock_process
 
-        adapter = container.resolve(IShellExecutor)
+        adapter = ShellAdapter()
         adapter.execute("echo test")
 
         mock_process.communicate.assert_called_once_with(timeout=None)
 
 
-def test_execute_handles_timeout_with_partial_output(container):
+def test_execute_handles_timeout_with_partial_output():
     """
     Verifies that ShellAdapter catches TimeoutExpired during communicate,
     terminates the process group, fetches partial output, and returns 124.
@@ -79,7 +78,7 @@ def test_execute_handles_timeout_with_partial_output(container):
     if sys.platform == "win32":
         pytest.skip("killpg is POSIX only")
 
-    adapter = container.resolve(IShellExecutor)
+    adapter = ShellAdapter()
 
     mock_process = MagicMock()
     mock_process.pid = 999999
@@ -104,12 +103,12 @@ def test_execute_handles_timeout_with_partial_output(container):
     assert not mock_restore.called
 
 
-def test_execute_handles_timeout_without_output(container):
+def test_execute_handles_timeout_without_output():
     """Verifies timeout handling when no partial output is available."""
     if sys.platform == "win32":
         pytest.skip("killpg is POSIX only")
 
-    adapter = container.resolve(IShellExecutor)
+    adapter = ShellAdapter()
 
     mock_process = MagicMock()
     mock_process.pid = 999999

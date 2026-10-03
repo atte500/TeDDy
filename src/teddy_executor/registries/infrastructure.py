@@ -38,6 +38,7 @@ def register_infrastructure(container: punq.Container) -> None:
     from teddy_executor.adapters.outbound.shell_command_builder import (
         ShellCommandBuilder,
     )
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
     from teddy_executor.adapters.outbound.system_environment_adapter import (
         SystemEnvironmentAdapter,
     )
@@ -77,6 +78,10 @@ def register_infrastructure(container: punq.Container) -> None:
             max_execute_lines=container.resolve(IConfigService).get_setting(
                 "execution.max_output_lines"
             ),
+            # Shared process-global guard: the SAME instance the session-loop
+            # boundary installs and the orchestrator drains, so an in-flight
+            # command observes the user's interrupt and is terminated.
+            interrupt_guard=container.resolve(InterruptGuard),
         ),
         scope=punq.Scope.transient,
     )

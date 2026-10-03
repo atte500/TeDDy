@@ -7,12 +7,12 @@ work gracefully (the report is still generated so the audit trail is
 preserved). Phase semantics (Task-Brief-approved): in WAITING (prompts,
 planning LLM call) a signal raises KeyboardInterrupt immediately — nothing
 is in flight. In EXECUTING the first signal sets the flag so the in-flight
-action can drain gracefully; a second signal within the config-driven
-grace window escalates to immediate termination; after the window the
-signal is treated as a new first signal (the window restarts).
+action can drain gracefully; a second signal within the grace window
+escalates to immediate termination; after the window the signal is
+treated as a new first signal (the window restarts).
 
-The grace window is read from the centralized configuration layer (no
-magic numbers in logic) and the monotonic clock is Constructor-Injected
+The grace window is a module constant and the monotonic clock is
+Constructor-Injected
 so tests advance time deterministically (no sleeps). The module stays
 import-free of DI frameworks (hexagonal core boundary).
 """
@@ -24,10 +24,11 @@ from contextlib import contextmanager
 from types import FrameType
 from typing import Iterator, Optional
 
-from teddy_executor.core.ports.outbound.config_service import IConfigService
-
-GRACE_WINDOW_KEY = "interrupt.grace_window_seconds"
-GRACE_WINDOW_DEFAULT = 2.0
+# Grace-window duration (seconds): how long a second Ctrl+C during action
+# execution is treated as an escalation (immediate force-kill) instead of a
+# new graceful-drain request. A code constant per explicit product decision
+# (no longer tunable from the configuration layer).
+GRACE_WINDOW_SECONDS = 2.0
 
 # The single shared session-interrupt notice (Bug 56): the now-inaccurate
 # "(Ctrl+C)" fragment was dropped so the user-visible boundary notice and the
@@ -38,22 +39,16 @@ INTERRUPT_REASON = "Interrupted by user."
 class InterruptGuard:
     """Installs the SIGINT handler and tracks the WAITING/EXECUTING phase.
 
-    Constructor-Injected dependencies:
-    - config_service: the outbound port serving the grace window from the
-      centralized configuration layer.
+    Constructor-Injected dependency:
     - monotonic: the time source for grace-window bookkeeping (e.g.,
       time.monotonic in production; a controllable fake in tests).
     """
 
     def __init__(
         self,
-        config_service: IConfigService,
         monotonic: Callable[[], float],
     ) -> None:
-        grace_raw = config_service.get_setting(GRACE_WINDOW_KEY, GRACE_WINDOW_DEFAULT)
-        self._grace_window = (
-            float(grace_raw) if grace_raw is not None else GRACE_WINDOW_DEFAULT
-        )
+        self._grace_window = GRACE_WINDOW_SECONDS
         self._monotonic = monotonic
         self.interrupted = threading.Event()
         self._executing = False

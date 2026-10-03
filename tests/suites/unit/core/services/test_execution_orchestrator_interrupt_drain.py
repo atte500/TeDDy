@@ -26,7 +26,6 @@ from teddy_executor.core.domain.models import (
 from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
-from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.execution_report_assembler import (
     IExecutionReportAssembler,
 )
@@ -41,10 +40,8 @@ from teddy_executor.core.utils.interrupt_guard import InterruptGuard
 
 
 def _real_guard() -> InterruptGuard:
-    """A REAL guard over a spec-bound config double (core logic stays real)."""
-    config = Mock(spec=IConfigService)
-    config.get_setting.return_value = 2.0
-    return InterruptGuard(config_service=config, monotonic=time.monotonic)
+    """A REAL guard over the monotonic clock (core logic stays real)."""
+    return InterruptGuard(monotonic=time.monotonic)
 
 
 def _build_orchestrator(

@@ -34,15 +34,13 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
     container.register(ISessionLoopGuard, instance=mock_loop_guard)
 
     # The wired session loop resolves InterruptGuard at the boundary —
-    # register a real guard (dedicated config double returning the 2.0
-    # grace-window default; the shared mock_config_service is unconfigured).
+    # register a real guard (monotonic clock; the shared mock_config_service
+    # is unconfigured).
     from teddy_executor.core.utils.interrupt_guard import InterruptGuard
 
-    guard_config = Mock(spec=IConfigService)
-    guard_config.get_setting.return_value = 2.0
     container.register(
         InterruptGuard,
-        instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
+        instance=InterruptGuard(monotonic=time.monotonic),
     )
     from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
     from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
@@ -118,15 +116,13 @@ def test_handle_new_session_prompts_even_when_non_interactive():
     container.register(ISessionLoopGuard, instance=mock_loop_guard)
 
     # The wired session loop resolves InterruptGuard at the boundary —
-    # register a real guard (dedicated config double returning the 2.0
-    # grace-window default; the shared mock_config_service is unconfigured).
+    # register a real guard (monotonic clock; the shared mock_config_service
+    # is unconfigured).
     from teddy_executor.core.utils.interrupt_guard import InterruptGuard
 
-    guard_config = Mock(spec=IConfigService)
-    guard_config.get_setting.return_value = 2.0
     container.register(
         InterruptGuard,
-        instance=InterruptGuard(config_service=guard_config, monotonic=time.monotonic),
+        instance=InterruptGuard(monotonic=time.monotonic),
     )
     from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
     from teddy_executor.adapters.outbound.terminal_quit_key_listener import (

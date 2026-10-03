@@ -84,7 +84,14 @@ class TerminalQuitKeyListener:
     # --- reader ---
 
     def _read_loop(self) -> None:
-        """Poll for the quit key, backing off while another reader owns stdin."""
+        """Poll for the quit key until ``stop()`` is called.
+
+        The reader is PERSISTENT (Bug 58): a quit fires ``_trigger`` and polling
+        CONTINUES, so every subsequent ``q`` is honoured for the whole session.
+        The listener is started once per session, so a one-shot loop (the
+        previous behaviour) silently disabled the quit mechanism after the first
+        press and left later turns unresponsive to `q`.
+        """
         while not self._stop_event.is_set():
             if is_stdin_owned():
                 self._stop_event.wait(_POLL_INTERVAL)
@@ -93,8 +100,7 @@ class TerminalQuitKeyListener:
             if byte is None:
                 self._stop_event.wait(_POLL_INTERVAL)
                 continue
-            if self._process_byte(byte):
-                break
+            self._process_byte(byte)
 
     def _read_one_byte(self) -> Optional[int]:
         """Read one byte from stdin, or None when none is available."""
@@ -126,12 +132,10 @@ class TerminalQuitKeyListener:
             return None
         return ord(msvcrt.getwch())
 
-    def _process_byte(self, byte: int) -> bool:
-        """Trigger the quit on the quit key; return whether the reader is done."""
+    def _process_byte(self, byte: int) -> None:
+        """Trigger the quit on the quit key; the reader keeps polling."""
         if byte == QUIT_KEY:
             self._trigger()
-            return True
-        return False
 
     def _trigger(self) -> None:
         """Invoke the injected hook, or self-deliver SIGINT by default."""

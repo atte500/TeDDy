@@ -14,6 +14,7 @@ class RunStatus(str, Enum):
     VALIDATION_FAILED = "VALIDATION_FAILED"
     SKIPPED = "SKIPPED"
     ABORTED = "ABORTED"
+    INTERRUPTED = "INTERRUPTED"
 
 
 class ActionStatus(str, Enum):
@@ -23,6 +24,7 @@ class ActionStatus(str, Enum):
     FAILURE = "FAILURE"
     SKIPPED = "SKIPPED"
     PENDING = "PENDING"
+    INTERRUPTED = "INTERRUPTED"
 
 
 @dataclass(frozen=True)

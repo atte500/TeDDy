@@ -182,11 +182,11 @@ def test_start_and_stop_manage_mode_and_daemon_thread(fake_termios, monkeypatch)
 
 
 def test_process_byte_triggers_on_the_quit_key():
-    """Detecting 0x71 must trigger the quit hook."""
+    """Detecting 0x71 must trigger the quit hook (reader keeps polling)."""
     recorder = _Recorder()
     listener = TerminalQuitKeyListener(on_quit=recorder)
 
-    assert listener._process_byte(QUIT_KEY) is True
+    assert listener._process_byte(QUIT_KEY) is None
     assert recorder.calls == 1
 
 
@@ -195,7 +195,7 @@ def test_process_byte_ignores_non_quit_bytes():
     recorder = _Recorder()
     listener = TerminalQuitKeyListener(on_quit=recorder)
 
-    assert listener._process_byte(0x61) is False
+    assert listener._process_byte(0x61) is None
     assert recorder.calls == 0
 
 
@@ -203,11 +203,23 @@ def test_process_byte_ignores_non_quit_bytes():
 
 
 def test_read_loop_self_delivers_sigint_on_quit_key(monkeypatch):
-    """With no injected hook the reader self-delivers SIGINT to the process."""
+    """With no injected hook the reader self-delivers SIGINT to the process.
+
+    The read loop is PERSISTENT, so the fake byte source requests ``stop()``
+    after the quit has been delivered — proving the loop keeps polling until
+    stopped rather than exiting on the first byte (Bug 58).
+    """
     listener = TerminalQuitKeyListener()  # on_quit defaults to None -> self-deliver
-    monkeypatch.setattr(listener, "_read_one_byte", lambda: QUIT_KEY, raising=False)
     delivered = []
     monkeypatch.setattr(os, "kill", lambda pid, sig: delivered.append((pid, sig)))
+
+    def fake_read():
+        if delivered:
+            listener._stop_event.set()
+            return None
+        return QUIT_KEY
+
+    monkeypatch.setattr(listener, "_read_one_byte", fake_read, raising=False)
 
     listener._read_loop()
 
@@ -276,3 +288,27 @@ def test_windows_read_one_byte_uses_msvcrt(monkeypatch):
     listener = TerminalQuitKeyListener()
 
     assert listener._read_one_byte() == QUIT_KEY
+
+
+# --- persistence (Bug 58 regression) ---
+
+
+def test_read_loop_honors_multiple_quit_presses(monkeypatch):
+    """Regression (Bug 58): the reader is PERSISTENT — the listener is started
+    once per session, so EVERY `q` press must fire the hook, not just the first.
+    A one-shot loop silently disabled quitting for the rest of the session."""
+    recorder = _Recorder()
+    listener = TerminalQuitKeyListener(on_quit=recorder)
+    presses = [QUIT_KEY, QUIT_KEY, QUIT_KEY]
+
+    def fake_read():
+        if not presses:
+            listener._stop_event.set()
+            return None
+        return presses.pop(0)
+
+    monkeypatch.setattr(listener, "_read_one_byte", fake_read, raising=False)
+
+    listener._read_loop()
+
+    assert recorder.calls == 3
