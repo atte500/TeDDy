@@ -1,12 +1,11 @@
 import yaml
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
 from teddy_executor.adapters.inbound.textual_plan_reviewer import TextualPlanReviewer
-from teddy_executor.adapters.inbound.console_plan_reviewer import ConsolePlanReviewer
 from teddy_executor.container import create_container
 
 
-def test_container_resolves_textual_reviewer_by_default(fs):
-    # Arrange: No config or default config
+def test_container_resolves_textual_reviewer(fs):
+    # Arrange: No ui_mode configuration (TUI is the sole reviewer)
     fs.create_dir(".teddy")
     fs.create_file(".teddy/config.yaml", contents="{}")
 
@@ -20,8 +19,8 @@ def test_container_resolves_textual_reviewer_by_default(fs):
     assert isinstance(reviewer, TextualPlanReviewer)
 
 
-def test_container_resolves_console_reviewer_when_configured(fs):
-    # Arrange: Config set to console
+def test_container_ignores_stale_console_config(fs):
+    # Arrange: A stale ui_mode: console key lingers in a user's config
     fs.create_dir(".teddy")
     fs.create_file(".teddy/config.yaml", contents=yaml.dump({"ui_mode": "console"}))
 
@@ -30,19 +29,5 @@ def test_container_resolves_console_reviewer_when_configured(fs):
     # Act
     reviewer = container.resolve(IPlanReviewer)
 
-    # Assert
-    assert isinstance(reviewer, ConsolePlanReviewer)
-
-
-def test_container_resolves_textual_reviewer_when_configured(fs):
-    # Arrange: Config set to tui
-    fs.create_dir(".teddy")
-    fs.create_file(".teddy/config.yaml", contents=yaml.dump({"ui_mode": "tui"}))
-
-    container = create_container()
-
-    # Act
-    reviewer = container.resolve(IPlanReviewer)
-
-    # Assert
+    # Assert: the console-selection branch is gone, so the stale key is ignored
     assert isinstance(reviewer, TextualPlanReviewer)
