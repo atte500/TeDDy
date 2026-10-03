@@ -54,8 +54,8 @@ def _configure_editor(mock_config, value):
     )
 
 
-def test_prompt_for_editor_selection_saves_resolved_path_for_number(monkeypatch):
-    """A valid number persists the selected editor's resolved absolute path."""
+def test_prompt_for_editor_selection_saves_basename_for_number(monkeypatch):
+    """A valid number persists the selected editor's basename (portable)."""
     mock_config = POSIXPathMock(spec=IConfigService)
     mock_env = POSIXPathMock(spec=ISystemEnvironment)
     helper = _editor_helper(mock_env, mock_config)
@@ -64,7 +64,7 @@ def test_prompt_for_editor_selection_saves_resolved_path_for_number(monkeypatch)
 
     _prompt_for_editor_selection(mock_config, helper, available)
 
-    mock_config.set_setting.assert_called_once_with("editor", "/usr/bin/nvim")
+    mock_config.set_setting.assert_called_once_with("editor", "nvim")
 
 
 def test_prompt_for_editor_selection_saves_custom_command_as_typed(monkeypatch):
@@ -106,7 +106,7 @@ def test_prompt_for_editor_selection_reprompts_on_invalid_number(monkeypatch):
 
     _prompt_for_editor_selection(mock_config, helper, available)
 
-    mock_config.set_setting.assert_called_once_with("editor", "/usr/bin/vim")
+    mock_config.set_setting.assert_called_once_with("editor", "vim")
 
 
 def test_prompt_for_editor_selection_reprompts_on_unavailable_custom(monkeypatch):
@@ -122,7 +122,7 @@ def test_prompt_for_editor_selection_reprompts_on_unavailable_custom(monkeypatch
 
     _prompt_for_editor_selection(mock_config, helper, available)
 
-    mock_config.set_setting.assert_called_once_with("editor", "/usr/bin/nvim")
+    mock_config.set_setting.assert_called_once_with("editor", "nvim")
 
 
 def test_prompt_for_custom_editor_saves_command_as_typed(monkeypatch):
@@ -198,7 +198,7 @@ def test_validate_editor_config_prompts_discovery_when_no_editor_configured(
 
     _validate_editor_config(env.container)
 
-    mock_config.set_setting.assert_called_once_with("editor", "/usr/bin/nvim")
+    mock_config.set_setting.assert_called_once_with("editor", "nvim")
 
 
 def test_validate_editor_config_prompts_discovery_when_configured_editor_missing(
@@ -215,7 +215,7 @@ def test_validate_editor_config_prompts_discovery_when_configured_editor_missing
 
     _validate_editor_config(env.container)
 
-    mock_config.set_setting.assert_called_once_with("editor", "/usr/bin/nvim")
+    mock_config.set_setting.assert_called_once_with("editor", "nvim")
 
 
 def test_validate_editor_config_prompts_custom_when_nothing_discovered(
@@ -453,5 +453,5 @@ def test_full_preflight_flow_persists_discovered_editor_selection(env, monkeypat
     # Act - the full interactive preflight boundary.
     _run_cli_preflight_check(container=env.container, interactive=True)
 
-    # Assert - the numbered selection is persisted as its resolved path.
-    mock_config.set_setting.assert_called_once_with("editor", "/usr/bin/nvim")
+    # Assert - the numbered selection is persisted as its basename.
+    mock_config.set_setting.assert_called_once_with("editor", "nvim")

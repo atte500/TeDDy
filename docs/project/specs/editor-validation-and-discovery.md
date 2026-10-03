@@ -291,7 +291,7 @@ The prompting functions (`_prompt_for_editor_selection`, `_prompt_for_custom_edi
 
 Primary-prompt input handling:
 
-- **Valid in-range number** → persist the selected editor's **resolved absolute path** to config, then a blank line and the green confirmation `Editor preference saved to .teddy/config.yaml.`
+- **Valid in-range number** → persist the selected editor's **basename** to config (portable across machines; the read path re-resolves it on `PATH`), then a blank line and the green confirmation `Editor preference saved to .teddy/config.yaml.`
 - **Out-of-range / non-numeric number** → the red message `'{raw}' is not a valid selection. Choose 1-{n}.` then re-prompt the primary prompt.
 - **Custom command** → validate the first token with `which()`. If available, persist the command **exactly as typed** (so flags such as `code --wait` are preserved); if NOT available, the red message `'{raw}' was not found in PATH.` then re-prompt. A custom command is **never** accepted without passing `which()`.
 - **Empty input** → persist `"disabled"` to config (then the green confirmation).

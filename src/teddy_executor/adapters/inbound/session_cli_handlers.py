@@ -586,10 +586,10 @@ def _prompt_for_editor_selection(
 ) -> None:
     """Prompts the user to select from the discovered editors (all on stderr).
 
-    A valid number persists the editor's resolved absolute path; a custom
-    command is validated via ``which()`` and persisted exactly as typed; empty
-    input persists ``"disabled"``. Out-of-range numbers and unavailable custom
-    commands re-prompt.
+    A valid number persists the selected editor's basename (portable across
+    machines); a custom command is validated via ``which()`` and persisted
+    exactly as typed; empty input persists ``"disabled"``. Out-of-range numbers
+    and unavailable custom commands re-prompt.
     """
     typer.echo("", err=True)
     typer.secho("Editor Setup", fg=typer.colors.CYAN, bold=True, err=True)
@@ -615,7 +615,7 @@ def _prompt_for_editor_selection(
         if raw.isdigit():
             index = int(raw)
             if 1 <= index <= len(available):
-                _persist_editor_choice(config_service, available[index - 1][1])
+                _persist_editor_choice(config_service, available[index - 1][0])
                 return
             typer.secho(
                 f"'{raw}' is not a valid selection. Choose 1-{len(available)}.",

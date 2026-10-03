@@ -181,6 +181,9 @@ class ConsoleToolingHelper:
         if not editor_str:
             return None
         parts = shlex.split(editor_str)
+        # Expand a leading ``~`` so personal binaries referenced as
+        # ``~/bin/...`` resolve instead of being looked up literally.
+        parts[0] = os.path.expanduser(parts[0])
 
         if tool_path := self._system_env.which(parts[0]):
             parts[0] = tool_path
