@@ -83,6 +83,27 @@ def test_find_editor_config_code_returns_without_flags(helper, mock_env, mock_co
     assert result == ["/usr/bin/code"], f"Expected ['/usr/bin/code'], got {result}"
 
 
+@pytest.mark.parametrize("sentinel", ["disabled", "DISABLED", "  Disabled  "])
+def test_find_editor_returns_none_for_disabled_sentinel(
+    helper, mock_env, mock_config, sentinel
+):
+    """The "disabled" sentinel (case/whitespace-insensitive) makes find_editor()
+    return None immediately, bypassing the VISUAL/EDITOR env fallback."""
+    # Arrange - config carries the sentinel; env vars would otherwise resolve.
+    mock_config.get_setting.return_value = sentinel
+    mock_env.get_env.side_effect = lambda x: (
+        "nvim" if x in ("VISUAL", "EDITOR") else None
+    )
+    mock_env.which.side_effect = lambda x: "/usr/bin/nvim" if x == "nvim" else None
+
+    # Act
+    result = helper.find_editor()
+
+    # Assert - disabled wins and the env fallback is never consulted.
+    assert result is None
+    mock_env.get_env.assert_not_called()
+
+
 def test_diff_viewer_returns_none_when_fallback_not_taken(
     helper, mock_env, mock_config
 ):

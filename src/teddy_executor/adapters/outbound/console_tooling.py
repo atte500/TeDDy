@@ -138,8 +138,16 @@ class ConsoleToolingHelper:
         return None
 
     def find_editor(self) -> Optional[List[str]]:
+        editor_str = self._config_service.get_setting("editor")
+
+        # 0. "disabled" sentinel: the user explicitly disabled the editor.
+        #    Return None immediately WITHOUT falling back to VISUAL/EDITOR
+        #    env vars (case- and whitespace-insensitive).
+        if editor_str and editor_str.strip().lower() == "disabled":
+            return None
+
         # 1. Check Config
-        if cmd := self._resolve_editor_cmd(self._config_service.get_setting("editor")):
+        if cmd := self._resolve_editor_cmd(editor_str):
             return cmd
 
         # 2. Check Env

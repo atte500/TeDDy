@@ -144,7 +144,7 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 - [x] **Harness** — Update `IConfigService` mock in test harness (mocking.py, composition.py) to implement `set_setting()` *(verified NO-OP — see Impact Audit: every `IConfigService` double is auto-specced (`register_mock` → `POSIXPathMock(spec=port_type)`, `create_autospec`, `MagicMock(spec=IConfigService)`) and absorbs `set_setting` from the spec automatically; no hand-rolled concrete fake exists. Kept only as a guard.)*
 - [x] **Seam** — Add `KNOWN_EDITORS: list[str]` class-level constant to `ConsoleToolingHelper` (as specified in spec 2a)
 - [x] **Wiring** — Add `discover_editors() -> list[tuple[str, str]]` method to `ConsoleToolingHelper` with PATH scanning and deduplication
-- [ ] **Wiring** — Modify `find_editor()` to handle "disabled" sentinel (returns None immediately, bypasses env fallback)
+- [x] **Wiring** — Modify `find_editor()` to handle "disabled" sentinel (returns None immediately, bypasses env fallback)
 - [ ] **Wiring** — Extend `_DIFF_FLAGS` translation table with all entries from spec 2d (add idea, webstorm, phpstorm, pycharm, rubymine, goland, clion, fleet)
 - [x] **Logic** — Implement `YamlConfigAdapter.set_setting()` with dot-notation support, file creation, cache update, and YAML persistence
 - [ ] **Logic** — Implement `get_diff_viewer_command()` unknown editor fallback: return `[editor_path]` with no flags when editor not in `_DIFF_FLAGS`
@@ -185,6 +185,12 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 - **Green-to-Green confirmed:** the method is purely additive — no production consumer calls it yet (the preflight `_validate_editor_config` flow that consumes it is a later Migration deliverable), so the full suite stayed green with no Migration sweep.
 - **Test-layer note:** the superseded Harness #3 intent was folded here (Plan Audit): the three behavioural tests for `discover_editors()` ship with this Wiring bundle, co-located in the existing `tests/suites/unit/adapters/outbound/test_console_tooling_editor.py` where `ConsoleToolingHelper` and the `mock_env` fixture already live. The `mock_env` (`POSIXPathMock(spec=ISystemEnvironment)`) already supports `which()` side-effects, so no standalone fixture was needed.
 - **Tests:** three unit tests added — ordered discovery of a found subset, dedup-by-resolved-path (first alias wins), and empty-list-when-none-found. No new `[DEBT]`.
+
+### Deliverable #7 (Wiring) — `find_editor()` "disabled" sentinel (2026-10-03)
+- **Change (spec §2b):** `find_editor()` now reads `get_setting("editor")` once into `editor_str` and, before any resolution, returns `None` when `editor_str.strip().lower() == "disabled"`. This bypasses the `VISUAL`/`EDITOR` env fallback entirely (an explicit user disablement), and is case- and whitespace-insensitive.
+- **Test-layer note:** although the slice labels this deliverable `Wiring`, it is a discrete core-logic rule on an adapter; per the spec's Test Strategy it is unit-tested in the existing `tests/suites/unit/adapters/outbound/test_console_tooling_editor.py` alongside the five sibling `find_editor()` tests (no acceptance boundary exercises `find_editor()` end-to-end until the later preflight Migration deliverable).
+- **Green-to-Green confirmed:** the guard is additive — none of the five pre-existing `find_editor()` tests pass `"disabled"` as the config, so their behaviour is unchanged; the full suite stayed green with no Migration sweep.
+- **Tests:** one parametrized test added (`test_find_editor_returns_none_for_disabled_sentinel`) covering `"disabled"`, `"DISABLED"`, and `"  Disabled  "`, asserting both `result is None` and that `get_env` is NEVER called (pinning the env-bypass). No new `[DEBT]`.
 
 ## Verification
 - [ ] Start a new interactive session with no editor configured → see discovery prompt
