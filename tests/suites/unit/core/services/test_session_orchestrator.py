@@ -231,6 +231,13 @@ def test_execute_regather_branch_is_fallback_only_never_hits_provided_context(
     mock_plan_validator.validate.return_value = []
     mock_fs.path_exists.return_value = True  # For is_session_mode
 
+    # The primary path now prunes any provided context (this pin's regression
+    # fix). This pin deliberately hands in a NON-dataclass context, which a
+    # real SessionPruningService.prune() returns UNCHANGED via its early-return
+    # guard — so the mock must mirror that pass-through to keep the
+    # "reaches execution unchanged" wiring contract.
+    orchestrator._pruning_service.prune.side_effect = lambda ctx, **kwargs: ctx
+
     provided_context = FalsyContext()
 
     # Act
@@ -365,7 +372,6 @@ class TestTeeGuard:
         monkeypatch,
     ) -> None:
         """When lifecycle_manager.tee_active is True, orchestrator must not install Tee."""
-        from unittest.mock import MagicMock
         from teddy_executor.core.domain.models import Plan
         from teddy_executor.core.domain.models.execution_report import (
             ExecutionReport,
@@ -416,7 +422,7 @@ class TestTeeGuard:
         # _Tee must NOT be called since lifecycle_manager already installed it
         mock_tee_class.assert_not_called()
 
-    def test_orchestrator_installs_tee_when_not_active(
+    def test_orchestrator_installs_tee_when_not_active(  # noqa: PLR0913
         self,
         orchestrator,
         mock_run_plan,
@@ -427,7 +433,6 @@ class TestTeeGuard:
         monkeypatch,
     ) -> None:
         """When lifecycle_manager.tee_active is False, orchestrator must install Tee."""
-        from unittest.mock import MagicMock
         from teddy_executor.core.domain.models import Plan
         from teddy_executor.core.domain.models.execution_report import (
             ExecutionReport,
@@ -542,7 +547,6 @@ class TestConsoleVisibilityHelpers:
         self, plan_title, plan_metadata, is_session, expected_calls
     ):
         """_print_header_bar should print emoji + title only when is_session=True."""
-        from unittest.mock import MagicMock
         from teddy_executor.core.domain.models import Plan
 
         plan = MagicMock(spec=Plan)
@@ -671,7 +675,7 @@ class TestConsoleVisibilityWiring:
         ],
         ids=["session_with_message", "session_empty_message", "non_session"],
     )
-    def test_helpers_called_during_execute(
+    def test_helpers_called_during_execute(  # noqa: PLR0913
         self,
         message,
         is_session,
@@ -685,7 +689,6 @@ class TestConsoleVisibilityWiring:
     ):
         """Wiring: helpers should be called with the expected arguments during execute()."""
         from teddy_executor.core.domain.models import Plan
-        from unittest.mock import MagicMock
 
         # Mock plan
         mock_plan = MagicMock(spec=Plan)

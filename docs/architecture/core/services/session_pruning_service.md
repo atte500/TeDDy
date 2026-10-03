@@ -1,5 +1,5 @@
 - **Status:** Refactoring
-- **Last Updated:** 2026-06-08
+- **Last Updated:** 2026-10-03
 
 ## Purpose / Responsibility
 The `SessionPruningService` is responsible for applying configurable auto-pruning heuristics to session context items. It prunes or deselects context items based on failure status, retention limits, and token budgets, while sparing certain turns (e.g., user-message turns and successful message turns) from pruning.
@@ -42,11 +42,17 @@ Both sparing checks are performed in `_update_turn_metadata_from_item`, which co
 ### Global Budget Heuristic (`_apply_global_budget`)
 The `_apply_global_budget` method enforces a total token budget for the Turn-scope working set. It is called as Heuristic 2 in the prune pipeline (after Retention Limit).
 
-#### Current Behavior (Per Slice 02-07)
+#### Current Behavior
 ```python
-total_tokens = sum(item.tokens for item in items if item.selected and item.scope == "Turn")
+total_tokens = sum(
+    item.token_count
+    for item in items
+    if item.selected
+    and item.scope == "Turn"
+    and isinstance(item.token_count, (int, float))
+)
 ```
-This sums ONLY Turn-scope items. Session-scope and System-scope items are excluded from the budget calculation, though they remain in the final payload. The `system_prompt_tokens` parameter has been removed.
+This sums ONLY Turn-scope items (`item.token_count`, not `item.tokens`). Session-scope and System-scope items are excluded from the budget calculation, though they remain in the final payload.
 
 #### Backward Compatibility
 - `auto_pruning.turn_context_threshold` is the sole key. If not set, threshold defaults to 0 (budget heuristic skipped).
@@ -61,16 +67,15 @@ Detects whether a report file contains user-interaction metadata.
 ### `prune(context: ProjectContext, current_status: Optional[str]) -> ProjectContext`
 Applies heuristics to deselect items.
 
-### `_apply_global_budget(items: Sequence[ContextItem], threshold: int, spared_ids: set[str]) -> list[ContextItem]`
+### `_apply_global_budget(items) -> list[ContextItem]`
 Enforces the Turn-scope token budget by pruning the largest files.
 - **Parameters**:
   - `items`: Full list of context items (mixed scopes).
-  - `threshold`: Token budget from config (or 0 to skip).
-  - `spared_ids`: Set of turn IDs to exempt from pruning.
 - **Logic**:
-  1. If `threshold <= 0`, return items unchanged.
-  2. Calculate `total_tokens = sum(item.tokens for item in items if item.selected and item.scope == "Turn")`.
-  3. If `total_tokens <= threshold`, return items unchanged.
-  4. Sort Turn-scope items by token count descending, prune largest until under budget.
-  5. Non-Turn-scope items are never pruned by this heuristic.
-- **Note**: The `system_prompt_tokens` parameter has been removed as of Slice 02-07. Callers must no longer pass it.
+  1. Read the threshold internally via `_get_turn_context_threshold()` (returns 0 when unset or on parse error).
+  2. If `threshold <= 0`, return items unchanged.
+  3. Calculate `total_tokens = sum(item.token_count for item in items if item.selected and item.scope == "Turn" and isinstance(item.token_count, (int, float)))`.
+  4. If `total_tokens <= threshold`, return items unchanged.
+  5. Sort Turn-scope items by token count descending, prune largest until under budget.
+  6. Non-Turn-scope items are never pruned by this heuristic.
+- **Note**: There is no `spared_ids` parameter and no `system_prompt_tokens` parameter; the sole configuration knob is `auto_pruning.turn_context_threshold`.

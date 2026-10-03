@@ -52,8 +52,10 @@ def _print_initial_request(
                     content = import_path.read_text(encoding="utf-8").strip()
                     if content:
                         message = content
-            except Exception:
-                pass
+            except (OSError, UnicodeDecodeError) as exc:
+                logger.debug(
+                    "Could not read initial_request.md for %s: %s", plan_path, exc
+                )
     if not message or not message.strip():
         return
     typer.secho("")
@@ -255,6 +257,16 @@ class SessionOrchestrator(IRunPlanUseCase):
             if is_session and plan_path and project_context is None:
                 project_context = self._gather_fallback_context(plan, plan_path)
 
+            # Prune WHICHEVER context is present (primary or fallback) BEFORE
+            # harvesting. prune() previously lived only in the fallback-only
+            # re-gather helper, so the primary path (planning-gathered context)
+            # was never pruned and turn.context grew unbounded.
+            if is_session and project_context is not None and self._pruning_service:
+                status = plan.metadata.get("Status") if plan else None
+                project_context = self._pruning_service.prune(
+                    project_context, current_status=status
+                )
+
             self._harvest_context(
                 is_session=is_session,
                 project_context=project_context,
@@ -439,15 +451,12 @@ class SessionOrchestrator(IRunPlanUseCase):
             system_prompt_tokens=system_token_count,
         )
 
-        if is_dataclass(project_context) and agent_name != project_context.agent_name:
+        if is_dataclass(project_context) and agent_name != getattr(
+            project_context, "agent_name", None
+        ):
             project_context = replace(
                 cast(Any, project_context),
                 agent_name=agent_name,
-            )
-        if self._pruning_service:
-            status = plan.metadata.get("Status") if plan else None
-            project_context = self._pruning_service.prune(
-                project_context, current_status=status
             )
         return project_context
 
