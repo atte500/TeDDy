@@ -28,12 +28,10 @@ class RealAdapterMixin:
             ConsoleInteractorAdapter,
         )
         from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
-        from teddy_executor.adapters.inbound.console_plan_reviewer import (
-            ConsolePlanReviewer,
-        )
+        from tests.harness.setup.harness_plan_reviewer import HarnessPlanReviewer
 
         self._container.register(IUserInteractor, ConsoleInteractorAdapter)
-        self._container.register(IPlanReviewer, ConsolePlanReviewer)
+        self._container.register(IPlanReviewer, HarnessPlanReviewer)
         return self
 
     def with_real_inspector(self: Any) -> Any:
