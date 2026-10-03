@@ -25,6 +25,7 @@ from teddy_executor.adapters.inbound.cli_helpers import (
     echo_and_copy,
     find_project_root,
 )
+from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
 from teddy_executor.core.services.update_checker import (
     background_check,
     compare_versions,
@@ -551,6 +552,100 @@ def _run_cli_preflight_check(container: Container, agent: Optional[str] = None) 
 
     error_msg = f"Configuration Error: {', '.join(errors)}"
     raise ConfigurationError(error_msg)
+
+
+def _persist_editor_choice(config_service: IConfigService, value: str) -> None:
+    """Persists the editor choice and prints the green save confirmation (stderr)."""
+    config_service.set_setting("editor", value)
+    typer.echo("", err=True)
+    typer.secho(
+        "Editor preference saved to .teddy/config.yaml.",
+        fg=typer.colors.GREEN,
+        err=True,
+    )
+
+
+def _prompt_for_editor_selection(
+    config_service: IConfigService,
+    helper: ConsoleToolingHelper,
+    available: list[tuple[str, str]],
+) -> None:
+    """Prompts the user to select from the discovered editors (all on stderr).
+
+    A valid number persists the editor's resolved absolute path; a custom
+    command is validated via ``which()`` and persisted exactly as typed; empty
+    input persists ``"disabled"``. Out-of-range numbers and unavailable custom
+    commands re-prompt.
+    """
+    typer.echo("", err=True)
+    typer.secho("Editor Setup", fg=typer.colors.CYAN, bold=True, err=True)
+    typer.echo("", err=True)
+    for index, (name, _path) in enumerate(available, start=1):
+        typer.echo(f"[{index}] {name}", err=True)
+    typer.echo("", err=True)
+
+    prompt = (
+        f"Select an editor [1-{len(available)}] "
+        "(number, custom command, or empty to disable): "
+    )
+    while True:
+        try:
+            raw = typer.prompt(prompt, default="", show_default=False, err=True)
+        except (EOFError, typer.Abort):
+            _persist_editor_choice(config_service, "disabled")
+            return
+        raw = raw.strip()
+        if not raw:
+            _persist_editor_choice(config_service, "disabled")
+            return
+        if raw.isdigit():
+            index = int(raw)
+            if 1 <= index <= len(available):
+                _persist_editor_choice(config_service, available[index - 1][1])
+                return
+            typer.secho(
+                f"'{raw}' is not a valid selection. Choose 1-{len(available)}.",
+                fg=typer.colors.RED,
+                err=True,
+            )
+            continue
+        if helper._resolve_editor_cmd(raw):
+            _persist_editor_choice(config_service, raw)
+            return
+        typer.secho(f"'{raw}' was not found in PATH.", fg=typer.colors.RED, err=True)
+
+
+def _prompt_for_custom_editor(
+    config_service: IConfigService,
+    helper: ConsoleToolingHelper,
+) -> None:
+    """Prompts for a custom editor command when discovery finds nothing (stderr).
+
+    The command is validated via ``which()`` (never accepted without it); empty
+    input persists ``"disabled"``.
+    """
+    typer.echo("", err=True)
+    typer.secho("Editor Setup", fg=typer.colors.CYAN, bold=True, err=True)
+    typer.echo("", err=True)
+
+    prompt = (
+        "No known editors found. Enter a custom editor command "
+        "(leave empty to disable): "
+    )
+    while True:
+        try:
+            raw = typer.prompt(prompt, default="", show_default=False, err=True)
+        except (EOFError, typer.Abort):
+            _persist_editor_choice(config_service, "disabled")
+            return
+        raw = raw.strip()
+        if not raw:
+            _persist_editor_choice(config_service, "disabled")
+            return
+        if helper._resolve_editor_cmd(raw):
+            _persist_editor_choice(config_service, raw)
+            return
+        typer.secho(f"'{raw}' was not found in PATH.", fg=typer.colors.RED, err=True)
 
 
 def detect_session_context() -> Optional[Dict[str, Sequence[str]]]:

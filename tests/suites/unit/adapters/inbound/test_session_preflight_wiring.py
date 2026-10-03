@@ -2,10 +2,15 @@ import pytest
 import typer
 from teddy_executor.adapters.inbound.session_cli_handlers import (
     _run_cli_preflight_check,
+    _prompt_for_editor_selection,
+    _prompt_for_custom_editor,
     handle_new_session,
     handle_resume_session,
     handle_plan_generation,
 )
+from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
+from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
+from tests.harness.setup.mocking import POSIXPathMock
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.inbound.init import IInitUseCase
@@ -15,6 +20,120 @@ from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 from teddy_executor.core.domain.models.exceptions import ConfigurationError
+
+
+# ---------------------------------------------------------------------------
+# Editor validation flow: console prompting helpers (Slice 03-01)
+# ---------------------------------------------------------------------------
+
+
+def _patch_prompt(monkeypatch, values):
+    """Feed the given strings to successive ``typer.prompt`` calls."""
+    iterator = iter(values)
+    monkeypatch.setattr("typer.prompt", lambda *args, **kwargs: next(iterator))
+
+
+def _editor_helper(mock_env, mock_config):
+    """Build a real ConsoleToolingHelper over auto-specced env/config doubles."""
+    return ConsoleToolingHelper(mock_env, mock_config)
+
+
+def test_prompt_for_editor_selection_saves_resolved_path_for_number(monkeypatch):
+    """A valid number persists the selected editor's resolved absolute path."""
+    mock_config = POSIXPathMock(spec=IConfigService)
+    mock_env = POSIXPathMock(spec=ISystemEnvironment)
+    helper = _editor_helper(mock_env, mock_config)
+    available = [("nvim", "/usr/bin/nvim"), ("vim", "/usr/bin/vim")]
+    _patch_prompt(monkeypatch, ["1"])
+
+    _prompt_for_editor_selection(mock_config, helper, available)
+
+    mock_config.set_setting.assert_called_once_with("editor", "/usr/bin/nvim")
+
+
+def test_prompt_for_editor_selection_saves_custom_command_as_typed(monkeypatch):
+    """An available custom command is persisted exactly as typed (flags kept)."""
+    mock_config = POSIXPathMock(spec=IConfigService)
+    mock_env = POSIXPathMock(spec=ISystemEnvironment)
+    mock_env.which.side_effect = lambda name: (
+        "/usr/bin/code" if name == "code" else None
+    )
+    helper = _editor_helper(mock_env, mock_config)
+    available = [("nvim", "/usr/bin/nvim")]
+    _patch_prompt(monkeypatch, ["code --wait"])
+
+    _prompt_for_editor_selection(mock_config, helper, available)
+
+    mock_config.set_setting.assert_called_once_with("editor", "code --wait")
+
+
+def test_prompt_for_editor_selection_saves_disabled_on_empty_input(monkeypatch):
+    """Empty input persists the 'disabled' sentinel."""
+    mock_config = POSIXPathMock(spec=IConfigService)
+    mock_env = POSIXPathMock(spec=ISystemEnvironment)
+    helper = _editor_helper(mock_env, mock_config)
+    available = [("nvim", "/usr/bin/nvim")]
+    _patch_prompt(monkeypatch, [""])
+
+    _prompt_for_editor_selection(mock_config, helper, available)
+
+    mock_config.set_setting.assert_called_once_with("editor", "disabled")
+
+
+def test_prompt_for_editor_selection_reprompts_on_invalid_number(monkeypatch):
+    """An out-of-range number re-prompts until a valid number is given."""
+    mock_config = POSIXPathMock(spec=IConfigService)
+    mock_env = POSIXPathMock(spec=ISystemEnvironment)
+    helper = _editor_helper(mock_env, mock_config)
+    available = [("nvim", "/usr/bin/nvim"), ("vim", "/usr/bin/vim")]
+    _patch_prompt(monkeypatch, ["9", "2"])
+
+    _prompt_for_editor_selection(mock_config, helper, available)
+
+    mock_config.set_setting.assert_called_once_with("editor", "/usr/bin/vim")
+
+
+def test_prompt_for_editor_selection_reprompts_on_unavailable_custom(monkeypatch):
+    """An unavailable custom command re-prompts (never accepted without which())."""
+    mock_config = POSIXPathMock(spec=IConfigService)
+    mock_env = POSIXPathMock(spec=ISystemEnvironment)
+    mock_env.which.side_effect = lambda name: (
+        "/usr/bin/nvim" if name == "nvim" else None
+    )
+    helper = _editor_helper(mock_env, mock_config)
+    available = [("nvim", "/usr/bin/nvim")]
+    _patch_prompt(monkeypatch, ["bogus", "1"])
+
+    _prompt_for_editor_selection(mock_config, helper, available)
+
+    mock_config.set_setting.assert_called_once_with("editor", "/usr/bin/nvim")
+
+
+def test_prompt_for_custom_editor_saves_command_as_typed(monkeypatch):
+    """The custom-only branch persists an available command as typed."""
+    mock_config = POSIXPathMock(spec=IConfigService)
+    mock_env = POSIXPathMock(spec=ISystemEnvironment)
+    mock_env.which.side_effect = lambda name: (
+        "/opt/bin/myeditor" if name == "myeditor" else None
+    )
+    helper = _editor_helper(mock_env, mock_config)
+    _patch_prompt(monkeypatch, ["myeditor"])
+
+    _prompt_for_custom_editor(mock_config, helper)
+
+    mock_config.set_setting.assert_called_once_with("editor", "myeditor")
+
+
+def test_prompt_for_custom_editor_saves_disabled_on_empty_input(monkeypatch):
+    """The custom-only branch persists 'disabled' on empty input."""
+    mock_config = POSIXPathMock(spec=IConfigService)
+    mock_env = POSIXPathMock(spec=ISystemEnvironment)
+    helper = _editor_helper(mock_env, mock_config)
+    _patch_prompt(monkeypatch, [""])
+
+    _prompt_for_custom_editor(mock_config, helper)
+
+    mock_config.set_setting.assert_called_once_with("editor", "disabled")
 
 
 def test_handle_new_session_halts_on_preflight_failure_before_prompt(env):
