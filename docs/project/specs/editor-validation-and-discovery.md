@@ -173,22 +173,36 @@ _DIFF_FLAGS: dict[str, list[str]] = {
 
 **File:** `src/teddy_executor/adapters/outbound/yaml_config_adapter.py`
 
-Add a new method to write settings back to the user config file:
+Add a new method to write settings back to the user config file.
+
+> **Prototype-verified (Slice 03-01 spike `probe_ku1`).** The naive body first
+> drafted here omitted directory creation AND cache synchronization; the spike
+> proved BOTH are mandatory: (1) a `root_dir`-based path whose `.teddy/` parent
+> does not yet exist raises `FileNotFoundError` on write, and (2) a disk-only
+> write leaves the in-memory merged `_config` cache stale — a subsequent
+> `get_setting()` on the SAME adapter returns the pre-write value. `os` is a
+> module-level import in the adapter, so no local import is needed.
 
 ```python
 def set_setting(self, key: str, value: Any) -> None:
     """Sets a configuration value and persists to the user config file.
     Supports dot-notation for nested keys (e.g., 'editor', 'diff_flags').
     Reads the current file, merges the new value, and writes back."""
-    import os
+    # 1. Ensure the parent directory exists. A root_dir-based path (e.g.,
+    #    <root>/.teddy/config.yaml) may not have created .teddy/ yet; without
+    #    this, the write below raises FileNotFoundError (spike-verified).
+    parent_dir = os.path.dirname(self._config_path)
+    if parent_dir:
+        os.makedirs(parent_dir, exist_ok=True)
 
-    # Load current user config
+    # 2. Load current user config (edit only the user-override file; the
+    #    bundled baseline is never written to).
     user_config: dict = {}
     if os.path.exists(self._config_path):
         with open(self._config_path, "r", encoding="utf-8") as f:
             user_config = yaml.safe_load(f) or {}
 
-    # Set the value using dot-notation traversal
+    # 3. Set the value using dot-notation traversal
     keys = key.split(".")
     current = user_config
     for k in keys[:-1]:
@@ -197,12 +211,17 @@ def set_setting(self, key: str, value: Any) -> None:
         current = current[k]
     current[keys[-1]] = value
 
-    # Write back
+    # 4. Write back
     with open(self._config_path, "w", encoding="utf-8") as f:
         yaml.dump(user_config, f, default_flow_style=False, allow_unicode=True)
-```
 
-This method should also update the in-memory `_config` cache so that subsequent `get_setting()` calls reflect the change without a reload.
+    # 5. Synchronize the in-memory merged cache so a subsequent get_setting()
+    #    on THIS adapter reflects the change without a reload (spike-verified).
+    cache = self._config
+    for k in keys[:-1]:
+        cache = cache.setdefault(k, {})
+    cache[keys[-1]] = value
+```
 
 ### 4. Editor Validation in Preflight Check
 

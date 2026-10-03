@@ -2,6 +2,7 @@
 - **Status:** Planned
 - **Milestone:** [03-Foundational-Refactors](/docs/project/milestones/03-foundational-refactors.md)
 - **Specs:** [Editor Validation & Discovery](/docs/project/specs/editor-validation-and-discovery.md)
+- **Prototype:** [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototypes/editor-validation-and-discovery/)
 - **Component Docs:** [ConsoleToolingHelper](/docs/architecture/adapters/outbound/console_tooling.md) (add), [YamlConfigAdapter](/docs/architecture/adapters/outbound/yaml_config_adapter.md) (update), [IConfigService](/docs/architecture/core/ports/outbound/config_service.md) (update), [CLI Adapter](/docs/architecture/adapters/inbound/cli.md) (update)
 - **Scope Slug:** `editor-validation-and-discovery`
 
@@ -87,22 +88,23 @@ And no editor prompts are shown
 ## Edge Cases
 - **User disables after setting prompts**: If the user explicitly set "disabled" in config between sessions, the preflight check skips validation entirely (no warning, no prompt).
 - **Env var fallback bypassed by "disabled"**: When "disabled" is set, find_editor() returns None immediately — does NOT fall through to VISUAL/EDITOR env vars.
-- **Config file missing during set_setting**: YamlConfigAdapter.set_setting() creates the config file if it doesn't exist.
+- **Config file/directory missing during set_setting**: If the user config file does not exist, YamlConfigAdapter.set_setting() creates it. If the PARENT directory (e.g., `.teddy/` for a `root_dir`-based adapter) does not exist, it is created recursively via `os.makedirs(..., exist_ok=True)` BEFORE the write — otherwise the write raises `FileNotFoundError` (spike-verified, `probe_ku1`).
+- **Stale cache after set_setting**: After a write, the in-memory merged `_config` cache MUST be updated in place so a subsequent `get_setting()` on the SAME adapter returns the new value. A disk-only write leaves the cache stale, returning the pre-write value (spike-verified, `probe_ku1`).
 - **YAML merge preserves comments**: yaml.dump() strips comments. The user-facing comment in config.yaml is only in the baseline (bundled) config, not the user config. set_setting() only writes to the user config file — this is acceptable.
 - **Empty editor string vs "disabled"**: Both result in the same preflight check behavior (discovery prompt). The difference is that "disabled" persists the result of user explicitly declining, while empty string means "not yet configured."
 - **TUI unknown editor classification**: The spec says unknown editors in TUI should route to annotated diff path (was GUI). This changes existing behavior for users with custom editors. The change means custom editors get the same unified diff experience as CLI editors.
 
 ## Key Unknowns
-- [ ] [Technical] `YamlConfigAdapter.set_setting()` — The `_config_path` is set at construction time. For `root_dir`-based paths (used in session init), the path must already exist. set_setting() must handle `os.path.exists()` checks and directory creation if needed.
-- [ ] [Technical] `_DIFF_FLAGS` expansion — The spec lists 15 flags entries. Some JetBrains editors (webstorm, phpstorm, etc.) use `"diff"` (no dash prefix) while `code`, `cursor`, etc. use `"--diff"`. Verify this convention works correctly when invoked via subprocess.
-- [ ] [Technical] Unknown editor fallback impact on TUI — Currently unknown editors route to GUI path (before/after files + ConfirmScreen). Changing to annotated diff path changes the user experience: they lose the ability to compare files side-by-side in a GUI. The diff_flags config override gives power users a way to restore GUI behavior.
+- [x] [Technical] `YamlConfigAdapter.set_setting()` — RESOLVED via `spikes/prototypes/editor-validation-and-discovery/spike.py` (`probe_ku1`). Three findings: (1) the spec's proposed body (§3) raises `FileNotFoundError` when the `root_dir`-based parent (`.teddy/`) does not yet exist, so `os.makedirs(os.path.dirname(self._config_path), exist_ok=True)` is REQUIRED before writing; (2) a disk-only write leaves the in-memory merged `_config` cache STALE (a fresh adapter read back `'nvim'` while the original adapter's `get_setting()` still returned `'code'`), so `set_setting()` MUST also update the in-memory `_config` cache in place; (3) with BOTH fixes the value persists to disk and reloads correctly via a fresh adapter, for `root_dir`-based paths AND plain deeply-nested (`nested/deep/config.yaml`) paths, including dot-notation keys. → The Spec §3 `set_setting` body MUST be corrected to add directory creation + cache update (Phase 4).
+- [x] [Technical] `_DIFF_FLAGS` expansion — RESOLVED via `probe_ku2`. The bare `"diff"` convention is mechanically sound: the live `idea` entry resolved to `[<resolved_path>, "diff"]`, and `subprocess.run` transmitted `"diff"` as a discrete `argv[0]` element followed by the two file paths (observed launcher argv `["diff", <file1>, <file2>]`). Simulating the spec's 8 added JetBrains entries (`idea.sh`, `webstorm`, `phpstorm`, `pycharm`, `rubymine`, `goland`, `clion`, `fleet`) produced identical `[<path>, "diff"]` commands and `["diff", file1, file2]` argv. No dash prefix is needed; the convention works correctly through subprocess.
+- [x] [Technical] Unknown editor fallback impact on TUI — RESOLVED via `probe_ku3`. CURRENT (pre-change) behaviour confirmed: an unknown editor (`my_editor`) takes the GUI before/after path (`create_temp=1`, `run_command=1`, no suspend), while a known CLI editor (`nvim`) takes the annotated path (`suspend=1`, no temp/run_command) and a known GUI editor (`code --diff`) takes the GUI path. The proposed routing predicate — `_is_cli_editor(diff_viewer) or basename(diff_viewer[0]).lower() not in _DIFF_FLAGS` — evaluates cli→annotated, known_gui→not-annotated, unknown→annotated, i.e. it correctly re-routes the unknown editor to the annotated diff path. This confirms the required migration change to `preview_edit_diff_viewer()`. NOTE (routing vs. override): the routing predicate reads the STATIC `_DIFF_FLAGS` table (not the resolved `get_diff_viewer_command()` output), so an unknown editor is routed to the annotated diff path regardless of whether `diff_flags` is configured in config. A user who wants the GUI before/after path must configure a known GUI editor whose basename is registered in `_DIFF_FLAGS` (e.g., `code`). The `diff_flags` config override changes only the FLAGS passed to the viewer, not the TUI routing decision.
 
 ## Implementation Plan
 The spec defines 5 phases which map to deliverables following the Tracer Bullet Dependency Sequence: Contract → Harness → Seam → Wiring → Logic → Migration → Refactor → Cleanup. The key architectural changes are:
 
 1. `IConfigService` adds `set_setting()` abstract method (breaking change)
 2. `ConsoleToolingHelper` adds `discover_editors()`, `KNOWN_EDITORS`, sentinel handling, fallback logic
-3. `YamlConfigAdapter` implements `set_setting()` with dot-notation YAML persistence
+3. `YamlConfigAdapter` implements `set_setting()` with dot-notation YAML persistence, recursive parent-directory creation (`os.makedirs`), and in-memory `_config` cache synchronization (all three spike-verified — see Prototype Findings)
 4. `session_cli_handlers.py` adds `_validate_editor_config()` + prompting functions, modifies `_run_cli_preflight_check()` with `interactive` flag
 5. `config.yaml` default editor changed to empty string with updated comments
 6. `textual_plan_reviewer_editor.py` unknown editor routing changed to annotated diff path
@@ -116,9 +118,25 @@ The deliverable dependency structure ensures each step is testable:
 - **Logic** deliverables replace trivial implementations with real rules via TDD
 - **Migration** deliverables update existing consumers to use new interfaces/behavior
 
+### Prototype Findings (spike-verified, Slice 03-01)
+Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototypes/editor-validation-and-discovery/) — `spike.py`, run with `uv run python spikes/prototypes/editor-validation-and-discovery/spike.py` (exit 0; 10/10 assertions pass).
+
+- **KU1 — `set_setting()` (`probe_ku1`):** Both fixes are MANDATORY. (a) The original spec body raised `FileNotFoundError` when the `root_dir`-based `.teddy/` parent did not exist → `os.makedirs(os.path.dirname(self._config_path), exist_ok=True)` is required BEFORE the write. (b) A disk-only write left the in-memory merged `_config` cache stale (a fresh adapter read `'nvim'`; the SAME adapter's `get_setting()` still returned `'code'`) → `set_setting()` MUST also update `_config` in place. With both fixes, values persist and reload for `root_dir`-based AND plain deeply-nested (`nested/deep/config.yaml`) paths, including dot-notation keys. Spec §3 has been corrected accordingly.
+- **KU2 — `_DIFF_FLAGS` JetBrains `"diff"` (`probe_ku2`):** The bare `"diff"` token (no dash) is transmitted as a discrete `argv` element through `subprocess.run` (observed launcher argv `["diff", <file1>, <file2>]`). All 8 planned JetBrains entries behave identically; no dash prefix is needed.
+- **KU3 — TUI unknown-editor routing (`probe_ku3`):** CURRENT behaviour routes an unknown editor (`my_editor`) to the GUI before/after path (create_temp=1, run_command=1, no suspend). The proposed predicate (`_is_cli_editor(...) or basename(diff_viewer[0]).lower() not in _DIFF_FLAGS`) correctly re-routes the unknown editor to the annotated diff path while preserving known-GUI behaviour. The routing predicate reads the STATIC `_DIFF_FLAGS` table, so the `diff_flags` config override does NOT alter routing (it changes only the flags passed to the viewer).
+
+### Impact Audit (Shared-Seam Analysis)
+`git grep` census (Turns 5-6). `IConfigService` has many production consumers (a **Shared Seam** by the >1-consumer rule), but the `set_setting` change is ADDITIVE (Expansion), not a rewrite.
+
+- **Only production implementer:** `YamlConfigAdapter`. No other concrete subclass of `IConfigService` exists under `src/`.
+- **Test doubles auto-absorb the new member:** every harness/test double is an auto-specced mock (`register_mock` → `POSIXPathMock(spec=port_type)`, `create_autospec(IConfigService)`, `MagicMock(spec=IConfigService)`). Specced mocks expose every attribute of their spec, so they gain `set_setting` automatically. No hand-rolled concrete `IConfigService` fake exists. → the Harness deliverable "update IConfigService mock" is a practical NO-OP (kept only as a guard).
+- **CRITICAL atomic ordering:** `set_setting` is declared `@abstractmethod`. Adding it to the ABC WITHOUT implementing it in `YamlConfigAdapter` makes the adapter uninstantiable (`TypeError: Can't instantiate abstract class YamlConfigAdapter with abstract method set_setting`), turning red every test that constructs it (`test_yaml_config_adapter*.py`, `test_config_defaults.py`, `tests/harness/setup/real_adapter_mixin.py`). Therefore the **Contract** deliverable (abstract method) and the `YamlConfigAdapter.set_setting` implementation MUST ship as ONE atomic green-to-green unit — do NOT commit the abstract method on its own. (Alternative, if a smaller diff is preferred: land the ABC member first as a non-abstract `raise NotImplementedError` default, then implement, then flip to `@abstractmethod` — but the bundle is simpler and is the prescribed path.)
+- **Only caller of `set_setting` (post-slice):** the preflight `_validate_editor_config` flow. No other consumer reads it, so no Migration sweep beyond the preflight wiring is required.
+- **No components deleted/renamed:** all existing `find_editor` / `get_diff_viewer_command` call sites remain valid; no documentation hits become stale.
+
 ## Deliverables
 
-- [ ] **Contract** — Add `set_setting(key: str, value: Any) -> None` abstract method to `IConfigService` protocol in `config_service.py`
+- [ ] **Contract** — Add `set_setting(key: str, value: Any) -> None` abstract method to `IConfigService` protocol in `config_service.py` (MUST land atomically with the `set_setting` Logic deliverable below — declaring the abstract method alone leaves `YamlConfigAdapter` uninstantiable and reds every adapter-constructing test; see Impact Audit)
 - [ ] **Contract** — Change default editor from `"code"` to `""` in `config.yaml` with updated comments (add `diff_flags` section)
 - [ ] **Harness** — Add `KNOWN_EDITORS` fixture and mock `discover_editors` patterns to `test_console_tooling_editor.py`
 - [ ] **Harness** — Update `IConfigService` mock in test harness (mocking.py, composition.py) to implement `set_setting()`
