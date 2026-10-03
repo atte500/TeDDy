@@ -80,20 +80,20 @@ def test_get_setting_handles_empty_key(fs, container):
     assert adapter.get_setting("", default="fallback") == "fallback"
 
 
-def test_get_setting_retrieves_ui_mode(fs, container):
+def test_get_setting_retrieves_scalar_value(fs, container):
     # Arrange
     config_path = ".teddy/config.yaml"
-    config_data = {"ui_mode": "console"}
+    config_data = {"editor": "nvim"}
     fs.create_dir(".teddy")
     fs.create_file(config_path, contents=yaml.dump(config_data))
 
     adapter = container.resolve(IConfigService)
 
     # Act & Assert
-    assert adapter.get_setting("ui_mode") == "console"
+    assert adapter.get_setting("editor") == "nvim"
 
 
-def test_get_setting_ui_mode_defaults_to_tui_at_call_site(fs, container):
+def test_get_setting_respects_caller_default_at_call_site(fs, container):
     # Arrange - Empty config
     fs.create_dir(".teddy")
     fs.create_file(".teddy/config.yaml", contents="{}")
@@ -103,7 +103,7 @@ def test_get_setting_ui_mode_defaults_to_tui_at_call_site(fs, container):
     # Act & Assert
     # The adapter itself doesn't have hardcoded defaults,
     # but we verify it respects the default passed by the caller.
-    assert adapter.get_setting("ui_mode", default="tui") == "tui"
+    assert adapter.get_setting("editor", default="auto") == "auto"
 
 
 def test_get_setting_output_capping_keys(fs, container):

@@ -213,11 +213,9 @@ class TestEnvironment(RealAdapterMixin):
 
     def _apply_config_defaults(self, mock: Any) -> None:
         mock.get_config_path.return_value = ".teddy/config.yaml"
-
-        def mock_setting(k, d=None):
-            return None if k == "ui_mode" else d
-
-        mock.get_setting.side_effect = mock_setting
+        # No config key is special-cased: the harness mock returns the
+        # caller-supplied default, mirroring IConfigService.get_setting.
+        mock.get_setting.side_effect = lambda k, default=None: default
 
     def _apply_shell_defaults(self, mock: Any) -> None:
         mock.execute.return_value = {"stdout": "", "stderr": "", "return_code": 0}

@@ -213,7 +213,6 @@ def test_auto_pruning_heuristics_acceptance(env, monkeypatch):
         "auto_pruning.enabled": True,
         "auto_pruning.prune_failure_history": True,
         "auto_pruning.prune_validation_failures": True,
-        "ui_mode": "tui",
     }.get(k, d)
 
     from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer

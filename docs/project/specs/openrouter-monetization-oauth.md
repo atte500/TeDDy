@@ -26,7 +26,7 @@ Integrate **OpenRouter OAuth (PKCE)**. This allows users to:
 - **Silent Reuse:** Once the authorization flow completes successfully, the resulting API key is written to a local credentials file (`.teddy/credentials.yaml`). TeDDy will reuse this credential silently and automatically for all future turns, commands, and sessions. The user never has to re-authenticate on the same machine.
 
 ### Secure Secret Storage (How is BYOK handled securely?)
-- **Separation of Concerns:** Storing sensitive API keys directly inside `config.yaml` introduces the risk of users accidentally committing their credentials to Git (if they choose to track non-sensitive configuration parameters like `editor`, `ui_mode`, or `auto_pruning` to share with their team).
+- **Separation of Concerns:** Storing sensitive API keys directly inside `config.yaml` introduces the risk of users accidentally committing their credentials to Git (if they choose to track non-sensitive configuration parameters like `editor` or `auto_pruning` to share with their team).
 - **The Security Architecture:**
   1. **System Environment Variables:** TeDDy prioritizes standard environment variables (like `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENROUTER_API_KEY`) above all else.
   2. **Dedicated Credentials File:** The login flow writes its retrieved key directly to `.teddy/credentials.yaml`. This file is strictly ignored by version control and acts solely as a local, machine-specific secret store.
