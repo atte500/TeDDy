@@ -390,7 +390,10 @@ def resume(  # noqa: PLR0913
         None,
         "--message",
         "-m",
-        help="Inject a user request/reply without interactive prompting.",
+        help=(
+            "Inject a user request/reply without interactive prompting "
+            "(e.g. to continue after interrupting a --yolo run)."
+        ),
     ),
     pipeline: bool = OPT_PIPELINE,
 ):

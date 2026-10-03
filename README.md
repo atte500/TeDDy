@@ -111,10 +111,18 @@ Resume a previous session:
 teddy resume
 ```
 
+Interrupt a running session with `q` (or `Ctrl+C`) at any time: the action currently in flight is stopped immediately, the remaining actions are skipped, and the report is still written so you keep the full audit trail. You can then continue the session with:
+
+```bash
+teddy resume -m "your next instruction"
+```
+
+`resume -m` injects the message as your next turn and skips the interactive prompt, so you never have to type a reply by hand. This is especially handy after interrupting an automated `--yolo` / `-y` run when you want to steer it with a new instruction.
+
 #### Optional flags
 
 - `--agent` / `-a` – Choose an agent persona (e.g., `pathfinder`, `architect`, `developer`).
-- `--context` / `-c` – Pass additional context files or directories. Repeatable (`-c a.py -c b.md`); comma-separated values are also accepted for backward compatibility (`-c "a.py,b.md"`).
+- `--context` / `-c` – Pass additional context files or directories. Repeatable (`-c a.py -c b.md`); comma-separated values are also accepted (`-c "a.py,b.md"`).
 - `--model` – Override the default model.
 - `--pipeline` / `-p` – Pipeline mode: auto-approves all actions, requires `--message` / `-m`, exits after the first `## Message`.
 
