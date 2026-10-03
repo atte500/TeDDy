@@ -131,12 +131,9 @@ class ConsoleToolingHelper:
 
         custom_tool_str = self._system_env.get_env("TEDDY_DIFF_TOOL")
         if custom_tool_str:
-            custom_tool_parts = shlex.split(custom_tool_str)
-            tool_name = custom_tool_parts[0]
-            if tool_path := self._system_env.which(tool_name):
-                custom_tool_parts[0] = tool_path
-                return custom_tool_parts
-            return None
+            # Single-source the command-string resolution so the env-var
+            # override honours the same ``~`` expansion as the editor path.
+            return self._resolve_editor_cmd(custom_tool_str)
 
         # Resolve the editor via the canonical resolver (honours the config
         # value, the "disabled" sentinel, and the VISUAL/EDITOR env fallback),
