@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import Mock
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
@@ -147,3 +148,80 @@ def test_get_completion_cost_delegates_to_litellm(container):
     mock_litellm.completion_cost.assert_called_once_with(
         completion_response=mock_response
     )
+
+
+def test_get_completion_cost_warns_for_priced_model_failure(container, caplog):
+    """A priced model whose cost computation raises must log a WARNING."""
+    # Arrange
+    from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+    mock_config = container.resolve(IConfigService)
+    adapter = LiteLLMAdapter(mock_config)
+
+    mock_litellm = Mock()
+    mock_litellm.model_cost = {
+        "priced-anomaly-model": {"input_cost_per_token": 0.00001}
+    }
+    mock_litellm.completion_cost.side_effect = Exception("cost blew up")
+    adapter._litellm_initialized = True
+    adapter._litellm_module = mock_litellm
+
+    mock_response = Mock()
+    mock_response.model = "priced-anomaly-model"
+    mock_response.usage = Mock(
+        prompt_tokens=100,
+        completion_tokens=50,
+        prompt_tokens_details=None,
+        completion_tokens_details=None,
+    )
+
+    # Act
+    with caplog.at_level(logging.WARNING):
+        cost = adapter.get_completion_cost(mock_response)
+
+    # Assert: 0.0 contract preserved AND a WARNING carries identity + usage
+    assert cost == 0.0
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert any(
+        "priced-anomaly-model" in r.getMessage()
+        and "100" in r.getMessage()
+        and "50" in r.getMessage()
+        for r in warnings
+    ), caplog.text
+
+
+def test_get_completion_cost_debug_for_unpriced_model_failure(container, caplog):
+    """An unpriced model whose cost computation raises logs DEBUG, not WARNING."""
+    # Arrange
+    from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+    mock_config = container.resolve(IConfigService)
+    adapter = LiteLLMAdapter(mock_config)
+
+    mock_litellm = Mock()
+    mock_litellm.model_cost = {}
+    mock_litellm.completion_cost.side_effect = Exception("cost blew up")
+    adapter._litellm_initialized = True
+    adapter._litellm_module = mock_litellm
+
+    mock_response = Mock()
+    mock_response.model = "unpriced-model"
+    mock_response.usage = Mock(
+        prompt_tokens=10,
+        completion_tokens=5,
+        prompt_tokens_details=None,
+        completion_tokens_details=None,
+    )
+
+    # Act
+    with caplog.at_level(logging.DEBUG):
+        cost = adapter.get_completion_cost(mock_response)
+
+    # Assert: 0.0 contract preserved, a DEBUG carries identity, and NO WARNING
+    assert cost == 0.0
+    debugs = [r for r in caplog.records if r.levelno == logging.DEBUG]
+    assert any("unpriced-model" in r.getMessage() for r in debugs), caplog.text
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert not any("unpriced-model" in r.getMessage() for r in warnings), caplog.text

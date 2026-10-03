@@ -1,8 +1,11 @@
+import logging
 from typing import Any, Dict, List, Optional, Protocol
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.domain.models.exceptions import ConfigurationError
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient, LlmApiError
 from teddy_executor.core.ports.outbound.time_service import ITimeService
+
+logger = logging.getLogger(__name__)
 
 
 class IOpenRouterHydrator(Protocol):
@@ -259,11 +262,88 @@ class LiteLLMAdapter(ILlmClient):
                                 completion_response=completion_response
                             )
                         )
-                    except (Exception, TypeError):
+                    except (Exception, TypeError) as retry_error:
+                        self._log_cost_failure(
+                            retry_error, completion_response, model_override
+                        )
                         return 0.0
 
             # Graceful fallback for unmapped models or hydration failure
+            self._log_cost_failure(e, completion_response, model_override)
             return 0.0
+
+    def _log_cost_failure(
+        self, error: Exception, completion_response: Any, model_override: Optional[str]
+    ) -> None:
+        """Logs a cost-computation failure with tiered severity.
+
+        WARNING when the resolved model HAS pricing metadata yet
+        ``completion_cost`` raised (an anomaly: real spend silently lost);
+        DEBUG when the model is unpriced (an expected miss, mirroring the TUI
+        ``$???`` placeholder). The caller still returns 0.0 so an otherwise
+        successful completion is never penalised for non-critical telemetry.
+        """
+        model_id = self._resolve_cost_model(completion_response, model_override)
+        summary = {
+            "model": model_id,
+            "prompt_tokens": self._extract_usage_value(
+                completion_response, "prompt_tokens"
+            ),
+            "completion_tokens": self._extract_usage_value(
+                completion_response, "completion_tokens"
+            ),
+            "cached_tokens": self._extract_detail_value(
+                completion_response, "prompt_tokens_details", "cached_tokens"
+            ),
+            "reasoning_tokens": self._extract_detail_value(
+                completion_response, "completion_tokens_details", "reasoning_tokens"
+            ),
+        }
+        if self.supports_pricing(model_id):
+            logger.warning(
+                "Cost computation failed for priced model: %s", summary, exc_info=True
+            )
+        else:
+            logger.debug(
+                "Cost computation failed for unpriced model: %s",
+                summary,
+                exc_info=True,
+            )
+
+    def _resolve_cost_model(
+        self, completion_response: Any, model_override: Optional[str]
+    ) -> Optional[str]:
+        """Resolves the model identity used by cost-failure diagnostics."""
+        if model_override:
+            return str(model_override)
+        model_id = getattr(completion_response, "model", None)
+        if model_id:
+            return str(model_id)
+        config_model = self._config_service.get_setting("llm.model")
+        return str(config_model) if config_model else None
+
+    def _extract_usage_value(
+        self, completion_response: Any, attr: str
+    ) -> Optional[int]:
+        """Defensively extracts an integer field from the usage object."""
+        usage = getattr(completion_response, "usage", None)
+        if usage is None:
+            return None
+        value = getattr(usage, attr, None)
+        return value if isinstance(value, int) else None
+
+    def _extract_detail_value(
+        self, completion_response: Any, details_attr: str, value_attr: str
+    ) -> Optional[int]:
+        """Defensively extracts a nested token detail from the usage object."""
+        usage = getattr(completion_response, "usage", None)
+        if usage is None:
+            return None
+        details = getattr(usage, details_attr, None)
+        if details is None:
+            return None
+        value = getattr(details, value_attr, None)
+        return value if isinstance(value, int) else None
 
     def validate_config(self, include_remote: bool = False) -> List[str]:
         """
@@ -371,7 +451,12 @@ class LiteLLMAdapter(ILlmClient):
         if not resolved_model:
             return False
 
-        model_info = litellm.model_cost.get(str(resolved_model), {})
+        model_cost = litellm.model_cost
+        if not isinstance(model_cost, dict):
+            # Defensive: a non-dict registry (e.g. a bare test double) exposes
+            # no pricing metadata; treat it as unpriced rather than crashing.
+            return False
+        model_info = model_cost.get(str(resolved_model), {})
         # input_cost_per_token is the primary indicator of pricing metadata
         return "input_cost_per_token" in model_info
 
