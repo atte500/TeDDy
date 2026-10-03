@@ -423,3 +423,35 @@ def test_preflight_check_gates_editor_validation_on_interactive_flag(
 
     # Assert - the gate is invoked exactly when interactive is True.
     assert len(editor_calls) == expected_calls
+
+
+def test_full_preflight_flow_persists_discovered_editor_selection(env, monkeypatch):
+    """End-to-end tracer bullet for the editor-validation preflight flow.
+
+    Unlike the direct-call orchestrator and prompt-helper tests above, this
+    drives the COMPLETE flow -- ``_run_cli_preflight_check(interactive=True)``
+    through the REAL ``_validate_editor_config`` into
+    ``_prompt_for_editor_selection`` and finally ``set_setting`` -- with
+    discovery stubbed at the ``discover_editors`` boundary.
+    """
+    # Arrange - no config errors so the gate is reached on the success path.
+    mock_llm = env.mock_port(ILlmClient)
+    mock_llm.validate_config.return_value = []
+
+    mock_config = env.mock_port(IConfigService)
+    env.mock_port(ISystemEnvironment)
+    # Unconfigured editor -> discovery prompt (overrides the harness default).
+    _configure_editor(mock_config, "")
+
+    monkeypatch.setattr(
+        ConsoleToolingHelper,
+        "discover_editors",
+        lambda self: [("nvim", "/usr/bin/nvim"), ("vim", "/usr/bin/vim")],
+    )
+    _patch_prompt(monkeypatch, ["1"])
+
+    # Act - the full interactive preflight boundary.
+    _run_cli_preflight_check(container=env.container, interactive=True)
+
+    # Assert - the numbered selection is persisted as its resolved path.
+    mock_config.set_setting.assert_called_once_with("editor", "/usr/bin/nvim")

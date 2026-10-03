@@ -1,6 +1,6 @@
 # Component Design: ConsoleToolingHelper
 
-**Status:** Planned
+**Status:** Implemented
 
 ## Purpose / Responsibility
 
@@ -12,7 +12,7 @@ The `ConsoleToolingHelper` is a utility service that provides centralized discov
 - **"disabled" sentinel bypasses env fallback**: If `editor` is set to `"disabled"`, `find_editor()` returns `None` immediately without checking `VISUAL`/`EDITOR` env vars. This is intentional — the user explicitly disabled editor functionality.
 - **Unknown editor with diff viewer**: `get_diff_viewer_command()` returns the editor path with no flags for editors not in `_DIFF_FLAGS`. The caller MUST pass both file paths as separate arguments for the editor to open in separate tabs.
 - **`diff_flags` config override must be validated**: If `diff_flags` config key is set but is not a list of strings, `get_diff_viewer_command()` MUST skip the override and fall through to the translation table. This prevents crashes from malformed config values.
-- **`TEDDY_DIFF_TOOL` takes precedence over all**: When the env var is set, `get_diff_viewer_command()` uses it directly, bypassing `_DIFF_FLAGS` translation and config override. If the tool is not found via `which()`, returns `None` (no fallback to editor flags).
+- **`diff_flags` config override outranks `TEDDY_DIFF_TOOL`**: When `diff_flags` is a valid list in config, `get_diff_viewer_command()` returns `[editor_path] + diff_flags`, bypassing both `TEDDY_DIFF_TOOL` and `_DIFF_FLAGS` translation. `TEDDY_DIFF_TOOL` (env var) outranks `_DIFF_FLAGS` but is itself outranked by the config override; if the custom tool is not found via `which()`, returns `None` (no fallback to editor flags).
 
 ## Class Invariants
 
