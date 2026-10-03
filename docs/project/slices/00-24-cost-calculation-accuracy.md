@@ -1,6 +1,6 @@
 # Slice: Cost Calculation Accuracy
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc, Milestone 0 prefix)
 - **Specs:** [Task Brief 00-22](/docs/project/tasks/00-22-cost-calculation-accuracy.md)
 - **Prototype:** N/A (empirical probe matrix S1–S6b recorded in the Task Brief Context section)
@@ -143,7 +143,7 @@ Semantic deduplication (census, turns 5-6): no existing test asserts cache-prici
 
 ## Verification
 
-- [ ] `uv run pytest tests/suites/unit/adapters/outbound/test_openrouter_hydrator.py tests/suites/unit/adapters/outbound/test_litellm_adapter_telemetry.py tests/suites/unit/core/services/test_planning_service_retries.py tests/suites/unit/core/services/test_planning_service.py -q` — all green.
-- [ ] Full test suite via the post-commit hook (never bypassed).
-- [ ] Regression check: models WITHOUT cache pricing bill exactly as before; registry models with cache rates (e.g. gpt-4o) still produce exact discounted math.
-- [ ] Optional manual probe: run a session turn against a cache-priced OpenRouter model with prompt caching active; confirm `turn_cost` reflects the cache-read discount (no $0-billed cached tokens; no negative prompt cost on Anthropic-shape usage).
+- [x] `uv run pytest tests/suites/unit/adapters/outbound/test_openrouter_hydrator.py tests/suites/unit/adapters/outbound/test_litellm_adapter_telemetry.py tests/suites/unit/core/services/test_planning_service_retries.py tests/suites/unit/core/services/test_planning_service.py -q` — all green. (43 passed.)
+- [x] Full test suite via the post-commit hook (never bypassed). (1490 passed, 5 skipped.)
+- [x] Regression check: models WITHOUT cache pricing bill exactly as before; registry models with cache rates (e.g. gpt-4o) still produce exact discounted math. (Registry probe on litellm 1.83.7: S1 no-cache = 0.00075, S3 with 40 cached tokens = 0.0007; `REGRESSION CHECK OK`.)
+- [ ] (Optional / manual — deferred to user) Live probe: run a session turn against a cache-priced OpenRouter model with prompt caching active; confirm `turn_cost` reflects the cache-read discount (no $0-billed cached tokens; no negative prompt cost on Anthropic-shape usage). Requires a real OpenRouter API key plus a prompt-caching session.
