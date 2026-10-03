@@ -330,3 +330,52 @@ def test_known_editors_lists_the_curated_editor_set():
     assert all(isinstance(name, str) for name in known)
     assert len(known) == len(set(known)), "KNOWN_EDITORS must not contain duplicates"
     assert set(known) == expected
+
+
+def test_discover_editors_returns_known_editors_found_in_path(helper, mock_env):
+    """discover_editors returns (name, path) pairs for editors found on PATH,
+    ordered by KNOWN_EDITORS."""
+    # Arrange - only a subset of KNOWN_EDITORS is available on PATH
+    which_map = {
+        "nvim": "/usr/local/bin/nvim",
+        "vim": "/usr/bin/vim",
+        "code": "/usr/bin/code",
+    }
+    mock_env.which.side_effect = lambda name: which_map.get(name)
+
+    # Act
+    result = helper.discover_editors()
+
+    # Assert - ordered by KNOWN_EDITORS (nvim, vim, ... code)
+    assert result == [
+        ("nvim", "/usr/local/bin/nvim"),
+        ("vim", "/usr/bin/vim"),
+        ("code", "/usr/bin/code"),
+    ]
+
+
+def test_discover_editors_deduplicates_by_resolved_path(helper, mock_env):
+    """discover_editors reports a binary reachable under two aliases only once,
+    under its first KNOWN_EDITORS name."""
+    # Arrange - 'vim' and 'vi' resolve to the SAME underlying binary
+    mock_env.which.side_effect = lambda name: (
+        "/usr/bin/shared-editor" if name in ("vim", "vi") else None
+    )
+
+    # Act
+    result = helper.discover_editors()
+
+    # Assert - deduplicated by resolved path, first alias wins
+    assert result == [("vim", "/usr/bin/shared-editor")]
+
+
+def test_discover_editors_returns_empty_list_when_none_found(helper, mock_env):
+    """discover_editors returns an empty list when no known editor is on PATH."""
+    # Arrange - nothing resolves
+    mock_env.which.return_value = None
+
+    # Act
+    result = helper.discover_editors()
+
+    # Assert
+    assert result == []

@@ -94,6 +94,23 @@ class ConsoleToolingHelper:
         self._system_env = system_env
         self._config_service = config_service
 
+    def discover_editors(self) -> list[tuple[str, str]]:
+        """Scans PATH for known editors.
+
+        Returns a list of ``(basename, resolved_path)`` pairs, deduplicated by
+        resolved path (the same binary reachable under different aliases is
+        reported once, under its first ``KNOWN_EDITORS`` name) and ordered by
+        the ``KNOWN_EDITORS`` list.
+        """
+        found: list[tuple[str, str]] = []
+        seen: set[str] = set()
+        for editor in self.KNOWN_EDITORS:
+            resolved = self._system_env.which(editor)
+            if resolved and resolved not in seen:
+                seen.add(resolved)
+                found.append((editor, resolved))
+        return found
+
     def get_diff_viewer_command(self) -> Optional[List[str]]:
         custom_tool_str = self._system_env.get_env("TEDDY_DIFF_TOOL")
         if custom_tool_str:
