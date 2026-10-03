@@ -695,7 +695,7 @@ def _validate_editor_config(container: Container) -> None:
         )
     else:
         typer.secho(
-            "No editor configured. Scanning for available editors in PATH...",
+            "No editor configured. Please select one below:",
             fg=typer.colors.YELLOW,
             err=True,
         )
