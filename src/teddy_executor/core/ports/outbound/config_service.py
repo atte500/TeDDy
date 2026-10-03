@@ -27,3 +27,15 @@ class IConfigService(ABC):
             The configuration value, or the default value if not found.
         """
         pass
+
+    @abstractmethod
+    def set_setting(self, key: str, value: Any) -> None:
+        """
+        Sets a configuration value and persists it to the underlying storage.
+        Supports dot-notation for nested keys.
+
+        Args:
+            key: The configuration key to set.
+            value: The value to persist.
+        """
+        pass

@@ -1,4 +1,5 @@
 import yaml
+from teddy_executor.adapters.outbound.yaml_config_adapter import YamlConfigAdapter
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 
 
@@ -154,3 +155,70 @@ def test_auto_pruning_defaults_are_present(fs, container):
     assert adapter.get_setting("auto_pruning.prune_failure_history") is True
     assert adapter.get_setting("auto_pruning.prune_validation_failures") is True
     assert adapter.get_setting("auto_pruning.preserve_message_turns") is True
+
+
+def test_set_setting_persists_value_and_syncs_cache(fs, container):
+    """set_setting persists to the user config AND updates the in-memory cache."""
+    # Arrange
+    fs.create_dir(".teddy")
+    fs.create_file(".teddy/config.yaml", contents=yaml.dump({"editor": "code"}))
+    adapter = container.resolve(IConfigService)
+
+    # Act
+    adapter.set_setting("editor", "nvim")
+
+    # Assert - same-adapter cache reflects the change without a reload
+    assert adapter.get_setting("editor") == "nvim"
+    # Assert - persisted to disk (verified via a fresh adapter)
+    fresh = YamlConfigAdapter(config_path=".teddy/config.yaml")
+    assert fresh.get_setting("editor") == "nvim"
+
+
+def test_set_setting_creates_config_file_and_parent_directory(fs, container):
+    """set_setting creates the config file and its parent directory when missing."""
+    # Arrange - no .teddy directory or config file exists yet
+    adapter = container.resolve(IConfigService)
+    assert not fs.exists(".teddy/config.yaml")
+
+    # Act
+    adapter.set_setting("editor", "nvim")
+
+    # Assert - file and parent directory were created
+    assert fs.exists(".teddy/config.yaml")
+    fresh = YamlConfigAdapter(config_path=".teddy/config.yaml")
+    assert fresh.get_setting("editor") == "nvim"
+
+
+def test_set_setting_supports_dot_notation(fs, container):
+    """set_setting resolves nested keys via dot-notation."""
+    # Arrange
+    fs.create_dir(".teddy")
+    fs.create_file(".teddy/config.yaml", contents=yaml.dump({"editor": "code"}))
+    adapter = container.resolve(IConfigService)
+
+    # Act
+    adapter.set_setting("llm.model", "gpt-4")
+
+    # Assert - same-adapter cache and disk both reflect the nested write
+    assert adapter.get_setting("llm.model") == "gpt-4"
+    fresh = YamlConfigAdapter(config_path=".teddy/config.yaml")
+    assert fresh.get_setting("llm.model") == "gpt-4"
+
+
+def test_set_setting_preserves_other_keys(fs, container):
+    """set_setting preserves unrelated keys in the user config file."""
+    # Arrange
+    fs.create_dir(".teddy")
+    fs.create_file(
+        ".teddy/config.yaml",
+        contents=yaml.dump({"editor": "code", "other": "keep"}),
+    )
+    adapter = container.resolve(IConfigService)
+
+    # Act
+    adapter.set_setting("editor", "nvim")
+
+    # Assert
+    fresh = YamlConfigAdapter(config_path=".teddy/config.yaml")
+    assert fresh.get_setting("editor") == "nvim"
+    assert fresh.get_setting("other") == "keep"

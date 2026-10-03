@@ -1,5 +1,5 @@
 # Slice: 03-01-Editor-Validation-and-Discovery
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** [03-Foundational-Refactors](/docs/project/milestones/03-foundational-refactors.md)
 - **Specs:** [Editor Validation & Discovery](/docs/project/specs/editor-validation-and-discovery.md)
 - **Prototype:** [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototypes/editor-validation-and-discovery/)
@@ -138,7 +138,7 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 
 ## Deliverables
 
-- [ ] **Contract** — Add `set_setting(key: str, value: Any) -> None` abstract method to `IConfigService` protocol in `config_service.py` (MUST land atomically with the `set_setting` Logic deliverable below — declaring the abstract method alone leaves `YamlConfigAdapter` uninstantiable and reds every adapter-constructing test; see Impact Audit)
+- [x] **Contract** — Add `set_setting(key: str, value: Any) -> None` abstract method to `IConfigService` protocol in `config_service.py` (MUST land atomically with the `set_setting` Logic deliverable below — declaring the abstract method alone leaves `YamlConfigAdapter` uninstantiable and reds every adapter-constructing test; see Impact Audit)
 - [ ] **Contract** — Change default editor from `"code"` to `""` in `config.yaml` with updated comments (add `diff_flags` section)
 - [ ] **Harness** — Add `KNOWN_EDITORS` fixture and mock `discover_editors` patterns to `test_console_tooling_editor.py`
 - [ ] **Harness** — Update `IConfigService` mock in test harness (mocking.py, composition.py) to implement `set_setting()`
@@ -146,7 +146,7 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 - [ ] **Wiring** — Add `discover_editors() -> list[tuple[str, str]]` method to `ConsoleToolingHelper` with PATH scanning and deduplication
 - [ ] **Wiring** — Modify `find_editor()` to handle "disabled" sentinel (returns None immediately, bypasses env fallback)
 - [ ] **Wiring** — Extend `_DIFF_FLAGS` translation table with all entries from spec 2d (add idea, webstorm, phpstorm, pycharm, rubymine, goland, clion, fleet)
-- [ ] **Logic** — Implement `YamlConfigAdapter.set_setting()` with dot-notation support, file creation, cache update, and YAML persistence
+- [x] **Logic** — Implement `YamlConfigAdapter.set_setting()` with dot-notation support, file creation, cache update, and YAML persistence
 - [ ] **Logic** — Implement `get_diff_viewer_command()` unknown editor fallback: return `[editor_path]` with no flags when editor not in `_DIFF_FLAGS`
 - [ ] **Logic** — Implement `get_diff_viewer_command()` `diff_flags` config override: use config value instead of `_DIFF_FLAGS` when `diff_flags` key is set
 - [ ] **Migration** — Add `_validate_editor_config(container)` function to `session_cli_handlers.py` with discovery and prompting flow
@@ -159,6 +159,11 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 
 ## Implementation Notes
 *(Filled by the Developer during implementation.)*
+
+### Deliverables #1 (Contract) + #9 (Logic) — `IConfigService.set_setting` / `YamlConfigAdapter.set_setting` (atomic, 2026-10-03)
+- **Atomicity:** the `IConfigService.set_setting` abstract member and the `YamlConfigAdapter.set_setting` implementation landed as ONE green-to-green unit (Impact Audit). Declaring the member alone makes `YamlConfigAdapter` uninstantiable (`TypeError: Can't instantiate abstract class ... with abstract method set_setting`), which would red every adapter-constructing test (`test_yaml_config_adapter*.py`, `test_config_defaults.py`, `tests/harness/setup/real_adapter_mixin.py`). A census confirmed `YamlConfigAdapter` is the sole production implementer and every test double is an auto-specced mock, so no other class needed the member.
+- **`set_setting` body (spike-verified, `probe_ku1`):** both mandatory fixes are implemented — (a) `os.makedirs(os.path.dirname(self._config_path), exist_ok=True)` runs BEFORE the write (guards the `root_dir`-based `.teddy/` parent case); (b) the in-memory merged `_config` cache is updated in place AFTER the disk write (a disk-only write left the cache stale). Dot-notation traversal, config-file + parent-directory creation, comment-stripping persistence (user file only; baseline never written), and preservation of unrelated keys all behave per spec §3.
+- **Tests:** four unit tests added to `tests/suites/unit/adapters/outbound/test_yaml_config_adapter.py` — persistence + cache sync, file + parent-dir creation, dot-notation nesting, and unrelated-key preservation. No new `[DEBT]`.
 
 ## Verification
 - [ ] Start a new interactive session with no editor configured → see discovery prompt

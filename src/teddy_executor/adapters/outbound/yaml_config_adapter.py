@@ -103,3 +103,47 @@ class YamlConfigAdapter(IConfigService):
             else:
                 return None
         return current
+
+    def set_setting(self, key: str, value: Any) -> None:
+        """Sets a configuration value and persists it to the user config file.
+
+        Supports dot-notation for nested keys. The user config file and its
+        parent directory are created if they do not exist. After writing, the
+        in-memory merged cache is updated so a subsequent ``get_setting()`` on
+        THIS adapter reflects the change without a reload.
+        """
+        # 1. Ensure the parent directory exists. A root_dir-based path may not
+        #    have created its parent yet; without this the write raises
+        #    FileNotFoundError (spike-verified, probe_ku1).
+        parent_dir = os.path.dirname(self._config_path)
+        if parent_dir:
+            os.makedirs(parent_dir, exist_ok=True)
+
+        # 2. Load the current user config. Only the user-override file is
+        #    written; the bundled baseline is never modified.
+        user_config: Dict[str, Any] = {}
+        if os.path.exists(self._config_path):
+            with open(self._config_path, "r", encoding="utf-8") as f:
+                loaded = yaml.safe_load(f)
+                if isinstance(loaded, dict):
+                    user_config = loaded
+
+        # 3. Set the value using dot-notation traversal.
+        keys = key.split(".")
+        node = user_config
+        for part in keys[:-1]:
+            if not isinstance(node.get(part), dict):
+                node[part] = {}
+            node = node[part]
+        node[keys[-1]] = value
+
+        # 4. Persist to disk.
+        with open(self._config_path, "w", encoding="utf-8") as f:
+            yaml.dump(user_config, f, default_flow_style=False, allow_unicode=True)
+
+        # 5. Synchronize the in-memory merged cache so a subsequent
+        #    get_setting() on THIS adapter reflects the change (spike-verified).
+        cache = self._config
+        for part in keys[:-1]:
+            cache = cache.setdefault(part, {})
+        cache[keys[-1]] = value
