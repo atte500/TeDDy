@@ -1,5 +1,5 @@
 # Slice: Deprecate `--console` Mode & Remove the Console Plan Reviewer
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [Milestone 5](/docs/project/milestones/05-quality-gate-debt-reconciliation.md)
 - **Specs:** [Task Brief](/docs/project/tasks/deprecate-console-mode.md)
 - **Prototype:** [N/A — no spike required; removal surface fully mapped during Orientation]
@@ -128,10 +128,10 @@ Green-to-green ordering rationale: the `register_reviewer` signature change (Ste
 - **As-built discovery (Turn 50):** [docs/architecture/adapters/inbound/cli.md](/docs/architecture/adapters/inbound/cli.md) contains NO reference to `--console`, `--tui`, `ui_mode`, or the console reviewer; its `start`/`execute` signatures already omit the removed flags, so the CLI Component Doc requires NO textual change for this slice. The second Component Doc ([IPlanReviewer](/docs/architecture/core/ports/inbound/plan_reviewer.md)) is re-checked during the same Documentation phase for any stale `ConsolePlanReviewer` reference.
 
 ## Verification
-1. `uv run pytest tests/suites/integration/core/services/test_reviewer_wiring.py -v` passes.
-2. `uv run pytest tests/suites/acceptance/test_tui_instruction_bridge.py -v` passes (message captured through the real interactor via the harness double).
-3. `uv run pytest tests/suites/acceptance/test_change_preview_feature.py -v` passes (its `Approve? (y/n/m):` assertion still holds).
-4. Full suite is green-to-green: `uv run pytest` (no new failures).
-5. `uv run teddy start --help` and `uv run teddy execute --help` no longer list `--console` / `--tui` (TUI is the sole mode).
-6. `src/teddy_executor/adapters/outbound/console_interactor_ask_loop.py` is unchanged, and `IUserInteractor.confirm_action` is still wired via `action_executor.py`.
-7. Removal completeness: the deprecated tokens (`ConsolePlanReviewer`, `console_plan_reviewer`, `OPT_UI_MODE`, `apply_ui_mode_override`, `ui_mode`) no longer appear in any production module or live config — they survive ONLY as deliberate string-literal references inside the Poka-Yoke removal pins ([tests/suites/unit/adapters/inbound/test_cli_console_mode_removal.py](/tests/suites/unit/adapters/inbound/test_cli_console_mode_removal.py), [tests/suites/unit/adapters/inbound/test_console_plan_reviewer_removal.py](/tests/suites/unit/adapters/inbound/test_console_plan_reviewer_removal.py), [tests/suites/unit/test_environment_harness_config_mock.py](/tests/suites/unit/test_environment_harness_config_mock.py)) and the stale-config Edge-Case test ([tests/suites/integration/core/services/test_reviewer_wiring.py](/tests/suites/integration/core/services/test_reviewer_wiring.py)), each of which asserts the token's absence or ignorance. (Historical references under `docs/project/debugging/` and `docs/project/milestones/` are acceptable.)
+- [x] 1. `uv run pytest tests/suites/integration/core/services/test_reviewer_wiring.py -v` passes.
+- [x] 2. `uv run pytest tests/suites/acceptance/test_tui_instruction_bridge.py -v` passes (message captured through the real interactor via the harness double).
+- [x] 3. `uv run pytest tests/suites/acceptance/test_change_preview_feature.py -v` passes (its `Approve? (y/n/m):` assertion still holds).
+- [x] 4. Full suite is green-to-green: `uv run pytest` (no new failures).
+- [x] 5. `uv run teddy start --help` and `uv run teddy execute --help` no longer list `--console` / `--tui` (TUI is the sole mode).
+- [x] 6. `src/teddy_executor/adapters/outbound/console_interactor_ask_loop.py` is unchanged, and `IUserInteractor.confirm_action` is still wired via `action_executor.py`.
+- [x] 7. Removal completeness: the deprecated tokens (`ConsolePlanReviewer`, `console_plan_reviewer`, `OPT_UI_MODE`, `apply_ui_mode_override`, `ui_mode`) no longer appear in any production module or live config — they survive ONLY as deliberate string-literal references inside the Poka-Yoke removal pins ([tests/suites/unit/adapters/inbound/test_cli_console_mode_removal.py](/tests/suites/unit/adapters/inbound/test_cli_console_mode_removal.py), [tests/suites/unit/adapters/inbound/test_console_plan_reviewer_removal.py](/tests/suites/unit/adapters/inbound/test_console_plan_reviewer_removal.py), [tests/suites/unit/test_environment_harness_config_mock.py](/tests/suites/unit/test_environment_harness_config_mock.py)) and the stale-config Edge-Case test ([tests/suites/integration/core/services/test_reviewer_wiring.py](/tests/suites/integration/core/services/test_reviewer_wiring.py)), each of which asserts the token's absence or ignorance. (Historical references under `docs/project/debugging/` and `docs/project/milestones/` are acceptable.)
