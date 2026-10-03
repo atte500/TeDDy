@@ -245,3 +245,88 @@ class TestGetDiffViewerCommand:
         result = helper.get_diff_viewer_command()
 
         assert result is None
+
+
+def test_known_editors_lists_the_curated_editor_set():
+    """The KNOWN_EDITORS Seam pins the curated PATH-discovery list (spec 2a).
+
+    It must be a list of unique editor-name strings equal to the curated set
+    scanned by the (later) discover_editors() method.
+    """
+    # Arrange - the curated contract from spec 2a
+    expected = {
+        # Terminal editors (modern)
+        "nvim",
+        "vim",
+        "vi",
+        "helix",
+        "hx",
+        "nano",
+        "micro",
+        "kak",
+        "emacs",
+        "ne",
+        "joe",
+        "ed",
+        "ex",
+        "mg",
+        "zee",
+        "amp",
+        # GUI editors
+        "code",
+        "codium",
+        "cursor",
+        "zed",
+        "sublime_text",
+        "subl",
+        "atom",
+        "pulsar",
+        "brackets",
+        "idea",
+        "idea.sh",
+        "webstorm",
+        "phpstorm",
+        "pycharm",
+        "rubymine",
+        "goland",
+        "clion",
+        "fleet",
+        "eclipse",
+        "netbeans",
+        "bluefish",
+        "gedit",
+        "gnome-text-editor",
+        "kate",
+        "kwrite",
+        "mousepad",
+        "xed",
+        "pluma",
+        "leafpad",
+        "geany",
+        "notepadqq",
+        "notepad++",
+        "notepad",
+        "wordpad",
+        "vimr",
+        "macvim",
+        "textmate",
+        "bbedit",
+        "ultraedit",
+        "windsurf",
+        "tabnine",
+        "tea",
+        "cot",
+        "textastic",
+        "nova",
+        "xcode",
+        "android-studio",
+    }
+
+    # Act
+    known = ConsoleToolingHelper.KNOWN_EDITORS
+
+    # Assert - a list of unique strings matching the curated set exactly
+    assert isinstance(known, list)
+    assert all(isinstance(name, str) for name in known)
+    assert len(known) == len(set(known)), "KNOWN_EDITORS must not contain duplicates"
+    assert set(known) == expected
