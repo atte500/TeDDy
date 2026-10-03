@@ -362,3 +362,57 @@ def test_resume_pipeline_without_message_stays_awaiting(tmp_path, monkeypatch):
     assert not (turn01 / "report.md").exists()
     meta01 = (turn01 / "meta.yaml").read_text(encoding="utf-8")
     assert "awaiting_reply: true" in meta01
+
+
+@pytest.mark.timeout(30)
+def test_resume_m_y_on_non_communication_pending_plan_honors_message(
+    tmp_path, monkeypatch
+):
+    """Scenario: `resume -m -y` honors the reply on a pending ACTION turn.
+
+    Given a session whose latest turn has plan.md, NO report.md, and NO
+    awaiting_reply flag, and whose plan is NOT a MESSAGE-only turn,
+    When I run teddy resume -m "next instruction" -y,
+    Then the pending non-communication plan is executed in place,
+    And the finalized report renders my message under the "## User Request"
+    section (the `-y` facet observable end-to-end — Bug 60).
+    """
+    (TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell())
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
+    # A NON-communication PENDING_PLAN turn: an EXECUTE-only plan is present,
+    # report.md is absent, and meta.yaml carries NO awaiting_reply flag —
+    # the exact precondition of the drop site (Bug 60).
+    turn_dir = tmp_path / ".teddy" / "sessions" / "resume" / "01"
+    turn_dir.mkdir(parents=True)
+    (turn_dir.parent / "session.context").touch()
+    (turn_dir / "turn.context").touch()
+    (turn_dir / "pathfinder.xml").touch()
+    (turn_dir / "meta.yaml").write_text("turn_id: '01'")
+
+    pending_plan = MarkdownPlanBuilder("Resume").add_execute("echo honored").build()
+    (turn_dir / "plan.md").write_text(pending_plan, encoding="utf-8")
+
+    # Act
+    result = adapter.run_cli_command(
+        ["resume", "--no-copy", "-m", "next instruction", "-y"], cwd=turn_dir
+    )
+    assert result.exit_code == 0
+
+    # The pending plan executed IN PLACE and finalized its turn report.
+    report_file = turn_dir / "report.md"
+    assert report_file.exists(), "The pending non-communication turn must finalize."
+    report = report_file.read_text(encoding="utf-8")
+    assert "honored" in report, (
+        "The pending non-communication plan must execute in place (its "
+        "EXECUTE action must run), not be dropped."
+    )
+    # The injected reply is rendered under ## User Request (the -y facet).
+    assert "## User Request" in report, (
+        "resume -m -y must render the injected reply under ## User Request."
+    )
+    assert "next instruction" in report, (
+        "The ## User Request section must carry the injected message."
+    )
+    # Executing the pending turn opens the successor turn.
+    assert (turn_dir.parent / "02").exists()
