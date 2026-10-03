@@ -136,7 +136,7 @@ class TestPendingPlanNonCommunicationResume:
         )
 
         # Assert: the pending plan was parsed WITH its plan_path (path precision).
-        manager._plan_parser.parse.assert_called()
+        manager._plan_parser.parse.assert_called_once()
         assert manager._plan_parser.parse.call_args.kwargs.get("plan_path") == PLAN_PATH
         # Assert: the injected reply is seeded onto the plan's metadata.
         assert plan.metadata.get("user_request") == REPLY

@@ -153,6 +153,10 @@ class TestPendingPlanCommunicationResume:
         manager._session_planner.trigger_new_plan.assert_called_once_with(
             TURN04, message=REPLY
         )
+        # Assert: the pending plan was parsed exactly ONCE on the resume
+        # path (the single WITH-path parse is reused for the communication
+        # decision AND the report synthesis -- no double-parse).
+        manager._plan_parser.parse.assert_called_once()
         # Assert: the interrupted turn is FINALIZED -- the standard
         # message-turn report lands at 03/report.md via finalize_turn.
         manager._file_system_manager.write_file.assert_called_once()

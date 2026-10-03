@@ -71,7 +71,12 @@ class SessionLifecycleManager:
 
         if state == SessionState.PENDING_PLAN:
             turn_meta = self._session_service.load_turn_meta(turn_path)
-            if self._should_consume_awaiting_reply(turn_meta, turn_path, message):
+            plan_path = f"{turn_path}/plan.md"
+            # Parse the pending plan ONCE (WITH its path) and reuse it for
+            # BOTH the communication decision and the reply seed, so
+            # plan.md is never parsed twice on the resume path.
+            plan = self._parse_pending_plan(turn_path, plan_path, message)
+            if self._should_consume_awaiting_reply(turn_meta, plan):
                 return self._consume_awaiting_reply(
                     turn_path,
                     turn_meta,
@@ -81,10 +86,10 @@ class SessionLifecycleManager:
                     project_context=project_context,
                     pipeline=pipeline,
                     message=message,
+                    plan=plan,
                 )
-            plan_path = f"{turn_path}/plan.md"
-            plan = self._seed_pending_plan(turn_path, plan_path, message)
             if plan is not None:
+                plan.metadata["user_request"] = message
                 report = orchestrator.execute(
                     plan=plan,
                     plan_path=plan_path,
@@ -129,55 +134,25 @@ class SessionLifecycleManager:
 
         return (session_name, None)
 
-    def _is_communication_turn(self, turn_path: str) -> bool:
-        """Reports whether the pending turn's plan is a MESSAGE-only turn.
-
-        An interactively-interrupted MESSAGE turn lands in PENDING_PLAN
-        WITHOUT the awaiting_reply flag (only the pipeline-stop path sets
-        it). Such a turn is semantically awaiting a reply, so an injected
-        `resume -m` reply must be consumed (mirroring
-        `_consume_awaiting_reply`) rather than dropped while the MESSAGE
-        plan is re-executed and re-prompts the user. Unparseable or
-        non-communication plans degrade gracefully to the re-execute path.
-        """
-        try:
-            plan = self._parse_awaiting_plan(turn_path)
-        except Exception:
-            return False
-        return plan.is_communication_turn()
-
-    def _should_consume_awaiting_reply(
-        self, turn_meta: dict[str, Any], turn_path: str, message: Optional[str]
-    ) -> bool:
-        """Reports whether the pending turn's reply must be consumed.
-
-        A reply is consumed when the turn carries the ``awaiting_reply``
-        flag (pipeline stop) or when an injected reply lands on a MESSAGE-
-        only communication turn (an interactively-interrupted communication
-        turn lacks the flag but is semantically awaiting a reply). A plain
-        pending action turn with no reply falls through to re-execution.
-        """
-        return bool(turn_meta.get("awaiting_reply")) or (
-            bool(message) and self._is_communication_turn(turn_path)
-        )
-
-    def _seed_pending_plan(
+    def _parse_pending_plan(
         self, turn_path: str, plan_path: str, message: Optional[str]
     ) -> Optional["Plan"]:
-        """Parses the pending plan (WITH its path) and seeds the injected reply.
+        """Parses the pending plan ONCE (WITH its path) when a reply is injected.
 
-        Parsing WITH ``plan_path`` preserves ``Plan.is_session`` /
-        ``Plan.plan_path`` — ``execute(plan=...)`` short-circuits
-        re-resolution from the path. Returns ``None`` when no reply is
-        injected or when the plan is unparseable, so the caller falls back to
-        the bare re-execute path. The reply is seeded onto the plan's
-        metadata (never forwarded as ``message``) so a TUI edit can still
-        override it.
+        The single parsed plan is reused for BOTH the communication decision
+        (`_should_consume_awaiting_reply`) and the reply seed, so ``plan.md``
+        is parsed at most once on the resume path. Parsing WITH ``plan_path``
+        preserves ``Plan.is_session`` / ``Plan.plan_path`` —
+        ``execute(plan=...)`` short-circuits re-resolution from the path.
+        Returns ``None`` when no reply is injected (the await short-circuit
+        and bare re-execute paths then parse lazily or not at all) or when
+        the plan is unparseable, so the caller falls back to the bare
+        re-execute path.
         """
         if not message:
             return None
         try:
-            plan = self._parse_awaiting_plan(turn_path, plan_path=plan_path)
+            return self._parse_awaiting_plan(turn_path, plan_path=plan_path)
         except InvalidPlanError:
             logger.debug(
                 "Pending plan at %s is unparseable; falling back to the "
@@ -185,8 +160,22 @@ class SessionLifecycleManager:
                 plan_path,
             )
             return None
-        plan.metadata["user_request"] = message
-        return plan
+
+    def _should_consume_awaiting_reply(
+        self, turn_meta: dict[str, Any], plan: Optional["Plan"]
+    ) -> bool:
+        """Reports whether the pending turn's reply must be consumed.
+
+        A reply is consumed when the turn carries the ``awaiting_reply``
+        flag (pipeline stop) or when the parsed pending plan is a MESSAGE-
+        only communication turn (an interactively-interrupted communication
+        turn lacks the flag but is semantically awaiting a reply). A plain
+        pending action turn — or a plan that failed to parse — falls through
+        to re-execution.
+        """
+        return bool(turn_meta.get("awaiting_reply")) or (
+            plan is not None and plan.is_communication_turn()
+        )
 
     def _append_message_to_previous_turn(self, turn_path: str, message: str) -> None:
         """Appends the injected reply to the previous turn's report if present.
@@ -237,6 +226,7 @@ class SessionLifecycleManager:
         project_context: Optional[Any] = None,
         pipeline: bool = False,
         message: Optional[str] = None,
+        plan: Optional["Plan"] = None,
     ) -> tuple[str, Optional[ExecutionReport]]:
         """Consumes an awaiting-reply turn without re-executing its plan.
 
@@ -268,7 +258,8 @@ class SessionLifecycleManager:
                 _print_message_from_teddy,
             )
 
-            plan = self._parse_awaiting_plan(turn_path)
+            if plan is None:
+                plan = self._parse_awaiting_plan(turn_path)
             report = self._synthesize_message_report(turn_path, plan=plan)
             message_logs = [
                 log for log in report.action_logs if log.action_type == "MESSAGE"
@@ -290,7 +281,7 @@ class SessionLifecycleManager:
             key: value for key, value in turn_meta.items() if key != "awaiting_reply"
         }
         self._session_service.save_turn_meta(turn_path, consumed_meta)
-        report = self._synthesize_message_report(turn_path, reply=reply)
+        report = self._synthesize_message_report(turn_path, reply=reply, plan=plan)
         next_turn_dir = self.finalize_turn(f"{turn_path}/plan.md", report)
         return self._handle_planning_and_execution(
             next_turn_dir,
