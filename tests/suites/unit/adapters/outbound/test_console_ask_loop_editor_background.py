@@ -419,6 +419,6 @@ class TestLaunchEditorBackgroundNoEditor:
                 result = ask_loop._launch_editor_background("test prompt")
 
         assert result == "", f"Expected empty string, got: {repr(result)}"
-        assert "No editor configured" in caplog.text, (
-            "Log should contain notification about missing editor"
+        assert "Editor is disabled in config" in caplog.text, (
+            "Log should contain the disabled-editor notification"
         )

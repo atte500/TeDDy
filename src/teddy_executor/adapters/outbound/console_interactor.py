@@ -1,3 +1,4 @@
+import logging
 import shlex
 from typing import List, Optional
 
@@ -24,6 +25,8 @@ from teddy_executor.adapters.outbound.console_interactor_helpers import (
     print_skipped_action,
     restore_terminal_mode,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ConsoleInteractorAdapter(IUserInteractor):
@@ -97,7 +100,9 @@ class ConsoleInteractorAdapter(IUserInteractor):
 
         editor_cmd = self._tooling.find_editor()
         if not editor_cmd:
-            typer.echo("Error: No suitable editor found.", err=True)
+            logger.info(
+                "Editor is disabled in config. Set 'editor' in .teddy/config.yaml to enable."
+            )
             return ""
 
         temp_path = self._system_env.create_temp_file(suffix=".md")

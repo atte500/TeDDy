@@ -102,6 +102,24 @@ class TestConsoleInteractorAdapter:
         response = adapter.ask_question("Prompt:")
         assert response == ""
 
+    def test_launch_editor_synchronous_logs_disabled_message_when_no_editor(
+        self, adapter: ConsoleInteractorAdapter, mock_env, monkeypatch, caplog
+    ):
+        """When find_editor() returns None, _launch_editor_synchronous MUST log
+        the disabled-editor notification (replacing the old generic message)."""
+        monkeypatch.delenv("TEDDY_TEST_MOCK_EDITOR_OUTPUT", raising=False)
+        # find_editor() resolves None: no config editor and no env editor.
+        mock_env.get_env.return_value = None
+        mock_env.which.return_value = None
+
+        with caplog.at_level("INFO"):
+            result = adapter._launch_editor_synchronous("initial content")
+
+        assert result == ""
+        assert "Editor is disabled in config" in caplog.text, (
+            "Log should contain the disabled-editor notification"
+        )
+
     def test_confirm_action_approves_on_y(
         self, adapter: ConsoleInteractorAdapter, monkeypatch
     ):

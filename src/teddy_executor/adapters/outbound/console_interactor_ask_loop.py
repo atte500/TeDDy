@@ -183,7 +183,7 @@ class ConsoleAskLoop:
         editor_cmd = self._tooling.find_editor()
         if not editor_cmd:
             logger.info(
-                "No editor configured. Please configure one in .teddy/config.yaml"
+                "Editor is disabled in config. Set 'editor' in .teddy/config.yaml to enable."
             )
             return ""
 
