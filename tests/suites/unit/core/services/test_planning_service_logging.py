@@ -5,6 +5,7 @@ from teddy_executor.core.ports.outbound import (
     IConfigService,
     IFileSystemManager,
 )
+from tests.harness.setup.mocking import POSIXPathMock
 
 
 def test_generate_plan_logs_token_usage_if_available(env, mock_prompt_manager):
@@ -16,7 +17,13 @@ def test_generate_plan_logs_token_usage_if_available(env, mock_prompt_manager):
     mock_fs = env.get_service(IFileSystemManager)
 
     mock_config.get_setting.return_value = "gpt-4"
-    mock_llm_client.get_completion.return_value = "plan content"
+    # A valid structured response breaks the retry loop on the first attempt,
+    # so exactly one 0.015 cost is logged (see retry-cost accumulation).
+    success_choice = POSIXPathMock()
+    success_choice.message.content = "plan content"
+    success_response = POSIXPathMock()
+    success_response.choices = [success_choice]
+    mock_llm_client.get_completion.return_value = success_response
     mock_llm_client.get_token_count.return_value = 100
     mock_llm_client.get_completion_cost.return_value = 0.015
     mock_fs.path_exists.return_value = False

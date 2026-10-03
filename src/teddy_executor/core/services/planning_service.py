@@ -157,9 +157,10 @@ class PlanningService(IPlanningUseCase):
                 messages=messages, model=model, **overrides
             )
             plan_content = self._extract_plan_content(response)
-            turn_cost = self._llm_client.get_completion_cost(
+            attempt_cost = self._llm_client.get_completion_cost(
                 response, model_override=model
             )
+            turn_cost += attempt_cost
 
             if plan_content and plan_content.strip():
                 break
