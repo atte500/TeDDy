@@ -148,7 +148,7 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 - [x] **Wiring** — Extend `_DIFF_FLAGS` translation table with all entries from spec 2d (add idea, webstorm, phpstorm, pycharm, rubymine, goland, clion, fleet)
 - [x] **Logic** — Implement `YamlConfigAdapter.set_setting()` with dot-notation support, file creation, cache update, and YAML persistence
 - [x] **Logic** — Implement `get_diff_viewer_command()` unknown editor fallback: return `[editor_path]` with no flags when editor not in `_DIFF_FLAGS`
-- [ ] **Logic** — Implement `get_diff_viewer_command()` `diff_flags` config override: use config value instead of `_DIFF_FLAGS` when `diff_flags` key is set
+- [x] **Logic** — Implement `get_diff_viewer_command()` `diff_flags` config override: use config value instead of `_DIFF_FLAGS` when `diff_flags` key is set
 - [ ] **Migration** — Add `_validate_editor_config(container)` function to `session_cli_handlers.py` with discovery and prompting flow
 - [ ] **Migration** — Add `_prompt_for_editor_selection()` and `_prompt_for_custom_editor()` prompting functions with `typer.prompt()` input validation
 - [ ] **Migration** — Modify `_run_cli_preflight_check()` to accept `interactive: bool = True` parameter and call `_validate_editor_config()` when interactive
@@ -204,6 +204,13 @@ Prototype: [spikes/prototypes/editor-validation-and-discovery/](/spikes/prototyp
 - **Not in scope (kept atomic):** the `diff_flags` config override (spec §2c step 0) is NOT added here; it is the next Logic deliverable (#10).
 - **Green-to-Green confirmed:** the only observable behaviour change is the intended fallback. The `TEDDY_DIFF_TOOL` branch is untouched; known editors (`vim`/`nvim`/`code`/`cursor`/`zed`/`idea`) keep returning `[path] + flags`; a resolved-but-unknown editor now returns `[path]`; an unresolved editor still returns `None`.
 - **Tests:** the existing `test_diff_viewer_returns_none_for_unknown_editor` was repurposed (Migration) into `test_diff_viewer_returns_editor_path_for_unknown_editor`, repinning the contract to `["/usr/bin/nano"]` rather than adding a duplicate. No new `[DEBT]`.
+
+### Deliverable #10 (Logic) — `get_diff_viewer_command()` `diff_flags` config override (2026-10-03)
+- **Change (spec §2c step 0):** inserted a `diff_flags` block at the TOP of `get_diff_viewer_command()`, ahead of the `TEDDY_DIFF_TOOL` check. When `config_service.get_setting("diff_flags")` is a truthy LIST, the method returns `find_editor()[:1] + diff_flags` — the resolved editor path (flags stripped) prefixed to the configured flags — instead of the `_DIFF_FLAGS` translation-table value.
+- **Priority (spec §2c):** `diff_flags` config override > `TEDDY_DIFF_TOOL` env var > `_DIFF_FLAGS` translation table > unknown-editor fallback. This matches the design doc's priority-chain listing; the design doc's "Failure Modes" line claiming "`TEDDY_DIFF_TOOL` takes precedence over all" is STALE and must be corrected in the slice's final As-Built Update.
+- **Crash guard (spec failure mode):** the block is guarded by `isinstance(diff_flags, list)`, so a malformed non-list value (e.g. a bare string) is skipped and the method falls through to the translation table — pinning the documented "skip the override on malformed config" behaviour.
+- **Green-to-Green confirmed:** the block is additive and guarded — every pre-existing test configures `get_setting.return_value` to a non-list string or `None`, so `isinstance(diff_flags, list)` is False, the block is skipped, and prior behaviour is unchanged; the full suite stayed green with no Migration sweep.
+- **Tests:** three unit tests added to `TestGetDiffViewerCommand` — override-used-instead-of-table (nvim + `["--diff","--wait"]` → `["/usr/bin/nvim","--diff","--wait"]`), non-list-falls-through (string `"--diff"` → table flags `["/usr/bin/nvim","-d"]`), and override-outranks-`TEDDY_DIFF_TOOL`. No new `[DEBT]`.
 
 ## Verification
 - [ ] Start a new interactive session with no editor configured → see discovery prompt

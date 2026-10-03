@@ -212,6 +212,54 @@ class TestGetDiffViewerCommand:
 
         assert result == ["/usr/bin/nano"]
 
+    def test_diff_viewer_respects_diff_flags_config_override(
+        self, helper, mock_env, mock_config
+    ):
+        """When diff_flags is configured as a list, get_diff_viewer_command
+        returns the resolved editor path prefixed to the configured flags,
+        overriding the _DIFF_FLAGS translation table (spec 2c step 0)."""
+        settings = {"editor": "nvim", "diff_flags": ["--diff", "--wait"]}
+        mock_config.get_setting.side_effect = lambda key, *a, **k: settings.get(key)
+        mock_env.get_env.side_effect = lambda x: None
+        mock_env.which.side_effect = lambda x: "/usr/bin/nvim" if x == "nvim" else None
+
+        result = helper.get_diff_viewer_command()
+
+        assert result == ["/usr/bin/nvim", "--diff", "--wait"]
+
+    def test_diff_viewer_ignores_non_list_diff_flags_override(
+        self, helper, mock_env, mock_config
+    ):
+        """A malformed (non-list) diff_flags value is skipped, falling through to
+        the _DIFF_FLAGS translation table instead of crashing (spec failure mode)."""
+        settings = {"editor": "nvim", "diff_flags": "--diff"}
+        mock_config.get_setting.side_effect = lambda key, *a, **k: settings.get(key)
+        mock_env.get_env.side_effect = lambda x: None
+        mock_env.which.side_effect = lambda x: "/usr/bin/nvim" if x == "nvim" else None
+
+        result = helper.get_diff_viewer_command()
+
+        assert result == ["/usr/bin/nvim", "-d"]
+
+    def test_diff_flags_override_outranks_teddy_diff_tool(
+        self, helper, mock_env, mock_config
+    ):
+        """The diff_flags config override is evaluated BEFORE TEDDY_DIFF_TOOL, so
+        it wins when both are set (spec 2c priority)."""
+        settings = {"editor": "nvim", "diff_flags": ["--diff", "--wait"]}
+        mock_config.get_setting.side_effect = lambda key, *a, **k: settings.get(key)
+        mock_env.get_env.side_effect = lambda x: (
+            "meld" if x == "TEDDY_DIFF_TOOL" else None
+        )
+        mock_env.which.side_effect = lambda x: {
+            "nvim": "/usr/bin/nvim",
+            "meld": "/usr/bin/meld",
+        }.get(x)
+
+        result = helper.get_diff_viewer_command()
+
+        assert result == ["/usr/bin/nvim", "--diff", "--wait"]
+
     def test_diff_viewer_returns_none_when_no_editor_found(
         self, helper, mock_env, mock_config
     ):

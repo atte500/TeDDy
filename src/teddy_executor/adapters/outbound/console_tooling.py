@@ -120,6 +120,15 @@ class ConsoleToolingHelper:
         return found
 
     def get_diff_viewer_command(self) -> Optional[List[str]]:
+        # 0. diff_flags config override: when the user has configured a valid
+        #    list, use it INSTEAD of the _DIFF_FLAGS translation table. Non-list
+        #    values are skipped (crash guard for malformed config).
+        diff_flags = self._config_service.get_setting("diff_flags")
+        if diff_flags and isinstance(diff_flags, list):
+            editor_cmd = self.find_editor()
+            if editor_cmd:
+                return editor_cmd[:1] + diff_flags
+
         custom_tool_str = self._system_env.get_env("TEDDY_DIFF_TOOL")
         if custom_tool_str:
             custom_tool_parts = shlex.split(custom_tool_str)
