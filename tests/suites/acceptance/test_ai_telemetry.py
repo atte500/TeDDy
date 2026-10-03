@@ -1,3 +1,4 @@
+import pytest
 import yaml
 from pathlib import Path
 from datetime import datetime
@@ -258,3 +259,62 @@ def test_input_log_during_replan(tmp_path, monkeypatch):
     assert (
         tmp_path / ".teddy/sessions/20260417_120000-replan-test/02/input.md"
     ).exists()
+
+
+def test_retried_turn_accumulates_billed_attempt_costs(tmp_path, monkeypatch):
+    """
+    Scenario: A retried turn's persisted turn_cost reflects the SUM of all billed
+    attempts (the CLI-boundary behavioral gate for retry-cost accrual).
+
+    Attempt 1 returns NO usable content (triggers the retry) but IS billed 0.10;
+    attempt 2 succeeds and is billed 0.20. The turn's meta.yaml must record 0.30.
+    """
+    from teddy_executor.core.ports.outbound import ILlmClient
+
+    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    setup_telemetry_env(tmp_path)
+
+    user_input = "Developing New Feature"
+    plan = (
+        MarkdownPlanBuilder("Accumulated Cost Feature")
+        .add_create("file.txt", "content", description="test")
+        .build()
+    )
+    mock_llm_client = env.get_service(ILlmClient)
+
+    # Attempt 1: no usable content (retry fires) yet still billed.
+    empty_response = make_mock_response("")
+    empty_response.choices = []
+    # Attempt 2: a valid plan.
+    mock_llm_client.get_completion.side_effect = [
+        empty_response,
+        make_mock_response(plan),
+    ]
+    mock_llm_client.get_token_count.return_value = 100
+    mock_llm_client.get_completion_cost.side_effect = [0.10, 0.20]
+
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
+    # Act: a full CLI session (planning -> execution) in one turn.
+    result = adapter.run_start(["--agent", "pathfinder", "-y", "-m", user_input])
+
+    # Assert: the retry did not discard the billed empty first attempt.
+    assert result.exit_code == 0
+    assert mock_llm_client.get_completion.call_count == 2
+    assert mock_llm_client.get_completion_cost.call_count == 2
+
+    timestamp = fixed_now.strftime("%Y%m%d_%H%M%S")
+    session_name = f"{timestamp}-{slugify(user_input)}"
+    meta = yaml.safe_load(
+        (
+            tmp_path / ".teddy" / "sessions" / session_name / "01" / "meta.yaml"
+        ).read_text(encoding="utf-8")
+    )
+    # The persisted turn cost is the SUM (0.10 + 0.20), not just the last attempt.
+    assert meta["turn_cost"] == pytest.approx(0.30)

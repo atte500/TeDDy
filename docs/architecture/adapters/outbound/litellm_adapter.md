@@ -38,6 +38,7 @@ The `LiteLLMAdapter` is responsible for interacting with various Large Language 
 -   **Remote Check Timeouts:** All remote connectivity and configuration checks (e.g., `litellm.check_valid_key`) are capped at a 10.0-second timeout via a background executor to accommodate library initialization and network latency.
 -   **Ultra-Lazy Validation:** Local configuration checks (existence of API key and model) are performed before importing the heavy `litellm` library, ensuring sub-second response times for common errors.
 -   **Error Handling:** Wraps all `litellm` operations to re-raise specific failures as `LlmApiError` or `ConfigurationError`, ensuring transparent CLI feedback.
+-   **Cost-Failure Transparency (Slice 00-24):** `get_completion_cost` never raises — a cost-computation failure preserves the `0.0` return contract (cost is non-critical-path telemetry on an already-successful completion). Before each `return 0.0` it calls `_log_cost_failure(error, completion_response, model_override)` with `exc_info=True`, tiered by severity: `logger.warning` when the resolved model HAS pricing metadata (`input_cost_per_token` present in its `litellm.model_cost` entry) yet `completion_cost` raised (an anomaly — real spend silently lost), `logger.debug` when the model is unpriced (an expected miss, mirroring the TUI `$???` placeholder). Model identity is resolved `model_override` → `completion_response.model` → config `llm.model`; the usage summary is extracted defensively (prompt/completion tokens plus optional `cached_tokens`/`reasoning_tokens`). `supports_pricing` is hardened against a non-dict `litellm.model_cost` shape (treated as unpriced).
 -   **Provider Resolution:** After each successful `litellm.completion()`, the actual downstream provider that served the request is available in `response._hidden_params["provider"]` (e.g., `"deepseek"`, `"together"`, `"openai"`). This value is extracted by `PromptManager.update_meta` for display in the CLI telemetry. The adapter does NOT special-case the `llm.provider` config value — the entire `llm` config section passes through transparently to litellm via `params.update(llm_config)`, allowing any litellm-supported parameter (including OpenRouter's `extra_body.providers.order`) to be set directly in `config.yaml`.
 -   **`:nitro` / `:floor` Shortcuts:** The `openrouter_hydrator` strips `:nitro` and `:floor` suffixes from model names to derive the base model ID for metadata fetching. These suffixes are TeDDy-specific conventions for selecting performance/cost tiers and are transparent to litellm.
 
@@ -52,7 +53,7 @@ This adapter implements the methods defined in the `ILlmClient` port contract:
 -   **Description:** Uses `litellm.token_counter` to provide a pre-flight token estimate.
 
 ### `get_completion_cost(completion_response) -> float`
--   **Description:** Uses `litellm.completion_cost` to calculate the precise USD cost of a response.
+-   **Description:** Uses `litellm.completion_cost` to calculate the precise USD cost of a response. On any cost-computation failure it logs at a tiered level (WARNING for a priced-model anomaly, DEBUG for an unpriced-model miss) and returns `0.0` — see Cost-Failure Transparency above.
 
 ## 5. OpenRouterMetadataHydrator: Persistent Registry Cache (Slice 00-20)
 
@@ -61,6 +62,7 @@ This adapter implements the methods defined in the `ILlmClient` port contract:
 - **Storage:** JSON at `.teddy/.model_registry_cache.json`; payload `{"version": 1, "fetched_at_epoch": <int>, "models": [...]}`. The path is covered by the shipped `.teddy/.gitignore` template (bare `*` rule).
 - **TTL:** 7 days default (configurable via `IConfigService`); `now - fetched_at_epoch >= ttl` → expired → one refetch on the next hydration, then rewrite.
 - **Failure handling:** missing/corrupt cache → treated as empty → refetch; never serve wrong metadata.
+- **Cache-pricing broadcast (Slice 00-24):** `_find_model` maps the catalog's per-token cache rates `input_cache_read`/`input_cache_write` to litellm's `cache_read_input_token_cost`/`cache_creation_input_token_cost`, float-parsed inside the existing `ValueError`/`TypeError` guard and emitted ONLY when present AND parsed `> 0` (a `0.0` rate is equivalent to the cached-tokens-billed-at-$0 defect and is therefore omitted; absent keys ⇒ keys omitted ⇒ prior behaviour). Without this, hydrated models lacked cache rates in `litellm.model_cost`, so cached tokens billed at $0 and Anthropic-shaped usage could yield a negative prompt cost.
 - **Writes:** atomic (`<name>.tmp` + `os.replace`).
 - **Injection:** the cache loader/path is constructor-injected at the `registries/infrastructure.py` factory (the hydrator is registered with singleton scope). Per-instance in-memory memoization is unchanged.
 - Pre-emptive hydration (via `get_context_window` in `PlanningService.generate_plan`) is retained so first-turn telemetry shows real values.
