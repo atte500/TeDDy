@@ -11,6 +11,7 @@ import typer
 from teddy_executor.core.domain.models import (
     ExecutionReport,
 )
+from teddy_executor.core.ports.outbound.config_service import IConfigService
 
 if TYPE_CHECKING:
     from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
@@ -48,6 +49,18 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stderr)],
     force=True,
 )
+
+
+def _resolve_yolo(yolo: Optional[bool], config_service: IConfigService) -> bool:
+    """Resolve the effective YOLO mode (single-sourced across commands).
+
+    An explicit flag always wins (``--yolo`` / ``-y`` -> ``True``,
+    ``--no-yolo`` / ``-n`` -> ``False``). When the flag is unset, the mode
+    falls back to the resolved default (``False``).
+    """
+    if yolo is not None:
+        return yolo
+    return False
 
 
 def _ensure_project_initialized(container, root_dir: str | None = None) -> None:
@@ -117,8 +130,14 @@ def start(  # noqa: PLR0913
     agent: str = typer.Option(
         "pathfinder", "--agent", "-a", help="Agent prompt to use."
     ),
-    yolo: bool = typer.Option(
-        False, "--yolo", "-y", help="Auto-approve all actions (non-interactive mode)."
+    yolo: Optional[bool] = typer.Option(
+        None,
+        "--yolo/--no-yolo",
+        "-y/-n",
+        help=(
+            "Auto-approve all actions (non-interactive). "
+            "--no-yolo / -n forces interactive mode."
+        ),
     ),
     pipeline: bool = OPT_PIPELINE,
     yes: bool = typer.Option(False, "--yes", hidden=True),
@@ -152,6 +171,7 @@ def start(  # noqa: PLR0913
 
     container = get_container()
     _ensure_project_initialized(container)
+    config_service = container.resolve(IConfigService)
 
     additional_context = (
         [
@@ -168,7 +188,13 @@ def start(  # noqa: PLR0913
         container=container,
         name=name,
         agent=agent,
-        interactive=not (yolo or pipeline or yes or no_interactive or non_interactive),
+        interactive=not (
+            _resolve_yolo(yolo, config_service)
+            or pipeline
+            or yes
+            or no_interactive
+            or non_interactive
+        ),
         no_copy=no_copy,
         message=message,
         pipeline=pipeline,
@@ -372,8 +398,14 @@ def create_parser_for_plan(plan_content: str) -> IPlanParser:
 @app.command()
 def resume(  # noqa: PLR0913
     path: Optional[str] = typer.Argument(None, help="Path to session or turn."),
-    yolo: bool = typer.Option(
-        False, "--yolo", "-y", help="Auto-approve all actions (non-interactive mode)."
+    yolo: Optional[bool] = typer.Option(
+        None,
+        "--yolo/--no-yolo",
+        "-y/-n",
+        help=(
+            "Auto-approve all actions (non-interactive). "
+            "--no-yolo / -n forces interactive mode."
+        ),
     ),
     yes: bool = typer.Option(False, "--yes", hidden=True),
     no_interactive: bool = typer.Option(False, "--no-interactive", hidden=True),
@@ -406,11 +438,18 @@ def resume(  # noqa: PLR0913
 
     container = get_container()
     _ensure_project_initialized(container)
+    config_service = container.resolve(IConfigService)
 
     handle_resume_session(
         container=container,
         path=path,
-        interactive=not (yolo or pipeline or yes or no_interactive or non_interactive),
+        interactive=not (
+            _resolve_yolo(yolo, config_service)
+            or pipeline
+            or yes
+            or no_interactive
+            or non_interactive
+        ),
         no_copy=no_copy,
         model=model,
         provider=provider,
@@ -425,8 +464,14 @@ def execute(  # noqa: PLR0913
     plan_file: Optional[Path] = typer.Argument(
         None, help="Root-relative path to the plan file (.md).", show_default=False
     ),
-    yolo: bool = typer.Option(
-        False, "--yolo", "-y", help="Auto-approve all actions (non-interactive mode)."
+    yolo: Optional[bool] = typer.Option(
+        None,
+        "--yolo/--no-yolo",
+        "-y/-n",
+        help=(
+            "Auto-approve all actions (non-interactive). "
+            "--no-yolo / -n forces interactive mode."
+        ),
     ),
     yes: bool = typer.Option(False, "--yes", hidden=True),
     no_interactive: bool = typer.Option(False, "--no-interactive", hidden=True),
@@ -450,11 +495,14 @@ def execute(  # noqa: PLR0913
     from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 
     report: Optional[ExecutionReport] = None
-    interactive_mode = not (yolo or yes or no_interactive or non_interactive)
     start_time = datetime.now(timezone.utc)
 
     container = get_container()
     _ensure_project_initialized(container)
+    config_service = container.resolve(IConfigService)
+    interactive_mode = not (
+        _resolve_yolo(yolo, config_service) or yes or no_interactive or non_interactive
+    )
 
     try:
         final_plan_content = get_plan_content(plan_content, plan_file)

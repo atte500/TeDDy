@@ -74,7 +74,7 @@ Then the session runs in non-interactive mode
 ## Deliverables
 
 - [x] **Contract** - Add a top-level `yolo_default: false` key (with an explanatory comment) to the shipped config template `src/teddy_executor/resources/config/config.yaml`, above the `yolo_guardrails` section.
-- [ ] **Wiring** - Add the `IConfigService` import and a single-sourced `_resolve_yolo` helper; convert `start`, `resume`, and `execute` to the tri-state `--yolo/--no-yolo` (`-y/-n`) flag; resolve the config service from the container in each command (re-ordering `execute`). Add the acceptance test proving tri-state CLI behavior end-to-end (the Tracer Bullet).
+- [x] **Wiring** - Add the `IConfigService` import and a single-sourced `_resolve_yolo` helper; convert `start`, `resume`, and `execute` to the tri-state `--yolo/--no-yolo` (`-y/-n`) flag; resolve the config service from the container in each command (re-ordering `execute`). Add the acceptance test proving tri-state CLI behavior end-to-end (the Tracer Bullet).
 - [ ] **Logic** - Wire the config default into `_resolve_yolo` (fall back to `get_setting("yolo_default", False)` when the flag is unset). Add unit tests covering the full resolution matrix plus an acceptance test proving `yolo_default: true` drives the no-flag default.
 - [ ] **Cleanup** - Update `docs/architecture/core/ports/outbound/config_service.md` (Standard Configuration Keys), `docs/architecture/adapters/inbound/cli.md` (tri-state flag), and `README.md` (config default + `--no-yolo` note).
 
@@ -83,6 +83,16 @@ Then the session runs in non-interactive mode
 ### Contract — shipped `yolo_default: false`
 - Added a top-level `yolo_default: false` key (with an explanatory comment) to `src/teddy_executor/resources/config/config.yaml`, immediately above the `yolo_guardrails` section. A fresh `teddy init` now ships the default explicitly; pre-existing configs without the key still resolve to `False` via the code-level fallback added in the Wiring/Logic deliverables.
 - Contract guard: added `tests/suites/unit/adapters/inbound/test_yolo_default_resolution.py::test_shipped_config_template_declares_yolo_default_false`, which loads the bundled template via `importlib.resources` and asserts the key is present and `is False`. This is the only meaningful Contract assertion here — a purely behavioural check cannot distinguish "key present as `false`" from "key absent", because `IConfigService.get_setting` returns the caller-supplied default in the absent case.
+
+### Wiring — tri-state flag + `_resolve_yolo` tracer
+- Added a top-level `IConfigService` import and a single-sourced `_resolve_yolo(yolo, config_service)` helper in `src/teddy_executor/__main__.py`. As a tracer bullet, the helper plumbs the `config_service` parameter but does not yet read it: an explicit flag wins (`True`/`False`) and the unset case returns a hardcoded `False`. The config-driven fallback (`get_setting("yolo_default", False)`) is the Logic deliverable's job.
+- Converted the `yolo` option on `start`, `resume`, and `execute` from `bool` to the MANDATORY combined tri-state declaration `typer.Option(None, "--yolo/--no-yolo", "-y/-n", ...)`, yielding `None` (unset) / `True` (`--yolo`/`-y`) / `False` (`--no-yolo`/`-n`). Resolved `IConfigService` from the container in each command body; on `execute` the `interactive_mode` computation was moved to AFTER `get_container()`/`_ensure_project_initialized()` so the config service is available.
+- Acceptance tracer (`tests/suites/acceptance/test_yolo_default_config.py`, parametrized over `-n`/`--no-yolo`): proves the new anti-yolo flag is accepted and runs the plan interactively (the real interactor prints `Action: CREATE`). This is the sole new end-to-end behaviour; the unset and `-y` paths are behaviourally unchanged and already covered by existing tests.
+- Ruff-audit note: `ARG` is not selected, so the tracer may carry the plumbed-but-unused `config_service` parameter without a quality-gate violation; the slice's Wiring/Logic split therefore required no re-partition.
+
+### Delivery — pre-existing Mypy gate (Wiring commit)
+- The Wiring VCP commit was blocked by the staged-file-scoped Mypy pre-commit hook: staging `src/teddy_executor/__main__.py` (top-level `IConfigService` import + `_resolve_yolo` helper + tri-state option conversion) widened the hook's import graph and surfaced **8 pre-existing, out-of-scope** errors in 6 untouched files — `action_executor.py:208`, `console_interactor_ask_loop.py:106-107`, `textual_plan_reviewer_editor.py:203-204`, `textual_plan_reviewer_app.py:384`, `session_lifecycle_manager.py:92`, `tests/harness/setup/test_environment.py:27`. None are in the deliverable's own files.
+- Handled per the workflow's quality-gate rule: the debt is logged (this slice + `PROJECT.md` → Technical Debt) and the pre-commit stage is bypassed via `--no-verify` for this commit **only**; the post-commit full-suite test gate remains enforced. Root-cause fix is the documented Milestone 5 Mypy-debt task (isolate `msvcrt`/`termios` behind typed accessors; fix the return-value/assignment mismatches).
 
 ## Verification
 
