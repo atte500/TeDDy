@@ -60,7 +60,9 @@ Then the session runs in non-interactive mode
 ### Test Harness Strategy
 
 - Acceptance/behavioral CLI tests drive the CLI in-process via `CliTestAdapter` / `TestEnvironment` (Subcutaneous Testing; no internal core imports).
-- Unit tests exercise `_resolve_yolo` directly across the full resolution matrix.
+- **Interactivity observability (discovery outcome):** the `execute` command exposes interactivity through the real interactor's per-action prompt — an interactive run prints `Action: <TYPE>` (and `Description: ...`), while a non-interactive run (`--yolo` / `-y`) prints nothing. This is the idiom already asserted by `test_cli_ux_improvements.py::test_cli_interactive_prompt_formatting` (`.with_real_interactor()` + `CliTestAdapter`). The Wiring acceptance test drives `execute` with `--yolo`/`-y` (no prompt) vs `--no-yolo`/`-n` (prompt, with `y\n` supplied) to prove tri-state resolution end-to-end; `start`/`resume` are covered by flag-recognition assertions plus the single-sourced helper.
+- Acceptance test file: `tests/suites/acceptance/test_yolo_default_config.py`.
+- Unit tests exercise `_resolve_yolo` directly across the full resolution matrix — file: `tests/suites/unit/adapters/inbound/test_yolo_default_resolution.py`.
 - Use the project's mock-registration helper (`register_mock` / autospec) for the config-service double — no bare `MagicMock` and no global `mock.patch`.
 
 ### Commands Affected
@@ -71,7 +73,7 @@ Then the session runs in non-interactive mode
 
 ## Deliverables
 
-- [ ] **Contract** - Add a top-level `yolo_default: false` key (with an explanatory comment) to the shipped config template `src/teddy_executor/resources/config/config.yaml`, above the `yolo_guardrails` section.
+- [▶] **Contract** - Add a top-level `yolo_default: false` key (with an explanatory comment) to the shipped config template `src/teddy_executor/resources/config/config.yaml`, above the `yolo_guardrails` section.
 - [ ] **Wiring** - Add the `IConfigService` import and a single-sourced `_resolve_yolo` helper; convert `start`, `resume`, and `execute` to the tri-state `--yolo/--no-yolo` (`-y/-n`) flag; resolve the config service from the container in each command (re-ordering `execute`). Add the acceptance test proving tri-state CLI behavior end-to-end (the Tracer Bullet).
 - [ ] **Logic** - Wire the config default into `_resolve_yolo` (fall back to `get_setting("yolo_default", False)` when the flag is unset). Add unit tests covering the full resolution matrix plus an acceptance test proving `yolo_default: true` drives the no-flag default.
 - [ ] **Cleanup** - Update `docs/architecture/core/ports/outbound/config_service.md` (Standard Configuration Keys), `docs/architecture/adapters/inbound/cli.md` (tri-state flag), and `README.md` (config default + `--no-yolo` note).
@@ -82,7 +84,7 @@ _(Filled during implementation.)_
 
 ## Verification
 
-1. `uv run pytest tests/suites/unit/adapters/inbound/test_yolo_default_resolution.py` passes.
+1. `uv run pytest tests/suites/unit/adapters/inbound/test_yolo_default_resolution.py tests/suites/acceptance/test_yolo_default_config.py` passes.
 2. With `yolo_default: true` in `.teddy/config.yaml`, `teddy start` runs non-interactively; `teddy start --no-yolo` and `teddy start -n` prompt interactively.
 3. `-y` still forces non-interactive; `-n` is recognized (previously an error).
 4. `uv run pytest` (full suite) is green.
