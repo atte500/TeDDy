@@ -18,7 +18,7 @@ location.
 
 import os
 
-from tests.harness.setup.mocking import POSIXPathMock
+from tests.harness.setup.mocking import POSIXPathMock, to_posix_path
 from teddy_executor.adapters.inbound.session_cli_handlers import (
     _prompt_for_editor_selection,
 )
@@ -56,10 +56,10 @@ def test_resolve_editor_cmd_expands_tilde_path():
     mock_env = POSIXPathMock(spec=ISystemEnvironment)
     helper = ConsoleToolingHelper(mock_env, mock_config)
     expanded = os.path.expanduser("~/bin/myeditor")
-    # POSIXPathMock normalizes the `which()` argument's backslashes to forward
-    # slashes before the side_effect runs, so compare against the normalized
-    # form (the raw Windows baseline keeps a `\` in the home component).
-    normalized = expanded.replace("\\", "/")
+    # POSIXPathMock normalizes the `which()` argument to POSIX form before the
+    # side_effect runs, so compare against the normalized resolved path (the
+    # raw Windows baseline keeps a `\` in the home component).
+    normalized = to_posix_path(expanded)
     mock_env.which.side_effect = lambda name: expanded if name == normalized else None
 
     # Act

@@ -13,7 +13,7 @@ its expanded absolute command, and any trailing arguments are preserved.
 
 import os
 
-from tests.harness.setup.mocking import POSIXPathMock
+from tests.harness.setup.mocking import POSIXPathMock, to_posix_path
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
@@ -27,10 +27,10 @@ def _helper_with_diff_tool(value: str, resolved: str) -> ConsoleToolingHelper:
     mock_env.get_env.side_effect = lambda key: (
         value if key == "TEDDY_DIFF_TOOL" else None
     )
-    # POSIXPathMock normalizes the `which()` argument's backslashes to forward
-    # slashes before the side_effect runs, so compare against the normalized
-    # form (the raw Windows baseline keeps a `\` in the home component).
-    normalized = resolved.replace("\\", "/")
+    # POSIXPathMock normalizes the `which()` argument to POSIX form before the
+    # side_effect runs, so compare against the normalized resolved path (the
+    # raw Windows baseline keeps a `\` in the home component).
+    normalized = to_posix_path(resolved)
     mock_env.which.side_effect = lambda name: resolved if name == normalized else None
     mock_config.get_setting.return_value = None  # no editor / diff_flags override
     return helper

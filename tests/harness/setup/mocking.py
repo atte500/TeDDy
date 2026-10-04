@@ -7,6 +7,20 @@ T = TypeVar("T")
 Mocked = Any  # fallback for complex proxying, but we'll try to cast specifically
 
 
+def to_posix_path(value: str) -> str:
+    """Normalize path separators to the harness' internal POSIX convention.
+
+    This is the single source of the harness' cross-platform path
+    normalization. Windows backslashes are rewritten to forward slashes so a
+    path compared on POSIX and Windows yields the same string. It is consumed
+    by ``POSIXPathMock``'s mock-call argument normalizer (``_normalize_args``),
+    the ``find_call_by_path`` assertion helper, and every path-matching
+    ``side_effect`` (e.g. a mocked ``which``) that must compare an incoming,
+    already-normalized argument against a resolved baseline.
+    """
+    return value.replace("\\", "/")
+
+
 class POSIXPathMock(MagicMock):
     """
     A specialized mock that normalizes the first string argument of any call
@@ -25,7 +39,7 @@ class POSIXPathMock(MagicMock):
             # Systemic normalization: only replace \ with / for path-like strings.
             # Large strings (file contents) or multi-line strings are skipped for performance.
             if len(val) < 1024 and "\n" not in val:
-                new_args[0] = val.replace("\\", "/")
+                new_args[0] = to_posix_path(val)
         return tuple(new_args), kwargs
 
     def __call__(self, /, *args, **kwargs):
@@ -58,11 +72,11 @@ class POSIXPathMock(MagicMock):
         Systemically finds a call to the specified method where the first
         argument matches the path. Handles cross-platform slash normalization.
         """
-        norm_target = path.replace("\\", "/")
+        norm_target = to_posix_path(path)
         method = getattr(self, method_name)
         for call in method.call_args_list:
             if call.args and isinstance(call.args[0], str):
-                norm_actual = call.args[0].replace("\\", "/")
+                norm_actual = to_posix_path(call.args[0])
                 if norm_actual == norm_target:
                     return call
 
