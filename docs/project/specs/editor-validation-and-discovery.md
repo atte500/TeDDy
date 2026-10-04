@@ -15,7 +15,7 @@ The goal is to make editor configuration frictionless: empty default by default,
 ## Guiding Principles / Core Logic
 
 1. **Fail early, fail clearly:** Editor validation must happen during the preflight check (`_run_cli_preflight_check`), before any session interaction begins.
-2. **Skip if non-interactive:** Editor prompting is ONLY active in interactive mode. `-y`/`-p`/`--pipeline`/`--yes`/`--non-interactive` bypass all editor checks entirely.
+2. **Gate on "will the session read the terminal":** Editor setup is decoupled from approval mode. It runs when the session will actually read stdin — an interactive run, or a `--yolo` / `yolo_default: true` run without `-m` (which still blocks on the opening-message prompt), on a TTY. It is skipped for fully-specified batch runs (`-y -m`), `--pipeline` runs, and any non-TTY stdin (CI/piped). The `interactive` flag is approval-only; headless/automated runs use `-y` (or non-TTY stdin), not the retired `--yes`/`--no-interactive`/`--non-interactive` aliases.
 3. **Always persist:** The user's selection is always saved to `.teddy/config.yaml`. A message logs where the config can be edited.
 4. **"disabled" sentinel:** If the user provides no input (empty), save `"disabled"` to config. This gracefully disables editor functionality everywhere.
 5. **Curated discovery, but no guessing:** Scan a comprehensive list of known editors in PATH. If nothing is found, prompt for a custom command. If the custom command is not in PATH, reject and loop back.
@@ -227,7 +227,7 @@ def set_setting(self, key: str, value: Any) -> None:
 
 **File:** `src/teddy_executor/adapters/inbound/session_cli_handlers.py`
 
-Add a new function and call it from `_run_cli_preflight_check()` when the session is interactive:
+Add a new function and call it from `_run_cli_preflight_check()` when the session will read the terminal (gated on the `setup_editor` signal):
 
 ```python
 def _validate_editor_config(container: Container) -> None:
@@ -301,22 +301,22 @@ Primary-prompt input handling:
 
 **Rendering conventions:** yellow warning, cyan header, green confirmation, red invalid messages, emitted via `typer.secho(..., fg=..., err=True)` in keeping with the codebase's existing console style. All editor-selection output goes to **stderr** (never stdout).
 
-The `_run_cli_preflight_check()` function should be modified to accept an `interactive` parameter:
+The `_run_cli_preflight_check()` function accepts a dedicated `setup_editor` parameter, computed at the CLI boundary as `setup_editor = system_env.isatty() and not pipeline and (interactive or message is None)`, decoupling the one-time setup from the approval flag:
 
 ```python
 def _run_cli_preflight_check(
     container: Container,
     agent: Optional[str] = None,
-    interactive: bool = True,
+    setup_editor: Optional[bool] = None,
 ) -> None:
     # ... existing LLM config validation ...
 
-    # Editor validation (only in interactive mode)
-    if interactive:
+    # Editor validation (only when the session will read the terminal)
+    if setup_editor:
         _validate_editor_config(container)
 ```
 
-The callers in `handle_new_session()` and `handle_resume_session()` pass the `interactive` flag.
+The callers in `handle_new_session()` and `handle_resume_session()` pass the computed `setup_editor` flag; the one-shot `handle_plan_generation()` passes `setup_editor=False`.
 
 ### 5. "disabled" Sentinel Handling Downstream
 
@@ -385,8 +385,8 @@ _CLI_EDITORS: set[str] = {
   - Test with existing file, verify the new setting is merged and written.
   - Test dot-notation (e.g., `editor` vs empty).
 - **Preflight Check:**
-  - Test with interactive=True, empty config → discover and prompt.
-  - Test with interactive=False → skip editor validation.
+  - Test with setup_editor=True, empty config → discover and prompt.
+  - Test with setup_editor=False → skip editor validation.
   - Test with configured editor available → no prompt.
   - Test with "disabled" sentinel → skip validation.
   - Test with configured but missing editor → warn and fall through to discovery.

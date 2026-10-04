@@ -107,13 +107,13 @@ Initializes a new session.
 
 1. An explicit flag always wins: `--yolo` / `-y` → non-interactive; `--no-yolo` / `-n` → interactive.
 2. When the flag is unset, the mode falls back to the top-level `yolo_default` config setting (`IConfigService.get_setting("yolo_default", False)`; code default `False`), so pre-existing configs behave unchanged.
-3. The resolved value participates in the command's existing interactivity expression `interactive = not (_resolve_yolo(...) or [pipeline or] yes or no_interactive or non_interactive)`, so the hidden non-interactive forces (`--yes`, `--pipeline`, `--no-interactive`, `--non-interactive`) still win.
+3. The resolved value participates in the command's interactivity expression `interactive = not (_resolve_yolo(...) or [pipeline])`, so `--pipeline` (where defined) still forces non-interactive. The redundant hidden aliases (`--yes`, `--no-interactive`, `--non-interactive`) were retired; `interactive` is now approval-only, and the headless/automated path is `-y` (or non-TTY stdin).
 
 On `execute`, the config service is resolved from the container AFTER `get_container()` / `_ensure_project_initialized()`, so the `interactive_mode` computation happens after the config service is available.
 
 ### Editor Validation Preflight
 
-The CLI adapter performs editor validation during session startup (`handle_new_session`, `handle_resume_session`) via `_run_cli_preflight_check()`. When in interactive mode (`interactive=True`), the preflight check calls `_validate_editor_config()` which:
+The CLI adapter performs editor validation during session startup (`handle_new_session`, `handle_resume_session`) via `_run_cli_preflight_check()`. When the session will read the terminal (the `setup_editor` signal is truthy), the preflight check calls `_validate_editor_config()` which:
 
 1. Checks if the editor is set to `"disabled"` — if so, skips all validation.
 2. Checks if the configured editor exists in `PATH` via `ConsoleToolingHelper.find_editor()`. If found, validation passes.
@@ -121,7 +121,7 @@ The CLI adapter performs editor validation during session startup (`handle_new_s
 4. Renders the discovery block: an always-present `Editor Setup` header, then a **bracket**-numbered list (`[1] nvim`, resolved paths hidden), then a single prompt `Select an editor [1-{n}] (number, custom command, or empty to disable): `. A valid number persists the editor's basename. A custom command is validated with `which()` and re-prompted if unavailable — it is never accepted without passing validation. Empty input persists `"disabled"`. Invalid/out-of-range input re-prompts.
 5. Persists the selection to `.teddy/config.yaml` via `IConfigService.set_setting()` and prints the green confirmation `Editor preference saved to .teddy/config.yaml.`. The full render specification (colours, the fallback branch, and the exact message strings) lives in [spec §4](/docs/project/specs/editor-validation-and-discovery.md).
 
-Editor validation is skipped entirely in non-interactive modes (`--yolo`, `--pipeline`, `--yes`).
+Editor validation is skipped entirely for runs that will not read the terminal: fully-specified batch runs (`-y` with `-m`), `--pipeline` runs, and any non-TTY stdin (CI/piped). A `-y` run without `-m` on a TTY still blocks on the opening-message prompt, so the one-time editor setup runs.
 
 ### Startup Health Checks (`_run_health_checks`)
 
@@ -149,17 +149,17 @@ Creates the `.teddy/` directory with default files (config, gitignore, init.cont
 
 This is the primary command for executing a plan.
 
-*   **Signature:** `teddy execute [PLAN_FILE] [--yes] [--no-copy]`
+*   **Signature:** `teddy execute [PLAN_FILE] [-y] [--no-copy]`
 *   **Input:**
     *   `PLAN_FILE` (Positional Argument, Optional): A path to a Markdown plan file (`.md`).
     *   If `PLAN_FILE` is omitted, the command reads the plan from the system clipboard. This introduces a dependency on the `pyperclip` library.
         *   **Dependency Vetting:** The `pyperclip` library was vetted via a technical spike (`spikes/technical/spike_clipboard_access.py`, now deleted) to confirm its cross-platform reliability, in accordance with the project's third-party dependency standards.
-    *   `--yes` (Optional Flag): If provided, the plan will be executed in non-interactive mode, automatically approving all actions.
+    *   `-y` / `--yolo` (Optional Flag): If provided, the plan is executed in non-interactive mode, automatically approving all actions. `-n` / `--no-yolo` forces interactive mode for a single run.
 *   **Behavior (Post-Refactoring):**
     1.  The `typer` command function resolves the `PlanValidator` and `ExecutionOrchestrator` services from the DI container.
     2.  It first invokes the `validator.validate()` method.
     3.  **Validation Failure:** If validation returns errors, execution stops immediately. An `ExecutionReport` is generated with a `VALIDATION_FAILED` status and the list of validation errors.
-    4.  **Validation Success:** If validation passes, the command then invokes the `orchestrator.execute()` method, passing the `plan` object and a boolean `interactive` flag (which is `False` if `--yes` is present).
+    4.  **Validation Success:** If validation passes, the command then invokes the `orchestrator.execute()` method, passing the `plan` object and a boolean `interactive` flag (which is `False` when `-y` / `--yolo` auto-approval is active).
     5.  It receives the `ExecutionReport` domain model in return from either the validation step or the execution step.
     6.  It passes the report to a formatter (`MarkdownReportFormatter`) and prints the final Markdown report to standard output and the clipboard.
 

@@ -13,3 +13,4 @@ The `ISystemEnvironment` port abstracts all interactions with the host operating
 - `run_command(args: list[str], check: bool = True, background: bool = False) -> None`: Executes an external command. Supports non-blocking background execution.
 - `create_temp_file(suffix: str | None = None) -> str`: Creates a temporary file and returns its path.
 - `delete_file(path: str) -> None`: Deletes a file from the system.
+- `isatty() -> bool`: Reports whether a terminal is attached to stdin (wraps `sys.stdin.isatty()`). Consumed by the one-time editor-setup gate to decide whether a session will actually read the terminal.

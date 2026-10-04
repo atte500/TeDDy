@@ -17,3 +17,4 @@ The `SystemEnvironmentAdapter` provides a concrete implementation of the `ISyste
     -   **Background:** Uses `subprocess.Popen` with `start_new_session=True` to launch independent background processes (e.g., editors).
 - **Temp Files:** Uses `tempfile.NamedTemporaryFile` with `delete=False` to manage file lifecycles across process boundaries.
 - **PATH Lookup:** Uses `shutil.which`.
+- **TTY Detection:** `isatty()` delegates directly to `sys.stdin.isatty()`, reporting whether a terminal is attached to stdin (consumed by the one-time editor-setup gate).
