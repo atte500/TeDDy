@@ -39,3 +39,28 @@ def test_execute_no_yolo_flag_is_accepted_and_runs_interactively(
     assert result.exit_code == 0
     output = result.stdout + result.stderr
     assert "Action: CREATE" in output
+
+
+def test_execute_without_flag_uses_yolo_default_true(tmp_path, monkeypatch):
+    """Scenario: ``yolo_default: true`` makes a no-flag ``execute`` non-interactive.
+
+    When the config default is enabled, running ``execute`` without any yolo
+    flag must auto-approve actions (non-interactive mode), so the interactive
+    per-action prompt (``Action: <TYPE>``) is never emitted.
+    """
+    from teddy_executor.core.ports.outbound import IConfigService
+
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup().with_real_interactor()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
+    mock_config = env.get_service(IConfigService)
+    mock_config.get_setting.side_effect = lambda key, default=None: (
+        True if key == "yolo_default" else default
+    )
+
+    result = adapter.run_execute_with_plan(_create_plan(), input="", interactive=True)
+
+    assert result.exit_code == 0
+    output = result.stdout + result.stderr
+    assert "Action: CREATE" not in output

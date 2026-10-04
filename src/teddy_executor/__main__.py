@@ -56,11 +56,11 @@ def _resolve_yolo(yolo: Optional[bool], config_service: IConfigService) -> bool:
 
     An explicit flag always wins (``--yolo`` / ``-y`` -> ``True``,
     ``--no-yolo`` / ``-n`` -> ``False``). When the flag is unset, the mode
-    falls back to the resolved default (``False``).
+    falls back to the ``yolo_default`` config setting (code default ``False``).
     """
     if yolo is not None:
         return yolo
-    return False
+    return bool(config_service.get_setting("yolo_default", False))
 
 
 def _ensure_project_initialized(container, root_dir: str | None = None) -> None:

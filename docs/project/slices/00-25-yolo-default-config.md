@@ -75,7 +75,7 @@ Then the session runs in non-interactive mode
 
 - [x] **Contract** - Add a top-level `yolo_default: false` key (with an explanatory comment) to the shipped config template `src/teddy_executor/resources/config/config.yaml`, above the `yolo_guardrails` section.
 - [x] **Wiring** - Add the `IConfigService` import and a single-sourced `_resolve_yolo` helper; convert `start`, `resume`, and `execute` to the tri-state `--yolo/--no-yolo` (`-y/-n`) flag; resolve the config service from the container in each command (re-ordering `execute`). Add the acceptance test proving tri-state CLI behavior end-to-end (the Tracer Bullet).
-- [ ] **Logic** - Wire the config default into `_resolve_yolo` (fall back to `get_setting("yolo_default", False)` when the flag is unset). Add unit tests covering the full resolution matrix plus an acceptance test proving `yolo_default: true` drives the no-flag default.
+- [x] **Logic** - Wire the config default into `_resolve_yolo` (fall back to `get_setting("yolo_default", False)` when the flag is unset). Add unit tests covering the full resolution matrix plus an acceptance test proving `yolo_default: true` drives the no-flag default.
 - [ ] **Cleanup** - Update `docs/architecture/core/ports/outbound/config_service.md` (Standard Configuration Keys), `docs/architecture/adapters/inbound/cli.md` (tri-state flag), and `README.md` (config default + `--no-yolo` note).
 
 ## Implementation Notes
@@ -93,6 +93,11 @@ Then the session runs in non-interactive mode
 ### Delivery — pre-existing Mypy gate (Wiring commit)
 - The Wiring VCP commit was blocked by the staged-file-scoped Mypy pre-commit hook: staging `src/teddy_executor/__main__.py` (top-level `IConfigService` import + `_resolve_yolo` helper + tri-state option conversion) widened the hook's import graph and surfaced **8 pre-existing, out-of-scope** errors in 6 untouched files — `action_executor.py:208`, `console_interactor_ask_loop.py:106-107`, `textual_plan_reviewer_editor.py:203-204`, `textual_plan_reviewer_app.py:384`, `session_lifecycle_manager.py:92`, `tests/harness/setup/test_environment.py:27`. None are in the deliverable's own files.
 - Handled per the workflow's quality-gate rule: the debt is logged (this slice + `PROJECT.md` → Technical Debt) and the pre-commit stage is bypassed via `--no-verify` for this commit **only**; the post-commit full-suite test gate remains enforced. Root-cause fix is the documented Milestone 5 Mypy-debt task (isolate `msvcrt`/`termios` behind typed accessors; fix the return-value/assignment mismatches).
+
+### Logic — config-driven default
+- Replaced the Wiring tracer's hardcoded `return False` with `return bool(config_service.get_setting("yolo_default", False))`, so an unset flag now falls back to the config default while an explicit `--yolo`/`-y` (`True`) or `--no-yolo`/`-n` (`False`) still wins. Updated the helper docstring accordingly. This is a body-only change — the `_resolve_yolo` signature is unchanged, so every caller (`start`, `resume`, `execute`) stays Green-to-Green.
+- Unit matrix (`test_yolo_default_resolution.py`): parametrized `_resolve_yolo` across all six `(flag, config, expected)` combinations — `None` + config drives the result; explicit `True`/`False` override the config in both directions. A separate guard asserts the config service is never consulted when the flag is explicit. Uses a spec-bound `Mock(spec=IConfigService)` double (TID251-compliant; `MagicMock`/`patch` remain banned).
+- Acceptance config-default test (`test_yolo_default_config.py::test_execute_without_flag_uses_yolo_default_true`): overrides the harness `IConfigService` so `get_setting("yolo_default", …)` returns `True`, runs `execute` with no yolo flag and no input, and asserts the interactive per-action prompt (`Action: CREATE`) is absent — proving the config default drives non-interactive mode end-to-end. The prompt-only nature of `Action: <TYPE>` was confirmed during discovery (`format_action_prompt` is consumed only by the interactor's `confirm_action`, never by the report template/formatter).
 
 ## Verification
 
