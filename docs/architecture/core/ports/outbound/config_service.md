@@ -41,6 +41,7 @@ This is an interface and contains no implementation logic.
 
 ## 5. Standard Configuration Keys
 
+- `yolo_default`: Boolean setting the default mode for the `--yolo` / `-y` flag across `start`, `resume`, and `execute` (default `False`). When `true`, sessions run non-interactively unless overridden by `--no-yolo` / `-n`; the code-level default keeps pre-existing configs unchanged.
 - `execution.similarity_threshold`: Float value for fuzzy matching.
 - `max_execute_lines`: Integer limit for `EXECUTE` output truncation (default 100).
 - `max_read_lines`: Integer limit for `READ` output truncation (default 1000).

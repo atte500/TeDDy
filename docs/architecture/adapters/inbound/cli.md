@@ -101,6 +101,16 @@ Initializes a new session.
     4.  Triggers immediate planning and enters the interactive execution loop.
     5.  `--context` / `-c` is repeatable: each occurrence adds one path (e.g., `-c a.py -c b.md`). Comma-separated values within a single occurrence are also split for backward compatibility (`-c "a.py,b.md"`). Limitation: paths containing a literal comma cannot be expressed.
 
+### YOLO Mode Resolution (Tri-State `--yolo/--no-yolo`)
+
+`start`, `resume`, and `execute` all expose a **tri-state** `yolo` flag declared with the combined Typer form `typer.Option(None, "--yolo/--no-yolo", "-y/-n")`, yielding `None` (unset) / `True` (`--yolo` / `-y`) / `False` (`--no-yolo` / `-n`). Resolution is single-sourced through the `_resolve_yolo(yolo, config_service)` helper in `src/teddy_executor/__main__.py` (Poka-Yoke: the three commands cannot drift):
+
+1. An explicit flag always wins: `--yolo` / `-y` → non-interactive; `--no-yolo` / `-n` → interactive.
+2. When the flag is unset, the mode falls back to the top-level `yolo_default` config setting (`IConfigService.get_setting("yolo_default", False)`; code default `False`), so pre-existing configs behave unchanged.
+3. The resolved value participates in the command's existing interactivity expression `interactive = not (_resolve_yolo(...) or [pipeline or] yes or no_interactive or non_interactive)`, so the hidden non-interactive forces (`--yes`, `--pipeline`, `--no-interactive`, `--non-interactive`) still win.
+
+On `execute`, the config service is resolved from the container AFTER `get_container()` / `_ensure_project_initialized()`, so the `interactive_mode` computation happens after the config service is available.
+
 ### Editor Validation Preflight
 
 The CLI adapter performs editor validation during session startup (`handle_new_session`, `handle_resume_session`) via `_run_cli_preflight_check()`. When in interactive mode (`interactive=True`), the preflight check calls `_validate_editor_config()` which:

@@ -76,7 +76,7 @@ Then the session runs in non-interactive mode
 - [x] **Contract** - Add a top-level `yolo_default: false` key (with an explanatory comment) to the shipped config template `src/teddy_executor/resources/config/config.yaml`, above the `yolo_guardrails` section.
 - [x] **Wiring** - Add the `IConfigService` import and a single-sourced `_resolve_yolo` helper; convert `start`, `resume`, and `execute` to the tri-state `--yolo/--no-yolo` (`-y/-n`) flag; resolve the config service from the container in each command (re-ordering `execute`). Add the acceptance test proving tri-state CLI behavior end-to-end (the Tracer Bullet).
 - [x] **Logic** - Wire the config default into `_resolve_yolo` (fall back to `get_setting("yolo_default", False)` when the flag is unset). Add unit tests covering the full resolution matrix plus an acceptance test proving `yolo_default: true` drives the no-flag default.
-- [ ] **Cleanup** - Update `docs/architecture/core/ports/outbound/config_service.md` (Standard Configuration Keys), `docs/architecture/adapters/inbound/cli.md` (tri-state flag), and `README.md` (config default + `--no-yolo` note).
+- [x] **Cleanup** - Update `docs/architecture/core/ports/outbound/config_service.md` (Standard Configuration Keys), `docs/architecture/adapters/inbound/cli.md` (tri-state flag), and `README.md` (config default + `--no-yolo` note).
 
 ## Implementation Notes
 
@@ -98,6 +98,12 @@ Then the session runs in non-interactive mode
 - Replaced the Wiring tracer's hardcoded `return False` with `return bool(config_service.get_setting("yolo_default", False))`, so an unset flag now falls back to the config default while an explicit `--yolo`/`-y` (`True`) or `--no-yolo`/`-n` (`False`) still wins. Updated the helper docstring accordingly. This is a body-only change — the `_resolve_yolo` signature is unchanged, so every caller (`start`, `resume`, `execute`) stays Green-to-Green.
 - Unit matrix (`test_yolo_default_resolution.py`): parametrized `_resolve_yolo` across all six `(flag, config, expected)` combinations — `None` + config drives the result; explicit `True`/`False` override the config in both directions. A separate guard asserts the config service is never consulted when the flag is explicit. Uses a spec-bound `Mock(spec=IConfigService)` double (TID251-compliant; `MagicMock`/`patch` remain banned).
 - Acceptance config-default test (`test_yolo_default_config.py::test_execute_without_flag_uses_yolo_default_true`): overrides the harness `IConfigService` so `get_setting("yolo_default", …)` returns `True`, runs `execute` with no yolo flag and no input, and asserts the interactive per-action prompt (`Action: CREATE`) is absent — proving the config default drives non-interactive mode end-to-end. The prompt-only nature of `Action: <TYPE>` was confirmed during discovery (`format_action_prompt` is consumed only by the interactor's `confirm_action`, never by the report template/formatter).
+
+### Cleanup — documentation updates
+- `config_service.md`: added `yolo_default` as the first entry in "Standard Configuration Keys" — a top-level Boolean setting the default mode for the `--yolo` / `-y` flag across `start`/`resume`/`execute` (default `False`), with `--no-yolo` / `-n` overriding it per-invocation.
+- `cli.md`: added a `### YOLO Mode Resolution (Tri-State --yolo/--no-yolo)` subsection documenting the combined Typer declaration (`typer.Option(None, "--yolo/--no-yolo", "-y/-n")` → `None`/`True`/`False`), the single-sourced `_resolve_yolo` helper, the explicit-flag-wins / config-fallback / hidden-forces-still-win precedence, and the `execute` resolution-ordering note.
+- `README.md`: added a `--yolo` / `-y` entry to the "Optional flags" list (noting the `yolo_default: true` config default and the `--no-yolo` / `-n` per-run override) and a one-line note under the `--yolo` quick-start snippet.
+- Docs-only deliverable (no test layer): the change set touches no production code or tests, so the full suite is unaffected (confirmed green at 1569 passed / 5 skipped).
 
 ## Verification
 

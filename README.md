@@ -105,6 +105,8 @@ Run with `--yolo` / `-y` for automatic approval:
 teddy start -y
 ```
 
+To make automatic approval the default for every session, set `yolo_default: true` in `.teddy/config.yaml`. Pass `--no-yolo` / `-n` to force interactive mode for a single run.
+
 Resume a previous session:
 
 ```bash
@@ -124,6 +126,7 @@ teddy resume -m "your next instruction"
 - `--agent` / `-a` – Choose an agent persona (e.g., `pathfinder`, `architect`, `developer`).
 - `--context` / `-c` – Pass additional context files or directories. Repeatable (`-c a.py -c b.md`); comma-separated values are also accepted (`-c "a.py,b.md"`).
 - `--model` – Override the default model.
+- `--yolo` / `-y` – Auto-approve all actions (non-interactive). Set `yolo_default: true` in `.teddy/config.yaml` to make this the default for every session; `--no-yolo` / `-n` forces interactive mode for a single run.
 - `--pipeline` / `-p` – Pipeline mode: auto-approves all actions, requires `--message` / `-m`, exits after the first `## Message`.
 
 #### Browser chat usage
