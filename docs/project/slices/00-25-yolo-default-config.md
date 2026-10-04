@@ -73,14 +73,16 @@ Then the session runs in non-interactive mode
 
 ## Deliverables
 
-- [▶] **Contract** - Add a top-level `yolo_default: false` key (with an explanatory comment) to the shipped config template `src/teddy_executor/resources/config/config.yaml`, above the `yolo_guardrails` section.
+- [x] **Contract** - Add a top-level `yolo_default: false` key (with an explanatory comment) to the shipped config template `src/teddy_executor/resources/config/config.yaml`, above the `yolo_guardrails` section.
 - [ ] **Wiring** - Add the `IConfigService` import and a single-sourced `_resolve_yolo` helper; convert `start`, `resume`, and `execute` to the tri-state `--yolo/--no-yolo` (`-y/-n`) flag; resolve the config service from the container in each command (re-ordering `execute`). Add the acceptance test proving tri-state CLI behavior end-to-end (the Tracer Bullet).
 - [ ] **Logic** - Wire the config default into `_resolve_yolo` (fall back to `get_setting("yolo_default", False)` when the flag is unset). Add unit tests covering the full resolution matrix plus an acceptance test proving `yolo_default: true` drives the no-flag default.
 - [ ] **Cleanup** - Update `docs/architecture/core/ports/outbound/config_service.md` (Standard Configuration Keys), `docs/architecture/adapters/inbound/cli.md` (tri-state flag), and `README.md` (config default + `--no-yolo` note).
 
 ## Implementation Notes
 
-_(Filled during implementation.)_
+### Contract — shipped `yolo_default: false`
+- Added a top-level `yolo_default: false` key (with an explanatory comment) to `src/teddy_executor/resources/config/config.yaml`, immediately above the `yolo_guardrails` section. A fresh `teddy init` now ships the default explicitly; pre-existing configs without the key still resolve to `False` via the code-level fallback added in the Wiring/Logic deliverables.
+- Contract guard: added `tests/suites/unit/adapters/inbound/test_yolo_default_resolution.py::test_shipped_config_template_declares_yolo_default_false`, which loads the bundled template via `importlib.resources` and asserts the key is present and `is False`. This is the only meaningful Contract assertion here — a purely behavioural check cannot distinguish "key present as `false`" from "key absent", because `IConfigService.get_setting` returns the caller-supplied default in the absent case.
 
 ## Verification
 

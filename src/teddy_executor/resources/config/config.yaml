@@ -24,6 +24,11 @@ read:
 research:
   max_results: 5 # Number of SERP results to retrieve and automatically scrape.
 
+# Default for the --yolo / -y flag. When true, sessions auto-approve all
+# actions (non-interactive) without needing to pass --yolo. The explicit
+# --no-yolo / -n flag always overrides this setting for a single invocation.
+yolo_default: false
+
 # Safety limits enforced ONLY in --yolo mode. When a limit is hit the session
 # is terminated with a message explaining how to adjust these values.
 # Limits are per-run: `teddy resume` starts counting from 0 again.
