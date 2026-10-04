@@ -233,6 +233,11 @@ class TestEnvironment(RealAdapterMixin):
     def _apply_env_defaults(self, mock: Any) -> None:
         mock.get_env.return_value = None
         mock.which.return_value = None
+        # Deterministic TTY signal for the editor-setup gate (Slice 00-26): an
+        # unconfigured auto-specced isatty() returns a truthy MagicMock, which
+        # would make every CLI-driving test look as though it runs on a TTY.
+        # Pin it False by default; with_tty() opts a test into TTY-on/off.
+        mock.isatty.return_value = False
 
     def _apply_interactor_defaults(self, mock: Any) -> None:
         mock.confirm_action.return_value = (True, "")
@@ -258,6 +263,19 @@ class TestEnvironment(RealAdapterMixin):
                 "TestEnvironment.setup() must be called before get_service()"
             )
         return self.container.resolve(service_type)
+
+    def with_tty(self, value: bool = True) -> "TestEnvironment":
+        """Forces the mocked ``ISystemEnvironment`` double to report a TTY.
+
+        Mock-only toggle (Slice 00-26): sets the auto-specced
+        ``ISystemEnvironment`` double's ``isatty()`` return value so behavioural
+        tests can deterministically opt into TTY-on / TTY-off. Returns ``self``
+        for chaining, mirroring the ``with_real_*`` mixin helpers.
+        """
+        from teddy_executor.core.ports.outbound import ISystemEnvironment
+
+        self.get_service(ISystemEnvironment).isatty.return_value = value
+        return self
 
     def get_mock_filesystem(self) -> Mock:
         from teddy_executor.core.ports.outbound import IFileSystemManager
