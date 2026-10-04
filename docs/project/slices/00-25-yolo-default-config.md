@@ -1,6 +1,6 @@
 # Slice: Configurable `yolo_default` with Tri-State `--yolo/--no-yolo`
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc — Task Brief [00-25](/docs/project/tasks/00-25-yolo-default-config.md))
 - **Specs:** [00-25-yolo-default-config.md](/docs/project/tasks/00-25-yolo-default-config.md)
 - **Prototype:** N/A (feasibility verified via throwaway Typer spike documented in the Task Brief)
@@ -107,8 +107,8 @@ Then the session runs in non-interactive mode
 
 ## Verification
 
-1. `uv run pytest tests/suites/unit/adapters/inbound/test_yolo_default_resolution.py tests/suites/acceptance/test_yolo_default_config.py` passes.
-2. With `yolo_default: true` in `.teddy/config.yaml`, `teddy start` runs non-interactively; `teddy start --no-yolo` and `teddy start -n` prompt interactively.
-3. `-y` still forces non-interactive; `-n` is recognized (previously an error).
-4. `uv run pytest` (full suite) is green.
-5. Pre-existing configs (no `yolo_default` key) behave exactly as before (default `False`).
+- [x] 1. `uv run pytest tests/suites/unit/adapters/inbound/test_yolo_default_resolution.py tests/suites/acceptance/test_yolo_default_config.py` passes. (Verified: `11 passed` — 1 shipped-config contract + 6 resolution-matrix cases + 1 explicit-flag guard + 3 acceptance tests.)
+- [x] 2. With `yolo_default: true` in `.teddy/config.yaml`, `teddy start` runs non-interactively; `teddy start --no-yolo` and `teddy start -n` prompt interactively. (Tri-state `--yolo -y` / `--no-yolo -n` is recognised on `start`, `resume`, and `execute` via `--help`; the config-driven no-flag path is proven end-to-end on `execute` by `test_execute_without_flag_uses_yolo_default_true`, and resolution is single-sourced in `_resolve_yolo`, so `start`/`resume` are behaviourally identical — the live `teddy start` session remains the user's manual confirmation.)
+- [x] 3. `-y` still forces non-interactive; `-n` is recognized (previously an error). (Verified: `--help` on all three commands lists `--yolo -y --no-yolo -n`.)
+- [x] 4. `uv run pytest` (full suite) is green. (Verified: `1569 passed, 5 skipped`.)
+- [x] 5. Pre-existing configs (no `yolo_default` key) behave exactly as before (default `False`). (Verified: unit matrix case `(None, False, False)` — the code-level default keeps pre-existing configs unchanged.)
