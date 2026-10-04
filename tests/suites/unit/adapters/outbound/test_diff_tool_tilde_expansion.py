@@ -27,7 +27,11 @@ def _helper_with_diff_tool(value: str, resolved: str) -> ConsoleToolingHelper:
     mock_env.get_env.side_effect = lambda key: (
         value if key == "TEDDY_DIFF_TOOL" else None
     )
-    mock_env.which.side_effect = lambda name: resolved if name == resolved else None
+    # POSIXPathMock normalizes the `which()` argument's backslashes to forward
+    # slashes before the side_effect runs, so compare against the normalized
+    # form (the raw Windows baseline keeps a `\` in the home component).
+    normalized = resolved.replace("\\", "/")
+    mock_env.which.side_effect = lambda name: resolved if name == normalized else None
     mock_config.get_setting.return_value = None  # no editor / diff_flags override
     return helper
 

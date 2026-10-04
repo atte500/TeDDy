@@ -56,7 +56,11 @@ def test_resolve_editor_cmd_expands_tilde_path():
     mock_env = POSIXPathMock(spec=ISystemEnvironment)
     helper = ConsoleToolingHelper(mock_env, mock_config)
     expanded = os.path.expanduser("~/bin/myeditor")
-    mock_env.which.side_effect = lambda name: expanded if name == expanded else None
+    # POSIXPathMock normalizes the `which()` argument's backslashes to forward
+    # slashes before the side_effect runs, so compare against the normalized
+    # form (the raw Windows baseline keeps a `\` in the home component).
+    normalized = expanded.replace("\\", "/")
+    mock_env.which.side_effect = lambda name: expanded if name == normalized else None
 
     # Act
     result = helper._resolve_editor_cmd("~/bin/myeditor")
