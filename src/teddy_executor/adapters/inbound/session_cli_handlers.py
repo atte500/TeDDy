@@ -527,13 +527,17 @@ def _run_cli_preflight_check(
     container: Container,
     agent: Optional[str] = None,
     interactive: bool = True,
+    setup_editor: Optional[bool] = None,
 ) -> None:
     """Ensures system is configured before starting/resuming a session.
 
-    When ``interactive`` is True, an additional editor-configuration gate runs
-    on the success path so a missing or unconfigured editor is discovered and
-    persisted at startup. Non-interactive runs (``--yolo``/``--pipeline``) and
-    one-shot commands pass ``interactive=False`` and never block on a prompt.
+    When the editor gate resolves truthy, an additional editor-configuration
+    gate runs on the success path so a missing or unconfigured editor is
+    discovered and persisted at startup. The gate keys on ``setup_editor`` when
+    supplied, falling back to ``interactive`` only when it is ``None`` (Slice
+    00-26 decouples the one-time editor setup from the approval flag). Truly
+    headless runs (``--pipeline``/non-TTY/one-shot) pass ``setup_editor=False``
+    and never block on a prompt.
     """
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
     from teddy_executor.core.domain.models.exceptions import ConfigurationError
@@ -558,9 +562,11 @@ def _run_cli_preflight_check(
             errors.insert(0, agent_error)
 
     if not errors:
-        # Editor validation only runs interactively (spec 4); a non-interactive
-        # run must never prompt, so the gate is skipped entirely.
-        if interactive:
+        # Editor setup runs only when the session will actually read the
+        # terminal: an explicit ``setup_editor`` overrides the ``interactive``
+        # fallback so the one-time setup is decoupled from the approval flag
+        # (Slice 00-26); truly headless runs must never prompt.
+        if setup_editor if setup_editor is not None else interactive:
             _validate_editor_config(container)
         return
 
