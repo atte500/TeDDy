@@ -427,18 +427,22 @@ def test_preflight_check_gates_editor_validation_on_interactive_flag(
 
 @pytest.mark.parametrize(
     "setup_editor, interactive, expected_calls",
-    [(False, True, 0), (True, False, 1)],
+    [(True, True, 1), (True, False, 1), (False, True, 0), (False, False, 0)],
 )
 def test_preflight_check_gates_editor_validation_on_setup_editor_flag(
     env, monkeypatch, setup_editor, interactive, expected_calls
 ):
-    """An explicit ``setup_editor`` signal overrides the ``interactive`` fallback.
+    """An explicit ``setup_editor`` signal fully determines the gate.
 
     Slice 00-26 decouples the one-time editor setup from the approval flag: the
-    gate keys on ``setup_editor`` when it is supplied, falling back to
-    ``interactive`` only when it is ``None``. So ``setup_editor=False`` must skip
-    the gate even on an interactive run, and ``setup_editor=True`` must run it
-    even on a non-interactive run.
+    gate keys on ``setup_editor`` whenever it is supplied, falling back to
+    ``interactive`` only when it is ``None``. This pins the COMPLETE explicit
+    truth table -- including the two agreement cells where the explicit signal
+    and the fallback coincide (``(True, True)`` runs, ``(False, False)`` skips)
+    -- so the editor boundary is fully specified independently of the
+    higher-layer behavioural tests. ``setup_editor=False`` must skip the gate
+    even on an interactive run, and ``setup_editor=True`` must run it even on a
+    non-interactive run.
     """
     # Arrange - no config errors so the gate is reached on the success path.
     mock_llm = env.mock_port(ILlmClient)
