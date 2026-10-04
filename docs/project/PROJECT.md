@@ -92,7 +92,6 @@ This section defines the conventions for our project management artifacts.
     - **Configurable Limits:** Add `--max-turns` and `--max-cost` with sensible defaults (99 turns or $5 spent — set in config.yaml). These only apply in `-y` mode and are not cumulative (on `teddy resume`, start counting from 0).
     - **Configurable Tree Depth:** Add `max-project-tree-depth` config setting with omission indicators for truncated directories.
     - **Session Interrupt:** Add a way to interrupt a session (e.g., press `q`, then confirm with Enter). Partially delivered ad-hoc via [00-21-session-interrupt-resume-message.md](/docs/project/tasks/00-21-session-interrupt-resume-message.md) (Ctrl+C two-phase interrupt, pipeline MESSAGE suppression, `resume -m`); TUI `q`-during-execution remains here.
-    - **`--yolo` as Default:** Make `--yolo` mode a configurable default setting.
     - **Deprecate `--console`:** Mark `--console` mode as deprecated. Remove related dead code in a follow-up milestone.
 - **Proposed Vertical Slices:**
     - **`00-03-cli-arg-normalization`:** Apply casefold to all remaining `stem ==` comparisons in `session_service.py` (lines 83, 522), `session_repository.py` (line 139), and make the prompt lookup in `prompts.py` case-insensitive. Additionally, normalize context paths from the `-c` flag by stripping leading slash, `./` prefix, and normalizing backslashes before seeding `session.context`. This fixes two bugs: case-sensitive agent name matching and verbatim path appending without normalization.

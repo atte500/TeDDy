@@ -7,7 +7,7 @@
 To provide a polished, intuitive interactive experience that gives users full visibility into session state and context, while adding foundational quality-of-life features like MOVE/DELETE actions, configurable limits, and session interrupt.
 
 ## Proposed Solution (The "What")
-Expand the TUI with improved navigation, context interactions, and metadata visibility. Add new action types (`MOVE`, `DELETE`) with context manifest awareness. Introduce configurable session limits and tree depth settings. Implement a session interrupt mechanism. Make `--yolo` mode configurable by default. Deprecate `--console` mode.
+Expand the TUI with improved navigation, context interactions, and metadata visibility. Add new action types (`MOVE`, `DELETE`) with context manifest awareness. Introduce configurable session limits and tree depth settings. Implement a session interrupt mechanism. Deprecate `--console` mode.
 
 ## Guidelines (The "How")
 - **Test Harness Strategy:**
@@ -24,7 +24,6 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
     - `session.max_turns: 99` (default)
     - `session.max_cost: 5.0` (default, in dollars)
     - `context.max_tree_depth: 4` (default, 0 = unlimited)
-    - `session.yolo_default: false` (default)
 - **TUI Changes:**
     - Alt+Up/Down: Section navigation with scroll-at-bottom behavior and sub-section awareness.
     - `e` key: Context-sensitive actions (open context file, open file, agent switch).
@@ -47,7 +46,6 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
 > 9. Configurable session limits (max-turns, max-cost)
 > 10. Configurable tree depth
 > 11. Session interrupt mechanism
-> 12. `--yolo` default config option
-> 13. `--console` deprecation marking
-> 14. Ad-hoc: CLI arg normalization (00-03)
-> 15. Ad-hoc: Remove bare except in InitService (00-04)
+> 12. `--console` deprecation marking
+> 13. Ad-hoc: CLI arg normalization (00-03)
+> 14. Ad-hoc: Remove bare except in InitService (00-04)
