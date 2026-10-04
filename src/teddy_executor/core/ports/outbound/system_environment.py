@@ -23,3 +23,7 @@ class ISystemEnvironment(Protocol):
     def delete_file(self, path: str) -> None:
         """Wraps os.unlink."""
         ...
+
+    def isatty(self) -> bool:
+        """Wraps sys.stdin.isatty() to report whether a terminal is attached to stdin."""
+        ...

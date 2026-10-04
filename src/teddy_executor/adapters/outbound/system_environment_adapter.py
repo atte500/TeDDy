@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess  # nosec
+import sys
 import tempfile
 from typing import List, Optional
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
@@ -11,6 +12,9 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
     def which(self, command: str) -> Optional[str]:
         return shutil.which(command)
 
+    def isatty(self) -> bool:
+        return sys.stdin.isatty()
+
     def get_env(self, key: str) -> Optional[str]:
         return os.getenv(key)
 
@@ -18,8 +22,6 @@ class SystemEnvironmentAdapter(ISystemEnvironment):
         self, args: List[str], check: bool = True, background: bool = False
     ) -> None:
         """Wraps subprocess.run (synchronous) or subprocess.Popen (background)."""
-        import sys
-
         if background:
             # We don't wait for the result
             # Mirrors spawn_editor() in textual_plan_reviewer_editor.py: on
