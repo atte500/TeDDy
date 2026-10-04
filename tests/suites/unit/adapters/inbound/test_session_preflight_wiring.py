@@ -391,58 +391,24 @@ def test_preflight_check_value_error_without_available_agents(env):
 
 
 # ---------------------------------------------------------------------------
-# Interactive gating of the editor-validation gate (merged Migration deliverable)
+# Gating of the editor-validation gate on the editor-setup signal
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
-    "interactive, expected_calls",
+    "setup_editor, expected_calls",
     [(True, 1), (False, 0)],
 )
-def test_preflight_check_gates_editor_validation_on_interactive_flag(
-    env, monkeypatch, interactive, expected_calls
-):
-    """The preflight editor gate runs ONLY in interactive mode (spec §4).
-
-    Non-interactive runs (--yolo/--pipeline) and one-shot commands must never
-    block on an editor prompt, so ``_validate_editor_config`` is invoked solely
-    when ``interactive`` is True.
-    """
-    # Arrange - no config errors so the gate is reached on the success path.
-    mock_llm = env.mock_port(ILlmClient)
-    mock_llm.validate_config.return_value = []
-
-    editor_calls = []
-    monkeypatch.setattr(
-        "teddy_executor.adapters.inbound.session_cli_handlers._validate_editor_config",
-        lambda container: editor_calls.append(container),
-    )
-
-    # Act
-    _run_cli_preflight_check(container=env.container, interactive=interactive)
-
-    # Assert - the gate is invoked exactly when interactive is True.
-    assert len(editor_calls) == expected_calls
-
-
-@pytest.mark.parametrize(
-    "setup_editor, interactive, expected_calls",
-    [(True, True, 1), (True, False, 1), (False, True, 0), (False, False, 0)],
-)
 def test_preflight_check_gates_editor_validation_on_setup_editor_flag(
-    env, monkeypatch, setup_editor, interactive, expected_calls
+    env, monkeypatch, setup_editor, expected_calls
 ):
-    """An explicit ``setup_editor`` signal fully determines the gate.
+    """The preflight editor gate is keyed solely on ``setup_editor``.
 
     Slice 00-26 decouples the one-time editor setup from the approval flag: the
-    gate keys on ``setup_editor`` whenever it is supplied, falling back to
-    ``interactive`` only when it is ``None``. This pins the COMPLETE explicit
-    truth table -- including the two agreement cells where the explicit signal
-    and the fallback coincide (``(True, True)`` runs, ``(False, False)`` skips)
-    -- so the editor boundary is fully specified independently of the
-    higher-layer behavioural tests. ``setup_editor=False`` must skip the gate
-    even on an interactive run, and ``setup_editor=True`` must run it even on a
-    non-interactive run.
+    Migration deliverable contracted the ``interactive`` fallback, so the gate
+    now runs exactly when ``setup_editor`` is True (the caller computed "the
+    session will read the terminal") and skips otherwise. ``interactive`` no
+    longer participates in the editor boundary.
     """
     # Arrange - no config errors so the gate is reached on the success path.
     mock_llm = env.mock_port(ILlmClient)
@@ -455,11 +421,9 @@ def test_preflight_check_gates_editor_validation_on_setup_editor_flag(
     )
 
     # Act
-    _run_cli_preflight_check(
-        container=env.container, interactive=interactive, setup_editor=setup_editor
-    )
+    _run_cli_preflight_check(container=env.container, setup_editor=setup_editor)
 
-    # Assert - the gate is invoked exactly when the resolved signal is True.
+    # Assert - the gate is invoked exactly when ``setup_editor`` is True.
     assert len(editor_calls) == expected_calls
 
 
@@ -467,7 +431,7 @@ def test_full_preflight_flow_persists_discovered_editor_selection(env, monkeypat
     """End-to-end tracer bullet for the editor-validation preflight flow.
 
     Unlike the direct-call orchestrator and prompt-helper tests above, this
-    drives the COMPLETE flow -- ``_run_cli_preflight_check(interactive=True)``
+    drives the COMPLETE flow -- ``_run_cli_preflight_check(setup_editor=True)``
     through the REAL ``_validate_editor_config`` into
     ``_prompt_for_editor_selection`` and finally ``set_setting`` -- with
     discovery stubbed at the ``discover_editors`` boundary.
@@ -488,8 +452,8 @@ def test_full_preflight_flow_persists_discovered_editor_selection(env, monkeypat
     )
     _patch_prompt(monkeypatch, ["1"])
 
-    # Act - the full interactive preflight boundary.
-    _run_cli_preflight_check(container=env.container, interactive=True)
+    # Act - the full preflight boundary with editor setup enabled.
+    _run_cli_preflight_check(container=env.container, setup_editor=True)
 
     # Assert - the numbered selection is persisted as its basename.
     mock_config.set_setting.assert_called_once_with("editor", "nvim")

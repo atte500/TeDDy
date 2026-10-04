@@ -448,7 +448,6 @@ def handle_new_session(  # noqa: PLR0913
         _run_cli_preflight_check(
             container,
             agent=agent,
-            interactive=interactive,
             setup_editor=setup_editor,
         )
         _echo_config_success(container, agent, model=model)
@@ -532,18 +531,16 @@ def _echo_config_success(
 def _run_cli_preflight_check(
     container: Container,
     agent: Optional[str] = None,
-    interactive: bool = True,
     setup_editor: Optional[bool] = None,
 ) -> None:
     """Ensures system is configured before starting/resuming a session.
 
-    When the editor gate resolves truthy, an additional editor-configuration
-    gate runs on the success path so a missing or unconfigured editor is
-    discovered and persisted at startup. The gate keys on ``setup_editor`` when
-    supplied, falling back to ``interactive`` only when it is ``None`` (Slice
-    00-26 decouples the one-time editor setup from the approval flag). Truly
-    headless runs (``--pipeline``/non-TTY/one-shot) pass ``setup_editor=False``
-    and never block on a prompt.
+    When ``setup_editor`` is truthy, an additional editor-configuration gate
+    runs on the success path so a missing or unconfigured editor is discovered
+    and persisted at startup. The one-time editor setup is decoupled from the
+    approval flag (Slice 00-26): every caller supplies ``setup_editor``
+    explicitly, and truly headless runs (``--pipeline``/non-TTY/one-shot) pass
+    ``setup_editor=False`` so they never block on a prompt.
     """
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
     from teddy_executor.core.domain.models.exceptions import ConfigurationError
@@ -569,10 +566,9 @@ def _run_cli_preflight_check(
 
     if not errors:
         # Editor setup runs only when the session will actually read the
-        # terminal: an explicit ``setup_editor`` overrides the ``interactive``
-        # fallback so the one-time setup is decoupled from the approval flag
-        # (Slice 00-26); truly headless runs must never prompt.
-        if setup_editor if setup_editor is not None else interactive:
+        # terminal; callers pass an explicit ``setup_editor`` signal so the
+        # one-time setup stays decoupled from the approval flag (Slice 00-26).
+        if setup_editor:
             _validate_editor_config(container)
         return
 
@@ -741,7 +737,6 @@ def handle_plan_generation(container: Container, message: Optional[str]):
         _run_cli_preflight_check(
             container,
             agent="pathfinder",
-            interactive=False,
             setup_editor=False,
         )
         _echo_config_success(container)
@@ -867,7 +862,6 @@ def handle_resume_session(  # noqa: PLR0913
         typer.echo("Checking configurations...", err=True)
         _run_cli_preflight_check(
             container,
-            interactive=interactive,
             setup_editor=setup_editor,
         )
 
