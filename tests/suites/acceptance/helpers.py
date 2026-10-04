@@ -46,7 +46,7 @@ def run_execute_with_plan_content(
     """
     with monkeypatch.context() as m:
         m.chdir(cwd)
-        args = ["execute", "--yes", "--no-copy", "--plan-content", plan_content]
+        args = ["execute", "-y", "--no-copy", "--plan-content", plan_content]
         return runner.invoke(app, args, input=user_input)
 
 

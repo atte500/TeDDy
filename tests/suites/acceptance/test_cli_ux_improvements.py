@@ -75,7 +75,7 @@ def test_config_check_message_is_localized_to_start_command(tmp_path, monkeypatc
 
     # 1. Verify message IS present in 'start'
     # Use a dummy message to trigger the handler
-    result_start = adapter.run_cli_command(["start", "-m", "test", "--no-interactive"])
+    result_start = adapter.run_cli_command(["start", "-m", "test", "-y"])
     assert "Checking configurations..." in result_start.stderr
 
     # 2. Verify message is NOT present in 'execute'

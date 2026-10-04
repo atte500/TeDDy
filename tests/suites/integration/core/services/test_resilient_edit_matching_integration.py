@@ -54,7 +54,7 @@ def test_fuzzy_edit_success_with_diff_in_report(tmp_path, monkeypatch):
             print('hello universe')
         ```
         """)
-    result = runner.invoke(app, ["execute", "--plan-content", plan, "--yes"])
+    result = runner.invoke(app, ["execute", "--plan-content", plan, "-y"])
 
     assert result.exit_code == 0
     # Check that the file was updated
@@ -115,7 +115,7 @@ def test_edit_custom_threshold_fail(tmp_path, monkeypatch):
             print('hello universe')
         ```
         """)
-    result = runner.invoke(app, ["execute", "--plan-content", plan, "--yes"])
+    result = runner.invoke(app, ["execute", "--plan-content", plan, "-y"])
 
     assert result.exit_code != 0
     assert "The `FIND` block could not be located" in result.stdout
@@ -172,7 +172,7 @@ def test_edit_ambiguity_tie_fail(tmp_path, monkeypatch):
             print('done')
         ```
         """)
-    result = runner.invoke(app, ["execute", "--plan-content", plan, "--yes"])
+    result = runner.invoke(app, ["execute", "--plan-content", plan, "-y"])
 
     assert result.exit_code != 0
     assert "ambiguous" in result.stdout.lower()

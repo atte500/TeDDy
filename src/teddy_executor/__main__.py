@@ -161,9 +161,6 @@ def start(  # noqa: PLR0913
         ),
     ),
     pipeline: bool = OPT_PIPELINE,
-    yes: bool = typer.Option(False, "--yes", hidden=True),
-    no_interactive: bool = typer.Option(False, "--no-interactive", hidden=True),
-    non_interactive: bool = typer.Option(False, "--non-interactive", hidden=True),
     no_copy: bool = OPT_NO_COPY,
     message: Optional[str] = typer.Option(
         None, "-m", "--message", help="Instruction for the first turn."
@@ -205,13 +202,7 @@ def start(  # noqa: PLR0913
         else None
     )
 
-    interactive = not (
-        _resolve_yolo(yolo, config_service)
-        or pipeline
-        or yes
-        or no_interactive
-        or non_interactive
-    )
+    interactive = not (_resolve_yolo(yolo, config_service) or pipeline)
     system_env = container.resolve(ISystemEnvironment)
     handle_new_session(
         container=container,
@@ -433,9 +424,6 @@ def resume(  # noqa: PLR0913
             "--no-yolo / -n forces interactive mode."
         ),
     ),
-    yes: bool = typer.Option(False, "--yes", hidden=True),
-    no_interactive: bool = typer.Option(False, "--no-interactive", hidden=True),
-    non_interactive: bool = typer.Option(False, "--non-interactive", hidden=True),
     no_copy: bool = OPT_NO_COPY,
     model: Optional[str] = typer.Option(None, "--model", help="LLM model override."),
     provider: Optional[str] = typer.Option(
@@ -466,13 +454,7 @@ def resume(  # noqa: PLR0913
     _ensure_project_initialized(container)
     config_service = container.resolve(IConfigService)
 
-    interactive = not (
-        _resolve_yolo(yolo, config_service)
-        or pipeline
-        or yes
-        or no_interactive
-        or non_interactive
-    )
+    interactive = not (_resolve_yolo(yolo, config_service) or pipeline)
     system_env = container.resolve(ISystemEnvironment)
     handle_resume_session(
         container=container,
@@ -504,9 +486,6 @@ def execute(  # noqa: PLR0913
             "--no-yolo / -n forces interactive mode."
         ),
     ),
-    yes: bool = typer.Option(False, "--yes", hidden=True),
-    no_interactive: bool = typer.Option(False, "--no-interactive", hidden=True),
-    non_interactive: bool = typer.Option(False, "--non-interactive", hidden=True),
     no_copy: bool = OPT_NO_COPY,
     plan_content: Optional[str] = typer.Option(
         None, "--plan-content", help="Plan content.", show_default=False
@@ -531,9 +510,7 @@ def execute(  # noqa: PLR0913
     container = get_container()
     _ensure_project_initialized(container)
     config_service = container.resolve(IConfigService)
-    interactive_mode = not (
-        _resolve_yolo(yolo, config_service) or yes or no_interactive or non_interactive
-    )
+    interactive_mode = not _resolve_yolo(yolo, config_service)
 
     try:
         final_plan_content = get_plan_content(plan_content, plan_file)

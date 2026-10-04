@@ -49,7 +49,7 @@ hello
     monkeypatch.chdir(tmp_path)
 
     # Act: Run teddy resume
-    result = runner.invoke(app, ["resume", session_name, "--no-interactive"])
+    result = runner.invoke(app, ["resume", session_name, "-y"])
 
     # Assert
     assert result.exit_code == 0

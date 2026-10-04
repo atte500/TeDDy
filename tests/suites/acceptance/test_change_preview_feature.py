@@ -189,7 +189,7 @@ def test_invalid_custom_tool_falls_back_to_terminal(tmp_path: Path, monkeypatch)
 
 
 def test_no_diff_is_shown_for_auto_approved_plans(tmp_path: Path, monkeypatch):
-    """Scenario: No diff shown when --yes is used."""
+    """Scenario: No diff shown when -y is used."""
     from unittest.mock import Mock
 
     env = TestEnvironment(monkeypatch, tmp_path)
@@ -209,9 +209,7 @@ def test_no_diff_is_shown_for_auto_approved_plans(tmp_path: Path, monkeypatch):
         .build()
     )
 
-    result = adapter.run_command(
-        ["execute", "--yes", "--no-copy", "--plan-content", plan]
-    )
+    result = adapter.run_command(["execute", "-y", "--no-copy", "--plan-content", plan])
 
     assert result.exit_code == 0
     assert (tmp_path / filename).read_text() == "Hello, TeDDy!"

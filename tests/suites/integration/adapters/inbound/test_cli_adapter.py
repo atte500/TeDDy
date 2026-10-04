@@ -37,7 +37,7 @@ def test_cli_invokes_orchestrator_with_plan_file(monkeypatch, tmp_path):
     p.write_text(valid_plan, encoding="utf-8")
 
     # ACT
-    result = cli.run_cli_command(["execute", str(p), "--yes"])
+    result = cli.run_cli_command(["execute", str(p), "-y"])
 
     # ASSERT
     assert result.exit_code == 0, f"CLI exited with error: {result.stderr}"
@@ -73,7 +73,7 @@ def test_cli_exits_with_error_code_on_failure(monkeypatch, tmp_path):
     p.write_text(valid_plan, encoding="utf-8")
 
     # ACT
-    result = cli.run_cli_command(["execute", str(p), "--yes"])
+    result = cli.run_cli_command(["execute", str(p), "-y"])
 
     # ASSERT
     assert result.exit_code == 1
