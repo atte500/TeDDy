@@ -415,6 +415,7 @@ def handle_new_session(  # noqa: PLR0913
     model: Optional[str] = None,
     provider: Optional[str] = None,
     api_key: Optional[str] = None,
+    setup_editor: Optional[bool] = None,
 ):
     """Logic for the 'start' command."""
     import threading
@@ -444,7 +445,12 @@ def handle_new_session(  # noqa: PLR0913
 
         # 2. Pre-flight checks (Fail-fast before user interaction)
         typer.echo("Checking configurations...", err=True)
-        _run_cli_preflight_check(container, agent=agent, interactive=interactive)
+        _run_cli_preflight_check(
+            container,
+            agent=agent,
+            interactive=interactive,
+            setup_editor=setup_editor,
+        )
         _echo_config_success(container, agent, model=model)
 
         session_manager: ISessionManager = container.resolve(ISessionManager)
@@ -732,7 +738,12 @@ def handle_plan_generation(container: Container, message: Optional[str]):
     """Logic for the 'plan' command."""
     try:
         # Note: 'plan' command uses the default 'pathfinder' agent if not in a session
-        _run_cli_preflight_check(container, agent="pathfinder", interactive=False)
+        _run_cli_preflight_check(
+            container,
+            agent="pathfinder",
+            interactive=False,
+            setup_editor=False,
+        )
         _echo_config_success(container)
 
         planning_service: IPlanningUseCase = container.resolve(IPlanningUseCase)
@@ -833,6 +844,7 @@ def handle_resume_session(  # noqa: PLR0913
     api_key: Optional[str] = None,
     message: Optional[str] = None,
     pipeline: bool = False,
+    setup_editor: Optional[bool] = None,
 ):
     """Logic for the 'resume' command."""
     import threading
@@ -853,7 +865,11 @@ def handle_resume_session(  # noqa: PLR0913
 
         # 2. Pre-flight checks
         typer.echo("Checking configurations...", err=True)
-        _run_cli_preflight_check(container, interactive=interactive)
+        _run_cli_preflight_check(
+            container,
+            interactive=interactive,
+            setup_editor=setup_editor,
+        )
 
         # 2. Resolve session name
         session_name = _resolve_session_name(container, path)

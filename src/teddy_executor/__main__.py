@@ -12,6 +12,7 @@ from teddy_executor.core.domain.models import (
     ExecutionReport,
 )
 from teddy_executor.core.ports.outbound.config_service import IConfigService
+from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 
 if TYPE_CHECKING:
     from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
@@ -61,6 +62,26 @@ def _resolve_yolo(yolo: Optional[bool], config_service: IConfigService) -> bool:
     if yolo is not None:
         return yolo
     return bool(config_service.get_setting("yolo_default", False))
+
+
+def _resolve_setup_editor(
+    system_env: ISystemEnvironment,
+    interactive: bool,
+    message: Optional[str],
+    pipeline: bool,
+) -> bool:
+    """Resolve whether the one-time editor setup should run (Slice 00-26).
+
+    The editor gate keys on "will the session actually read the terminal"
+    rather than on the approval (``interactive``) flag: setup runs only when a
+    terminal is attached (``system_env.isatty``), the run is not a pipeline,
+    and the session will either enter the approval loop (``interactive``) or
+    block on the opening-message prompt (``message is None``). This lets a yolo
+    run without ``-m`` configure its editor once, while fully-specified batch
+    runs (``-y -m``), pipeline runs, and non-TTY (CI/piped) runs stay
+    prompt-free.
+    """
+    return system_env.isatty() and not pipeline and (interactive or message is None)
 
 
 def _ensure_project_initialized(container, root_dir: str | None = None) -> None:
@@ -184,16 +205,21 @@ def start(  # noqa: PLR0913
         else None
     )
 
+    interactive = not (
+        _resolve_yolo(yolo, config_service)
+        or pipeline
+        or yes
+        or no_interactive
+        or non_interactive
+    )
+    system_env = container.resolve(ISystemEnvironment)
     handle_new_session(
         container=container,
         name=name,
         agent=agent,
-        interactive=not (
-            _resolve_yolo(yolo, config_service)
-            or pipeline
-            or yes
-            or no_interactive
-            or non_interactive
+        interactive=interactive,
+        setup_editor=_resolve_setup_editor(
+            system_env, interactive=interactive, message=message, pipeline=pipeline
         ),
         no_copy=no_copy,
         message=message,
@@ -440,15 +466,20 @@ def resume(  # noqa: PLR0913
     _ensure_project_initialized(container)
     config_service = container.resolve(IConfigService)
 
+    interactive = not (
+        _resolve_yolo(yolo, config_service)
+        or pipeline
+        or yes
+        or no_interactive
+        or non_interactive
+    )
+    system_env = container.resolve(ISystemEnvironment)
     handle_resume_session(
         container=container,
         path=path,
-        interactive=not (
-            _resolve_yolo(yolo, config_service)
-            or pipeline
-            or yes
-            or no_interactive
-            or non_interactive
+        interactive=interactive,
+        setup_editor=_resolve_setup_editor(
+            system_env, interactive=interactive, message=message, pipeline=pipeline
         ),
         no_copy=no_copy,
         model=model,
