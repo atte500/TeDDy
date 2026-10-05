@@ -145,6 +145,11 @@ class TestResumeMessageBeforeFirstPlan:
         content = fs.files[INITIAL_REQUEST]
         assert "Build a login page" in content
         assert MESSAGE in content
+        # The appended request must be plain text, NOT a `## Additional
+        # Request` heading + smart-fenced codeblock: the initial request and
+        # the injected message sit on adjacent lines.
+        assert "## Additional Request" not in content
+        assert content == f"Build a login page\n{MESSAGE}\n"
 
 
 class TestResumeMessageMidSessionPreserved:

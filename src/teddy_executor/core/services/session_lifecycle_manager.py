@@ -213,8 +213,8 @@ class SessionLifecycleManager:
         predecessor report -- so `_append_message_to_previous_turn` is a hard
         no-op there. `initial_request.md` is the durable artifact seeded into
         `session.context` at session creation and consumed to generate the
-        first plan, so the injected message is appended under a smart-fenced
-        `## Additional Request` heading to persist it.
+        first plan, so the injected message is appended as plain text
+        immediately after the initial request.
         """
         request_path = self._session_service.to_root_relative(
             Path(turn_path).parent, "initial_request.md"
@@ -222,8 +222,7 @@ class SessionLifecycleManager:
         if not self._file_system_manager.path_exists(request_path):
             return
         content = str(self._file_system_manager.read_file(request_path)).rstrip("\n")
-        fence = get_fence_for_content(message)
-        content += f"\n\n## Additional Request\n{fence}text\n{message}\n{fence}\n"
+        content += f"\n{message}\n"
         self._file_system_manager.write_file(request_path, content)
 
     def _append_user_request(self, turn_path: str, message: str) -> None:
