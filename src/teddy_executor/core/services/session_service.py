@@ -249,21 +249,11 @@ class SessionService(ISessionManager):
 
         # 1. Resolve current state
         meta = self._repository.load_meta(cur_dir.as_posix())
-        next_id, next_session_dir, is_migration = self._resolve_next_turn_path(cur_dir)
-        if is_migration:
-            # Atomically claim the continuation root BEFORE any persistence so
-            # a concurrent migration can never write into an occupied sibling.
-            claimed_root = self._claim_session_root(next_session_dir.name)
-            next_session_dir = Path(claimed_root)
+        next_id, next_session_dir = self._resolve_next_turn_path(cur_dir)
         next_dir = (next_session_dir / next_id).as_posix()
 
         # 2. Setup next directory
         self._repository.create_turn_directory(next_dir)
-
-        if is_migration:
-            self._clone_session_artifacts(
-                cur_dir.parent, next_session_dir, cur_dir, Path(next_dir), meta
-            )
 
         # 3. Persist metadata
         self._persist_next_meta(
@@ -496,14 +486,10 @@ class SessionService(ISessionManager):
         """Resolves a session name from a given path."""
         return self._repository.resolve_session_from_path(path)
 
-    def _resolve_next_turn_path(self, cur_dir: Path) -> tuple[str, Path, bool]:
-        """Determines the next turn ID, session directory, and migration status."""
-        if cur_dir.name == "99":
-            new_name = self._calculate_continuation_name(cur_dir.parent.name)
-            return "01", cur_dir.parent.parent / new_name, True
-
+    def _resolve_next_turn_path(self, cur_dir: Path) -> tuple[str, Path]:
+        """Determines the next turn ID and session directory (same session)."""
         next_id = f"{int(cur_dir.name) + 1:02d}"
-        return next_id, cur_dir.parent, False
+        return next_id, cur_dir.parent
 
     def _calculate_continuation_name(self, current_name: str) -> str:
         """Determines the next session name with an incremented suffix."""
@@ -534,36 +520,3 @@ class SessionService(ISessionManager):
             if self._file_system_manager.create_directory_exclusive(root):
                 return root
             candidate = self._calculate_continuation_name(candidate)
-
-    def _clone_session_artifacts(
-        self,
-        src_session: Path,
-        dest_session: Path,
-        src_turn: Path,
-        dest_turn: Path,
-        meta: Dict[str, Any],
-    ) -> None:
-        """Clones core session and agent artifacts during migration."""
-        # 1. session.context
-        old_ctx = src_session / "session.context"
-        if self._file_system_manager.path_exists(old_ctx.as_posix()):
-            content = self._file_system_manager.read_file(old_ctx.as_posix())
-            self._file_system_manager.write_file(
-                (dest_session / "session.context").as_posix(), content
-            )
-
-        # 2. Agent Prompt (from Session to Session-N)
-        agent_name = meta.get("agent_name", "pf")
-        # Find the prompt file in the source session (any extension)
-        src_prompt_path = None
-        src_session_str = src_session.as_posix()
-        if self._file_system_manager.path_exists(src_session_str):
-            for f in self._file_system_manager.list_directory(src_session_str):
-                if Path(f).stem.casefold() == agent_name.casefold():
-                    src_prompt_path = (src_session / f).as_posix()
-                    break
-        if src_prompt_path and self._file_system_manager.path_exists(src_prompt_path):
-            content = self._file_system_manager.read_file(src_prompt_path)
-            # Preserve the original filename (including extension)
-            dest_prompt_path = (dest_session / Path(src_prompt_path).name).as_posix()
-            self._file_system_manager.write_file(dest_prompt_path, content)

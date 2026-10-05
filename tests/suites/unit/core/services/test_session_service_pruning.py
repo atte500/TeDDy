@@ -1,6 +1,5 @@
 import pytest
 from pathlib import Path
-from unittest.mock import ANY
 from tests.harness.setup.mocking import register_mock
 from teddy_executor.core.services.session_service import SessionService
 from teddy_executor.core.services.prompt_manager import PromptManager
@@ -76,31 +75,6 @@ def test_create_session_does_not_put_prompt_in_turn_directory(service, mock_deps
     )
 
 
-def test_migration_does_not_clone_prompt_into_new_turn_directory(service, mock_deps):
-    # Arrange: Scenario where we are at turn 99 and transition
-    cur_plan_path = ".teddy/sessions/my-session/99/plan.md"
-    mock_deps["repo"].load_meta.return_value = {
-        "turn_id": "99",
-        "agent_name": "pathfinder",
-        "cumulative_cost": 1.0,
-    }
-    # Mocking the filesystem for migration
-    mock_deps["fsm"].path_exists.return_value = True
-
-    # Act
-    service.transition_to_next_turn(cur_plan_path)
-
-    # Assert
-    # Session root for the new session should have the prompt
-    # But the turn directory (01) should NOT
-    forbidden_turn_prompt = ".teddy/sessions/my-session-2/01/pathfinder.xml"
-    write_paths = [call.args[0] for call in mock_deps["fsm"].write_file.call_args_list]
-
-    assert forbidden_turn_prompt not in write_paths, (
-        "Prompt should not be cloned into turn directory during migration"
-    )
-
-
 def test_transition_does_not_put_prompt_in_turn_directory(service, mock_deps):
     # Arrange
     cur_plan_path = ".teddy/sessions/my-session/01/plan.md"
@@ -120,38 +94,6 @@ def test_transition_does_not_put_prompt_in_turn_directory(service, mock_deps):
     write_paths = [call.args[0] for call in mock_deps["fsm"].write_file.call_args_list]
     assert forbidden_turn_prompt not in write_paths, (
         "Prompt should not be written to turn 02 directory"
-    )
-
-
-def test_migration_99_to_01_does_not_put_prompt_in_turn_directory(service, mock_deps):
-    # Arrange
-    cur_plan_path = ".teddy/sessions/my-session/99/plan.md"
-    mock_deps["repo"].load_meta.return_value = {
-        "turn_id": "99",
-        "agent_name": "pathfinder",
-        "cumulative_cost": 4.5,
-    }
-    mock_deps["repo"].read_context_file.return_value = set()
-    mock_deps["repo"].to_root_relative.return_value = "99/plan.md"
-    mock_deps["fsm"].path_exists.return_value = True
-    mock_deps["fsm"].list_directory.side_effect = lambda d: {
-        ".teddy/sessions/my-session": ["pathfinder.xml"],
-    }.get(d, [])
-    mock_deps["fsm"].read_file.side_effect = lambda p: "<prompt/>"  # noqa: ARG005
-
-    # Act
-    service.transition_to_next_turn(cur_plan_path)
-
-    # Assert
-    # We expect prompt at the NEW session root
-    expected_new_root_prompt = ".teddy/sessions/my-session-2/pathfinder.xml"
-    mock_deps["fsm"].write_file.assert_any_call(expected_new_root_prompt, ANY)
-
-    # We strictly FORBID it in the NEW Turn 01 directory
-    forbidden_turn_prompt = ".teddy/sessions/my-session-2/01/pathfinder.xml"
-    write_paths = [call.args[0] for call in mock_deps["fsm"].write_file.call_args_list]
-    assert forbidden_turn_prompt not in write_paths, (
-        "Prompt should not be cloned into NEW turn 01 directory during migration"
     )
 
 
