@@ -189,14 +189,16 @@ class LocalFileSystemAdapter(IFileSystemManager):
 
     def read_files_in_vault(self, paths: list[str]) -> dict[str, str | None]:
         """
-        Reads the content of multiple files specified in a list.
-        Returns content for found files and None for files that are not found.
+        Reads the FULL, untruncated content of multiple files specified in a
+        list. Returns content for found files and None for files that are not
+        found. Unlike read_file, this bypasses the read.max_lines cap because
+        context assembly must embed files verbatim.
         """
         contents: dict[str, str | None] = {}
         for path in paths:
             try:
-                # read_file already calls _resolve_path, which joins with root_dir.
-                contents[path] = self.read_file(path)
+                # read_raw_file already calls _resolve_path, which joins with root_dir.
+                contents[path] = self.read_raw_file(path)
             except FileNotFoundError:
                 contents[path] = None  # Mark not found files with None
         return contents

@@ -115,8 +115,10 @@ class IFileSystemManager(Protocol):
 
     def read_files_in_vault(self, paths: list[str]) -> dict[str, str | None]:
         """
-        Reads the content of multiple files. Returns content for found files
-        and None for files that are not found.
+        Reads the FULL, untruncated content of multiple files. Returns content
+        for found files and None for files that are not found. Unlike read_file,
+        this does NOT honour read.max_lines: context assembly embeds files
+        verbatim.
         """
         ...
 
