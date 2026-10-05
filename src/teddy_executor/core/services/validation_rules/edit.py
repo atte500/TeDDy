@@ -139,7 +139,7 @@ def _validate_single_edit(
         )
         fence = get_fence_for_content(find_block)
 
-        if is_ambiguous and not match_all:
+        if is_ambiguous and not match_all and score >= effective_threshold:
             errors.append(
                 ValidationError(
                     message=(

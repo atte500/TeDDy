@@ -45,7 +45,7 @@ def find_best_match(
 
     candidate_starts = gather_candidate_starts(file_lines, find_lines, threshold)
     best_match_lines, score, is_ambiguous, offset = _evaluate_candidates(
-        file_lines, find_lines, candidate_starts, find_block
+        file_lines, find_lines, candidate_starts, find_block, threshold
     )
 
     return "".join(best_match_lines), round(score, 2), is_ambiguous, offset
@@ -94,6 +94,7 @@ def _evaluate_candidates(
     find_lines: List[str],
     candidate_starts: Set[int],
     find_block: str,
+    threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
 ) -> tuple[List[str], float, bool, int]:
     """Evaluates candidates using difflib ratio, with sub-sampling and priority capping."""
     num_find_lines = len(find_lines)
@@ -120,7 +121,7 @@ def _evaluate_candidates(
         candidates_to_refine = [(0.0, file_lines[:num_find_lines])]
 
     return _refine_and_select_best(
-        candidates_to_refine, find_lines, num_find_lines, find_block
+        candidates_to_refine, find_lines, num_find_lines, find_block, threshold
     )
 
 
@@ -129,6 +130,7 @@ def _refine_and_select_best(
     find_lines: List[str],
     num_find_lines: int,
     find_block: str,
+    threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
 ) -> tuple[List[str], float, bool, int]:
     """Refines top candidates and returns the best match with ambiguity info."""
     best_ratio = -1.0
@@ -157,7 +159,7 @@ def _refine_and_select_best(
             best_match_lines = current_match_lines
             is_ambiguous = current_is_ambiguous
             best_offset = current_offset
-        elif ratio == best_ratio and ratio > 0:
+        elif ratio == best_ratio and ratio > 0 and ratio >= threshold:
             is_ambiguous = True
 
     if os.environ.get("TEDDY_DEBUG"):
