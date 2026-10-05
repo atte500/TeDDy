@@ -28,8 +28,11 @@ def test_start_yolo_without_message_prompts_for_editor_on_tty(tmp_path, monkeypa
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
     mock_config = env.get_service(IConfigService)
+    # Isolate the editor gate: an unconfigured editor (so the setup prompt runs)
+    # but an ALREADY-configured API key, so the (unrelated) API-key preflight
+    # gate stays inert and only the editor persists a setting here.
     mock_config.get_setting.side_effect = lambda key, default=None: (
-        "" if key == "editor" else default
+        "" if key == "editor" else "configured-key" if key == "llm.api_key" else default
     )
 
     mock_prompt_manager = env.mock_port(IPromptManager)

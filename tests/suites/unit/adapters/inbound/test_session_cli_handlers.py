@@ -377,7 +377,7 @@ def test_handle_new_session_starts_background_check_thread(monkeypatch):
     # Bypass session orchestration logic to avoid mock container failures
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._run_cli_preflight_check",
-        lambda container, agent=None, setup_editor=None: None,
+        lambda container, agent=None, setup_editor=None, setup_api_key=None: None,
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
@@ -474,7 +474,7 @@ def test_handle_resume_session_starts_background_check_thread(monkeypatch):
     # Bypass session orchestration logic to avoid mock container failures
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._run_cli_preflight_check",
-        lambda container, agent=None, setup_editor=None: None,
+        lambda container, agent=None, setup_editor=None, setup_api_key=None: None,
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",

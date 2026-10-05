@@ -84,6 +84,22 @@ def _resolve_setup_editor(
     return system_env.isatty() and not pipeline and (interactive or message is None)
 
 
+def _resolve_setup_api_key(
+    system_env: ISystemEnvironment,
+    pipeline: bool,
+) -> bool:
+    """Resolve whether the interactive LLM API-key setup should run.
+
+    Unlike the optional editor, the LLM API key is REQUIRED, so its gate is
+    deliberately WIDER: setup runs whenever a terminal is attached and the run
+    is not a pipeline. There is intentionally no ``interactive``/``-m`` clause --
+    a fully-specified batch run (``-y -m``) on a TTY still prompts, because the
+    session cannot proceed without a key. Pipeline runs remain the clean
+    automation path (they hard-error by design).
+    """
+    return system_env.isatty() and not pipeline
+
+
 def _ensure_project_initialized(container, root_dir: str | None = None) -> None:
     """Lazily performs project anchoring and initialization.
 
@@ -212,6 +228,7 @@ def start(  # noqa: PLR0913
         setup_editor=_resolve_setup_editor(
             system_env, interactive=interactive, message=message, pipeline=pipeline
         ),
+        setup_api_key=_resolve_setup_api_key(system_env, pipeline=pipeline),
         no_copy=no_copy,
         message=message,
         pipeline=pipeline,
@@ -463,6 +480,7 @@ def resume(  # noqa: PLR0913
         setup_editor=_resolve_setup_editor(
             system_env, interactive=interactive, message=message, pipeline=pipeline
         ),
+        setup_api_key=_resolve_setup_api_key(system_env, pipeline=pipeline),
         no_copy=no_copy,
         model=model,
         provider=provider,

@@ -416,6 +416,7 @@ def handle_new_session(  # noqa: PLR0913
     provider: Optional[str] = None,
     api_key: Optional[str] = None,
     setup_editor: Optional[bool] = None,
+    setup_api_key: Optional[bool] = None,
 ):
     """Logic for the 'start' command."""
     import threading
@@ -449,6 +450,7 @@ def handle_new_session(  # noqa: PLR0913
             container,
             agent=agent,
             setup_editor=setup_editor,
+            setup_api_key=setup_api_key,
         )
         _echo_config_success(container, agent, model=model)
 
@@ -821,6 +823,7 @@ def handle_plan_generation(container: Container, message: Optional[str]):
             container,
             agent="pathfinder",
             setup_editor=False,
+            setup_api_key=False,
         )
         _echo_config_success(container)
 
@@ -923,6 +926,7 @@ def handle_resume_session(  # noqa: PLR0913
     message: Optional[str] = None,
     pipeline: bool = False,
     setup_editor: Optional[bool] = None,
+    setup_api_key: Optional[bool] = None,
 ):
     """Logic for the 'resume' command."""
     import threading
@@ -946,6 +950,7 @@ def handle_resume_session(  # noqa: PLR0913
         _run_cli_preflight_check(
             container,
             setup_editor=setup_editor,
+            setup_api_key=setup_api_key,
         )
 
         # 2. Resolve session name
