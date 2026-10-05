@@ -143,7 +143,7 @@ def test_ensure_initialized_returns_summary_when_files_missing(service, mock_fs)
     mock_fs.read_file.return_value = "mock content"
 
     result = service.ensure_initialized()
-    assert result == "Config: updated (3 files). Prompts: updated (6 files)."
+    assert result == "Config: updated (4 files). Prompts: updated (6 files)."
 
 
 def test_ensure_prompts_initialized_overwrite_true(service, mock_fs):
@@ -194,8 +194,8 @@ def test_ensure_config_initialized_overwrite_true(service, mock_fs):
     mock_fs.read_file.return_value = "mock content"
 
     result = service.ensure_config_initialized(overwrite=True)
-    assert mock_fs.write_file.call_count == 3
-    assert result == "Configuration files overwritten (3 files)."
+    assert mock_fs.write_file.call_count == 4
+    assert result == "Configuration files overwritten (4 files)."
 
 
 def test_ensure_config_initialized_overwrite_false(service, mock_fs):
@@ -220,5 +220,30 @@ def test_ensure_config_initialized_missing_config_non_overwrite(service, mock_fs
     mock_fs.read_file.return_value = "mock content"
 
     result = service.ensure_config_initialized(overwrite=False)
-    assert mock_fs.write_file.call_count == 3
-    assert result == "Configuration files updated (3 files)."
+    assert mock_fs.write_file.call_count == 4
+    assert result == "Configuration files updated (4 files)."
+
+
+def test_ensure_config_initialized_scaffolds_env_placeholder(service, mock_fs):
+    """`teddy init config` scaffolds a commented `.teddy/.env` placeholder.
+
+    The placeholder gives the user a file to paste the LLM API key into; the
+    bundled `config.yaml` already references the value via the
+    ``${TEDDY_LLM_API_KEY}`` interpolation token.
+    """
+
+    def mock_exists(p):
+        if p.startswith("/mock/config"):
+            return True
+        return False
+
+    mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.read_file.return_value = "mock content"
+
+    # Act
+    service.ensure_config_initialized(overwrite=False)
+
+    # Assert - the .env placeholder is scaffolded alongside the other files
+    written = {call.args[0]: call.args[1] for call in mock_fs.write_file.call_args_list}
+    assert ".teddy/.env" in written
+    assert "TEDDY_LLM_API_KEY" in written[".teddy/.env"]

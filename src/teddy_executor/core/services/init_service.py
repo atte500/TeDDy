@@ -7,6 +7,23 @@ import yaml
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
+# Embedded default for the gitignored ``.teddy/.env`` placeholder. It cannot be
+# shipped as a tracked dotfile: the bundled ``resources/config/.gitignore``
+# template (content ``*``) makes git ignore any new dotfile in that directory,
+# and the repo-root allowlist is overridden by the deeper file. Keeping it as a
+# string constant also makes the scaffold unit-testable. The placeholder is
+# fully commented so it never trips the secret scanner.
+_ENV_PLACEHOLDER = (
+    "# TeDDy secrets. This gitignored file holds your provider credentials.\n"
+    "# The bundled config.yaml reads the LLM key from this file's env var.\n"
+    "# Paste your OpenRouter (or other provider) key below, then save.\n"
+    "# TEDDY_LLM_API_KEY=\n"  # pragma: allowlist secret
+)
+
+_EMBEDDED_DEFAULTS = {
+    ".env": _ENV_PLACEHOLDER,
+}
+
 
 class InitService(IInitUseCase):
     """
@@ -25,7 +42,15 @@ class InitService(IInitUseCase):
             self._config_dir = os.path.abspath(str(resource_path))
 
     def _get_default_content(self, filename: str) -> str | None:
-        """Loads default content from the config directory using the file system port."""
+        """Loads default content for a bundled config file.
+
+        Embedded defaults (see ``_EMBEDDED_DEFAULTS``) take precedence; they are
+        used for files that cannot ship as tracked dotfiles (e.g. the gitignored
+        ``.env`` placeholder). Otherwise, content is loaded from the config
+        directory using the file system port.
+        """
+        if filename in _EMBEDDED_DEFAULTS:
+            return _EMBEDDED_DEFAULTS[filename]
         try:
             target_path = os.path.join(self._config_dir, filename)
             if self._file_system.path_exists(target_path):
@@ -37,7 +62,7 @@ class InitService(IInitUseCase):
         return None
 
     def _init_config_dir(self, overwrite: bool = False) -> str:
-        """Copies bundled config files (config.yaml, .gitignore, init.context) to .teddy/.
+        """Copies bundled config files (config.yaml, .gitignore, init.context, .env) to .teddy/.
 
         Args:
             overwrite: If True, always overwrite existing files. If False, only write missing ones.
@@ -45,7 +70,7 @@ class InitService(IInitUseCase):
         Returns:
             A status string: "unchanged", "updated (N files)", or "overwritten (N files)".
         """
-        config_files = ["config.yaml", ".gitignore", "init.context"]
+        config_files = ["config.yaml", ".gitignore", "init.context", ".env"]
         count = 0
         for fname in config_files:
             target_path = f".teddy/{fname}"
