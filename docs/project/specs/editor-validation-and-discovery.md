@@ -286,7 +286,9 @@ The prompting functions (`_prompt_for_editor_selection`, `_prompt_for_custom_edi
 4. Blank line.
 5. The discovered editors, one per line, in **bracket** format with the resolved path **hidden**: `[1] nvim`, `[2] vim`, … (only the name is shown; the reader does not need the path).
 6. Blank line.
-7. A **single primary selection prompt** (a number, a custom command, and empty are all accepted here):
+7. A grey **hint** line (de-emphasised), telling the user what to do when their editor is not shown — add it to `PATH`, or enter its absolute path: `Tip: Don't see your editor? Make sure it's available in your PATH, or enter its absolute path below.`
+8. Blank line.
+9. A **single primary selection prompt** (a number, a custom command, and empty are all accepted here):
    `Select an editor [1-{n}] (number, custom command, or empty to disable): ` (`{n}` = the discovered count).
 
 Primary-prompt input handling:
@@ -297,9 +299,9 @@ Primary-prompt input handling:
 - **Empty input** → persist `"disabled"` to config (then the green confirmation).
 - **EOF / closed input** → persist `"disabled"`.
 
-**Nothing-found branch (`_prompt_for_custom_editor`)** — when `discover_editors()` returns nothing: the warning, blank line, and the `Editor Setup` header still render, followed by the single prompt `No known editors found. Enter a custom editor command (leave empty to disable):`. The same `which()`-validation loop applies (unavailable → `'{raw}' was not found in PATH.` + re-prompt), as do empty→`"disabled"` and EOF→`"disabled"`.
+**Nothing-found branch (`_prompt_for_custom_editor`)** — when `discover_editors()` returns nothing: the warning, blank line, and the `Editor Setup` header still render, followed by the same grey hint line and then the single prompt `No known editors found. Enter a custom editor command (leave empty to disable):`. The same `which()`-validation loop applies (unavailable → `'{raw}' was not found in PATH.` + re-prompt), as do empty→`"disabled"` and EOF→`"disabled"`.
 
-**Rendering conventions:** yellow warning, cyan header, green confirmation, red invalid messages, emitted via `typer.secho(..., fg=..., err=True)` in keeping with the codebase's existing console style. All editor-selection output goes to **stderr** (never stdout).
+**Rendering conventions:** yellow warning, cyan header, **grey hint** (`BRIGHT_BLACK`), green confirmation, red invalid messages, emitted via `typer.secho(..., fg=..., err=True)` in keeping with the codebase's existing console style. All editor-selection output goes to **stderr** (never stdout).
 
 The `_run_cli_preflight_check()` function accepts a dedicated `setup_editor` parameter, computed at the CLI boundary as `setup_editor = system_env.isatty() and not pipeline and (interactive or message is None)`, decoupling the one-time setup from the approval flag:
 

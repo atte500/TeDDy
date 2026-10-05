@@ -587,6 +587,22 @@ def _persist_editor_choice(config_service: IConfigService, value: str) -> None:
     )
 
 
+# Shared hint shown in BOTH editor-setup branches. It answers "my editor isn't
+# here -- now what?" without the ambiguous word "listed": add it to PATH, or
+# enter an absolute path (which ``which()`` resolves as a direct path even when
+# the binary is off-PATH). Single-sourced so both branches stay in lockstep
+# (see docs/project/specs/editor-validation-and-discovery.md §4).
+_EDITOR_SETUP_TIP = (
+    "Tip: Don't see your editor? Make sure it's available in your PATH, "
+    "or enter its absolute path below."
+)
+
+
+def _print_editor_setup_tip() -> None:
+    """Prints the shared editor-setup hint (stderr, de-emphasised grey)."""
+    typer.secho(_EDITOR_SETUP_TIP, fg=typer.colors.BRIGHT_BLACK, err=True)
+
+
 def _prompt_for_editor_selection(
     config_service: IConfigService,
     helper: ConsoleToolingHelper,
@@ -604,6 +620,8 @@ def _prompt_for_editor_selection(
     typer.echo("", err=True)
     for index, (name, _path) in enumerate(available, start=1):
         typer.echo(f"[{index}] {name}", err=True)
+    typer.echo("", err=True)
+    _print_editor_setup_tip()
     typer.echo("", err=True)
 
     prompt = (
@@ -648,6 +666,8 @@ def _prompt_for_custom_editor(
     """
     typer.echo("", err=True)
     typer.secho("Editor Setup", fg=typer.colors.CYAN, bold=True, err=True)
+    typer.echo("", err=True)
+    _print_editor_setup_tip()
     typer.echo("", err=True)
 
     prompt = (
