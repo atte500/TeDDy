@@ -97,7 +97,7 @@ flowchart LR
 - [x] **Logic** - Make `LocalFileSystemAdapter.read_files_in_vault` read verbatim via `read_raw_file` (bypassing `read.max_lines`), update the adapter + `IFileSystemManager` docstrings, and add a unit test proving a `>max_read_lines` file is returned in full.
 - [x] **Logic** - Exclude context-embedded URLs from the READ cap: add an additive `truncate: bool = True` keyword to `WebScraper.get_content` (+ adapter), gate `_truncate_content`, and call `get_content(url, truncate=False)` from `ContextService._fetch_and_cache_url`; add unit tests for BOTH call paths (context = verbatim, READ action = capped).
 - [x] **Refactor** - Remove stale `migration`/`continuation` prose from `session_lifecycle_manager.py` and `run_plan_use_case.py` (docstrings/comments) to reflect the single-folder model.
-- [ ] **Wiring** - End-to-end single-folder behavioral gate: an integration test driving a session from turn `99` to turn `100` (via the session lifecycle/resume path) asserting `.teddy/sessions/<name>/100/` is created in the SAME folder and NO `<name>-2` sibling is produced.
+- [x] **Wiring** - End-to-end single-folder behavioral gate: an integration test driving a session from turn `99` to turn `100` (via the session lifecycle/resume path) asserting `.teddy/sessions/<name>/100/` is created in the SAME folder and NO `<name>-2` sibling is produced.
 
 ## Implementation Notes
 
@@ -144,6 +144,15 @@ flowchart LR
 - **Prose-only Refactor (no Red/Green):** this deliverable changes docstring text only — there is no behaviour to drive, so Red/Green are `n/a` and the step collapses to a grep + lint verification.
 - **Verification:** `git grep -nE "migrat|continuation|centennial" src/teddy_executor` returns ZERO hits in the three edited files (only the intentional/retained matches survive). `uv run ruff check` over the three files reports no NEW findings — its only output is three PRE-EXISTING `PLR0913 Too many arguments in function definition` on the untouched `resume` / `_consume_awaiting_reply` / `_handle_planning_and_execution` signatures ([session_lifecycle_manager.py](/src/teddy_executor/core/services/session_lifecycle_manager.py):53/219/381), already tracked in [PROJECT.md](/docs/project/PROJECT.md) as Milestone 5 debt; the docstring edits change no signature, so the findings are structurally pre-existing. Full suite green at `1612 passed, 5 skipped`.
 - **Commit note:** the pre-commit Ruff hook is scoped to staged files, so staging `session_lifecycle_manager.py` will re-expose those three pre-existing `PLR0913` findings; the Delivery commit (type `refactor`) will therefore bypass the pre-commit stage with `--no-verify` only — the post-commit full-suite test gate is never bypassed.
+
+### Deliverable 6 — End-to-end single-folder behavioral gate (Wiring)
+
+- **Change:** Added `test_transition_from_turn_99_to_100_stays_in_same_session` to [test_session_service.py](/tests/suites/integration/core/services/test_session_service.py): an integration test driving `ISessionManager.transition_to_next_turn` from a real `tmp_path` session whose current turn dir is `99`, asserting the next turn resolves to `100` in the SAME session folder (`next_turn_path.name == "100"`, `next_turn_path.parent.name == "feat-x"`), that `100/turn.context` exists, and that NO `feat-x-2` continuation sibling is created.
+- **Rationale:** This is the slice's outermost behavioral gate, proving the single-folder model end-to-end at the integration boundary (no CLI/LLM round-trip required). It mirrors the existing sibling `test_transition_to_next_turn_handles_missing_turn_context(tmp_path, container)` and asserts on `.name`/`.parent.name` rather than brittle absolute-path equality (macOS `tmp_path` symlink).
+- **Red/Green:** The test PASSED on first execution (`1 passed`) because Deliverables 1–3 already implemented and unit-tested the single-folder behavior; its inverse — the removed `test_turn_100_migration_claims_unoccupied_root_and_preserves_sibling` — would fail against pre-slice code, so the gate is meaningful, not vacuous. No production code was needed (the tracer bullet IS the real implementation).
+- **Refactor:** `uv run ruff check` on the new test file → `All checks passed!` (no TID251; the test drives the real `container`-resolved `ISessionManager` against a real `tmp_path` filesystem).
+- **Verification:** Full suite green at `1613 passed, 5 skipped` — the one-test increase over Deliverable 5's `1612` is exactly this new gate; no other count changed.
+- **Debt (recorded here, NOT harvested to `PROJECT.md` per the code-only constraint):** two integration tests in [test_session_service.py](/tests/suites/integration/core/services/test_session_service.py) now share near-identical session-setup boilerplate (`<session>/<turn>/` + `meta.yaml` + prompt); candidate for a shared helper when a third appears (rule of three).
 
 ## Verification
 

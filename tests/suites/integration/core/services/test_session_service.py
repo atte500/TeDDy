@@ -117,3 +117,38 @@ def test_concurrent_session_creation_claims_distinct_root_and_preserves_sibling(
     # The concurrent winner's ledger is byte-identical to before.
     after = _ledger_snapshot(sibling)
     assert after == before
+
+
+def test_transition_from_turn_99_to_100_stays_in_same_session(tmp_path, container):
+    """
+    Scenario: Single-folder sessions past the turn-99 boundary (Wiring gate).
+
+    Given a session "feat-x" whose current turn directory is "99",
+    When the session transitions to the next turn,
+    Then ".teddy/sessions/feat-x/100/" is created in the SAME session folder,
+    And NO "-2" continuation session root ("feat-x-2") is created.
+    """
+    # Arrange
+    service = container.resolve(ISessionManager)
+
+    session_dir = tmp_path / ".teddy" / "sessions" / "feat-x"
+    turn_99_dir = session_dir / "99"
+    turn_99_dir.mkdir(parents=True)
+    (turn_99_dir / "meta.yaml").write_text("turn_id: '99'", encoding="utf-8")
+    (turn_99_dir / "pathfinder.xml").write_text(
+        "<prompt>test</prompt>", encoding="utf-8"
+    )
+
+    plan_path = (turn_99_dir / "plan.md").as_posix()
+
+    # Act
+    next_turn_dir = service.transition_to_next_turn(plan_path)
+
+    # Assert: turn 100 lives in the SAME session folder as turn 99.
+    next_turn_path = Path(next_turn_dir)
+    assert next_turn_path.name == "100"
+    assert next_turn_path.parent.name == "feat-x"
+    assert (next_turn_path / "turn.context").exists()
+
+    # Assert: NO "-2" continuation session root was created.
+    assert not (next_turn_path.parent.parent / "feat-x-2").exists()
