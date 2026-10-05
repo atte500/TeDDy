@@ -105,3 +105,46 @@ def test_interpolation_is_live_across_transient_adapter_instances(
     writer.set_env_variable("TEDDY_LLM_API_KEY", "sk-written-mid-run")
 
     assert reader.get_setting("llm.api_key") == "sk-written-mid-run"
+
+
+def test_get_setting_section_interpolates_nested_vars():
+    """get_setting('llm', {}) must resolve ${VAR} tokens in child string values."""
+    from teddy_executor.adapters.outbound.yaml_config_adapter import YamlConfigAdapter
+
+    import tempfile
+    import os
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        dot_teddy = os.path.join(tmpdir, ".teddy")
+        os.makedirs(dot_teddy)
+
+        # Write .env
+        env_path = os.path.join(dot_teddy, ".env")
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.write("TEDDY_LLM_API_KEY=sk-placeholder-xxxxxxxx\n")
+
+        # Write config.yaml with a ${VAR} in a nested string
+        config_path = os.path.join(dot_teddy, "config.yaml")
+        with open(config_path, "w", encoding="utf-8") as f:
+            f.write(
+                "llm:\n"
+                '  api_key: "${TEDDY_LLM_API_KEY}"\n'
+                '  model: "openrouter/test"\n'
+            )
+
+        adapter = YamlConfigAdapter(config_path=config_path)
+
+        # 1. Direct key access works (existing behaviour)
+        assert adapter.get_setting("llm.api_key") == "sk-placeholder-xxxxxxxx", (
+            "Direct nested access should interpolate"
+        )
+
+        # 2. Whole section access now also interpolates (the fix)
+        llm_section = adapter.get_setting("llm", {})
+        assert isinstance(llm_section, dict), "llm section must be a dict"
+        assert llm_section.get("api_key") == "sk-placeholder-xxxxxxxx", (
+            "Retrieving the whole llm dict should also interpolate child values"
+        )
+        assert llm_section.get("model") == "openrouter/test", (
+            "Non-interpolated values should remain unchanged"
+        )

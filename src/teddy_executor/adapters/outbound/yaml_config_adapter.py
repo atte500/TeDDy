@@ -155,9 +155,20 @@ class YamlConfigAdapter(IConfigService):
         return _INTERPOLATION_PATTERN.sub(_replace, text)
 
     def _maybe_interpolate(self, value: Any) -> Any:
-        """Interpolate only string values that actually carry a token."""
-        if isinstance(value, str) and "${" in value:
-            return self._interpolate(value)
+        """Recursively interpolate string values containing ``${VAR}`` tokens.
+
+        Handles nested dicts, lists, and plain strings. Non-string leaf values
+        are returned unchanged. The caller is responsible for providing a
+        deep copy if the source should not be mutated.
+        """
+        if isinstance(value, str):
+            if "${" in value:
+                return self._interpolate(value)
+            return value
+        if isinstance(value, dict):
+            return {k: self._maybe_interpolate(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [self._maybe_interpolate(item) for item in value]
         return value
 
     def _resolve_nested(self, parts: list[str]) -> Optional[Any]:
