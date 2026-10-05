@@ -532,6 +532,7 @@ def _run_cli_preflight_check(
     container: Container,
     agent: Optional[str] = None,
     setup_editor: Optional[bool] = None,
+    setup_api_key: Optional[bool] = None,
 ) -> None:
     """Ensures system is configured before starting/resuming a session.
 
@@ -541,10 +542,23 @@ def _run_cli_preflight_check(
     approval flag (Slice 00-26): every caller supplies ``setup_editor``
     explicitly, and truly headless runs (``--pipeline``/non-TTY/one-shot) pass
     ``setup_editor=False`` so they never block on a prompt.
+
+    When ``setup_api_key`` is truthy and the resolved ``llm.api_key`` is
+    missing, an interactive prompt persists the key to ``.teddy/.env`` BEFORE
+    the ``ILlmClient`` is resolved, so the client's transient config-service
+    instance reads the post-persist on-disk state (Slice 00-27). The gate is
+    ADDITIVE and inert by default (``None`` -> skip), so every existing caller
+    is unaffected.
     """
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
     from teddy_executor.core.domain.models.exceptions import ConfigurationError
     from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+
+    # API-key setup runs BEFORE the LLM client is resolved so its transient
+    # config-service instance reads the freshly-persisted on-disk state.
+    config_service = container.resolve(IConfigService)
+    if setup_api_key and _is_llm_api_key_missing(config_service):
+        _prompt_for_api_key(config_service)
 
     llm_client = container.resolve(ILlmClient)
     # Perform local validation only to ensure fast CLI startup.
@@ -574,6 +588,55 @@ def _run_cli_preflight_check(
 
     error_msg = f"Configuration Error: {', '.join(errors)}"
     raise ConfigurationError(error_msg)
+
+
+def _is_llm_api_key_missing(config_service: IConfigService) -> bool:
+    """True when the resolved ``llm.api_key`` is absent or blank.
+
+    A value that is not a string (e.g. ``None`` from an unresolved
+    interpolation) or that is only whitespace counts as missing, mirroring the
+    emptiness CHECK in ``LiteLLMAdapter.validate_config``.
+    """
+    api_key = config_service.get_setting("llm.api_key")
+    return not (isinstance(api_key, str) and api_key.strip())
+
+
+def _prompt_for_api_key(config_service: IConfigService) -> None:
+    """Prompts for the LLM API key and persists it to ``.teddy/.env`` (stderr).
+
+    The key is written to ``.teddy/.env`` (never ``os.environ``) and the config
+    is migrated to the ``${TEDDY_LLM_API_KEY}`` interpolation form so the
+    transient ``IConfigService`` instance held by ``ILlmClient`` resolves it on
+    the same run. Empty or aborted input returns WITHOUT raising; the
+    downstream validation error surfaces the missing key with its own hint.
+    """
+    typer.echo("", err=True)
+    typer.secho("LLM API Key", fg=typer.colors.CYAN, bold=True, err=True)
+    typer.echo("", err=True)
+    typer.secho(
+        "\u26a0 No LLM API key configured. Paste your provider key below.",
+        fg=typer.colors.YELLOW,
+        err=True,
+    )
+    typer.echo("", err=True)
+
+    try:
+        value = typer.prompt("LLM API key", hide_input=True, default="")
+    except (EOFError, typer.Abort):
+        return
+
+    value = value.strip()
+    if not value:
+        return
+
+    config_service.set_env_variable("TEDDY_LLM_API_KEY", value)
+    config_service.set_setting("llm.api_key", "${TEDDY_LLM_API_KEY}")
+    typer.echo("", err=True)
+    typer.secho(
+        "LLM API key saved to .teddy/.env.",
+        fg=typer.colors.GREEN,
+        err=True,
+    )
 
 
 def _persist_editor_choice(config_service: IConfigService, value: str) -> None:

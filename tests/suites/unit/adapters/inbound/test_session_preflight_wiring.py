@@ -457,3 +457,44 @@ def test_full_preflight_flow_persists_discovered_editor_selection(env, monkeypat
 
     # Assert - the numbered selection is persisted as its basename.
     mock_config.set_setting.assert_called_once_with("editor", "nvim")
+
+
+# ---------------------------------------------------------------------------
+# Gating of the interactive API-key setup prompt (Slice 00-27 Seam)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "setup_api_key",
+    [True, False],
+)
+def test_preflight_check_gates_api_key_prompt_on_setup_api_key_flag(
+    env, monkeypatch, setup_api_key
+):
+    """The preflight API-key gate keys on ``setup_api_key`` AND key absence.
+
+    The gate is ADDITIVE and INERT by default (``setup_api_key`` defaults to
+    ``None`` -> skip), so every existing caller is unaffected. When the signal
+    is truthy and ``llm.api_key`` is missing, the interactive prompt fires and
+    persists the entered key; otherwise the gate is skipped.
+    """
+    # Arrange - no config errors so the gate is reached on the success path.
+    mock_llm = env.mock_port(ILlmClient)
+    mock_llm.validate_config.return_value = []
+    mock_config = env.mock_port(IConfigService)
+    # Missing key -> the gate is eligible to prompt.
+    mock_config.get_setting.side_effect = lambda key, default=None: (
+        "" if key == "llm.api_key" else default
+    )
+    monkeypatch.setattr("typer.prompt", lambda *args, **kwargs: "entered-value")
+
+    # Act
+    _run_cli_preflight_check(container=env.container, setup_api_key=setup_api_key)
+
+    # Assert - the prompt's persist fires exactly when the flag is truthy.
+    if setup_api_key:
+        mock_config.set_env_variable.assert_called_once_with(
+            "TEDDY_LLM_API_KEY", "entered-value"
+        )
+    else:
+        mock_config.set_env_variable.assert_not_called()
