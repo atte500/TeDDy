@@ -92,7 +92,7 @@ flowchart LR
 
 ## Deliverables
 
-- [ ] **Logic** - Fix `SessionRepository.get_latest_turn` to sort turn directories numerically (`max(turns, key=int)`) so `100` resolves after `99`, with a unit test asserting the `01`–`100` case.
+- [x] **Logic** - Fix `SessionRepository.get_latest_turn` to sort turn directories numerically (`max(turns, key=int)`) so `100` resolves after `99`, with a unit test asserting the `01`–`100` case.
 - [ ] **Logic** - Remove the session-migration behavior: `_resolve_next_turn_path` always advances within the same session (`:02d` min-width) and returns `tuple[str, Path]`; `transition_to_next_turn` drops both `is_migration` branches and `_clone_session_artifacts` is deleted. Rewrite/remove the affected unit and integration migration tests and add a unit test asserting `"99"` → `("100", <same session dir>)`.
 - [ ] **Logic** - Make `LocalFileSystemAdapter.read_files_in_vault` read verbatim via `read_raw_file` (bypassing `read.max_lines`), update the adapter + `IFileSystemManager` docstrings, and add a unit test proving a `>max_read_lines` file is returned in full.
 - [ ] **Logic** - Exclude context-embedded URLs from the READ cap: add an additive `truncate: bool = True` keyword to `WebScraper.get_content` (+ adapter), gate `_truncate_content`, and call `get_content(url, truncate=False)` from `ContextService._fetch_and_cache_url`; add unit tests for BOTH call paths (context = verbatim, READ action = capped).
@@ -101,7 +101,13 @@ flowchart LR
 
 ## Implementation Notes
 
-(Filled by the Developer as each deliverable lands.)
+### Deliverable 1 — `get_latest_turn` numeric sort
+
+- **Change:** In `SessionRepository.get_latest_turn` ([session_repository.py](/src/teddy_executor/core/services/session_repository.py)), replaced the lexicographic `latest_turn_id = sorted(turns)[-1]` with `latest_turn_id = max(turns, key=int)`. `turns` was already filtered to numeric directory names via `item.isdigit()`, so `key=int` cannot raise on a non-numeric entry.
+- **Rationale:** For turn directories `"01"`–`"100"`, the lexicographic maximum is `"99"` (`'9' > '1'`); the numeric maximum is `100`. This is the single sort site that must change for the `99 → 100` boundary.
+- **Test:** Added `test_get_latest_turn_returns_numerically_latest_turn` in [test_session_repository.py](/tests/suites/unit/core/services/test_session_repository.py), driving an autospec'd `IFileSystemManager` whose `list_directory` returns `["01"…"100"]` and asserting the result is `.teddy/sessions/feat-x/100`. Red confirmed the exact failure (`'.teddy/sessions/feat-x/99' != '.teddy/sessions/feat-x/100'`).
+- **Refactor:** Migrated the file's three legacy bare-`MagicMock()` doubles to `create_autospec(IFileSystemManager, instance=True)`, removing the TID251-banned `unittest.mock.MagicMock` import so the upcoming commit needs no `--no-verify`. No behavioural change (all four tests green before and after).
+- **Verification:** Full suite green at `1616 passed, 5 skipped`.
 
 ## Verification
 

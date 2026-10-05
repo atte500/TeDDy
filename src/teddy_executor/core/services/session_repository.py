@@ -156,7 +156,7 @@ class SessionRepository(ISessionRepository):
         if not turns:
             raise ValueError(f"No turns found in session '{session_name}'.")
 
-        latest_turn_id = sorted(turns)[-1]
+        latest_turn_id = max(turns, key=int)
         return f"{session_root}/{latest_turn_id}"
 
     def rename_session(self, old_name: str, new_name: str) -> str:
