@@ -4,7 +4,7 @@
 
 ## 1. Purpose
 
-The `InitService` is the application service responsible for the idempotent initialization of a TeDDy project. It implements the `IInitUseCase` port and centralizes the logic for creating the foundational directory structure, default templates, and user-editable prompt files. It supports a configurable template directory to ensure isolation in test environments. Changes are always non-destructive unless `overwrite=True` is explicitly passed.
+The `InitService` is the application service responsible for the idempotent initialization of a TeDDy project. It implements the `IInitUseCase` port and centralizes the logic for creating the foundational directory structure, default templates, and user-editable prompt files. It supports a configurable template directory to ensure isolation in test environments. Changes are always non-destructive unless `overwrite=True` is explicitly passed, with one deliberate exception: `.teddy/.env` is **create-only** — it is written only when absent and is never overwritten once it exists, because it holds the user's non-regenerable LLM API key (`config.yaml`, `.gitignore`, and `init.context` remain regenerable defaults and ARE reset by `overwrite=True`).
 
 ## 2. Failure Modes
 
@@ -17,6 +17,7 @@ The `InitService` is the application service responsible for the idempotent init
 - `_config_dir` is always a non-empty string pointing to the bundled config resource directory.
 - `_file_system` is never None after initialization.
 - The service MUST NOT modify or overwrite existing project files unless `overwrite=True` is explicitly passed.
+- `.teddy/.env` is exempt from `overwrite=True`: it is **create-only** and MUST be preserved once it exists, because the user's LLM API key it holds is non-regenerable. `config.yaml`, `.gitignore`, and `init.context` are regenerable defaults and ARE overwritten under `overwrite=True`.
 
 ## 4. Used Outbound Ports
 
@@ -36,7 +37,7 @@ When `ensure_initialized` is called, the service performs the following checks a
 2.  **Security Gate:** Checks for `.teddy/.gitignore`. If missing, it is created from the embedded `_GITIGNORE_PLACEHOLDER` constant with a global ignore pattern (`*`) to prevent sensitive configuration from being accidentally committed to version control.
 3.  **Default Configuration:** Checks for `.teddy/config.yaml`. If missing, it is created using the bundled baseline.
 4.  **Initial Context:** Checks for `.teddy/init.context`. If missing, it is created using bundled defaults.
-5.  **Secrets Placeholder:** Checks for `.teddy/.env`. If missing, it is created from the embedded `_ENV_PLACEHOLDER` constant — a commented placeholder whose (uncommented) `TEDDY_LLM_API_KEY=` line the bundled `config.yaml` interpolates via `${TEDDY_LLM_API_KEY}`.
+5.  **Secrets Placeholder (create-only):** Checks for `.teddy/.env`. If missing, it is created from the embedded `_ENV_PLACEHOLDER` constant — a commented placeholder whose (uncommented) `TEDDY_LLM_API_KEY=` line the bundled `config.yaml` interpolates via `${TEDDY_LLM_API_KEY}`. Unlike the other config files, `.env` is **never overwritten once it exists**, even under `overwrite=True` (i.e. when `teddy init config` runs): it holds the user's non-regenerable LLM API key. Only `config.yaml`, `.gitignore`, and `init.context` are reset by `overwrite=True`.
 6.  **Template Initialization (new):** Checks for `docs/templates/` directory. If missing, creates it and copies all bundled templates from `src/teddy_executor/resources/templates/`.
 
 ### Template Initialization Logic (new)
@@ -74,4 +75,6 @@ The bundled templates directory contains 9 files:
 - **Exceptions:** None.
 - **Contract Dependencies:** Relies on `_get_default_content()` loading from `src/teddy_executor/resources/templates/`.
 
-## 8. All operations are designed to be non-destructive; the service will never modify or overwrite an existing project file unless `overwrite=True`.
+## 8. Non-Destructive Guarantee
+
+All operations are designed to be non-destructive; the service will never modify or overwrite an existing project file unless `overwrite=True`. The single exception is `.teddy/.env`, which is **create-only** and is preserved once it exists, even under `overwrite=True` (see §6).

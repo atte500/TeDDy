@@ -5,7 +5,11 @@ repos:
     hooks:
     -   id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
-        exclude: 'poetry\.lock|\.secrets\.baseline'
+        # README.md documents a deliberate, non-secret placeholder API key
+        # (`api_key: "your-openrouter-api-key-here"`) that detect-secrets cannot
+        # distinguish from a real "Secret Keyword". Exclude it to remove the
+        # pre-existing false positive (see PROJECT.md Technical Debt).
+        exclude: 'poetry\.lock|\.secrets\.baseline|^README\.md$'
 
 -   repo: https://github.com/PyCQA/bandit
     rev: 1.7.9

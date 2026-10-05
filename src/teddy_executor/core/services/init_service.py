@@ -27,6 +27,12 @@ _EMBEDDED_DEFAULTS = {
     ".gitignore": _GITIGNORE_PLACEHOLDER,
 }
 
+# Config files that must NEVER be overwritten once they exist, even when
+# ``overwrite=True`` is passed. These files hold data the tool cannot
+# regenerate (e.g. the user's LLM API key in ``.env``); the remaining config
+# files are regenerable defaults that ``teddy init config`` intentionally resets.
+_CREATE_ONLY_CONFIG_FILES = frozenset({".env"})
+
 
 class InitService(IInitUseCase):
     """
@@ -67,8 +73,15 @@ class InitService(IInitUseCase):
     def _init_config_dir(self, overwrite: bool = False) -> str:
         """Copies config files (config.yaml, .gitignore, init.context, .env) to .teddy/.
 
+        ``.env`` is create-only (see ``_CREATE_ONLY_CONFIG_FILES``): it is written
+        only when absent and is NEVER overwritten once it exists, even when
+        ``overwrite=True`` is passed, because it holds the user's non-regenerable
+        LLM API key. The other three files are regenerable defaults and are
+        overwritten as documented.
+
         Args:
-            overwrite: If True, always overwrite existing files. If False, only write missing ones.
+            overwrite: If True, overwrite existing regenerable files with defaults.
+                If False, only write missing files.
 
         Returns:
             A status string: "unchanged", "updated (N files)", or "overwritten (N files)".
@@ -77,7 +90,11 @@ class InitService(IInitUseCase):
         count = 0
         for fname in config_files:
             target_path = f".teddy/{fname}"
-            if overwrite or not self._file_system.path_exists(target_path):
+            exists = self._file_system.path_exists(target_path)
+            should_write = not exists or (
+                overwrite and fname not in _CREATE_ONLY_CONFIG_FILES
+            )
+            if should_write:
                 content = self._get_default_content(fname)
                 if content is not None:
                     self._file_system.write_file(target_path, content)
@@ -155,12 +172,17 @@ class InitService(IInitUseCase):
         """
         Ensures configuration files (config.yaml, .gitignore, init.context, .env) are present in the .teddy/ directory.
 
+        ``.env`` is create-only and is never overwritten once it exists, even
+        when ``overwrite=True`` (see ``_init_config_dir``).
+
         Args:
-            overwrite: If True, always overwrite existing config files with defaults.
-                       If False (default), only write missing files.
+            overwrite: If True, overwrite existing regenerable config files
+                       (config.yaml, .gitignore, init.context) with defaults.
+                       If False (default), only write missing files. ``.env`` is
+                       written only when missing in either case.
 
         Returns:
-            A human-readable status string (e.g., "Configuration files overwritten (4 files).").
+            A human-readable status string (e.g., "Configuration files overwritten (3 files).").
         """
         status = self._init_config_dir(overwrite=overwrite)
         return f"Configuration files {status}."

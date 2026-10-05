@@ -189,13 +189,22 @@ def test_ensure_prompts_initialized_missing_prompts_non_overwrite(service, mock_
 
 
 def test_ensure_config_initialized_overwrite_true(service, mock_fs):
-    """All config exist, overwrite=True → overwrites 4, returns "Configuration files overwritten (4 files)." """
+    """All config exist, overwrite=True → overwrites the 3 regenerable files
+    (config.yaml, .gitignore, init.context) and PRESERVES the existing `.env`."""
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = "mock content"
 
     result = service.ensure_config_initialized(overwrite=True)
-    assert mock_fs.write_file.call_count == 4
-    assert result == "Configuration files overwritten (4 files)."
+
+    written_paths = [call.args[0] for call in mock_fs.write_file.call_args_list]
+    assert mock_fs.write_file.call_count == 3
+    assert set(written_paths) == {
+        ".teddy/config.yaml",
+        ".teddy/.gitignore",
+        ".teddy/init.context",
+    }
+    assert ".teddy/.env" not in written_paths
+    assert result == "Configuration files overwritten (3 files)."
 
 
 def test_ensure_config_initialized_overwrite_false(service, mock_fs):
@@ -251,3 +260,23 @@ def test_ensure_config_initialized_scaffolds_env_placeholder(service, mock_fs):
     # rather than appending a second line next to a dead comment.
     assert "\nTEDDY_LLM_API_KEY=\n" in written[".teddy/.env"]
     assert "# TEDDY_LLM_API_KEY=" not in written[".teddy/.env"]
+
+
+def test_ensure_config_initialized_overwrite_true_creates_missing_env(service, mock_fs):
+    """Create-only ≠ never-create: `overwrite=True` still scaffolds `.env` when absent."""
+
+    def mock_exists(p):
+        if p.startswith("/mock/config"):
+            return True
+        # Only `.env` is missing; the three regenerable files already exist.
+        return p != ".teddy/.env"
+
+    mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.read_file.return_value = "mock content"
+
+    service.ensure_config_initialized(overwrite=True)
+
+    written = {call.args[0]: call.args[1] for call in mock_fs.write_file.call_args_list}
+    assert ".teddy/.env" in written
+    assert "TEDDY_LLM_API_KEY" in written[".teddy/.env"]
+    assert ".teddy/config.yaml" in written
