@@ -119,7 +119,7 @@ The `FileSystemManager` port defines a technology-agnostic interface for interac
     *   Returns `True` if the directory was created by this call.
     *   Returns `False` if the directory already existed (`FileExistsError` caught).
     *   Any error other than `FileExistsError` (e.g., permission denied) is re-raised (Failure Transparency).
-*   **Intended Use:** Claiming session roots (`.teddy/sessions/{timestamp}-{name}`) so concurrent session creation and turn-100 migration can never silently overwrite an existing session's audit ledger.
+*   **Intended Use:** Claiming session roots (`.teddy/sessions/{timestamp}-{name}`) so concurrent same-name session creation can never silently overwrite an existing session's audit ledger.
 
 ---
 

@@ -25,21 +25,17 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
     -   **Prompt Relocation:** Fetches and saves the agent's system prompt exclusively to the session root as `{session_root}/system_prompt.xml`.
     -   Initializes `01/meta.yaml` with `turn_id`, `creation_timestamp`, and any optional LLM overrides (`model`, `provider`, `api_key`).
 2.  **Turn Transition (`transition_to_next_turn`):**
-    -   Calculates the next turn ID (e.g., `01` -> `02`).
+    -   Calculates the next turn ID within the SAME session folder, using `:02d` **minimum-width** padding (`01` -> `02`, … `99` -> `100` -> `101`). There is NO session migration; a session never spawns a continuation folder.
     -   **Context Pruning:** The context-pruning block is delegated to the private `_prune_context_paths(paths, pruned_paths, next_session_dir)` helper (behavior-preserving SRP extraction).
-    -   **Migration Trigger:** If the next ID is `"100"`, invokes `migrate_to_continuation`.
     -   **Cost Persistence:** Updates `meta.yaml` with `parent_turn_id` links and cumulative cost. Every turn's `meta.yaml` MUST store `turn_cost` and `cumulative_cost`.
 
-3.  **Migration Algorithm (`migrate_to_continuation`):**
-    -   Resolves next session name (e.g., `{name}-2`).
-    -   **Exclusive Continuation Claim:** During migration, the continuation root is exclusive-claimed via `_claim_session_root` BEFORE `_clone_session_artifacts` runs; an occupied continuation name (e.g., a live sibling `...-foo-2` session) is skipped and the next free root (`...-foo-3`) is claimed. The claimed directory name drives ALL downstream persistence (turn dir, meta, context, cloned artifacts). Non-migration turn transitions are unaffected.
-    -   Clones `session.context` and `system_prompt.xml` from the current session root to the new one.
-    -   Transitions the current turn's `turn.context` to Turn 01 of the new session.
+3.  **Context Management (Turn Transition):**
+    -   Seeds the next `turn.context` with the current one. Reading is robust: if `turn.context` is missing or unreadable, it is treated as an empty set of paths.
+    -   Parses `READ` and `PRUNE` actions from the `ExecutionReport` to update the next context.
+    -   Always appends the current `report.md` to the next context to ensure the AI has history.
     -   **Defensive Serialization:** Ensures all metadata is cast to primitive types before serialization to prevent hangs (see `ARCHITECTURE.md` rule on serialization).
-    -   **Context Management:**
-        -   Seeds the next `turn.context` with the current one. Reading is robust: if `turn.context` is missing or unreadable, it is treated as an empty set of paths.
-        -   Parses `READ` and `PRUNE` actions from the `ExecutionReport` to update the next context.
-        -   Always appends the current `report.md` to the next context to ensure the AI has history.
+
+> **Note (2026-10-05):** Session migration to a continuation folder — previously triggered at turn 99 and cloning `session.context`/`system_prompt.xml` into `{name}-2` — has been **removed** (see [00-28](/docs/project/tasks/00-28-session-turn-numbering-and-read-cap.md)). A session now uses a single folder for any number of turns.
 
 ## 5. Data Contracts / Methods
 
@@ -47,7 +43,7 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
 -   **Description:** Exclusively claims a new session root (retrying with an incremented `-N` suffix if occupied), bootstraps the session directory, merges additional context if provided, and returns the claimed root path.
 
 ### `_claim_session_root(base_name: str) -> str` (private)
--   **Description:** Atomically claims `.teddy/sessions/{candidate}` via `IFileSystemManager.create_directory_exclusive` (single atomic OS operation — no check-then-act window), iterating candidates `base_name`, then following the continuation-name convention (`_calculate_continuation_name`): `base-2`, `base-3`, ... Returns the first successfully claimed root path. This is the single shared uniqueness mechanism for both `create_session` and the turn-100 migration, guaranteeing concurrent same-name sessions never merge their audit ledgers.
+-   **Description:** Atomically claims `.teddy/sessions/{candidate}` via `IFileSystemManager.create_directory_exclusive` (single atomic OS operation — no check-then-act window), iterating candidates `base_name`, then following the continuation-name convention (`_calculate_continuation_name`): `base-2`, `base-3`, ... Returns the first successfully claimed root path. It guarantees concurrent same-**name** sessions never merge their audit ledgers. (Used solely by `create_session`; the former turn-100 migration call site was removed.)
 
 ### `get_latest_turn(session_name: str) -> str`
 -   **Description:** Returns the directory path of the most recent turn in a session.
@@ -74,6 +70,6 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
 
 -   **Dynamic Renaming:** The `rename_session` method is provided to safely move session directories. The `SessionOrchestrator` uses this to rename timestamped sessions to a slugified version of the first plan's title (H1) after generation.
 -   **Robust Context Reading:** Uses `_read_context_file` to handle missing or malformed `turn.context` files gracefully, treating them as empty.
--   **Session Name Collision Guard:** `_claim_session_root` provides atomic exclusive creation of session roots (`mkdir()` without `exist_ok` via `IFileSystemManager.create_directory_exclusive`), eliminating the TOCTOU race where two concurrent creators both observe a free path. The retry chain follows the continuation-name convention. Covered by unit tests (helper retry chain, `create_session` collision, migration collision) and a sibling-integrity integration gate asserting both call sites leave a pre-existing sibling session's ledger byte-identical.
+-   **Session Name Collision Guard:** `_claim_session_root` provides atomic exclusive creation of session roots (`mkdir()` without `exist_ok` via `IFileSystemManager.create_directory_exclusive`), eliminating the TOCTOU race where two concurrent creators both observe a free path. The retry chain follows the continuation-name convention. Covered by unit tests (helper retry chain, `create_session` collision) and a sibling-integrity integration gate asserting a pre-existing sibling session's ledger stays byte-identical.
 -   **Complexity Management:** The context-pruning block of `transition_to_next_turn` is extracted into the private `_prune_context_paths(paths, pruned_paths, next_session_dir)` helper, keeping the transition method under the project's cyclomatic-complexity threshold.
 -   **Turn-Meta Seam (`load_turn_meta` / `save_turn_meta`, 2026-10-01):** Public, symmetric methods exposing repository-backed turn-meta persistence (`load_meta(turn_dir)` / `save_meta(path, data)` under the hood — the repository's filename asymmetry stays encapsulated behind this seam). Core consumers (e.g., the pipeline MESSAGE suppression path persisting `awaiting_reply: true`) use these Constructor-Injected methods instead of hand-rolled yaml handling or direct repository access.

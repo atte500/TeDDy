@@ -58,7 +58,7 @@ The system uses a top-level `.teddy/` directory to store all persistent data. Se
 │   └── 20260124-add-user-auth/  # Session Directory
 │       ├── pathfinder.xml       # Agent-specific prompt (shared)
 │       ├── session.context      # Shared across all turns
-│       └── 01/                  # Turn 1 (Fixed 2-digit padding, e.g., 01, 10, 99)
+│       └── 01/                  # Turn 1 (`:02d` minimum width; numbering continues past 99, e.g. 01, 10, 99, 100)
 │           ├── input.md
 │           ├── plan.md
 │           └── report.md
@@ -119,9 +119,9 @@ Initializes a new session directory, generates the first plan, and immediately e
     2.  Ensures `.teddy/init.context` exists. If the file is missing, it is created with a default content (`README.md`, `docs/project/PROJECT.md`, and `docs/architecture/ARCHITECTURE.md`). **An existing `init.context` file will not be overwritten.**
     3.  Creates the session-specific context file at `<session>/session.context` and copies the full contents of `.teddy/init.context` into it (with all `#` comments stripped out) to seed the session's default context.
     4.  Uses `teddy get-prompt` to fetch the agent prompt and saves it using its actual name (e.g., `01/pathfinder.xml`).
-    5.  **Turn Limit:** Sessions are capped at 99 turns. Upon completing turn 99, the system must migrate the session state to a new continuation session (e.g., `session-name-2`). The migration must clone `session.context` and the active prompt, and transition the `turn.context` exactly as a normal turn transition would to preserve the working context.
-    5.  Automatically triggers the planning phase for the first turn. The exact text sent to the LLM must be saved as 01/input.md.
-    6.  Once the `plan.md` is generated, the command **must not exit**. It must seamlessly invoke the `execute` logic to prompt the user for approval via the TUI.
+    5.  **Turn Numbering:** Sessions are NOT capped and do NOT migrate. Turns increment within the SAME session folder using `:02d` minimum-width padding (so `99` is followed by `100`, `101`, …). The `get_latest_turn` lookup sorts turn directories numerically so `100` resolves after `99`. (The former turn-99 migration to a `session-name-2` continuation folder was retired — see [00-28](/docs/project/tasks/00-28-session-turn-numbering-and-read-cap.md).)
+    6.  Automatically triggers the planning phase for the first turn. The exact text sent to the LLM must be saved as 01/input.md.
+    7.  Once the `plan.md` is generated, the command **must not exit**. It must seamlessly invoke the `execute` logic to prompt the user for approval via the TUI.
 
 ---
 
