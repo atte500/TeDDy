@@ -337,7 +337,7 @@ class TestGetContextCacheIntegration:
         )
 
         # Assert: web scraper was called
-        web_scraper.get_content.assert_called_once_with(url)
+        web_scraper.get_content.assert_called_once_with(url, truncate=False)
 
         # Assert: content is in the return value
         assert fetched_content in result.content, (
@@ -374,7 +374,7 @@ class TestGetContextCacheIntegration:
         )
 
         # Assert: web scraper was called
-        web_scraper.get_content.assert_called_once_with(url)
+        web_scraper.get_content.assert_called_once_with(url, truncate=False)
 
         # Assert: content is None (represented as "--- FILE NOT FOUND ---") in result
         assert "--- FILE NOT FOUND ---" in result.content, (

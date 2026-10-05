@@ -302,13 +302,15 @@ class WebScraperAdapter(WebScraper):
                 pass
         return markdown_content
 
-    def get_content(self, url: str, **_kwargs) -> str:
+    def get_content(self, url: str, truncate: bool = True, **_kwargs) -> str:
         """
         Fetches and extracts the content from the given URL.
         Employs a multi-stage stealth rotation to bypass automated blocking.
 
         Args:
             url: The URL to fetch content from.
+            truncate: Whether to apply the read.max_lines cap (default True).
+                Context assembly passes False so embedded content is verbatim.
             **_kwargs: Optional extraction hints.
 
         Returns:
@@ -322,9 +324,9 @@ class WebScraperAdapter(WebScraper):
         # to exit re-opens the process-global threshold while siblings are
         # still inside trafilatura.extract(), letting their WARNINGs escape.
         with suppressed_logging():
-            return self._get_content_impl(url, **_kwargs)
+            return self._get_content_impl(url, truncate=truncate, **_kwargs)
 
-    def _get_content_impl(self, url: str, **_kwargs) -> str:
+    def _get_content_impl(self, url: str, truncate: bool = True, **_kwargs) -> str:
         """Internal implementation of get_content (extracted for logging suppression wrapper)."""
         # 1. Specialized handling for GitHub raw content
         raw_github_content = self._handle_github_raw(url)
@@ -359,5 +361,8 @@ class WebScraperAdapter(WebScraper):
 
         if not markdown_content:
             return ""
+
+        if not truncate:
+            return markdown_content
 
         return self._truncate_content(markdown_content)

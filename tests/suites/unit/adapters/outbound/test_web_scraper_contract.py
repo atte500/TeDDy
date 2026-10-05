@@ -65,3 +65,31 @@ def test_web_scraper_disables_high_recall_flags_and_truncates_lines():
 
     # 2. Verify truncation (head of the document up to max_lines)
     assert result == "Line 1\nLine 2\nLine 3"
+
+
+def test_web_scraper_returns_full_content_when_truncate_disabled():
+    """
+    Scenario: Context-embedded URLs bypass the READ cap.
+
+    Given a remote URL whose extracted markdown exceeds read.max_lines,
+    When it is fetched during context assembly (get_content(..., truncate=False)),
+    Then the full, untruncated content is returned,
+    And the READ *action* / TUI path (default truncate=True) stays capped.
+    """
+    # Arrange: a 5-line body with the READ cap configured at 3.
+    mock_config = POSIXPathMock(spec=IConfigService)
+    mock_config.get_setting.return_value = 3
+
+    adapter = WebScraperAdapter(config_service=mock_config)
+
+    full_content = "Line 1\nLine 2\nLine 3\nLine 4\nLine 5"
+    mock_trafilatura = POSIXPathMock()
+    mock_trafilatura.extract.return_value = full_content
+    adapter._get_trafilatura = POSIXPathMock(return_value=mock_trafilatura)
+    adapter._fetch_with_rotation = POSIXPathMock(return_value="<html>Dummy</html>")
+
+    # Act: context assembly requests verbatim content.
+    result = adapter.get_content("http://example.com", truncate=False)
+
+    # Assert: verbatim content — the cap is NOT applied.
+    assert result == full_content

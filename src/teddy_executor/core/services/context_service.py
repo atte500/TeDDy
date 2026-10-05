@@ -216,7 +216,7 @@ class ContextService(IGetContextUseCase):
         caller can decide how to handle the error.
         """
         try:
-            content = self._web_scraper.get_content(url)
+            content = self._web_scraper.get_content(url, truncate=False)
             web_cache[url] = content
             if cache_dir:
                 self._save_web_cache(cache_dir, web_cache)

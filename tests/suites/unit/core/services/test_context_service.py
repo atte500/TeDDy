@@ -523,7 +523,7 @@ def test_get_context_fetches_remote_url_content_via_web_scraper(
 
     # Assert
     # 1. Scraper should be called for the URL
-    mock_scraper.get_content.assert_called_once_with(url)
+    mock_scraper.get_content.assert_called_once_with(url, truncate=False)
 
     # 2. Results should contain both contents
     assert scraped_content in result.content

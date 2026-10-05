@@ -7,12 +7,14 @@ class WebScraper(Protocol):
     An outbound port for fetching content from a web URL.
     """
 
-    def get_content(self, url: str, **_kwargs) -> str:
+    def get_content(self, url: str, truncate: bool = True, **_kwargs) -> str:
         """
         Fetches the content from the given URL.
 
         Args:
             url: The URL to fetch content from.
+            truncate: Whether to apply the read.max_lines cap (default True).
+                Context assembly passes False so embedded content is verbatim.
             **_kwargs: Optional extraction hints (e.g., include_comments=True).
 
         Returns:
