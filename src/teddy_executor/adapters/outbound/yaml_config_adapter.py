@@ -3,8 +3,12 @@ import re
 from importlib import resources
 from typing import Any, Dict, Optional
 import yaml
-from dotenv import set_key
+from dotenv import dotenv_values, set_key
 from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+_INTERPOLATION_PATTERN = re.compile(
+    r"\$\$|\$\{([_A-Za-z][_A-Za-z0-9]*)(?::-([^}]*))?\}"
+)
 
 
 class YamlConfigAdapter(IConfigService):
@@ -81,14 +85,14 @@ class YamlConfigAdapter(IConfigService):
 
         # 1. Try exact match first (highest priority: top-level user overrides)
         if key in self._config:
-            return self._config[key]
+            return self._maybe_interpolate(self._config[key])
 
         # 2. Try nested resolution (standard hierarchical structure)
         parts = key.split(".")
         result = self._resolve_nested(parts)
 
         if result is not None:
-            return result
+            return self._maybe_interpolate(result)
 
         return default
 
@@ -112,6 +116,49 @@ class YamlConfigAdapter(IConfigService):
         if parent_dir:
             os.makedirs(parent_dir, exist_ok=True)
         set_key(env_path, name, value, quote_mode="always")
+
+    def _build_interpolation_env(self) -> Dict[str, str]:
+        """Build the lookup table used to resolve ``${VAR}`` tokens.
+
+        Values from ``.teddy/.env`` are layered UNDER ``os.environ`` so a real
+        shell environment variable wins over the file. ``.env`` is read FRESH on
+        every call (never cached), which is what keeps a key written mid-run live
+        across the transient ``IConfigService`` instances.
+        """
+        env: Dict[str, str] = {}
+        for name, value in dotenv_values(self._env_file_path()).items():
+            if value is not None:
+                env[name] = value
+        env.update(os.environ)
+        return env
+
+    def _interpolate(self, text: str) -> str:
+        """Resolve ``${VAR}`` / ``${VAR:-default}`` tokens in ``text``.
+
+        ``$$`` collapses to a literal ``$`` and consumes the following text so it
+        is not re-interpolated. An unresolved token without a default becomes the
+        empty string. Text with no ``${`` is returned unchanged.
+        """
+        if "${" not in text:
+            return text
+        env = self._build_interpolation_env()
+
+        def _replace(match: "re.Match[str]") -> str:
+            if match.group(0) == "$$":
+                return "$"
+            name, default = match.group(1), match.group(2)
+            value = env.get(name)
+            if value is not None:
+                return value
+            return default if default is not None else ""
+
+        return _INTERPOLATION_PATTERN.sub(_replace, text)
+
+    def _maybe_interpolate(self, value: Any) -> Any:
+        """Interpolate only string values that actually carry a token."""
+        if isinstance(value, str) and "${" in value:
+            return self._interpolate(value)
+        return value
 
     def _resolve_nested(self, parts: list[str]) -> Optional[Any]:
         """Iteratively resolves nested keys."""
