@@ -1,6 +1,6 @@
 # Application Service: `InitService`
 
-**Status:** Refactoring
+**Status:** Implemented
 
 ## 1. Purpose
 
@@ -9,6 +9,7 @@ The `InitService` is the application service responsible for the idempotent init
 ## 2. Failure Modes
 
 - **Resource Not Found**: If a bundled resource file (templates, prompts, config) is missing from the package, `_get_default_content()` returns `None`. This causes a skip, logged at DEBUG level. The init service MUST raise a clear error when MRP.xml is missing (as it is required for prompt assembly), but for other templates/config, missing resources are silently skipped.
+- **Embedded Scaffolding Defaults**: `_get_default_content()` consults the embedded `_EMBEDDED_DEFAULTS` map (`.env` → `_ENV_PLACEHOLDER`, `.gitignore` → `_GITIGNORE_PLACEHOLDER`) BEFORE consulting the bundled config directory. Those two fixed `.teddy` scaffolding files ship as string constants rather than tracked dotfiles because the bundled `resources/config/` directory cannot hold a live `.gitignore` (its `*` rule would be a real ignore rule for the source tree, blocking any sibling dotfile).
 - **Silent Error Swallowing (Known Debt)**: `_get_default_content()` catches `(OSError, yaml.YAMLError, ImportError, AttributeError)` and returns `None`. This can hide errors from Python version changes to `importlib.resources`. This is logged as Technical Debt for Milestone 4.
 
 ## 3. Class Invariants
@@ -32,10 +33,11 @@ The `InitService` is the application service responsible for the idempotent init
 When `ensure_initialized` is called, the service performs the following checks and actions relative to the current working directory:
 
 1.  **Directory Creation:** Checks for the `.teddy/` directory. If it does not exist, it is created.
-2.  **Security Gate:** Checks for `.teddy/.gitignore`. If missing, it is created with a global ignore pattern (`*`) to prevent sensitive configuration from being accidentally committed to version control.
-3.  **Default Configuration:** Checks for `.teddy/config.yaml`. If missing, it is created using bundled defaults.
+2.  **Security Gate:** Checks for `.teddy/.gitignore`. If missing, it is created from the embedded `_GITIGNORE_PLACEHOLDER` constant with a global ignore pattern (`*`) to prevent sensitive configuration from being accidentally committed to version control.
+3.  **Default Configuration:** Checks for `.teddy/config.yaml`. If missing, it is created using the bundled baseline.
 4.  **Initial Context:** Checks for `.teddy/init.context`. If missing, it is created using bundled defaults.
-5.  **Template Initialization (new):** Checks for `docs/templates/` directory. If missing, creates it and copies all bundled templates from `src/teddy_executor/resources/templates/`.
+5.  **Secrets Placeholder:** Checks for `.teddy/.env`. If missing, it is created from the embedded `_ENV_PLACEHOLDER` constant — a commented placeholder whose (uncommented) `TEDDY_LLM_API_KEY=` line the bundled `config.yaml` interpolates via `${TEDDY_LLM_API_KEY}`.
+6.  **Template Initialization (new):** Checks for `docs/templates/` directory. If missing, creates it and copies all bundled templates from `src/teddy_executor/resources/templates/`.
 
 ### Template Initialization Logic (new)
 

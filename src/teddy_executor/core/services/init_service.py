@@ -7,21 +7,24 @@ import yaml
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
-# Embedded default for the gitignored ``.teddy/.env`` placeholder. It cannot be
-# shipped as a tracked dotfile: the bundled ``resources/config/.gitignore``
-# template (content ``*``) makes git ignore any new dotfile in that directory,
-# and the repo-root allowlist is overridden by the deeper file. Keeping it as a
-# string constant also makes the scaffold unit-testable. The placeholder is
-# fully commented so it never trips the secret scanner.
+# Embedded defaults for the fixed ``.teddy`` scaffolding that cannot ship as
+# tracked source files. The bundled ``resources/config/`` directory cannot hold
+# a live ``.gitignore`` (its ``*`` rule would be a real ignore rule for the
+# source tree, blocking any sibling dotfile), so both files are kept as string
+# constants. This sidesteps the git-tracking hazard entirely and makes the
+# scaffold unit-testable.
 _ENV_PLACEHOLDER = (
     "# TeDDy secrets. This gitignored file holds your provider credentials.\n"
     "# The bundled config.yaml reads the LLM key from this file's env var.\n"
-    "# Paste your OpenRouter (or other provider) key below, then save.\n"
-    "# TEDDY_LLM_API_KEY=\n"  # pragma: allowlist secret
+    "# Paste your OpenRouter (or other provider) key below.\n"
+    "TEDDY_LLM_API_KEY=\n"  # pragma: allowlist secret
 )
+
+_GITIGNORE_PLACEHOLDER = "# Ignore everything in the .teddy directory by default\n*\n"
 
 _EMBEDDED_DEFAULTS = {
     ".env": _ENV_PLACEHOLDER,
+    ".gitignore": _GITIGNORE_PLACEHOLDER,
 }
 
 
@@ -62,7 +65,7 @@ class InitService(IInitUseCase):
         return None
 
     def _init_config_dir(self, overwrite: bool = False) -> str:
-        """Copies bundled config files (config.yaml, .gitignore, init.context, .env) to .teddy/.
+        """Copies config files (config.yaml, .gitignore, init.context, .env) to .teddy/.
 
         Args:
             overwrite: If True, always overwrite existing files. If False, only write missing ones.
@@ -150,14 +153,14 @@ class InitService(IInitUseCase):
 
     def ensure_config_initialized(self, overwrite: bool = True) -> str:
         """
-        Ensures configuration files (config.yaml, .gitignore, init.context) are present in the .teddy/ directory.
+        Ensures configuration files (config.yaml, .gitignore, init.context, .env) are present in the .teddy/ directory.
 
         Args:
             overwrite: If True, always overwrite existing config files with defaults.
                        If False (default), only write missing files.
 
         Returns:
-            A human-readable status string (e.g., "Configuration files overwritten (3 files).").
+            A human-readable status string (e.g., "Configuration files overwritten (4 files).").
         """
         status = self._init_config_dir(overwrite=overwrite)
         return f"Configuration files {status}."

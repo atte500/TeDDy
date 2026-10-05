@@ -34,7 +34,7 @@ class IInitUseCase(ABC):
     @abstractmethod
     def ensure_config_initialized(self, overwrite: bool = False) -> str:
         """
-        Ensures configuration files (config.yaml, .gitignore, init.context) are present
+        Ensures configuration files (config.yaml, .gitignore, init.context, .env) are present
         in the .teddy/ directory.
 
         Args:
@@ -42,6 +42,6 @@ class IInitUseCase(ABC):
                        If False (default), only write missing files.
 
         Returns:
-            A human-readable status string (e.g., "Configuration files overwritten (3 files).").
+            A human-readable status string (e.g., "Configuration files overwritten (4 files).").
         """
         pass

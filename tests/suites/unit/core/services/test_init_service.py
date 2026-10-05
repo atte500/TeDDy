@@ -1,9 +1,11 @@
 import pytest
-from teddy_executor.core.services.init_service import InitService
+from teddy_executor.core.services.init_service import (
+    InitService,
+    _GITIGNORE_PLACEHOLDER,
+)
 
 SOURCE_CONFIG = "mock config content"
 SOURCE_CONTEXT = "mock context content"
-SOURCE_GITIGNORE = "mock gitignore content"
 
 
 @pytest.fixture
@@ -22,7 +24,6 @@ def test_ensure_initialized_creates_directory_and_files_if_missing(service, mock
 
     mock_fs.path_exists.side_effect = mock_exists
     mock_fs.read_file.side_effect = lambda p: {
-        "/mock/config/.gitignore": SOURCE_GITIGNORE,
         "/mock/config/config.yaml": SOURCE_CONFIG,
         "/mock/config/init.context": SOURCE_CONTEXT,
     }.get(p)
@@ -33,8 +34,8 @@ def test_ensure_initialized_creates_directory_and_files_if_missing(service, mock
     # Then
     mock_fs.create_directory.assert_any_call(".teddy")
     mock_fs.create_directory.assert_any_call(".teddy/prompts")
-    # Ensure we use the exact content from side_effect for assertions
-    mock_fs.write_file.assert_any_call(".teddy/.gitignore", SOURCE_GITIGNORE)
+    # The .gitignore scaffold comes from an embedded constant, not a template file.
+    mock_fs.write_file.assert_any_call(".teddy/.gitignore", _GITIGNORE_PLACEHOLDER)
     mock_fs.write_file.assert_any_call(".teddy/config.yaml", SOURCE_CONFIG)
     mock_fs.write_file.assert_any_call(".teddy/init.context", SOURCE_CONTEXT)
 
@@ -92,7 +93,6 @@ def test_ensure_initialized_copies_prompts_to_teddy(service, mock_fs):
 
     def mock_read(p: str) -> str:
         return {
-            "/mock/config/.gitignore": "mock gitignore",
             "/mock/config/config.yaml": "mock config",
             "/mock/config/init.context": "mock context",
             "/mock/config/prompts/architect.xml": "architect prompt",
@@ -110,7 +110,7 @@ def test_ensure_initialized_copies_prompts_to_teddy(service, mock_fs):
 
     # Then
     mock_fs.create_directory.assert_any_call(".teddy")
-    mock_fs.write_file.assert_any_call(".teddy/.gitignore", "mock gitignore")
+    mock_fs.write_file.assert_any_call(".teddy/.gitignore", _GITIGNORE_PLACEHOLDER)
     mock_fs.write_file.assert_any_call(".teddy/config.yaml", "mock config")
     mock_fs.write_file.assert_any_call(".teddy/init.context", "mock context")
     for fname in PROMPT_FILES:
@@ -131,7 +131,7 @@ def test_ensure_initialized_returns_summary_when_everything_exists(service, mock
 
 
 def test_ensure_initialized_returns_summary_when_files_missing(service, mock_fs):
-    """Missing everything → "Config: updated (3 files). Prompts: updated (6 files)." """
+    """Missing everything → "Config: updated (4 files). Prompts: updated (6 files)." """
 
     def mock_exists(p):
         # config templates exist, but .teddy does not
@@ -189,7 +189,7 @@ def test_ensure_prompts_initialized_missing_prompts_non_overwrite(service, mock_
 
 
 def test_ensure_config_initialized_overwrite_true(service, mock_fs):
-    """All config exist, overwrite=True → overwrites 3, returns "Configuration files overwritten (3 files)." """
+    """All config exist, overwrite=True → overwrites 4, returns "Configuration files overwritten (4 files)." """
     mock_fs.path_exists.return_value = True
     mock_fs.read_file.return_value = "mock content"
 
@@ -209,7 +209,7 @@ def test_ensure_config_initialized_overwrite_false(service, mock_fs):
 
 
 def test_ensure_config_initialized_missing_config_non_overwrite(service, mock_fs):
-    """No config files exist, overwrite=False → write 3, returns "Configuration files updated (3 files)." """
+    """No config files exist, overwrite=False → write 4, returns "Configuration files updated (4 files)." """
 
     def mock_exists(p):
         if p.startswith("/mock/config"):
@@ -247,3 +247,7 @@ def test_ensure_config_initialized_scaffolds_env_placeholder(service, mock_fs):
     written = {call.args[0]: call.args[1] for call in mock_fs.write_file.call_args_list}
     assert ".teddy/.env" in written
     assert "TEDDY_LLM_API_KEY" in written[".teddy/.env"]
+    # The key line is uncommented so dotenv.set_key rewrites it in place
+    # rather than appending a second line next to a dead comment.
+    assert "\nTEDDY_LLM_API_KEY=\n" in written[".teddy/.env"]
+    assert "# TEDDY_LLM_API_KEY=" not in written[".teddy/.env"]

@@ -133,7 +133,7 @@ Editor validation is skipped entirely for runs that will not read the terminal: 
 
 **Status:** Implemented
 
-Creates the `.teddy/` directory with default files (config, gitignore, init.context), pre-warms heavy imports, and auto-launches `teddy login` if no credentials exist.
+Creates the `.teddy/` directory with default files (config, gitignore, init.context, .env), pre-warms heavy imports, and auto-launches `teddy login` if no credentials exist.
 
 - **Signature:** `teddy init`
 - **No options** (kept simple).

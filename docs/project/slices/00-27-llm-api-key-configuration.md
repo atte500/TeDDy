@@ -4,7 +4,7 @@
 - **Milestone:** N/A (ad-hoc task; source: [00-27-llm-api-key-configuration.md](/docs/project/tasks/00-27-llm-api-key-configuration.md))
 - **Specs:** N/A
 - **Prototype:** N/A
-- **Component Docs:** [yaml_config_adapter.md](/docs/architecture/adapters/outbound/yaml_config_adapter.md), [config_service.md](/docs/architecture/core/ports/outbound/config_service.md)
+- **Component Docs:** [yaml_config_adapter.md](/docs/architecture/adapters/outbound/yaml_config_adapter.md), [config_service.md](/docs/architecture/core/ports/outbound/config_service.md), [init_service.md](/docs/architecture/core/services/init_service.md)
 - **Scope Slug:** `llm-api-key-configuration`
 
 ## Business Goal
@@ -127,7 +127,7 @@ prompt fires → key persisted).
 - [x] **Wiring** - Thread the signal end-to-end (Tracer Bullet): add `setup_api_key: Optional[bool] = None` to `handle_new_session`/`handle_resume_session` (appended LAST, so no positional caller shifts) and forward `setup_api_key=setup_api_key` into `_run_cli_preflight_check(...)`; `handle_plan_generation` passes `setup_api_key=False`. In `__main__.py` add `_resolve_setup_api_key(system_env, pipeline) -> bool` returning `system_env.isatty() and not pipeline` (NO `interactive`/`-m` clause), compute it in `start`/`resume`, and pass it. Bundle behavioral tests: one Acceptance test (`start -y -m` on a TTY with a missing key → prompt fires → key persisted) + Unit skips (falsy `setup_api_key`).
 - [x] **Logic** - Cover the gate unit's edge-case table: `_is_llm_api_key_missing` (`None`/`""`/whitespace → missing; a real key → present) and `_prompt_for_api_key` (non-empty → both persists + confirmation; empty and EOF → no persist). Pin every permutation independently of the higher-layer behavioral tests.
 - [x] **Cleanup** - Update the component docs: `docs/architecture/adapters/outbound/yaml_config_adapter.md` (record `${VAR}` / `${VAR:-default}` / `$$` interpolation, fresh-read `.env` layering with shell-env precedence, `set_env_variable`, and the "`os.environ` is never mutated" guarantee) and `docs/architecture/core/ports/outbound/config_service.md` (record the new `set_env_variable` member). Set/refresh their status.
-- [▶] **Refactor** - Hardcode the `.teddy` scaffolding in `InitService` instead of shipping source templates: add `_GITIGNORE_PLACEHOLDER` (exact bytes `# Ignore everything in the .teddy directory by default\n*\n`) and register it in `_EMBEDDED_DEFAULTS`; drop the leading `#` before `TEDDY_LLM_API_KEY=` in `_ENV_PLACEHOLDER` (so `dotenv.set_key` rewrites the line in place rather than appending a second one); DELETE `src/teddy_executor/resources/config/.gitignore` (its live `*` rule defeated the repo-root allowlist and made any sibling dotfile untrackable); update `tests/suites/unit/core/services/test_init_service.py` (drop the `.gitignore` `read_file` mapping + rewrite both `write_file(".teddy/.gitignore", …)` assertions against the constant; keep the `4`-file counts); refresh `docs/architecture/core/services/init_service.md`; FULL suite green.
+- [x] **Refactor** - Hardcode the `.teddy` scaffolding in `InitService` instead of shipping source templates: add `_GITIGNORE_PLACEHOLDER` (exact bytes `# Ignore everything in the .teddy directory by default\n*\n`) and register it in `_EMBEDDED_DEFAULTS`; drop the leading `#` before `TEDDY_LLM_API_KEY=` in `_ENV_PLACEHOLDER` (so `dotenv.set_key` rewrites the line in place rather than appending a second one); DELETE `src/teddy_executor/resources/config/.gitignore` (its live `*` rule defeated the repo-root allowlist and made any sibling dotfile untrackable); update `tests/suites/unit/core/services/test_init_service.py` (drop the `.gitignore` `read_file` mapping + rewrite both `write_file(".teddy/.gitignore", …)` assertions against the constant; keep the `4`-file counts); refresh `docs/architecture/core/services/init_service.md`; FULL suite green.
 
 ## Implementation Notes
 
@@ -214,6 +214,17 @@ prompt fires → key persisted).
 - Updated `docs/architecture/core/ports/outbound/config_service.md` §4 to record the additive `set_env_variable` member declared by the port (mirrors the `set_setting` persistence contract, for secrets written to the config-directory `.env`).
 - Both component docs carry `**Status:** Implemented`, matching the as-built code.
 - Doc-only deliverable: no production code changed, so the full suite was unchanged (`1615 passed, 5 skipped`).
+
+### D10 — Refactor: hardcode the `.teddy` scaffolding (user-directed)
+
+- User-directed refactor (Turns 87/90, "go"): stop shipping the source `.gitignore` template and hardcode BOTH `.teddy` scaffolding files as string constants in `init_service.py`.
+- Added `_GITIGNORE_PLACEHOLDER` (exact bytes `# Ignore everything in the .teddy directory by default\n*\n`) and registered it in `_EMBEDDED_DEFAULTS` alongside `_ENV_PLACEHOLDER`, so `_get_default_content` short-circuits both constants BEFORE consulting the filesystem (mirroring the `.env` mechanism from D4). Refreshed the module-header comment accordingly.
+- De-commented the `.env` placeholder's key line (`TEDDY_LLM_API_KEY=` instead of `# TEDDY_LLM_API_KEY=`). Functionally identical for TeDDy (an empty value still parses to `""` and counts as "missing"), but `dotenv.set_key` now rewrites that line IN PLACE on a later persist instead of appending a second line next to a dead comment.
+- DELETED `src/teddy_executor/resources/config/.gitignore`. Its content (`*`) was a LIVE ignore rule for the source tree that OVERRODE the repo-root allowlist (`!/src/teddy_executor/resources/config/**`), making any sibling dotfile untrackable — the root cause proven in the Turn-86 investigation and the reason D4 embedded the `.env` placeholder rather than shipping a tracked dotfile. Removing it eliminates the double-duty hazard at the root.
+- Reconciled the ONLY asserting test suite (Turn-93 census): `test_init_service.py` now imports `_GITIGNORE_PLACEHOLDER` (which drove the Red `ImportError`), drops the dead `/mock/config/.gitignore` read mapping from both side-effect maps, and retargets both `write_file(".teddy/.gitignore", …)` assertions to the constant. Kept the `4`-file counts. `init_service.py` is the SOLE production reader.
+- Refactor pass fixed four now-stale docstrings: three `3 files`→`4 files` prose corrections left behind by the D4 count bump, and one `bundled`→`config` wording fix in `_init_config_dir`'s docstring.
+- Inner loop: Red (`ImportError: cannot import name '_GITIGNORE_PLACEHOLDER'`, T94) → Green (`13 passed in 1.10s`, T95) → Refactor (`13 passed in 1.80s`, T96). Integration gate: FULL suite GREEN (`1616 passed, 5 skipped`; the +1 over the Turn-81 `1615` baseline traces to upstream commits integrated by the Turn-92 `git pull --rebase` — this refactor added no test and reported zero failures).
+- **Byte-neutral for the user:** the deletion is invisible to the runtime experience — `teddy init` writes the SAME `.gitignore` content it always did, now sourced from a constant rather than a bundled template.
 
 ## Verification
 
