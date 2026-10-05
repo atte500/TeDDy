@@ -126,7 +126,7 @@ prompt fires → key persisted).
 - [x] **Seam** - Additive seam in `_run_cli_preflight_check`: add `setup_api_key: Optional[bool] = None`; resolve `config_service = container.resolve(IConfigService)` at the top and run `if setup_api_key and _is_llm_api_key_missing(config_service): _prompt_for_api_key(config_service)`; MOVE `llm_client = container.resolve(ILlmClient)` to AFTER the gate. Add module-level `_is_llm_api_key_missing(config_service)` (`not (isinstance(k, str) and k.strip())`) and `_prompt_for_api_key(config_service)` (yellow stderr warning; `typer.prompt("LLM API key", hide_input=True)`; persist via `set_env_variable` + `set_setting("llm.api_key", "${TEDDY_LLM_API_KEY}")`; green confirmation; EOF/empty → return). Inert by default (`None` → skip). Unit tests: gate skip/run + prompt persist/EOF.
 - [x] **Wiring** - Thread the signal end-to-end (Tracer Bullet): add `setup_api_key: Optional[bool] = None` to `handle_new_session`/`handle_resume_session` (appended LAST, so no positional caller shifts) and forward `setup_api_key=setup_api_key` into `_run_cli_preflight_check(...)`; `handle_plan_generation` passes `setup_api_key=False`. In `__main__.py` add `_resolve_setup_api_key(system_env, pipeline) -> bool` returning `system_env.isatty() and not pipeline` (NO `interactive`/`-m` clause), compute it in `start`/`resume`, and pass it. Bundle behavioral tests: one Acceptance test (`start -y -m` on a TTY with a missing key → prompt fires → key persisted) + Unit skips (falsy `setup_api_key`).
 - [x] **Logic** - Cover the gate unit's edge-case table: `_is_llm_api_key_missing` (`None`/`""`/whitespace → missing; a real key → present) and `_prompt_for_api_key` (non-empty → both persists + confirmation; empty and EOF → no persist). Pin every permutation independently of the higher-layer behavioral tests.
-- [ ] **Cleanup** - Update the component docs: `docs/architecture/adapters/outbound/yaml_config_adapter.md` (record `${VAR}` / `${VAR:-default}` / `$$` interpolation, fresh-read `.env` layering with shell-env precedence, `set_env_variable`, and the "`os.environ` is never mutated" guarantee) and `docs/architecture/core/ports/outbound/config_service.md` (record the new `set_env_variable` member). Set/refresh their status.
+- [x] **Cleanup** - Update the component docs: `docs/architecture/adapters/outbound/yaml_config_adapter.md` (record `${VAR}` / `${VAR:-default}` / `$$` interpolation, fresh-read `.env` layering with shell-env precedence, `set_env_variable`, and the "`os.environ` is never mutated" guarantee) and `docs/architecture/core/ports/outbound/config_service.md` (record the new `set_env_variable` member). Set/refresh their status.
 
 ## Implementation Notes
 
@@ -206,6 +206,13 @@ prompt fires → key persisted).
 - Characterization suite: the D6 Seam already implemented both helpers, so the table was Green on first run — the Red intent was to pin the boundaries, not to demand missing code.
 - Uses a real in-memory `IConfigService` double (`_RecordingConfigService`, recording every persist call) plus `monkeypatch` for the `typer` I/O seams — no bare mocks.
 - Integration gate: the FULL suite ran green (`1615 passed, 5 skipped`).
+
+### D9 — Cleanup: as-built component-doc update
+
+- Updated `docs/architecture/adapters/outbound/yaml_config_adapter.md` to as-built reality: §1 Purpose now names the lazy `${VAR}` interpolation and the `.teddy/.env` secret persistence; §3 gained the `${VAR}` / `${VAR:-default}` / `$$` interpolation rules (value-only, lazy at `get_setting` time), the fresh-read `.env` layering with shell-env precedence, a corrected comment-preserving `set_setting` description (replacing the stale `yaml.dump()` round-trip text), and a new `### Writing Secrets (set_env_variable)` subsection; §4 gained the `set_env_variable` method contract with the `os.environ` non-mutation invariant.
+- Updated `docs/architecture/core/ports/outbound/config_service.md` §4 to record the additive `set_env_variable` member declared by the port (mirrors the `set_setting` persistence contract, for secrets written to the config-directory `.env`).
+- Both component docs carry `**Status:** Implemented`, matching the as-built code.
+- Doc-only deliverable: no production code changed, so the full suite was unchanged (`1615 passed, 5 skipped`).
 
 ## Verification
 

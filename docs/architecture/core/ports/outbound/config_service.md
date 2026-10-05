@@ -39,6 +39,19 @@ This is an interface and contains no implementation logic.
     -   May raise `OSError` if the config file cannot be written (e.g., insufficient permissions).
     -   May raise `yaml.YAMLError` if the config file becomes corrupted during write.
 
+### `set_env_variable(self, name: str, value: str) -> None`
+
+-   **Description:** Persists a secret to the `.env` file inside the config directory (the storage layer that backs `${VAR}` interpolation). Mirrors the `set_setting` persistence contract, but for secrets.
+-   **Preconditions:**
+    -   `name` must be a non-empty environment-variable name.
+    -   `value` may be any string secret.
+-   **Postconditions:**
+    -   The value is persisted to the `.env` file inside the config directory (created if missing).
+    -   `os.environ` is NOT mutated.
+-   **Exception/Error States:**
+    -   May raise `OSError` if the `.env` file cannot be written (e.g., insufficient permissions).
+-   **Invariants:** The secret is written to disk only; the process environment is left untouched, so later child processes never inherit the secret.
+
 ## 5. Standard Configuration Keys
 
 - `yolo_default`: Boolean setting the default mode for the `--yolo` / `-y` flag across `start`, `resume`, and `execute` (default `False`). When `true`, sessions run non-interactively unless overridden by `--no-yolo` / `-n`; the code-level default keeps pre-existing configs unchanged.
