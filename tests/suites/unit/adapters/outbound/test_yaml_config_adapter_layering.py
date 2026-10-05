@@ -43,3 +43,22 @@ def test_user_config_overrides_baseline(tmp_path):
 
     # Then: The user value should take precedence
     assert adapter.get_setting("execution.max_output_lines") == 999
+
+
+def test_baseline_llm_api_key_is_an_env_var_reference(tmp_path, monkeypatch):
+    """The bundled baseline ships ``llm.api_key`` as an env-var reference.
+
+    Migration guard: the shipped default must resolve the key from
+    ``.teddy/.env`` / the shell instead of shipping a literal empty value that
+    would make the missing-key path look satisfied.
+    """
+    # Given: the env var is available to the process
+    monkeypatch.setenv("TEDDY_LLM_API_KEY", "resolved-from-env")
+
+    # When: the adapter loads the bundled baseline
+    adapter = YamlConfigAdapter(
+        config_path=".teddy/config.yaml", root_dir=str(tmp_path)
+    )
+
+    # Then: llm.api_key resolves through interpolation
+    assert adapter.get_setting("llm.api_key") == "resolved-from-env"

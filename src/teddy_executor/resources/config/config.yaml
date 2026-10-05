@@ -52,6 +52,8 @@ auto_pruning:
 # All keys under 'llm' are passed directly to litellm.completion().
 llm:
   model: "openrouter/deepseek/deepseek-v4-flash:nitro"
-  api_key: ""
+  # Interpolated from .teddy/.env / the shell environment (${TEDDY_LLM_API_KEY}).
+  # Paste your key into .teddy/.env, or replace this with a literal value to override.
+  api_key: "${TEDDY_LLM_API_KEY}"
   max_retries: 3
   timeout: 300
