@@ -48,9 +48,9 @@ class IRunPlanUseCase(ABC):
 
         Returns:
             A tuple (actual_session_name, report). The actual_session_name
-            may differ from the input session_name after a centennial
-            migration (when the session transitions to a continuation name
-            like 'my-session-2').
+            is the name under which the turn was executed, which may differ
+            from the input if planning renames the session. A session stays
+            in a single folder for its lifetime.
 
         Args:
             session_name: The name of the session to resume.

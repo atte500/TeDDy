@@ -63,9 +63,9 @@ class SessionLifecycleManager:
 
         Returns:
             A tuple (actual_session_name, report). The actual_session_name
-            may differ from the input session_name after a centennial
-            migration (when the session transitions to a continuation name
-            like 'my-session-2').
+            is the name under which the turn was executed, which may differ
+            from the input if planning renames the session. A session stays
+            in a single folder for its lifetime.
         """
         state, turn_path = self._session_service.get_session_state(session_name)
 
@@ -399,8 +399,7 @@ class SessionLifecycleManager:
         Returns:
             A tuple (actual_session_name, report). The actual_session_name
             is the session name returned by trigger_new_plan, which may
-            differ from the original session name after a centennial
-            migration.
+            differ from the original if planning renames the session.
         """
         # Install Tee to capture planning output before trigger_new_plan
         tee = None
