@@ -357,7 +357,11 @@ class LiteLLMAdapter(ILlmClient):
         is_placeholder = isinstance(api_key, str) and api_key == ""
 
         if is_placeholder:
-            return ["'llm.api_key' is empty."]
+            return [
+                "'llm.api_key' is empty. "
+                "Set TEDDY_LLM_API_KEY in .teddy/.env "
+                "(or your shell environment)."
+            ]
 
         model = self._config_service.get_setting("llm.model")
         if not model:

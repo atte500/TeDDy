@@ -26,6 +26,26 @@ def test_validate_config_rejects_empty_api_key(adapter, mock_config):
     assert any("llm.api_key" in error for error in errors)
 
 
+def test_validate_config_empty_api_key_message_hints_at_dotenv(adapter, mock_config):
+    """The empty-key error message points the user at .teddy/.env / TEDDY_LLM_API_KEY.
+
+    The emptiness CHECK itself is unchanged; the migration only appends a hint
+    so a fresh project knows exactly where to put the key.
+    """
+    # Arrange: Config has an empty API key
+    mock_config.get_setting.side_effect = lambda key, default=None: {
+        "llm.api_key": "",
+        "llm.model": "gpt-4",
+    }.get(key, default)
+
+    # Act
+    errors = adapter.validate_config()
+
+    # Assert - the message names the env file and the env var the user must set
+    assert any("TEDDY_LLM_API_KEY" in error for error in errors)
+    assert any(".teddy/.env" in error for error in errors)
+
+
 def test_validate_config_detects_missing_env_vars(adapter, mock_config, monkeypatch):
     # Arrange
     mock_config.get_setting.side_effect = lambda key, default=None: {
