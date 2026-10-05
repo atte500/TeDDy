@@ -203,12 +203,42 @@ class LiteLLMAdapter(ILlmClient):
 
         return params
 
+    _AUTH_ERROR_HINTS = [
+        "API key expired",
+        "API_KEY_INVALID",
+        "invalid_api_key",
+        "api_key client option must be set",
+        "Incorrect API key",
+        "No cookie auth credentials",
+    ]
+
+    def _is_auth_error(self, error: Exception) -> bool:
+        """Detects authentication/key errors by message hint OR exception TYPE.
+
+        Auth failures are NOT transient: no amount of retrying will fix a wrong
+        or expired key, so they must fail fast. Detection is two-pronged because
+        a provider's exact wording is not load-bearing. The type check is guarded
+        by ``isinstance(candidate, type)`` so the dynamically-created attributes
+        of a mock provider are never mistaken for the real exception class.
+        """
+        msg = str(error)
+        if any(hint in msg for hint in self._AUTH_ERROR_HINTS):
+            return True
+        candidate = getattr(self._get_litellm(), "AuthenticationError", None)
+        return isinstance(candidate, type) and isinstance(error, candidate)
+
     def _should_retry_completion(
         self, error: Exception, attempt: int, max_attempts: int
     ) -> bool:
-        """Retries any completion error with exponential backoff."""
-        """Retries on ALL exceptions with exponential backoff, since config
-        validation has already passed (so the error must be transient)."""
+        """Retries transient errors with exponential backoff; never auth errors.
+
+        Authentication errors are permanent, so they are surfaced immediately
+        (fail fast) instead of burning the backoff budget on calls that cannot
+        succeed. All other exceptions keep the retry-on-any-error behaviour,
+        since config validation has already passed.
+        """
+        if self._is_auth_error(error):
+            return False
         if attempt < max_attempts - 1:
             delay = 0.5 * (2**attempt)
             if self._time_service:
@@ -221,17 +251,13 @@ class LiteLLMAdapter(ILlmClient):
         return False
 
     def _raise_specific_completion_errors(self, error: Exception) -> None:
-        """Identifies and raises specific errors based on exception signature."""
-        msg = str(error)
-        hints = [
-            "API key expired",
-            "API_KEY_INVALID",
-            "invalid_api_key",
-            "api_key client option must be set",
-            "Incorrect API key",
-            "No cookie auth credentials",
-        ]
-        if any(hint in msg for hint in hints):
+        """Raises a specific error based on the exception signature.
+
+        Auth errors (by hint OR type) become a ``ConfigurationError`` with the
+        original message preserved for a clear, actionable CLI message.
+        """
+        if self._is_auth_error(error):
+            msg = str(error)
             clean_msg = msg.split(" - ")[-1] if " - " in msg else msg
             raise ConfigurationError(clean_msg) from error
 

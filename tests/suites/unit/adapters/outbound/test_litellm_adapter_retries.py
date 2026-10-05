@@ -347,3 +347,61 @@ def test_timeout_exception_triggers_retry(container: Any) -> None:
         f"Expected backoff delay [0.5] but got {mock_time.sleep_calls}"
     )
     assert result is success_response, "Returned response is not the successful mock"
+
+
+# =========== Test 5: Auth Errors Fail Fast (Option C) ===========
+
+
+def test_auth_error_matching_hint_is_not_retried(container: Any) -> None:
+    """
+    Given a valid config,
+    When litellm raises an error whose message matches a known auth hint,
+    Then the adapter fails fast with ConfigurationError on the FIRST attempt
+    (exactly one call, no backoff sleep).
+    """
+    # Arrange
+    adapter, mock_litellm, mock_time = _create_adapter(container)
+
+    mock_litellm.completion.side_effect = Exception(
+        "Incorrect API key provided: sk-xxx"  # matches a documented auth hint
+    )
+
+    # Act / Assert
+    with pytest.raises(ConfigurationError):
+        adapter.get_completion(messages=[{"role": "user", "content": "test"}])
+
+    # Fail fast: exactly one call and no backoff sleeps.
+    assert mock_litellm.completion.call_count == 1, (
+        f"Expected 1 litellm call but got {mock_litellm.completion.call_count}"
+    )
+    assert mock_time.sleep_calls == [], (
+        f"Expected no backoff sleeps but got {mock_time.sleep_calls}"
+    )
+
+
+def test_authentication_error_type_is_not_retried(container: Any) -> None:
+    """
+    Given a litellm ``AuthenticationError`` whose message matches NO string hint,
+    When get_completion runs,
+    Then it is detected by TYPE and still fails fast with ConfigurationError
+    (exactly one call, no backoff sleep).
+    """
+    # Arrange
+    adapter, mock_litellm, mock_time = _create_adapter(container)
+
+    class AuthenticationError(Exception):
+        pass
+
+    mock_litellm.AuthenticationError = AuthenticationError
+    mock_litellm.completion.side_effect = AuthenticationError("wording-with-no-hint")
+
+    # Act / Assert
+    with pytest.raises(ConfigurationError):
+        adapter.get_completion(messages=[{"role": "user", "content": "test"}])
+
+    assert mock_litellm.completion.call_count == 1, (
+        f"Expected 1 litellm call but got {mock_litellm.completion.call_count}"
+    )
+    assert mock_time.sleep_calls == [], (
+        f"Expected no backoff sleeps but got {mock_time.sleep_calls}"
+    )
