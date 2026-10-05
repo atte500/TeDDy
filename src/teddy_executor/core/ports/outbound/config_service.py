@@ -39,3 +39,17 @@ class IConfigService(ABC):
             value: The value to persist.
         """
         pass
+
+    @abstractmethod
+    def set_env_variable(self, name: str, value: str) -> None:
+        """
+        Persists a secret to the ``.env`` file inside the config directory.
+
+        The secret is written to ``.env`` WITHOUT mutating ``os.environ``, so it
+        cannot leak into the child processes spawned by the application.
+
+        Args:
+            name: The environment variable name to persist.
+            value: The secret value to persist.
+        """
+        pass

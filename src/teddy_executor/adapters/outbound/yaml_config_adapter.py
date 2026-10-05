@@ -3,6 +3,7 @@ import re
 from importlib import resources
 from typing import Any, Dict, Optional
 import yaml
+from dotenv import set_key
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 
 
@@ -94,6 +95,23 @@ class YamlConfigAdapter(IConfigService):
     def get_config_path(self) -> str:
         """Returns the path to the configuration file."""
         return self._config_path
+
+    def _env_file_path(self) -> str:
+        """Returns the path to the ``.env`` file inside the config directory."""
+        return os.path.join(os.path.dirname(self._config_path), ".env")
+
+    def set_env_variable(self, name: str, value: str) -> None:
+        """Persists a secret to the ``.env`` file WITHOUT mutating ``os.environ``.
+
+        Writing via ``dotenv.set_key`` (never ``load_dotenv``) keeps the secret
+        out of the process environment, so it cannot leak into the shell child
+        processes that ``EXECUTE`` actions spawn inside the user's repo.
+        """
+        env_path = self._env_file_path()
+        parent_dir = os.path.dirname(env_path)
+        if parent_dir:
+            os.makedirs(parent_dir, exist_ok=True)
+        set_key(env_path, name, value, quote_mode="always")
 
     def _resolve_nested(self, parts: list[str]) -> Optional[Any]:
         """Iteratively resolves nested keys."""

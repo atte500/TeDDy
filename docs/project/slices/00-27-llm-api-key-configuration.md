@@ -118,7 +118,7 @@ prompt fires → key persisted).
 
 ## Deliverables
 
-- [ ] **Contract** - Add `set_env_variable(self, name: str, value: str) -> None` to `IConfigService` (docstring: persist a secret to the `.env` file in the config directory, without touching `os.environ`) and implement it in `YamlConfigAdapter` via a new `_env_file_path()` helper (`os.path.join(os.path.dirname(self._config_path), ".env")`) + `os.makedirs(..., exist_ok=True)` + `dotenv.set_key(self._env_file_path(), name, value, quote_mode="always")`. Additive; `YamlConfigAdapter` is the sole concrete subclass, so the ABC stays instantiable. Unit test: the key lands in `.env` and `os.environ` is unchanged.
+- [x] **Contract** - Add `set_env_variable(self, name: str, value: str) -> None` to `IConfigService` (docstring: persist a secret to the `.env` file in the config directory, without touching `os.environ`) and implement it in `YamlConfigAdapter` via a new `_env_file_path()` helper (`os.path.join(os.path.dirname(self._config_path), ".env")`) + `os.makedirs(..., exist_ok=True)` + `dotenv.set_key(self._env_file_path(), name, value, quote_mode="always")`. Additive; `YamlConfigAdapter` is the sole concrete subclass, so the ABC stays instantiable. Unit test: the key lands in `.env` and `os.environ` is unchanged.
 - [ ] **Logic** - Add `${VAR}` interpolation to `YamlConfigAdapter`: `_build_interpolation_env()` (start from `dotenv_values(self._env_file_path())` dropping `None`s, then `.update(os.environ)` so the real shell env wins; read `.env` FRESH every call), `_interpolate()` (regex `\$\{([_A-Za-z][_A-Za-z0-9]*)(?::-([^}]*))?\}`, unresolved → `""`, `$$` → literal `$`; return unchanged when no `${`), and `_maybe_interpolate()` (only when `isinstance(value, str) and "${" in value`). Apply in BOTH the exact-match and `_resolve_nested` paths of `get_setting`. Unit tests: the interpolation rule matrix + a cross-instance liveness test (a SECOND real adapter resolves a key written by `set_env_variable`).
 - [ ] **Migration** - Point the bundled `config.yaml` `llm.api_key` at `"${TEDDY_LLM_API_KEY}"` and refresh the adjacent comment (interpolated from `.teddy/.env`/shell; a literal value still wins). MUST follow the interpolation Logic deliverable. Verify no suite asserts the bundled `api_key` literal.
 - [ ] **Migration** - Scaffold `.teddy/.env`: CREATE `src/teddy_executor/resources/config/.env` (commented placeholder, obviously-fake to avoid a `detect-secrets` false positive) and add `".env"` to `InitService._init_config_dir`'s `config_files`; update the literal `3`→`4` count assertions in `tests/suites/unit/core/services/test_init_service.py`. Unit test for `teddy init config` scaffolding the file.
@@ -130,7 +130,15 @@ prompt fires → key persisted).
 
 ## Implementation Notes
 
-(To be filled by the Developer during implementation.)
+### D1 — Contract: `set_env_variable` on `IConfigService` + `YamlConfigAdapter`
+
+- Added `set_env_variable(self, name: str, value: str) -> None` as an `@abstractmethod` on `IConfigService` (mirrors the existing `set_setting` contract shape and documents the `os.environ` non-mutation guarantee in its docstring).
+- Implemented it on `YamlConfigAdapter` via a new `_env_file_path()` helper (`os.path.join(os.path.dirname(self._config_path), ".env")`), a parent-dir guard (`if parent_dir: os.makedirs(parent_dir, exist_ok=True)` — the same idiom `set_setting` already uses, avoiding `os.makedirs("")` on a bare `config_path`), and `dotenv.set_key(env_path, name, value, quote_mode="always")`.
+- `quote_mode="always"` was chosen deliberately: secrets are always quoted in the `.env` file, keeping it robust against values containing spaces or shell-metacharacters.
+- The write uses `dotenv.set_key` (never `load_dotenv`), so `os.environ` is never mutated. This is the mechanism that keeps the key out of the child shells that `EXECUTE` actions spawn inside the user's repo — TeDDy is a guest in that repo.
+- **Green-to-Green**: Orientation (Turn 3) proved `YamlConfigAdapter` is the SOLE concrete `IConfigService` subclass, so adding the abstract member AND its implementation in the SAME change kept the ABC instantiable with no consumer migration. The auto-specced harness doubles (`POSIXPathMock(spec=IConfigService)` via `register_mock`) inherit the new member automatically, so brief Step 7 required no harness edit.
+- New Unit test: `tests/suites/unit/adapters/outbound/test_yaml_config_adapter_env_persistence.py` drives a REAL adapter over `tmp_path` and asserts both persistence to `.teddy/.env` and non-mutation of `os.environ`.
+- Integration gate: the FULL suite ran green (`1587 passed, 5 skipped`) — the breaking port addition regressed no existing consumer or harness double.
 
 ## Verification
 
