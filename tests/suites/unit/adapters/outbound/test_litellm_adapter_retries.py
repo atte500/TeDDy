@@ -40,15 +40,6 @@ def _create_valid_config_mock(
             section = config.get(parts[0].lower(), {})
             return section.get(parts[1], default)
         return config.get(key, default)
-        if key == "llm.max_retries":
-            return 4
-        if key == "llm":
-            return {"max_retries": 4, "api_key": "sk-test-key", "model": "gpt-4o"}
-        if key == "llm.api_key":
-            return "sk-test-key"  # pragma: allowlist secret
-        if key == "llm.model":
-            return "gpt-4o"
-        return default
 
     mock_config.get_setting.side_effect = mock_get_setting
     return mock_config
@@ -95,6 +86,9 @@ def test_validation_guard_blocks_invalid_api_key(container: Any) -> None:
     }.get(key, default)
 
     mock_litellm = POSIXPathMock()
+    mock_litellm.validate_environment.return_value = {
+        "missing_keys": ["OPENROUTER_API_KEY"]
+    }
     mock_litellm.completion.side_effect = Exception("Should not be called")
 
     adapter = LiteLLMAdapter(

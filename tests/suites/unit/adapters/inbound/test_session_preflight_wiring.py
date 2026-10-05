@@ -498,3 +498,32 @@ def test_preflight_check_gates_api_key_prompt_on_setup_api_key_flag(
         )
     else:
         mock_config.set_env_variable.assert_not_called()
+
+
+def test_preflight_check_skips_api_key_prompt_for_keyless_local_model(env, monkeypatch):
+    """A keyless local model is NOT prompted for a dummy API key.
+
+    Even when ``setup_api_key`` is truthy and ``llm.api_key`` is missing, a
+    local backend that needs no key (delegated to litellm) must skip the prompt
+    so the user is never trapped entering a placeholder.
+    """
+    from unittest.mock import Mock
+
+    import litellm
+
+    mock_llm = env.mock_port(ILlmClient)
+    mock_llm.validate_config.return_value = []
+    mock_config = env.mock_port(IConfigService)
+    mock_config.get_setting.side_effect = lambda key, default=None: {
+        "llm.api_key": "",
+        "llm.model": "lm_studio/local",
+    }.get(key, default)
+    monkeypatch.setattr(
+        litellm,
+        "validate_environment",
+        Mock(return_value={"keys_in_environment": True, "missing_keys": []}),
+    )
+
+    _run_cli_preflight_check(container=env.container, setup_api_key=True)
+
+    mock_config.set_env_variable.assert_not_called()

@@ -15,12 +15,14 @@ by ``test_session_preflight_wiring.py``.
 """
 
 from typing import Any, Optional
+from unittest.mock import Mock
 
 import pytest
 import typer
 
 from teddy_executor.adapters.inbound.session_cli_handlers import (
     _is_llm_api_key_missing,
+    _llm_model_requires_api_key,
     _prompt_for_api_key,
 )
 from teddy_executor.core.ports.outbound.config_service import IConfigService
@@ -34,8 +36,9 @@ class _RecordingConfigService(IConfigService):
     ``set_env_variable`` / ``set_setting`` call is recorded for inspection.
     """
 
-    def __init__(self, api_key: Optional[str]) -> None:
+    def __init__(self, api_key: Optional[str], model: Optional[str] = None) -> None:
         self._api_key = api_key
+        self._model = model
         self.env_writes: list[tuple[str, str]] = []
         self.setting_writes: list[tuple[str, Any]] = []
 
@@ -45,6 +48,8 @@ class _RecordingConfigService(IConfigService):
     def get_setting(self, key: str, default: Optional[Any] = None) -> Optional[Any]:
         if key == "llm.api_key":
             return self._api_key
+        if key == "llm.model":
+            return self._model
         return default
 
     def set_setting(self, key: str, value: Any) -> None:
@@ -153,3 +158,70 @@ def test_prompt_for_api_key_abort_persists_nothing_without_raising(monkeypatch):
 
     assert config.env_writes == []
     assert config.setting_writes == []
+
+
+# --- _llm_model_requires_api_key: provider-aware key requirement ------------
+
+
+def test_llm_model_requires_api_key_true_for_cloud_model(monkeypatch):
+    """A cloud model whose provider key is missing requires a key."""
+    import litellm
+
+    monkeypatch.setattr(
+        litellm,
+        "validate_environment",
+        Mock(return_value={"missing_keys": ["OPENAI_API_KEY"]}),
+    )
+
+    assert (
+        _llm_model_requires_api_key(
+            _RecordingConfigService(None, model="openai/gpt-4o")
+        )
+        is True
+    )
+
+
+def test_llm_model_requires_api_key_false_for_keyless_local_model(monkeypatch):
+    """A keyless local model (e.g. lm_studio) requires no key."""
+    import litellm
+
+    monkeypatch.setattr(
+        litellm,
+        "validate_environment",
+        Mock(return_value={"keys_in_environment": True, "missing_keys": []}),
+    )
+
+    assert (
+        _llm_model_requires_api_key(
+            _RecordingConfigService(None, model="lm_studio/local")
+        )
+        is False
+    )
+
+
+def test_llm_model_requires_api_key_false_for_advisory_non_key_requirement(
+    monkeypatch,
+):
+    """A non-*_API_KEY requirement (e.g. OLLAMA_API_BASE) is advisory, not a key."""
+    import litellm
+
+    monkeypatch.setattr(
+        litellm,
+        "validate_environment",
+        Mock(return_value={"missing_keys": ["OLLAMA_API_BASE"]}),
+    )
+
+    assert (
+        _llm_model_requires_api_key(
+            _RecordingConfigService(None, model="ollama/llama3")
+        )
+        is False
+    )
+
+
+@pytest.mark.parametrize("model", [None, "", "   "])
+def test_llm_model_requires_api_key_true_when_model_unconfigured(model):
+    """An unconfigured model conservatively requires a key (prompt still fires)."""
+    assert (
+        _llm_model_requires_api_key(_RecordingConfigService(None, model=model)) is True
+    )

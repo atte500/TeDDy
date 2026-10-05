@@ -174,6 +174,13 @@ class LiteLLMAdapter(ILlmClient):
         llm_config = cast(Dict[str, Any], self._config_service.get_setting("llm", {}))
         params.update(llm_config)
 
+        # Drop an empty/blank api_key so litellm applies the provider's own
+        # default (e.g. a dummy key for keyless local models). Forwarding "" is
+        # equivalent to a missing key and raises AuthenticationError.
+        api_key = params.get("api_key")
+        if isinstance(api_key, str) and not api_key.strip():
+            del params["api_key"]
+
         if model:
             params["model"] = model
 
@@ -216,7 +223,14 @@ class LiteLLMAdapter(ILlmClient):
     def _raise_specific_completion_errors(self, error: Exception) -> None:
         """Identifies and raises specific errors based on exception signature."""
         msg = str(error)
-        hints = ["API key expired", "API_KEY_INVALID", "invalid_api_key"]
+        hints = [
+            "API key expired",
+            "API_KEY_INVALID",
+            "invalid_api_key",
+            "api_key client option must be set",
+            "Incorrect API key",
+            "No cookie auth credentials",
+        ]
         if any(hint in msg for hint in hints):
             clean_msg = msg.split(" - ")[-1] if " - " in msg else msg
             raise ConfigurationError(clean_msg) from error
@@ -348,41 +362,42 @@ class LiteLLMAdapter(ILlmClient):
     def validate_config(self, include_remote: bool = False) -> List[str]:
         """
         Validates the LLM configuration for common errors.
-        - Checks for the default 'your-api-key' placeholder.
+        - Delegates key-requiredness to litellm (provider-aware), so keyless
+          local models validate cleanly while cloud models still surface a
+          friendly missing-key error.
         - Checks for missing provider-specific environment variables.
         - Optionally performs a lightweight remote connectivity check.
         """
-        # 1. Ultra-Lazy Short-circuit: Basic configuration checks (No litellm import)
-        api_key = self._config_service.get_setting("llm.api_key")
-        is_placeholder = isinstance(api_key, str) and api_key == ""
-
-        if is_placeholder:
-            return [
-                "'llm.api_key' is empty. "
-                "Set TEDDY_LLM_API_KEY in .teddy/.env "
-                "(or your shell environment)."
-            ]
-
         model = self._config_service.get_setting("llm.model")
         if not model:
             return ["'llm.model' is not configured."]
 
-        # 2. Secondary Check: Environment/Provider requirements (Requires litellm)
+        api_key = self._config_service.get_setting("llm.api_key")
+        is_api_key_provided = isinstance(api_key, str) and bool(api_key.strip())
+
+        # Provider-aware check: litellm knows what each model actually requires,
+        # so keyless local models (lm_studio/vllm/ollama) validate cleanly while
+        # cloud models still surface a friendly missing-key error. Only
+        # *_API_KEY requirements are hard errors; any other reported requirement
+        # (e.g. OLLAMA_API_BASE, a base URL defaulting to localhost) is advisory.
         litellm = self._get_litellm()
-        errors = []
+        errors: List[str] = []
         validation_result = litellm.validate_environment(model=model)
         missing_keys = validation_result.get("missing_keys", [])
 
-        # If a valid api_key is provided in config, we ignore missing *_API_KEY env vars
-        is_api_key_provided = api_key and not is_placeholder
-
         for key in missing_keys:
-            if is_api_key_provided and "_API_KEY" in key:
+            if "_API_KEY" not in key:
                 continue
-            errors.append(f"Missing required environment variable or config: {key}")
+            if is_api_key_provided:
+                continue
+            errors.append(
+                f"'llm.api_key' is empty: {key} is required for model "
+                f"'{model}'. Set TEDDY_LLM_API_KEY in .teddy/.env "
+                "(or your shell environment)."
+            )
 
         # 3. Optional Remote Check: Verify key validity/expiration
-        if not errors and include_remote:
+        if not errors and include_remote and is_api_key_provided:
             from concurrent.futures import TimeoutError
 
             executor = self._get_executor()

@@ -545,12 +545,15 @@ def _run_cli_preflight_check(
     explicitly, and truly headless runs (``--pipeline``/non-TTY/one-shot) pass
     ``setup_editor=False`` so they never block on a prompt.
 
-    When ``setup_api_key`` is truthy and the resolved ``llm.api_key`` is
-    missing, an interactive prompt persists the key to ``.teddy/.env`` BEFORE
-    the ``ILlmClient`` is resolved, so the client's transient config-service
-    instance reads the post-persist on-disk state (Slice 00-27). The gate is
-    ADDITIVE and inert by default (``None`` -> skip), so every existing caller
-    is unaffected.
+    When ``setup_api_key`` is truthy, the resolved ``llm.api_key`` is missing,
+    AND the configured model actually requires a provider key (key-requiredness
+    is delegated to litellm via ``_llm_model_requires_api_key``), an interactive
+    prompt persists the key to ``.teddy/.env`` BEFORE the ``ILlmClient`` is
+    resolved, so the client's transient config-service instance reads the
+    post-persist on-disk state (Slice 00-27). Keyless local models (e.g.
+    ``lm_studio``, ``vllm``) are therefore never prompted for a dummy key. The
+    gate is ADDITIVE and inert by default (``None`` -> skip), so every existing
+    caller is unaffected.
     """
     from teddy_executor.core.ports.outbound.llm_client import ILlmClient
     from teddy_executor.core.domain.models.exceptions import ConfigurationError
@@ -559,7 +562,11 @@ def _run_cli_preflight_check(
     # API-key setup runs BEFORE the LLM client is resolved so its transient
     # config-service instance reads the freshly-persisted on-disk state.
     config_service = container.resolve(IConfigService)
-    if setup_api_key and _is_llm_api_key_missing(config_service):
+    if (
+        setup_api_key
+        and _is_llm_api_key_missing(config_service)
+        and _llm_model_requires_api_key(config_service)
+    ):
         _prompt_for_api_key(config_service)
 
     llm_client = container.resolve(ILlmClient)
@@ -603,14 +610,48 @@ def _is_llm_api_key_missing(config_service: IConfigService) -> bool:
     return not (isinstance(api_key, str) and api_key.strip())
 
 
+def _llm_model_requires_api_key(config_service: IConfigService) -> bool:
+    """True when the configured model needs a provider API key.
+
+    Key-requiredness is delegated to litellm (the single source of truth) so
+    keyless local backends (e.g. ``lm_studio``, ``vllm``) never trigger the
+    interactive key prompt. Only a missing ``*_API_KEY`` entry is a hard
+    requirement; non-key entries (e.g. ``OLLAMA_API_BASE``) are advisory,
+    mirroring ``LiteLLMAdapter.validate_config``. An unconfigured or
+    unclassifiable model conservatively requires a key so the prompt still
+    fires and the downstream model error then surfaces with its own hint.
+    """
+    model = config_service.get_setting("llm.model")
+    if not (isinstance(model, str) and model.strip()):
+        return True
+    try:
+        import litellm
+
+        result = litellm.validate_environment(model=model)
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "Could not determine the API-key requirement for model '%s'; "
+            "requiring a key as a conservative fallback.",
+            model,
+            exc_info=True,
+        )
+        return True
+    missing = result.get("missing_keys", []) if isinstance(result, dict) else []
+    return any(str(entry).endswith("_API_KEY") for entry in missing)
+
+
 def _prompt_for_api_key(config_service: IConfigService) -> None:
     """Prompts for the LLM API key and persists it to ``.teddy/.env`` (stderr).
 
     The key is written to ``.teddy/.env`` (never ``os.environ``) and the config
     is migrated to the ``${TEDDY_LLM_API_KEY}`` interpolation form so the
     transient ``IConfigService`` instance held by ``ILlmClient`` resolves it on
-    the same run. Empty or aborted input returns WITHOUT raising; the
-    downstream validation error surfaces the missing key with its own hint.
+    the same run. A truly empty entry re-prompts (Click's native loop, now that
+    no default is supplied); a whitespace-only entry is ignored, and an aborted
+    prompt (Ctrl-C / Ctrl-D) returns WITHOUT raising so the downstream
+    validation error can surface the missing key with its own hint.
     """
     typer.echo("", err=True)
     typer.secho("LLM API Key", fg=typer.colors.CYAN, bold=True, err=True)
@@ -623,7 +664,7 @@ def _prompt_for_api_key(config_service: IConfigService) -> None:
     typer.echo("", err=True)
 
     try:
-        value = typer.prompt("LLM API key", hide_input=True, default="")
+        value = typer.prompt("LLM API key", hide_input=True)
     except (EOFError, typer.Abort):
         return
 
