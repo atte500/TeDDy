@@ -1,6 +1,6 @@
 # Slice: Single-Folder Sessions — Turn Numbering Past 99 & Context Read-Cap Exclusion
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc — supersedes a Milestone 2 requirement)
 - **Specs:** N/A (Task Brief [00-28](/docs/project/tasks/00-28-session-turn-numbering-and-read-cap.md) is the spec)
 - **Prototype:** N/A
@@ -156,11 +156,11 @@ flowchart LR
 
 ## Verification
 
-1. `uv run pytest tests/suites/unit/core/services/test_session_service_transition.py tests/suites/unit/core/services/test_session_service.py tests/suites/unit/core/services/test_session_repository.py tests/suites/unit/adapters/outbound/test_file_system_adapter_capping.py tests/suites/unit/adapters/outbound/test_file_system_adapter_contract.py -q` passes.
-2. `uv run pytest -q` (full suite) passes — no regressions, no filesystem pollution.
-3. `git grep -n "_clone_session_artifacts" src/` returns NOTHING (method fully removed).
-4. `git grep -nE "is_migration" src/` returns NOTHING.
-5. `git grep -n "_calculate_continuation_name\|_claim_session_root" src/` still shows them present and used by `create_session` (name-collision guard intact).
-6. Manual end-to-end (or a targeted transition test): driving a session to turn `100` creates `.teddy/sessions/<name>/100/` in the SAME folder, and NO `<name>-2` sibling is created.
-7. Manual: a `report.md` longer than `read.max_lines` (1000 lines) appears VERBATIM in the next turn's `input.md` (`## Session History`) — not truncated.
-8. Retro-compatibility: an existing `.teddy/sessions/<name>-2/` folder still resumes correctly and its turns still sort/render.
+- [x] **1.** `uv run pytest tests/suites/unit/core/services/test_session_service_transition.py tests/suites/unit/core/services/test_session_service.py tests/suites/unit/core/services/test_session_repository.py tests/suites/unit/adapters/outbound/test_file_system_adapter_capping.py tests/suites/unit/adapters/outbound/test_file_system_adapter_contract.py -q` passes. — ✅ VERIFIED (Turn 54: `41 passed`).
+- [x] **2.** `uv run pytest -q` (full suite) passes — no regressions, no filesystem pollution. — ✅ VERIFIED (Turn 54: `1613 passed, 5 skipped`).
+- [x] **3.** `git grep -n "_clone_session_artifacts" src/` returns NOTHING (method fully removed). — ✅ VERIFIED (Turn 54: NONE).
+- [x] **4.** `git grep -nE "is_migration" src/` returns NOTHING. — ✅ VERIFIED (Turn 54: NONE).
+- [x] **5.** `git grep -n "_calculate_continuation_name\|_claim_session_root" src/` still shows them present and used by `create_session` (name-collision guard intact). — ✅ VERIFIED (Turn 54: both present, consumed by `create_session` at `session_service.py:53`).
+- [x] **6.** Manual end-to-end (or a targeted transition test): driving a session to turn `100` creates `.teddy/sessions/<name>/100/` in the SAME folder, and NO `<name>-2` sibling is created. — ✅ VERIFIED (Turn 54: `test_transition_from_turn_99_to_100_stays_in_same_session` → `1 passed`).
+- [x] **7.** Manual: a `report.md` longer than `read.max_lines` (1000 lines) appears VERBATIM in the next turn's `input.md` (`## Session History`) — not truncated. — ✅ VERIFIED (Turn 59 spike: 1500 lines ≥ cap 1000 embedded verbatim under `## Session History`).
+- [x] **8.** Retro-compatibility: an existing `.teddy/sessions/<name>-2/` folder still resumes correctly and its turns still sort/render. — ✅ VERIFIED (Turn 59 spike: legacy `feat-x-2` folder resolves via `resolve_session_from_path` and its turns sort numerically).
