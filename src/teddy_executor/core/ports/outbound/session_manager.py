@@ -107,3 +107,13 @@ class ISessionManager(Protocol):
         Calculates a root-relative path for a file within a turn directory.
         """
         ...
+
+    def preserve_turn_in_session_context(self, turn_dir: Path) -> None:
+        """
+        Re-evaluates a turn's preservation decision and, when it qualifies,
+        admits its plan.md/report.md to the session-scoped (prune-exempt)
+        ``session.context``. Mirrors the preservation arm of
+        ``transition_to_next_turn`` so a turn augmented AFTER its own
+        finalization can still be preserved.
+        """
+        ...

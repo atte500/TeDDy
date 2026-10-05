@@ -349,6 +349,25 @@ class SessionService(ISessionManager):
             session_context_path, "\n".join(sorted(list(existing)))
         )
 
+    def preserve_turn_in_session_context(self, turn_dir: Path) -> None:
+        """Re-evaluates a turn's preservation and admits it to session.context.
+
+        Mirrors the preservation arm of ``transition_to_next_turn`` so a turn
+        that is augmented (e.g. a ``resume -m`` user request appended to its
+        report AFTER its own finalize already ran) can still be promoted into
+        the prune-exempt, session-scoped ``session.context``.
+        """
+        preserve_messages = bool(
+            self._config_service.get_setting(
+                "auto_pruning.preserve_message_turns", True
+            )
+        )
+        if not (preserve_messages and self._is_preserved_turn(Path(turn_dir))):
+            return
+        plan_md_path = self.to_root_relative(Path(turn_dir), "plan.md")
+        report_md_path = self.to_root_relative(Path(turn_dir), "report.md")
+        self._append_to_session_context(Path(turn_dir), {plan_md_path, report_md_path})
+
     def to_root_relative(self, turn_dir: Path, filename: str) -> str:
         """Calculates a root-relative path for a file within a turn directory."""
         return self._repository.to_root_relative(turn_dir, filename)

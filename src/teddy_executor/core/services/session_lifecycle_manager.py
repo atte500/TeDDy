@@ -108,7 +108,10 @@ class SessionLifecycleManager:
 
         if state == SessionState.EMPTY:
             if message:
-                self._append_message_to_previous_turn(turn_path, message)
+                if Path(turn_path).name == "01":
+                    self._append_to_initial_request(turn_path, message)
+                else:
+                    self._append_message_to_previous_turn(turn_path, message)
             return self._handle_planning_and_execution(
                 turn_path,
                 orchestrator,
@@ -195,6 +198,33 @@ class SessionLifecycleManager:
         )
         if self._file_system_manager.path_exists(prev_report):
             self._append_user_request(prev_turn, message)
+            # The augmented predecessor turn's OWN preservation decision ran
+            # at its finalize (inside transition_to_next_turn), BEFORE this
+            # append -- so the freshly-written `## User Request` is not yet
+            # reflected in session.context. Re-evaluate preservation so the
+            # injected request is admitted to the prune-exempt session scope
+            # (mirrors transition_to_next_turn's preservation arm).
+            self._session_service.preserve_turn_in_session_context(Path(prev_turn))
+
+    def _append_to_initial_request(self, turn_path: str, message: str) -> None:
+        """Appends the injected reply to the session's `initial_request.md`.
+
+        The pre-first-plan EMPTY state's turn is turn 01, which has NO
+        predecessor report -- so `_append_message_to_previous_turn` is a hard
+        no-op there. `initial_request.md` is the durable artifact seeded into
+        `session.context` at session creation and consumed to generate the
+        first plan, so the injected message is appended under a smart-fenced
+        `## Additional Request` heading to persist it.
+        """
+        request_path = self._session_service.to_root_relative(
+            Path(turn_path).parent, "initial_request.md"
+        )
+        if not self._file_system_manager.path_exists(request_path):
+            return
+        content = str(self._file_system_manager.read_file(request_path)).rstrip("\n")
+        fence = get_fence_for_content(message)
+        content += f"\n\n## Additional Request\n{fence}text\n{message}\n{fence}\n"
+        self._file_system_manager.write_file(request_path, content)
 
     def _append_user_request(self, turn_path: str, message: str) -> None:
         """Appends a smart-fenced `## User Request` section to the turn report.

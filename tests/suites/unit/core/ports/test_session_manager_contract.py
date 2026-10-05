@@ -49,6 +49,9 @@ class DummyManager:
     def to_root_relative(self, turn_dir: Path, filename: str) -> str:
         return ""
 
+    def preserve_turn_in_session_context(self, turn_dir: Path) -> None:
+        return None
+
     def get_cumulative_cost(self, session_name: str) -> float:
         return 0.0
 
