@@ -2,6 +2,7 @@
 Regression test: Resume should update meta.yaml with model/provider/api_key overrides.
 """
 
+import pytest
 from unittest.mock import MagicMock  # noqa: TID251
 
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
@@ -236,3 +237,123 @@ class TestResumeMetadataUpdate:
             assert saved_data.get("agent_name") == "developer"
         finally:
             handlers._orchestrate_session_loop = original_loop
+
+
+# ---------------------------------------------------------------------------
+# Logic deliverable: resume -a/--agent flag behavior
+# ---------------------------------------------------------------------------
+
+
+def test_resume_without_agent_does_not_call_set_session_agent(monkeypatch):
+    """
+    Verifies that handle_resume_session does NOT call set_session_agent
+    when the agent parameter is not provided (no-flag-no-change).
+    """
+    from unittest.mock import Mock
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        handle_resume_session,
+    )
+    from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+
+    # Arrange
+    mock_container = Mock()
+    mock_session_manager = Mock(spec=ISessionManager)
+    mock_container.resolve.return_value = mock_session_manager
+
+    # Bypass preflight and session orchestration
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._run_cli_preflight_check",
+        lambda container, agent=None, setup_editor=None, setup_api_key=None: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
+        lambda container, session_name, interactive, no_copy, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._sync_and_display_session_meta",
+        lambda container, session_name, model=None, provider=None, api_key=None: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._resolve_session_name",
+        lambda container, path=None: "test-session",
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers.background_check",
+        lambda cache_path, index_url=None: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.cli_helpers.find_project_root",
+        lambda: None,
+    )
+
+    # Act — no agent parameter
+    handle_resume_session(
+        container=mock_container,
+        interactive=True,
+        setup_editor=False,
+        setup_api_key=False,
+    )
+
+    # Assert — set_session_agent should NOT have been called
+    mock_session_manager.set_session_agent.assert_not_called()
+
+
+def test_resume_with_nonexistent_agent_exits_with_error(monkeypatch):
+    """
+    Verifies that handle_resume_session exits with typer.Exit when
+    set_session_agent raises ValueError (nonexistent agent).
+    """
+    import typer
+    from unittest.mock import Mock
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        handle_resume_session,
+    )
+    from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+
+    # Arrange
+    mock_container = Mock()
+    mock_session_manager = Mock(spec=ISessionManager)
+    mock_session_manager.set_session_agent.side_effect = ValueError(
+        "Agent prompt 'nonexistent' not found in .teddy/prompts/"
+    )
+    mock_container.resolve.return_value = mock_session_manager
+
+    # Bypass preflight and session orchestration
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._run_cli_preflight_check",
+        lambda container, agent=None, setup_editor=None, setup_api_key=None: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
+        lambda container, session_name, interactive, no_copy, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._sync_and_display_session_meta",
+        lambda container, session_name, model=None, provider=None, api_key=None: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._resolve_session_name",
+        lambda container, path=None: "test-session",
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers.background_check",
+        lambda cache_path, index_url=None: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.cli_helpers.find_project_root",
+        lambda: None,
+    )
+
+    # Act / Assert — typer.Exit is raised when set_session_agent errors
+    with pytest.raises(typer.Exit) as exc_info:
+        handle_resume_session(
+            container=mock_container,
+            agent="nonexistent",
+            interactive=True,
+            setup_editor=False,
+            setup_api_key=False,
+        )
+
+    assert exc_info.value.exit_code == 1, (
+        f"Expected exit code 1, got {exc_info.value.exit_code}"
+    )
