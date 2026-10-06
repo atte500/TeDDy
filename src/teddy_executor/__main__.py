@@ -191,9 +191,6 @@ def start(  # noqa: PLR0913
         ),
     ),
     model: Optional[str] = typer.Option(None, "--model", help="LLM model override."),
-    provider: Optional[str] = typer.Option(
-        None, "--provider", help="LLM provider override."
-    ),
     api_key: Optional[str] = typer.Option(
         None, "--api-key", help="LLM API key override."
     ),
@@ -234,7 +231,6 @@ def start(  # noqa: PLR0913
         pipeline=pipeline,
         additional_context=additional_context,
         model=model,
-        provider=provider,
         api_key=api_key,
     )
 
@@ -441,9 +437,6 @@ def resume(  # noqa: PLR0913
     ),
     no_copy: bool = OPT_NO_COPY,
     model: Optional[str] = typer.Option(None, "--model", help="LLM model override."),
-    provider: Optional[str] = typer.Option(
-        None, "--provider", help="LLM provider override."
-    ),
     api_key: Optional[str] = typer.Option(
         None, "--api-key", help="LLM API key override."
     ),
@@ -487,7 +480,6 @@ def resume(  # noqa: PLR0913
         setup_api_key=_resolve_setup_api_key(system_env, pipeline=pipeline),
         no_copy=no_copy,
         model=model,
-        provider=provider,
         api_key=api_key,
         agent=agent,
         message=message,

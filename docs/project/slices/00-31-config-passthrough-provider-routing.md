@@ -72,7 +72,7 @@ Test strategy: All new tests are unit tests in existing test files. No new test 
 ## Deliverables
 
 - [x] **Contract** - Write regression test for `_prepare_completion_params` pass-through (extra_body unchanged, no top-level provider).
-- [ ] **Seam** - Remove provider special-case in adapter; remove `--provider` CLI flag from start/resume.
+- [x] **Seam** - Remove provider special-case in adapter; remove `--provider` CLI flag from start/resume.
 - [ ] **Wiring** - Remove provider parameter from session_cli_handlers handler signatures and forwards.
 - [ ] **Logic** - Remove provider parameter from planning_service.py.
 - [ ] **Migration** - Remove provider option write in session_service.py.
@@ -85,6 +85,7 @@ Test strategy: All new tests are unit tests in existing test files. No new test 
   2. `test_prepare_completion_params_does_not_transform_top_level_provider`: verifies that a top-level `provider` key under `llm` is no longer removed/transformed (safe after deleting the OpenRouter Provider Routing block).
 - **Adapter change:** Deleted the `# OpenRouter Provider Routing` block in `_prepare_completion_params` (lines 167–172) — the entire `target_model`/`provider = params.get("provider")` lookup, `params["extra_body"]["providers"] = …` assignment, and `del params["provider"]`.
 - Both tests pass. The `llm` config section is now pure pass-through.
+- **Seam deliverable (CLI flag removal):** Removed the `--provider` Typer Option from both `start` and `resume` commands in `__main__.py`. Removed the `provider=provider` forwarding from the `handle_new_session` call (was already done in a previous edit) and from `handle_resume_session`. Added a unit test file `tests/suites/unit/test_cli_flag_removal.py` with two tests asserting `--provider` does not appear in `start --help` or `resume --help`. Updated `tests/suites/acceptance/test_cli_context_flag.py` to remove stale `--provider` usage and provider assertions.
 
 ## Verification
 
