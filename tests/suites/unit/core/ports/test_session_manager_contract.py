@@ -52,6 +52,9 @@ class DummyManager:
     def preserve_turn_in_session_context(self, turn_dir: Path) -> None:
         return None
 
+    def set_session_agent(self, session_name: str, agent_name: str) -> None:
+        return None
+
     def get_cumulative_cost(self, session_name: str) -> float:
         return 0.0
 

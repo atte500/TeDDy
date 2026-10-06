@@ -117,3 +117,11 @@ class ISessionManager(Protocol):
         finalization can still be preserved.
         """
         ...
+
+    def set_session_agent(self, session_name: str, agent_name: str) -> None:
+        """
+        Permanently changes the session's agent. Updates meta.yaml
+        with the new agent_name and replaces the session's prompt
+        XML with the new agent's prompt from .teddy/prompts/.
+        """
+        ...
