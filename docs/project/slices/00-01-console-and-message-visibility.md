@@ -1,8 +1,8 @@
 # Slice: Console and Message Visibility
 - **Status:** In Progress
 - **Type:** Feature
-- **Milestone:** [02-stability-and-polish](/docs/project/milestones/02-stability-and-polish.md)
-- **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
+- **Milestone:** N/A (retired)
+- **Specs:** [Interactive Session Workflow](/docs/project/specs/invariants/interactive-session-workflow.md)
 - **Prototype:** [spikes/prototypes/00-console-and-message-visibility/](/spikes/prototypes/00-console-and-message-visibility/)
 - **Component Docs:** [SessionOrchestrator](/docs/architecture/core/services/session_orchestrator.md)
 - **Scope Slug:** `logging`

@@ -1,7 +1,7 @@
 # Milestone 4: TUI & UX Enhancements
 
 - **Status:** Planned
-- **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
+- **Specs:** [docs/project/specs/invariants/interactive-session-workflow.md](/docs/project/specs/invariants/interactive-session-workflow.md)
 
 ## Goal (The "Why")
 To provide a polished, intuitive interactive experience that gives users full visibility into session state and context, while adding foundational quality-of-life features like MOVE/DELETE actions, configurable limits, and session interrupt.

@@ -2,7 +2,7 @@
 
 - **Status:** In Progress
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
-- **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
+- **Specs:** [Interactive Session Workflow](/docs/project/specs/invariants/interactive-session-workflow.md)
 - **Prototype:** N/A
 - **Component Docs:** [TextualPlanReviewer](/docs/architecture/adapters/inbound/textual_plan_reviewer.md), [ConsoleTooling](/docs/architecture/adapters/outbound/console_tooling.md), [ConsoleInteractor](/docs/architecture/adapters/outbound/console_interactor.md)
 - **Scope Slug:** `tui-plan-reviewer-editor-fixes`

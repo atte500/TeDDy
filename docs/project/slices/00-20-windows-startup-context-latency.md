@@ -2,11 +2,11 @@
 
 - **Status:** In Progress
 - **Milestone:** N/A (ad-hoc, Milestone 0 prefix)
-- **Specs:** [docs/project/specs/plan-execution-context.md](/docs/project/specs/plan-execution-context.md)
+- **Specs:** N/A (plan-execution-context retired)
 - **Prototype:** [spikes/prototypes/windows-startup-latency/](/spikes/prototypes/windows-startup-latency/)
 - **Component Docs:** [docs/architecture/adapters/outbound/litellm_adapter.md](/docs/architecture/adapters/outbound/litellm_adapter.md), [docs/architecture/adapters/inbound/cli.md](/docs/architecture/adapters/inbound/cli.md)
 - **Scope Slug:** `windows-startup-latency`
-- **Source Diagnosis:** [docs/project/debugging/51-windows-startup-context-slowness.md](/docs/project/debugging/51-windows-startup-context-slowness.md)
+- **Source Diagnosis:** N/A (retired)
 
 ## Business Goal
 

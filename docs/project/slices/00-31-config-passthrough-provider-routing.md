@@ -1,8 +1,8 @@
 # Slice: Config Passthrough Provider Routing
 
 - **Status:** Completed
-- **Milestone:** [Milestone 2: Stability & Infrastructure](/docs/project/milestones/02-stability-and-polish.md)
-- **Specs:** [Task Brief: Config Passthrough Provider Routing](/docs/project/tasks/00-29-config-passthrough-provider-routing.md)
+- **Milestone:** N/A (retired)
+- **Specs:** Task Brief: Config Passthrough Provider Routing
 - **Prototype:** N/A
 - **Component Docs:** [LiteLLMAdapter](/docs/architecture/adapters/outbound/litellm_adapter.md)
 - **Scope Slug:** `config-passthrough`

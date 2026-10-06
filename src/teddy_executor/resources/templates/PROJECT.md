@@ -19,6 +19,7 @@ Defines the high-level artifact lifecycle and conventions for project management
 - **Artifact Lifecycle:** How work flows (e.g., Spec → Milestone → Slice).
 - **Numbering:** Sequential MM-NN format, 00 prefix for ad-hoc work.
 - **Archiving Policy:** When and how completed artifacts are archived or deleted.
+- **Spec Organization:** Organize specification documents by lifecycle into two subfolders: `docs/project/specs/invariants/` (formats, contracts, and workflows of record — long-lived system invariants) and `docs/project/specs/features/` (to-be-implemented initiatives that feed the Spec → Milestone → Slice lifecycle — deleted per the Archiving Policy once implemented).
 
 ## Roadmap
 
@@ -52,5 +53,10 @@ A living list of upcoming Milestones and their high-level features.
 Tracks known technical debt for future cleanup.
 
 **Format:** `- [Description including context and location of the debt item.]`
+
+**Logging Hygiene (MUST):**
+- **Never re-log the same debt.** If a debt item recurs across commits, fold the new occurrence into the existing entry — do NOT append a new bullet.
+- **Prefer fixing directly over logging.** Only log debt that genuinely cannot be resolved in the moment. Do not log-then-resolve a defect that could be fixed immediately.
+- **Never log resolved items.** Do not add "informational" or "completed" entries.
 
 **Deletion Policy:** When a technical debt item is addressed (the underlying issue is resolved in a completed milestone/slice), the entry MUST be deleted from this section. Do not mark it as "completed" or "resolved" — remove it entirely. Git history serves as the permanent record.

@@ -1,7 +1,7 @@
 # Slice: LLM API Key via `.teddy/.env` + Interactive Preflight Setup
 
 - **Status:** In Progress
-- **Milestone:** N/A (ad-hoc task; source: [00-27-llm-api-key-configuration.md](/docs/project/tasks/00-27-llm-api-key-configuration.md))
+- **Milestone:** N/A (ad-hoc task; source: 00-27-llm-api-key-configuration.md)
 - **Specs:** N/A
 - **Prototype:** N/A
 - **Component Docs:** [yaml_config_adapter.md](/docs/architecture/adapters/outbound/yaml_config_adapter.md), [config_service.md](/docs/architecture/core/ports/outbound/config_service.md), [init_service.md](/docs/architecture/core/services/init_service.md)

@@ -2,7 +2,7 @@
 
 - **Status:** In Progress
 - **Milestone:** N/A (ad-hoc slice)
-- **Specs:** [Pipeline Automation Task](/docs/project/tasks/pipeline-automation.md)
+- **Specs:** Pipeline Automation Task
 - **Component Docs:** [CLI Adapter](/docs/architecture/adapters/inbound/cli.md), [Session CLI Handlers](/docs/architecture/adapters/inbound/session_cli_handlers.md)
 - **Scope Slug:** `pipeline-automation`
 

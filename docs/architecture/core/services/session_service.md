@@ -35,7 +35,7 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
     -   Always appends the current `report.md` to the next context to ensure the AI has history.
     -   **Defensive Serialization:** Ensures all metadata is cast to primitive types before serialization to prevent hangs (see `ARCHITECTURE.md` rule on serialization).
 
-> **Note (2026-10-05):** Session migration to a continuation folder — previously triggered at turn 99 and cloning `session.context`/`system_prompt.xml` into `{name}-2` — has been **removed** (see [00-28](/docs/project/tasks/00-28-session-turn-numbering-and-read-cap.md)). A session now uses a single folder for any number of turns.
+> **Note (2026-10-05):** Session migration to a continuation folder — previously triggered at turn 99 and cloning `session.context`/`system_prompt.xml` into `{name}-2` — has been **removed**. A session now uses a single folder for any number of turns.
 
 ## 5. Data Contracts / Methods
 
