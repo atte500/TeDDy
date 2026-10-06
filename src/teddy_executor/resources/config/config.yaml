@@ -55,3 +55,10 @@ llm:
   api_key: "${TEDDY_LLM_API_KEY}"  # Paste your key into .teddy/.env, or replace this with a literal value to override.
   max_retries: 3
   timeout: 300
+
+# Common additional parameters:
+  # temperature: 0.2
+  # max_tokens: 4096
+  # extra_body:
+  #   provider:
+  #     order: ["baseten"]
