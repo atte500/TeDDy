@@ -127,8 +127,6 @@ class SessionService(ISessionManager):
         }
         if options.model:
             meta_data["model"] = options.model
-        if options.provider:
-            meta_data["provider"] = options.provider
         if options.api_key:
             meta_data["api_key"] = options.api_key
         return meta_data

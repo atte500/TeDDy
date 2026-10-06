@@ -1010,3 +1010,62 @@ def test_set_session_agent_removes_stale_prompt_files(env):
     assert f"{session_root}/turn.context" not in remove_calls, (
         "Non-prompt files should not be removed"
     )
+
+
+def test_create_session_does_not_write_provider_to_initial_meta(env):
+    """Verify that create_session does NOT write the 'provider' option to initial meta_data.
+
+    The 'provider' override path was removed; only the display path (from
+    _hidden_params) may populate meta["provider"] later via update_meta.
+    """
+    from teddy_executor.core.domain.models.session import SessionOptions
+
+    mock_time = env.mock_port(ITimeService)
+    mock_prompts = env.mock_port(IPromptManager)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    session_name = "provider-absent-session"
+    agent_name = "pathfinder"
+    init_context = "README.md"
+    agent_prompt = "<prompt>Pathfinder content</prompt>"
+
+    mock_fs.read_file.side_effect = lambda p: {
+        ".teddy/init.context": init_context,
+        f".teddy/prompts/{agent_name}.xml": agent_prompt,
+    }.get(p, "")
+    mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": [f"{agent_name}.xml"],
+    }.get(d, [])
+    mock_time.now.return_value = datetime(2026, 10, 6, 12, 0, 0)
+    mock_time.now_utc.return_value = datetime(2026, 10, 6, 12, 0, 0)
+    mock_prompts.get_prompt_content.side_effect = AssertionError(
+        "create_session should not call get_prompt_content anymore"
+    )
+
+    # Create session with a provider option (simulating old CLI override)
+    service.create_session(
+        SessionOptions(
+            name=session_name,
+            agent_name=agent_name,
+            provider="baseten",
+        )
+    )
+
+    # Inspect the meta_data written to disk. The mock filesystem stores files;
+    # we need to capture the meta.yaml content. Since the service writes meta.yaml
+    # via IFileSystemManager.write_file, we can check that call.
+    yaml_call = None
+    for call_args in mock_fs.write_file.call_args_list:
+        # write_file(path, content) – we look for calls containing "meta.yaml"
+        if "meta.yaml" in call_args[0][0]:
+            yaml_call = call_args
+            break
+
+    assert yaml_call is not None, "No meta.yaml write found"
+    content = yaml_call[0][1]
+    # provider should NOT be in the meta content
+    assert "provider" not in content, (
+        f"Unexpected 'provider' key found in initial meta.yaml:\n{content}"
+    )
