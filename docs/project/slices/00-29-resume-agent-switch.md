@@ -74,7 +74,7 @@ No core domain changes beyond the protocol addition; the orchestrator and lifecy
 
 ## Deliverables
 - [x] **Contract** - Add `set_session_agent(session_name: str, agent_name: str) -> None` to the `ISessionManager` protocol.
-- [ ] **Harness** - Add contract compliance test for `set_session_agent` in `test_session_manager_contract.py`.
+- [x] **Harness** - Add contract compliance test for `set_session_agent` in `test_session_manager_contract.py`.
 - [ ] **Seam** - Implement `set_session_agent` in `SessionService` with full logic: update meta.yaml, copy/overwrite prompt, remove stale prompts.
 - [ ] **Wiring** - Add `-a/--agent` to `teddy resume`, thread through `handle_resume_session`, call `container.resolve(ISessionManager).set_session_agent(...)` before `_orchestrate_session_loop`.
 - [ ] **Logic** - Add unit tests in `test_session_cli_handlers_resume_meta.py` covering meta.yaml update, prompt copy, prompt overwrite, stale-prompt removal, no-flag-no-change, and nonexistent-agent error.
@@ -87,6 +87,12 @@ No core domain changes beyond the protocol addition; the orchestrator and lifecy
 - **Test double:** Added the corresponding no-op implementation to `DummyManager` in the contract test file, placed after `preserve_turn_in_session_context` and before `get_cumulative_cost`. The no-op body (`return None`) is sufficient because the contract test only checks protocol compliance via `isinstance`, not behavioral correctness.
 - **Verification:** Both contract tests pass (`2 passed`). Full suite green (`1633 passed, 5 skipped`).
 - **Refactor:** No refactoring needed — the change is purely additive (one Protocol method + one test-double method) with zero risk to existing consumers.
+
+### Harness — Contract compliance test for `set_session_agent`
+
+- **Status:** Already covered by existing infrastructure.
+- **Rationale:** The existing `test_session_manager_contract_accepts_new_parameters` test checks `isinstance(DummyManager(), ISessionManager)`. Since `@runtime_checkable` protocols verify all required members at runtime, and `DummyManager` now includes `set_session_agent`, this test already covers the new method. No additional test code was required.
+- **Verification:** Both contract tests pass (`2 passed`). Full suite green (`1633 passed, 5 skipped`).
 
 ## Verification
 - [ ] `teddy resume -a developer` in an existing pathfinder session updates `agent_name` in `meta.yaml` to "developer"
