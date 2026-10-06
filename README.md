@@ -71,27 +71,14 @@ Use subcommands to overwrite specific files with defaults:
 - `teddy init prompts` – Overwrite bundled prompt XMLs in `.teddy/prompts/` (useful after upgrades).
 - `teddy init config` – Overwrite config.yaml, .gitignore, and init.context with defaults. Preserves an existing `.env` (create-only).
 
-#### LLM Configuration
+#### Configuration
 
-Edit `.teddy/config.yaml`:
+Your first `teddy start` runs an interactive setup and saves your LLM API key (`.teddy/.env`) and editor (`.teddy/config.yaml`). To configure manually instead, edit `.teddy/config.yaml`:
+- `llm.model` — a model path from [openrouter.ai/models](https://openrouter.ai/models) (default: OpenRouter).
+- `llm.api_key` — defaults to `${TEDDY_LLM_API_KEY}`; put your key in `.teddy/.env` (a literal value here also works).
+- `editor` — any command in `PATH` or an absolute path to an executable, or `"disabled"` to turn editing off.
 
-```yaml
-llm:
-  api_key: "your-openrouter-api-key-here"
-  model: "openrouter/deepseek/deepseek-v4-flash:nitro"
-```
-
-> **Note:** You can update the `model` field to switch providers/models. TeDDy defaults to the [OpenRouter API](https://openrouter.ai/) which supports hundreds of models. To change the model, simply edit the `model` value in your config.
-
-#### Editor Configuration
-
-Set your preferred editor for reviewing and modifying plans:
-
-```yaml
-editor: "nvim"
-```
-
-If no editor is configured, TeDDy will use the system default. Supported editors include `nvim`, `vim`, `code`, and any editor available on your `PATH`.
+All `llm.*` keys pass through to [LiteLLM](https://docs.litellm.ai/docs/completion/input), so any of its parameters (e.g. `extra_body`) work here.
 
 #### Start a session
 
