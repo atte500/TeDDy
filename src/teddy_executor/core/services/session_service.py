@@ -62,41 +62,7 @@ class SessionService(ISessionManager):
         )
 
         # 2. Prompt population — read from .teddy/prompts/ (canonical source)
-        prompts_dir = ".teddy/prompts"
-        if not self._file_system_manager.path_exists(prompts_dir):
-            available = self._prompt_manager.get_available_agents()
-            if available:
-                msg = (
-                    f"Agent prompt '{options.agent_name}' not found in .teddy/prompts/. "
-                    f"Available agents: {', '.join(available)}"
-                )
-            else:
-                msg = (
-                    f"Agent prompt '{options.agent_name}' not found in .teddy/prompts/. "
-                    "Please run 'teddy init' to restore prompts."
-                )
-            raise ValueError(msg)
-        # Find the prompt file with the agent name (any extension)
-        prompt_filename = None
-        for f in self._file_system_manager.list_directory(prompts_dir):
-            if Path(f).stem.casefold() == options.agent_name.casefold():
-                prompt_filename = f
-                break
-        if prompt_filename is None:
-            available = self._prompt_manager.get_available_agents()
-            if available:
-                msg = (
-                    f"Agent prompt '{options.agent_name}' not found in .teddy/prompts/. "
-                    f"Available agents: {', '.join(available)}"
-                )
-            else:
-                msg = (
-                    f"Agent prompt '{options.agent_name}' not found in .teddy/prompts/. "
-                    "Please run 'teddy init' to restore prompts."
-                )
-            raise ValueError(msg)
-        prompt_path = f"{prompts_dir}/{prompt_filename}"
-        prompt_content = self._file_system_manager.read_file(prompt_path)
+        prompt_filename, prompt_content = self._resolve_agent_prompt(options.agent_name)
         self._file_system_manager.write_file(
             f"{session_root}/{prompt_filename}", prompt_content
         )
@@ -166,6 +132,55 @@ class SessionService(ISessionManager):
         if options.api_key:
             meta_data["api_key"] = options.api_key
         return meta_data
+
+    def _resolve_agent_prompt(self, agent_name: str) -> tuple[str, str]:
+        """
+        Resolves an agent's prompt file from .teddy/prompts/ via casefold stem matching.
+
+        Returns:
+            (prompt_filename, prompt_content)
+
+        Raises:
+            ValueError: If the prompts directory is missing or no matching prompt exists.
+        """
+        prompts_dir = ".teddy/prompts"
+        if not self._file_system_manager.path_exists(prompts_dir):
+            available = self._prompt_manager.get_available_agents()
+            if available:
+                msg = (
+                    f"Agent prompt '{agent_name}' not found in .teddy/prompts/. "
+                    f"Available agents: {', '.join(available)}"
+                )
+            else:
+                msg = (
+                    f"Agent prompt '{agent_name}' not found in .teddy/prompts/. "
+                    "Please run 'teddy init' to restore prompts."
+                )
+            raise ValueError(msg)
+
+        prompt_filename = None
+        for f in self._file_system_manager.list_directory(prompts_dir):
+            if Path(f).stem.casefold() == agent_name.casefold():
+                prompt_filename = f
+                break
+
+        if prompt_filename is None:
+            available = self._prompt_manager.get_available_agents()
+            if available:
+                msg = (
+                    f"Agent prompt '{agent_name}' not found in .teddy/prompts/. "
+                    f"Available agents: {', '.join(available)}"
+                )
+            else:
+                msg = (
+                    f"Agent prompt '{agent_name}' not found in .teddy/prompts/. "
+                    "Please run 'teddy init' to restore prompts."
+                )
+            raise ValueError(msg)
+
+        prompt_path = f"{prompts_dir}/{prompt_filename}"
+        prompt_content = self._file_system_manager.read_file(prompt_path)
+        return prompt_filename, prompt_content
 
     def get_latest_turn(self, session_name: str) -> str:
         """
@@ -504,6 +519,40 @@ class SessionService(ISessionManager):
     def resolve_session_from_path(self, path: str) -> str:
         """Resolves a session name from a given path."""
         return self._repository.resolve_session_from_path(path)
+
+    def set_session_agent(self, session_name: str, agent_name: str) -> None:
+        """
+        Permanently changes the session's agent. Updates meta.yaml
+        with the new agent_name and replaces the session's prompt
+        XML with the new agent's prompt from .teddy/prompts/.
+        """
+        session_root = f".teddy/sessions/{session_name}"
+        latest_turn_path = self.get_latest_turn(session_name)
+
+        # 1. Update meta.yaml
+        meta = self.load_turn_meta(latest_turn_path)
+        meta["agent_name"] = agent_name
+        self.save_turn_meta(latest_turn_path, meta)
+
+        # 2. Find new prompt in .teddy/prompts/ (mirrors create_session pattern)
+        prompt_filename, prompt_content = self._resolve_agent_prompt(agent_name)
+
+        # 3. Write prompt to session root (overwrite any existing file with same stem)
+        self._file_system_manager.write_file(
+            f"{session_root}/{prompt_filename}", prompt_content
+        )
+
+        # 4. Remove stale prompt files (any file in session root whose stem matches a
+        #    known prompt from .teddy/prompts/ but whose stem does not match the new agent)
+        known_prompt_stems = {
+            Path(f).stem.casefold()
+            for f in self._file_system_manager.list_directory(".teddy/prompts")
+        }
+        new_agent_stem = agent_name.casefold()
+        for f in self._file_system_manager.list_directory(session_root):
+            stem = Path(f).stem.casefold()
+            if stem in known_prompt_stems and stem != new_agent_stem:
+                self._file_system_manager.remove_file(f"{session_root}/{f}")
 
     def _resolve_next_turn_path(self, cur_dir: Path) -> tuple[str, Path]:
         """Determines the next turn ID and session directory (same session)."""

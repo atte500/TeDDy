@@ -306,6 +306,18 @@ class LocalFileSystemAdapter(IFileSystemManager):
         except IOError as e:
             raise IOError(f"Failed to read raw file at {path}: {e}") from e
 
+    def remove_file(self, path: str) -> None:
+        """
+        Deletes a file from the file system.
+        """
+        file_path = self._resolve_path(path)
+        try:
+            file_path.unlink()
+        except FileNotFoundError:
+            raise
+        except OSError as e:
+            raise OSError(f"Failed to remove file at {path}: {e}") from e
+
     def edit_file(
         self,
         path: str,

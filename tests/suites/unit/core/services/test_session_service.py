@@ -883,3 +883,130 @@ def test_claim_session_root_continuation_chain_walks_multiple_hops(env):
     mock_fs.find_call_by_path(
         "create_directory_exclusive", ".teddy/sessions/20260417_120000-foo-4"
     )
+
+
+# ---------------------------------------------------------------------------
+# Seam deliverable: set_session_agent
+# ---------------------------------------------------------------------------
+
+
+def test_set_session_agent_updates_meta_yaml_and_copies_prompt(env):
+    """
+    Verifies that set_session_agent updates meta.yaml with the new agent_name,
+    copies the new prompt to the session root.
+    """
+    # Arrange
+    from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+
+    repo = env.mock_port(ISessionRepository)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    session_name = "test-session"
+    session_root = f".teddy/sessions/{session_name}"
+    latest_turn_path = f"{session_root}/03"
+
+    # Existing meta.yaml has agent "pathfinder"
+    existing_meta = {"agent_name": "pathfinder", "turn_id": "03"}
+    repo.get_latest_turn.return_value = latest_turn_path
+    repo.load_meta.return_value = existing_meta
+    repo.to_root_relative.return_value = "test.xml"
+
+    # Stale prompt file exists at session root
+    old_prompt_stem = "pathfinder.xml"
+
+    # .teddy/prompts/ contains Developer.xml (case-insensitive match)
+    mock_fs.path_exists.side_effect = lambda p: (
+        p
+        in {
+            ".teddy/prompts",
+            ".teddy/prompts/Developer.xml",
+        }
+    )
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": ["architect.xml", "Developer.xml"],
+        session_root: [old_prompt_stem, "turn.context"],
+    }.get(d, [])
+    mock_fs.read_file.side_effect = lambda p: {
+        ".teddy/prompts/Developer.xml": "<prompt>developer content</prompt>",
+    }.get(p, "")
+
+    # Act
+    service.set_session_agent(session_name, "developer")
+
+    # Assert
+    # 1. meta.yaml was updated with new agent_name
+    repo.save_meta.assert_called_once_with(
+        f"{latest_turn_path}/meta.yaml",
+        {"agent_name": "developer", "turn_id": "03"},
+    )
+
+    # 2. New prompt was written to session root
+    mock_fs.write_file.assert_any_call(
+        f"{session_root}/Developer.xml",
+        "<prompt>developer content</prompt>",
+    )
+
+
+def test_set_session_agent_removes_stale_prompt_files(env):
+    """
+    Verifies that set_session_agent removes stale prompt files with different stems.
+    """
+    # Arrange
+    from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+
+    repo = env.mock_port(ISessionRepository)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    session_name = "test-stale"
+    session_root = f".teddy/sessions/{session_name}"
+    latest_turn_path = f"{session_root}/03"
+
+    existing_meta = {"agent_name": "pathfinder", "turn_id": "03"}
+    repo.get_latest_turn.return_value = latest_turn_path
+    repo.load_meta.return_value = existing_meta
+    repo.to_root_relative.return_value = "test.xml"
+
+    # Session root has: pathfinder.xml (current), assistant.xml (stale from previous switch), turn.context
+    session_files = ["pathfinder.xml", "assistant.xml", "turn.context"]
+    mock_fs.path_exists.side_effect = lambda p: (
+        p
+        in {
+            ".teddy/prompts",
+            ".teddy/prompts/Developer.xml",
+        }
+    )
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": [
+            "architect.xml",
+            "Developer.xml",
+            "assistant.xml",
+            "pathfinder.xml",
+        ],
+        session_root: session_files,
+    }.get(d, [])
+    mock_fs.read_file.side_effect = lambda p: {
+        ".teddy/prompts/Developer.xml": "<prompt>developer content</prompt>",
+    }.get(p, "")
+
+    # Act
+    service.set_session_agent(session_name, "developer")
+
+    # Assert
+    # 1. New prompt written
+    mock_fs.write_file.assert_any_call(
+        f"{session_root}/Developer.xml",
+        "<prompt>developer content</prompt>",
+    )
+
+    # 2. Stale prompt files removed (pathfinder.xml and assistant.xml),
+    #    but turn.context is NOT removed
+    mock_fs.remove_file.assert_any_call(f"{session_root}/pathfinder.xml")
+    mock_fs.remove_file.assert_any_call(f"{session_root}/assistant.xml")
+
+    # 3. turn.context should NOT have been removed
+    remove_calls = [call.args[0] for call in mock_fs.remove_file.call_args_list]
+    assert f"{session_root}/turn.context" not in remove_calls, (
+        "Non-prompt files should not be removed"
+    )

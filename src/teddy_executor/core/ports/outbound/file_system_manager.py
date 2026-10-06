@@ -86,6 +86,15 @@ class IFileSystemManager(Protocol):
         """
         ...
 
+    def remove_file(self, path: str) -> None:
+        """
+        Deletes a file from the file system.
+
+        Raises:
+            FileNotFoundError: If no file exists at the specified path.
+        """
+        ...
+
     def edit_file(
         self,
         path: str,

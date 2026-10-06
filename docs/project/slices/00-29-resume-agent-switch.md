@@ -75,7 +75,7 @@ No core domain changes beyond the protocol addition; the orchestrator and lifecy
 ## Deliverables
 - [x] **Contract** - Add `set_session_agent(session_name: str, agent_name: str) -> None` to the `ISessionManager` protocol.
 - [x] **Harness** - Add contract compliance test for `set_session_agent` in `test_session_manager_contract.py`.
-- [ ] **Seam** - Implement `set_session_agent` in `SessionService` with full logic: update meta.yaml, copy/overwrite prompt, remove stale prompts.
+- [x] **Seam** - Implement `set_session_agent` in `SessionService` with full logic: update meta.yaml, copy/overwrite prompt, remove stale prompts.
 - [ ] **Wiring** - Add `-a/--agent` to `teddy resume`, thread through `handle_resume_session`, call `container.resolve(ISessionManager).set_session_agent(...)` before `_orchestrate_session_loop`.
 - [ ] **Logic** - Add unit tests in `test_session_cli_handlers_resume_meta.py` covering meta.yaml update, prompt copy, prompt overwrite, stale-prompt removal, no-flag-no-change, and nonexistent-agent error.
 
@@ -93,6 +93,22 @@ No core domain changes beyond the protocol addition; the orchestrator and lifecy
 - **Status:** Already covered by existing infrastructure.
 - **Rationale:** The existing `test_session_manager_contract_accepts_new_parameters` test checks `isinstance(DummyManager(), ISessionManager)`. Since `@runtime_checkable` protocols verify all required members at runtime, and `DummyManager` now includes `set_session_agent`, this test already covers the new method. No additional test code was required.
 - **Verification:** Both contract tests pass (`2 passed`). Full suite green (`1633 passed, 5 skipped`).
+
+### Seam — Implement `set_session_agent` in `SessionService`
+
+- **Change:** Added `set_session_agent` method to `SessionService` ([session_service.py](/src/teddy_executor/core/services/session_service.py)) with full logic:
+    1. Resolve latest turn via `self.get_latest_turn(session_name)`
+    2. Load meta.yaml via `self.load_turn_meta`, update `agent_name`, save via `self.save_turn_meta`
+    3. Find new prompt in `.teddy/prompts/` via `_resolve_agent_prompt` (casefold stem matching)
+    4. Write new prompt to session root, overwriting any file with same stem
+    5. Remove stale prompt files: list session root, for each file whose stem casefold-matches a known prompt from `.teddy/prompts/` but does NOT match the new agent's stem, call `remove_file`
+- **Prerequisite:** `remove_file` was added to `IFileSystemManager` protocol, `LocalFileSystemAdapter`, and the adapter contract test before the stale-removal step (interleaved protocol expansion).
+- **Refactor:** Extracted `_resolve_agent_prompt(agent_name) -> tuple[str, str]` from both `create_session` and `set_session_agent` into a shared helper, eliminating ~40 lines of duplicated prompt-resolution + error-message code. The helper is placed after `_initialize_meta_data` and before `get_latest_turn`.
+- **Tests:** Two tests added in [test_session_service.py](/tests/suites/unit/core/services/test_session_service.py):
+    - `test_set_session_agent_updates_meta_yaml_and_copies_prompt` — asserts meta.yaml update and new prompt write.
+    - `test_set_session_agent_removes_stale_prompt_files` — asserts stale prompt removal, non-prompt files preserved.
+- **Cycle:** Red → Green → Refactor. Red confirmed `AttributeError` (method missing); Green passed both tests; Refactor extracted the helper.
+- **Verification:** Full suite green (`1637 passed, 5 skipped`).
 
 ## Verification
 - [ ] `teddy resume -a developer` in an existing pathfinder session updates `agent_name` in `meta.yaml` to "developer"
