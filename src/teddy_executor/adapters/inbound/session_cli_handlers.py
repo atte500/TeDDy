@@ -907,10 +907,13 @@ def _resolve_session_name(
     container: Container,
     path: Optional[str] = None,
 ) -> str:
-    """Resolves the session name from a path, CWD, or auto-detection."""
+    """Resolves the session name from a path or slug, CWD, or auto-detection."""
     session_manager = container.resolve(ISessionManager)
     if path:
-        return session_manager.resolve_session_from_path(path)
+        try:
+            return session_manager.resolve_session_from_path(path)
+        except ValueError:
+            return session_manager.resolve_session_from_slug(path)
     try:
         return session_manager.resolve_session_from_path(str(Path.cwd().resolve()))
     except ValueError:

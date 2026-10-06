@@ -167,3 +167,26 @@ def test_resume_with_file_path(tmp_path, monkeypatch):
 
     assert result.exit_code == 0
     assert "session" in result.stdout
+
+
+def test_resume_by_slug_resolves_timestamped_session(tmp_path, monkeypatch):
+    """Scenario: 'resume' accepts a bare slug instead of the full folder name."""
+    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    setup_robust_env(tmp_path)
+
+    plan = MarkdownPlanBuilder("Test").add_execute("echo 1").build()
+    env.get_service(ILlmClient).get_completion.return_value = make_mock_response(plan)
+
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+    adapter.run_start(["add-user-auth"], input="prompt\ny\n")
+
+    result = adapter.run_cli_command(["resume", "add-user-auth"], input="prompt\ny\n")
+
+    assert result.exit_code == 0
+    assert "20260417_120000-add-user-auth" in result.stdout
