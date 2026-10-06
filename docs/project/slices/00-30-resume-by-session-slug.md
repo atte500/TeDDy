@@ -1,5 +1,5 @@
 # Slice: resume-by-session-slug
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Specs:** N/A
 - **Prototype:** N/A
@@ -151,11 +151,11 @@ flowchart LR
 - **Green-to-green safety:** The suite adds NO production code and only reads the public behavior of `_resolve_session_name`. Integration gate: full suite green at `1652 passed, 5 skipped`.
 
 ## Verification
-- [ ] `uv run pytest tests/suites/unit/core/services/test_session_repository.py -v` — all green.
-- [ ] `uv run pytest tests/suites/unit/adapters/inbound/test_session_cli_handlers.py -v` — all green.
-- [ ] `uv run pytest tests/suites/unit/core/ports/test_session_manager_contract.py -v` — contract double satisfies `isinstance`.
-- [ ] `uv run pytest tests/suites/acceptance/test_session_resume_robustness.py -v` — all green.
-- [ ] Manual: with a session folder `20260124_153000-add-user-auth`, `teddy resume add-user-auth` prints `Resuming session: .teddy/sessions/20260124_153000-add-user-auth`.
-- [ ] Manual: `teddy resume` (no arg) and `teddy resume <valid path>` behave EXACTLY as before (no regression).
-- [ ] Manual: `teddy resume nonexistent-slug` fails with a clear `ValueError` ("No session found with slug: nonexistent-slug").
-- [ ] `uv run pytest` — full suite green (post-commit gate).
+- [x] `uv run pytest tests/suites/unit/core/services/test_session_repository.py -v` — all green.
+- [x] `uv run pytest tests/suites/unit/adapters/inbound/test_session_cli_handlers.py -v` — all green.
+- [x] `uv run pytest tests/suites/unit/core/ports/test_session_manager_contract.py -v` — contract double satisfies `isinstance`.
+- [x] `uv run pytest tests/suites/acceptance/test_session_resume_robustness.py -v` — all green.
+- [x] Manual: with a session folder `20260124_153000-add-user-auth`, `teddy resume add-user-auth` prints `Resuming session: .teddy/sessions/20260124_153000-add-user-auth`. (Pinned by the passing acceptance test `test_resume_by_slug_resolves_timestamped_session`.)
+- [x] Manual: `teddy resume` (no arg) and `teddy resume <valid path>` behave EXACTLY as before (no regression). (Pinned by the passing acceptance tests `test_resume_auto_detects_latest_session`, `test_resume_with_session_path`, `test_resume_with_turn_path`, `test_resume_with_file_path`.)
+- [x] Manual: `teddy resume nonexistent-slug` fails with a clear `ValueError` ("No session found with slug: nonexistent-slug"). (Pinned by the passing unit test `test_resolve_session_from_slug_raises_when_no_match`.)
+- [x] `uv run pytest` — full suite green (post-commit gate). (1652 passed, 5 skipped.)
