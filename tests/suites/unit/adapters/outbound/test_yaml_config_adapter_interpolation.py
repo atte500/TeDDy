@@ -127,9 +127,7 @@ def test_get_setting_section_interpolates_nested_vars():
         config_path = os.path.join(dot_teddy, "config.yaml")
         with open(config_path, "w", encoding="utf-8") as f:
             f.write(
-                "llm:\n"
-                '  api_key: "${TEDDY_LLM_API_KEY}"\n'
-                '  model: "openrouter/test"\n'
+                'llm:\n  api_key: "${TEDDY_LLM_API_KEY}"\n  model: "openrouter/test"\n'
             )
 
         adapter = YamlConfigAdapter(config_path=config_path)

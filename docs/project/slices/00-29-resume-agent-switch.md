@@ -1,5 +1,5 @@
 # Slice: resume-agent-switch
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Specs:** N/A
 - **Prototype:** N/A
@@ -138,10 +138,10 @@ No core domain changes beyond the protocol addition; the orchestrator and lifecy
 - **Verification:** Full suite green (`1640 passed, 5 skipped`).
 
 ## Verification
-- [ ] `teddy resume -a developer` in an existing pathfinder session updates `agent_name` in `meta.yaml` to "developer"
-- [ ] `teddy resume -a developer` copies `developer.xml` from `.teddy/prompts/` into the session directory, overwriting any existing prompt file
-- [ ] `teddy resume` (without -a) behaves exactly as before — no meta.yaml changes, no prompt file changes
-- [ ] `teddy resume -a nonexistent` fails with a clear error message that the agent prompt is not found
-- [ ] All existing tests pass
-- [ ] `uv run pytest tests/suites/unit/adapters/inbound/test_session_cli_handlers_resume_meta.py -v` passes
-- [ ] `uv run pytest tests/suites/unit/core/ports/test_session_manager_contract.py -v` passes
+- [x] `teddy resume -a developer` in an existing pathfinder session updates `agent_name` in `meta.yaml` to "developer"
+- [x] `teddy resume -a developer` copies `developer.xml` from `.teddy/prompts/` into the session directory, overwriting any existing prompt file
+- [x] `teddy resume` (without -a) behaves exactly as before — no meta.yaml changes, no prompt file changes
+- [x] `teddy resume -a nonexistent` fails with a clear error message that the agent prompt is not found
+- [x] All existing tests pass
+- [x] `uv run pytest tests/suites/unit/adapters/inbound/test_session_cli_handlers_resume_meta.py -v` passes
+- [x] `uv run pytest tests/suites/unit/core/ports/test_session_manager_contract.py -v` passes
