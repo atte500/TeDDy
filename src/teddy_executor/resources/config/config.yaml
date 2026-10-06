@@ -51,14 +51,28 @@ auto_pruning:
 # LiteLLM Configuration Reference: https://docs.litellm.ai/docs/completion/input
 # All keys under 'llm' are passed directly to litellm.completion().
 llm:
-  model: "openrouter/~deepseek/deepseek-flash-latest:nitro"  # Syntax: "openrouter/<model-path>" (paths from openrouter.ai/models); ":nitro"=fastest, ":floor"=cheapest.
+  model: "openrouter/~deepseek/deepseek-flash-latest:nitro"  # Syntax: "openrouter/<model-path>" (model paths: https://openrouter.ai/models); ":nitro"=fastest, ":floor"=cheapest.
   api_key: "${TEDDY_LLM_API_KEY}"  # Paste your key into .teddy/.env, or replace this with a literal value to override.
   max_retries: 3
   timeout: 300
 
-# Common additional parameters:
-  # temperature: 0.2
-  # max_tokens: 4096
-  # extra_body:
-  #   provider:
-  #     order: ["baseten"]
+# Local models (no API key needed — LiteLLM supplies a keyless default):
+#   model: "ollama/llama3.2"      # Ollama (default endpoint http://localhost:11434)
+#   model: "lm_studio/qwen2.5"    # LM Studio
+#   model: "hosted_vllm/mistral"  # vLLM (set api_base to your server, e.g. http://localhost:8000/v1)
+
+# Any OpenAI-compatible server (e.g. llama.cpp's llama-server) works via the
+# openai/ prefix with an explicit endpoint and a non-empty api_key (a dummy
+# value is fine). A provider prefix is required — an endpoint alone is rejected.
+#   model: "openai/<model-name>"
+#   api_base: "http://localhost:8080/v1"
+#   api_key: "sk-noop"
+
+# Any other LiteLLM/OpenAI-compatible parameters are forwarded unchanged
+# (e.g. temperature, top_p, max_tokens). Omit them to keep provider defaults.
+
+# OpenRouter provider routing (optional): prefer specific upstream providers,
+# in order.
+#   extra_body:
+#     provider:
+#       order: ["<provider-slug>"]  # Preference-ordered list of OpenRouter provider slugs.
