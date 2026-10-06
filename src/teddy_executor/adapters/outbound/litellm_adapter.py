@@ -193,14 +193,6 @@ class LiteLLMAdapter(ILlmClient):
                 "No LLM model specified. Please set 'llm.model' in your config."
             )
 
-        # OpenRouter Provider Routing
-        target_model = str(params.get("model", ""))
-        provider = params.get("provider")
-        if provider and target_model.startswith("openrouter/"):
-            params.setdefault("extra_body", {})
-            params["extra_body"]["providers"] = {"order": [provider.capitalize()]}
-            del params["provider"]
-
         return params
 
     _AUTH_ERROR_HINTS = [

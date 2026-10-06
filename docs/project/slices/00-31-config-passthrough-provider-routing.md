@@ -71,7 +71,7 @@ Test strategy: All new tests are unit tests in existing test files. No new test 
 
 ## Deliverables
 
-- [ ] **Contract** - Write regression test for `_prepare_completion_params` pass-through (extra_body unchanged, no top-level provider).
+- [x] **Contract** - Write regression test for `_prepare_completion_params` pass-through (extra_body unchanged, no top-level provider).
 - [ ] **Seam** - Remove provider special-case in adapter; remove `--provider` CLI flag from start/resume.
 - [ ] **Wiring** - Remove provider parameter from session_cli_handlers handler signatures and forwards.
 - [ ] **Logic** - Remove provider parameter from planning_service.py.
@@ -80,7 +80,11 @@ Test strategy: All new tests are unit tests in existing test files. No new test 
 
 ## Implementation Notes
 
-(To be filled during implementation)
+- **Contract deliverable (Regression tests):** Added two tests to `tests/suites/unit/adapters/outbound/test_litellm_adapter.py`:
+  1. `test_prepare_completion_params_passes_extra_body_unchanged`: verifies that `extra_body` in llm config passes through unchanged and no top-level `provider` key appears in params.
+  2. `test_prepare_completion_params_does_not_transform_top_level_provider`: verifies that a top-level `provider` key under `llm` is no longer removed/transformed (safe after deleting the OpenRouter Provider Routing block).
+- **Adapter change:** Deleted the `# OpenRouter Provider Routing` block in `_prepare_completion_params` (lines 167–172) — the entire `target_model`/`provider = params.get("provider")` lookup, `params["extra_body"]["providers"] = …` assignment, and `del params["provider"]`.
+- Both tests pass. The `llm` config section is now pure pass-through.
 
 ## Verification
 

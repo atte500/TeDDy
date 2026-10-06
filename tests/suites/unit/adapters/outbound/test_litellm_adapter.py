@@ -478,3 +478,66 @@ def test_get_completion_broadcasts_metadata_to_all_candidates(mock_config, conta
     # Metadata from resolved_id MUST be applied to requested_id as well
     assert litellm.model_cost[requested_id]["max_input_tokens"] == 32000
     assert litellm.model_cost[resolved_id]["max_input_tokens"] == 32000
+
+
+def test_prepare_completion_params_passes_extra_body_unchanged(mock_config):
+    """extra_body in llm config passes through unchanged; no top-level provider key."""
+    config = {
+        "api_key": "sk-test",
+        "model": "test-model",
+        "max_retries": 3,
+        "llm": {
+            "extra_body": {"provider": {"order": ["baseten"]}},
+        },
+    }
+
+    def _valid_llm(key: str, default=None):
+        if key.startswith("llm"):
+            parts = key.split(".", 1)
+            if len(parts) == 1:
+                return config.get("llm", default)
+            return config.get(parts[1], default)
+        return default
+
+    mock_config.get_setting.side_effect = _valid_llm
+    adapter = LiteLLMAdapter(mock_config)
+
+    # Call the private method directly
+    params = adapter._prepare_completion_params(model="openrouter/test")
+
+    # Assert no top-level provider key
+    assert "provider" not in params
+    # Assert extra_body passes through unchanged
+    assert params["extra_body"] == {"provider": {"order": ["baseten"]}}
+
+
+def test_prepare_completion_params_does_not_transform_top_level_provider(mock_config):
+    """A top-level provider key under llm is no longer special-cased."""
+    config = {
+        "api_key": "sk-test",
+        "model": "test-model",
+        "max_retries": 3,
+        "llm": {
+            "provider": "baseten",
+        },
+    }
+
+    def _valid_llm(key: str, default=None):
+        if key.startswith("llm"):
+            parts = key.split(".", 1)
+            if len(parts) == 1:
+                return config.get("llm", default)
+            return config.get(parts[1], default)
+        return default
+
+    mock_config.get_setting.side_effect = _valid_llm
+    adapter = LiteLLMAdapter(mock_config)
+
+    # Call the private method directly
+    params = adapter._prepare_completion_params(model="openrouter/test")
+
+    # The top-level provider key should still be present (not removed or transformed)
+    assert "provider" in params
+    assert params["provider"] == "baseten"
+    # extra_body should not be created if not present in config
+    assert "extra_body" not in params or params["extra_body"] is None
