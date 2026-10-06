@@ -76,7 +76,7 @@ No core domain changes beyond the protocol addition; the orchestrator and lifecy
 - [x] **Contract** - Add `set_session_agent(session_name: str, agent_name: str) -> None` to the `ISessionManager` protocol.
 - [x] **Harness** - Add contract compliance test for `set_session_agent` in `test_session_manager_contract.py`.
 - [x] **Seam** - Implement `set_session_agent` in `SessionService` with full logic: update meta.yaml, copy/overwrite prompt, remove stale prompts.
-- [ ] **Wiring** - Add `-a/--agent` to `teddy resume`, thread through `handle_resume_session`, call `container.resolve(ISessionManager).set_session_agent(...)` before `_orchestrate_session_loop`.
+- [x] **Wiring** - Add `-a/--agent` to `teddy resume`, thread through `handle_resume_session`, call `container.resolve(ISessionManager).set_session_agent(...)` before `_orchestrate_session_loop`.
 - [ ] **Logic** - Add unit tests in `test_session_cli_handlers_resume_meta.py` covering meta.yaml update, prompt copy, prompt overwrite, stale-prompt removal, no-flag-no-change, and nonexistent-agent error.
 
 ## Implementation Notes
@@ -109,6 +109,24 @@ No core domain changes beyond the protocol addition; the orchestrator and lifecy
     - `test_set_session_agent_removes_stale_prompt_files` — asserts stale prompt removal, non-prompt files preserved.
 - **Cycle:** Red → Green → Refactor. Red confirmed `AttributeError` (method missing); Green passed both tests; Refactor extracted the helper.
 - **Verification:** Full suite green (`1637 passed, 5 skipped`).
+
+### Wiring — Add `-a/--agent` to `teddy resume` CLI command
+
+- **Changes:**
+    1. Added `agent: Optional[str] = typer.Option(None, "--agent", "-a", help="Switch to a different agent persona for this session.")` to the `resume` function in [__main__.py](/src/teddy_executor/__main__.py), placed after `--api-key` and before `--message`.
+    2. Added `agent` parameter to `handle_resume_session` signature in [session_cli_handlers.py](/src/teddy_executor/adapters/inbound/session_cli_handlers.py), placed after `api_key` and before `message`.
+    3. Added the `ISessionManager` import to `session_cli_handlers.py` (already present from existing usage — confirmed via `git grep`).
+    4. Inserted the agent-switch call after `_sync_and_display_session_meta` and before `_orchestrate_session_loop`:
+       ```python
+       if agent:
+           container.resolve(ISessionManager).set_session_agent(session_name, agent)
+       ```
+    5. Passed `agent=agent` from `__main__.py`'s `handle_resume_session(...)` call.
+    6. **Refactor:** Fixed an unintended `setup_api_key` regression introduced during the `agent` threading (the call was changed to `_resolve_setup_api_key(interactive)` with wrong arity); restored it to `_resolve_setup_api_key(system_env, pipeline=pipeline)`.
+- **Tests:** One test added in [test_session_cli_handlers.py](/tests/suites/unit/adapters/inbound/test_session_cli_handlers.py):
+    - `test_resume_handler_calls_set_session_agent_when_agent_provided` — verifies that passing `agent` to `handle_resume_session` calls `ISessionManager.set_session_agent` with the correct session name and agent name.
+- **Cycle:** Red → Green → Refactor. Red confirmed `TypeError: unexpected keyword argument 'agent'`. Green passed after adding the parameter and the call. Refactor fixed the `setup_api_key` arity regression (unintended change from `system_env, pipeline=pipeline` to `interactive`).
+- **Verification:** Full suite green (`1638 passed, 5 skipped`).
 
 ## Verification
 - [ ] `teddy resume -a developer` in an existing pathfinder session updates `agent_name` in `meta.yaml` to "developer"

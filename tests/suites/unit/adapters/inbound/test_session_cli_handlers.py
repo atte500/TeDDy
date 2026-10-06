@@ -526,3 +526,66 @@ def test_handle_resume_session_starts_background_check_thread(monkeypatch):
     cache_path = args[0]
     assert isinstance(cache_path, Path)
     assert ".update_cache.json" in str(cache_path)
+
+
+# ---------------------------------------------------------------------------
+# Wiring deliverable: resume -a/--agent flag threading
+# ---------------------------------------------------------------------------
+
+
+def test_resume_handler_calls_set_session_agent_when_agent_provided(monkeypatch):
+    """
+    Verifies that handle_resume_session calls ISessionManager.set_session_agent
+    when the agent parameter is provided.
+    """
+    from unittest.mock import Mock
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        handle_resume_session,
+    )
+    from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+
+    # Arrange
+    mock_container = Mock()
+    mock_session_manager = Mock(spec=ISessionManager)
+    mock_container.resolve.return_value = mock_session_manager
+
+    # Bypass preflight and session orchestration
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._run_cli_preflight_check",
+        lambda container, agent=None, setup_editor=None, setup_api_key=None: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
+        lambda container, session_name, interactive, no_copy, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._sync_and_display_session_meta",
+        lambda container, session_name, model=None, provider=None, api_key=None: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._resolve_session_name",
+        lambda container, path=None: "test-session",
+    )
+    # Mock background_check to avoid real imports
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers.background_check",
+        lambda cache_path, index_url=None: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.cli_helpers.find_project_root",
+        lambda: None,
+    )
+
+    # Act
+    handle_resume_session(
+        container=mock_container,
+        agent="developer",
+        interactive=True,
+        setup_editor=False,
+        setup_api_key=False,
+    )
+
+    # Assert
+    mock_session_manager.set_session_agent.assert_called_once_with(
+        "test-session", "developer"
+    )

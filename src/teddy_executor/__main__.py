@@ -447,6 +447,12 @@ def resume(  # noqa: PLR0913
     api_key: Optional[str] = typer.Option(
         None, "--api-key", help="LLM API key override."
     ),
+    agent: Optional[str] = typer.Option(
+        None,
+        "--agent",
+        "-a",
+        help="Switch to a different agent persona for this session.",
+    ),
     message: Optional[str] = typer.Option(
         None,
         "--message",
@@ -483,6 +489,7 @@ def resume(  # noqa: PLR0913
         model=model,
         provider=provider,
         api_key=api_key,
+        agent=agent,
         message=message,
         pipeline=pipeline,
     )

@@ -964,6 +964,7 @@ def handle_resume_session(  # noqa: PLR0913
     model: Optional[str] = None,
     provider: Optional[str] = None,
     api_key: Optional[str] = None,
+    agent: Optional[str] = None,
     message: Optional[str] = None,
     pipeline: bool = False,
     setup_editor: Optional[bool] = None,
@@ -1006,7 +1007,11 @@ def handle_resume_session(  # noqa: PLR0913
             container, session_name, model=model, provider=provider, api_key=api_key
         )
 
-        # 5. Enter the session loop
+        # 5. Agent switch: if -a/--agent provided, update session agent permanently
+        if agent:
+            container.resolve(ISessionManager).set_session_agent(session_name, agent)
+
+        # 6. Enter the session loop
         _orchestrate_session_loop(
             container=container,
             session_name=session_name,
