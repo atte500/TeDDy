@@ -141,13 +141,13 @@ teddy resume -m "your next instruction"
 
 ### Installing Experimental Versions
 
-To install or upgrade to the latest experimental (pre-release) version from TestPyPI:
+To install or upgrade to the latest experimental (pre-release) version directly from PyPI:
 
 ```bash
-uv tool install teddy-cli --pre --force --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --index-strategy unsafe-best-match
+uv tool install teddy-cli --pre --force
 ```
 
-> **Note:** Experimental versions are published to TestPyPI and may include features that are not yet stable. Use with caution.
+> **Note:** Experimental versions are published as PEP 440 dev pre-releases on PyPI and may include features that are not yet stable. Use with caution.
 
 ### Command Reference
 

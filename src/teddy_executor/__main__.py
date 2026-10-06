@@ -354,15 +354,13 @@ def update(
         typer.echo("To apply prompt updates, run: teddy init prompts")
     elif experimental:
         typer.echo(f"A new experimental version {latest} is available.")
-        typer.echo(
-            "To upgrade, run: uv tool install teddy-cli --pre --force --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --index-strategy unsafe-best-match"
-        )
+        typer.echo("To upgrade, run: uv tool install teddy-cli --pre --force")
         typer.echo("To apply prompt updates, run: teddy init prompts")
     else:
         typer.echo(f"A new version {latest} is available.")
-        # A pre-release install comes from the TestPyPI experimental channel.
-        # `uv tool upgrade` cannot reliably move the tool off that index back to
-        # PyPI, so force a reinstall from the default index instead.
+        # A pre-release install comes from PyPI with a dev version (--pre).
+        # `uv tool upgrade` cannot reliably move the tool off --pre back to
+        # stable, so force a reinstall from the default index instead.
         if is_prerelease(current):
             typer.echo("To upgrade, run: uv tool install teddy-cli --force")
         else:

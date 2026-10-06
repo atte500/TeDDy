@@ -14,15 +14,15 @@ permissions:
   contents: read
 
 jobs:
-  publish-to-testpypi:
-    name: Publish to Test PyPI
+  publish-dev-to-pypi:
+    name: Publish Dev Pre-release to PyPI
     if: >
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
       github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment:
-      name: testpypi
-      url: https://test.pypi.org/p/teddy-cli
+      name: pypi
+      url: https://pypi.org/p/teddy-cli
     permissions:
       id-token: write  # MANDATORY: This permission is required for OIDC Trusted Publishing
     steps:
@@ -47,10 +47,9 @@ jobs:
     - name: Build package
       run: uv build
 
-    - name: Publish to Test PyPI
+    - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        repository-url: https://test.pypi.org/legacy/
+      # Default target is PyPI (no repository-url needed)
 
   publish-to-pypi:
     name: Publish to PyPI

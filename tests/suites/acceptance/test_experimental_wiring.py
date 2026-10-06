@@ -53,5 +53,3 @@ def test_experimental_flag_uses_test_pypi_url(monkeypatch):
         f"Expected version 0.2.0 in output, got: {result.stdout!r}"
     )
     assert "uv tool install teddy-cli --pre --force" in result.stdout
-
-    assert "test.pypi.org" in result.stdout
