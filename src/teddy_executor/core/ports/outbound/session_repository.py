@@ -16,6 +16,10 @@ class ISessionRepository(Protocol):
         """Resolves a session name from a given filesystem path."""
         ...
 
+    def resolve_session_from_slug(self, slug: str) -> str:
+        """Resolves a session folder name from its timestamp-stripped slug."""
+        ...
+
     def is_valid_path(self, path_str: str) -> bool:
         """Checks if a string is a plausible file path."""
         ...

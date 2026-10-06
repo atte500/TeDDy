@@ -97,7 +97,7 @@ flowchart LR
 ```
 
 ## Deliverables
-- [ ] **Contract** - Add `resolve_session_from_slug(self, slug: str) -> str` to the `ISessionRepository` outbound port (mirrors `resolve_session_from_path`); migrate a hand-written `ISessionRepository` double only if one exists (census says none does).
+- [x] **Contract** - Add `resolve_session_from_slug(self, slug: str) -> str` to the `ISessionRepository` outbound port (mirrors `resolve_session_from_path`); migrate a hand-written `ISessionRepository` double only if one exists (census says none does).
 - [ ] **Contract** - Add `resolve_session_from_slug` to the `@runtime_checkable ISessionManager` protocol AND migrate the hand-written `DummyManager` contract double in the SAME atomic commit.
 - [ ] **Logic** - Implement `SessionRepository.resolve_session_from_slug` (EXACT case-insensitive match via `_strip_prefix(...).casefold()`, LATEST-WINS mtime sort, `logger.warning` naming the chosen folder on ambiguity, `ValueError` on no-match/no-sessions) + the four repository unit tests.
 - [ ] **Seam** - Implement the `SessionService.resolve_session_from_slug` delegate (`return self._repository.resolve_session_from_slug(slug)`) directly after `resolve_session_from_path`.
@@ -105,7 +105,14 @@ flowchart LR
 - [ ] **Logic** - Add unit tests for the `_resolve_session_name` fallback (path-fails → slug fallback invoked; path-succeeds → slug fallback NOT invoked; no-`path` → CWD-climb/`get_latest_session_name` unchanged).
 
 ## Implementation Notes
-_(Filled by the Developer as deliverables land.)_
+
+### Contract — `resolve_session_from_slug` on `ISessionRepository`
+
+- **Change:** Declared the additive `resolve_session_from_slug(self, slug: str) -> str` member on the `ISessionRepository` outbound port ([session_repository.py](/src/teddy_executor/core/ports/outbound/session_repository.py)), placed directly after `resolve_session_from_path` and mirroring its shape/docstring. Signature matches the Task Brief (Step 1).
+- **Test:** Added a Unit-layer contract-presence assertion at [test_session_repository_contract.py](/tests/suites/unit/core/ports/outbound/test_session_repository_contract.py) (`assert hasattr(ISessionRepository, "resolve_session_from_slug")`).
+- **Cycle:** Red → Green → Refactor. Red confirmed `AssertionError: ISessionRepository must declare resolve_session_from_slug` (hasattr False). Green flipped to `1 passed` after the port declaration. Refactor was a deliberate no-op — a pure additive Protocol type declaration has no internal structure to restructure.
+- **Green-to-green safety:** The Plan Audit confirmed `ISessionRepository` is NOT `@runtime_checkable` and has no hand-written double (only autospec-based `mock_port`/`register_mock` doubles exist, which auto-tolerate additive protocol members), so nothing could break. Integration gate: full suite green at `1641 passed, 5 skipped`.
+- **Harness migration:** None required — the census found no hand-written `ISessionRepository` double.
 
 ## Verification
 - [ ] `uv run pytest tests/suites/unit/core/services/test_session_repository.py -v` — all green.
