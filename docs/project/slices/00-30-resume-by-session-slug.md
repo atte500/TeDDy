@@ -102,7 +102,7 @@ flowchart LR
 - [x] **Logic** - Implement `SessionRepository.resolve_session_from_slug` (EXACT case-insensitive match via `_strip_prefix(...).casefold()`, LATEST-WINS mtime sort, `logger.warning` naming the chosen folder on ambiguity, `ValueError` on no-match/no-sessions) + the four repository unit tests.
 - [x] **Seam** - Implement the `SessionService.resolve_session_from_slug` delegate (`return self._repository.resolve_session_from_slug(slug)`) directly after `resolve_session_from_path`.
 - [x] **Wiring** - Overload the positional `[path]` in `_resolve_session_name`: try `resolve_session_from_path(path)` FIRST and fall back to `resolve_session_from_slug(path)` on `ValueError`; leave the no-`path` branch unchanged; add the end-to-end acceptance test (create a session → `teddy resume <slug>` resumes the correct folder).
-- [ ] **Logic** - Add unit tests for the `_resolve_session_name` fallback (path-fails → slug fallback invoked; path-succeeds → slug fallback NOT invoked; no-`path` → CWD-climb/`get_latest_session_name` unchanged).
+- [x] **Logic** - Add unit tests for the `_resolve_session_name` fallback (path-fails → slug fallback invoked; path-succeeds → slug fallback NOT invoked; no-`path` → CWD-climb/`get_latest_session_name` unchanged).
 
 ## Implementation Notes
 
@@ -142,6 +142,13 @@ flowchart LR
 - **Tests:** Added the end-to-end acceptance test `test_resume_by_slug_resolves_timestamped_session` at [test_session_resume_robustness.py](/tests/suites/acceptance/test_session_resume_robustness.py) (Task Brief Step 9): it creates a session via `start add-user-auth` (fixed clock → folder `20260417_120000-add-user-auth`) and resumes it via `resume add-user-auth`, then asserts exit 0 and that the resolved timestamped folder name surfaces on stdout.
 - **Cycle:** Red → Green → Refactor. Red confirmed `AssertionError: assert 1 == 0` (`Result SystemExit(1).exit_code`) — with no fallback, a bare slug raised `ValueError` and `handle_resume_session` exited 1; Green flipped to `1 passed` after wiring the `try/except ValueError` fallback. Refactor was a deliberate no-op — the fallback reuses the existing `try/except ValueError` idiom already present in the sibling no-`path` arm.
 - **Green-to-green safety:** The change is scoped to the `if path:` arm and preserves all existing path/CWD/auto-detect resume behavior (the CLI still tries `resolve_session_from_path` first). Integration gate: full suite green at `1649 passed, 5 skipped`.
+
+### Logic — CLI `_resolve_session_name` Slug Fallback Unit Tests
+
+- **Change:** Added a dedicated Unit suite [test_session_cli_handlers_slug_fallback.py](/tests/suites/unit/adapters/inbound/test_session_cli_handlers_slug_fallback.py) (Task Brief Step 8) with three tests locking the Deliverable-5 wire: (1) a `path` whose `resolve_session_from_path` raises `ValueError` falls back to `resolve_session_from_slug` (forwarded verbatim; its answer returned); (2) a `path` that resolves successfully does NOT call `resolve_session_from_slug`; (3) the no-`path` arm climbs from `str(Path.cwd().resolve())` and, on `ValueError`, returns `get_latest_session_name()` — never touching slug resolution.
+- **Harness:** Used `create_autospec(ISessionManager, instance=True)` (the bound, contract-enforced idiom) injected via a minimal hand-written `_ContainerStub`; no `MagicMock`, `patch`, or `monkeypatch.setattr` (Anti-Mock Poisoning).
+- **Cycle:** Red → Green → Refactor. Red: the three tests were authored and executed (`3 passed` — green-on-write, additive regression coverage for behavior that already exists from Deliverable 5, commit 97701cb1). Refactor was a deliberate no-op (bound autospec double + minimal stub; no magic numbers, `except Exception:` blocks, duplicated harness logic, or local imports).
+- **Green-to-green safety:** The suite adds NO production code and only reads the public behavior of `_resolve_session_name`. Integration gate: full suite green at `1652 passed, 5 skipped`.
 
 ## Verification
 - [ ] `uv run pytest tests/suites/unit/core/services/test_session_repository.py -v` — all green.

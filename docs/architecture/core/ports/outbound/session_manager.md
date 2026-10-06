@@ -57,5 +57,12 @@ This port abstracts the logic for creating turn directories, managing the `turn.
 - **Returns:** The session name as a string.
 - **Exceptions:** `ValueError` if the path is not inside a session.
 
+### `resolve_session_from_slug`
+- **Description:** Resolves a session name from its timestamp-stripped slug (e.g. `add-user-auth` → `20260124_153000-add-user-auth`). Matching is EXACT and case-insensitive; when several sessions share a slug, the most recently modified one wins (LATEST-WINS).
+- **Arguments:**
+    - `slug` (str)
+- **Returns:** The session name as a string.
+- **Exceptions:** `ValueError` if no session matches the slug (or if no sessions exist).
+
 ### `resolve_context_paths(plan_path: str) -> dict[str, list[str]]`
 - **Description:** Locates context files relative to the plan path and returns their contents.

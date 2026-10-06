@@ -66,6 +66,10 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
 -   **Description:** Resolves a session name from a given path (session root, turn dir, or file).
 -   **Exceptions:** `ValueError` if the path is not inside a session.
 
+### `resolve_session_from_slug(slug: str) -> str`
+-   **Description:** Resolves a session name from its timestamp-stripped slug (EXACT, case-insensitive; LATEST-WINS on ambiguity). Delegates to `ISessionRepository.resolve_session_from_slug` — no filesystem I/O in the adapter layer.
+-   **Exceptions:** `ValueError` if no session matches the slug (or if no sessions exist).
+
 ## 6. Implementation Notes
 
 -   **Dynamic Renaming:** The `rename_session` method is provided to safely move session directories. The `SessionOrchestrator` uses this to rename timestamped sessions to a slugified version of the first plan's title (H1) after generation.

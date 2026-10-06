@@ -129,6 +129,19 @@ Editor validation is skipped entirely for runs that will not read the terminal: 
 
 **`_ensure_commit_hooks` compare-and-skip (Slice 00-20):** before spawning `pre-commit install -f -t pre-commit -t post-commit`, the guard verifies each requested shim PER HOOK TYPE (pre-commit installs ONE shim per hook type; each declares only its OWN `--hook-type=<type>`): the shim exists in the resolved hooks directory (`.git/hooks` or `core.hooksPath`), contains `hook-impl`, declares `--config=.pre-commit-config.yaml`, declares its own `--hook-type=`, and embeds an existing `INSTALL_PYTHON` path. All shims valid → the subprocess is skipped and the green notification still shows. Any failure (missing shim, dead interpreter, foreign content) → the real install runs exactly as before (safety never reduced). Byte-comparison is explicitly rejected: shims are deterministic functions of (template, INSTALL_PYTHON, args), but install methods (pipx/uv/pip) produce distinct valid hashes, so byte-comparison would trigger a wasteful reinstall on every interpreter change.
 
+### Session Command: `resume`
+**Status:** Implemented
+
+Resumes an existing session. The optional positional `[PATH|SLUG]` accepts either a filesystem path (session root, turn dir, or file) OR a bare timestamp-stripped slug.
+
+*   **Signature:** `teddy resume [PATH|SLUG] [--agent AGENT] [--provider PROVIDER] [--api-key KEY] [--message MESSAGE] [--pipeline]`
+*   **Resolution (`_resolve_session_name`):** path-first, slug-fallback:
+    1. When `[PATH|SLUG]` is supplied, `ISessionManager.resolve_session_from_path(path)` is tried FIRST, preserving ALL existing path-based behavior (CWD-climb, explicit `sessions/` path, exact folder name).
+    2. ONLY on `ValueError`, resolution falls back to `ISessionManager.resolve_session_from_slug(path)`, which matches the argument's timestamp-stripped slug EXACTLY and case-insensitively (`teddy resume add-user-auth` → `.teddy/sessions/20260124_153000-add-user-auth`) and resolves LATEST-WINS when several sessions share a slug.
+    3. When no argument is supplied, the branch is unchanged: climb from the CWD, then `get_latest_session_name()`.
+    Resolution follows the Hexagonal convention (port → service → repository); no filesystem I/O is performed in the CLI adapter.
+*   **Output:** `handle_resume_session` echoes `Resuming session: .teddy/sessions/<resolved-name>`, surfacing the chosen folder.
+
 ### Utility Command: `init`
 
 **Status:** Implemented
