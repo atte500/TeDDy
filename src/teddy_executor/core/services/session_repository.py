@@ -1,3 +1,4 @@
+import logging
 import re
 import yaml
 from pathlib import Path
@@ -5,6 +6,8 @@ from typing import Set, Dict, Any
 
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+
+logger = logging.getLogger(__name__)
 
 
 class SessionRepository(ISessionRepository):
@@ -72,6 +75,45 @@ class SessionRepository(ISessionRepository):
             return path
 
         raise ValueError(f"Could not resolve session from path: {path}")
+
+    def resolve_session_from_slug(self, slug: str) -> str:
+        """Resolves a session folder name from its timestamp-stripped slug."""
+        sessions_root = ".teddy/sessions"
+        if not self._file_system_manager.path_exists(sessions_root):
+            raise ValueError("No sessions found.")
+
+        target = slug.strip().casefold()
+        matches = [
+            name
+            for name in self._file_system_manager.list_directory(sessions_root)
+            if self._strip_prefix(name).casefold() == target
+        ]
+
+        if not matches:
+            raise ValueError(f"No session found with slug: {slug}")
+
+        scored: list[tuple[str, float]] = []
+        for name in matches:
+            try:
+                mtime = self._file_system_manager.get_mtime(f"{sessions_root}/{name}")
+                scored.append((name, mtime))
+            except (FileNotFoundError, OSError):
+                continue
+
+        if not scored:
+            raise ValueError(f"No session found with slug: {slug}")
+
+        scored.sort(key=lambda x: x[1], reverse=True)
+        chosen = scored[0][0]
+
+        if len(scored) > 1:
+            logger.warning(
+                "Multiple sessions match slug '%s'; resuming latest: %s",
+                slug,
+                chosen,
+            )
+
+        return chosen
 
     def is_valid_path(self, path_str: str) -> bool:
         """Heuristic to check if a string is a plausible file path."""

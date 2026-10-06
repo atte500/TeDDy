@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import create_autospec
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.services.session_repository import SessionRepository
@@ -81,3 +82,74 @@ def test_get_latest_turn_returns_numerically_latest_turn():
 
     # Assert: the numerically-latest turn (100), not the lexicographic "99".
     assert latest_turn == ".teddy/sessions/feat-x/100"
+
+
+def test_resolve_session_from_slug_matches_stripped_prefix():
+    # Setup
+    mock_fs = create_autospec(IFileSystemManager, instance=True)
+    mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.return_value = ["20260124_153000-add-user-auth"]
+    mock_fs.get_mtime.return_value = 100.0
+    repo = SessionRepository(mock_fs)
+
+    # Act
+    session_name = repo.resolve_session_from_slug("add-user-auth")
+
+    # Assert
+    assert session_name == "20260124_153000-add-user-auth"
+
+
+def test_resolve_session_from_slug_is_case_insensitive():
+    # Setup
+    mock_fs = create_autospec(IFileSystemManager, instance=True)
+    mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.return_value = ["20260124_153000-add-user-auth"]
+    mock_fs.get_mtime.return_value = 100.0
+    repo = SessionRepository(mock_fs)
+
+    # Act
+    session_name = repo.resolve_session_from_slug("Add-User-Auth")
+
+    # Assert
+    assert session_name == "20260124_153000-add-user-auth"
+
+
+def test_resolve_session_from_slug_latest_wins_on_ambiguity():
+    # Setup: two sessions whose stripped slugs are identical; the second is newer.
+    mock_fs = create_autospec(IFileSystemManager, instance=True)
+    mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.return_value = [
+        "20260124_153000-add-user-auth",
+        "20260125_090000-add-user-auth",
+    ]
+    mock_fs.get_mtime.side_effect = [100.0, 200.0]
+    repo = SessionRepository(mock_fs)
+
+    # Act
+    session_name = repo.resolve_session_from_slug("add-user-auth")
+
+    # Assert: the newer mtime wins.
+    assert session_name == "20260125_090000-add-user-auth"
+
+
+def test_resolve_session_from_slug_raises_when_no_match():
+    # Setup: a session exists, but no folder strips to the queried slug.
+    mock_fs = create_autospec(IFileSystemManager, instance=True)
+    mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.return_value = ["20260124_153000-some-other-slug"]
+    repo = SessionRepository(mock_fs)
+
+    # Act / Assert
+    with pytest.raises(ValueError, match="No session found with slug: missing-slug"):
+        repo.resolve_session_from_slug("missing-slug")
+
+
+def test_resolve_session_from_slug_raises_when_no_sessions():
+    # Setup: the sessions root does not exist.
+    mock_fs = create_autospec(IFileSystemManager, instance=True)
+    mock_fs.path_exists.return_value = False
+    repo = SessionRepository(mock_fs)
+
+    # Act / Assert
+    with pytest.raises(ValueError, match="No sessions found."):
+        repo.resolve_session_from_slug("add-user-auth")
