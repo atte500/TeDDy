@@ -94,10 +94,29 @@ teddy start -y
 
 To make automatic approval the default for every session, set `yolo_default: true` in `.teddy/config.yaml`. Pass `--no-yolo` / `-n` to force interactive mode for a single run.
 
-Resume a previous session:
+Start a session with a specific agent and an initial instruction:
+
+```bash
+teddy start -a architect -m "Plan the auth module"
+```
+
+If you omit `-a`, the `pathfinder` agent is used by default. Pass just an initial message:
+
+```bash
+teddy start -m "Your instruction"
+```
+
+Resume the most recent session:
 
 ```bash
 teddy resume
+```
+
+Resume a specific session by slug or path:
+
+```bash
+teddy resume my-feature-branch
+teddy resume .teddy/sessions/20260825_151900-my-feature-branch
 ```
 
 Interrupt a running session with `q` (or `Ctrl+C`) at any time: the action currently in flight is stopped immediately, the remaining actions are skipped, and the report is still written so you keep the full audit trail. You can then continue the session with:
@@ -106,15 +125,22 @@ Interrupt a running session with `q` (or `Ctrl+C`) at any time: the action curre
 teddy resume -m "your next instruction"
 ```
 
-`resume -m` injects the message as your next turn and skips the interactive prompt, so you never have to type a reply by hand. This is especially handy after interrupting an automated `--yolo` / `-y` run when you want to steer it with a new instruction.
+`resume -m` injects the message as your next turn which is especially handy if you want to jump in during an automated `--yolo` / `-y` run to steer the agent with additional instructions without having to wait for it to finish.
+
+Resume an ongoing session with a different agent:
+
+```bash
+teddy resume -a developer
+```
 
 #### Optional flags
 
-- `--agent` / `-a` – Choose an agent persona (e.g., `pathfinder`, `architect`, `developer`).
+- `--agent` / `-a` – Choose an agent persona (e.g., `pathfinder`, `architect`, `developer`). Default: `pathfinder`.
 - `--context` / `-c` – Pass additional context files or directories. Repeatable (`-c a.py -c b.md`); comma-separated values are also accepted (`-c "a.py,b.md"`).
 - `--model` – Override the default model.
 - `--yolo` / `-y` – Auto-approve all actions (non-interactive). Set `yolo_default: true` in `.teddy/config.yaml` to make this the default for every session; `--no-yolo` / `-n` forces interactive mode for a single run.
-- `--pipeline` / `-p` – Pipeline mode: auto-approves all actions, requires `--message` / `-m`, exits after the first `## Message`.
+- `--message` / `-m` – Provide an initial message or instruction. Use standalone with `start` or `resume`, or together with `--pipeline`.
+- `--pipeline` / `-p` – Pipeline mode: auto-approves all actions, requires `--message` / `-m`, exits after the first `## Message`. Useful for CI and automated workflows.
 
 #### Browser chat usage
 
@@ -138,17 +164,17 @@ uv tool install teddy-cli --pre --force
 
 ### Command Reference
 
-| Command        | Description                                                                                    |
-| -------------- | ---------------------------------------------------------------------------------------------- |
-| `init`         | Initialize `.teddy` directory with defaults and pre-warm heavy imports. See subcommands below. |
-| `init prompts` | Overwrite bundled prompt XMLs in `.teddy/prompts/` with defaults.                              |
+| Command        | Description                                                                                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------------- |
+| `init`         | Initialize `.teddy` directory with defaults and pre-warm heavy imports. See subcommands below.                 |
+| `init prompts` | Overwrite bundled prompt XMLs in `.teddy/prompts/` with defaults.                                              |
 | `init config`  | Overwrite config.yaml, .gitignore, and init.context with defaults. Preserves an existing `.env` (create-only). |
-| `start`        | Start an interactive session.                                                                  |
-| `resume`       | Resume an existing session.                                                                    |
-| `update`       | Check for updates and display upgrade instructions.                                            |
-| `execute`      | Execute a Markdown plan. Reads from clipboard if no file path provided.                        |
-| `context`      | Gather project context (file tree + selected file contents) to clipboard.                      |
-| `get-prompt`   | Retrieve agent system prompts. Respects `.teddy/prompts/` overrides.                           |
+| `start`        | Start an interactive session.                                                                                  |
+| `resume`       | Resume an existing session.                                                                                    |
+| `update`       | Check for updates and display upgrade instructions.                                                            |
+| `execute`      | Execute a Markdown plan. Reads from clipboard if no file path provided.                                        |
+| `context`      | Gather project context (file tree + selected file contents) to clipboard.                                      |
+| `get-prompt`   | Retrieve agent system prompts. Respects `.teddy/prompts/` overrides.                                           |
 
 By default, `execute` and `context` copy their output to the clipboard. Use `--no-copy` to disable.
 
