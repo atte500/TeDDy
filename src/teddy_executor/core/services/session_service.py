@@ -520,6 +520,10 @@ class SessionService(ISessionManager):
         """Resolves a session name from a given path."""
         return self._repository.resolve_session_from_path(path)
 
+    def resolve_session_from_slug(self, slug: str) -> str:
+        """Resolves a session name from its timestamp-stripped slug."""
+        return self._repository.resolve_session_from_slug(slug)
+
     def set_session_agent(self, session_name: str, agent_name: str) -> None:
         """
         Permanently changes the session's agent. Updates meta.yaml
