@@ -118,7 +118,6 @@ class TestResumeClearsActualModel:
                 interactive=False,
                 no_copy=True,
                 model="new-model",
-                provider=None,
                 api_key=None,
             )
 
@@ -179,7 +178,6 @@ class TestResumeClearsActualModel:
                 interactive=False,
                 no_copy=True,
                 model=None,
-                provider=None,
                 api_key=None,
             )
 

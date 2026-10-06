@@ -413,7 +413,6 @@ def handle_new_session(  # noqa: PLR0913
     pipeline: bool = False,
     additional_context: Optional[list[str]] = None,
     model: Optional[str] = None,
-    provider: Optional[str] = None,
     api_key: Optional[str] = None,
     setup_editor: Optional[bool] = None,
     setup_api_key: Optional[bool] = None,
@@ -471,7 +470,6 @@ def handle_new_session(  # noqa: PLR0913
             initial_request=message,
             additional_context=additional_context or [],
             model=model,
-            provider=provider,
             api_key=api_key,
         )
         session_dir = session_manager.create_session(options)
@@ -924,7 +922,6 @@ def _sync_and_display_session_meta(
     container: Container,
     session_name: str,
     model: Optional[str] = None,
-    provider: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> None:
     """Reads latest turn meta.yaml, syncs config overrides, and clears actual_model."""
@@ -949,9 +946,6 @@ def _sync_and_display_session_meta(
     elif config_model != "unknown" and meta.get("model") != config_model:
         meta["model"] = config_model
         changed = True
-    if provider:
-        meta["provider"] = provider
-        changed = True
     if api_key:
         meta["api_key"] = api_key
         changed = True
@@ -965,7 +959,6 @@ def handle_resume_session(  # noqa: PLR0913
     interactive: bool = True,
     no_copy: bool = False,
     model: Optional[str] = None,
-    provider: Optional[str] = None,
     api_key: Optional[str] = None,
     agent: Optional[str] = None,
     message: Optional[str] = None,
@@ -1007,7 +1000,7 @@ def handle_resume_session(  # noqa: PLR0913
 
         # 4. Display actual_model and sync config overrides
         _sync_and_display_session_meta(
-            container, session_name, model=model, provider=provider, api_key=api_key
+            container, session_name, model=model, api_key=api_key
         )
 
         # 5. Agent switch: if -a/--agent provided, update session agent permanently

@@ -160,11 +160,11 @@ def test_prompt_for_api_key_abort_persists_nothing_without_raising(monkeypatch):
     assert config.setting_writes == []
 
 
-# --- _llm_model_requires_api_key: provider-aware key requirement ------------
+# --- _llm_model_requires_api_key -----------------------------------------
 
 
 def test_llm_model_requires_api_key_true_for_cloud_model(monkeypatch):
-    """A cloud model whose provider key is missing requires a key."""
+    """A cloud model whose API key is missing requires a key."""
     import litellm
 
     monkeypatch.setattr(
