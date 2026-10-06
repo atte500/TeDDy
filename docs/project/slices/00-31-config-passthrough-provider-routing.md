@@ -1,6 +1,6 @@
 # Slice: Config Passthrough Provider Routing
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [Milestone 2: Stability & Infrastructure](/docs/project/milestones/02-stability-and-polish.md)
 - **Specs:** [Task Brief: Config Passthrough Provider Routing](/docs/project/tasks/00-29-config-passthrough-provider-routing.md)
 - **Prototype:** N/A
@@ -93,8 +93,8 @@ Test strategy: All new tests are unit tests in existing test files. No new test 
 
 ## Verification
 
-- [ ] `_prepare_completion_params` returns `extra_body` verbatim, no `provider` key produced – unit test passes.
-- [ ] `teddy start --help` and `teddy resume --help` do not list `--provider`; passing `--provider` errors.
-- [ ] Setting `llm.extra_body: {provider: {order: ["baseten"]}}` in config produces correct Litellm call – mocked assertion passes.
-- [ ] Session provider display (from `_hidden_params`) remains in meta – existing display tests pass.
-- [ ] Full test suite green: `uv run pytest`.
+- [x] `_prepare_completion_params` returns `extra_body` verbatim, no `provider` key produced – unit test passes.
+- [x] `teddy start --help` and `teddy resume --help` do not list `--provider`; passing `--provider` errors.
+- [x] Setting `llm.extra_body: {provider: {order: ["baseten"]}}` in config produces correct Litellm call – mocked assertion passes.
+- [x] Session provider display (from `_hidden_params`) remains in meta – existing display tests pass.
+- [x] Full test suite green: `uv run pytest`.
