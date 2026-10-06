@@ -98,7 +98,7 @@ flowchart LR
 
 ## Deliverables
 - [x] **Contract** - Add `resolve_session_from_slug(self, slug: str) -> str` to the `ISessionRepository` outbound port (mirrors `resolve_session_from_path`); migrate a hand-written `ISessionRepository` double only if one exists (census says none does).
-- [ ] **Contract** - Add `resolve_session_from_slug` to the `@runtime_checkable ISessionManager` protocol AND migrate the hand-written `DummyManager` contract double in the SAME atomic commit.
+- [x] **Contract** - Add `resolve_session_from_slug` to the `@runtime_checkable ISessionManager` protocol AND migrate the hand-written `DummyManager` contract double in the SAME atomic commit.
 - [ ] **Logic** - Implement `SessionRepository.resolve_session_from_slug` (EXACT case-insensitive match via `_strip_prefix(...).casefold()`, LATEST-WINS mtime sort, `logger.warning` naming the chosen folder on ambiguity, `ValueError` on no-match/no-sessions) + the four repository unit tests.
 - [ ] **Seam** - Implement the `SessionService.resolve_session_from_slug` delegate (`return self._repository.resolve_session_from_slug(slug)`) directly after `resolve_session_from_path`.
 - [ ] **Wiring** - Overload the positional `[path]` in `_resolve_session_name`: try `resolve_session_from_path(path)` FIRST and fall back to `resolve_session_from_slug(path)` on `ValueError`; leave the no-`path` branch unchanged; add the end-to-end acceptance test (create a session → `teddy resume <slug>` resumes the correct folder).
@@ -113,6 +113,14 @@ flowchart LR
 - **Cycle:** Red → Green → Refactor. Red confirmed `AssertionError: ISessionRepository must declare resolve_session_from_slug` (hasattr False). Green flipped to `1 passed` after the port declaration. Refactor was a deliberate no-op — a pure additive Protocol type declaration has no internal structure to restructure.
 - **Green-to-green safety:** The Plan Audit confirmed `ISessionRepository` is NOT `@runtime_checkable` and has no hand-written double (only autospec-based `mock_port`/`register_mock` doubles exist, which auto-tolerate additive protocol members), so nothing could break. Integration gate: full suite green at `1641 passed, 5 skipped`.
 - **Harness migration:** None required — the census found no hand-written `ISessionRepository` double.
+
+### Contract — `resolve_session_from_slug` on `ISessionManager` (+ `DummyManager` migration)
+
+- **Change:** Declared the additive `resolve_session_from_slug(self, slug: str) -> str` member on the `@runtime_checkable ISessionManager` protocol ([session_manager.py](/src/teddy_executor/core/ports/outbound/session_manager.py)), placed directly after `resolve_session_from_path` and mirroring its shape/docstring. Signature matches the Task Brief (Step 3).
+- **Harness migration (mandatory, atomic):** Migrated the hand-written `DummyManager` double in [test_session_manager_contract.py](/tests/suites/unit/core/ports/test_session_manager_contract.py) with a matching no-op `resolve_session_from_slug` stub, placed directly after its `resolve_session_from_path` stub. This is REQUIRED because `@runtime_checkable ISessionManager` is enforced at runtime by `assert isinstance(DummyManager(), ISessionManager)` — adding the protocol member WITHOUT the stub would flip that pre-existing assertion to FAILED.
+- **Test:** Added a Unit-layer contract-presence assertion at [test_session_manager_contract.py](/tests/suites/unit/core/ports/test_session_manager_contract.py) (`assert hasattr(ISessionManager, "resolve_session_from_slug")`), mirroring the Deliverable 1 idiom.
+- **Cycle:** Red → Green → Refactor. Red confirmed `AssertionError: ISessionManager must declare resolve_session_from_slug` (hasattr False) while the two pre-existing tests stayed green (`1 failed, 2 passed`). Green flipped the suite to `3 passed` after the protocol member and the `DummyManager` stub landed together. Refactor was a deliberate no-op — one additive Protocol member plus its paired test-double stub have no internal structure to restructure.
+- **Green-to-green safety:** The protocol member and its double were added in the SAME atomic edit set, satisfying the `isinstance` contract. Integration gate: full suite green at `1642 passed, 5 skipped`.
 
 ## Verification
 - [ ] `uv run pytest tests/suites/unit/core/services/test_session_repository.py -v` — all green.

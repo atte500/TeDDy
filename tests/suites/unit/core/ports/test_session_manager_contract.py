@@ -46,6 +46,9 @@ class DummyManager:
     def resolve_session_from_path(self, path: str) -> str:
         return ""
 
+    def resolve_session_from_slug(self, slug: str) -> str:
+        return ""
+
     def to_root_relative(self, turn_dir: Path, filename: str) -> str:
         return ""
 
@@ -82,3 +85,10 @@ def test_session_manager_contract_rejects_partial_implementation():
             return "ok"
 
     assert not isinstance(PartialManager(), ISessionManager)
+
+
+def test_protocol_declares_resolve_session_from_slug():
+    """The protocol must declare slug-based resolution, mirroring path resolution."""
+    assert hasattr(ISessionManager, "resolve_session_from_slug"), (
+        "ISessionManager must declare resolve_session_from_slug"
+    )

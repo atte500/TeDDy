@@ -102,6 +102,13 @@ class ISessionManager(Protocol):
         """
         ...
 
+    def resolve_session_from_slug(self, slug: str) -> str:
+        """
+        Resolves a session name from its timestamp-stripped slug
+        (e.g. 'add-user-auth' -> '20260124_153000-add-user-auth').
+        """
+        ...
+
     def to_root_relative(self, turn_dir: Path, filename: str) -> str:
         """
         Calculates a root-relative path for a file within a turn directory.
