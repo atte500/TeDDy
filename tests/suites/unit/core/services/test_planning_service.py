@@ -477,3 +477,40 @@ def test_generate_plan_displays_no_actual_model_line_after_fix(env):
     # args[0] is the meta dict; the real update_meta will overwrite meta["model"],
     # but the mock doesn't execute real logic, so we just verify the call happened.
     # (The actual persistence is tested by prompt_manager unit tests.)
+
+
+def test_generate_plan_does_not_pass_provider_to_llm(env):
+    """Verify that generate_plan does NOT pass a 'provider' kwarg to the LLM client.
+
+    The 'provider' override path was removed; only 'api_key' may appear in overrides.
+    """
+    # Arrange
+    mock_prompt_manager = env.mock_port(IPromptManager)
+    mock_llm_client = env.mock_port(ILlmClient)
+    mock_context_service = env.mock_port(IGetContextUseCase)
+
+    from teddy_executor.core.services.planning_service import PlanningService
+
+    service = env.get_service(PlanningService)
+
+    # Setup meta with a provider value (simulates a session that had a provider)
+    mock_prompt_manager.resolve_message.return_value = "test"
+    mock_prompt_manager.resolve_agent_metadata.return_value = (
+        "pathfinder",
+        {"provider": "baseten", "model": "openrouter/test"},
+        "meta.yaml",
+    )
+    mock_prompt_manager.fetch_system_prompt.return_value = "system-prompt"
+    mock_context_service.get_context.return_value = ProjectContext(
+        header="H", content="C", scoped_paths={}, git_status=""
+    )
+
+    # Act
+    service.generate_plan(user_message="test", turn_dir="01")
+
+    # Assert: get_completion must NOT have a 'provider' kwarg
+    assert mock_llm_client.get_completion.called
+    _, kwargs = mock_llm_client.get_completion.call_args
+    assert "provider" not in kwargs, (
+        f"Unexpected 'provider' kwarg found in get_completion call: {kwargs}"
+    )

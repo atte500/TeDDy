@@ -74,7 +74,7 @@ Test strategy: All new tests are unit tests in existing test files. No new test 
 - [x] **Contract** - Write regression test for `_prepare_completion_params` pass-through (extra_body unchanged, no top-level provider).
 - [x] **Seam** - Remove provider special-case in adapter; remove `--provider` CLI flag from start/resume.
 - [x] **Wiring** - Remove provider parameter from session_cli_handlers handler signatures and forwards.
-- [ ] **Logic** - Remove provider parameter from planning_service.py.
+- [x] **Logic** - Remove provider parameter from planning_service.py.
 - [ ] **Migration** - Remove provider option write in session_service.py.
 - [ ] **Cleanup** - Update litellm_adapter.md docs; remove `--provider` test references; verify display provider path still works.
 
@@ -87,6 +87,7 @@ Test strategy: All new tests are unit tests in existing test files. No new test 
 - Both tests pass. The `llm` config section is now pure pass-through.
 - **Seam deliverable (CLI flag removal):** Removed the `--provider` Typer Option from both `start` and `resume` commands in `__main__.py`. Removed the `provider=provider` forwarding from the `handle_new_session` call (was already done in a previous edit) and from `handle_resume_session`. Added a unit test file `tests/suites/unit/test_cli_flag_removal.py` with two tests asserting `--provider` does not appear in `start --help` or `resume --help`. Updated `tests/suites/acceptance/test_cli_context_flag.py` to remove stale `--provider` usage and provider assertions.
 - **Wiring deliverable (Handler signatures):** Removed the `provider` parameter from three handler signatures in `session_cli_handlers.py`: `handle_new_session`, `_sync_and_display_session_meta`, and `handle_resume_session`. Removed `provider=provider` from the `SessionOptions` construction and the `_sync_and_display_session_meta` forwarding call. Removed the `if provider:` block that carried the CLI override into meta. Updated the affected unit test files (`test_session_cli_handlers.py`, `test_session_cli_handlers_resume_meta.py`, `test_session_cli_handlers_api_key_gate.py`) and the missed regression test file (`test_bug_24_model_override_on_resume.py`, discovered during Integration). The display provider path (extracted from `_hidden_params["provider"]` via `PromptManager.update_meta`) was verified as independent and left intact.
+- **Logic deliverable (Planning service):** Removed the `provider` parameter from `planning_service.py` — three changes: (1) removed `provider=meta.get("provider"),` from the `_perform_generation_with_retry` call, (2) removed `provider: Optional[str] = None` from `_perform_generation_with_retry` signature, (3) removed the `if provider:` / `overrides["provider"] = provider` block. Added a regression test `test_generate_plan_does_not_pass_provider_to_llm` that asserts `provider` is NOT in the `get_completion` kwargs when meta contains a `provider` value. All callers (`session_cli_handlers.py:873`, `session_planner.py:40`, `session_replanner.py:61`) already pass no `provider` — verified via Orientation grep.
 
 ## Verification
 

@@ -113,7 +113,6 @@ class PlanningService(IPlanningUseCase):
         response, plan_content, turn_cost = self._perform_generation_with_retry(
             messages,
             model=model,
-            provider=meta.get("provider"),
             api_key=meta.get("api_key"),
         )
 
@@ -135,7 +134,6 @@ class PlanningService(IPlanningUseCase):
         self,
         messages: list[Dict[str, str]],
         model: str,
-        provider: Optional[str] = None,
         api_key: Optional[str] = None,
     ) -> tuple[Any, str, float]:
         """Implements retry loop for empty LLM content."""
@@ -147,8 +145,6 @@ class PlanningService(IPlanningUseCase):
 
         # Construct overrides dict for kwargs
         overrides = {}
-        if provider:
-            overrides["provider"] = provider
         if api_key:
             overrides["api_key"] = api_key
 
