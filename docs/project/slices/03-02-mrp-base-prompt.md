@@ -1,5 +1,5 @@
 # Slice: MRP Base Prompt
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [03-foundational-refactors](/docs/project/milestones/03-foundational-refactors.md)
 - **Specs:** TBD (Milestone doc serves as spec)
 - **Component Docs:** [PromptManager](/docs/architecture/core/services/prompt_manager.md)
@@ -138,15 +138,15 @@ Before the Developer starts, the Prototyper should verify:
 The Prototyper spike lives at `spikes/prototypes/mrp-base-prompt/`.
 
 ## Verification
-1. [ ] Run `pytest tests/suites/unit/core/services/test_prompt_manager.py -v` — all existing tests pass, new MRP injection tests pass.
-2. [ ] Run full test suite: `pytest` — all tests pass (green-to-green).
-3. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/architect.xml | grep -c "<general_rules>"` — returns 0 (shared rules extracted).
-4. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/architect.xml | grep -c "<response_format>"` — returns 0 (response format extracted to MRP.xml).
-5. [ ] Manual: `cat .teddy/prompts/architect.xml` — confirms MRP.xml NOT present in .teddy/prompts/.
-6. [ ] Manual: `cat src/teddy_executor/resources/MRP.xml | grep -c "State Transition Protocol"` — returns at least 1 (MRP rules present).
-7. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/debugger.xml | grep -c "Remote Probing Protocol"` — returns at least 1 (agent-specific rule preserved).
-8. [ ] Manual: Run a session with the developer agent and capture the system prompt. Verify it starts with "Agent Name: Developer" followed by the XML content.
-9. [ ] Unit test: Verify that `fetch_system_prompt("architect", turn_path)` returns a string starting with "Agent Name: Architect".
+1. [x] Run `pytest tests/suites/unit/core/services/test_prompt_manager.py -v` — all existing tests pass, new MRP injection tests pass.
+2. [x] Run full test suite: `pytest` — all tests pass (green-to-green).
+3. [x] Manual: `cat src/teddy_executor/resources/config/prompts/architect.xml | grep -c "<general_rules>"` — returns 0 (shared rules extracted).
+4. [x] Manual: `cat src/teddy_executor/resources/config/prompts/architect.xml | grep -c "<response_format>"` — returns 0 (response format extracted to MRP.xml).
+5. [x] Manual: `cat .teddy/prompts/architect.xml` — confirms MRP.xml NOT present in .teddy/prompts/.
+6. [x] Manual: `cat src/teddy_executor/resources/MRP.xml | grep -c "State Transition Protocol"` — returns at least 1 (MRP rules present).
+7. [x] Manual: `cat src/teddy_executor/resources/config/prompts/debugger.xml | grep -c "Remote Probing Protocol"` — returns at least 1 (agent-specific rule preserved).
+8. [x] Manual: Run a session with the developer agent and capture the system prompt. Verify it starts with "Agent Name: Developer" followed by the XML content.
+9. [x] Unit test: Verify that `fetch_system_prompt("architect", turn_path)` returns a string starting with "Agent Name: Architect".
 
 ## Implementation Notes
 
