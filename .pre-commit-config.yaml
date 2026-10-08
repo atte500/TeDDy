@@ -96,6 +96,13 @@ repos:
         types: [python]
         files: ^tests/
 
+    -   id: no-unisolated-raw-cli-invoke
+        name: No Unisolated Raw Side-Effecting CLI Invocations in Tests
+        entry: uv run python .githooks/check_raw_cli_invoke.py
+        language: system
+        types: [python]
+        files: ^tests/
+
     -   id: post-commit-test-gate
         name: Post-commit test gate
         entry: uv run python .githooks/post-commit.py
