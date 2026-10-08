@@ -3,6 +3,7 @@
 - **Milestone:** [03-foundational-refactors](/docs/project/milestones/03-foundational-refactors.md)
 - **Specs:** TBD (Milestone doc serves as spec)
 - **Component Docs:** [PromptManager](/docs/architecture/core/services/prompt_manager.md)
+- **Prototype:** [spikes/prototypes/mrp-base-prompt/](/spikes/prototypes/mrp-base-prompt/)
 - **Scope Slug:** `mrp-base-prompt`
 
 ## Business Goal
@@ -18,13 +19,13 @@ Eliminate ~900 lines of duplicated protocol rules across all 6 agent prompts by 
 - [x] Removed the `- **Lines:**` option from the `READ` action definition.
 - [x] Replaced the placeholder example with a lorem-ipsum Action-Plan example.
 - [x] Updated the Milestone 3 spec for agent-name injection, MRP injection semantics (after the agent-specific XML, inside `<system>`), and legacy detection.
+- [x] Remove the shared `<general_rules>` and `<response_format>` from all 6 agent XMLs; keep only agent-specific rules and renumber sequentially.
 
 ### To Do (Harness Code)
 - [ ] `PromptManager.fetch_system_prompt()`: inject `Agent Name: {agent}` before the agent-specific XML.
 - [ ] `PromptManager.fetch_system_prompt()`: load MRP.xml via `importlib.resources.files()` and append after the agent-specific content (inside `<system>`).
 - [ ] Legacy detection: skip MRP injection when the resolved prompt already contains `<response_format>`.
 - [ ] Fail-fast: raise `FileNotFoundError` when MRP.xml is missing.
-- [ ] Remove the shared `<general_rules>` and `<response_format>` from all 6 agent XMLs; keep only agent-specific rules and renumber sequentially.
 - [ ] Tests: agent-name injection, MRP append, legacy skip, missing-MRP failure, and agent-XML cleanup assertions.
 
 ## Scenarios
@@ -86,7 +87,7 @@ And the Pathfinder XML still contains its Handoff Targets and blueprint definiti
 
 ## Key Unknowns
 - [x] [Technical] MRP.xml location: Approved by user — RELOCATED OUT of `src/teddy_executor/resources/config/prompts/` so it is NOT bundled/grouped with the user-overridable agent prompts. New home: `src/teddy_executor/resources/MRP.xml`, loaded via `importlib.resources.files("teddy_executor.resources") / "MRP.xml"`.
-- [ ] [Technical] `importlib.resources` API for loading MRP.xml: Need to verify the correct API call (`files()` vs `open_binary()`) against the `teddy_executor.resources` package (MRP.xml now lives at the package root, not in a `prompts` subdirectory). The existing `prompts.py` does NOT load from bundled resources (it only searches `.teddy/prompts/`), so PromptManager must load MRP.xml directly.
+- [x] [Technical] `importlib.resources` API for loading MRP.xml: RESOLVED & EMPIRICALLY VERIFIED (spike at [spikes/prototypes/mrp-base-prompt/](/spikes/prototypes/mrp-base-prompt/), evidence in FINDINGS.md). Use `importlib.resources.files("teddy_executor.resources") / "MRP.xml"`, then `.read_text(encoding="utf-8")`. In this source checkout `files()` returns a `pathlib.PosixPath` whose `is_file()` is True; production code MUST use only the `Traversable` contract (`is_file`, `read_text`) so it also works under zip/wheel installs. A missing MRP.xml raises `FileNotFoundError` both naturally (via `read_text` on a non-existent name) and via the explicit `is_file()`-guarded fail-fast pattern production should adopt. The existing `prompts.py` still does NOT load from bundled resources; PromptManager loads MRP.xml directly.
 
 ## Implementation Plan
 
@@ -142,7 +143,7 @@ The Prototyper spike lives at `spikes/prototypes/mrp-base-prompt/`.
 3. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/architect.xml | grep -c "<general_rules>"` — returns 0 (shared rules extracted).
 4. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/architect.xml | grep -c "<response_format>"` — returns 0 (response format extracted to MRP.xml).
 5. [ ] Manual: `cat .teddy/prompts/architect.xml` — confirms MRP.xml NOT present in .teddy/prompts/.
-6. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/MRP.xml | grep -c "State Transition Protocol"` — returns at least 1 (MRP rules present).
+6. [ ] Manual: `cat src/teddy_executor/resources/MRP.xml | grep -c "State Transition Protocol"` — returns at least 1 (MRP rules present).
 7. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/debugger.xml | grep -c "Remote Probing Protocol"` — returns at least 1 (agent-specific rule preserved).
 8. [ ] Manual: Run a session with the developer agent and capture the system prompt. Verify it starts with "Agent Name: Developer" followed by the XML content.
 9. [ ] Unit test: Verify that `fetch_system_prompt("architect", turn_path)` returns a string starting with "Agent Name: Architect".
