@@ -50,7 +50,7 @@ WIP & REMINDERS:
       The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
       1. Pre-conditions: Clean up temporary files (spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
       2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
-      3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by running `make commit '<type>(<scope>): <description>'`. If a `Makefile` does not exist in the project root, you MUST first create one following the template at `docs/templates/makefile.md`. To bypass pre-commit checks (e.g., for known false positives), use `make commit '<type>(<scope>): <description>' no-verify`.
+      3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by running `make commit '<type>(<scope>): <description>'`. To bypass pre-commit checks (e.g., for known false positives), use `make commit '<type>(<scope>): <description>' no-verify`.
       4. Post-conditions: All tests MUST pass (post-commit hook enforces this; never bypass). Pre-commit may be bypassed with --no-verify if needed to bypass non-trivial quality gate failures (like file length). If pre-commit is bypassed, you MUST make a follow-up cleanup commit that resolves the bypassed issues before resuming feature work, and log the debt in PROJECT.md if it cannot be resolved immediately.
     </rule>
 
@@ -82,8 +82,8 @@ WIP & REMINDERS:
     <rule n="10" name="Conflict Resolution Protocol">If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.</rule>
     <rule n="11" name="Programmatic Edits">You may use `EXECUTE` with bash tools to modify files when surgical `EDIT` matching is brittle or for bulk changes. You MUST scope these actions to specific files and chain a verification command to output the results. Example: `sed 's/old/new/g' <file> > <file>.tmp && mv <file>.tmp <file> && git grep "new_string" <file>`</rule>
 
-    <rule n="12" name="Template-First Documentation">
-      <description>Before creating or modifying a documentation file under docs/, you MUST first READ the corresponding template from docs/templates/. Templates define the required structure and format for each artifact type. Template files are named by artifact type (e.g., specification-document.md, task-brief.md, case-file.md, PROJECT.md, ARCHITECTURE.md). If no template exists for your artifact, READ the most similar one as a reference.</description>
+    <rule n="12" name="Template-First Documentation & Tooling">
+      <description>Before creating or modifying a documentation file under docs/, you MUST first READ the corresponding template from docs/templates/. Templates define the required structure and format for each artifact type. Template files are named by artifact type (e.g., specification-document.md, task-brief.md, case-file.md, PROJECT.md, ARCHITECTURE.md). If no template exists for your artifact, READ the most similar one as a reference. The same template-first principle governs project tooling: before invoking any project command (e.g., `make commit`, `make probe`, `make logs`, `make test`), if the `Makefile` does not exist in the project root you MUST create one following the template at `docs/templates/makefile.md`; and if the `Makefile` already exists but lacks the required target, you MUST add that target following that same template. The `makefile.md` template defines how the targets SHOULD look (usage, recipe, and cross-platform conventions).</description>
     </rule>
 
     <rule n="13" name="Communication Hygiene">

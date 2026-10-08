@@ -17,7 +17,12 @@ Defines the high-level artifact lifecycle and conventions for project management
 
 ### Required Topics:
 - **Artifact Lifecycle:** How work flows (e.g., Spec → Milestone → Slice).
-- **Numbering:** Sequential MM-NN format, 00 prefix for ad-hoc work.
+- **Numbering:** Artifacts are numbered sequentially using a per-type filename convention so agents can infer the correct filename:
+    - **Vertical Slices:** `MM-NN-name.md` (in `docs/project/slices/`) — `MM` is the target Milestone number and `NN` is the sequence number within that milestone.
+    - **Milestones:** `MM-name.md` (in `docs/project/milestones/`).
+    - **Case Files (Debugger):** `NN-name.md` — numbered sequentially.
+    - **Task Briefs:** `NN-name.md` (in `docs/project/tasks/`) — numbered sequentially.
+    - **Ad-hoc work (not tied to a milestone):** `00-NN-name.md` — `00` is used as the Milestone prefix. Ad-hoc slices are NOT tracked in Milestone documents or the Roadmap.
 - **Archiving Policy:** When and how completed artifacts are archived or deleted.
 - **Spec Organization:** Organize specification documents by lifecycle into two subfolders: `docs/project/specs/invariants/` (formats, contracts, and workflows of record — long-lived system invariants) and `docs/project/specs/features/` (to-be-implemented initiatives that feed the Spec → Milestone → Slice lifecycle — deleted per the Archiving Policy once implemented).
 - **Run Environment:** Specify the project's designated environment/dependency manager (e.g., `uv`, `poetry`, `pip`) and prefix ALL execution commands with its runner (e.g., `uv run pytest`). The chosen runner MUST be reflected in the `Makefile`.

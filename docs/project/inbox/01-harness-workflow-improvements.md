@@ -25,11 +25,6 @@ Bracketed numbers refer to the original 40-item list; `Nx` marks new items raise
 
 Ordered by execution priority. Items within a tier are independent.
 
-### Tier 1 — Remaining mechanical content (low-risk, content-only)
-
-- **[N5] Per-doc-type file-numbering conventions in the `PROJECT.md` template** — The template's Workflow Standards "Numbering" topic is a generic one-liner today ("Sequential MM-NN format, 00 prefix for ad-hoc work"). Expand it to enumerate the filename convention for EACH artifact type — vertical slices `MM-NN-name.md`, milestones `MM-name.md`, case files `NN-name.md`, task briefs `NN-task-brief.md`, ad-hoc work `00-NN-name.md` — so agents can infer the correct filename per artifact. ⬜ Not started.
-- **[N3] CI-history extraction → Makefile** — Abstract the long `gh run view ... | awk ...` CI-log extraction from the Debugger's Reproduction step into the `makefile.md` template (e.g. a `make logs` target). ⬜ Not started.
-
 ### Tier 2 — Harness code (production; on the critical path)
 
 - **[1] MRP as a separate injected layer (harness)** — Design/content is complete (see Done). Remaining: `PromptManager.fetch_system_prompt()` must inject the `Agent Name:` line, append `MRP.xml` after the agent-specific XML (inside `<system>`), run the legacy `<response_format>` detection, and fail-fast (`FileNotFoundError`) when MRP.xml is missing — plus tests. Slice **03-02**. 🟡
@@ -92,6 +87,7 @@ Completed 2026-10-08. Kept compact — full detail lives in Git history and the 
 - **[4] `make test`** — target added to the real `Makefile` (`.PHONY: commit probe test`; recipe `uv run pytest`) and documented in the `makefile.md` template.
 - **[5] Templates reference the Makefile** — `PROJECT.md` (Milestone 0 + Workflow Standards) and `ARCHITECTURE.md` (Conventions + Makefile Commands).
 - **[40] Milestone 0 uses `make test`** — bootstrapping exposes the suite via `make test` and runs it in the post-commit hook.
+- **Generalized Makefile provisioning into `MRP.xml` rule 12** — The scattered inline "if a `Makefile` does not exist in the project root, create one following `docs/templates/makefile.md`" sentences (`MRP.xml` rule 6 VCP; Debugger Phase 1 Step 2 and RPP rule 11) were consolidated into a single shared rule 12 ("Template-First Documentation & Tooling"), which also covers the case where a `Makefile` exists but lacks the required target (e.g. `commit`, `probe`, `logs`, `test`).
 - **Distinction retained:** TeDDy's own `Makefile` (this repo) vs the `makefile.md` template that instructs *other* projects to create their own.
 
 ### Init & Templates
@@ -108,5 +104,9 @@ Completed 2026-10-08. Kept compact — full detail lives in Git history and the 
 
 ### Pre-commit Setup
 - **[18] Concise pre-commit quick-start** added to the `ARCHITECTURE.md` template (`pre-commit install`, post-commit hook install, `pre-commit run --all-files`).
+
+### Tier 1 — Mechanical Content
+- **[N5] Per-doc-type file-numbering conventions** — The `PROJECT.md` template's Workflow Standards "Numbering" topic now enumerates the filename convention for each artifact type (vertical slices `MM-NN-name.md`, milestones `MM-name.md`, case files `NN-name.md`, task briefs `NN-name.md`, ad-hoc work `00-NN-name.md`).
+- **[N3] CI-history extraction → `make logs`** — The Debugger's inline `gh run view ... | awk ...` CI-log extraction was abstracted into a `make logs <run-id> '<step-name>'` target in the `makefile.md` template; the Debugger's Phase 1 Step 2 now references it, and the target is mirrored in TeDDy's real `Makefile`.
 
 ---

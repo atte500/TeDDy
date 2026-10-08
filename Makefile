@@ -1,4 +1,4 @@
-.PHONY: commit probe test
+.PHONY: commit probe test logs
 
 # commit - VCP workflow: stage, pre-commit, commit, pull, push
 # Usage:
@@ -51,6 +51,22 @@ probe:
 	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 && \
 	gh run download "$$RUN_ID" --name probe-result --dir spikes/debug >/dev/null 2>&1 && \
 	cat spikes/debug/probe_output.txt 2>/dev/null || echo "(no output file)"
+
+# logs - CI Log Extraction: extract a single failed step's logs from a GitHub Actions run.
+# Usage:
+#   make logs <run-id> '<step-name>'
+#
+# The run ID comes from `gh run list`; the step name comes from `gh run view <id>`
+# (the execution tree). The awk program isolates ONLY that step's output, strips
+# ANSI escapes and GitHub's ##[group]/##[endgroup] boilerplate, and prefixes
+# ##[error] lines with "Error: ". See docs/templates/makefile.md (CI Log Extraction).
+
+logs: LOGS_RUN := $(word 1,$(filter-out logs,$(MAKECMDGOALS)))
+logs: LOGS_STEP := $(wordlist 2,99,$(filter-out logs,$(MAKECMDGOALS)))
+
+logs:
+	@[ -n "$(LOGS_RUN)" ] || { echo "Usage: make logs <run-id> '<step-name>'"; exit 1; }
+	@gh run view "$(LOGS_RUN)" --log | awk -F'\t' -v step="$(LOGS_STEP)" '$$2==step { if(j!=$$1){j=$$1; print "\n["j"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/, "", l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/, "", l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/, "Error: ", l); print l }'
 
 # test - Run the full test suite via the project's designated runner (uv).
 #
