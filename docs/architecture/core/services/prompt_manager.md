@@ -1,20 +1,20 @@
 # Component: PromptManager
 
-**Status:** Refactoring
+**Status:** Stable
 
 The `PromptManager` is responsible for resolving agent configurations, system prompts, and metadata for the session audit trail.
 
 ## Purpose / Responsibility
 The `PromptManager` provides a centralized service for all prompt and metadata resolution. It abstracts the filesystem and internal resources to provide a clean API for other services to retrieve agent-specific logic and user-provided instructions. It is also responsible for extracting telemetry metadata (model, provider, turn cost) from LLM responses and persisting it to the session's `meta.yaml` via the `update_meta` method.
 
-### MRP.xml Base Prompt Injection & Agent Name Injection (New)
-Starting in Milestone 3, `fetch_system_prompt()` performs two new operations:
+### MRP.xml Base Prompt Injection & Agent Name Injection
+Starting in Milestone 3, `fetch_system_prompt()` performs two operations:
 
-1. **Agent Name Injection:** The method now injects the agent name at the very start of the assembled system prompt. The format is: `# Agent Name: {AgentName}\n\n`. The agent name is derived from the `agent_name` parameter (the XML filename stem, e.g., `"architect"` → `"Architect"` with capitalized first letter). This line appears BEFORE any agent-specific XML content.
+1. **Agent Name Injection:** The method now injects the agent name at the very start of the assembled system prompt. The format is: `Agent Name: {AgentName}\n\n` (no leading `#`). The agent name is derived from the `agent_name` parameter (the XML filename stem, e.g., `"architect"` → `"Architect"` with capitalized first letter). This line appears BEFORE any agent-specific XML content.
 
-2. **MRP.xml Appending:** After the agent-specific XML content, the method appends the contents of `MRP.xml` (a bundled resource at `src/teddy_executor/resources/config/prompts/MRP.xml`). MRP.xml is loaded via `importlib.resources` and is NOT copied to `.teddy/prompts/` — it is a protocol-level infrastructure file that must remain unmodified to ensure all agents produce parseable output.
+2. **MRP.xml Appending:** After the agent-specific XML content, the method appends the contents of `MRP.xml` (a bundled resource at `src/teddy_executor/resources/MRP.xml`). MRP.xml is loaded via `importlib.resources` and is NOT copied to `.teddy/prompts/` — it is a protocol-level infrastructure file that must remain unmodified to ensure all agents produce parseable output. The resource root is an additive, optional constructor seam (`mrp_resource_root`, defaulting to the bundled package resource) so tests can inject a real directory without global patching.
 
-The overall return format is: `# Agent Name: {Name}\n\n{agent-specific XML}\n\n{MRP content}`.
+The overall return format is: `Agent Name: {Name}\n\n{agent-specific XML}\n\n{MRP content}`.
 
 The injection is NON-breaking: the method signature (`fetch_system_prompt(agent_name, turn_path) -> str`) is unchanged. The return value now contains all three parts.
 
@@ -28,7 +28,7 @@ In the "Pure Context" model, `PromptManager` does NOT provide instructions for t
 - **Goal Persistence:** It manages the retrieval of the immutable session goal (`initial_request.md`) from the session root.
 
 ## Failure Modes
-- **MRP.xml Missing From Resources**: Violates the postcondition "Returns a valid assembled system prompt containing both agent XML and MRP protocol rules." If MRP.xml is absent from `src/teddy_executor/resources/config/prompts/`, `fetch_system_prompt()` MUST raise a clear exception rather than returning a prompt without the MRP rules. This prevents silent protocol degradation.
+- **MRP.xml Missing From Resources**: Violates the postcondition "Returns a valid assembled system prompt containing both agent XML and MRP protocol rules." If MRP.xml is absent from `src/teddy_executor/resources/`, `fetch_system_prompt()` MUST raise a clear exception rather than returning a prompt without the MRP rules. This prevents silent protocol degradation.
 - **Agent XML Not Found**: If no prompt file is found for the requested agent (searched session root → .teddy/prompts/), `fetch_system_prompt()` returns an empty string. This is logged as a warning but does not raise — useful for graceful degradation during test/development.
 
 ## Ports
@@ -43,8 +43,8 @@ In the "Pure Context" model, `PromptManager` does NOT provide instructions for t
 
 ### `fetch_system_prompt(agent_name, turn_path) -> str`
 - **Preconditions:** `agent_name` must be a non-empty string. `turn_path` must be a valid `Path`.
-- **Postconditions:** Returns the assembled system prompt. The prompt consists of: (1) a header line `# Agent Name: {CapitalizedAgentName}\n\n`, (2) the agent-specific XML content resolved from the filesystem hierarchy (session root → .teddy/prompts/), followed by (3) the MRP.xml base prompt content loaded via `importlib.resources`. Ensures the final prompt starts with the agent name and contains both the agent instructions and the shared MRP protocol rules. If MRP.xml is missing, a specific `FileNotFoundError` is raised.
+- **Postconditions:** Returns the assembled system prompt. The prompt consists of: (1) a header line `Agent Name: {CapitalizedAgentName}\n\n` (no leading `#`), (2) the agent-specific XML content resolved from the filesystem hierarchy (session root → .teddy/prompts/), followed by (3) the MRP.xml base prompt content loaded via `importlib.resources` — appended ONLY when the resolved agent content does NOT already contain `<response_format>` (legacy user-override detection). Ensures the final prompt starts with the agent name and contains both the agent instructions and the shared MRP protocol rules. If MRP.xml is missing and must be appended, a specific `FileNotFoundError` is raised.
 - **Exceptions:**
-  - `FileNotFoundError`: If MRP.xml is missing from `src/teddy_executor/resources/config/prompts/`. This is a fatal error that must propagate.
+  - `FileNotFoundError`: If MRP.xml is missing from `src/teddy_executor/resources/`. This is a fatal error that must propagate.
   - No exception is raised if the agent XML is missing — returns empty string with a warning log.
-- **Invariants:** The agent name header is always first. The MRP rules are always appended AFTER the agent-specific content. The method NEVER modifies the agent XML content itself.
+- **Invariants:** The agent name header is always first whenever an agent prompt resolves. The MRP rules are appended AFTER the agent-specific content when the resolved prompt does not already carry `<response_format>`. The method NEVER modifies the agent XML content itself.

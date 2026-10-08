@@ -127,7 +127,7 @@ The MRP.xml should contain:
 - [x] **Contract** - MRP base prompt at `src/teddy_executor/resources/MRP.xml` with extracted shared content (shipped).
 - [x] **Cleanup** - Shared `<general_rules>` and `<response_format>` blocks removed from all 6 agent XMLs. This was completed as part of the content work (the "Done" section above marks it `[x]`) and was empirically re-verified on 2026-10-08: `git grep` finds zero occurrences of either marker under `src/teddy_executor/resources/config/prompts/`. No code work remains.
 - [x] **Logic** - Modify `PromptManager` to (1) inject the `Agent Name: {CapitalizedAgentName}` header before the agent-specific content, (2) load `MRP.xml` through an injectable resource seam (`mrp_resource_root`, defaulting to `importlib.resources.files("teddy_executor.resources")`, following the `InitService` pattern) using only the `Traversable` contract (`is_file` + `read_text`), (3) append the MRP content after the agent-specific content, (4) skip ONLY the MRP append when the resolved prompt already contains `<response_format>` (legacy user override), and (5) raise `FileNotFoundError` when `MRP.xml` is missing. Bundled with unit tests: happy path, agent-name capitalization, legacy skip, missing-MRP failure, empty-MRP, and missing-agent-XML. The former `Harness` deliverable is folded here — its content is unit tests, which bundle with `Logic` — including the injectable seam's test fixture.
-- [ ] **Wiring** - Acceptance behavioral gate: drive a session against the harness fake LLM and assert the captured system prompt contains the `Agent Name:` header, the agent-specific content, and the MRP protocol rules end-to-end.
+- [x] **Wiring** - Acceptance behavioral gate: drive a session against the harness fake LLM and assert the captured system prompt contains the `Agent Name:` header, the agent-specific content, and the MRP protocol rules end-to-end.
 
 ### Key Unknown Resolution Strategy
 Before the Developer starts, the Prototyper should verify:
@@ -187,10 +187,9 @@ assertions encoded the pre-injection return value
 `test_bug_03_prompt_resolution.py::test_fetch_system_prompt_ignores_case`). A shared
 `mrp_prompt_manager` fixture was extracted to remove construction duplication within the file.
 
-**Outstanding for As-Built (last deliverable).** `docs/architecture/core/services/prompt_manager.md`
-still shows (a) the MRP path as `resources/config/prompts/MRP.xml` (actual: `resources/MRP.xml`),
-(b) the header format as `# Agent Name: {Name}` (actual: no leading `#`), and (c) Status
-"Refactoring". Correct these when the final Wiring deliverable lands.
+**As-Built update (completed with the Wiring deliverable).** `docs/architecture/core/services/prompt_manager.md`
+was corrected to reflect the as-built reality: the MRP path (`resources/MRP.xml`), the agent-name header
+format (`Agent Name: {Name}`, no leading `#`), the injectable `mrp_resource_root` seam, and the `Stable` status.
 
 **Delivery recovery — pre-commit bypass (Logic VCP).** The first Logic VCP attempt aborted at the
 staged-file Ruff hook on a pre-existing `TID251` mock-ban (`unittest.mock.MagicMock`/`patch`) at
@@ -199,3 +198,26 @@ staged-file Ruff hook on a pre-existing `TID251` mock-ban (`unittest.mock.MagicM
 slice. Per the Delivery recovery protocol (refactor-or-log-and-bypass), the occurrence was folded
 into the consolidated PROJECT.md debt entry and the VCP is committed with `--no-verify` for the
 pre-commit stage only; the unskippable post-commit full-suite gate still runs.
+
+### Wiring deliverable — acceptance behavioral gate (implemented 2026-10-08)
+
+**Boundary & seam.** The gate is a subcutaneous end-to-end test in the Acceptance layer
+(`tests/suites/acceptance/test_mrp_prompt_assembly.py`). It drives a real session through the CLI
+(`start -y -m "instructions"`) against a real-filesystem-anchored `TestEnvironment`
+(`.setup().with_real_shell()`, which deep-swaps the container and registers a real
+`LocalFileSystemAdapter(root_dir=tmp_path)`), then reads the system prompt the injected `ILlmClient`
+mock received via `llm.get_completion.call_args[1]["messages"][0]["content"]`. The real, bundle-backed
+`PromptManager` is exercised (it is NOT in `TestEnvironment._register_default_mocks()`), so MRP.xml is
+loaded from the bundled `teddy_executor.resources` package with no seam injection needed in this layer.
+Imports are limited to the `ILlmClient` outbound port + harness, satisfying the Acceptance boundary.
+
+**Assertions.** The captured system prompt (1) starts with `Agent Name: Pathfinder`, (2) contains the
+seeded agent-specific content `<prompt>Pathfinder</prompt>`, and (3) contains the shared MRP rules
+(`<response_format>` + `State Transition Protocol`), with (2) ordered before (3). This is the slice's
+final behavioral gate and passed on first execution — the `Logic` deliverable (commit `a34494ed`) had
+already wired the real behavior, so the tracer bullet was pre-established. No production code changed.
+
+**Refactor.** Removed three unnecessary `# type: ignore` comments: `TestEnvironment.get_service`
+returns `Any` and the harness mock is untyped, so neither the abstract-class argument nor the
+`get_completion` attribute access required suppression (the canonical acceptance tests make the
+identical calls ignore-free).
