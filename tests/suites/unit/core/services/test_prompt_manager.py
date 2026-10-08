@@ -1,12 +1,67 @@
 import pytest
 from pathlib import Path
+
 from teddy_executor.core.services.prompt_manager import PromptManager
+
+_MRP_SENTINEL = "<mrp>SHARED_PROTOCOL</mrp>"
+
+
+def _write_mrp_root(tmp_path: Path, content: str = _MRP_SENTINEL) -> Path:
+    """Creates a real, ``Traversable``-compatible resource root holding MRP.xml.
+
+    Injecting a real directory (instead of patching ``importlib.resources``)
+    keeps the test hermetic and patch-free while fully controlling the MRP
+    content the assembler appends.
+    """
+    root = tmp_path / "teddy_executor_resources"
+    root.mkdir()
+    (root / "MRP.xml").write_text(content, encoding="utf-8")
+    return root
+
+
+def _arrange_teddy_prompt_resolution(mock_fs, *, agent_file: str, content: str) -> Path:
+    """Wires ``mock_fs`` so a prompt resolves only from ``.teddy/prompts/``.
+
+    Returns the standard three-level turn path used across these tests. The
+    session root is empty, forcing resolution to fall through to the canonical
+    ``.teddy/prompts/`` directory.
+    """
+    turn_path = Path(".teddy/sessions/my-session/01")
+    session_root = turn_path.parent.as_posix()
+    teddy_prompts_dir = (
+        turn_path.parent.parent.parent.parent / ".teddy" / "prompts"
+    ).as_posix()
+    mock_fs.list_directory.side_effect = lambda d: {
+        teddy_prompts_dir: [agent_file],
+        session_root: [],
+    }.get(d, [])
+    mock_fs.path_exists.side_effect = lambda path: (
+        path in [teddy_prompts_dir, f"{teddy_prompts_dir}/{agent_file}"]
+    )
+    mock_fs.read_file.side_effect = lambda p: {
+        f"{teddy_prompts_dir}/{agent_file}": content,
+    }.get(p, "")
+    return turn_path
 
 
 @pytest.fixture
 def prompt_manager(mock_fs, mock_user_interactor):
     return PromptManager(
         file_system_manager=mock_fs, user_interactor=mock_user_interactor
+    )
+
+
+@pytest.fixture
+def mrp_prompt_manager(tmp_path, mock_fs, mock_user_interactor):
+    """A ``PromptManager`` whose MRP resource is a real, controlled ``tmp_path``.
+
+    Using a real directory (instead of patching ``importlib.resources``) keeps
+    these tests hermetic and patch-free while fully controlling the MRP content.
+    """
+    return PromptManager(
+        file_system_manager=mock_fs,
+        user_interactor=mock_user_interactor,
+        mrp_resource_root=_write_mrp_root(tmp_path),
     )
 
 
@@ -26,44 +81,24 @@ def test_resolve_agent_metadata_returns_defaults_if_file_missing(
     assert meta_path == "turns/01/meta.yaml"
 
 
-def test_fetch_system_prompt_resolves_from_teddy_prompts(prompt_manager, mock_fs):
+def test_fetch_system_prompt_resolves_from_teddy_prompts(mrp_prompt_manager, mock_fs):
     """
-    Verifies that fetch_system_prompt resolves from .teddy/prompts/ when session root
-    does not have the prompt, and does NOT fall back to internal bundled resources.
-    Now uses extension-agnostic search.
+    Verifies that fetch_system_prompt resolves the agent XML from .teddy/prompts/
+    when the session root does not have the prompt, and does NOT fall back to
+    internal bundled resources. Uses extension-agnostic search.
     """
-    # Arrange
-    turn_path = Path(".teddy/sessions/my-session/01")
-    agent_name = "pathfinder"
-
-    # Session root missing, .teddy/prompts/ has a prompt file (no extension assumption)
-    session_root = turn_path.parent.as_posix()
-    teddy_prompts_dir = (
-        turn_path.parent.parent.parent.parent / ".teddy" / "prompts"
-    ).as_posix()
-
-    mock_fs.list_directory.side_effect = lambda d: {
-        teddy_prompts_dir: ["pathfinder.xml"],
-        session_root: [],
-    }.get(d, [])
-
-    mock_fs.path_exists.side_effect = lambda path: (
-        path
-        in [
-            teddy_prompts_dir,
-            f"{teddy_prompts_dir}/pathfinder.xml",
-        ]
+    turn_path = _arrange_teddy_prompt_resolution(
+        mock_fs,
+        agent_file="pathfinder.xml",
+        content="<prompt>From .teddy/prompts/</prompt>",
     )
 
-    mock_fs.read_file.side_effect = lambda p: {
-        f"{teddy_prompts_dir}/pathfinder.xml": "<prompt>From .teddy/prompts/</prompt>",
-    }.get(p, "")
-
     # Act
-    content = prompt_manager.fetch_system_prompt(agent_name, turn_path)
+    content = mrp_prompt_manager.fetch_system_prompt("pathfinder", turn_path)
 
-    # Assert
-    assert content == "<prompt>From .teddy/prompts/</prompt>"
+    # Assert: the agent-specific content survives and the name header is present
+    assert "Agent Name: Pathfinder" in content
+    assert "<prompt>From .teddy/prompts/</prompt>" in content
 
 
 def test_get_available_agents_returns_prompt_files(prompt_manager, mock_fs):
@@ -124,3 +159,126 @@ def test_get_available_agents_includes_all_files(prompt_manager, mock_fs):
 
     # Assert: all files included
     assert agents == ["architect", "debugger", "notes", "README"]
+
+
+def test_fetch_system_prompt_assembles_name_agent_xml_and_mrp(
+    mrp_prompt_manager, mock_fs
+):
+    """The assembled prompt is the agent-name header, then the agent-specific
+    XML, then the shared MRP protocol content appended at the end."""
+    turn_path = _arrange_teddy_prompt_resolution(
+        mock_fs,
+        agent_file="pathfinder.xml",
+        content="<agent>AGENT_SPECIFIC</agent>",
+    )
+
+    # Act
+    result = mrp_prompt_manager.fetch_system_prompt("pathfinder", turn_path)
+
+    # Assert
+    assert result.startswith("Agent Name: Pathfinder\n\n")
+    assert "<agent>AGENT_SPECIFIC</agent>" in result
+    assert "<mrp>SHARED_PROTOCOL</mrp>" in result
+    assert result.index("<agent>AGENT_SPECIFIC</agent>") < result.index(
+        "<mrp>SHARED_PROTOCOL</mrp>"
+    )
+
+
+def test_fetch_system_prompt_capitalizes_agent_name_in_header(
+    mrp_prompt_manager, mock_fs
+):
+    """The agent-name header capitalizes the first letter of the agent slug."""
+    turn_path = _arrange_teddy_prompt_resolution(
+        mock_fs,
+        agent_file="architect.xml",
+        content="<architect/>",
+    )
+
+    result = mrp_prompt_manager.fetch_system_prompt("architect", turn_path)
+
+    assert result.startswith("Agent Name: Architect\n\n")
+
+
+def test_fetch_system_prompt_skips_mrp_when_response_format_present(
+    mrp_prompt_manager, mock_fs
+):
+    """A resolved prompt that already carries ``<response_format>`` is a legacy
+    override: the agent-name header is still injected, but the shared MRP block
+    is NOT appended."""
+    legacy_content = "<agent><response_format>INLINE</response_format></agent>"
+    turn_path = _arrange_teddy_prompt_resolution(
+        mock_fs,
+        agent_file="pathfinder.xml",
+        content=legacy_content,
+    )
+
+    result = mrp_prompt_manager.fetch_system_prompt("pathfinder", turn_path)
+
+    assert result.startswith("Agent Name: Pathfinder\n\n")
+    assert legacy_content in result
+    assert "<mrp>SHARED_PROTOCOL</mrp>" not in result
+
+
+def test_fetch_system_prompt_raises_when_mrp_missing(
+    tmp_path, mock_fs, mock_user_interactor
+):
+    """Missing ``MRP.xml`` is a fatal protocol error: fail fast, never degrade
+    silently."""
+    empty_root = tmp_path / "teddy_executor_resources"
+    empty_root.mkdir()  # no MRP.xml written
+    prompt_manager = PromptManager(
+        file_system_manager=mock_fs,
+        user_interactor=mock_user_interactor,
+        mrp_resource_root=empty_root,
+    )
+    turn_path = _arrange_teddy_prompt_resolution(
+        mock_fs,
+        agent_file="pathfinder.xml",
+        content="<agent/>",
+    )
+
+    with pytest.raises(FileNotFoundError, match="MRP"):
+        prompt_manager.fetch_system_prompt("pathfinder", turn_path)
+
+
+def test_fetch_system_prompt_appends_empty_mrp_without_error(
+    tmp_path, mock_fs, mock_user_interactor
+):
+    """An existing but empty ``MRP.xml`` is a degenerate-but-valid case: the
+    assembly succeeds and appends nothing."""
+    prompt_manager = PromptManager(
+        file_system_manager=mock_fs,
+        user_interactor=mock_user_interactor,
+        mrp_resource_root=_write_mrp_root(tmp_path, content=""),
+    )
+    turn_path = _arrange_teddy_prompt_resolution(
+        mock_fs,
+        agent_file="pathfinder.xml",
+        content="<agent/>",
+    )
+
+    result = prompt_manager.fetch_system_prompt("pathfinder", turn_path)
+
+    assert result == "Agent Name: Pathfinder\n\n<agent/>\n\n"
+
+
+def test_fetch_system_prompt_returns_empty_when_agent_xml_missing(
+    tmp_path, mock_fs, mock_user_interactor
+):
+    """No resolvable agent prompt returns an empty string (no header, no MRP),
+    preserving the graceful-degradation contract and avoiding a spurious MRP
+    load."""
+    prompt_manager = PromptManager(
+        file_system_manager=mock_fs,
+        user_interactor=mock_user_interactor,
+        mrp_resource_root=_write_mrp_root(tmp_path),
+    )
+    mock_fs.path_exists.return_value = False
+    mock_fs.list_directory.return_value = []
+    mock_fs.read_file.return_value = ""
+
+    result = prompt_manager.fetch_system_prompt(
+        "ghost", Path(".teddy/sessions/my-session/01")
+    )
+
+    assert result == ""

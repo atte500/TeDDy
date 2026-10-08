@@ -14,10 +14,17 @@ from teddy_executor.core.services.session_lifecycle_manager import (
 class TestPromptCaseSensitivity:
     """Verifies that _find_prompt_file resolves case-insensitively."""
 
-    def test_fetch_system_prompt_ignores_case(self, mock_fs, mock_user_interactor):
+    def test_fetch_system_prompt_ignores_case(
+        self, tmp_path, mock_fs, mock_user_interactor
+    ):
         """fetch_system_prompt with 'Pathfinder' must find 'pathfinder.xml'."""
+        mrp_root = tmp_path / "teddy_executor_resources"
+        mrp_root.mkdir()
+        (mrp_root / "MRP.xml").write_text("<mrp/>", encoding="utf-8")
         prompt_manager = PromptManager(
-            file_system_manager=mock_fs, user_interactor=mock_user_interactor
+            file_system_manager=mock_fs,
+            user_interactor=mock_user_interactor,
+            mrp_resource_root=mrp_root,
         )
         turn_path = Path(".teddy/sessions/my-session/01")
         agent_name = "Pathfinder"
@@ -44,7 +51,8 @@ class TestPromptCaseSensitivity:
         }.get(p, "")
 
         result = prompt_manager.fetch_system_prompt(agent_name, turn_path)
-        assert result == "You are a pathfinder agent."
+        assert result.startswith("Agent Name: Pathfinder")
+        assert "You are a pathfinder agent." in result
 
 
 class TestLifecyclePrintsInitialRequest:

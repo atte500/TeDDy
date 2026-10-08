@@ -1,10 +1,21 @@
+from importlib import resources
+import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
+
 import yaml
+
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
+
+# The bundled Markdown Response Protocol base prompt. It lives OUTSIDE
+# ``config/prompts/`` so it is never grouped with the user-overridable agent
+# prompts, and is loaded as a package resource rather than via the file system
+# port.
+_MRP_PACKAGE = "teddy_executor.resources"
+_MRP_FILENAME = "MRP.xml"
 
 
 class PromptManager(IPromptManager):
@@ -16,9 +27,15 @@ class PromptManager(IPromptManager):
         self,
         file_system_manager: IFileSystemManager,
         user_interactor: IUserInteractor = None,  # type: ignore
+        mrp_resource_root: Any = None,
     ):
         self._file_system_manager = file_system_manager
         self._user_interactor = user_interactor
+        # Injectable resource seam: a Traversable (or any object exposing the
+        # ``Traversable`` contract — ``is_file`` + ``read_text``) that anchors
+        # ``MRP.xml``. When ``None``, the bundled package resource is resolved
+        # lazily. Tests inject a real ``pathlib.Path`` to avoid global patching.
+        self._mrp_resource_root = mrp_resource_root
 
     def get_prompt_content(self, agent_name: str) -> Optional[str]:
         """Synchronously retrieves the raw content of an agent prompt."""
@@ -77,7 +94,13 @@ class PromptManager(IPromptManager):
                 return f"{directory}/{f}"
         return None
 
-    def fetch_system_prompt(self, agent_name: str, turn_path: Path) -> str:
+    def _resolve_agent_prompt_content(self, agent_name: str, turn_path: Path) -> str:
+        """Resolves the agent-specific prompt XML from the filesystem hierarchy.
+
+        Searches the session root first, then the canonical ``.teddy/prompts/``
+        directory. Returns an empty string (with a warning) when no prompt file
+        is found, preserving the graceful-degradation contract.
+        """
         # 1. Try Session-Root override (Current standard)
         session_root_prompt = self._find_prompt_file(
             turn_path.parent.as_posix(), agent_name
@@ -93,8 +116,6 @@ class PromptManager(IPromptManager):
         if teddy_prompt_path:
             return self._file_system_manager.read_file(teddy_prompt_path)
 
-        import logging
-
         logging.getLogger(__name__).warning(
             "PromptManager: Failed to resolve system prompt for agent '%s' (searched %s and %s)",
             agent_name,
@@ -102,6 +123,44 @@ class PromptManager(IPromptManager):
             teddy_prompt_path,
         )
         return ""
+
+    def _load_mrp_base_prompt(self) -> str:
+        """Loads the bundled Markdown Response Protocol base prompt.
+
+        Uses only the ``Traversable`` contract (``is_file`` + ``read_text``) so
+        it works both in a source checkout (``pathlib.Path``) and under a
+        zip/wheel install (``zipfile.Path``). Fails fast when the resource is
+        absent to prevent silent protocol degradation.
+        """
+        root = self._mrp_resource_root
+        if root is None:
+            root = resources.files(_MRP_PACKAGE)
+        resource = root / _MRP_FILENAME
+        if not resource.is_file():
+            raise FileNotFoundError(
+                f"Bundled MRP base prompt not found at {resource}. "
+                f"The package resource '{_MRP_PACKAGE}/{_MRP_FILENAME}' is missing."
+            )
+        return resource.read_text(encoding="utf-8")
+
+    def fetch_system_prompt(self, agent_name: str, turn_path: Path) -> str:
+        content = self._resolve_agent_prompt_content(agent_name, turn_path)
+        if not content:
+            # No agent prompt resolved: preserve the historical empty-string
+            # contract (no header, no MRP) rather than fabricating a prompt.
+            return ""
+
+        assembled = f"Agent Name: {agent_name.capitalize()}\n\n{content}"
+
+        # Legacy compatibility: a resolved prompt that already carries its own
+        # response format (e.g. a customized ``.teddy/prompts/`` override) is
+        # returned without the shared MRP block, but keeps the agent-name header.
+        if "<response_format>" in content:
+            return assembled
+
+        # Both the agent-specific XML and the MRP block live inside the
+        # assembled ``<system>`` prompt; MRP is appended AFTER the agent content.
+        return f"{assembled}\n\n{self._load_mrp_base_prompt()}"
 
     def log_telemetry(self, token_count: Any, turn_cost: Any) -> float:
         def safe_float(v: Any, default: float = 0.0) -> float:

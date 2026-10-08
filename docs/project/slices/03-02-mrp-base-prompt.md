@@ -22,11 +22,11 @@ Eliminate ~900 lines of duplicated protocol rules across all 6 agent prompts by 
 - [x] Remove the shared `<general_rules>` and `<response_format>` from all 6 agent XMLs; keep only agent-specific rules and renumber sequentially.
 
 ### To Do (Harness Code)
-- [ ] `PromptManager.fetch_system_prompt()`: inject `Agent Name: {agent}` before the agent-specific XML.
-- [ ] `PromptManager.fetch_system_prompt()`: load MRP.xml via `importlib.resources.files()` and append after the agent-specific content (inside `<system>`).
-- [ ] Legacy detection: skip MRP injection when the resolved prompt already contains `<response_format>`.
-- [ ] Fail-fast: raise `FileNotFoundError` when MRP.xml is missing.
-- [ ] Tests: agent-name injection, MRP append, legacy skip, missing-MRP failure, and agent-XML cleanup assertions.
+- [x] `PromptManager.fetch_system_prompt()`: inject `Agent Name: {agent}` before the agent-specific XML.
+- [x] `PromptManager.fetch_system_prompt()`: load MRP.xml via `importlib.resources.files()` and append after the agent-specific content (inside `<system>`).
+- [x] Legacy detection: skip MRP injection when the resolved prompt already contains `<response_format>`.
+- [x] Fail-fast: raise `FileNotFoundError` when MRP.xml is missing.
+- [x] Tests: agent-name injection, MRP append, legacy skip, missing-MRP failure, and agent-XML cleanup assertions.
 
 ## Scenarios
 
@@ -126,7 +126,7 @@ The MRP.xml should contain:
 ### Deliverables
 - [x] **Contract** - MRP base prompt at `src/teddy_executor/resources/MRP.xml` with extracted shared content (shipped).
 - [x] **Cleanup** - Shared `<general_rules>` and `<response_format>` blocks removed from all 6 agent XMLs. This was completed as part of the content work (the "Done" section above marks it `[x]`) and was empirically re-verified on 2026-10-08: `git grep` finds zero occurrences of either marker under `src/teddy_executor/resources/config/prompts/`. No code work remains.
-- [ ] **Logic** - Modify `PromptManager` to (1) inject the `Agent Name: {CapitalizedAgentName}` header before the agent-specific content, (2) load `MRP.xml` through an injectable resource seam (`mrp_resource_root`, defaulting to `importlib.resources.files("teddy_executor.resources")`, following the `InitService` pattern) using only the `Traversable` contract (`is_file` + `read_text`), (3) append the MRP content after the agent-specific content, (4) skip ONLY the MRP append when the resolved prompt already contains `<response_format>` (legacy user override), and (5) raise `FileNotFoundError` when `MRP.xml` is missing. Bundled with unit tests: happy path, agent-name capitalization, legacy skip, missing-MRP failure, empty-MRP, and missing-agent-XML. The former `Harness` deliverable is folded here — its content is unit tests, which bundle with `Logic` — including the injectable seam's test fixture.
+- [x] **Logic** - Modify `PromptManager` to (1) inject the `Agent Name: {CapitalizedAgentName}` header before the agent-specific content, (2) load `MRP.xml` through an injectable resource seam (`mrp_resource_root`, defaulting to `importlib.resources.files("teddy_executor.resources")`, following the `InitService` pattern) using only the `Traversable` contract (`is_file` + `read_text`), (3) append the MRP content after the agent-specific content, (4) skip ONLY the MRP append when the resolved prompt already contains `<response_format>` (legacy user override), and (5) raise `FileNotFoundError` when `MRP.xml` is missing. Bundled with unit tests: happy path, agent-name capitalization, legacy skip, missing-MRP failure, empty-MRP, and missing-agent-XML. The former `Harness` deliverable is folded here — its content is unit tests, which bundle with `Logic` — including the injectable seam's test fixture.
 - [ ] **Wiring** - Acceptance behavioral gate: drive a session against the harness fake LLM and assert the captured system prompt contains the `Agent Name:` header, the agent-specific content, and the MRP protocol rules end-to-end.
 
 ### Key Unknown Resolution Strategy
@@ -147,3 +147,55 @@ The Prototyper spike lives at `spikes/prototypes/mrp-base-prompt/`.
 7. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/debugger.xml | grep -c "Remote Probing Protocol"` — returns at least 1 (agent-specific rule preserved).
 8. [ ] Manual: Run a session with the developer agent and capture the system prompt. Verify it starts with "Agent Name: Developer" followed by the XML content.
 9. [ ] Unit test: Verify that `fetch_system_prompt("architect", turn_path)` returns a string starting with "Agent Name: Architect".
+
+## Implementation Notes
+
+### Logic deliverable — MRP injection & agent-name header (implemented 2026-10-08)
+
+**Seam decision.** MRP loading is made testable via an *additive, optional* constructor parameter
+`mrp_resource_root: Any = None` on `PromptManager`. When `None`, the bundled package resource is
+resolved lazily inside `_load_mrp_base_prompt()` via
+`importlib.resources.files("teddy_executor.resources")`. Tests inject a real `pathlib.Path` root
+(a `tmp_path` directory) instead of patching `importlib.resources`, satisfying the anti-mock-poisoning
+rule with zero global patching. This is non-breaking: `PromptManager` has one production instantiation
+(`container.py`) and four keyword-arg test constructions — none affected by the new defaulted param.
+This mirrors the existing `InitService(config_dir=...)` seam pattern.
+
+**Fail-fast loader.** `_load_mrp_base_prompt()` uses only the `Traversable` contract
+(`is_file()` + `read_text(encoding="utf-8")`) so it works both in a source checkout and under a
+zip/wheel install. A missing `MRP.xml` raises a domain-specific `FileNotFoundError` (the slice's
+fatal-protocol-error requirement); an empty `MRP.xml` is deliberately allowed (append-empty). The
+extractor `_resolve_agent_prompt_content()` was pulled out of `fetch_system_prompt()` to keep the
+method focused (SRP).
+
+**Assembly.** `fetch_system_prompt()` returns `Agent Name: {agent.capitalize()}\n\n{agent XML}` and
+appends `\n\n{MRP}` only when the resolved content does NOT contain `<response_format>` (legacy
+user-override detection). The `header + content` prefix is assembled once and reused across both
+return branches.
+
+**Missing agent XML.** Preserved the historical `return ""` early-return (no header, no MRP), which
+also avoids a spurious MRP load and keeps the graceful-degradation contract intact.
+
+**Deliberate divergence from the Milestone doc.** The Milestone 3 text says the legacy branch should
+"return the resolved content as-is"; the slice + user instruction mandate injecting the agent-name
+header while skipping only the MRP append. Followed the slice/user mandate; documented here.
+
+**Tests bundled (unit layer).** Happy-path assembly, agent-name capitalization, legacy-skip,
+missing-MRP failure, empty-MRP, and missing-agent-XML — plus two repaired pre-existing tests whose
+assertions encoded the pre-injection return value
+(`test_prompt_manager.py::test_fetch_system_prompt_resolves_from_teddy_prompts`,
+`test_bug_03_prompt_resolution.py::test_fetch_system_prompt_ignores_case`). A shared
+`mrp_prompt_manager` fixture was extracted to remove construction duplication within the file.
+
+**Outstanding for As-Built (last deliverable).** `docs/architecture/core/services/prompt_manager.md`
+still shows (a) the MRP path as `resources/config/prompts/MRP.xml` (actual: `resources/MRP.xml`),
+(b) the header format as `# Agent Name: {Name}` (actual: no leading `#`), and (c) Status
+"Refactoring". Correct these when the final Wiring deliverable lands.
+
+**Delivery recovery — pre-commit bypass (Logic VCP).** The first Logic VCP attempt aborted at the
+staged-file Ruff hook on a pre-existing `TID251` mock-ban (`unittest.mock.MagicMock`/`patch`) at
+`tests/suites/unit/core/services/test_bug_03_prompt_resolution.py:4`, which serves the out-of-scope
+`TestLifecyclePrintsInitialRequest` class. `git show HEAD:…` confirmed the imports predate this
+slice. Per the Delivery recovery protocol (refactor-or-log-and-bypass), the occurrence was folded
+into the consolidated PROJECT.md debt entry and the VCP is committed with `--no-verify` for the
+pre-commit stage only; the unskippable post-commit full-suite gate still runs.
