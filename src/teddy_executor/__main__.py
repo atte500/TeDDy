@@ -285,10 +285,23 @@ def config():
     typer.echo(status)
 
 
+@init_app.command()
+def templates():
+    """
+    Overwrites bundled Markdown templates in docs/templates/ with defaults.
+    """
+    from teddy_executor.core.ports.inbound.init import IInitUseCase
+
+    container = get_container()
+    init_use_case = container.resolve(IInitUseCase)
+    status = init_use_case.ensure_templates_initialized(overwrite=True)
+    typer.echo(status)
+
+
 app.add_typer(
     init_app,
     name="init",
-    help="Initialize .teddy directory, prompts, or configuration.",
+    help="Initialize .teddy directory, prompts, configuration, or templates.",
 )
 
 

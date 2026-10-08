@@ -70,6 +70,7 @@ Use subcommands to overwrite specific files with defaults:
 
 - `teddy init prompts` – Overwrite bundled prompt XMLs in `.teddy/prompts/` (useful after upgrades).
 - `teddy init config` – Overwrite config.yaml, .gitignore, and init.context with defaults. Preserves an existing `.env` (create-only).
+- `teddy init templates` – Overwrite bundled Markdown templates in `docs/templates/` with defaults (useful after upgrades).
 
 #### Configuration
 
@@ -169,6 +170,7 @@ uv tool install teddy-cli --pre --force
 | `init`         | Initialize `.teddy` directory with defaults and pre-warm heavy imports. See subcommands below.                 |
 | `init prompts` | Overwrite bundled prompt XMLs in `.teddy/prompts/` with defaults.                                              |
 | `init config`  | Overwrite config.yaml, .gitignore, and init.context with defaults. Preserves an existing `.env` (create-only). |
+| `init templates` | Overwrite bundled Markdown templates in `docs/templates/` with defaults.                                    |
 | `start`        | Start an interactive session.                                                                                  |
 | `resume`       | Resume an existing session.                                                                                    |
 | `update`       | Check for updates and display upgrade instructions.                                                            |
