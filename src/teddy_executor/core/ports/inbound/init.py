@@ -45,3 +45,17 @@ class IInitUseCase(ABC):
             A human-readable status string (e.g., "Configuration files overwritten (4 files).").
         """
         pass
+
+    @abstractmethod
+    def ensure_templates_initialized(self, overwrite: bool = False) -> str:
+        """
+        Ensures Markdown templates are present in the docs/templates/ directory.
+
+        Args:
+            overwrite: If True, always overwrite existing template files with defaults.
+                       If False (default), only write missing files.
+
+        Returns:
+            A human-readable status string (e.g., "Templates updated (11 files).").
+        """
+        pass
