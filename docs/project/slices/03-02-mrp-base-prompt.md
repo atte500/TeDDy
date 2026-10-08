@@ -1,5 +1,5 @@
 # Slice: MRP Base Prompt
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** [03-foundational-refactors](/docs/project/milestones/03-foundational-refactors.md)
 - **Specs:** TBD (Milestone doc serves as spec)
 - **Component Docs:** [PromptManager](/docs/architecture/core/services/prompt_manager.md)
@@ -124,10 +124,10 @@ The MRP.xml should contain:
 `fetch_system_prompt()` must inject the agent name at the very start of the assembled system prompt, before the agent-specific XML and MRP content. The agent name is derived from the XML filename (e.g., `architect.xml` → `Architect`). The format is a single line, `Agent Name: {AgentName}` (capitalized; no leading `#`), followed by a blank line and the agent-specific XML content. The `agent_name` parameter already exists as a string input; it is capitalized for display.
 
 ### Deliverables
-- [x] **Contract** - MRP base prompt at `src/teddy_executor/resources/MRP.xml` with extracted shared content: `<response_format>` block, shared `<general_rules>` (rules 1-9, Conflict Resolution, Programmatic Edits).
-- [ ] **Harness** - Add test for MRP.xml loading in PromptManager (verify `fetch_system_prompt` assembled content contains MRP rules, verify FileNotFoundError is raised when MRP.xml is missing).
-- [ ] **Logic** - Modify `PromptManager.fetch_system_prompt()` to: (1) inject agent name at start with "Agent Name: {CapitalizedAgentName}", (2) load MRP.xml via `importlib.resources`, (3) append MRP content after agent-specific XML.
-- [ ] **Cleanup** - Remove shared `<general_rules>` and `<response_format>` blocks from all 6 agent XMLs. Keep agent-specific rules only.
+- [x] **Contract** - MRP base prompt at `src/teddy_executor/resources/MRP.xml` with extracted shared content (shipped).
+- [x] **Cleanup** - Shared `<general_rules>` and `<response_format>` blocks removed from all 6 agent XMLs. This was completed as part of the content work (the "Done" section above marks it `[x]`) and was empirically re-verified on 2026-10-08: `git grep` finds zero occurrences of either marker under `src/teddy_executor/resources/config/prompts/`. No code work remains.
+- [ ] **Logic** - Modify `PromptManager` to (1) inject the `Agent Name: {CapitalizedAgentName}` header before the agent-specific content, (2) load `MRP.xml` through an injectable resource seam (`mrp_resource_root`, defaulting to `importlib.resources.files("teddy_executor.resources")`, following the `InitService` pattern) using only the `Traversable` contract (`is_file` + `read_text`), (3) append the MRP content after the agent-specific content, (4) skip ONLY the MRP append when the resolved prompt already contains `<response_format>` (legacy user override), and (5) raise `FileNotFoundError` when `MRP.xml` is missing. Bundled with unit tests: happy path, agent-name capitalization, legacy skip, missing-MRP failure, empty-MRP, and missing-agent-XML. The former `Harness` deliverable is folded here — its content is unit tests, which bundle with `Logic` — including the injectable seam's test fixture.
+- [ ] **Wiring** - Acceptance behavioral gate: drive a session against the harness fake LLM and assert the captured system prompt contains the `Agent Name:` header, the agent-specific content, and the MRP protocol rules end-to-end.
 
 ### Key Unknown Resolution Strategy
 Before the Developer starts, the Prototyper should verify:
