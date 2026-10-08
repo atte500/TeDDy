@@ -1,5 +1,5 @@
 # Slice: Templates and Init
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** [03-foundational-refactors](/docs/project/milestones/03-foundational-refactors.md)
 - **Specs:** TBD (Milestone doc serves as spec)
 - **Component Docs:** [InitService](/docs/architecture/core/services/init_service.md)
@@ -12,8 +12,8 @@ Eliminate redundant blueprint definitions across all 6 agent prompts by extracti
 
 ### Done (Content / Template Artifacts)
 - [x] **Blueprints already removed from agent prompts.** All 6 agent XMLs (`architect`, `assistant`, `debugger`, `developer`, `pathfinder`, `prototyper`) no longer contain `<blueprints>` sections (verified: `git grep -l "<blueprints>"` returns nothing). The shared `<general_rules>`/`<response_format>` were likewise removed and now live in `MRP.xml` (slice 03-02).
-- [x] **Bundled template folder already created** at `src/teddy_executor/resources/templates/`. It currently holds 10 Markdown templates:
-    - `specification-document.md`, `component-design.md`, `ARCHITECTURE.md`, `PROJECT.md`, `makefile.md`, `ci.md`
+- [x] **Bundled template folder already created** at `src/teddy_executor/resources/templates/`. It currently holds 11 Markdown templates:
+    - `specification-document.md`, `component-design.md`, `ARCHITECTURE.md`, `PROJECT.md`, `makefile.md`, `ci.md`, `pre-commit.md`
     - `milestone.md`, `vertical-slice.md`, `case-file.md`, `task-brief.md`
 - [x] This bundled folder is the source that `teddy init templates` will copy into a user project's `docs/templates/`. Template filenames follow the artifact-type convention (`milestone.md`, `vertical-slice.md`, `case-file.md`, `task-brief.md`) per MRP rule 12 — NOT the `MM-NN` instance-naming convention used for actual slice/case-file documents.
 
@@ -101,25 +101,24 @@ Each of the 6 XMLs needs the same changes:
 1. Remove the entire `<blueprints>` section (including opening/closing tags and all blueprint definitions).
 2. Add a brief inline directive in the workflow instructions referencing `docs/templates/`.
 
-### Deliverables
-- [ ] **Contract** - Add `ensure_templates_initialized(overwrite=False) -> str` to `IInitUseCase` ABC.
-- [x] **Contract** - The `src/teddy_executor/resources/templates/` directory exists with 10 bundled Markdown template files: `specification-document.md`, `task-brief.md`, `case-file.md`, `vertical-slice.md`, `milestone.md`, `component-design.md`, `ARCHITECTURE.md`, `PROJECT.md`, `makefile.md`, `ci.md`.
-- [ ] **Harness** - Add test fixture support for InitService mock templates directory (follows existing `mock_fs` patterns in `test_init_service.py`).
-- [ ] **Logic** - Implement `_init_templates()` and `ensure_templates_initialized()` in `InitService` following the existing `_init_prompts()` pattern.
-- [ ] **Wiring** - Add `init_app.command("templates")` to `__main__.py` calling `ensure_templates_initialized(overwrite=True)`.
-- [ ] **Wiring** - Modify `init_callback` in `__main__.py` to also call `ensure_templates_initialized()` when no subcommand is invoked.
-- [ ] **Harness** - Add test for CLI `init templates` subcommand via CliRunner (verify command exists and produces correct output).
-- [ ] **Refactor** - Update InitService constructor to accept optional `templates_dir` parameter (defaulting to `resources.files("teddy_executor.resources.templates")`).
-- [ ] **Cleanup** - Remove `<blueprints>` sections from all 6 agent XMLs. Replace with inline template directive comments.
+## Deliverables
+- [x] **Contract** - The `src/teddy_executor/resources/templates/` directory exists with 11 bundled Markdown template files: `specification-document.md`, `task-brief.md`, `case-file.md`, `vertical-slice.md`, `milestone.md`, `component-design.md`, `ARCHITECTURE.md`, `PROJECT.md`, `makefile.md`, `ci.md`, `pre-commit.md`.
+- [ ] **Logic** - Implement template support in `InitService`: add an optional `templates_dir` constructor parameter (defaulting to `resources.files("teddy_executor.resources") / "templates"`), add `_init_templates(overwrite=False) -> str` copying the 11 bundled templates into `docs/templates/` (non-destructive unless `overwrite=True`), and add `ensure_templates_initialized(overwrite=False) -> str`. Unit tests cover: full copy, partial-population non-destructiveness, `overwrite=True` replacement, and missing-resource no-op.
+- [ ] **Contract** - Add `ensure_templates_initialized(overwrite: bool = False) -> str` as an additive abstract member of the `IInitUseCase` ABC, plus a contract test at `tests/suites/unit/core/ports/inbound/test_init.py`. Declared AFTER `InitService` implements it to preserve green-to-green.
+- [ ] **Wiring** - Extend `InitService.ensure_initialized()` to also call `_init_templates(overwrite=False)` and fold the templates status into its summary string, so bare `teddy init`, `teddy start`, and `teddy resume` auto-create `docs/templates/` non-destructively. Update the two exact-string summary tests in `test_init_service.py`.
+- [ ] **Wiring** - Add the `teddy init templates` subcommand to `__main__.py` (calls `ensure_templates_initialized(overwrite=True)`); add an acceptance test via `CliRunner` proving the command exists and populates `docs/templates/`.
+- [ ] **Cleanup** - Add inline `docs/templates/` directives to the 5 agent XMLs that still lack them (`architect`, `assistant`, `developer`, `pathfinder`, `prototyper`); `debugger.xml` already carries them. Confirm no `<blueprints>` remain anywhere.
 
 ## Implementation Notes
-- **Auto-init on startup:** `teddy start` and `teddy resume` automatically call `ensure_templates_initialized(overwrite=False)` to create `docs/templates/` if the directory is missing. This is non-destructive — existing template files are never overwritten. Only the explicit `teddy init templates` command uses `overwrite=True` to force-regenerate all templates from defaults. This behavior was decided during development to prevent agents from failing when template files are accidentally deleted, without risking overriding user-customized templates.
+- **Auto-init on startup:** `teddy start` and `teddy resume` automatically create `docs/templates/` (non-destructively) because `_ensure_project_initialized()` calls `InitService.ensure_initialized()`, which folds in `_init_templates(overwrite=False)`. Existing template files are never overwritten; only the explicit `teddy init templates` command uses `overwrite=True` to force-regenerate all templates from defaults. This prevents agents from failing when template files are accidentally deleted, without risking overriding user-customized templates.
+- **Deliverable ordering (re-partitioned during Plan Audit):** The original plan placed the `Contract` (adding the abstract `ensure_templates_initialized` to `IInitUseCase`) before the `Logic` (the concrete `InitService` implementation). Because `IInitUseCase` is a shared seam and `InitService` is its only concrete implementation, adding the abstract member first would make `InitService` uninstantiable (`TypeError: Can't instantiate abstract class InitService with abstract method ensure_templates_initialized`) and turn the suite red — a non-green break. The plan was re-ordered to implement the concrete method first (`Logic`), then declare it on the ABC (`Contract`), preserving a green-to-green transition at every step.
+- **Template count correction:** The bundled `src/teddy_executor/resources/templates/` directory holds **11** files, not 10 as originally scoped. The extra file is `pre-commit.md`.
 
 ## Verification
 1. [ ] Run `pytest tests/suites/unit/core/services/test_init_service.py -v` — all existing tests pass, new template tests pass.
 2. [ ] Run `pytest tests/suites/unit/core/ports/inbound/test_init.py -v` — contract tests for new ABC method pass.
 3. [ ] Run full test suite: `pytest` — all tests pass (green-to-green).
-4. [ ] Manual: `cd /tmp/test-project && teddy init && ls docs/templates/` — confirms 10 template files exist.
+4. [ ] Manual: `cd /tmp/test-project && teddy init && ls docs/templates/` — confirms 11 template files exist.
 5. [ ] Manual: `cd /tmp/test-project && cat docs/templates/PROJECT.md` — confirms link to `docs/project/PROJECT.md`.
 6. [ ] Manual: `cd /tmp/test-project && rm -rf docs/templates/ && teddy init templates && ls docs/templates/` — confirms regeneration works.
 7. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/architect.xml | grep -c "<blueprints>"` — returns 0 (blueprints extracted to templates).
