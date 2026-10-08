@@ -11,7 +11,8 @@ Eliminate ~900 lines of duplicated protocol rules across all 6 agent prompts by 
 ## Progress (Done vs To Do)
 
 ### Done (Design / Content Artifacts)
-- [x] Created `src/teddy_executor/resources/config/prompts/MRP.xml` containing the shared `<general_rules>` (State Transition Protocol, State Dashboard format, Sequential Action Workflow, Path & Link Formatting, Information Gathering Workflow, VCP, Standardized Plan Types, Code Block Formatting, Validation Failure Recovery, Conflict Resolution Protocol, Programmatic Edits, Template-First Documentation) and the `<response_format>` block.
+- [x] Created the MRP base prompt (now at `src/teddy_executor/resources/MRP.xml`) containing the shared `<general_rules>` (State Transition Protocol, State Dashboard format, Sequential Action Workflow, Path & Link Formatting, Information Gathering Workflow, VCP, Standardized Plan Types, Code Block Formatting, Validation Failure Recovery, Conflict Resolution Protocol, Programmatic Edits, Template-First Documentation) and the `<response_format>` block.
+- [x] **Relocated MRP.xml** out of `src/teddy_executor/resources/config/prompts/` to `src/teddy_executor/resources/MRP.xml` (a 2026-10-08 decision) so it is never grouped with — or mistaken for — the user-overridable agent prompts. PromptManager MUST load it from the `teddy_executor.resources` package via `importlib.resources`.
 - [x] Parameterized the plan metadata (`- **Agent:**`) so it resolves from the injected `Agent Name:` line at the top of the assembled prompt.
 - [x] Removed all XML escape sequences (`&lt;` / `&gt;`) — prompts are plaintext, not parsed — and documented the convention in `docs/architecture/ARCHITECTURE.md`.
 - [x] Removed the `- **Lines:**` option from the `READ` action definition.
@@ -62,7 +63,7 @@ And MRP.xml is only present in the bundled package resources
 > As an administrator, I want fetch_system_prompt() to raise a clear error if MRP.xml is missing so that protocol degradation is never silent.
 
 ```gherkin
-Given MRP.xml is missing from src/teddy_executor/resources/config/prompts/
+Given MRP.xml is missing from src/teddy_executor/resources/
 When fetch_system_prompt() is called for any agent
 Then a FileNotFoundError is raised with a message indicating MRP.xml is missing
 ```
@@ -79,13 +80,13 @@ And the Pathfinder XML still contains its Handoff Targets and blueprint definiti
 ```
 
 ## Edge Cases
-- **MRP.xml resource missing**: If MRP.xml is absent from `src/teddy_executor/resources/config/prompts/`, `fetch_system_prompt()` MUST raise a clear `FileNotFoundError`. This is a fatal protocol error — agents will produce non-parseable output without the MRP rules.
+- **MRP.xml resource missing**: If MRP.xml is absent from `src/teddy_executor/resources/`, `fetch_system_prompt()` MUST raise a clear `FileNotFoundError`. This is a fatal protocol error — agents will produce non-parseable output without the MRP rules.
 - **Agent-specific rules preserved**: Only the shared rules (1-9, Conflict Resolution, Programmatic Edits) and `<response_format>` are extracted to MRP.xml. Agent-specific rules (e.g., Debugger's RPP rule 11, Developer's Contract Enforcement rule 10) remain in their respective XMLs.
 - **Empty MRP.xml**: If MRP.xml exists but is empty, `fetch_system_prompt()` should still succeed (append empty string) rather than raising an error. The file presence indicates intent, but zero-length content is a degenerate case.
 
 ## Key Unknowns
-- [x] [Technical] MRP.xml location: Approved by user — alongside agent XMLs in `src/teddy_executor/resources/config/prompts/`.
-- [ ] [Technical] `importlib.resources` API for loading MRP.xml: Need to verify the correct API call (`files()` vs `open_binary()`) for the prompts subdirectory to load MRP.xml from the same resource package. The existing `prompts.py` does NOT load from bundled resources (it only searches `.teddy/prompts/`), so PromptManager must load MRP.xml directly.
+- [x] [Technical] MRP.xml location: Approved by user — RELOCATED OUT of `src/teddy_executor/resources/config/prompts/` so it is NOT bundled/grouped with the user-overridable agent prompts. New home: `src/teddy_executor/resources/MRP.xml`, loaded via `importlib.resources.files("teddy_executor.resources") / "MRP.xml"`.
+- [ ] [Technical] `importlib.resources` API for loading MRP.xml: Need to verify the correct API call (`files()` vs `open_binary()`) against the `teddy_executor.resources` package (MRP.xml now lives at the package root, not in a `prompts` subdirectory). The existing `prompts.py` does NOT load from bundled resources (it only searches `.teddy/prompts/`), so PromptManager must load MRP.xml directly.
 
 ## Implementation Plan
 
@@ -95,12 +96,12 @@ This slice has one technical unknown that should be de-risked by the Prototyper 
 ### Detailed Tech Strategy
 
 #### MRP.xml Loading
-PromptManager's `fetch_system_prompt()` currently resolves agent XMLs via the filesystem hierarchy. For MRP.xml, it MUST load directly from the package using `importlib.resources`:
+PromptManager's `fetch_system_prompt()` currently resolves agent XMLs via the filesystem hierarchy. For MRP.xml — which deliberately lives OUTSIDE `config/prompts/` so it is not grouped with agent prompts — it MUST load directly from the `teddy_executor.resources` package using `importlib.resources`:
 ```python
 import importlib.resources as resources
 
 # In fetch_system_prompt, after resolving agent XML content:
-mrp_xml_path = resources.files("teddy_executor.resources.config.prompts") / "MRP.xml"
+mrp_xml_path = resources.files("teddy_executor.resources") / "MRP.xml"
 mrp_content = mrp_xml_path.read_text(encoding="utf-8")
 ```
 This bypasses `.teddy/prompts/` entirely — MRP.xml is NEVER user-editable.
@@ -122,14 +123,14 @@ The MRP.xml should contain:
 `fetch_system_prompt()` must inject the agent name at the very start of the assembled system prompt, before the agent-specific XML and MRP content. The agent name is derived from the XML filename (e.g., `architect.xml` → `Architect`). The format is a single line, `Agent Name: {AgentName}` (capitalized; no leading `#`), followed by a blank line and the agent-specific XML content. The `agent_name` parameter already exists as a string input; it is capitalized for display.
 
 ### Deliverables
-- [ ] **Contract** - Create `src/teddy_executor/resources/config/prompts/MRP.xml` with extracted shared content: `<response_format>` block, shared `<general_rules>` (rules 1-9, Conflict Resolution, Programmatic Edits).
+- [x] **Contract** - MRP base prompt at `src/teddy_executor/resources/MRP.xml` with extracted shared content: `<response_format>` block, shared `<general_rules>` (rules 1-9, Conflict Resolution, Programmatic Edits).
 - [ ] **Harness** - Add test for MRP.xml loading in PromptManager (verify `fetch_system_prompt` assembled content contains MRP rules, verify FileNotFoundError is raised when MRP.xml is missing).
 - [ ] **Logic** - Modify `PromptManager.fetch_system_prompt()` to: (1) inject agent name at start with "Agent Name: {CapitalizedAgentName}", (2) load MRP.xml via `importlib.resources`, (3) append MRP content after agent-specific XML.
 - [ ] **Cleanup** - Remove shared `<general_rules>` and `<response_format>` blocks from all 6 agent XMLs. Keep agent-specific rules only.
 
 ### Key Unknown Resolution Strategy
 Before the Developer starts, the Prototyper should verify:
-1. `importlib.resources.files("teddy_executor.resources.config.prompts")` correctly resolves to the prompts directory.
+1. `importlib.resources.files("teddy_executor.resources")` correctly resolves to the resources package root (where MRP.xml now lives).
 2. `read_text(encoding="utf-8")` works on the Traversable returned by `files()`.
 3. The FileNotFoundError scenario reproduces correctly when MRP.xml is absent.
 

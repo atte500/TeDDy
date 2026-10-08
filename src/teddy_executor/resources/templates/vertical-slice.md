@@ -4,7 +4,7 @@
 - **Specs:** [links]
 - **Prototype:** [link]
 - **Component Docs:** [links]
-- **Scope Slug:** `feature-slug`
+- **Scope Slug:** `feature-slug`  <!-- 1-2 kebab-case words only. -->
 
 ## Business Goal
 

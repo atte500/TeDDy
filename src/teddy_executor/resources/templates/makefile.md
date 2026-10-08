@@ -14,7 +14,15 @@ make commit 'fix(tests): resolve flaky assertion' no-verify
 ```
 
 **What is `.PHONY`?**
-`.PHONY` is a Makefile directive that declares `commit` and `probe` as phony targets — they do not correspond to actual files. Without `.PHONY`, if a file named `commit` or `probe` existed in the directory (e.g., a script called `commit`), Make would see it as up-to-date and skip the target entirely. By declaring them phony, Make always runs the recipe when you call `make commit` or `make probe`.
+`.PHONY` is a Makefile directive that declares `commit`, `probe`, and `test` as phony targets — they do not correspond to actual files. Without `.PHONY`, if a file named `commit` or `probe` existed in the directory (e.g., a script called `commit`), Make would see it as up-to-date and skip the target entirely. By declaring them phony, Make always runs the recipe when you call `make commit`, `make probe`, or `make test`.
+
+### Test
+```shell
+make test
+```
+
+**What does `make test` run?**
+`make test` runs the project's full test suite via the designated runner (e.g. `uv run pytest`). The post-commit hook runs the same suite automatically on every commit; this target exposes it as an on-demand command for agents and developers. If a project's Makefile lacks a `test` target, agents MUST add one following this template.
 
 ### Probe
 ```shell
@@ -58,6 +66,17 @@ The Makefile uses Make's built-in `-` prefix for error suppression (`-pre-commit
 - **POSIX shells (bash, sh, zsh):** `-` prefix works because Make handles error suppression natively before passing the recipe line to the shell.
 - **Windows (cmd.exe):** `-` prefix works because Make suppresses the exit code check, avoiding shell-specific `||` operators that cmd.exe does not support.
 - **Error transparency:** If pre-commit, pull, or push fail, the commit still succeeds locally. The post-commit test gate is the real safety net; remote failures appear as non-zero exit codes in the terminal output.
+
+## Test Workflow
+
+### Example
+
+```makefile
+test:
+	uv run pytest
+```
+
+**Usage:** `make test`
 
 ## VCP Commit Workflow
 

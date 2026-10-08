@@ -16,6 +16,15 @@ This section defines foundational engineering practices. Each entry MUST be a sp
 - **CI Pipeline:** Two parallel jobs — 1) Blocking OS matrix test suite with strict test coverage targets. 2) Non-blocking (continue-on-error: true) quality checks running fast formatters, linters, security/secret scanners, type checkers, and repository-wide structural checks (excluding sandboxes and third-party dependencies).
 - **Pre-commit Hooks:** Scope (staged files only), required hooks (formatters, linters, type checkers, security scanners).
 - **Post-commit Execution:** Full test suite run on commit, automatic revert on failure.
+- **Makefile Commands:** The `Makefile` is the canonical entry point for the VCP commit workflow and on-demand test runs. `make test` runs the full suite, `make commit '<msg>'` performs a VCP commit, and `make probe '<reason>'` runs the Remote Probing Protocol. See [docs/templates/makefile.md](docs/templates/makefile.md).
+
+### Pre-commit Quick-Start
+
+```shell
+pre-commit install                          # install the pre-commit stage hook
+pre-commit install --hook-type post-commit  # install the post-commit test gate
+pre-commit run --all-files                  # run all hooks manually against the repo
+```
 
 ## 2. Component & Boundary Map
 

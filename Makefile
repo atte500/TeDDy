@@ -1,4 +1,4 @@
-.PHONY: commit probe
+.PHONY: commit probe test
 
 # commit - VCP workflow: stage, pre-commit, commit, pull, push
 # Usage:
@@ -51,6 +51,17 @@ probe:
 	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 && \
 	gh run download "$$RUN_ID" --name probe-result --dir spikes/debug >/dev/null 2>&1 && \
 	cat spikes/debug/probe_output.txt 2>/dev/null || echo "(no output file)"
+
+# test - Run the full test suite via the project's designated runner (uv).
+#
+# Usage:
+#   make test
+#
+# The post-commit hook runs this same suite automatically on every commit;
+# this target exposes it as an on-demand command for agents and developers.
+
+test:
+	uv run pytest
 
 %:
 	@:

@@ -51,16 +51,17 @@ When `ensure_templates_initialized` is called, the service:
 
 ### Template Files
 
-The bundled templates directory contains 9 files:
+The bundled templates directory contains 10 files:
 - `specification-document.md` — Template for Specification Documents
 - `task-brief.md` — Template for Task Briefs
 - `case-file.md` — Template for Case Files
 - `vertical-slice.md` — Template for Vertical Slices
 - `milestone.md` — Template for Milestone documents
 - `component-design.md` — Template for Component Design Documents
-- `architecture.md` — Template for ARCHITECTURE.md Conventions section
-- `project.md` — Template for PROJECT.md Roadmap section (references `docs/templates/makefile.md` as part of Milestone 0 foundational tasks)
+- `ARCHITECTURE.md` — Template for ARCHITECTURE.md Conventions section
+- `PROJECT.md` — Template for PROJECT.md Roadmap section (references `docs/templates/makefile.md` as part of Milestone 0 foundational tasks)
 - `makefile.md` — Makefile template for VCP commit and Remote Probing Protocol commands
+- `ci.md` — CI workflow template for the Remote Probing Protocol (used by the Debugger).
 
 ## 7. Contracts / Methods
 
@@ -71,7 +72,7 @@ The bundled templates directory contains 9 files:
 
 ### `ensure_templates_initialized(overwrite: bool = False) -> str`
 - **Preconditions:** None.
-- **Postconditions:** Delegates to `_init_templates()`. Returns a human-readable string prefixed with "Templates" (e.g., "Templates updated (9 files).").
+- **Postconditions:** Delegates to `_init_templates()`. Returns a human-readable string prefixed with "Templates" (e.g., "Templates updated (10 files).").
 - **Exceptions:** None.
 - **Contract Dependencies:** Relies on `_get_default_content()` loading from `src/teddy_executor/resources/templates/`.
 
