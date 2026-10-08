@@ -27,7 +27,7 @@ def test_packaging_transitive_dependency():
     assert v1 == Version("1.0.0")
 
 
-def test_init_command_calls_prewarm_imports(monkeypatch):
+def test_init_command_calls_prewarm_imports(monkeypatch, tmp_path):
     """Logic: `teddy init` should call `prewarm_imports()` from cli_helpers.
 
     Red phase: before the fix, this test will fail because __main__.py's
@@ -54,6 +54,12 @@ def test_init_command_calls_prewarm_imports(monkeypatch):
     )
 
     import teddy_executor.__main__ as main_app
+
+    # Isolate the real filesystem writes of the unconditional
+    # `IInitUseCase.ensure_initialized()` call into a disposable workspace.
+    # The default filesystem adapter root (".") is resolved lazily against
+    # the process CWD, so without this the scaffold leaks into the repo root.
+    monkeypatch.chdir(tmp_path)
 
     runner = CliRunner()
     result = runner.invoke(main_app.app, ["init"])
