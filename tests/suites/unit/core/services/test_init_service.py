@@ -2,6 +2,7 @@ import pytest
 from teddy_executor.core.services.init_service import (
     InitService,
     _GITIGNORE_PLACEHOLDER,
+    _TEMPLATE_FILES,
 )
 
 SOURCE_CONFIG = "mock config content"
@@ -12,6 +13,16 @@ SOURCE_CONTEXT = "mock context content"
 def service(mock_fs):
     # We use a mock path for config_dir
     return InitService(file_system=mock_fs, config_dir="/mock/config")
+
+
+@pytest.fixture
+def templates_service(mock_fs):
+    # Mock templates_dir to isolate file-system interaction for template tests.
+    return InitService(
+        file_system=mock_fs,
+        config_dir="/mock/config",
+        templates_dir="/mock/templates",
+    )
 
 
 def test_ensure_initialized_creates_directory_and_files_if_missing(service, mock_fs):
@@ -280,3 +291,93 @@ def test_ensure_config_initialized_overwrite_true_creates_missing_env(service, m
     assert ".teddy/.env" in written
     assert "TEDDY_LLM_API_KEY" in written[".teddy/.env"]
     assert ".teddy/config.yaml" in written
+
+
+# ── Template initialization tests ────────────────────────────────────────────
+
+
+def test_init_templates_copies_all_when_missing(templates_service, mock_fs):
+    """No docs/templates/ exists, overwrite=False → creates dir and writes all 11 templates."""
+
+    def mock_exists(p: str) -> bool:
+        # Bundled templates exist; docs/templates/ does not.
+        return p.startswith("/mock/templates")
+
+    mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.read_file.side_effect = lambda p: f"content::{p}"
+
+    result = templates_service._init_templates(overwrite=False)
+
+    mock_fs.create_directory.assert_any_call("docs/templates")
+    for fname in _TEMPLATE_FILES:
+        mock_fs.write_file.assert_any_call(
+            f"docs/templates/{fname}", f"content::/mock/templates/{fname}"
+        )
+    assert mock_fs.write_file.call_count == 11
+    assert result == "updated (11 files)"
+
+
+def test_init_templates_partial_population_non_destructive(templates_service, mock_fs):
+    """Some templates already exist, overwrite=False → only missing ones are written."""
+
+    existing = {"specification-document.md", "task-brief.md"}
+
+    def mock_exists(p: str) -> bool:
+        if p.startswith("/mock/templates"):
+            return True
+        if p == "docs/templates":
+            return True
+        return p in {f"docs/templates/{fname}" for fname in existing}
+
+    mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.read_file.side_effect = lambda p: f"content::{p}"
+
+    result = templates_service._init_templates(overwrite=False)
+
+    written = [call.args[0] for call in mock_fs.write_file.call_args_list]
+    assert mock_fs.write_file.call_count == len(_TEMPLATE_FILES) - len(existing)
+    for fname in existing:
+        assert f"docs/templates/{fname}" not in written
+    assert result == f"updated ({len(_TEMPLATE_FILES) - len(existing)} files)"
+
+
+def test_init_templates_overwrite_true_replaces(templates_service, mock_fs):
+    """All templates already exist, overwrite=True → all are rewritten."""
+
+    def mock_exists(p: str) -> bool:
+        # Bundled templates AND every docs/templates/ target already exist.
+        return True
+
+    mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.read_file.side_effect = lambda p: f"content::{p}"
+
+    result = templates_service._init_templates(overwrite=True)
+
+    assert mock_fs.write_file.call_count == len(_TEMPLATE_FILES)
+    assert result == f"overwritten ({len(_TEMPLATE_FILES)} files)"
+
+
+def test_init_templates_missing_resource_no_op(templates_service, mock_fs):
+    """Bundled templates resource is missing → no writes, returns "unchanged"."""
+
+    mock_fs.path_exists.return_value = False
+
+    result = templates_service._init_templates(overwrite=False)
+
+    mock_fs.write_file.assert_not_called()
+    assert result == "unchanged"
+
+
+def test_ensure_templates_initialized_returns_status(templates_service, mock_fs):
+    """`ensure_templates_initialized` wraps `_init_templates` with a "Templates" prefix."""
+
+    def mock_exists(p: str) -> bool:
+        # Bundled templates exist; docs/templates/ does not.
+        return p.startswith("/mock/templates")
+
+    mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.read_file.side_effect = lambda p: f"content::{p}"
+
+    result = templates_service.ensure_templates_initialized(overwrite=False)
+
+    assert result == f"Templates updated ({len(_TEMPLATE_FILES)} files)."

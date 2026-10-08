@@ -1,5 +1,6 @@
 import logging
 import os
+from collections.abc import Callable, Sequence
 from importlib import resources
 
 import yaml
@@ -33,13 +34,37 @@ _EMBEDDED_DEFAULTS = {
 # files are regenerable defaults that ``teddy init config`` intentionally resets.
 _CREATE_ONLY_CONFIG_FILES = frozenset({".env"})
 
+# Bundled Markdown templates copied into a project's ``docs/templates/`` by
+# ``_init_templates``. Kept as a fixed manifest (rather than a directory
+# listing) so the copy is deterministic and mirrors the ``_init_prompts``
+# pattern. Single source of truth for the template names, also imported by the
+# unit tests to avoid shadow literals.
+_TEMPLATE_FILES = [
+    "specification-document.md",
+    "task-brief.md",
+    "case-file.md",
+    "vertical-slice.md",
+    "milestone.md",
+    "component-design.md",
+    "ARCHITECTURE.md",
+    "PROJECT.md",
+    "makefile.md",
+    "ci.md",
+    "pre-commit.md",
+]
+
 
 class InitService(IInitUseCase):
     """
     Service for initializing projects.
     """
 
-    def __init__(self, file_system: IFileSystemManager, config_dir: str | None = None):
+    def __init__(
+        self,
+        file_system: IFileSystemManager,
+        config_dir: str | None = None,
+        templates_dir: str | None = None,
+    ):
         self._file_system = file_system
         # Find the config directory relative to the package root if not provided
         if config_dir:
@@ -49,6 +74,73 @@ class InitService(IInitUseCase):
             resource_path = resources.files("teddy_executor.resources.config")
             # Ensure we resolve to an absolute string for compatibility with the FileSystem port
             self._config_dir = os.path.abspath(str(resource_path))
+        # Templates ship as a sibling directory of the bundled config package. We
+        # join onto ``resources`` (rather than resolving a ``resources.templates``
+        # subpackage) so the directory needs no ``__init__.py``.
+        if templates_dir:
+            self._templates_dir = templates_dir
+        else:
+            resource_path = resources.files("teddy_executor.resources") / "templates"
+            self._templates_dir = os.path.abspath(str(resource_path))
+
+    def _read_bundled_resource(self, base_dir: str, filename: str) -> str | None:
+        """Reads a bundled resource file from ``base_dir`` via the file-system port.
+
+        Returns ``None`` when the resource is absent or unreadable, so callers
+        can silently skip missing scaffold resources (logged at DEBUG).
+        """
+        try:
+            target_path = os.path.join(base_dir, filename)
+            if self._file_system.path_exists(target_path):
+                return self._file_system.read_file(target_path)
+        except (OSError, yaml.YAMLError, ImportError, AttributeError):
+            logging.getLogger(__name__).debug(
+                "Failed to load bundled resource %s", filename
+            )
+        return None
+
+    @staticmethod
+    def _format_init_status(count: int, overwrite: bool) -> str:
+        """Formats the shared copy-result status string.
+
+        Single-sources the "unchanged" / "updated (N files)" / "overwritten (N
+        files)" vocabulary shared by the config, prompts, and templates copy
+        routines.
+        """
+        if count == 0:
+            return "unchanged"
+        if overwrite:
+            return f"overwritten ({count} files)"
+        return f"updated ({count} files)"
+
+    def _copy_bundled_files(
+        self,
+        dest_dir: str,
+        filenames: Sequence[str],
+        resolve_content: Callable[[str], str | None],
+        overwrite: bool,
+        create_only: frozenset[str] = frozenset(),
+    ) -> str:
+        """Copies bundled resources into ``dest_dir`` via the file-system port.
+
+        Creates ``dest_dir`` when absent. Writes each ``filenames`` entry that is
+        missing, or every entry when ``overwrite`` is set -- except names listed
+        in ``create_only``, which are written only when absent. Content is
+        supplied by ``resolve_content``; a ``None`` result silently skips a
+        missing bundled resource. Returns the shared copy-result status string.
+        """
+        if not self._file_system.path_exists(dest_dir):
+            self._file_system.create_directory(dest_dir)
+        count = 0
+        for fname in filenames:
+            target_path = f"{dest_dir}/{fname}"
+            exists = self._file_system.path_exists(target_path)
+            if not exists or (overwrite and fname not in create_only):
+                content = resolve_content(fname)
+                if content is not None:
+                    self._file_system.write_file(target_path, content)
+                    count += 1
+        return self._format_init_status(count, overwrite)
 
     def _get_default_content(self, filename: str) -> str | None:
         """Loads default content for a bundled config file.
@@ -60,15 +152,7 @@ class InitService(IInitUseCase):
         """
         if filename in _EMBEDDED_DEFAULTS:
             return _EMBEDDED_DEFAULTS[filename]
-        try:
-            target_path = os.path.join(self._config_dir, filename)
-            if self._file_system.path_exists(target_path):
-                return self._file_system.read_file(target_path)
-        except (OSError, yaml.YAMLError, ImportError, AttributeError):
-            logging.getLogger(__name__).debug(
-                "Failed to load default content for %s", filename
-            )
-        return None
+        return self._read_bundled_resource(self._config_dir, filename)
 
     def _init_config_dir(self, overwrite: bool = False) -> str:
         """Copies config files (config.yaml, .gitignore, init.context, .env) to .teddy/.
@@ -86,24 +170,13 @@ class InitService(IInitUseCase):
         Returns:
             A status string: "unchanged", "updated (N files)", or "overwritten (N files)".
         """
-        config_files = ["config.yaml", ".gitignore", "init.context", ".env"]
-        count = 0
-        for fname in config_files:
-            target_path = f".teddy/{fname}"
-            exists = self._file_system.path_exists(target_path)
-            should_write = not exists or (
-                overwrite and fname not in _CREATE_ONLY_CONFIG_FILES
-            )
-            if should_write:
-                content = self._get_default_content(fname)
-                if content is not None:
-                    self._file_system.write_file(target_path, content)
-                    count += 1
-        if count == 0:
-            return "unchanged"
-        if overwrite:
-            return f"overwritten ({count} files)"
-        return f"updated ({count} files)"
+        return self._copy_bundled_files(
+            dest_dir=".teddy",
+            filenames=["config.yaml", ".gitignore", "init.context", ".env"],
+            resolve_content=self._get_default_content,
+            overwrite=overwrite,
+            create_only=_CREATE_ONLY_CONFIG_FILES,
+        )
 
     def _init_prompts(self, overwrite: bool = False) -> str:
         """Copies bundled prompt XMLs to .teddy/prompts/.
@@ -114,31 +187,38 @@ class InitService(IInitUseCase):
         Returns:
             A status string: "unchanged", "updated (N files)", or "overwritten (N files)".
         """
-        prompts_dir = ".teddy/prompts"
-        if not self._file_system.path_exists(prompts_dir):
-            self._file_system.create_directory(prompts_dir)
+        return self._copy_bundled_files(
+            dest_dir=".teddy/prompts",
+            filenames=[
+                "architect.xml",
+                "assistant.xml",
+                "debugger.xml",
+                "developer.xml",
+                "pathfinder.xml",
+                "prototyper.xml",
+            ],
+            resolve_content=lambda fname: self._get_default_content(f"prompts/{fname}"),
+            overwrite=overwrite,
+        )
 
-        prompt_files = [
-            "architect.xml",
-            "assistant.xml",
-            "debugger.xml",
-            "developer.xml",
-            "pathfinder.xml",
-            "prototyper.xml",
-        ]
-        count = 0
-        for fname in prompt_files:
-            target_path = f"{prompts_dir}/{fname}"
-            if overwrite or not self._file_system.path_exists(target_path):
-                content = self._get_default_content(f"prompts/{fname}")
-                if content is not None:
-                    self._file_system.write_file(target_path, content)
-                    count += 1
-        if count == 0:
-            return "unchanged"
-        if overwrite:
-            return f"overwritten ({count} files)"
-        return f"updated ({count} files)"
+    def _init_templates(self, overwrite: bool = False) -> str:
+        """Copies bundled Markdown templates to docs/templates/.
+
+        Args:
+            overwrite: If True, always overwrite existing files.
+                If False (default), only write missing files.
+
+        Returns:
+            A status string: "unchanged", "updated (N files)", or "overwritten (N files)".
+        """
+        return self._copy_bundled_files(
+            dest_dir="docs/templates",
+            filenames=_TEMPLATE_FILES,
+            resolve_content=lambda fname: self._read_bundled_resource(
+                self._templates_dir, fname
+            ),
+            overwrite=overwrite,
+        )
 
     def ensure_initialized(self) -> str:
         """
@@ -186,3 +266,17 @@ class InitService(IInitUseCase):
         """
         status = self._init_config_dir(overwrite=overwrite)
         return f"Configuration files {status}."
+
+    def ensure_templates_initialized(self, overwrite: bool = False) -> str:
+        """
+        Ensures Markdown templates are present in the docs/templates/ directory.
+
+        Args:
+            overwrite: If True, always overwrite existing template files with
+                       defaults. If False (default), only write missing files.
+
+        Returns:
+            A human-readable status string (e.g., "Templates updated (11 files).").
+        """
+        status = self._init_templates(overwrite=overwrite)
+        return f"Templates {status}."
