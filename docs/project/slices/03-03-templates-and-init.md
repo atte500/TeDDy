@@ -1,5 +1,5 @@
 # Slice: Templates and Init
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [03-foundational-refactors](/docs/project/milestones/03-foundational-refactors.md)
 - **Specs:** TBD (Milestone doc serves as spec)
 - **Component Docs:** [InitService](/docs/architecture/core/services/init_service.md)
@@ -17,13 +17,13 @@ Eliminate redundant blueprint definitions across all 6 agent prompts by extracti
     - `milestone.md`, `vertical-slice.md`, `case-file.md`, `task-brief.md`
 - [x] This bundled folder is the source that `teddy init templates` will copy into a user project's `docs/templates/`. Template filenames follow the artifact-type convention (`milestone.md`, `vertical-slice.md`, `case-file.md`, `task-brief.md`) per MRP rule 12 — NOT the `MM-NN` instance-naming convention used for actual slice/case-file documents.
 
-### To Do (Harness Code)
-- [ ] Add `ensure_templates_initialized(overwrite=False) -> str` to the `IInitUseCase` ABC (additive member).
-- [ ] Implement `InitService._init_templates()` + `ensure_templates_initialized()` following the existing `_init_prompts()` pattern; add a `templates_dir` constructor parameter.
-- [ ] Add the `teddy init templates` CLI subcommand (calls `ensure_templates_initialized(overwrite=True)`).
-- [ ] Bare `teddy init` also creates `docs/templates/`; `teddy start`/`teddy resume` auto-create it non-destructively.
-- [ ] Add inline template directives in the agent XMLs (the replacement for the removed blueprints).
-- [ ] Tests: template copy, partial-population non-destructiveness, and the CLI subcommand.
+### Done (Harness Code)
+- [x] Add `ensure_templates_initialized(overwrite=False) -> str` to the `IInitUseCase` ABC (additive member).
+- [x] Implement `InitService._init_templates()` + `ensure_templates_initialized()` following the existing `_init_prompts()` pattern; add a `templates_dir` constructor parameter.
+- [x] Add the `teddy init templates` CLI subcommand (calls `ensure_templates_initialized(overwrite=True)`).
+- [x] Bare `teddy init` also creates `docs/templates/`; `teddy start`/`teddy resume` auto-create it non-destructively.
+- [x] Add inline template directives in the agent XMLs (the replacement for the removed blueprints).
+- [x] Tests: template copy, partial-population non-destructiveness, and the CLI subcommand.
 
 ## Scenarios
 
@@ -120,11 +120,11 @@ Each of the 6 XMLs needs the same changes:
 - **Cleanup deliverable (agent XML template directives) - implementation:** Added one brief inline `<artifact_templates>` directive to each of the five agent XMLs that still lacked a `docs/templates/` reference (`architect`, `assistant`, `developer`, `pathfinder`, `prototyper`), inserted immediately after the shared `<phase_tracking>` anchor inside `<workflow>` (a unique, uniform insertion point confirmed across all six XMLs). Each directive names the artifact types most relevant to that agent (e.g., `vertical-slice.md`/`case-file.md` for the Developer; `specification-document.md`/`milestone.md` for the Pathfinder) and points to `teddy init templates` for regeneration. `debugger.xml` already carried `docs/templates/` references and was deliberately left untouched. The content-only edit was driven by the Unit-layer invariant test `tests/suites/unit/test_agent_template_directives.py`, which reads the bundled prompt resources via `importlib.resources` (mirroring `test_prompt_resource_relocation.py`) and asserts every agent XML references `docs/templates/` and none retains a `<blueprints>` section — no production-module import, no mocks. Refactor was a justified no-op: the two independent assertions (reference-present, blueprints-absent) each express a single invariant, and a shared read helper already factors the common logic.
 
 ## Verification
-1. [ ] Run `pytest tests/suites/unit/core/services/test_init_service.py -v` — all existing tests pass, new template tests pass.
-2. [ ] Run `pytest tests/suites/unit/core/ports/inbound/test_init.py -v` — contract tests for new ABC method pass.
-3. [ ] Run full test suite: `pytest` — all tests pass (green-to-green).
-4. [ ] Manual: `cd /tmp/test-project && teddy init && ls docs/templates/` — confirms 11 template files exist.
-5. [ ] Manual: `cd /tmp/test-project && cat docs/templates/PROJECT.md` — confirms link to `docs/project/PROJECT.md`.
-6. [ ] Manual: `cd /tmp/test-project && rm -rf docs/templates/ && teddy init templates && ls docs/templates/` — confirms regeneration works.
-7. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/architect.xml | grep -c "<blueprints>"` — returns 0 (blueprints extracted to templates).
-8. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/architect.xml | grep -c "template"` — returns at least 1 (directive references templates).
+1. [x] Run `pytest tests/suites/unit/core/services/test_init_service.py -v` — all existing tests pass, new template tests pass.
+2. [x] Run `pytest tests/suites/unit/core/ports/inbound/test_init.py -v` — contract tests for new ABC method pass.
+3. [x] Run full test suite: `pytest` — all tests pass (green-to-green).
+4. [x] Manual: `cd /tmp/test-project && teddy init && ls docs/templates/` — confirms 11 template files exist.
+5. [x] Manual: `cd /tmp/test-project && cat docs/templates/PROJECT.md` — confirms link to `docs/project/PROJECT.md`.
+6. [x] Manual: `cd /tmp/test-project && rm -rf docs/templates/ && teddy init templates && ls docs/templates/` — confirms regeneration works.
+7. [x] Manual: `cat src/teddy_executor/resources/config/prompts/architect.xml | grep -c "<blueprints>"` — returns 0 (blueprints extracted to templates).
+8. [x] Manual: `cat src/teddy_executor/resources/config/prompts/architect.xml | grep -c "template"` — returns at least 1 (directive references templates).

@@ -81,4 +81,4 @@ Bundled Markdown template files are stored in `src/teddy_executor/resources/temp
 ## Vertical Slices
 - [x] **03-01-Editor-Validation-and-Discovery** — Editor discovery, early PATH validation, interactive selection prompt, persistence to config, "disabled" sentinel handling, and diff flags fallback for unknown editors. See the specification for full details.
 - [x] **03-02-MRP-Base-Prompt** — MRP.xml creation, PromptManager agent name + MRP injection logic, legacy detection, and removal of shared general_rules/response_format from agent XMLs. See the [slice definition](/docs/project/slices/03-02-mrp-base-prompt.md) for deliverables and scenarios.
-- [ ] **03-03-Templates-and-Init** — Template files, `teddy init templates` subcommand, InitService changes, and blueprint removal from agent XMLs. See the [slice definition](/docs/project/slices/03-03-templates-and-init.md) for deliverables and scenarios.
+- [x] **03-03-Templates-and-Init** — Template files, `teddy init templates` subcommand, InitService changes, and blueprint removal from agent XMLs. See the [slice definition](/docs/project/slices/03-03-templates-and-init.md) for deliverables and scenarios.
