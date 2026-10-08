@@ -382,9 +382,9 @@ def _display_update_notification(cache_path: Path) -> None:
             return
         current = get_current_version()
         if compare_versions(current, latest):
-            # A pre-release install comes from the TestPyPI experimental channel.
-            # `uv tool upgrade` cannot reliably move the tool off that index back to
-            # PyPI, so force a reinstall from the default index instead.
+            # A pre-release install comes from the PyPI experimental channel (--pre).
+            # `uv tool upgrade` cannot reliably move the tool off that flag back to
+            # stable, so force a reinstall from the default index instead.
             if is_prerelease(current):
                 command = "uv tool install teddy-cli --force"
             else:

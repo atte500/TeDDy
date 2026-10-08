@@ -1,8 +1,8 @@
 """Update Checker: Lightweight version check and upgrade mechanism.
 
 Provides functions for detecting the current installed version, fetching the
-latest version from PyPI/TestPyPI, comparing versions, caching results, and
-performing upgrades. All public functions use stdlib only (plus the
+latest version from PyPI, comparing versions, and caching results. All public
+functions use stdlib only (plus the
 `packaging` library which is a transitive dependency via pip-audit).
 """
 
@@ -19,7 +19,6 @@ if TYPE_CHECKING:
 # --- Constants ---
 
 PYPI_URL = "https://pypi.org/pypi/teddy-cli/json"
-TEST_PYPI_URL = "https://test.pypi.org/pypi/teddy-cli/json"
 CACHE_FILENAME = ".update_cache.json"
 CACHE_TTL_HOURS = 24
 
@@ -73,7 +72,7 @@ def fetch_latest_version(
     stable_only: bool = True,
 ) -> Optional[str]:
     """
-    Fetch the highest version from PyPI/TestPyPI JSON API.
+    Fetch the highest version from the PyPI JSON API.
 
     Scans all releases in data['releases'] (instead of only data['info']['version']),
     and optionally filters to stable versions only.

@@ -1,6 +1,7 @@
 """Regression test for Bug #20: experimental channel shows wrong upgrade command.
 
-When current is a prerelease (TestPyPI channel) and latest is a strictly newer
+When current is a prerelease (PyPI pre-release channel) and latest is a strictly
+newer
 stable, `teddy update` (without --experimental) should show:
     uv tool install teddy-cli --force
 

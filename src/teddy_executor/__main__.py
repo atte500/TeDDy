@@ -319,7 +319,7 @@ def update(
     experimental: bool = typer.Option(
         False,
         "--experimental",
-        help="Check and upgrade from TestPyPI instead of PyPI.",
+        help="Include pre-release (dev) builds in the update check.",
     ),
 ):
     """Checks PyPI for the latest version of TeDDy and displays upgrade
@@ -330,12 +330,11 @@ def update(
         compare_versions,
         is_prerelease,
         PYPI_URL,
-        TEST_PYPI_URL,
     )
 
-    index_url = TEST_PYPI_URL if experimental else PYPI_URL
-    # When experimental, include prerelease versions (TestPyPI only has dev releases)
-    latest = fetch_latest_version(index_url, stable_only=not experimental)
+    # Dev pre-releases are published to PyPI (see .github/workflows/publish.yml),
+    # so --experimental only widens the check to include prereleases.
+    latest = fetch_latest_version(PYPI_URL, stable_only=not experimental)
 
     if latest is None:
         typer.echo("Could not check for updates: network error.")

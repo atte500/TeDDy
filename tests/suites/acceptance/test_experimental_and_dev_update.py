@@ -1,7 +1,7 @@
 """Acceptance tests for experimental flag and dev-version update behavior.
 
 Covers:
-- Experimental flag should fetch dev releases from TestPyPI (not return None).
+- Experimental flag should fetch dev releases from PyPI (not return None).
 - When current version is a pre-release and latest is stable, should offer upgrade.
 - Notification-only behavior (no auto-upgrade).
 """
@@ -38,7 +38,7 @@ def _setup_compare_versions_mock(monkeypatch, return_value):
 
 def test_experimental_flag_uses_stable_only_false(monkeypatch):
     """When --experimental is used, fetch_latest_version should be called
-    with stable_only=False (to include dev releases from TestPyPI)."""
+    with stable_only=False (to include dev releases)."""
     import teddy_executor.core.services.update_checker as uc
 
     _setup_basic_mocks(monkeypatch)
