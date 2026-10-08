@@ -8,6 +8,24 @@
 ## Business Goal
 Eliminate ~900 lines of duplicated protocol rules across all 6 agent prompts by extracting the shared Markdown Response Protocol (MRP) into a central `MRP.xml` base prompt. This makes protocol changes a single-point update and ensures all agents produce parseable output.
 
+## Progress (Done vs To Do)
+
+### Done (Design / Content Artifacts)
+- [x] Created `src/teddy_executor/resources/config/prompts/MRP.xml` containing the shared `<general_rules>` (State Transition Protocol, State Dashboard format, Sequential Action Workflow, Path & Link Formatting, Information Gathering Workflow, VCP, Standardized Plan Types, Code Block Formatting, Validation Failure Recovery, Conflict Resolution Protocol, Programmatic Edits, Template-First Documentation) and the `<response_format>` block.
+- [x] Parameterized the plan metadata (`- **Agent:**`) so it resolves from the injected `Agent Name:` line at the top of the assembled prompt.
+- [x] Removed all XML escape sequences (`&lt;` / `&gt;`) — prompts are plaintext, not parsed — and documented the convention in `docs/architecture/ARCHITECTURE.md`.
+- [x] Removed the `- **Lines:**` option from the `READ` action definition.
+- [x] Replaced the placeholder example with a lorem-ipsum Action-Plan example.
+- [x] Updated the Milestone 3 spec for agent-name injection, MRP injection semantics (after the agent-specific XML, inside `<system>`), and legacy detection.
+
+### To Do (Harness Code)
+- [ ] `PromptManager.fetch_system_prompt()`: inject `Agent Name: {agent}` before the agent-specific XML.
+- [ ] `PromptManager.fetch_system_prompt()`: load MRP.xml via `importlib.resources.files()` and append after the agent-specific content (inside `<system>`).
+- [ ] Legacy detection: skip MRP injection when the resolved prompt already contains `<response_format>`.
+- [ ] Fail-fast: raise `FileNotFoundError` when MRP.xml is missing.
+- [ ] Remove the shared `<general_rules>` and `<response_format>` from all 6 agent XMLs; keep only agent-specific rules and renumber sequentially.
+- [ ] Tests: agent-name injection, MRP append, legacy skip, missing-MRP failure, and agent-XML cleanup assertions.
+
 ## Scenarios
 
 > As a user, I want my session's system prompt to include the MRP protocol rules so that all agents follow the same response format.
@@ -101,7 +119,7 @@ The MRP.xml should contain:
 - Rule 11 (Programmatic Edits) — shared
 
 #### Agent Name Injection
-`fetch_system_prompt()` must inject the agent name at the very start of the assembled system prompt, before the agent-specific XML and MRP content. The agent name is derived from the XML filename (e.g., `architect.xml` → "Agent Name: Architect"). The format is: `# Agent Name: {AgentName}\n\n` followed by the agent-specific XML content. The agent_name parameter already exists as a string input; it needs to be capitalized and formatted.
+`fetch_system_prompt()` must inject the agent name at the very start of the assembled system prompt, before the agent-specific XML and MRP content. The agent name is derived from the XML filename (e.g., `architect.xml` → `Architect`). The format is a single line, `Agent Name: {AgentName}` (capitalized; no leading `#`), followed by a blank line and the agent-specific XML content. The `agent_name` parameter already exists as a string input; it is capitalized for display.
 
 ### Deliverables
 - [ ] **Contract** - Create `src/teddy_executor/resources/config/prompts/MRP.xml` with extracted shared content: `<response_format>` block, shared `<general_rules>` (rules 1-9, Conflict Resolution, Programmatic Edits).
@@ -126,4 +144,4 @@ The Prototyper spike lives at `spikes/prototypes/mrp-base-prompt/`.
 6. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/MRP.xml | grep -c "State Transition Protocol"` — returns at least 1 (MRP rules present).
 7. [ ] Manual: `cat src/teddy_executor/resources/config/prompts/debugger.xml | grep -c "Remote Probing Protocol"` — returns at least 1 (agent-specific rule preserved).
 8. [ ] Manual: Run a session with the developer agent and capture the system prompt. Verify it starts with "Agent Name: Developer" followed by the XML content.
-9. [ ] Unit test: Verify that `fetch_system_prompt("architect", turn_path)` returns a string starting with "# Agent Name: Architect".
+9. [ ] Unit test: Verify that `fetch_system_prompt("architect", turn_path)` returns a string starting with "Agent Name: Architect".
