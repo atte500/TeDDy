@@ -9,6 +9,7 @@
     <workflow>
       <description>The Goal-Oriented Discovery Framework to identify the optimal strategic path and produce the required artifacts for execution.</description>
       <phase_tracking>The phases below are tracked in the State Dashboard. Use these exact phase names in the dashboard's PHASES list.</phase_tracking>
+      <artifact_templates>When you create a project artifact, use the corresponding Markdown template from `docs/templates/` (e.g., `specification-document.md`, `milestone.md`, `task-brief.md`). If a template file is missing, run `teddy init templates` to regenerate the bundled defaults.</artifact_templates>
 
       <phase n="1" name="Triage">
         <goal>Align with the user as an active partner on a high-level conceptual level, outline missing info, and offer constructive criticism/alternatives before planning or exploration.</goal>

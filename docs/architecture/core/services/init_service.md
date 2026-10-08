@@ -45,13 +45,13 @@ When `ensure_initialized` is called, the service performs the following checks a
 When `ensure_templates_initialized` is called, the service:
 
 1.  Checks if `docs/templates/` directory exists. If not, creates it.
-2.  Loads all files from `src/teddy_executor/resources/templates/` using `_get_default_content()` targeting the templates resource path.
+2.  Loads each bundled template from `src/teddy_executor/resources/templates/` via `_read_bundled_resource()` targeting the templates resource directory.
 3.  For each template file, copies it to `docs/templates/{filename}`. If `overwrite=True`, always overwrites; otherwise only writes missing files.
 4.  Returns a human-readable status string.
 
 ### Template Files
 
-The bundled templates directory contains 10 files:
+The bundled templates directory contains 11 files:
 - `specification-document.md` — Template for Specification Documents
 - `task-brief.md` — Template for Task Briefs
 - `case-file.md` — Template for Case Files
@@ -62,6 +62,7 @@ The bundled templates directory contains 10 files:
 - `PROJECT.md` — Template for PROJECT.md Roadmap section (references `docs/templates/makefile.md` as part of Milestone 0 foundational tasks)
 - `makefile.md` — Makefile template for VCP commit and Remote Probing Protocol commands
 - `ci.md` — CI workflow template for the Remote Probing Protocol (used by the Debugger).
+- `pre-commit.md` — Pre-commit configuration template (the quality-gate baseline for a new project).
 
 ## 7. Contracts / Methods
 
@@ -72,9 +73,9 @@ The bundled templates directory contains 10 files:
 
 ### `ensure_templates_initialized(overwrite: bool = False) -> str`
 - **Preconditions:** None.
-- **Postconditions:** Delegates to `_init_templates()`. Returns a human-readable string prefixed with "Templates" (e.g., "Templates updated (10 files).").
+- **Postconditions:** Delegates to `_init_templates()`. Returns a human-readable string prefixed with "Templates" (e.g., "Templates updated (11 files).").
 - **Exceptions:** None.
-- **Contract Dependencies:** Relies on `_get_default_content()` loading from `src/teddy_executor/resources/templates/`.
+- **Contract Dependencies:** Relies on `_read_bundled_resource()` loading from `src/teddy_executor/resources/templates/`.
 
 ## 8. Non-Destructive Guarantee
 

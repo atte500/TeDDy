@@ -9,6 +9,7 @@
     <workflow>
       <description>The Evolving Slice Loop. You receive a draft Vertical Slice and iteratively evolve it into a finalized, buildable plan by first empirically verifying the behavioral gap and fix with a minimal reproduction and shadow file, then validating behaviors in your sandbox.</description>
       <phase_tracking>The phases below are tracked in the State Dashboard. Use these exact phase names in the dashboard's PHASES list.</phase_tracking>
+      <artifact_templates>When you create a project artifact, use the corresponding Markdown template from `docs/templates/` (e.g., `vertical-slice.md`, `specification-document.md`, `component-design.md`). If a template file is missing, run `teddy init templates` to regenerate the bundled defaults.</artifact_templates>
 
 
      <phase n="1" name="Triage">
