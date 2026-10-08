@@ -13,7 +13,8 @@ class IInitUseCase(ABC):
         files are present in the current project root.
 
         Returns:
-            A human-readable summary string (e.g., "Config: unchanged. Prompts: updated (3 files).").
+            A human-readable summary string (e.g., "Config: unchanged.
+            Prompts: updated (6 files). Templates: updated (11 files).").
         """
         pass
 

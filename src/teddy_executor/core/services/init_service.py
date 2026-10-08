@@ -225,14 +225,19 @@ class InitService(IInitUseCase):
         Ensures the .teddy directory and default files are present.
 
         Returns:
-            A human-readable summary string (e.g., "Config: unchanged. Prompts: updated (3 files).").
+            A human-readable summary string (e.g., "Config: unchanged.
+            Prompts: updated (6 files). Templates: updated (11 files).").
         """
         if not self._file_system.path_exists(".teddy"):
             self._file_system.create_directory(".teddy")
 
         config_status = self._init_config_dir(overwrite=False)
         prompts_status = self._init_prompts(overwrite=False)
-        return f"Config: {config_status}. Prompts: {prompts_status}."
+        templates_status = self._init_templates(overwrite=False)
+        return (
+            f"Config: {config_status}. Prompts: {prompts_status}. "
+            f"Templates: {templates_status}."
+        )
 
     def ensure_prompts_initialized(self, overwrite: bool = True) -> str:
         """
