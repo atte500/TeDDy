@@ -89,6 +89,8 @@ Completed 2026-10-08. Kept compact — full detail lives in Git history and the 
 - **[40] Milestone 0 uses `make test`** — bootstrapping exposes the suite via `make test` and runs it in the post-commit hook.
 - **Generalized Makefile provisioning into `MRP.xml` rule 12** — The scattered inline "if a `Makefile` does not exist in the project root, create one following `docs/templates/makefile.md`" sentences (`MRP.xml` rule 6 VCP; Debugger Phase 1 Step 2 and RPP rule 11) were consolidated into a single shared rule 12 ("Template-First Documentation & Tooling"), which also covers the case where a `Makefile` exists but lacks the required target (e.g. `commit`, `probe`, `logs`, `test`).
 - **Distinction retained:** TeDDy's own `Makefile` (this repo) vs the `makefile.md` template that instructs *other* projects to create their own.
+- **Full-suite run commands abstracted to `make test`** — the "run the full test suite" instructions (`MRP.xml` rule 10; Debugger Phase 6 Step 5; Developer's verification step) now invoke `make test` instead of a raw runner command.
+- **`MRP.xml` rule 12 covers `ci.md` + `pre-commit.md`** — rule 12 ("Template-First Documentation & Tooling") now also directs agents to follow `docs/templates/ci.md` for CI workflows and `docs/templates/pre-commit.md` for pre-commit setup.
 
 ### Init & Templates
 - **[8] Vertical slice scope slug** capped at 2 kebab-case words in `vertical-slice.md`.
@@ -104,6 +106,7 @@ Completed 2026-10-08. Kept compact — full detail lives in Git history and the 
 
 ### Pre-commit Setup
 - **[18] Concise pre-commit quick-start** added to the `ARCHITECTURE.md` template (`pre-commit install`, post-commit hook install, `pre-commit run --all-files`).
+- **[N7] `pre-commit.md` template** — Added a bundled `pre-commit.md` template documenting the Pre-commit framework setup (the `.pre-commit-config.yaml` structure, the `pre-commit` + `post-commit` stages, and the unskippable post-commit test gate), modelled on the repo's real `.pre-commit-config.yaml` and `.githooks/post-commit.py`. Referenced from `MRP.xml` rule 12 and listed in the `PROJECT.md` template's Templates table.
 
 ### Tier 1 — Mechanical Content
 - **[N5] Per-doc-type file-numbering conventions** — The `PROJECT.md` template's Workflow Standards "Numbering" topic now enumerates the filename convention for each artifact type (vertical slices `MM-NN-name.md`, milestones `MM-name.md`, case files `NN-name.md`, task briefs `NN-name.md`, ad-hoc work `00-NN-name.md`).

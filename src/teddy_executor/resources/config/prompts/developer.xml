@@ -69,7 +69,7 @@
       <phase n="3" name="Integration">
         <goal>Mandatory Gate ensuring continuous integration scoped at the deliverable level.</goal>
         <step n="1" name="Global Test Run">
-          Run the full test suite (no filters). If it passes, proceed to Phase 4. If it fails, proceed to Fault Evaluation.
+          Run the full test suite via `make test` (no filters). If it passes, proceed to Phase 4. If it fails, proceed to Fault Evaluation.
         </step>
         <step n="2" name="Fault Evaluation">
           Classify the failure using this empirical rule: If fixing the global suite requires modifying ANY application code outside the exact scope of your current deliverable, it is a Systemic Regression. If the fix ONLY requires modifying the current deliverable's components or updating existing test files, it is a Local Flaw.

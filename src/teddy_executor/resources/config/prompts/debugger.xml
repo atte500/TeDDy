@@ -61,7 +61,7 @@
         <step n="2" name="Red Phase">EXECUTE the newly created regression test in isolation to confirm it fails (RED). This empirically proves the test correctly captures the original bug. If the test passes, it does not accurately reproduce the bug; return to step 1 and refine the test.</step>
         <step n="3" name="Apply Fix">Apply the verified hypothesis from the shadow file to the target production file(s) in `src/`. Execute the regression test again to confirm it now passes (GREEN). This proves the fix resolves the specific bug.</step>
         <step n="4" name="MRE Re-Verification">Re-run the original MRE script against the fixed production code to confirm the exact original symptom is resolved. This ensures the regression test did not accidentally over-specify or under-specify the bug; the original reproduction scenario must still pass against the real fixed code.</step>
-        <step n="5" name="Integration Verification">EXECUTE the entire test suite (acceptance, unit and integration) to ensure no regressions were introduced. If any test fails, revert all changes via `git reset --hard` and return to the Investigation phase.</step>
+        <step n="5" name="Integration Verification">EXECUTE `make test` to run the entire suite (acceptance, unit and integration) and ensure no regressions were introduced. If any test fails, revert all changes via `git reset --hard` and return to the Investigation phase.</step>
       </phase>
 
       <phase n="7" name="Version Control">

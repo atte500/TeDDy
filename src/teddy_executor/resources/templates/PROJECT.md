@@ -44,6 +44,7 @@ Before creating or modifying any documentation artifact, agents MUST read the co
 | `ARCHITECTURE.md` | System architecture document |
 | `makefile.md` | Makefile (VCP commit + Remote Probing Protocol commands) |
 | `ci.md` | CI workflow template (debug workflow for the Remote Probing Protocol) |
+| `pre-commit.md` | Pre-commit framework setup (pre-commit + post-commit test gate) |
 
 These files live in `docs/templates/` and are created or refreshed by `teddy init templates`.
 
