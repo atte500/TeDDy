@@ -277,6 +277,12 @@ class MarkdownPlanParser(IPlanParser):
                 offending_nodes = consume_content_until_next_action(
                     stream, self._valid_actions
                 )
+                # A section-boundary Heading (level <= H2) is left unconsumed by
+                # the helper, which then returns an empty list. Retain that
+                # peeked node as the offender so the formatter can report what
+                # it actually found instead of degrading to a terse headline.
+                if not offending_nodes:
+                    offending_nodes = [node]
                 raise InvalidPlanError(
                     format_structural_mismatch_msg(
                         doc, "a Level 3 Action Heading", -1, offending_nodes

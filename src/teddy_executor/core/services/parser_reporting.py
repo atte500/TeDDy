@@ -242,7 +242,17 @@ def format_structural_mismatch_msg(
 
     # If mismatch_idx is -1, this is a content error, not a structural schema mismatch
     if mismatch_idx == -1:
-        msg = f"Plan content is invalid: {expected}.\n\n"
+        # When the expectation is a concrete node type and a real offending
+        # node exists, name what we actually found; otherwise the headline
+        # degrades to the self-referential "…: a Level 3 Action Heading.".
+        # Free-form problem descriptions (e.g. "Unknown action type: X") are
+        # already self-contained and keep their original terse wording.
+        if is_direct and primary_node is not None:
+            msg = (
+                f"Plan content is invalid. {error_header}, but found {actual_name}.\n\n"
+            )
+        else:
+            msg = f"Plan content is invalid: {expected}.\n\n"
     else:
         msg = f"Plan structure is invalid. {error_header}, but found {actual_name}.\n\n"
 
