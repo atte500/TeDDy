@@ -149,7 +149,7 @@ Add a single canonical-casing helper (agent name → the resolved prompt file st
 - [x] **Seam** — Items 3/4: a drift-check helper comparing user files against bundled defaults.
 - [x] **Wiring** — Items 3/4/5: emit the drift notification at the start/resume preflight and gate it (plus the update notification) by the toggles.
 - [x] **Harness** — Regression/unit tests for the drift checker and its toggle gating; add an acceptance test for the (toggle-gated) drift notification.
-- [ ] **Refactor** — Single-source the canonical-casing helper (avoid duplicating the stem→`capitalize()` logic).
+- [x] **Refactor** — Single-source the canonical-casing helper (avoid duplicating the stem→`capitalize()` logic).
 - [ ] **Cleanup** — Update the `03-03-templates-and-init` slice doc to record the reversed explicit-only contract; remove `spikes/debug/` if present.
 
 ## Implementation Notes
@@ -240,6 +240,16 @@ The change is strictly additive (a brand-new top-level key), so `YamlConfigAdapt
 **No production change — mutation-style characterization Reds.** Every new test asserts ALREADY-CORRECT production behaviour, so the Red steps were characterization/regression Reds: each case was reasoned to genuinely drive its target branch (mutation-style), and NO production code was modified to manufacture a failing assertion. This is the intended shape for a Harness deliverable whose purpose is to lock in behaviour already shipped by the Seam and Wiring items.
 
 **Verification.** Focused runs: case (a) `2 passed` (Turn 109), case (b) `4 passed` (Turn 110), case (c) `2 passed` (Turn 111) — four new tests total. Phase 3 (Turn 112): full suite GREEN at `1705 passed, 5 skipped in 8.37s` — the four new tests added to the `1701`-pass Wiring baseline, confirming no regression.
+
+### Refactor — Single-source the canonical-casing helper (complete)
+
+**Production change.** The last remaining inline casing literal in production is gone. `prompt_manager.py` now imports `canonical_agent_name` from `teddy_executor.core.utils.string` (co-located beneath the existing `utils.serialization` import), and the lazy-compose header in `fetch_system_prompt` became `assembled = f"Agent Name: {canonical_agent_name(agent_name)}\n\n{content}"`. The Phase 1 Discovery grep (Turn 116) had pinned the blast radius to exactly this ONE call: `canonical_agent_name` was already consumed by `session_cli_handlers.py` (the CLI banner) and `session_service.py` (both meta-write sites), and NO other inline `.capitalize()` survived in `src/` or `tests/`. Single-sourcing now guarantees the banner, the planning header and the composed prompt header can never drift apart.
+
+**Behaviour-preserving / Green-to-Green.** `canonical_agent_name(a)` returns `a.capitalize()` today, so the refactor emits byte-identical output. No seam break: the helper signature is unchanged and the change only ADDS a consumer, so no Contract → Migration → Cleanup partitioning was warranted.
+
+**One Red-Green cycle (characterization safety net).** Red (Turn 118): `tests/suites/unit/core/services/test_prompt_manager.py` gained a parametrized safety-net test driving upper- and mixed-case agent input through the real header branch; the focused module ran `14 passed` (characterization Green — production already canonicalised, so NO production was changed to manufacture a failure). Green (Turn 119): the import plus the inline-call replacement landed; the focused module stayed `14 passed` with ZERO assertion edits, proving the refactor is behaviour-preserving.
+
+**Phase 3 Integration.** The full suite (`make test`, no filters) ran GREEN at `1707 passed, 5 skipped in 9.21s` — the two new parametrized cases added to the `1705`-pass Harness baseline, confirming no regression. No Phase 3 recovery was required.
 
 ## Verification
 

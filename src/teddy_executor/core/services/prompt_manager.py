@@ -9,6 +9,7 @@ from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemMa
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
+from teddy_executor.core.utils.string import canonical_agent_name
 
 # The bundled Markdown Response Protocol base prompt. It lives OUTSIDE
 # ``config/prompts/`` so it is never grouped with the user-overridable agent
@@ -154,7 +155,7 @@ class PromptManager(IPromptManager):
             # contract (no header, no MRP) rather than fabricating a prompt.
             return ""
 
-        assembled = f"Agent Name: {agent_name.capitalize()}\n\n{content}"
+        assembled = f"Agent Name: {canonical_agent_name(agent_name)}\n\n{content}"
 
         # Legacy compatibility: a resolved prompt that already carries its own
         # response format (e.g. a customized ``.teddy/prompts/`` override) is

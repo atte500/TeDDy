@@ -238,6 +238,34 @@ def test_fetch_system_prompt_capitalizes_agent_name_in_header(
     assert result.startswith("Agent Name: Architect\n\n")
 
 
+@pytest.mark.parametrize(
+    ("raw_agent", "agent_file", "expected_header"),
+    [
+        ("ARCHITECT", "architect.xml", "Agent Name: Architect\n\n"),
+        ("DeVeLoPeR", "developer.xml", "Agent Name: Developer\n\n"),
+    ],
+)
+def test_fetch_system_prompt_canonicalises_agent_name_for_any_input_casing(
+    mrp_prompt_manager, mock_fs, raw_agent, agent_file, expected_header
+):
+    """The agent-name header uses canonical casing for ANY input casing.
+
+    Refactor (session-behaviour): the header must single-source the shared
+    canonical_agent_name helper (rather than an inline .capitalize()), so
+    -a DeVeLoPeR / -a ARCHITECT render exactly like their lowercase forms,
+    matching the persisted meta.yaml value and the CLI banner.
+    """
+    turn_path = _arrange_teddy_prompt_resolution(
+        mock_fs,
+        agent_file=agent_file,
+        content="<agent/>",
+    )
+
+    result = mrp_prompt_manager.fetch_system_prompt(raw_agent, turn_path)
+
+    assert result.startswith(expected_header)
+
+
 def test_fetch_system_prompt_skips_mrp_when_response_format_present(
     mrp_prompt_manager, mock_fs
 ):
