@@ -1,5 +1,5 @@
 # Slice: Session Behaviour Refinements (Init, Prompts/Templates, Config Checks & Agent Casing)
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A
 - **Specs:** N/A
 - **Prototype:** N/A
@@ -111,7 +111,7 @@ Feature: Agent name canonical casing
 ## Implementation Plan
 
 ### Item 1 — Templates explicit-only
-Remove the `_init_templates(overwrite=False)` call (and the trailing `Templates:` summary segment) from `InitService.ensure_initialized()`, so `docs/templates/` is written only by `ensure_templates_initialized()` (the `teddy init templates` path). This REVERSES a decision recorded in the completed slice [`03-03-templates-and-init`](/docs/project/slices/03-03-templates-and-init.md); update that doc and its acceptance test `tests/suites/acceptance/test_templates_auto_init.py` to the new contract.
+Remove the `_init_templates(overwrite=False)` call (and the trailing `Templates:` summary segment) from `InitService.ensure_initialized()`, so `docs/templates/` is written only by `ensure_templates_initialized()` (the `teddy init templates` path). This REVERSES a decision recorded in the completed slice [`03-03-templates-and-init`](/docs/project/slices/03-03-templates-and-init.md). The reversal of the acceptance contract lives in Item 1: rewrite `tests/suites/acceptance/test_templates_auto_init.py` to assert that bare `teddy init` does NOT create `docs/templates/`, and update the two `Templates:` summary assertions in `tests/suites/unit/core/services/test_init_service.py`. The `03-03` slice doc is updated separately by the Cleanup deliverable.
 
 ### Item 2 — Compose once → persist → read verbatim (Option A, per user decision)
 Split the current dual role of `PromptManager.fetch_system_prompt` (which both composes AND reads) into a distinct compose step and read step:
@@ -140,15 +140,15 @@ Add a single canonical-casing helper (agent name → the resolved prompt file st
 
 ## Deliverables
 
-- [ ] **Logic** — Item 1: drop `_init_templates` from `InitService.ensure_initialized`.
+- [▶] **Logic** — Item 1: drop the `_init_templates` call (and the trailing `Templates:` summary segment) from `InitService.ensure_initialized`; reverse the acceptance contract in `tests/suites/acceptance/test_templates_auto_init.py` and update the two summary-string assertions in `tests/suites/unit/core/services/test_init_service.py` in the same change set.
 - [ ] **Logic** — Item 2: compose+persist in `SessionService.create_session`; verbatim reuse in `PromptManager.fetch_system_prompt`; recompose in `set_session_agent`.
 - [ ] **Logic** — Item 6: canonicalise agent casing in `_echo_config_success` and meta persistence.
+- [ ] **Contract** — Item 5: add the two config toggle keys to the bundled `config.yaml` (additive; read via `IConfigService.get_setting`).
 - [ ] **Seam** — Items 3/4: a drift-check helper comparing user files against bundled defaults.
 - [ ] **Wiring** — Items 3/4/5: emit the drift notification at the start/resume preflight and gate it (plus the update notification) by the toggles.
-- [ ] **Contract** — Item 5: add the two config toggle keys (additive).
-- [ ] **Harness** — Regression/unit tests for the drift checker, composed-prompt persistence+reuse, and canonical casing; replace `test_templates_auto_init.py` with the reversed contract; add an acceptance test for the drift notification.
+- [ ] **Harness** — Regression/unit tests for the drift checker, composed-prompt persistence+reuse, canonical casing, and the config-toggle defaults; add an acceptance test for the (toggle-gated) drift notification.
 - [ ] **Refactor** — Single-source the canonical-casing helper (avoid duplicating the stem→`capitalize()` logic).
-- [ ] **Cleanup** — Update slice `03-03` doc + its acceptance test; remove `spikes/debug/`.
+- [ ] **Cleanup** — Update the `03-03-templates-and-init` slice doc to record the reversed explicit-only contract; remove `spikes/debug/` if present.
 
 ## Implementation Notes
 
