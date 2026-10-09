@@ -29,7 +29,11 @@ Then [expected outcome]
 
 ## Key Unknowns
 
-**Format:** Checklist of unresolved risks. Tags: `[Technical]` for code/architecture, `[Functional]` for behavior/UX. Mark as `[x]` when resolved.
+**Format:** Checklist of unresolved risks, each tagged with one of three tiers. Mark as `[x]` when resolved.
+- `[Formal]` — Ambiguities in business rules, policy decisions, domain definitions, or scope boundaries. Resolve by asking the user directly in an alignment turn; speculative coding or prototyping for formal questions is forbidden.
+- `[Technical]` (works-like) — External dependencies, third-party libraries, APIs, runtime performance, concurrency, or data-storage feasibility. Resolve via automated assertion probes and benchmarks.
+- `[Functional]` (looks-like) — User-facing ergonomics, CLI flags, terminal rendering, interactive flows, or layout aesthetic. Resolve via interactive demo runners with configurable knobs.
+
 - [ ] [Tag] Title: Description of the unknown.
 
 ## Implementation Plan

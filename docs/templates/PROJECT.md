@@ -22,11 +22,12 @@ Defines the high-level artifact lifecycle and conventions for project management
     - **Milestones:** `MM-name.md` (in `docs/project/milestones/`).
     - **Case Files (Debugger):** `NN-name.md` — numbered sequentially.
     - **Task Briefs:** `NN-name.md` (in `docs/project/tasks/`) — numbered sequentially.
-    - **Ad-hoc work (not tied to a milestone):** `00-NN-name.md` — `00` is used as the Milestone prefix. Ad-hoc slices are NOT tracked in Milestone documents or the Roadmap.
+    - **Milestone 0 (bootstrapping) & Ad-hoc work (not tied to a milestone):** `00-NN-name.md` — `00` is used as the Milestone prefix for Milestone 0 bootstrapping slices and for ad-hoc slices. Ad-hoc slices are NOT tracked in Milestone documents or the Roadmap.
 - **Archiving Policy:** When and how completed artifacts are archived or deleted.
-- **Spec Organization:** Organize specification documents by lifecycle into two subfolders: `docs/project/specs/invariants/` (formats, contracts, and workflows of record — long-lived system invariants) and `docs/project/specs/features/` (to-be-implemented initiatives that feed the Spec → Milestone → Slice lifecycle — deleted per the Archiving Policy once implemented).
+- **Spec Organization:** Specification documents live in a single flat directory `docs/project/specs/` and are reserved strictly for **permanent system invariants** — formats, contracts, protocols (e.g. the MRP), core data models, and non-negotiable architectural rules. Feature goals, requirements, and acceptance criteria belong in Milestone documents (`docs/project/milestones/`), not in specs. There is no ephemeral `specs/features/` lifecycle.
 - **Run Environment:** Specify the project's designated environment/dependency manager (e.g., `uv`, `poetry`, `pip`) and prefix ALL execution commands with its runner (e.g., `uv run pytest`). The chosen runner MUST be reflected in the `Makefile`.
 - **Build & Run Commands:** Document the standard commands in the project `Makefile` (see [docs/templates/makefile.md](docs/templates/makefile.md)). At minimum: `make test` (full suite), `make commit '<msg>'` (VCP), and `make probe '<reason>'` (Remote Probing Protocol).
+- **Release Process:** Document how releases are cut. At minimum: (1) **Triage** the scope (patch/minor/major) from conventional commits since the last tag; (2) write **release notes** to `docs/project/releases/v<version>.md`; (3) bump the `version` field in the project manifest; (4) present the notes and version bump at an **approval gate**; (5) **commit** (`chore(release): bump version to <version>`) and **tag** (`git tag -a v<version>`); and (6) **publish** (e.g. create a GitHub Release). Adapt the concrete commands to the project's packaging and distribution channel.
 
 ## Templates
 
@@ -34,7 +35,7 @@ Before creating or modifying any documentation artifact, agents MUST read the co
 
 | Template | Purpose |
 | -------- | ------- |
-| `specification-document.md` | Specification documents (features and invariants) |
+| `specification-document.md` | Specification documents (permanent system invariants) |
 | `milestone.md` | Milestone documents |
 | `vertical-slice.md` | Vertical slice definitions |
 | `component-design.md` | Component design documents (ports and contracts) |
@@ -75,15 +76,4 @@ A living list of upcoming Milestones and their high-level features.
     - **Post-commit Hook:** Implement a hook that runs the full test suite via `make test` and reverts the commit on failure (via `git reset --soft HEAD~1`, keeping changes staged). This is the unskippable safety net — `--no-verify` MUST NOT bypass it.
     - **Debug Workflow:** Create `.github/workflows/debug.yml` following [docs/templates/ci.md](docs/templates/ci.md) to enable the Remote Probing Protocol.
     - **Makefile:** Create a `Makefile` following [docs/templates/makefile.md](docs/templates/makefile.md) with `make commit`, `make probe`, and `make test` commands. `make commit` implements the VCP workflow, `make probe` implements the Debugger's Remote Probing Protocol, and `make test` runs the full suite on demand.
-
-## Technical Debt
-Tracks known technical debt for future cleanup.
-
-**Format:** `- [Description including context and location of the debt item.]`
-
-**Logging Hygiene (MUST):**
-- **Never re-log the same debt.** If a debt item recurs across commits, fold the new occurrence into the existing entry — do NOT append a new bullet.
-- **Prefer fixing directly over logging.** Only log debt that genuinely cannot be resolved in the moment. Do not log-then-resolve a defect that could be fixed immediately.
-- **Never log resolved items.** Do not add "informational" or "completed" entries.
-
-**Deletion Policy:** When a technical debt item is addressed (the underlying issue is resolved in a completed milestone/slice), the entry MUST be deleted from this section. Do not mark it as "completed" or "resolved" — remove it entirely. Git history serves as the permanent record.
+    - **`.gitignore` Configuration:** Configure a project-tailored `.gitignore` covering language/OS cache files, build artifacts, virtual environments, and the transient `.tmp/` directory. The `spikes/` directory MUST remain tracked so prototypes and probes stay version-controlled.

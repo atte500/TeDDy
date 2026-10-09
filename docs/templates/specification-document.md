@@ -1,10 +1,12 @@
-# Spec: {{feature}}
+# Spec: {{invariant}}
 - **Status:** Active
+
+> **Scope:** This template codifies **permanent system invariants** only — stable formats, contracts, protocols (e.g. the MRP), core data models, and non-negotiable architectural rules of record. It is NOT for feature goals, requirements, or acceptance criteria; those belong in Milestone documents (`docs/project/milestones/`) and Vertical Slices.
 
 ## Overview / Problem Statement
 
-**Format:** 2-3 paragraphs describing the problem being solved, why existing solutions are insufficient, and what makes this approach valuable.
-Core problem, context, and value proposition.
+**Format:** 2-3 paragraphs describing the invariant being codified, why it exists, and what it guarantees.
+Context for the invariant, the contract it establishes, and the risk it mitigates.
 
 ## Guiding Principles / Core Logic
 
@@ -23,5 +25,5 @@ Detailed logic, file formats, directory structures, or workflow diagrams (Mermai
 
 ## Guidelines
 
-**Format:** Bulleted or numbered list of actionable guidelines. Each entry should guide decision-making, not prescribe specific implementation.
-High-level phasing, sequencing, and technical strategy for the Architect.
+**Format:** Bulleted or numbered list of rules for conforming to and evolving this invariant. Each entry should constrain design decisions, not prescribe specific implementation.
+Conformance requirements and the process for amending the invariant.
