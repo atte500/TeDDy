@@ -507,48 +507,6 @@ Testing Tee failure isolation - session should continue.
     shutil.rmtree(session_dir / "history.log", ignore_errors=True)
 
 
-def test_teddy_plan_generates_plan_file(tmp_path, monkeypatch, env):
-    """
-    Scenario: teddy plan generates a plan
-    """
-    env.with_real_filesystem()
-    container = env.container
-    monkeypatch.chdir(tmp_path)
-    session_dir = tmp_path / ".teddy" / "sessions" / "feat-x"
-    turn_dir = session_dir / "01"
-    turn_dir.mkdir(parents=True)
-
-    (turn_dir / "turn.context").write_text("", encoding="utf-8")
-    (session_dir / "session.context").write_text("", encoding="utf-8")
-    (turn_dir / "pathfinder.xml").write_text("system prompt", encoding="utf-8")
-    (turn_dir / "meta.yaml").write_text("turn_id: '01'\n", encoding="utf-8")
-
-    # Create .teddy/prompts/pathfinder.xml so get_prompt_content succeeds
-    prompts_dir = tmp_path / ".teddy" / "prompts"
-    prompts_dir.mkdir(parents=True, exist_ok=True)
-    (prompts_dir / "pathfinder.xml").write_text("system prompt", encoding="utf-8")
-
-    mock_llm = POSIXPathMock()
-    mock_llm.validate_config.return_value = []
-    mock_llm.get_completion.return_value = make_mock_response(
-        "# Plan: Generated Plan\n- Status: Green 🟢"
-    )
-    mock_llm.get_token_count.return_value = 100
-    mock_llm.get_completion_cost.return_value = 0.01
-    container.register(ILlmClient, instance=mock_llm)
-
-    from teddy_executor.adapters.inbound.session_cli_handlers import (
-        handle_plan_generation,
-    )
-
-    monkeypatch.chdir(turn_dir)
-    handle_plan_generation(container, "Implement feature X")
-
-    plan_file = turn_dir / "plan.md"
-    assert plan_file.exists()
-    assert "# Plan: Generated Plan" in plan_file.read_text(encoding="utf-8")
-
-
 # ---------------------------------------------------------------------------
 # History Log Planning Output Integration Tests
 # ---------------------------------------------------------------------------

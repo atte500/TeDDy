@@ -10,7 +10,6 @@ from punq import Container
 
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.inbound.init import IInitUseCase
-from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.domain.models.session import SessionOptions
@@ -971,41 +970,6 @@ def detect_session_context() -> Optional[Dict[str, Sequence[str]]]:
             "Session": [str(session_context)],
         }
     return None
-
-
-def handle_plan_generation(container: Container, message: Optional[str]):
-    """Logic for the 'plan' command."""
-    try:
-        # Note: 'plan' command uses the default 'pathfinder' agent if not in a session
-        _run_cli_preflight_check(
-            container,
-            agent="pathfinder",
-            setup_editor=False,
-            setup_api_key=False,
-        )
-        _echo_config_success(container)
-
-        planning_service: IPlanningUseCase = container.resolve(IPlanningUseCase)
-        context_files = detect_session_context()
-        cwd = Path.cwd()
-
-        plan_path, _, _ = planning_service.generate_plan(
-            user_message=message, turn_dir=str(cwd), context_files=context_files
-        )
-        typer.echo(f"Plan generated at: {plan_path}")
-    except Exception as e:
-        from teddy_executor.core.domain.models.exceptions import ConfigurationError
-
-        if isinstance(e, ConfigurationError):
-            from teddy_executor.core.ports.outbound.config_service import IConfigService
-
-            config_service = container.resolve(IConfigService)
-            config_path = config_service.get_config_path()
-            typer.echo(f"Error: {e}", err=True)
-            typer.echo(f"Please update your configuration at: {config_path}", err=True)
-        else:
-            typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(code=1)
 
 
 def handle_context_gathering(container: Container, no_copy: bool):

@@ -7,13 +7,11 @@ from teddy_executor.adapters.inbound.session_cli_handlers import (
     _prompt_for_custom_editor,
     handle_new_session,
     handle_resume_session,
-    handle_plan_generation,
 )
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from tests.harness.setup.mocking import POSIXPathMock
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
-from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
@@ -285,26 +283,6 @@ def test_handle_resume_session_halts_on_preflight_failure(env):
     assert excinfo.value.exit_code == 1
     # Assert: Orchestrator was NEVER called
     mock_orchestrator.resume.assert_not_called()
-    # Assert: Only local validation was performed
-    mock_llm_client.validate_config.assert_called_once_with(include_remote=False)
-
-
-def test_handle_plan_generation_halts_on_preflight_failure(env):
-    # Arrange
-    mock_planning_service = env.mock_port(IPlanningUseCase)
-    mock_llm_client = env.mock_port(ILlmClient)
-    mock_config_service = env.mock_port(IConfigService)
-
-    mock_llm_client.validate_config.return_value = ["API Key is placeholder"]
-    mock_config_service.get_config_path.return_value = ".teddy/config.yaml"
-
-    # Act & Assert
-    with pytest.raises(typer.Exit) as excinfo:
-        handle_plan_generation(container=env.container, message="Generate a test")
-
-    assert excinfo.value.exit_code == 1
-    # Assert: Planning service was NEVER called
-    mock_planning_service.generate_plan.assert_not_called()
     # Assert: Only local validation was performed
     mock_llm_client.validate_config.assert_called_once_with(include_remote=False)
 
