@@ -24,37 +24,105 @@ Bracketed numbers refer to the original 40-item list; `Nx` marks new items raise
 
 Ordered by execution priority. Items within a tier are independent; every item names any dependency it has. `❓` needs a decision before implementation; `⬜` is ready to start.
 
-### Tier 3 — Strategic (requires joint decisions)
+### Tier 3 — Strategic Themes (Discussion in Progress)
 
-- **[10]** Handle technical debt directly instead of dumping it in `PROJECT.md`; larger items → existing/new milestone (align with the user before any roadmap update).
-- **[12]** Developer hands back to **Pathfinder** (not Architect) when done.
-- **[13]** Developer marks the slice **Completed** before handing to the user for verification.
-- **[14]** Debugger: systemic audit **before** proposing the solution; ideally a single alignment gate.
-- **[15]** Debugger invokes **Prototyper** first when technical unknowns persist (or create a Task Brief like Pathfinder — should Architect too?).
-- **[16]** Prototyper isolates UI/UX bugs in a smaller focused prototype, or Debugger steps in; Debugger needs an effective user-facing bug diagnosis method.
-- **[17]** Pathfinder: drop Assistant from delegation options; implement tactical work directly.
-- **[19]** Consider `docs/project/inbox/` for process frictions that are not technical debt (this file is the first entry).
-- **[21]** Developer: proactive QA phase (handle debt, remove linter suppressions, unify duplicate logic).
-- **[22]** Developer: run a real manual smoke test as an end-user before handoff.
-- **[24]** Distinguish invariants (long-lived) vs feature specs (short-lived, folded in if needed); define lifecycles.
-- **[28]** Add a **Formal Unknown** category (clearable by asking the user), alongside Technical/Functional unknowns. ⬜ (new concept)
-- **[29]** Use `CURL` when `READ` on a URL fails; create a spike for JS-heavy pages. ⬜ (new behavior)
-- **[30]** Review for workflow streamlining; avoid unofficial jargon. ⬜ (strategic)
-- **[31]** `.gitignore` template + instruction to use it. ⬜ (InitService already embeds a `.gitignore` default for `.teddy/`)
-- **[33]** External-facing (libs/APIs) → Technical Unknown; user-facing → Functional Unknown. ⬜
-- **[35]** Update component/architectural docs when code changes; fill gaps; remove redundancy (keep information where most relevant).
-- **[36]** Coarse-to-fine spike methodology: build a minimal spike, add fidelity until the bug reproduces; phases reproduce → isolate → solve.
-- **[37]** Relax "revert on test failure" (do not auto-revert); audit Developer for a similar rule.
-- **[38]** Reduce to a single alignment gate after root cause + MRE + Shadow Fix.
-- **[39]** Prototyper: "looks-like" vs "works-like" prototypes (maps to functional vs technical unknowns).
-- **[N1] Track answered user questions in the State Dashboard** — Log, under WIP & REMINDERS, which user questions/requests have already been answered, so agents do not repeat resolved points or re-ask answered questions. ❓ Decide exact marker/wording.
-- **[N2] Debugger "dangling" rules** — The two Debugger-specific rules (`Debug Mode & Branch by Abstraction`, `Remote Probing Protocol`) currently sit orphaned inside `<workflow>` after the final phase. Integrate them into the workflow phases and/or move protocol detail into templates. ⬜
-- **[S1] Collapse `specs/features/` → invariants + Milestone Requirements + Task Briefs.** Retire feature specs: strategic *what/why* lives in **Milestone Requirements**; tactical *how* lives in **Task Briefs**; reserve the Specification Document template for **long-lived invariants**. Caveat: reconcile the "Specification Document" references in the Pathfinder and Architect prompts. (Refines **[24]**.) ❓
-- **[S2] Autonomous CI / quality-failure detection & autofix.** Keep the local post-commit test gate **blocking**; add an **agent-facing detection command** (e.g. a `make ci` target) plus a **"CI Preflight"** instruction so agents fix a red build/quality verdict *before* proceeding; surface the non-blocking quality result through the same command. Caveat: a post-commit hook **cannot** synchronously report on remote CI. Sub-question: keep the local `git reset --soft HEAD~1` revert, or switch to report-only? (Refines **[37]**.) ❓
-- **[S3] Pathfinder direct-execution boundary.** Codify an **Execution Boundary** with no mid-workflow branch: execute directly when the deliverable is **non-behavioral** (docs, templates, config text, artifact creation, file moves/renames); delegate **production logic/tests/runtime → Developer** and **design/contracts → Architect**. The only conditional is the **terminal handoff**. (Refines **[17]**.) ❓
-- **[S4] Assistant: remove pre-execution alignment; default `-p` to Assistant.** Strip the Assistant's Phase-1 alignment Message so it emits **ONE terminal Message**, then make **pipeline (`-p`) runs default to the Assistant**. Caveat: `-p` exits after the **first** `## Message`, so *any* message-first agent (including the `pathfinder` default) is unusable in `-p`. ❓
-- **[S5] Type-driven / gap-driven development ownership.** Make the already-implicit **Contract-First Design + Mypy + Design-by-Contract + Prototyper→Developer** flow *explicit* (typed contracts as the Architect's first artifact; the Developer may stub the typed signature to drive the Red phase) **without new jargon or a new phase**. ❓
-- **[S6] Document prompt assembly & bundling in `ARCHITECTURE.md`.** Document (a) the `PromptManager` assembly pipeline — `Agent Name:` injection, `MRP.xml` append inside `<system>`, and the legacy `<response_format>` detection; (b) the bundled/overridable prompt set (`resources/config/prompts/*.xml` copied to `.teddy/prompts/`) versus the **non-overridable** `resources/MRP.xml`; and (c) the `resources/templates/` → `docs/templates/` init flow. ⬜ (documentation task)
+---
+
+#### Theme 1: Specifications, Artifact Lifecycles & Planning Artifacts
+*Focus: How requirements flow from discovery to delivery without artifact duplication, drift, or maintenance churn.*
+
+- **[24] Specification Lifecycles:** Distinguish long-lived invariants vs short-lived feature specs; define unambiguous creation, update, and retirement lifecycles for both.
+- **[S1] Collapse `specs/features/` $\to$ Invariants + Milestone Requirements + Task Briefs (Refines [24]):** Retire dedicated feature spec documents. Strategic *what/why* lives in **Milestones**; tactical *how* lives in **Vertical Slices** or **Task Briefs**; reserve the `specification-document.md` template strictly for **long-lived system invariants**. Reconcile all references in Pathfinder and Architect prompts. ❓
+- **[19] Friction Inbox (`docs/project/inbox/`):** Establish `docs/project/inbox/` as a destination for capturing raw process frictions, backlog thoughts, and workflow ideas that do not qualify as technical debt. ⬜
+
+---
+
+#### Theme 2: Pathfinder Direct-Execution Boundary & Delegation Options
+*Focus: Clarifying what Pathfinder executes directly versus what it delegates, and rationalizing available handoff targets.*
+
+- **[17] Pathfinder Tactical Delegation:** Drop the Assistant from Pathfinder's delegation targets; have Pathfinder implement tactical and non-behavioral tasks directly.
+- **[S3] Pathfinder Direct-Execution Boundary (Refines [17]):** Codify an explicit execution boundary without mid-workflow branches:
+  - **Execute directly:** Non-behavioral deliverables (documentation, templates, configuration text, roadmap adjustments, file moves/renames, chore edits).
+  - **Delegate to Developer:** Production runtime logic, tests, and behavior changes.
+  - **Delegate to Architect:** Structural design, seam decomposition, and contract definitions.
+  - The only conditional branch is the terminal handoff. ❓
+
+---
+
+#### Theme 3: Assistant Fast Iteration & Pipeline Mode
+*Focus: Making the Assistant usable for single-shot commands, scripting, and autonomous pipeline runs.*
+
+- **[S4] Assistant Alignment Elimination & Pipeline Default:**
+  - Strip the pre-execution Phase 1 alignment gate from `assistant.xml` so it executes immediately and emits **one terminal Message**.
+  - Default the pipeline execution flag (`teddy run -p`) to the Assistant so headless scripted runs do not abort on an early alignment message. ❓
+
+---
+
+#### Theme 4: Developer Workflow, QA Rigor & Handoff Routing
+*Focus: Ensuring the Developer produces clean, fully verified work before completion, and returns control to the proper agent.*
+
+- **[12] Developer Terminal Handoff Target:** Change Developer's completion handoff from Architect back to **Pathfinder** (or evaluate when/if Architect is still relevant).
+- **[13] Slice Completion Lifecycle:** Developer explicitly transitions the Vertical Slice status to `Completed` before requesting user verification.
+- **[21] Proactive QA Phase:** Embed an explicit polish step in the Developer workflow (resolving in-scope debt, removing temporary lint suppressions, unifying duplicate logic introduced during Green phase).
+- **[22] Manual Smoke Verification:** Developer executes a real manual smoke test as an end-user (e.g. running CLI commands or interactive verification) before handoff, rather than relying exclusively on unit tests.
+
+---
+
+#### Theme 5: Technical Debt Handling & Architectural Doc Maintenance
+*Focus: Preventing `PROJECT.md` from becoming an unmanaged debt dumping ground, and keeping docs synchronized with code.*
+
+- **[10] Direct Technical Debt Remediation:** Handle technical debt directly in-flight where possible instead of blindly logging it into `PROJECT.md`. Structure debt into tiers:
+  - Micro/quick-wins ($\le 3$ lines, localized): fix immediately.
+  - Slice-scoped: include as `Refactor`/`Cleanup` deliverables in the active slice.
+  - Large/structural: align with user before scheduling into existing or new milestones.
+- **[35] Architectural & Component Doc Synchronization:** Require agents to update component designs and architecture maps concurrently when code changes occur, removing stale redundancy.
+
+---
+
+#### Theme 6: Debugger Workflow, Investigation Methodology & Gating
+*Focus: Streamlining the investigation phases, improving user alignment efficiency, and integrating orphaned rules.*
+
+- **[14] / [38] Debugger Gate Consolidation & Systemic Audit Ordering:**
+  - Run the Systemic Audit immediately after verifying the root cause with an MRE and Shadow Fix.
+  - Collapse multiple alignment gates into a **single alignment gate** where the user receives the complete analysis (RCA + MRE evidence + Shadow fix + Systemic audit + resolution plan) at once.
+- **[15] Debugger Escalation to Prototyper:** Clarify when Debugger should invoke Prototyper when deep technical unknowns persist, or author a Task Brief.
+- **[16] UI/UX Bug Diagnosis:** Methodology for Prototyper to isolate UI/UX rendering bugs in a minimal focused sandbox when Debugger needs assistance.
+- **[36] Coarse-to-Fine Spike Methodology:** Codify coarse-to-fine probing: start minimal, gradually add fidelity until the bug reproduces, following distinct phases (reproduce $\to$ isolate $\to$ solve).
+- **[N2] Integrate Dangling Debugger Rules:** Integrate the two orphaned rules at the end of `debugger.xml` (`Debug Mode & Branch by Abstraction` and `Remote Probing Protocol`) directly into their respective workflow phases and templates. ⬜
+
+---
+
+#### Theme 7: Unknowns Taxonomy & Prototyping Approaches
+*Focus: Standardizing how risks and uncertainties are classified and de-risked.*
+
+- **[28] Formal Unknowns Category:** Introduce `[Formal]` as a first-class unknown tag (ambiguities in business rules, definitions, or requirements cleared directly by asking the user), alongside `[Technical]` and `[Functional]`. ⬜
+- **[33] Boundary Classification:** Explicitly define the boundary: external libraries/APIs/runtime $\to$ `[Technical]`; user-facing UX/interaction $\to$ `[Functional]`. ⬜
+- **[39] Looks-Like vs. Works-Like Prototyping:** Map prototyping deliverables to unknown types: "looks-like" for functional/UX unknowns, "works-like" for technical/feasibility unknowns.
+
+---
+
+#### Theme 8: Git Hooks, CI Quality Gates & Tooling
+*Focus: Improving commit safety, quality-failure detection, and foundational tool configs.*
+
+- **[37] Relax "Revert on Test Failure":** Evaluate the local post-commit hook's automatic `git reset --soft HEAD~1` behavior; prevent confusion when commit attempts fail tests.
+- **[S2] Autonomous CI / Quality-Failure Preflight (Refines [37]):**
+  - Add an agent-facing preflight command (e.g. `make ci` or `make check`) running both tests and quality checks.
+  - Instruct agents to run this preflight before committing so failures are caught and fixed prior to invoking git commit.
+  - Decide whether to keep the post-commit soft-revert as an unskippable backstop or switch to a reporting-only failure gate. ❓
+- **[31] `.gitignore` Template:** Provide a standard bundled `.gitignore` template covering `.tmp/`, `spikes/`, and environment caches, with instructions for agents to reference it during bootstrapping. ⬜
+
+---
+
+#### Theme 9: Prompt Hygiene, State Dashboard & Harness Consistency
+*Focus: Refining response mechanics, eliminating communication loops, and documenting harness internals.*
+
+- **[N1] State Dashboard Answer Tracking:** Define an explicit marker in `WIP & REMINDERS` (e.g. `[A]`) to record user answers to questions, preventing agents from re-asking answered questions across turns. ❓
+- **[29] URL Read Fallback (`curl` / JS-heavy pages):** Instruct agents to fall back to `EXECUTE curl -sL <url>` if `READ` on a remote URL fails, and create a spike for dynamic JS pages. ⬜
+- **[30] Prompt Language & Jargon Review:** Audit all agent prompts to streamline instructions and eliminate unofficial or confusing jargon. ⬜
+- **[S5] Contract-First Design Ownership:** Clarify typed protocol/contract generation (Architect generates types/contracts $\to$ Developer stubs them to drive Red phase) without inventing new phase names. ❓
+- **[S6] Document Assembly Pipeline in `ARCHITECTURE.md`:** Document the `PromptManager` assembly flow (`Agent Name:` injection, `MRP.xml` appending, non-overridable vs overridable assets, and template initialization) in `ARCHITECTURE.md`. ⬜
+
+---
 
 ### Tier 4 — Final verification (last step)
 
@@ -106,5 +174,3 @@ Completed 2026-10-08 and 2026-10-09. Kept compact — full detail lives in Git h
 ### Tier 1 — Mechanical Content
 - **[N5] Per-doc-type file-numbering conventions** — The `PROJECT.md` template's Workflow Standards "Numbering" topic now enumerates the filename convention for each artifact type (vertical slices `MM-NN-name.md`, milestones `MM-name.md`, case files `NN-name.md`, task briefs `NN-name.md`, ad-hoc work `00-NN-name.md`).
 - **[N3] CI-history extraction → `make logs`** — The Debugger's inline `gh run view ... | awk ...` CI-log extraction was abstracted into a `make logs <run-id> '<step-name>'` target in the `makefile.md` template; the Debugger's Phase 1 Step 2 now references it, and the target is mirrored in TeDDy's real `Makefile`.
-
----
