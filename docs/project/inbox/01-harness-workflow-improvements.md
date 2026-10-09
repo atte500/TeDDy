@@ -2,7 +2,7 @@
 
 - **Status:** Active (working backlog)
 - **Owner:** Pathfinder
-- **Last Updated:** 2026-10-08
+- **Last Updated:** 2026-10-09
 
 ## Purpose
 
@@ -11,70 +11,65 @@ Single source of truth for improvement ideas raised during the harness/prompt re
 - **To Do** — the actionable backlog, ordered by execution priority (each entry notes its blocker/dependency).
 - **Done** — a compact record of completed work, kept only for traceability so later sessions do not re-litigate settled points.
 
-Bracketed numbers refer to the original 40-item list; `Nx` marks new items raised during review. A theme appears under **To Do** only while it still has open work; fully completed themes live only under **Done**.
+Bracketed numbers refer to the original 40-item list; `Nx` marks new items raised during review; `Sx` marks strategic items raised during the 2026-10-09 prompt/workflow review. A theme appears under **To Do** only while it still has open work; fully completed themes live only under **Done**.
 
 ## Status Legend
 
-- ⬜ Not started
-- 🟡 Partially done (design/content complete; harness follow-up outstanding)
+- ⬜ Not started / ready to start
 - ❓ Needs a strategic decision before implementation
 
 ---
 
 ## To Do
 
-Ordered by execution priority. Items within a tier are independent.
-
-### Tier 2 — Harness code (production; on the critical path)
-
-- **[1] MRP as a separate injected layer (harness)** — Design/content is complete (see Done). Remaining: `PromptManager.fetch_system_prompt()` must inject the `Agent Name:` line, append `MRP.xml` after the agent-specific XML (inside `<system>`), run the legacy `<response_format>` detection, and fail-fast (`FileNotFoundError`) when MRP.xml is missing — plus tests. Slice **03-02**. 🟡
-- **[7] `teddy init templates`** — Implement the command; instruct agents to use it when `docs/templates/` is missing. Bare `teddy init` and `teddy start`/`teddy resume` also (non-destructively) create `docs/templates/`. Slice **03-03**. ⬜ Deferred (production code).
-- **[6] Prompt divergence check** — `teddy start` should warn when local prompts differ from bundled defaults and instruct `teddy init prompts`. ⬜ Deferred (production code).
+Ordered by execution priority. Items within a tier are independent; every item names any dependency it has. `❓` needs a decision before implementation; `⬜` is ready to start.
 
 ### Tier 3 — Strategic (requires joint decisions)
 
-**D. Agent Handoff Chain & Workflow**
+- **[10]** Handle technical debt directly instead of dumping it in `PROJECT.md`; larger items → existing/new milestone (align with the user before any roadmap update).
 - **[12]** Developer hands back to **Pathfinder** (not Architect) when done.
 - **[13]** Developer marks the slice **Completed** before handing to the user for verification.
 - **[14]** Debugger: systemic audit **before** proposing the solution; ideally a single alignment gate.
 - **[15]** Debugger invokes **Prototyper** first when technical unknowns persist (or create a Task Brief like Pathfinder — should Architect too?).
 - **[16]** Prototyper isolates UI/UX bugs in a smaller focused prototype, or Debugger steps in; Debugger needs an effective user-facing bug diagnosis method.
 - **[17]** Pathfinder: drop Assistant from delegation options; implement tactical work directly.
+- **[19]** Consider `docs/project/inbox/` for process frictions that are not technical debt (this file is the first entry).
 - **[21]** Developer: proactive QA phase (handle debt, remove linter suppressions, unify duplicate logic).
 - **[22]** Developer: run a real manual smoke test as an end-user before handoff.
-- **[39]** Prototyper: "looks-like" vs "works-like" prototypes (maps to functional vs technical unknowns).
-
-**E. Documentation & Debt Management**
-- **[10]** Handle technical debt directly instead of dumping in `PROJECT.md`; larger items → existing/new milestone (align with the user before any roadmap update).
-- **[19]** Consider `docs/project/inbox/` for process frictions that are not technical debt (this file is the first entry).
 - **[24]** Distinguish invariants (long-lived) vs feature specs (short-lived, folded in if needed); define lifecycles.
+- **[28]** Add a **Formal Unknown** category (clearable by asking the user), alongside Technical/Functional unknowns. ⬜ (new concept)
+- **[29]** Use `CURL` when `READ` on a URL fails; create a spike for JS-heavy pages. ⬜ (new behavior)
+- **[30]** Review for workflow streamlining; avoid unofficial jargon. ⬜ (strategic)
+- **[31]** `.gitignore` template + instruction to use it. ⬜ (InitService already embeds a `.gitignore` default for `.teddy/`)
+- **[33]** External-facing (libs/APIs) → Technical Unknown; user-facing → Functional Unknown. ⬜
 - **[35]** Update component/architectural docs when code changes; fill gaps; remove redundancy (keep information where most relevant).
-
-**G. Debugger Methodology**
 - **[36]** Coarse-to-fine spike methodology: build a minimal spike, add fidelity until the bug reproduces; phases reproduce → isolate → solve.
 - **[37]** Relax "revert on test failure" (do not auto-revert); audit Developer for a similar rule.
 - **[38]** Reduce to a single alignment gate after root cause + MRE + Shadow Fix.
-
-**F. Communication & Workflow Hygiene (remaining)**
-- **[28]** Add a **Formal Unknown** category (clearable by asking the user), alongside Technical/Functional unknowns. ⬜ Deferred (new concept).
-- **[29]** Use `CURL` when `READ` on a URL fails; create a spike for JS-heavy pages. ⬜ Deferred (new behavior).
-- **[30]** Review for workflow streamlining; avoid unofficial jargon. ⬜ Deferred (strategic).
-- **[31]** `.gitignore` template + instruction to use it. ⬜ Deferred (InitService already embeds a `.gitignore` default for `.teddy/`).
-- **[33]** External-facing (libs/APIs) → Technical Unknown; user-facing → Functional Unknown. ⬜ Deferred.
-
-**New Items**
+- **[39]** Prototyper: "looks-like" vs "works-like" prototypes (maps to functional vs technical unknowns).
 - **[N1] Track answered user questions in the State Dashboard** — Log, under WIP & REMINDERS, which user questions/requests have already been answered, so agents do not repeat resolved points or re-ask answered questions. ❓ Decide exact marker/wording.
 - **[N2] Debugger "dangling" rules** — The two Debugger-specific rules (`Debug Mode & Branch by Abstraction`, `Remote Probing Protocol`) currently sit orphaned inside `<workflow>` after the final phase. Integrate them into the workflow phases and/or move protocol detail into templates. ⬜
+- **[S1] Collapse `specs/features/` → invariants + Milestone Requirements + Task Briefs.** Retire feature specs: strategic *what/why* lives in **Milestone Requirements**; tactical *how* lives in **Task Briefs**; reserve the Specification Document template for **long-lived invariants**. Caveat: reconcile the "Specification Document" references in the Pathfinder and Architect prompts. (Refines **[24]**.) ❓
+- **[S2] Autonomous CI / quality-failure detection & autofix.** Keep the local post-commit test gate **blocking**; add an **agent-facing detection command** (e.g. a `make ci` target) plus a **"CI Preflight"** instruction so agents fix a red build/quality verdict *before* proceeding; surface the non-blocking quality result through the same command. Caveat: a post-commit hook **cannot** synchronously report on remote CI. Sub-question: keep the local `git reset --soft HEAD~1` revert, or switch to report-only? (Refines **[37]**.) ❓
+- **[S3] Pathfinder direct-execution boundary.** Codify an **Execution Boundary** with no mid-workflow branch: execute directly when the deliverable is **non-behavioral** (docs, templates, config text, artifact creation, file moves/renames); delegate **production logic/tests/runtime → Developer** and **design/contracts → Architect**. The only conditional is the **terminal handoff**. (Refines **[17]**.) ❓
+- **[S4] Assistant: remove pre-execution alignment; default `-p` to Assistant.** Strip the Assistant's Phase-1 alignment Message so it emits **ONE terminal Message**, then make **pipeline (`-p`) runs default to the Assistant**. Caveat: `-p` exits after the **first** `## Message`, so *any* message-first agent (including the `pathfinder` default) is unusable in `-p`. ❓
+- **[S5] Type-driven / gap-driven development ownership.** Make the already-implicit **Contract-First Design + Mypy + Design-by-Contract + Prototyper→Developer** flow *explicit* (typed contracts as the Architect's first artifact; the Developer may stub the typed signature to drive the Red phase) **without new jargon or a new phase**. ❓
+- **[S6] Document prompt assembly & bundling in `ARCHITECTURE.md`.** Document (a) the `PromptManager` assembly pipeline — `Agent Name:` injection, `MRP.xml` append inside `<system>`, and the legacy `<response_format>` detection; (b) the bundled/overridable prompt set (`resources/config/prompts/*.xml` copied to `.teddy/prompts/`) versus the **non-overridable** `resources/MRP.xml`; and (c) the `resources/templates/` → `docs/templates/` init flow. ⬜ (documentation task)
 
 ### Tier 4 — Final verification (last step)
 
-- **[N6] Full prompt / template / docs sanity check** — After Tiers 1–3 land, audit all 6 agent prompts for inconsistencies: (a) across agents; (b) within each agent's own workflow/phases; and (c) between the new templates/process and the current state of TeDDy's own docs, repo, and setup (e.g. the `MRP.xml` relocation to `src/teddy_executor/resources/`, the new real `Makefile` `make test` target, the renamed bundled templates, and the `docs/templates/` self-hosting gap). ⬜ Last step.
+- **[N6] Full prompt / template / docs sanity check** — After Tiers 1–3 land, audit all 6 agent prompts for inconsistencies: (a) across agents; (b) within each agent's own workflow/phases; and (c) between the new templates/process and the current state of TeDDy's own docs, repo, and setup (e.g. the `MRP.xml` relocation to `src/teddy_executor/resources/` + injection logic, the new real `Makefile` `make test` target, the renamed bundled templates, and the `docs/templates/` self-hosting gap). ⬜ Last step.
 
 ---
 
 ## Done (for traceability)
 
-Completed 2026-10-08. Kept compact — full detail lives in Git history and the linked slices.
+Completed 2026-10-08 and 2026-10-09. Kept compact — full detail lives in Git history and the linked slices.
+
+### Tier 2 — Harness Code
+- **[1] MRP as a separate injected layer** — `PromptManager.fetch_system_prompt()` injects the `Agent Name:` line, appends `MRP.xml` after the agent-specific XML (inside `<system>`), runs the legacy `<response_format>` detection, and fails fast (`FileNotFoundError`) when `MRP.xml` is missing — plus tests. Slice **03-02**.
+- **[7] `teddy init templates`** — The command ships and regenerates `docs/templates/` from the bundled defaults; bare `teddy init` no longer creates `docs/templates/` on first run. Slice **03-03**.
+- **[6] Prompt divergence check** — `teddy start` warns when local prompts differ from bundled defaults and instructs `teddy init prompts`.
 
 ### Prompt Architecture & MRP
 - **[2] Whitespace normalization** across the prompt XMLs.
