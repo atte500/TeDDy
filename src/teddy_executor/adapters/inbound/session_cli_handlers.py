@@ -544,7 +544,7 @@ def handle_new_session(  # noqa: PLR0913
         daemon=True,
     )
     thread.start()
-    _display_update_notification(container, cache_path)
+    fired = _display_update_notification(container, cache_path)
 
     try:
         # 0. Pipeline mode requires an initial message
@@ -561,12 +561,15 @@ def handle_new_session(  # noqa: PLR0913
 
         # 2. Pre-flight checks (Fail-fast before user interaction)
         typer.echo("Checking configurations...", err=True)
-        _run_cli_preflight_check(
-            container,
-            agent=agent,
-            setup_editor=setup_editor,
-            setup_api_key=setup_api_key,
+        fired.extend(
+            _run_cli_preflight_check(
+                container,
+                agent=agent,
+                setup_editor=setup_editor,
+                setup_api_key=setup_api_key,
+            )
         )
+        _display_checks_footer(fired)
         _echo_config_success(container, agent, model=model)
 
         session_manager: ISessionManager = container.resolve(ISessionManager)
@@ -649,7 +652,7 @@ def _run_cli_preflight_check(
     agent: Optional[str] = None,
     setup_editor: Optional[bool] = None,
     setup_api_key: Optional[bool] = None,
-) -> None:
+) -> list[str]:
     """Ensures system is configured before starting/resuming a session.
 
     When ``setup_editor`` is truthy, an additional editor-configuration gate
@@ -707,8 +710,7 @@ def _run_cli_preflight_check(
         # one-time setup stays decoupled from the approval flag (Slice 00-26).
         if setup_editor:
             _validate_editor_config(container)
-        _display_drift_notification(container)
-        return
+        return _display_drift_notification(container)
 
     error_msg = f"Configuration Error: {', '.join(errors)}"
     raise ConfigurationError(error_msg)
@@ -1094,7 +1096,7 @@ def handle_resume_session(  # noqa: PLR0913
         daemon=True,
     )
     thread.start()
-    _display_update_notification(container, cache_path)
+    fired = _display_update_notification(container, cache_path)
 
     try:
         # 1. Health checks (advisory, non-blocking)
@@ -1102,11 +1104,14 @@ def handle_resume_session(  # noqa: PLR0913
 
         # 2. Pre-flight checks
         typer.echo("Checking configurations...", err=True)
-        _run_cli_preflight_check(
-            container,
-            setup_editor=setup_editor,
-            setup_api_key=setup_api_key,
+        fired.extend(
+            _run_cli_preflight_check(
+                container,
+                setup_editor=setup_editor,
+                setup_api_key=setup_api_key,
+            )
         )
+        _display_checks_footer(fired)
 
         # 2. Resolve session name
         session_name = _resolve_session_name(container, path)

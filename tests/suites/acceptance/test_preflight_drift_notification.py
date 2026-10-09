@@ -36,6 +36,14 @@ def test_start_advises_init_prompts_when_a_prompt_has_drifted(tmp_path, monkeypa
         f"got: {output!r}"
     )
 
+    # Assert: the single shared disable-footer names the fired checks. In this
+    # workspace the prompts drift fires alongside the (missing) templates drift,
+    # so the footer lists both keys in canonical order (prompts, then templates).
+    assert (
+        "You can disable these checks in .teddy/config.yaml: "
+        "checks.prompts, checks.templates." in output
+    ), f"The shared disable-footer must name both fired checks; got: {output!r}"
+
 
 def test_start_advises_init_templates_when_a_template_is_missing(tmp_path, monkeypatch):
     """Scenario (Missing template): an incomplete docs/templates/ yields the advice."""
@@ -63,3 +71,8 @@ def test_start_advises_init_templates_when_a_template_is_missing(tmp_path, monke
         "A missing template must trigger the 'teddy init templates' preflight "
         f"advice; got: {output!r}"
     )
+
+    # Assert: the single shared disable-footer names the fired templates check.
+    assert (
+        "You can disable this check in .teddy/config.yaml: checks.templates." in output
+    ), f"The shared disable-footer must name the fired templates check; got: {output!r}"

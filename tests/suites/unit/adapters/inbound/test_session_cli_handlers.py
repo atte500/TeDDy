@@ -377,7 +377,7 @@ def test_handle_new_session_starts_background_check_thread(monkeypatch):
     # Bypass session orchestration logic to avoid mock container failures
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._run_cli_preflight_check",
-        lambda container, agent=None, setup_editor=None, setup_api_key=None: None,
+        lambda container, agent=None, setup_editor=None, setup_api_key=None: [],
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
@@ -473,7 +473,7 @@ def test_handle_resume_session_starts_background_check_thread(monkeypatch):
     # Bypass session orchestration logic to avoid mock container failures
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._run_cli_preflight_check",
-        lambda container, agent=None, setup_editor=None, setup_api_key=None: None,
+        lambda container, agent=None, setup_editor=None, setup_api_key=None: [],
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
@@ -550,7 +550,7 @@ def test_resume_handler_calls_set_session_agent_when_agent_provided(monkeypatch)
     # Bypass preflight and session orchestration
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._run_cli_preflight_check",
-        lambda container, agent=None, setup_editor=None, setup_api_key=None: None,
+        lambda container, agent=None, setup_editor=None, setup_api_key=None: [],
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
@@ -569,7 +569,7 @@ def test_resume_handler_calls_set_session_agent_when_agent_provided(monkeypatch)
     # get_setting(), keeping this wiring test focused on set_session_agent.
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._display_update_notification",
-        lambda container, cache_path: None,
+        lambda container, cache_path: [],
     )
     # Mock background_check to avoid real imports
     monkeypatch.setattr(
