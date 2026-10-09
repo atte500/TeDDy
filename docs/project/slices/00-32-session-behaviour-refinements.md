@@ -150,7 +150,7 @@ Add a single canonical-casing helper (agent name → the resolved prompt file st
 - [x] **Wiring** — Items 3/4/5: emit the drift notification at the start/resume preflight and gate it (plus the update notification) by the toggles.
 - [x] **Harness** — Regression/unit tests for the drift checker and its toggle gating; add an acceptance test for the (toggle-gated) drift notification.
 - [x] **Refactor** — Single-source the canonical-casing helper (avoid duplicating the stem→`capitalize()` logic).
-- [ ] **Cleanup** — Update the `03-03-templates-and-init` slice doc to record the reversed explicit-only contract; remove `spikes/debug/` if present.
+- [x] **Cleanup** — Update the `03-03-templates-and-init` slice doc to record the reversed explicit-only contract; remove `spikes/debug/` if present.
 
 ## Implementation Notes
 
@@ -250,6 +250,14 @@ The change is strictly additive (a brand-new top-level key), so `YamlConfigAdapt
 **One Red-Green cycle (characterization safety net).** Red (Turn 118): `tests/suites/unit/core/services/test_prompt_manager.py` gained a parametrized safety-net test driving upper- and mixed-case agent input through the real header branch; the focused module ran `14 passed` (characterization Green — production already canonicalised, so NO production was changed to manufacture a failure). Green (Turn 119): the import plus the inline-call replacement landed; the focused module stayed `14 passed` with ZERO assertion edits, proving the refactor is behaviour-preserving.
 
 **Phase 3 Integration.** The full suite (`make test`, no filters) ran GREEN at `1707 passed, 5 skipped in 9.21s` — the two new parametrized cases added to the `1705`-pass Harness baseline, confirming no regression. No Phase 3 recovery was required.
+
+### Cleanup — 03-03 contract reversal + spikes/debug no-op (complete)
+
+**Documentation change (the deliverable IS the doc update).** The `03-03-templates-and-init` slice doc gained a **Contract Reversal** section, inserted immediately before its `## Business Goal` header, recording that slice `00-32` Item 1 reversed the auto-init contract so that `docs/templates/` is scaffolded ONLY by the explicit `teddy init templates` subcommand. It enumerates every now-superseded statement in that document (the bare-init Gherkin scenario, the Wiring deliverable row that claimed a folded `Templates:` summary segment, the "Auto-init on startup" note, and Verification step 4) and cites the reversal's acceptance contract in `tests/suites/acceptance/test_templates_auto_init.py`.
+
+**Spikes removal is a confirmed NO-OP.** The second half of the deliverable ("remove `spikes/debug/` if present") was verified in Turn 125: no `spikes/debug/` directory exists. The retained `spikes/prototypes/mrp-base-prompt` prototype (owned by slice `03-02`) is out of scope and left untouched.
+
+**Verification.** Phase 3 (Turn 126): full suite GREEN at `1707 passed, 5 skipped` — identical to the Refactor baseline, as predicted for a documentation-only change (no source or test file touched). No Phase 3 recovery was required. This is the slice's LAST deliverable; the 8-item `## Verification` checklist and the Consistency Check run in Phase 5.
 
 ## Verification
 

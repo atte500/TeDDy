@@ -5,6 +5,30 @@
 - **Component Docs:** [InitService](/docs/architecture/core/services/init_service.md)
 - **Scope Slug:** `templates-init`
 
+## Contract Reversal (Superseded by Session Behaviour Refinements)
+
+Status: PARTIALLY SUPERSEDED. Slice 00-32 Session Behaviour Refinements (Item 1,
+Templates explicit-only) REVERSED the auto-init contract this document describes. Bare
+teddy init -- and the teddy start / teddy resume paths that share
+InitService.ensure_initialized -- NO LONGER create docs/templates/. Only the explicit
+teddy init templates subcommand scaffolds docs/templates/, and it still overwrites.
+
+The following statements below no longer describe the shipped behaviour:
+
+- Scenario "I want to run teddy init (bare) so that docs/templates/ is also created":
+  bare teddy init does NOT create docs/templates/; templates are now opt-in.
+- Wiring deliverable row about folding the templates status into ensure_initialized:
+  ensure_initialized no longer calls _init_templates and no longer emits a Templates:
+  summary segment; its summary is now "Config: <status>. Prompts: <status>.".
+- Implementation note "Auto-init on startup": docs/templates/ is NOT auto-created on
+  teddy start / teddy resume.
+- Verification step 4 (manual teddy init scaffold check): now void; use
+  teddy init templates instead.
+
+The reversal's acceptance contract lives in
+tests/suites/acceptance/test_templates_auto_init.py, which asserts that bare teddy init
+does NOT create docs/templates/.
+
 ## Business Goal
 Eliminate redundant blueprint definitions across all 6 agent prompts by extracting shared content into centralized template files. Provide a `teddy init templates` command for users to regenerate project scaffolding in `docs/templates/`.
 

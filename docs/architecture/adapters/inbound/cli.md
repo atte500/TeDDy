@@ -123,6 +123,15 @@ The CLI adapter performs editor validation during session startup (`handle_new_s
 
 Editor validation is skipped entirely for runs that will not read the terminal: fully-specified batch runs (`-y` with `-m`), `--pipeline` runs, and any non-TTY stdin (CI/piped). A `-y` run without `-m` on a TTY still blocks on the opening-message prompt, so the one-time editor setup runs.
 
+### Preflight Notifications (Drift & Update)
+
+`_run_cli_preflight_check()` also emits two advisory notifications on its healthy path — the shared slot reached by `start`, `plan` and `resume` after `ensure_initialized()`:
+
+- **Drift notification** (`_display_drift_notification`): resolves `IInitUseCase`, calls `check_drift()`, and — when the report has drift — emits a yellow message advising the actionable command (`teddy init prompts` for edited/missing prompts; `teddy init templates` for edited/missing templates). Gated by the `checks.prompts_templates` toggle (default enabled).
+- **Update notification** (`_display_update_notification`): reads the update cache and, when a newer version is cached, emits the upgrade advice. Gated by the `checks.update` toggle (default enabled); the toggle suppresses only the user-facing NOTIFICATION — the background version fetch/caching still runs.
+
+Both toggles are read additively via `IConfigService.get_setting`, so a config that lacks the `checks` block behaves as enabled (backwards compatible).
+
 ### Startup Health Checks (`_run_health_checks`)
 
 `_run_health_checks()` runs two advisory checks on session start/resume (`handle_new_session`, `handle_resume_session`): `_ensure_commit_hooks()` and `_check_git_initialized()`.

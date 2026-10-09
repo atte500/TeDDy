@@ -19,9 +19,9 @@ Extract the shared Markdown Response Protocol (response format + common general 
 Agent XMLs have their duplicate common `<general_rules>` and `<response_format>` blocks removed, keeping only agent-specific rules. The MRP.xml state dashboard format instruction is a single shared directive rather than repeated per agent.
 
 ### Slice 03-03: Templates & Init
-Bundled Markdown template files are stored in `src/teddy_executor/resources/templates/`. The `teddy init templates` subcommand copies them to `docs/templates/` in the user's project. The `teddy init` (bare) command also creates `docs/templates/` on first init. Agent XMLs have their `<blueprints>` sections replaced with directives referencing the templates. The PROJECT.md template (`PROJECT.md`) references `docs/templates/makefile.md` as part of Milestone 0 foundational tasks. Includes the Makefile template (`makefile.md`) as one of the 10 template files.
+Bundled Markdown template files are stored in `src/teddy_executor/resources/templates/`. The `teddy init templates` subcommand copies them to `docs/templates/` in the user's project. The `teddy init` (bare) command no longer creates `docs/templates/` on first init. Agent XMLs have their `<blueprints>` sections replaced with directives referencing the templates. The PROJECT.md template (`PROJECT.md`) references `docs/templates/makefile.md` as part of Milestone 0 foundational tasks. Includes the Makefile template (`makefile.md`) as one of the 10 template files.
 
-- **Auto-init on startup:** `teddy start` and `teddy resume` automatically create `docs/templates/` if the directory is missing (non-destructive — never overwrites existing files). Only `teddy init templates` forces overwrite.
+- **Auto-init on startup:** `teddy start` and `teddy resume` no longer create `docs/templates/` if the directory is missing (non-destructive — never overwrites existing files). Only `teddy init templates` forces overwrite.
 
 ## Guidelines (The "How")
 - **Test Harness Strategy:**

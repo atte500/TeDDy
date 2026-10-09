@@ -16,7 +16,7 @@ class IInitUseCase(ABC):
 
         Returns:
             A human-readable summary string (e.g., "Config: unchanged.
-            Prompts: updated (6 files). Templates: updated (11 files).").
+            Prompts: updated (6 files).").
         """
         pass
 

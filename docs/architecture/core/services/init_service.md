@@ -38,7 +38,7 @@ When `ensure_initialized` is called, the service performs the following checks a
 3.  **Default Configuration:** Checks for `.teddy/config.yaml`. If missing, it is created using the bundled baseline.
 4.  **Initial Context:** Checks for `.teddy/init.context`. If missing, it is created using bundled defaults.
 5.  **Secrets Placeholder (create-only):** Checks for `.teddy/.env`. If missing, it is created from the embedded `_ENV_PLACEHOLDER` constant — a commented placeholder whose (uncommented) `TEDDY_LLM_API_KEY=` line the bundled `config.yaml` interpolates via `${TEDDY_LLM_API_KEY}`. Unlike the other config files, `.env` is **never overwritten once it exists**, even under `overwrite=True` (i.e. when `teddy init config` runs): it holds the user's non-regenerable LLM API key. Only `config.yaml`, `.gitignore`, and `init.context` are reset by `overwrite=True`.
-6.  **Template Initialization (new):** Checks for `docs/templates/` directory. If missing, creates it and copies all bundled templates from `src/teddy_executor/resources/templates/`.
+6.  **Templates are NOT scaffolded by bare init (explicit-only).** `ensure_initialized()` deliberately does NOT create `docs/templates/`; template scaffolding is performed solely by the explicit `teddy init templates` subcommand (see the Template Initialization Logic below and the `ensure_templates_initialized` contract). This REVERSES the earlier auto-init decision recorded in the completed slice `03-03-templates-and-init` (slice `00-32` Item 1).
 
 ### Template Initialization Logic (new)
 
@@ -76,6 +76,12 @@ The bundled templates directory contains 11 files:
 - **Postconditions:** Delegates to `_init_templates()`. Returns a human-readable string prefixed with "Templates" (e.g., "Templates updated (11 files).").
 - **Exceptions:** None.
 - **Contract Dependencies:** Relies on `_read_bundled_resource()` loading from `src/teddy_executor/resources/templates/`.
+
+### `check_drift() -> DriftReport`
+- **Preconditions:** None.
+- **Postconditions:** Enumerates the canonical default file sets (`_PROMPT_FILES`, `_TEMPLATE_FILES`) and returns an immutable `DriftReport` (from `core/domain/models/drift_report.py`) classifying each user `.teddy/prompts/*.xml` and `docs/templates/*.md` file as EDITED (present but differing from a resolvable bundled default), MISSING (absent), or clean. Unresolvable bundled defaults are skipped, never reported as drift. A file is MISSING when the user copy is absent, so an entirely absent user directory simply makes every file in the set report as MISSING (per-file check, no directory special-casing). `DriftReport` exposes `has_drift`, `prompts_drifted` and `templates_drifted` convenience properties consumed by the preflight notification.
+- **Exceptions:** None.
+- **Contract Dependencies:** Reuses the existing `_config_dir` / `_templates_dir` / `_get_default_content` / `_read_bundled_resource` seams via a `_classify_drift` per-file helper. `check_drift` is an ADDITIVE member of `IInitUseCase` (no breaking signature change; every port double is spec-based).
 
 ## 8. Non-Destructive Guarantee
 

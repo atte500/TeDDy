@@ -18,6 +18,10 @@ The overall return format is: `Agent Name: {Name}\n\n{agent-specific XML}\n\n{MR
 
 The injection is NON-breaking: the method signature (`fetch_system_prompt(agent_name, turn_path) -> str`) is unchanged. The return value now contains all three parts.
 
+### Persist-then-reuse (Option A; slice `00-32` Item 2)
+
+As-built, `fetch_system_prompt` is primarily a VERBATIM READER. The composed prompt is persisted at the session root (`{session_root}/{prompt_filename}`) by `SessionService.create_session` at creation and by `SessionService.set_session_agent` on an agent switch; every later turn returns that persisted file UNCHANGED — no header prepend, no MRP append, no content sniffing. The agent-name header and the MRP block are composed only on the LAZY-COMPOSE FALLBACK path (a missing session-root file: a legacy session or a manual delete), which assembles from `.teddy/prompts/` and then persists the result. Because the session-root file IS by definition the composed prompt, no composed-vs-raw disambiguation is required. The injected header's casing is single-sourced through the shared `canonical_agent_name` helper (slice `00-32` Refactor), so the CLI banner, the planning header and the composed prompt header can never drift apart. The legacy `<response_format>` skip lives in the lazy-compose step, keeping the verbatim reader trivial.
+
 ### Provider Extraction
 After each LLM completion, `update_meta` extracts the resolved downstream provider from `response._hidden_params["provider"]` (populated by litellm). This reflects the actual provider that served the request (e.g., `"deepseek"`, `"together"`, `"openai"`), as opposed to the user-configured provider hint. The extraction uses `getattr(response, "_hidden_params", {}).get("provider", "unknown")` for graceful degradation when `_hidden_params` is absent (e.g., local models).
 
