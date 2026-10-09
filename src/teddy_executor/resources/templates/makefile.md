@@ -10,7 +10,6 @@ and the Debugger's Remote Probing Protocol (RPP). Below are concrete examples ad
 ### Commit
 ```shell
 make commit 'feat(templates): add PROJECT.md template'
-make commit 'fix(tests): resolve flaky assertion' no-verify
 ```
 
 **What is `.PHONY`?**
@@ -88,17 +87,19 @@ test:
 
 ## VCP Commit Workflow
 
+`make commit` runs the pre-commit hooks once (via `pre-commit run`) and re-stages any auto-formatted files, then commits with `--no-verify` to suppress Git's own redundant second invocation of the pre-commit hook. This skips ONLY the pre-commit stage — the post-commit test gate (`.githooks/post-commit.py`) is a separate hook and remains fully active and unskippable.
+
 ### Example
 
 ```makefile
-commit: ARGS := $(filter-out no-verify,$(filter-out commit,$(MAKECMDGOALS)))
+commit: ARGS := $(filter-out commit,$(MAKECMDGOALS))
 
 commit:
-	@[ -n "$(ARGS)" ] || { echo "Usage: make commit '<message>' [no-verify]"; exit 1; }
+	@[ -n "$(ARGS)" ] || { echo "Usage: make commit '<message>'"; exit 1; }
 	git add .
 	-pre-commit run
 	git add .
-	git commit -m "$(ARGS)" $(if $(filter no-verify,$(MAKECMDGOALS)),--no-verify,)
+	git commit -m "$(ARGS)" --no-verify
 	-git pull --rebase
 	-git push
 
@@ -108,7 +109,6 @@ commit:
 
 **Usage:**
 - `make commit 'feat(templates): add PROJECT.md template'`
-- `make commit 'fix(tests): resolve flaky assertion' no-verify`
 
 ## Remote Probing Protocol (RPP)
 
