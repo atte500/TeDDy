@@ -23,7 +23,7 @@ The entire session is a sequence of "turns," where each turn consists of a plann
 ```mermaid
 graph TD
     subgraph "Current Turn (N)"
-        A("`teddy plan` or `resume`") --> B["Generate `N/input.md`<br>(implicit)"];
+        A("`teddy start` or `resume`") --> B["Generate `N/input.md`<br>(implicit)"];
         B & C["`{agent_name}.xml`"] --> D["LLM generates<br/>`N/plan.md`"];
 
         D --> E("`teddy execute`");
@@ -125,12 +125,10 @@ Initializes a new session directory, generates the first plan, and immediately e
 
 ---
 
-### `teddy plan`
+### Plan Generation (Internal)
 
-Generates a `plan.md` within a turn directory.
+The planning phase runs INTERNALLY as part of `teddy start` and `teddy resume`; it is not a standalone user-facing command. `start` triggers it for the first turn, and `resume` triggers it for the next turn.
 
--   **Options:**
-    -   `-m, --message <message>`: The user's prompt/instruction for this turn.
 -   **Behavior:**
     1.  Operates within the context of the current turn directory (e.g., `01/`).
     2.  **Implicitly runs the `teddy context` logic** to generate an up-to-date `input.md` file.
@@ -186,7 +184,7 @@ The primary "continue" command for a session. It intelligently determines the ne
     2.  Identifies the latest turn directory in the resolved session.
     2.  **State Check:**
         -   If the turn has a `plan.md` but no `report.md`, it behaves like `teddy execute`.
-        -   If the turn is complete (has a `report.md`), it prompts the user for a new message. It then behaves like `teddy plan` for the *next* turn (which includes implicitly generating a new `input.md`).
+        -   If the turn is complete (has a `report.md`), it prompts the user for a new message. It then runs the internal Plan Generation phase for the *next* turn (which includes implicitly generating a new `input.md`).
 
 ---
 
@@ -278,7 +276,7 @@ If any of the pre-flight checks fail, the following automated process is initiat
 3.  **Initiate Next Turn (with Exception):**
     -   The system creates the `T_next` directory using the standard Turn Transition Algorithm, but with **one critical exception**: the path to the failure report (`T_current/report.md`) is **NOT** appended to `T_next/turn.context`. This keeps the AI's working context clean.
 4.  **Automatic Re-plan:**
-    -   The system automatically invokes `teddy plan` within the `T_next` directory, passing the entire feedback payload from Step 2 as the user's message (`--message`).
+    -   The system automatically runs the internal Plan Generation phase within the `T_next` directory, passing the entire feedback payload from Step 2 as the user's message (`--message`).
 5.  **Halt Execution & Handoff:**
     -   The current `teddy execute` command terminates. The user is left in the new turn directory, where the AI is generating a corrected plan. The user's next action is to review the newly generated plan and run `teddy execute` again.
 

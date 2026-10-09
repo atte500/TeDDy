@@ -125,12 +125,13 @@ Editor validation is skipped entirely for runs that will not read the terminal: 
 
 ### Preflight Notifications (Drift & Update)
 
-`_run_cli_preflight_check()` also emits two advisory notifications on its healthy path — the shared slot reached by `start`, `plan` and `resume` after `ensure_initialized()`:
+`_run_cli_preflight_check()` also emits two advisory notifications on its healthy path — the shared slot reached by `start` and `resume` after `ensure_initialized()`:
 
-- **Drift notification** (`_display_drift_notification`): resolves `IInitUseCase`, calls `check_drift()`, and — when the report has drift — emits a yellow message advising the actionable command (`teddy init prompts` for edited/missing prompts; `teddy init templates` for edited/missing templates). Gated by the `checks.prompts_templates` toggle (default enabled).
+- **Drift notification** (`_display_drift_notification`): resolves `IInitUseCase`, calls `check_drift()`, and — for each channel that is BOTH enabled AND drifted — emits exactly ONE count-aware yellow line advising the actionable command (`teddy init prompts` for the prompts channel; `teddy init templates` for the templates channel). The line distinguishes CHANGED from MISSING files and is singular/plural on the total count. The prompts channel is emitted BEFORE the templates channel. Each channel is gated by its OWN toggle — `checks.prompts` for prompts and `checks.templates` for templates (both default enabled).
+- **Shared disable-footer** (`_display_checks_footer`): after ALL notifications, the preflight prints exactly ONE plain (uncolored) line naming every check that actually fired, giving the user a discoverable way to silence them: `You can disable this check in .teddy/config.yaml: <key>.` (singular) or `You can disable these checks in .teddy/config.yaml: <k1>, <k2>.` (plural). The keys are deduped and ordered by the canonical sequence (`checks.prompts`, `checks.templates`, `checks.update`); a disabled channel never fires and is therefore omitted.
 - **Update notification** (`_display_update_notification`): reads the update cache and, when a newer version is cached, emits the upgrade advice. Gated by the `checks.update` toggle (default enabled); the toggle suppresses only the user-facing NOTIFICATION — the background version fetch/caching still runs.
 
-Both toggles are read additively via `IConfigService.get_setting`, so a config that lacks the `checks` block behaves as enabled (backwards compatible).
+All three toggles are read additively via `IConfigService.get_setting`, so a config that lacks the `checks` block behaves as enabled (backwards compatible).
 
 ### Startup Health Checks (`_run_health_checks`)
 
