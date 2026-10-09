@@ -129,6 +129,8 @@ Introduce a drift-check capability that compares each `.teddy/prompts/*.xml` and
 ### Item 5 — Independent config toggles
 Add independent toggle keys to the bundled `config.yaml` (read via `IConfigService.get_setting`; ADDITIVE, no port signature change). Gate the drift notification and the update notification behind their respective toggles, defaulting to enabled when absent.
 
+**Locked key names (fixed by the Developer at Phase 1 Plan Audit):** a single `checks:` block with `checks.prompts_templates` (gates the prompts/templates drift notification) and `checks.update` (gates the update notification). Both default to `true` when absent, so existing user configs are unaffected (backwards compatible). The `checks.update` toggle gates the user-facing NOTIFICATION only — the background version fetch/caching still runs.
+
 ### Item 6 — Canonical agent casing
 Add a single canonical-casing helper (agent name → the resolved prompt file stem, `.capitalize()`). Apply it at (a) the `_echo_config_success` banner interpolation, and (b) `SessionService` meta persistence (`_initialize_meta_data`, `set_session_agent`). Because `planning_service.py` reads `meta["agent_name"]`, canonicalising the persisted value fixes the `Waiting for … to respond...` header automatically.
 
@@ -143,7 +145,7 @@ Add a single canonical-casing helper (agent name → the resolved prompt file st
 - [x] **Logic** — Item 1: drop the `_init_templates` call (and the trailing `Templates:` summary segment) from `InitService.ensure_initialized`; reverse the acceptance contract in `tests/suites/acceptance/test_templates_auto_init.py` and update the two summary-string assertions in `tests/suites/unit/core/services/test_init_service.py` in the same change set.
 - [x] **Logic** — Item 2: compose+persist in `SessionService.create_session`; verbatim reuse in `PromptManager.fetch_system_prompt`; recompose in `set_session_agent`.
 - [x] **Logic** — Item 6: canonicalise agent casing in `_echo_config_success` and meta persistence.
-- [ ] **Contract** — Item 5: add the two config toggle keys to the bundled `config.yaml` (additive; read via `IConfigService.get_setting`).
+- [x] **Contract** — Item 5: add the two config toggle keys to the bundled `config.yaml` (additive; read via `IConfigService.get_setting`).
 - [ ] **Seam** — Items 3/4: a drift-check helper comparing user files against bundled defaults.
 - [ ] **Wiring** — Items 3/4/5: emit the drift notification at the start/resume preflight and gate it (plus the update notification) by the toggles.
 - [ ] **Harness** — Regression/unit tests for the drift checker, composed-prompt persistence+reuse, canonical casing, and the config-toggle defaults; add an acceptance test for the (toggle-gated) drift notification.
@@ -194,6 +196,20 @@ Because `planning_service.py` reads `meta["agent_name"]` directly, canonicalisin
 **Phase 3 Local Recovery.** The Global Run (Turn 54) surfaced `2 failed, 1694 passed, 5 skipped` — both in-scope TEST files, so classified LOCAL FLAWS (no Systemic Regression; no abort/re-plan). Each stale assertion pinned the pre-change RAW casing; each was re-pointed at the canonical contract without weakening intent: `test_bug_16_model_override_message.py` (`assert "pathfinder" in output` → `assert "Pathfinder" in output`) and `test_session_service.py` (`{"agent_name": "developer", ...}` → `{"agent_name": "Developer", ...}`). No production widening.
 
 **Verification.** Red 1 (Turn 43): canonical-form unit test fails. Red 2 (Turn 46): `3 failed` on banner casing. Red 3 (Turn 50): `6 failed` on meta casing. Green 1 (Turn 44): `test_string_utils.py` → `16 passed`. Green 2 (Turn 48): banner suite → `3 passed`. Green 3 (Turn 52): meta suite → `6 passed`. Phase 3 (Turn 55): full suite `1696 passed, 5 skipped in 10.17s` (exit 0).
+
+### Item 5 — Independent config toggles (complete)
+
+**Production change.** The bundled `src/teddy_executor/resources/config/config.yaml` gained ONE additive top-level `checks:` mapping, inserted immediately after the `research:` block:
+
+    checks:
+      prompts_templates: true # Notify when docs/templates/ has drifted from the bundled defaults.
+      update: true # Notify when a newer TeDDy version is available (background fetch still runs).
+
+The change is strictly additive (a brand-new top-level key), so `YamlConfigAdapter` and every existing `get_setting` read are untouched — NO `IConfigService` signature change, hence no Shared-Seam partitioning. Both toggles default to enabled; the downstream Wiring deliverable reads them via `get_setting("checks.prompts_templates", True)` / `get_setting("checks.update", True)`, so existing user configs that lack the `checks` block behave as enabled (backwards compatible). The `checks.update` toggle gates the user-facing NOTIFICATION only — the background version fetch/caching still runs.
+
+**One Red-Green cycle.** Red (Turn 64): `tests/suites/unit/test_bundled_config_notification_toggles.py` was created — a unit-layer Contract test that reads the bundled `config.yaml` via `resources.files("teddy_executor.resources.config").joinpath("config.yaml").read_text(encoding="utf-8")` (mirroring the `test_prompt_resource_relocation.py` package-resource precedent). The single-file run failed `1 failed` with `AssertionError: Bundled config.yaml must declare a 'checks' mapping for notification toggles, got: None` — the exact missing condition. Green (Turn 65): the additive `checks:` block was inserted; the single-file run returned `1 passed`. Refactor (Phase 2 Step 3) was a no-op — a minimal additive config block introducing no duplication, magic numbers, shadow logic, dead code, or DI impurity — so no `[DEBT]` was logged.
+
+**Phase 3 Integration.** The full suite (`make test`, no filters) ran GREEN at `1697 passed, 5 skipped in 9.37s` — the prior `1696` baseline plus the one new toggle-contract test — confirming the additive change is Green-to-Green with no regression. No Phase 3 recovery was required.
 
 ## Verification
 
