@@ -452,22 +452,26 @@ def _display_drift_notification(container: Container) -> list[str]:
     return fired
 
 
-def _display_update_notification(container: Container, cache_path: Path) -> None:
+def _display_update_notification(container: Container, cache_path: Path) -> list[str]:
     """Check the update cache and display a non-blocking notification
     if a newer version is available. Called on session startup, after
     the background check thread has been started. Gated by the
     checks.update config toggle (defaults to enabled); a disabled toggle
-    suppresses the notification only -- the background fetch still runs."""
+    suppresses the notification only -- the background fetch still runs.
+
+    Returns ``["checks.update"]`` when a newer version is actually
+    displayed, else ``[]`` so the shared disable-footer can name the
+    fired check."""
     config = container.resolve(IConfigService)
     if not config.get_setting("checks.update", True):
-        return
+        return []
     try:
         cache = read_update_cache(cache_path)
         if cache is None:
-            return
+            return []
         latest = cache.get("latest_version", "")
         if not latest:
-            return
+            return []
         current = get_current_version()
         if compare_versions(current, latest):
             # A pre-release install comes from the PyPI experimental channel (--pre).
@@ -484,11 +488,13 @@ def _display_update_notification(container: Container, cache_path: Path) -> None
                     fg=typer.colors.YELLOW,
                 )
             )
+            return ["checks.update"]
     except Exception:
         import logging
 
         logger = logging.getLogger(__name__)
         logger.debug("Failed to display update notification", exc_info=True)
+    return []
 
 
 def handle_new_session(  # noqa: PLR0913

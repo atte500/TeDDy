@@ -95,12 +95,15 @@ def test_update_notification_suppressed_when_update_toggle_disabled(
     cache_path = tmp_path / ".update_cache.json"
     _write_fresh_update_cache(cache_path)
 
-    _display_update_notification(env.container, cache_path)
+    fired = _display_update_notification(env.container, cache_path)
 
     captured = capsys.readouterr()
     assert "new version" not in captured.out.lower(), (
         "A disabled checks.update toggle must suppress the update notification; "
         f"got: {captured.out!r}"
+    )
+    assert fired == [], (
+        f"A disabled checks.update toggle must not report a fired check; got: {fired!r}"
     )
 
 
@@ -199,4 +202,44 @@ def test_update_notification_fires_when_update_toggle_absent(env, capsys, tmp_pa
     assert "new version" in captured.out.lower(), (
         "An absent checks.update toggle must default to enabled so the update "
         f"notification fires; got: {captured.out!r}"
+    )
+
+
+def test_update_notification_reports_fired_key_when_it_fires(env, capsys, tmp_path):
+    # When the update notification actually fires (toggle enabled AND a newer
+    # version is displayed), the helper must report its fired key so the shared
+    # disable-footer can name it.
+    config = env.mock_port(IConfigService)
+    config.get_setting.side_effect = lambda key, default=None: default
+    cache_path = tmp_path / ".update_cache.json"
+    _write_fresh_update_cache(cache_path)
+
+    fired = _display_update_notification(env.container, cache_path)
+
+    captured = capsys.readouterr()
+    assert "new version" in captured.out.lower(), (
+        f"The update notification must fire; got: {captured.out!r}"
+    )
+    assert fired == ["checks.update"], (
+        f"A fired update check must report 'checks.update'; got: {fired!r}"
+    )
+
+
+def test_update_notification_returns_empty_when_no_update_available(
+    env, capsys, tmp_path
+):
+    # No cache (or a stale/older cache) means no notification fires, so the
+    # helper must report NO fired check.
+    config = env.mock_port(IConfigService)
+    config.get_setting.side_effect = lambda key, default=None: default
+    cache_path = tmp_path / ".update_cache.json"  # absent -> no cache
+
+    fired = _display_update_notification(env.container, cache_path)
+
+    captured = capsys.readouterr()
+    assert "new version" not in captured.out.lower(), (
+        f"No update must be displayed; got: {captured.out!r}"
+    )
+    assert fired == [], (
+        f"An absent update cache must not report a fired check; got: {fired!r}"
     )
