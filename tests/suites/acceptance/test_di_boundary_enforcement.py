@@ -2,7 +2,6 @@ import shutil
 import subprocess
 
 import pytest
-from pathlib import Path
 
 
 @pytest.mark.skipif(
@@ -10,37 +9,31 @@ from pathlib import Path
     reason="grep not available on PATH (Windows)",
 )
 def test_di_boundary_hook_rejects_punq_in_core(tmp_path):
-    # Setup: Create a violation file in a mock core directory
-    # We use a real path relative to the project root for the grep command to work
-    # as it would in pre-commit, but we'll simulate the check.
-    violation_file = Path("src/teddy_executor/core/services/violation_spike.py")
-    violation_file.parent.mkdir(parents=True, exist_ok=True)
-    violation_file.write_text("import punq\n", encoding="utf-8")
+    # Setup: plant the violation inside a TEMPORARY core tree. The check must NOT
+    # write into the live src/teddy_executor/core/ directory: under pytest-xdist
+    # the transient file was present when one worker snapshotted `git status`
+    # and gone by another worker's snapshot, tripping the session-scoped
+    # `_assert_no_test_pollution` Poka-Yoke with a bogus "files that
+    # unexpectedly disappeared" failure.
+    core_dir = tmp_path / "core" / "services"
+    core_dir.mkdir(parents=True)
+    (core_dir / "violation_spike.py").write_text("import punq\n", encoding="utf-8")
 
-    try:
-        # Act: Run the command we intend to use in the pre-commit hook
-        # Note: We exclude action_factory.py for now as it's a known violator
-        # to be fixed in later deliverables.
-        cmd = [
-            "grep",
-            "-rE",
-            "import punq|from punq",
-            "src/teddy_executor/core/",
-            "--exclude=action_factory.py",
-        ]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+    # Act: run the same grep pattern the pre-commit hook uses, scoped to the
+    # temporary core tree.
+    cmd = [
+        "grep",
+        "-rE",
+        "import punq|from punq",
+        str(tmp_path / "core"),
+        "--exclude=action_factory.py",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
 
-        # Assert: The command should find the violation and return exit code 0 (found matches)
-        # In pre-commit, a 0 exit code from grep usually means it found something,
-        # which we want to treat as a failure.
-        assert result.returncode == 0
-        assert "violation_spike.py" in result.stdout
-        assert "import punq" in result.stdout
-
-    finally:
-        # Cleanup
-        if violation_file.exists():
-            violation_file.unlink()
+    # Assert: the command finds the violation and returns exit code 0 (matches).
+    assert result.returncode == 0
+    assert "violation_spike.py" in result.stdout
+    assert "import punq" in result.stdout
 
 
 @pytest.mark.skipif(
