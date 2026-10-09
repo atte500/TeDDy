@@ -71,7 +71,7 @@ Workstream A is a PRESENTATION + CONFIG-SCHEMA change with ZERO core-domain, Por
 
 ## Deliverables
 
-- [▶] **Logic** - Split the bundled notification toggles: replace `checks.prompts_templates` with `checks.prompts` + `checks.templates` (keep `checks.update`) in `src/teddy_executor/resources/config/config.yaml`; update `tests/suites/unit/test_bundled_config_notification_toggles.py` to require the two new keys and assert the old key is ABSENT.
+- [x] **Logic** - Split the bundled notification toggles: replace `checks.prompts_templates` with `checks.prompts` + `checks.templates` (keep `checks.update`) in `src/teddy_executor/resources/config/config.yaml`; update `tests/suites/unit/test_bundled_config_notification_toggles.py` to require the two new keys and assert the old key is ABSENT.
 - [ ] **Logic** - Rewrite `_display_drift_notification(container) -> list[str]` to read `checks.prompts`/`checks.templates` independently, emit ONE count-aware yellow line per CHANGED/MISSING channel (prompts before templates), and return the fired keys; repoint `tests/suites/unit/adapters/inbound/test_session_notification_toggles.py` to the new keys, add a `checks.templates` gate test and count-aware wording coverage.
 - [ ] **Logic** - Make `_display_update_notification(container, cache_path) -> list[str]` return `["checks.update"]` when the notification fires (toggle enabled AND a newer version displayed) else `[]`, preserving all existing behavior; add a unit test for the return value.
 - [ ] **Logic** - Add `_display_checks_footer(keys: list[str]) -> None` (no-op on empty; otherwise ONE plain line ordering the deduped keys by the canonical sequence, "this check" singular / "these checks" plural); add unit tests.
@@ -81,7 +81,15 @@ Workstream A is a PRESENTATION + CONFIG-SCHEMA change with ZERO core-domain, Por
 
 ## Implementation Notes
 
-Filled during implementation.
+### D1 — Split the bundled notification toggles (Logic)
+
+**Production change.** `src/teddy_executor/resources/config/config.yaml`: the `checks:` block's combined `prompts_templates` key was replaced by two independent keys `prompts` + `templates` (keeping `update`), each documented with a per-key comment. The old combined key is retired outright (the feature is unreleased, so no backward-compatibility fallback was added).
+
+**Contract test.** `tests/suites/unit/test_bundled_config_notification_toggles.py`: `test_bundled_config_declares_notification_toggles` now requires `checks.prompts is True` and `checks.templates is True` (retaining `checks.update is True`), and a new sibling `test_bundled_config_retires_combined_prompts_templates_key` asserts the retired combined key is ABSENT. The module docstring was updated to describe the three independent toggles.
+
+**Red-Green evidence.** Red (Turn 6): the repointed contract test produced EXACTLY the predicted two coupled `AssertionError`s — `Bundled config.yaml must declare 'checks.prompts: true'; got: None` and `Bundled config.yaml must NOT declare the retired combined 'checks.prompts_templates' key; got: True`, with the parsed mapping `{'prompts_templates': True, 'update': True}`. Green (Turn 7): after the single `config.yaml` edit, the targeted run returned `2 passed`.
+
+**Green-to-Green.** Integration gate (Turn 8, `make test`, full suite, no filters) → `1708 passed, 5 skipped`. The change is green-to-green by construction: the production `_display_drift_notification` still reads `config.get_setting("checks.prompts_templates", True)`, which now returns its `True` default because the bundled key is absent — so the drift advice fires exactly as before and the acceptance suite stayed green. The two remaining live references to the old key (the production read in `_display_drift_notification` and the mocked side_effect in `test_session_notification_toggles.py`) are intentionally left for D2, which repoints them to the two new keys. This is a planned, scoped hand-off, NOT latent debt.
 
 ## Verification
 

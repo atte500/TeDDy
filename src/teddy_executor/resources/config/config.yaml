@@ -25,11 +25,12 @@ research:
   max_results: 5 # Number of SERP results to retrieve and automatically scrape.
 
 # Notification Checks
-# Independent toggles for user-facing notifications. Both default to enabled
-# (true); existing user configs that lack this block behave as enabled.
+# Independent toggles for user-facing notifications. All three default to
+# enabled (true) when absent, so existing user configs keep working.
 checks:
-  prompts_templates: true # Notify when docs/templates/ has drifted from the bundled defaults.
-  update: true # Notify when a newer TeDDy version is available (background fetch still runs).
+  prompts: true    # Notify when .teddy/prompts/ files differ from the bundled defaults.
+  templates: true  # Notify when docs/templates/ files differ from the bundled defaults.
+  update: true     # Notify when a newer TeDDy version is available (background fetch still runs).
 
 # Default for the --yolo / -y flag. When true, sessions auto-approve all
 # actions (non-interactive) without needing to pass --yolo. The explicit
