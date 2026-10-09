@@ -71,3 +71,38 @@ def test_update_notification_suppressed_when_update_toggle_disabled(
         "A disabled checks.update toggle must suppress the update notification; "
         f"got: {captured.out!r}"
     )
+
+
+def test_drift_notification_fires_when_prompts_templates_toggle_absent(env, capsys):
+    # An ABSENT checks.prompts_templates toggle (config lacks the key) must default
+    # to ENABLED, so the drift advice still fires. This locks the production default
+    # argument: mutating it to False would break this characterization.
+    config = env.mock_port(IConfigService)
+    config.get_setting.side_effect = lambda key, default=None: default
+    init = env.mock_port(IInitUseCase)
+    init.check_drift.return_value = DriftReport(edited_prompts=("pathfinder.xml",))
+
+    _display_drift_notification(env.container)
+
+    captured = capsys.readouterr()
+    assert "teddy init prompts" in captured.out, (
+        "An absent checks.prompts_templates toggle must default to enabled so the "
+        f"drift advice fires; got: {captured.out!r}"
+    )
+
+
+def test_update_notification_fires_when_update_toggle_absent(env, capsys, tmp_path):
+    # An ABSENT checks.update toggle (config lacks the key) must default to ENABLED,
+    # so the update notification still fires.
+    config = env.mock_port(IConfigService)
+    config.get_setting.side_effect = lambda key, default=None: default
+    cache_path = tmp_path / ".update_cache.json"
+    _write_fresh_update_cache(cache_path)
+
+    _display_update_notification(env.container, cache_path)
+
+    captured = capsys.readouterr()
+    assert "new version" in captured.out.lower(), (
+        "An absent checks.update toggle must default to enabled so the update "
+        f"notification fires; got: {captured.out!r}"
+    )

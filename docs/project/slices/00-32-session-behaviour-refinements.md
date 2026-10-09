@@ -148,7 +148,7 @@ Add a single canonical-casing helper (agent name → the resolved prompt file st
 - [x] **Contract** — Item 5: add the two config toggle keys to the bundled `config.yaml` (additive; read via `IConfigService.get_setting`).
 - [x] **Seam** — Items 3/4: a drift-check helper comparing user files against bundled defaults.
 - [x] **Wiring** — Items 3/4/5: emit the drift notification at the start/resume preflight and gate it (plus the update notification) by the toggles.
-- [ ] **Harness** — Regression/unit tests for the drift checker and its toggle gating; add an acceptance test for the (toggle-gated) drift notification.
+- [x] **Harness** — Regression/unit tests for the drift checker and its toggle gating; add an acceptance test for the (toggle-gated) drift notification.
 - [ ] **Refactor** — Single-source the canonical-casing helper (avoid duplicating the stem→`capitalize()` logic).
 - [ ] **Cleanup** — Update the `03-03-templates-and-init` slice doc to record the reversed explicit-only contract; remove `spikes/debug/` if present.
 
@@ -228,6 +228,18 @@ The change is strictly additive (a brand-new top-level key), so `YamlConfigAdapt
 **Refactor (Phase 2 Step 3).** No file-scoped refactor warranted: the two toggle reads share only the `container.resolve(IConfigService)` line with different keys, so the rule of three is not met and a shared `_is_check_enabled` helper would add indirection without removing genuine duplication. No `[DEBT]` was newly logged.
 
 **Phase 3 Local Recovery.** The Global Run (Turn 98) surfaced `1 failed, 1700 passed, 5 skipped` in `test_session_cli_handlers.py::test_resume_handler_calls_set_session_agent_when_agent_provided`, whose bare `Mock()` container returns a single `Mock(spec=ISessionManager)` for EVERY port. The newly-threaded `_display_update_notification` resolves `IConfigService` and calls `get_setting` → `AttributeError: Mock object has no attribute 'get_setting'`. Classified a LOCAL FLAW (the fix required editing ONLY that existing test file; no out-of-scope production change). The repair stubbed `_display_update_notification` alongside the test's six existing seams, preserving its focus on `set_session_agent` wiring; the two sibling background-check tests use bare truthy mocks and were unharmed. The re-run (Turn 100) was GREEN at `1701 passed, 5 skipped`.
+
+### Harness — Drift/toggle regression + acceptance tests (complete)
+
+**Scope.** The Plan Audit (Turns 105-106) fixed this deliverable to exactly the three genuinely-uncovered cases left after the existing suites, so the additions lock in production behaviour that previously had no direct test:
+
+- **(a) UNIT — absent `.teddy/prompts/` directory.** `tests/suites/unit/core/services/test_init_service_drift.py` gained `test_check_drift_reports_every_prompt_missing_when_prompts_dir_absent`, which imports the `_PROMPT_FILES` manifest as the single source of truth (no shadow list) and asserts that with `.teddy/prompts/` entirely absent every manifest entry reports MISSING while the independent `docs/templates/` half stays clean. This drives the per-file `path_exists` guard — there is no directory-existence shortcut.
+- **(b) UNIT — toggles absent from config default to ENABLED.** `tests/suites/unit/adapters/inbound/test_session_notification_toggles.py` gained two symmetric characterization tests whose fake config returns the caller's default for every key (the exact semantics of a config lacking the `checks` block). Each drives the production `get_setting("<key>", True)` default argument: with it `True` the notification fires, and a mutation to `False` would break both — locking the backwards-compatible default.
+- **(c) ACCEPTANCE — missing template advises `teddy init templates`.** `tests/suites/acceptance/test_preflight_drift_notification.py` gained `test_start_advises_init_templates_when_a_template_is_missing`, a happy-path scenario of the drift-notification Feature driven through the outermost `teddy start` boundary. It arranges `docs/templates/` with a single local file so template drift is reported under BOTH a per-file classifier and any directory-guarded variant (robust to the one open design question in the template half), and asserts the yellow `teddy init templates` advice appears.
+
+**No production change — mutation-style characterization Reds.** Every new test asserts ALREADY-CORRECT production behaviour, so the Red steps were characterization/regression Reds: each case was reasoned to genuinely drive its target branch (mutation-style), and NO production code was modified to manufacture a failing assertion. This is the intended shape for a Harness deliverable whose purpose is to lock in behaviour already shipped by the Seam and Wiring items.
+
+**Verification.** Focused runs: case (a) `2 passed` (Turn 109), case (b) `4 passed` (Turn 110), case (c) `2 passed` (Turn 111) — four new tests total. Phase 3 (Turn 112): full suite GREEN at `1705 passed, 5 skipped in 8.37s` — the four new tests added to the `1701`-pass Wiring baseline, confirming no regression.
 
 ## Verification
 
