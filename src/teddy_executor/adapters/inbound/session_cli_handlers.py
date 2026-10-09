@@ -452,6 +452,28 @@ def _display_drift_notification(container: Container) -> list[str]:
     return fired
 
 
+def _display_checks_footer(keys: list[str]) -> None:
+    """Emit the shared disable-footer naming the checks that just fired.
+
+    No-op when no check fired. Otherwise prints exactly ONE plain (uncolored)
+    line so the user can discover how to silence the notifications they saw,
+    ordering the deduped keys by the canonical check sequence.
+    """
+    if not keys:
+        return
+
+    canonical = ("checks.prompts", "checks.templates", "checks.update")
+    unique = set(keys)
+    ordered = [key for key in canonical if key in unique]
+
+    if len(ordered) == 1:
+        typer.echo(f"You can disable this check in .teddy/config.yaml: {ordered[0]}.")
+    else:
+        typer.echo(
+            f"You can disable these checks in .teddy/config.yaml: {', '.join(ordered)}."
+        )
+
+
 def _display_update_notification(container: Container, cache_path: Path) -> list[str]:
     """Check the update cache and display a non-blocking notification
     if a newer version is available. Called on session startup, after

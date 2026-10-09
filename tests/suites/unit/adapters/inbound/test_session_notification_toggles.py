@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 from teddy_executor.adapters.inbound.session_cli_handlers import (
+    _display_checks_footer,
     _display_drift_notification,
     _display_update_notification,
 )
@@ -243,3 +244,45 @@ def test_update_notification_returns_empty_when_no_update_available(
     assert fired == [], (
         f"An absent update cache must not report a fired check; got: {fired!r}"
     )
+
+
+def test_footer_is_silent_when_no_check_fired(capsys):
+    # No check fired -> the shared footer is a pure no-op (no line printed).
+    _display_checks_footer([])
+
+    captured = capsys.readouterr()
+    assert captured.out == "", (
+        f"An empty fired-keys list must print no footer; got: {captured.out!r}"
+    )
+
+
+def test_footer_names_a_single_fired_check_with_singular_wording(capsys):
+    # Exactly one check fired -> the singular "this check" footer naming the key.
+    _display_checks_footer(["checks.templates"])
+
+    captured = capsys.readouterr()
+    assert captured.out == (
+        "You can disable this check in .teddy/config.yaml: checks.templates.\n"
+    ), f"Singular footer wording mismatch; got: {captured.out!r}"
+
+
+def test_footer_names_multiple_fired_checks_in_canonical_order(capsys):
+    # Multiple checks fired -> the plural footer, with the keys deduped and
+    # ordered by the canonical sequence regardless of the reported order.
+    _display_checks_footer(["checks.update", "checks.templates", "checks.prompts"])
+
+    captured = capsys.readouterr()
+    assert captured.out == (
+        "You can disable these checks in .teddy/config.yaml: "
+        "checks.prompts, checks.templates, checks.update.\n"
+    ), f"Plural footer wording/order mismatch; got: {captured.out!r}"
+
+
+def test_footer_dedupes_repeated_fired_keys(capsys):
+    # A repeated fired key must collapse to a single entry (and stay singular).
+    _display_checks_footer(["checks.update", "checks.update"])
+
+    captured = capsys.readouterr()
+    assert captured.out == (
+        "You can disable this check in .teddy/config.yaml: checks.update.\n"
+    ), f"Duplicate fired keys must be deduped; got: {captured.out!r}"
