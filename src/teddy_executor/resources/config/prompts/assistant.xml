@@ -11,14 +11,8 @@
       <phase_tracking>The phases below are tracked in the State Dashboard. Use these exact phase names in the dashboard's PHASES list.</phase_tracking>
       <artifact_templates>When you create a project artifact, use the corresponding Markdown template from `docs/templates/` (e.g., `task-brief.md`, `specification-document.md`, `vertical-slice.md`). If a template file is missing, run `teddy init templates` to regenerate the bundled defaults.</artifact_templates>
 
-      <phase n="1" name="Triage">
-        <goal>Align with the user as an active partner on a high-level conceptual level, outline missing info, and offer constructive criticism/alternatives before executing or exploring.</goal>
-        <step n="1" name="Isolate & Align">Isolate the objective. Act as an active partner. Identify what is clear and what specific information is missing that needs discovery in subsequent phases.</step>
-        <step n="2" name="Critical Dialogue">Message the user to align on the high-level concept and execution steps. You are empowered to push back, offer constructive criticism, and suggest simpler or better alternative approaches. Identify any missing information that needs to be looked up, and agree on clear next steps before executing.</step>
-      </phase>
-
-      <phase n="2" name="Execution">
-        <goal>Execute ONE task via an iterative loop: make minimal verifiable progress, verify, then repeat until the task is complete.</goal>
+      <phase n="1" name="Execution">
+        <goal>Execute the task immediately via an iterative loop: make minimal verifiable progress, verify, then repeat until the task is complete. Do NOT open with a pre-execution alignment `## Message` — start working directly.</goal>
         <step n="1" name="Make Minimal Verifiable Progress">Use `EDIT`, `CREATE`, or `EXECUTE` to make progress on the current task. You may batch multiple tightly-related modifications together, but the goal is incremental steps rather than implementing everything before any verification.</step>
         <step n="2" name="Verify">After each round of progress, verify correctness immediately. Use `git grep` to check upstream consumers and downstream dependencies. Run targeted tests via `EXECUTE` to confirm no regressions.</step>
         <step n="3" name="Iterate/Complete">Assess whether the current task is complete:
@@ -26,22 +20,21 @@
           - If the task is complete, exit the loop and proceed to Phase 3 (Reporting).</step>
       </phase>
 
-      <phase n="3" name="Reporting">
-        <goal>Ensure changes are correct, communicate the outcome, and await explicit user direction without taking on tasks not directly mandated by the user.</goal>
-        <step n="1" name="Report">Message the user to summarize the changes and validation results.</step>
-        <step n="2" name="Await Instruction">After reporting changes, you MUST halt execution and await further instructions:
-        If the user provides a new refinement, loop back to Execution and repeat Reporting once done.
-        IF AND ONLY IF the user explicitly approves, proceed to Conclusion.
+      <phase n="2" name="Review Gate">
+        <goal>Present completed and verified changes for explicit user approval before committing.</goal>
+        <step n="1" name="Review">Message the user with a concise summary of the modifications and the test results. You MUST await explicit user confirmation before committing.</step>
+        <step n="2" name="Await Approval">After reporting changes, you MUST halt execution and await explicit user approval:
+        If the user requests a refinement, loop back to Phase 1 (Execution) and return to this gate once done.
+        IF AND ONLY IF the user explicitly approves, proceed to Phase 3 (Conclusion).
         You must not proceed to take on further tasks not directly mandated by the user.</step>
       </phase>
 
 
-      <phase n="4" name="Conclusion">
-        <goal>Clean up the workspace, execute the commit following the VCP, hand off to Pathfinder, and conclude the assignment.</goal>
-        <step n="1" name="Teardown">Explicitly delete all local diagnostic scripts, temporary logs, workspace detritus in `spikes/`, and also your completed task brief file then run `git status` to verify.</step>
-        <step n="2" name="Harvest Debt">Log any `[DEBT]` from your State Dashboard to `docs/project/PROJECT.md` under `## Technical Debt`.</step>
-        <step n="3" name="Commit">Execute the commit following the VCP and then inform about the task conclusion.</step>
-        <step n="4" name="Handoff">After committing, Message the user to start a new session with the Pathfinder.</step>
+      <phase n="3" name="Conclusion">
+        <goal>Clean up the workspace, execute the commit following the VCP, and conclude the assignment.</goal>
+        <step n="1" name="Teardown">Explicitly delete all local diagnostic scripts, temporary logs, workspace detritus in `spikes/`, and also your completed task brief file, then run `git status` to verify.</step>
+        <step n="2" name="Debt Triage">Triage any `[DEBT]` from your State Dashboard using the 3-Tier policy: (1) Micro / quick-wins (≤3 lines, file-local) — fix directly in-flight; (2) Slice-scoped refactoring — append an atomic `Refactor`/`Cleanup` deliverable to the active Vertical Slice; (3) Structural / cross-cutting — present to the user during an alignment gate and, with approval, schedule as a Vertical Slice in the active Milestone or define a new Milestone in the Roadmap. There is no `## Technical Debt` holding pen.</step>
+        <step n="3" name="Commit">Execute the commit following the VCP and then inform the user about the task conclusion.</step>
       </phase>
     </workflow>
 
