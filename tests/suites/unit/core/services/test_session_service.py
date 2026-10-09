@@ -1007,7 +1007,7 @@ def test_set_session_agent_updates_meta_yaml_and_copies_prompt(env):
     # 1. meta.yaml was updated with new agent_name
     repo.save_meta.assert_called_once_with(
         f"{latest_turn_path}/meta.yaml",
-        {"agent_name": "developer", "turn_id": "03"},
+        {"agent_name": "Developer", "turn_id": "03"},
     )
 
     # 2. The RECOMPOSED system prompt was written to the session root

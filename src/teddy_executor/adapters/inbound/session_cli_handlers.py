@@ -19,7 +19,7 @@ from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGu
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 from teddy_executor.core.utils.interrupt_guard import INTERRUPT_REASON, InterruptGuard
-from teddy_executor.core.utils.string import slugify
+from teddy_executor.core.utils.string import canonical_agent_name, slugify
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.adapters.inbound.cli_helpers import (
     echo_and_copy,
@@ -524,7 +524,7 @@ def _echo_config_success(
         resolved_model = config_service.get_setting("llm.model", "unknown")
     msg = f"API key valid! Model: {resolved_model}"
     if agent:
-        msg += f" | Agent: {agent}"
+        msg += f" | Agent: {canonical_agent_name(agent)}"
     typer.echo(msg, err=True)
 
 

@@ -42,4 +42,4 @@ def test_echo_config_success_with_model_override(env):
     assert "deepseek-v4-flash" not in output, (
         "Config model 'deepseek-v4-flash' should not appear when override is provided."
     )
-    assert "pathfinder" in output
+    assert "Pathfinder" in output

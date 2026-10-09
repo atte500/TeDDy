@@ -1,4 +1,5 @@
 from teddy_executor.core.utils.string import (
+    canonical_agent_name,
     slugify,
     truncate_lines,
     get_truncation_hint,
@@ -133,3 +134,16 @@ def test_slugify_handles_apostrophes_and_new_stopwords():
     assert slugify("It's a beautiful day") == "beautiful-day"
     assert slugify("I'm going to fix it already") == "fix"
     assert slugify("We'll surely check it") == "check"
+
+
+def test_canonical_agent_name_standardizes_agent_slug_casing():
+    """Canonical agent form is first-letter-uppercase, rest-lowercase.
+
+    Single-sources the display/persistence casing so ``-a PATHFINDER``,
+    ``-a pathfinder`` and ``-a DeVeLoPeR`` all render as ``Pathfinder`` /
+    ``Developer`` in the CLI banner, the planning header and ``meta.yaml``.
+    """
+    assert canonical_agent_name("PATHFINDER") == "Pathfinder"
+    assert canonical_agent_name("pathfinder") == "Pathfinder"
+    assert canonical_agent_name("DeVeLoPeR") == "Developer"
+    assert canonical_agent_name("developer") == "Developer"

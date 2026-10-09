@@ -142,7 +142,7 @@ Add a single canonical-casing helper (agent name → the resolved prompt file st
 
 - [x] **Logic** — Item 1: drop the `_init_templates` call (and the trailing `Templates:` summary segment) from `InitService.ensure_initialized`; reverse the acceptance contract in `tests/suites/acceptance/test_templates_auto_init.py` and update the two summary-string assertions in `tests/suites/unit/core/services/test_init_service.py` in the same change set.
 - [x] **Logic** — Item 2: compose+persist in `SessionService.create_session`; verbatim reuse in `PromptManager.fetch_system_prompt`; recompose in `set_session_agent`.
-- [ ] **Logic** — Item 6: canonicalise agent casing in `_echo_config_success` and meta persistence.
+- [x] **Logic** — Item 6: canonicalise agent casing in `_echo_config_success` and meta persistence.
 - [ ] **Contract** — Item 5: add the two config toggle keys to the bundled `config.yaml` (additive; read via `IConfigService.get_setting`).
 - [ ] **Seam** — Items 3/4: a drift-check helper comparing user files against bundled defaults.
 - [ ] **Wiring** — Items 3/4/5: emit the drift notification at the start/resume preflight and gate it (plus the update notification) by the toggles.
@@ -178,6 +178,22 @@ Add a single canonical-casing helper (agent name → the resolved prompt file st
 **Phase 3 Local Recovery.** The Global Run (Turn 32) surfaced `5 failed, 1681 passed, 5 skipped` — all five in the deliverable's in-scope test files, so classified LOCAL FLAWS (no Systemic Regression; no abort/re-plan). Each stale test pinned the OLD raw `.teddy/prompts/` content; each was re-pointed at the composed contract WITHOUT weakening its original intent (path placement, meta updates, stale-stem pruning, `.teddy/prompts/` read). The five repaired tests: `test_session_service.py::{test_create_session_orchestrates_filesystem_correctly, test_create_session_reads_prompt_from_teddy_prompts, test_set_session_agent_updates_meta_yaml_and_copies_prompt, test_set_session_agent_removes_stale_prompt_files}` and `test_session_service_pruning.py::test_create_session_does_not_put_prompt_in_turn_directory`. Tests lacking an explicit `IPromptManager` mock gained a deterministic `env.mock_port(IPromptManager)` so the composed value is asserted regardless of the env default binding. `test_session_service_dynamic_agent_naming.py` asserts prompt PATHS only, so it stayed GREEN (no edit).
 
 **Verification.** Red 1 (Turn 22): verbatim-read test failed on doubled header + MRP. Red 2 (Turn 25): `write_file(..., composed) call not found`. Red 3 (Turn 29): `write_file(..., composed) call not found`. Green 1 (Turn 23): `test_prompt_manager.py` → `12 passed`. Green 2 (Turn 27): targeted → `1 passed`. Green 3 (Turn 31): targeted → `1 passed`. Phase 3 (Turn 35): full suite `1686 passed, 5 skipped in 9.24s` (exit 0).
+
+### Item 6 — Canonical agent casing (complete)
+
+**Production change.** A single canonical-casing helper `canonical_agent_name(agent)` (returning `agent.capitalize()`) was added to `src/teddy_executor/core/utils/string.py`. It is applied at three seams so `-a PATHFINDER`, `-a pathfinder` and `-a DeVeLoPeR` display/persist identically as `Pathfinder` / `Developer`:
+
+- **CLI banner** (`session_cli_handlers._echo_config_success`): the import was co-located with the existing `slugify` import, and the banner interpolation became `msg += f" | Agent: {canonical_agent_name(agent)}"` INSIDE the existing `if agent:` None-guard (required because `handle_plan_generation` calls `_echo_config_success(container)` with no `agent`).
+- **Initial turn metadata** (`SessionService._initialize_meta_data`): `"agent_name": canonical_agent_name(options.agent_name)`.
+- **Agent switch** (`SessionService.set_session_agent`): `meta["agent_name"] = canonical_agent_name(agent_name)`.
+
+Because `planning_service.py` reads `meta["agent_name"]` directly, canonicalising the PERSISTED value fixes the `Waiting for <Agent> to respond...` planning header automatically — no planning-service edit was needed. Case-insensitive RESOLUTION is preserved: the raw `agent_name` still drives `_resolve_agent_prompt` / `fetch_system_prompt` (casefold), so only DISPLAY/persistence canonicalises. The carried-forward `agent_name` in `_persist_next_meta` (`current_meta.get("agent_name", "pf")`) is canonical automatically (inherited from the two source seams), so no edit was warranted.
+
+**Three Red-Green cycles.** Green 1 (`test_string_utils.py::test_canonical_agent_name_standardizes_agent_slug_casing`, Turn 43→44 → `16 passed`) introduced the helper. Green 2 (`test_echo_config_success_agent_casing.py`, Turn 46→48 → `3 passed`) applied it at the CLI banner. Green 3 (`test_session_service_agent_casing.py`, Turn 50→52 → `6 passed`) applied it at both meta write sites. Every Red step failed first on the canonical-form assertion (banner: `Expected canonical 'Agent: Pathfinder' ... got '... | Agent: PATHFINDER'`; meta: `meta.yaml must persist the canonical agent name, got 'pathfinder'`), confirming the contract was genuinely unimplemented rather than coincidentally passing.
+
+**Phase 3 Local Recovery.** The Global Run (Turn 54) surfaced `2 failed, 1694 passed, 5 skipped` — both in-scope TEST files, so classified LOCAL FLAWS (no Systemic Regression; no abort/re-plan). Each stale assertion pinned the pre-change RAW casing; each was re-pointed at the canonical contract without weakening intent: `test_bug_16_model_override_message.py` (`assert "pathfinder" in output` → `assert "Pathfinder" in output`) and `test_session_service.py` (`{"agent_name": "developer", ...}` → `{"agent_name": "Developer", ...}`). No production widening.
+
+**Verification.** Red 1 (Turn 43): canonical-form unit test fails. Red 2 (Turn 46): `3 failed` on banner casing. Red 3 (Turn 50): `6 failed` on meta casing. Green 1 (Turn 44): `test_string_utils.py` → `16 passed`. Green 2 (Turn 48): banner suite → `3 passed`. Green 3 (Turn 52): meta suite → `6 passed`. Phase 3 (Turn 55): full suite `1696 passed, 5 skipped in 10.17s` (exit 0).
 
 ## Verification
 

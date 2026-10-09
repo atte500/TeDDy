@@ -193,6 +193,18 @@ STOPWORDS = {
 }
 
 
+def canonical_agent_name(agent: str) -> str:
+    """Canonicalises an agent slug to its display/persistence form.
+
+    Returns the first-letter-uppercase, remainder-lowercase form of ``agent``
+    (e.g. ``PATHFINDER`` -> ``Pathfinder``, ``DeVeLoPeR`` -> ``Developer``).
+    Single-sources the casing used by the CLI banner, the planning header and
+    ``meta.yaml`` persistence, so ``-a PATHFINDER`` renders identically to
+    ``-a pathfinder``.
+    """
+    return agent.capitalize()
+
+
 def slugify(text: str, max_length: int = 40) -> str:
     """
     Converts a string into a URL-friendly slug.

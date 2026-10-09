@@ -17,7 +17,7 @@ from teddy_executor.core.ports.outbound.session_manager import (
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 from teddy_executor.core.ports.outbound.time_service import ITimeService
-from teddy_executor.core.utils.string import slugify
+from teddy_executor.core.utils.string import canonical_agent_name, slugify
 
 
 class SessionService(ISessionManager):
@@ -130,7 +130,7 @@ class SessionService(ISessionManager):
         """Creates the initial metadata dictionary."""
         meta_data = {
             "turn_id": "01",
-            "agent_name": options.agent_name,
+            "agent_name": canonical_agent_name(options.agent_name),
             "cumulative_cost": 0.0,
             "turn_cost": 0.0,
             "creation_timestamp": self._time_service.now_utc().isoformat(),
@@ -544,7 +544,7 @@ class SessionService(ISessionManager):
 
         # 1. Update meta.yaml
         meta = self.load_turn_meta(latest_turn_path)
-        meta["agent_name"] = agent_name
+        meta["agent_name"] = canonical_agent_name(agent_name)
         self.save_turn_meta(latest_turn_path, meta)
 
         # 2. Resolve the target filename (validates the agent) and recompose the
