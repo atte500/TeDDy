@@ -1,6 +1,6 @@
 # Milestone 3: Foundational Refactors
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Specs:** N/A (editor-validation spec retired — feature shipped as slice 03-01)
 
 ## Goal (The "Why")

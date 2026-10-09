@@ -146,3 +146,31 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 - **Zero-Cost Guards:** All debug and prototype logic MUST use language-native dead-code elimination (e.g., `if __debug__:`) to ensure zero performance impact in production.
 - **Branch by Abstraction:** All behavioral alternatives MUST be injected at the Composition Root via Constructor Injection. Mid-logic environment checks are strictly forbidden.
 - **State Dumps:** Diagnostics should write transient state to `.tmp/debug/`.
+
+---
+
+## 5. Prompt Assembly & Template Lifecycle
+
+This section documents how the system prompt delivered to the LLM is assembled and how TeDDy manages user-editable prompts and project templates.
+
+### Prompt Assembly Pipeline (`PromptManager`)
+
+`PromptManager.fetch_system_prompt(agent_name, turn_path)` produces the final system prompt in a strict order:
+
+1. **Session-root prompt (primary path):** If the session root already carries a composed prompt file for the agent (written by `SessionService` at session creation or on agent switch), it is returned **verbatim**. It is never re-composed, which would duplicate the agent-name header and the MRP block.
+2. **Lazy-compose fallback (legacy sessions or a manually deleted file):**
+    1. **Agent Name injection:** the line `Agent Name: {Agent}` (canonically capitalized) is prepended to the agent-specific XML so the agent can populate the `- **Agent:**` MRP metadata field.
+    2. **Agent-specific content** is resolved from the canonical `.teddy/prompts/` directory.
+    3. **MRP append:** the shared `MRP.xml` base prompt is appended AFTER the agent-specific content — both inside the assembled `<system>` prompt. `MRP.xml` is loaded through the `Traversable` contract (`is_file` + `read_text`) so it resolves both in a source checkout and under a zip/wheel install; a missing resource raises `FileNotFoundError` (fail-fast) to prevent silent protocol degradation.
+    4. **Legacy check:** if the resolved prompt already contains `<response_format>` (e.g. a customized `.teddy/prompts/` override), the MRP block is NOT injected, but the agent-name header is preserved.
+
+### Overridable vs. Non-Overridable Prompts
+
+- **Agent prompts (overridable):** `src/teddy_executor/resources/config/prompts/*.xml` are copied into the project's `.teddy/prompts/` directory by `teddy init prompts` (and bare `teddy init`). Users may customize any agent prompt; TeDDy never overwrites an existing prompt on startup.
+- **Core protocol (non-overridable):** `src/teddy_executor/resources/MRP.xml` is the Markdown Response Protocol base prompt. It lives OUTSIDE `config/prompts/` so it is never grouped with the user-overridable agent prompts, and it is never copied to `.teddy/prompts/`. It is injected dynamically at prompt-assembly time.
+
+### Template Generation Lifecycle
+
+- **Bundled templates:** `src/teddy_executor/resources/templates/*.md` ship inside the package.
+- **Project templates:** `docs/templates/` in the user's project. `teddy init templates` copies the bundled defaults to `docs/templates/` (overwriting existing files). Bare `teddy init` and agent startup do NOT create `docs/templates/`.
+- **Artifact directives:** each agent XML carries an inline directive instructing the agent to `READ` the corresponding template from `docs/templates/` before creating an artifact.

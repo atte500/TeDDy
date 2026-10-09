@@ -92,7 +92,7 @@ test:
 ### Example
 
 ```makefile
-commit: ARGS := $(filter-out commit,$(MAKECMDGOALS))
+commit: ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
 commit:
 	@[ -n "$(ARGS)" ] || { echo "Usage: make commit '<message>'"; exit 1; }
@@ -115,7 +115,7 @@ commit:
 ### Example
 
 ```makefile
-probe: REASON := $(filter-out probe,$(MAKECMDGOALS))
+probe: REASON := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
 probe:
 	@[ -n "$(REASON)" ] || { echo "Usage: make probe '<reason>'"; exit 1; }
@@ -139,8 +139,8 @@ The Debugger's Reproduction phase needs to read the logs of a specific failed CI
 ### Example
 
 ```makefile
-logs: LOGS_RUN := $(word 1,$(filter-out logs,$(MAKECMDGOALS)))
-logs: LOGS_STEP := $(wordlist 2,99,$(filter-out logs,$(MAKECMDGOALS)))
+logs: LOGS_RUN := $(word 2,$(MAKECMDGOALS))
+logs: LOGS_STEP := $(wordlist 3,99,$(MAKECMDGOALS))
 
 logs:
 	@[ -n "$(LOGS_RUN)" ] || { echo "Usage: make logs <run-id> '<step-name>'"; exit 1; }
@@ -155,7 +155,7 @@ logs:
 - First discover the run ID and the failed step name with `gh run view 12345` (the execution tree), then pass both to `make logs`.
 
 **How it works:**
-- `$(filter-out logs,$(MAKECMDGOALS))` drops the target name from the goal list; `$(word 1, ...)` takes the run ID and `$(wordlist 2,99, ...)` takes the (space-containing) step name.
+- `$(word 2,$(MAKECMDGOALS))` takes the run ID and `$(wordlist 3,99,$(MAKECMDGOALS))` takes the (space-containing) step name; the first goal (the `logs` target itself) is dropped.
 - The `awk` program matches rows whose second tab-separated field equals the step name via `-v step=...`, trims the leading timestamp, strips ANSI escape sequences, and removes GitHub's group boilerplate, prefixing `##[error]` lines with `Error: `.
 - It reuses the same cross-platform Make constructs as the other targets (see [Cross-Platform Design](#cross-platform-design)); the `%: @:` catch-all prevents the extra `make` goals from being treated as files.
 

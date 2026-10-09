@@ -12,7 +12,8 @@
 
 # Target-specific variables capture positional arguments before recipe execution.
 # These are Make variables, not shell variables, so they persist across all recipe lines.
-# $(filter-out commit,...) strips the target name from MAKECMDGOALS to get the message.
+# $(wordlist 2,...) drops only the FIRST goal (the target name) and preserves every
+# remaining word of the message verbatim -- including the literal word "commit".
 #
 # `git commit` is invoked with `--no-verify` to suppress Git's own redundant second
 # invocation of the pre-commit hook: this target already runs `pre-commit run` once
@@ -20,7 +21,7 @@
 # would double the work and block on minor linter warnings. `--no-verify` skips ONLY
 # the pre-commit stage; the post-commit test gate (.githooks/post-commit.py) remains
 # fully active and unskippable.
-commit: ARGS := $(filter-out commit,$(MAKECMDGOALS))
+commit: ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
 commit:
 	@[ -n "$(ARGS)" ] || { echo "Usage: make commit '<message>'"; exit 1; }
@@ -41,7 +42,7 @@ commit:
 # The dispatch/watch section uses a combined shell block because $RUN_ID is a
 # shell variable that must persist across multiple commands.
 
-probe: REASON := $(filter-out probe,$(MAKECMDGOALS))
+probe: REASON := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
 probe:
 	@[ -n "$(REASON)" ] || { echo "Usage: make probe '<reason>'"; exit 1; }
@@ -64,8 +65,8 @@ probe:
 # ANSI escapes and GitHub's ##[group]/##[endgroup] boilerplate, and prefixes
 # ##[error] lines with "Error: ". See docs/templates/makefile.md (CI Log Extraction).
 
-logs: LOGS_RUN := $(word 1,$(filter-out logs,$(MAKECMDGOALS)))
-logs: LOGS_STEP := $(wordlist 2,99,$(filter-out logs,$(MAKECMDGOALS)))
+logs: LOGS_RUN := $(word 2,$(MAKECMDGOALS))
+logs: LOGS_STEP := $(wordlist 3,99,$(MAKECMDGOALS))
 
 logs:
 	@[ -n "$(LOGS_RUN)" ] || { echo "Usage: make logs <run-id> '<step-name>'"; exit 1; }
