@@ -37,6 +37,8 @@ Ordered by execution priority. Every theme has been evaluated and all strategic 
   - **Strategic Scope in Milestones:** Pathfinder authors feature goals, requirements, and acceptance criteria directly into `docs/project/milestones/MM-name.md` (summarized in `PROJECT.md`'s Roadmap).
   - **Tactical Execution:** Architect decomposes milestones directly into Vertical Slices (`docs/project/slices/MM-NN-name.md`). Pathfinder drafts Task Briefs (`docs/project/tasks/NN-name.md`) for one-off tactical work.
   - **Prompt & Template Updates:** Update `pathfinder.xml`, `architect.xml`, `PROJECT.md`, and `specification-document.md` to remove all references to feature spec drafting and deletion.
+- **[11] Release Process in PROJECT.md Template (Resolved):** ⬜
+  - Add a **Release Process** topic under `## Workflow Standards` in the `PROJECT.md` template, documenting how the project handles version tagging (e.g., `git tag vX.Y.Z`), changelogs, packaging, and distribution publishing.
 - **[19] Friction Inbox (`docs/project/inbox/`):** 🚫 **Dropped.** No unmanaged inbox directory. Process frictions are resolved immediately by Pathfinder into `PROJECT.md` (`Workflow Standards` / `Guiding Principles`) or triaged in working discussions. Technical debt remains in code or milestone planning.
 - **[24] Specification Lifecycles:** ⬜ Closed into **[S1]**.
 
@@ -310,6 +312,7 @@ Here is the exact breakdown of every file that will change and the specific modi
 * **Spec Organization:** Remove `specs/features/` vs `specs/invariants/` split. All specs under `docs/project/specs/` are permanent invariants (`[S1]`).
 * **Numbering Standard:** Document `MM-NN-name.md` for milestone slices, `00-NN-name.md` for Milestone 0 (bootstrapping) and ad-hoc slices outside milestones (`[N11]`).
 * **Milestone 0 Requirements:** Add explicit `.gitignore` setup requirement (keeping `spikes/` tracked) (`[31]`).
+* **Release Process:** Add release process guidelines under `## Workflow Standards` (version tagging, changelogs, publication) (`[11]`).
 * **Technical Debt Section:** Completely delete the `## Technical Debt` section and its logging hygiene rules (`[10]`).
 
 #### `specification-document.md`
