@@ -369,10 +369,48 @@ def _orchestrate_session_loop(
         signal.signal(signal.SIGINT, previous_handler)
 
 
-def _display_update_notification(cache_path: Path) -> None:
+def _display_drift_notification(container: Container) -> None:
+    """Advises the restore command when user prompts/templates have drifted.
+
+    Compares the user's ``.teddy/prompts/`` and ``docs/templates/`` against the
+    bundled defaults (via ``IInitUseCase.check_drift``) and, when they have
+    drifted (edited or missing), emits a yellow, actionable advice naming the
+    restore command(s). Advisory only: it runs on the preflight HEALTHY path and
+    never blocks the session. Gated by the checks.prompts_templates config
+    toggle (defaults to enabled).
+    """
+    config = container.resolve(IConfigService)
+    if not config.get_setting("checks.prompts_templates", True):
+        return
+
+    report = container.resolve(IInitUseCase).check_drift()
+    if not report.has_drift:
+        return
+
+    commands: list[str] = []
+    if report.prompts_drifted:
+        commands.append("teddy init prompts")
+    if report.templates_drifted:
+        commands.append("teddy init templates")
+
+    typer.echo(
+        typer.style(
+            "ℹ Prompt/template drift detected. To restore the bundled "
+            f"defaults, run: {' and '.join(commands)}\n",
+            fg=typer.colors.YELLOW,
+        )
+    )
+
+
+def _display_update_notification(container: Container, cache_path: Path) -> None:
     """Check the update cache and display a non-blocking notification
     if a newer version is available. Called on session startup, after
-    the background check thread has been started."""
+    the background check thread has been started. Gated by the
+    checks.update config toggle (defaults to enabled); a disabled toggle
+    suppresses the notification only -- the background fetch still runs."""
+    config = container.resolve(IConfigService)
+    if not config.get_setting("checks.update", True):
+        return
     try:
         cache = read_update_cache(cache_path)
         if cache is None:
@@ -428,7 +466,7 @@ def handle_new_session(  # noqa: PLR0913
         daemon=True,
     )
     thread.start()
-    _display_update_notification(cache_path)
+    _display_update_notification(container, cache_path)
 
     try:
         # 0. Pipeline mode requires an initial message
@@ -591,6 +629,7 @@ def _run_cli_preflight_check(
         # one-time setup stays decoupled from the approval flag (Slice 00-26).
         if setup_editor:
             _validate_editor_config(container)
+        _display_drift_notification(container)
         return
 
     error_msg = f"Configuration Error: {', '.join(errors)}"
@@ -977,7 +1016,7 @@ def handle_resume_session(  # noqa: PLR0913
         daemon=True,
     )
     thread.start()
-    _display_update_notification(cache_path)
+    _display_update_notification(container, cache_path)
 
     try:
         # 1. Health checks (advisory, non-blocking)
