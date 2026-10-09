@@ -95,20 +95,14 @@ class PromptManager(IPromptManager):
         return None
 
     def _resolve_agent_prompt_content(self, agent_name: str, turn_path: Path) -> str:
-        """Resolves the agent-specific prompt XML from the filesystem hierarchy.
+        """Resolves the agent-specific prompt XML from the canonical
+        ``.teddy/prompts/`` directory (the user-editable source).
 
-        Searches the session root first, then the canonical ``.teddy/prompts/``
-        directory. Returns an empty string (with a warning) when no prompt file
-        is found, preserving the graceful-degradation contract.
+        Returns an empty string (with a warning) when no prompt file is found,
+        preserving the graceful-degradation contract. Session-root prompts are
+        resolved by the caller (``fetch_system_prompt``), which returns them
+        verbatim rather than re-composing them.
         """
-        # 1. Try Session-Root override (Current standard)
-        session_root_prompt = self._find_prompt_file(
-            turn_path.parent.as_posix(), agent_name
-        )
-        if session_root_prompt:
-            return self._file_system_manager.read_file(session_root_prompt)
-
-        # 2. Try .teddy/prompts/ (canonical source, user-editable)
         teddy_prompt_dir = (
             turn_path.parent.parent.parent.parent / ".teddy" / "prompts"
         ).as_posix()
@@ -117,9 +111,8 @@ class PromptManager(IPromptManager):
             return self._file_system_manager.read_file(teddy_prompt_path)
 
         logging.getLogger(__name__).warning(
-            "PromptManager: Failed to resolve system prompt for agent '%s' (searched %s and %s)",
+            "PromptManager: Failed to resolve system prompt for agent '%s' (searched %s)",
             agent_name,
-            session_root_prompt,
             teddy_prompt_path,
         )
         return ""
@@ -144,6 +137,17 @@ class PromptManager(IPromptManager):
         return resource.read_text(encoding="utf-8")
 
     def fetch_system_prompt(self, agent_name: str, turn_path: Path) -> str:
+        # Option A: the session-root prompt file IS the composed system prompt
+        # (written by SessionService at session creation / agent switch). Return
+        # it verbatim -- never re-compose, to avoid a duplicate header and MRP.
+        session_root_prompt = self._find_prompt_file(
+            turn_path.parent.as_posix(), agent_name
+        )
+        if session_root_prompt:
+            return self._file_system_manager.read_file(session_root_prompt)
+
+        # Lazy-compose fallback (legacy session or manually deleted file):
+        # assemble from the canonical ``.teddy/prompts/`` source.
         content = self._resolve_agent_prompt_content(agent_name, turn_path)
         if not content:
             # No agent prompt resolved: preserve the historical empty-string

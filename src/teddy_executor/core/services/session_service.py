@@ -61,10 +61,20 @@ class SessionService(ISessionManager):
             f"{session_root}/session.context", clean_context
         )
 
-        # 2. Prompt population — read from .teddy/prompts/ (canonical source)
-        prompt_filename, prompt_content = self._resolve_agent_prompt(options.agent_name)
+        # 2. Prompt population — compose the full system prompt and persist it.
+        # `_resolve_agent_prompt` validates the agent and resolves the target
+        # filename; `PromptManager.fetch_system_prompt` assembles the composed
+        # system prompt (agent-name header + agent XML + MRP). Because the
+        # session root is still empty here, this forces the compose path from
+        # `.teddy/prompts/`. Persisting the composed value makes the session
+        # root hold the exact prompt sent to the model, which later turns reuse
+        # verbatim (Option A).
+        prompt_filename, _raw_prompt = self._resolve_agent_prompt(options.agent_name)
+        composed_prompt = self._prompt_manager.fetch_system_prompt(
+            options.agent_name, Path(turn_dir)
+        )
         self._file_system_manager.write_file(
-            f"{session_root}/{prompt_filename}", prompt_content
+            f"{session_root}/{prompt_filename}", composed_prompt
         )
 
         # 3. Metadata persistence
@@ -524,9 +534,10 @@ class SessionService(ISessionManager):
 
     def set_session_agent(self, session_name: str, agent_name: str) -> None:
         """
-        Permanently changes the session's agent. Updates meta.yaml
-        with the new agent_name and replaces the session's prompt
-        XML with the new agent's prompt from .teddy/prompts/.
+        Permanently changes the session's agent. Updates meta.yaml with the
+        new agent_name and replaces the session's prompt XML with the
+        RECOMPOSED system prompt for the new agent (agent-name header + agent
+        XML + MRP), so later turns reuse it verbatim (Option A).
         """
         session_root = f".teddy/sessions/{session_name}"
         latest_turn_path = self.get_latest_turn(session_name)
@@ -536,12 +547,21 @@ class SessionService(ISessionManager):
         meta["agent_name"] = agent_name
         self.save_turn_meta(latest_turn_path, meta)
 
-        # 2. Find new prompt in .teddy/prompts/ (mirrors create_session pattern)
-        prompt_filename, prompt_content = self._resolve_agent_prompt(agent_name)
+        # 2. Resolve the target filename (validates the agent) and recompose the
+        #    full system prompt. Option A: switching agents must recompose
+        #    (agent-name header + agent XML + MRP) via the prompt manager and
+        #    persist THAT composed value -- never the raw `.teddy/prompts/`
+        #    content -- so later turns reuse it verbatim. Because the session
+        #    root does not yet hold the new agent's file, the prompt manager
+        #    takes the lazy-compose path from `.teddy/prompts/`.
+        prompt_filename, _raw_prompt = self._resolve_agent_prompt(agent_name)
+        composed_prompt = self._prompt_manager.fetch_system_prompt(
+            agent_name, Path(latest_turn_path)
+        )
 
         # 3. Write prompt to session root (overwrite any existing file with same stem)
         self._file_system_manager.write_file(
-            f"{session_root}/{prompt_filename}", prompt_content
+            f"{session_root}/{prompt_filename}", composed_prompt
         )
 
         # 4. Remove stale prompt files (any file in session root whose stem matches a

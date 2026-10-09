@@ -101,6 +101,45 @@ def test_fetch_system_prompt_resolves_from_teddy_prompts(mrp_prompt_manager, moc
     assert "<prompt>From .teddy/prompts/</prompt>" in content
 
 
+def test_fetch_system_prompt_returns_persisted_composed_prompt_verbatim(
+    mrp_prompt_manager, mock_fs
+):
+    """A composed session-root prompt is returned VERBATIM (no re-composition).
+
+    Option A: the session-root file IS the composed system prompt, so the reader
+    must return it unchanged -- no second ``Agent Name:`` header and no
+    re-appended MRP block.
+    """
+    composed = (
+        "Agent Name: Pathfinder\n\n"
+        "<agent>AGENT_SPECIFIC</agent>\n\n"
+        "<mrp>SHARED_PROTOCOL</mrp>"
+    )
+    turn_path = Path(".teddy/sessions/my-session/01")
+    session_root = turn_path.parent.as_posix()
+    session_prompt = f"{session_root}/pathfinder.xml"
+
+    mock_fs.list_directory.side_effect = lambda d: {
+        session_root: ["pathfinder.xml"],
+    }.get(d, [])
+    mock_fs.path_exists.side_effect = lambda path: (
+        path
+        in [
+            session_root,
+            session_prompt,
+        ]
+    )
+    mock_fs.read_file.side_effect = lambda p: {session_prompt: composed}.get(p, "")
+
+    # Act
+    result = mrp_prompt_manager.fetch_system_prompt("pathfinder", turn_path)
+
+    # Assert: returned exactly as persisted (single header, single MRP block)
+    assert result == composed
+    assert result.count("Agent Name:") == 1
+    assert result.count("<mrp>") == 1
+
+
 def test_get_available_agents_returns_prompt_files(prompt_manager, mock_fs):
     """
     Verifies that get_available_agents() lists all files from .teddy/prompts/

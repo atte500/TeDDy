@@ -141,7 +141,7 @@ Add a single canonical-casing helper (agent name → the resolved prompt file st
 ## Deliverables
 
 - [x] **Logic** — Item 1: drop the `_init_templates` call (and the trailing `Templates:` summary segment) from `InitService.ensure_initialized`; reverse the acceptance contract in `tests/suites/acceptance/test_templates_auto_init.py` and update the two summary-string assertions in `tests/suites/unit/core/services/test_init_service.py` in the same change set.
-- [ ] **Logic** — Item 2: compose+persist in `SessionService.create_session`; verbatim reuse in `PromptManager.fetch_system_prompt`; recompose in `set_session_agent`.
+- [x] **Logic** — Item 2: compose+persist in `SessionService.create_session`; verbatim reuse in `PromptManager.fetch_system_prompt`; recompose in `set_session_agent`.
 - [ ] **Logic** — Item 6: canonicalise agent casing in `_echo_config_success` and meta persistence.
 - [ ] **Contract** — Item 5: add the two config toggle keys to the bundled `config.yaml` (additive; read via `IConfigService.get_setting`).
 - [ ] **Seam** — Items 3/4: a drift-check helper comparing user files against bundled defaults.
@@ -164,6 +164,20 @@ Add a single canonical-casing helper (agent name → the resolved prompt file st
 **Blast-radius lesson.** The missed coupling expressed the path as SEPARATE components (`tmp_path / "docs" / "templates"`), so a literal `git grep "docs/templates"` did not flag it. Future audits of path-coupling reversals MUST also sweep the path TAIL component (e.g. `git grep '"templates"'`).
 
 **Verification.** Red (Turn 8): `3 failed, 17 passed`. Green (Turn 9): targeted run `21 passed`. Phase 3 (Turn 13): full suite `1683 passed, 5 skipped`.
+
+### Item 2 — Composed system prompt persisted and reused (Option A, complete)
+
+**Production change.** Split the dual compose+read role of `PromptManager.fetch_system_prompt` into distinct steps:
+
+- **Compose+persist at session creation.** `SessionService.create_session` resolves the target filename via `_resolve_agent_prompt` (which retains its agent-validation `ValueError` and its case-preserving filename role) and obtains the COMPOSED system prompt by calling `self._prompt_manager.fetch_system_prompt(options.agent_name, Path(turn_dir))`. Because the session root is still empty at that point, the reader takes its lazy-compose path (`.teddy/prompts/` → `Agent Name: <Canonical>` header + agent XML + appended `MRP.xml`), and the composed string is persisted to `{session_root}/{prompt_filename}` via the service's own `IFileSystemManager`.
+- **Recompose+persist on agent switch.** `SessionService.set_session_agent` mirrors the same shape: it resolves the filename via `_resolve_agent_prompt`, calls `fetch_system_prompt(agent_name, Path(latest_turn_path))` for the new agent, persists the composed value, and keeps its stale-stem pruning.
+- **Verbatim read every turn.** `PromptManager.fetch_system_prompt` returns the persisted session-root file UNCHANGED — no header prepend, no MRP append, no content sniffing. Because the session-root file IS by definition the composed prompt, no composed-vs-raw disambiguation is required (Key Unknown resolved). `_resolve_agent_prompt_content` was retargeted to read only canonically from `.teddy/prompts/`; the legacy `<response_format>` skip moved INTO the compose step so the reader stays trivial.
+
+**Three Red-Green cycles.** Green 1 (`test_prompt_manager.py::test_fetch_system_prompt_returns_persisted_composed_prompt_verbatim`, Turn 22→23 → `12 passed`) established the verbatim reader and the `.teddy/prompts/`-only resolver. Green 2 (`test_session_service.py::test_create_session_persists_composed_prompt_at_session_root`, Turn 25→27 → `1 passed`) landed compose+persist in `create_session`. Green 3 (`test_session_service_pruning.py::test_set_session_agent_persists_recomposed_prompt_at_session_root`, Turn 29→31 → `1 passed`) landed recompose+persist in `set_session_agent`. All three failed first with the exact `write_file(..., composed) call not found` smoking gun, confirming the compose contract was genuinely unimplemented (not coincidentally passing).
+
+**Phase 3 Local Recovery.** The Global Run (Turn 32) surfaced `5 failed, 1681 passed, 5 skipped` — all five in the deliverable's in-scope test files, so classified LOCAL FLAWS (no Systemic Regression; no abort/re-plan). Each stale test pinned the OLD raw `.teddy/prompts/` content; each was re-pointed at the composed contract WITHOUT weakening its original intent (path placement, meta updates, stale-stem pruning, `.teddy/prompts/` read). The five repaired tests: `test_session_service.py::{test_create_session_orchestrates_filesystem_correctly, test_create_session_reads_prompt_from_teddy_prompts, test_set_session_agent_updates_meta_yaml_and_copies_prompt, test_set_session_agent_removes_stale_prompt_files}` and `test_session_service_pruning.py::test_create_session_does_not_put_prompt_in_turn_directory`. Tests lacking an explicit `IPromptManager` mock gained a deterministic `env.mock_port(IPromptManager)` so the composed value is asserted regardless of the env default binding. `test_session_service_dynamic_agent_naming.py` asserts prompt PATHS only, so it stayed GREEN (no edit).
+
+**Verification.** Red 1 (Turn 22): verbatim-read test failed on doubled header + MRP. Red 2 (Turn 25): `write_file(..., composed) call not found`. Red 3 (Turn 29): `write_file(..., composed) call not found`. Green 1 (Turn 23): `test_prompt_manager.py` → `12 passed`. Green 2 (Turn 27): targeted → `1 passed`. Green 3 (Turn 31): targeted → `1 passed`. Phase 3 (Turn 35): full suite `1686 passed, 5 skipped in 9.24s` (exit 0).
 
 ## Verification
 

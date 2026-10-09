@@ -54,6 +54,13 @@ def test_create_session_does_not_put_prompt_in_turn_directory(service, mock_deps
         ".teddy/init.context": "README.md",
         f".teddy/prompts/{options.agent_name}.xml": "<prompt>content</prompt>",
     }.get(p, "")
+    # Option A: create_session persists the COMPOSED system prompt returned by
+    # the prompt manager at the session root.
+    composed_prompt = (
+        "Agent Name: Pathfinder\n\n<prompt>content</prompt>\n\n"
+        "<mrp>SHARED_PROTOCOL</mrp>"
+    )
+    mock_deps["prompt"].fetch_system_prompt.return_value = composed_prompt
 
     # Act
     session_root = service.create_session(options)
@@ -61,9 +68,7 @@ def test_create_session_does_not_put_prompt_in_turn_directory(service, mock_deps
     # Assert
     # We expect it at session root
     expected_root_prompt = f"{session_root}/pathfinder.xml"
-    mock_deps["fsm"].write_file.assert_any_call(
-        expected_root_prompt, "<prompt>content</prompt>"
-    )
+    mock_deps["fsm"].write_file.assert_any_call(expected_root_prompt, composed_prompt)
 
     # We strictly FORBID it in the turn directory (01)
     forbidden_turn_prompt = f"{session_root}/01/pathfinder.xml"
@@ -95,6 +100,66 @@ def test_transition_does_not_put_prompt_in_turn_directory(service, mock_deps):
     assert forbidden_turn_prompt not in write_paths, (
         "Prompt should not be written to turn 02 directory"
     )
+
+
+def test_set_session_agent_persists_recomposed_prompt_at_session_root(
+    service, mock_deps
+):
+    """set_session_agent persists the RECOMPOSED system prompt on agent switch.
+
+    Option A: switching agents must recompose (agent-name header + agent XML +
+    MRP) and persist that composed prompt to the session root -- never the raw
+    ``.teddy/prompts/`` content -- so later turns reuse it verbatim.
+    """
+    # Arrange
+    session_name = "test-recompose"
+    session_root = f".teddy/sessions/{session_name}"
+    latest_turn_path = f"{session_root}/03"
+
+    mock_deps["repo"].get_latest_turn.return_value = latest_turn_path
+    mock_deps["repo"].load_meta.return_value = {
+        "agent_name": "pathfinder",
+        "turn_id": "03",
+    }
+    mock_deps["repo"].to_root_relative.return_value = "test.xml"
+
+    composed = (
+        "Agent Name: Developer\n\n"
+        "<prompt>developer content</prompt>\n\n"
+        "<mrp>SHARED_PROTOCOL</mrp>"
+    )
+    mock_deps["prompt"].fetch_system_prompt.return_value = composed
+
+    mock_deps["fsm"].path_exists.side_effect = lambda p: (
+        p
+        in {
+            ".teddy/prompts",
+            ".teddy/prompts/Developer.xml",
+        }
+    )
+    mock_deps["fsm"].list_directory.side_effect = lambda d: {
+        ".teddy/prompts": ["architect.xml", "Developer.xml"],
+        session_root: ["pathfinder.xml", "turn.context"],
+    }.get(d, [])
+    mock_deps["fsm"].read_file.side_effect = lambda p: {
+        ".teddy/prompts/Developer.xml": "<prompt>developer content</prompt>",
+    }.get(p, "")
+
+    # Act
+    service.set_session_agent(session_name, "developer")
+
+    # Assert: the COMPOSED prompt was persisted, not the raw content
+    prompt_path = f"{session_root}/Developer.xml"
+    mock_deps["fsm"].write_file.assert_any_call(prompt_path, composed)
+
+    written = {
+        call.args[0]: call.args[1]
+        for call in mock_deps["fsm"].write_file.call_args_list
+    }
+    assert written[prompt_path] != "<prompt>developer content</prompt>"
+
+    # Composition is delegated to the prompt manager exactly once
+    mock_deps["prompt"].fetch_system_prompt.assert_called_once()
 
 
 def test_prompt_manager_ignores_turn_local_override(container):

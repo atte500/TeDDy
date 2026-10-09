@@ -25,6 +25,9 @@ def test_create_session_orchestrates_filesystem_correctly(env):
     init_context = "README.md\n# comment\ndocs/project/PROJECT.md"
     clean_context = "README.md\ndocs/project/PROJECT.md"
     agent_prompt = "<prompt>Pathfinder content</prompt>"
+    composed_prompt = (
+        f"Agent Name: Pathfinder\n\n{agent_prompt}\n\n<mrp>SHARED_PROTOCOL</mrp>"
+    )
 
     # read_file must return different content based on path
     mock_fs.read_file.side_effect = lambda p: {
@@ -42,6 +45,9 @@ def test_create_session_orchestrates_filesystem_correctly(env):
     mock_prompts.get_prompt_content.side_effect = AssertionError(
         "create_session should not call get_prompt_content anymore"
     )
+    # Option A: create_session composes the system prompt via the prompt
+    # manager and persists the composed value at the session root.
+    mock_prompts.fetch_system_prompt.return_value = composed_prompt
 
     # Act
     service.create_session(
@@ -66,10 +72,10 @@ def test_create_session_orchestrates_filesystem_correctly(env):
         expected_context,
     )
 
-    # 3. pathfinder.xml creation
+    # 3. pathfinder.xml creation -- the COMPOSED system prompt (Option A)
     mock_fs.write_file.assert_any_call(
         Path(".teddy/sessions/20260417_120000-feat-x/pathfinder.xml").as_posix(),
-        agent_prompt,
+        composed_prompt,
     )
 
     # 4. meta.yaml creation
@@ -503,12 +509,17 @@ def test_create_session_reads_prompt_from_teddy_prompts(env):
     from teddy_executor.core.ports.outbound.time_service import ITimeService
 
     mock_time = env.mock_port(ITimeService)
+    mock_prompts = env.mock_port(IPromptManager)
     service = env.get_service(ISessionManager)
     mock_fs = env.get_mock_filesystem()
 
     session_name = "prompt-source"
     agent_name = "pathfinder"
     prompt_content = "<prompt>From .teddy/prompts/</prompt>"
+    composed_prompt = (
+        f"Agent Name: Pathfinder\n\n{prompt_content}\n\n<mrp>SHARED_PROTOCOL</mrp>"
+    )
+    mock_prompts.fetch_system_prompt.return_value = composed_prompt
 
     read_calls: list[str] = []
 
@@ -538,11 +549,12 @@ def test_create_session_reads_prompt_from_teddy_prompts(env):
     session_root = ".teddy/sessions/20260610_160000-prompt-source"
     expected_prompt_path = f"{session_root}/{agent_name}.xml"
 
-    # Verify prompt was written to session root with content from .teddy/prompts/
+    # Verify the COMPOSED system prompt was written to the session root
+    # (Option A: the session-root file IS the composed system prompt).
     prompt_call = mock_fs.find_call_by_path("write_file", expected_prompt_path)
     assert prompt_call is not None, f"Expected write to {expected_prompt_path}"
-    assert prompt_call.args[1] == prompt_content, (
-        f"Expected content '{prompt_content}', got '{prompt_call.args[1]}'"
+    assert prompt_call.args[1] == composed_prompt, (
+        f"Expected composed content '{composed_prompt}', got '{prompt_call.args[1]}'"
     )
 
     # Verify .teddy/prompts/pathfinder.xml was read
@@ -553,6 +565,55 @@ def test_create_session_reads_prompt_from_teddy_prompts(env):
     assert teddy_prompt_read, (
         f"Expected read_file to be called with .teddy/prompts/{agent_name}.xml"
     )
+
+
+def test_create_session_persists_composed_prompt_at_session_root(env):
+    """
+    Item 2 (compose+persist): create_session persists the COMPOSED system prompt
+    -- the value returned by fetch_system_prompt (agent-name header + agent XML
+    + MRP) -- to the session root, NOT the raw .teddy/prompts/ file content.
+    """
+    # Arrange
+    mock_time = env.mock_port(ITimeService)
+    mock_prompts = env.mock_port(IPromptManager)
+    service = env.get_service(ISessionManager)
+    mock_fs = env.get_mock_filesystem()
+
+    session_name = "compose-x"
+    agent_name = "pathfinder"
+    raw_prompt = "<agent>PATHFINDER</agent>"
+    composed_prompt = (
+        f"Agent Name: Pathfinder\n\n{raw_prompt}\n\n<mrp>SHARED_PROTOCOL</mrp>"
+    )
+
+    mock_fs.read_file.side_effect = lambda p: {
+        ".teddy/init.context": "README.md",
+        f".teddy/prompts/{agent_name}.xml": raw_prompt,
+    }.get(p, "")
+    mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": [f"{agent_name}.xml"],
+    }.get(d, [])
+    mock_time.now.return_value = datetime(2026, 4, 17, 12, 0, 0)
+    mock_time.now_utc.return_value = datetime(2026, 4, 17, 12, 0, 0)
+    mock_prompts.fetch_system_prompt.return_value = composed_prompt
+
+    # Act
+    session_root = service.create_session(
+        SessionOptions(name=session_name, agent_name=agent_name)
+    )
+
+    # Assert: the COMPOSED prompt was persisted at the session root
+    prompt_path = f"{session_root}/{agent_name}.xml"
+    mock_fs.write_file.assert_any_call(prompt_path, composed_prompt)
+
+    # The raw prompt content must NOT have been written verbatim
+    written = {call.args[0]: call.args[1] for call in mock_fs.write_file.call_args_list}
+    assert written[prompt_path] != raw_prompt
+
+    # Composition is delegated to fetch_system_prompt exactly once
+    mock_prompts.fetch_system_prompt.assert_called_once()
+    assert mock_prompts.fetch_system_prompt.call_args.args[0] == agent_name
 
 
 # ---------------------------------------------------------------------------
@@ -899,6 +960,7 @@ def test_set_session_agent_updates_meta_yaml_and_copies_prompt(env):
     from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 
     repo = env.mock_port(ISessionRepository)
+    mock_prompts = env.mock_port(IPromptManager)
     service = env.get_service(ISessionManager)
     mock_fs = env.get_mock_filesystem()
 
@@ -930,6 +992,13 @@ def test_set_session_agent_updates_meta_yaml_and_copies_prompt(env):
     mock_fs.read_file.side_effect = lambda p: {
         ".teddy/prompts/Developer.xml": "<prompt>developer content</prompt>",
     }.get(p, "")
+    # Option A: set_session_agent recomposes the system prompt and persists it.
+    composed_prompt = (
+        "Agent Name: Developer\n\n"
+        "<prompt>developer content</prompt>\n\n"
+        "<mrp>SHARED_PROTOCOL</mrp>"
+    )
+    mock_prompts.fetch_system_prompt.return_value = composed_prompt
 
     # Act
     service.set_session_agent(session_name, "developer")
@@ -941,10 +1010,11 @@ def test_set_session_agent_updates_meta_yaml_and_copies_prompt(env):
         {"agent_name": "developer", "turn_id": "03"},
     )
 
-    # 2. New prompt was written to session root
+    # 2. The RECOMPOSED system prompt was written to the session root
+    #    (Option A: the session-root file IS the composed system prompt).
     mock_fs.write_file.assert_any_call(
         f"{session_root}/Developer.xml",
-        "<prompt>developer content</prompt>",
+        composed_prompt,
     )
 
 
@@ -956,6 +1026,7 @@ def test_set_session_agent_removes_stale_prompt_files(env):
     from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 
     repo = env.mock_port(ISessionRepository)
+    mock_prompts = env.mock_port(IPromptManager)
     service = env.get_service(ISessionManager)
     mock_fs = env.get_mock_filesystem()
 
@@ -989,15 +1060,22 @@ def test_set_session_agent_removes_stale_prompt_files(env):
     mock_fs.read_file.side_effect = lambda p: {
         ".teddy/prompts/Developer.xml": "<prompt>developer content</prompt>",
     }.get(p, "")
+    # Option A: set_session_agent recomposes the system prompt and persists it.
+    composed_prompt = (
+        "Agent Name: Developer\n\n"
+        "<prompt>developer content</prompt>\n\n"
+        "<mrp>SHARED_PROTOCOL</mrp>"
+    )
+    mock_prompts.fetch_system_prompt.return_value = composed_prompt
 
     # Act
     service.set_session_agent(session_name, "developer")
 
     # Assert
-    # 1. New prompt written
+    # 1. The RECOMPOSED system prompt was written to the session root
     mock_fs.write_file.assert_any_call(
         f"{session_root}/Developer.xml",
-        "<prompt>developer content</prompt>",
+        composed_prompt,
     )
 
     # 2. Stale prompt files removed (pathfinder.xml and assistant.xml),
