@@ -5,6 +5,7 @@ from importlib import resources
 
 import yaml
 
+from teddy_executor.core.domain.models.drift_report import DriftReport
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 
@@ -51,6 +52,19 @@ _TEMPLATE_FILES = [
     "makefile.md",
     "ci.md",
     "pre-commit.md",
+]
+
+# Bundled prompt XMLs copied into a project's ``.teddy/prompts/`` by
+# ``_init_prompts`` and compared by ``check_drift``. Kept as a fixed manifest
+# (mirroring ``_TEMPLATE_FILES``) so the copy routine and the drift check share
+# one single source of truth.
+_PROMPT_FILES = [
+    "architect.xml",
+    "assistant.xml",
+    "debugger.xml",
+    "developer.xml",
+    "pathfinder.xml",
+    "prototyper.xml",
 ]
 
 
@@ -189,14 +203,7 @@ class InitService(IInitUseCase):
         """
         return self._copy_bundled_files(
             dest_dir=".teddy/prompts",
-            filenames=[
-                "architect.xml",
-                "assistant.xml",
-                "debugger.xml",
-                "developer.xml",
-                "pathfinder.xml",
-                "prototyper.xml",
-            ],
+            filenames=_PROMPT_FILES,
             resolve_content=lambda fname: self._get_default_content(f"prompts/{fname}"),
             overwrite=overwrite,
         )
@@ -285,3 +292,59 @@ class InitService(IInitUseCase):
         """
         status = self._init_templates(overwrite=overwrite)
         return f"Templates {status}."
+
+    def _classify_drift(
+        self,
+        dest_dir: str,
+        filenames: Sequence[str],
+        resolve_bundled: Callable[[str], str | None],
+    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        """Partitions ``filenames`` into (edited, missing) against bundled defaults.
+
+        A file is MISSING when its user copy is absent. It is EDITED when the
+        user copy exists, a bundled default is resolvable, and the two contents
+        differ. Unresolvable bundled defaults are skipped (never reported as
+        drift). Order is preserved from ``filenames`` for deterministic output.
+        """
+        edited: list[str] = []
+        missing: list[str] = []
+        for fname in filenames:
+            user_path = f"{dest_dir}/{fname}"
+            if not self._file_system.path_exists(user_path):
+                missing.append(fname)
+                continue
+            bundled_content = resolve_bundled(fname)
+            if bundled_content is None:
+                continue
+            if self._file_system.read_file(user_path) != bundled_content:
+                edited.append(fname)
+        return tuple(edited), tuple(missing)
+
+    def check_drift(self) -> DriftReport:
+        """Compares the user's prompts and templates against bundled defaults.
+
+        Reports which ``.teddy/prompts/*.xml`` and ``docs/templates/*.md`` files
+        have been EDITED away from their bundled default and which are MISSING,
+        so the CLI preflight can advise ``teddy init prompts`` /
+        ``teddy init templates``. An absent ``.teddy/prompts/`` directory simply
+        makes every prompt report as MISSING (per-file check, no directory
+        special-casing).
+        """
+        edited_prompts, missing_prompts = self._classify_drift(
+            dest_dir=".teddy/prompts",
+            filenames=_PROMPT_FILES,
+            resolve_bundled=lambda fname: self._get_default_content(f"prompts/{fname}"),
+        )
+        edited_templates, missing_templates = self._classify_drift(
+            dest_dir="docs/templates",
+            filenames=_TEMPLATE_FILES,
+            resolve_bundled=lambda fname: self._read_bundled_resource(
+                self._templates_dir, fname
+            ),
+        )
+        return DriftReport(
+            edited_prompts=edited_prompts,
+            missing_prompts=missing_prompts,
+            edited_templates=edited_templates,
+            missing_templates=missing_templates,
+        )

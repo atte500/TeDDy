@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from teddy_executor.core.domain.models.drift_report import DriftReport
+
 
 class IInitUseCase(ABC):
     """
@@ -58,5 +60,17 @@ class IInitUseCase(ABC):
 
         Returns:
             A human-readable status string (e.g., "Templates updated (11 files).").
+        """
+        pass
+
+    @abstractmethod
+    def check_drift(self) -> DriftReport:
+        """
+        Compares the user's prompts and templates against the bundled defaults.
+
+        Returns:
+            A DriftReport enumerating which ``.teddy/prompts/*.xml`` and
+            ``docs/templates/*.md`` files are edited or missing relative to the
+            bundled defaults.
         """
         pass
