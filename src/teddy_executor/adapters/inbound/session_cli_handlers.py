@@ -369,37 +369,87 @@ def _orchestrate_session_loop(
         signal.signal(signal.SIGINT, previous_handler)
 
 
-def _display_drift_notification(container: Container) -> None:
+def _format_drift_clause(
+    noun_singular: str,
+    noun_plural: str,
+    target_dir: str,
+    edited: Sequence[str],
+    missing: Sequence[str],
+) -> str:
+    """Builds the count-aware 'what drifted' clause for ONE notification channel.
+
+    Distinguishes CHANGED from MISSING files and singularises on a single file,
+    e.g. ``2 prompts in .teddy/prompts/ differ from this version's defaults``,
+    ``1 prompt in .teddy/prompts/ is missing``, or ``3 prompts in .teddy/prompts/
+    differ from this version's defaults (1 changed, 2 missing)``.
+    """
+    changed = len(edited)
+    missing_count = len(missing)
+    total = changed + missing_count
+    noun = noun_singular if total == 1 else noun_plural
+    if changed and missing_count:
+        differ = "differs" if total == 1 else "differ"
+        return (
+            f"{total} {noun} in {target_dir} {differ} from this version's defaults "
+            f"({changed} changed, {missing_count} missing)"
+        )
+    if changed:
+        differ = "differs" if total == 1 else "differ"
+        return f"{total} {noun} in {target_dir} {differ} from this version's defaults"
+    is_are = "is" if total == 1 else "are"
+    return f"{total} {noun} in {target_dir} {is_are} missing"
+
+
+def _display_drift_notification(container: Container) -> list[str]:
     """Advises the restore command when user prompts/templates have drifted.
 
     Compares the user's ``.teddy/prompts/`` and ``docs/templates/`` against the
-    bundled defaults (via ``IInitUseCase.check_drift``) and, when they have
-    drifted (edited or missing), emits a yellow, actionable advice naming the
-    restore command(s). Advisory only: it runs on the preflight HEALTHY path and
-    never blocks the session. Gated by the checks.prompts_templates config
-    toggle (defaults to enabled).
+    bundled defaults (via ``IInitUseCase.check_drift``) and, for EACH channel that
+    is BOTH enabled AND drifted, emits exactly ONE yellow, count-aware advice line
+    naming the restore command. The prompts channel is emitted before the
+    templates channel. Returns the list of config keys whose check actually fired
+    (``checks.prompts`` / ``checks.templates``) so a shared disable-footer can
+    name them. Advisory only: it runs on the preflight HEALTHY path and never
+    blocks the session. Each channel is gated by its own config toggle
+    (``checks.prompts`` / ``checks.templates``), both defaulting to enabled.
     """
     config = container.resolve(IConfigService)
-    if not config.get_setting("checks.prompts_templates", True):
-        return
-
     report = container.resolve(IInitUseCase).check_drift()
-    if not report.has_drift:
-        return
+    fired: list[str] = []
 
-    commands: list[str] = []
-    if report.prompts_drifted:
-        commands.append("teddy init prompts")
-    if report.templates_drifted:
-        commands.append("teddy init templates")
-
-    typer.echo(
-        typer.style(
-            "ℹ Prompt/template drift detected. To restore the bundled "
-            f"defaults, run: {' and '.join(commands)}\n",
-            fg=typer.colors.YELLOW,
+    if config.get_setting("checks.prompts", True) and report.prompts_drifted:
+        clause = _format_drift_clause(
+            "prompt",
+            "prompts",
+            ".teddy/prompts/",
+            report.edited_prompts,
+            report.missing_prompts,
         )
-    )
+        typer.echo(
+            typer.style(
+                f"ℹ {clause}. To overwrite, run: teddy init prompts\n",
+                fg=typer.colors.YELLOW,
+            )
+        )
+        fired.append("checks.prompts")
+
+    if config.get_setting("checks.templates", True) and report.templates_drifted:
+        clause = _format_drift_clause(
+            "template",
+            "templates",
+            "docs/templates/",
+            report.edited_templates,
+            report.missing_templates,
+        )
+        typer.echo(
+            typer.style(
+                f"ℹ {clause}. To overwrite, run: teddy init templates\n",
+                fg=typer.colors.YELLOW,
+            )
+        )
+        fired.append("checks.templates")
+
+    return fired
 
 
 def _display_update_notification(container: Container, cache_path: Path) -> None:

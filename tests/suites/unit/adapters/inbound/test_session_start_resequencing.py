@@ -2,6 +2,7 @@ import time
 from unittest.mock import Mock, create_autospec
 from punq import Container
 from teddy_executor.adapters.inbound.session_cli_handlers import handle_new_session
+from teddy_executor.core.domain.models.drift_report import DriftReport
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.domain.models.session import SessionOptions
@@ -24,7 +25,9 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
     mock_loop_guard = create_autospec(ISessionLoopGuard)
     mock_prompt_manager = Mock(spec=IPromptManager)
 
-    container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
+    init_mock = Mock(spec=IInitUseCase)
+    init_mock.check_drift.return_value = DriftReport()
+    container.register(IInitUseCase, instance=init_mock)
     container.register(IPromptManager, instance=mock_prompt_manager)
     container.register(ISessionManager, instance=mock_session_manager)
     container.register(IUserInteractor, instance=mock_user_interactor)
@@ -120,7 +123,9 @@ def test_handle_new_session_prompts_even_when_non_interactive():
     mock_loop_guard = create_autospec(ISessionLoopGuard)
     mock_prompt_manager = Mock(spec=IPromptManager)
 
-    container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
+    init_mock = Mock(spec=IInitUseCase)
+    init_mock.check_drift.return_value = DriftReport()
+    container.register(IInitUseCase, instance=init_mock)
     container.register(IPromptManager, instance=mock_prompt_manager)
     container.register(ISessionManager, instance=mock_session_manager)
     container.register(IUserInteractor, instance=mock_user_interactor)
@@ -184,7 +189,9 @@ def test_handle_new_session_raises_eof_error_on_empty_prompt_response_in_non_int
     mock_config_service = Mock(spec=IConfigService)
     mock_prompt_manager = Mock(spec=IPromptManager)
 
-    container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
+    init_mock = Mock(spec=IInitUseCase)
+    init_mock.check_drift.return_value = DriftReport()
+    container.register(IInitUseCase, instance=init_mock)
     container.register(IPromptManager, instance=mock_prompt_manager)
     container.register(ISessionManager, instance=mock_session_manager)
     container.register(IUserInteractor, instance=mock_user_interactor)

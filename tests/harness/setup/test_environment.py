@@ -90,6 +90,7 @@ class TestEnvironment(RealAdapterMixin):
         self._register_io_mocks()
 
     def _register_system_mocks(self) -> None:
+        from teddy_executor.core.domain.models.drift_report import DriftReport
         from teddy_executor.core.ports.inbound.init import IInitUseCase
         from teddy_executor.core.ports.outbound import (
             IShellExecutor,
@@ -97,7 +98,12 @@ class TestEnvironment(RealAdapterMixin):
             ISessionLoopGuard,
         )
 
-        self.mock_port(IInitUseCase)
+        init_mock = self.mock_port(IInitUseCase)
+        # Contract-faithful default: IInitUseCase.check_drift() must return a
+        # real DriftReport (never a bare Mock), so session-driving tests that
+        # reach the drift-advice path observe "no drift" instead of crashing on
+        # a dynamic double's missing __len__.
+        init_mock.check_drift.return_value = DriftReport()
         self.mock_port(ISystemEnvironment)
         self.mock_port(IShellExecutor)
         self.mock_port(ISessionLoopGuard)

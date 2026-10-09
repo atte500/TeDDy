@@ -24,6 +24,8 @@ from teddy_executor.core.domain.models.execution_report import (
     RunStatus,
     RunSummary,
 )
+from teddy_executor.core.domain.models.drift_report import DriftReport
+from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
@@ -56,6 +58,9 @@ def _build_resume_harness() -> SimpleNamespace:
     config_service.get_setting.side_effect = lambda key, default="unknown": default
     config_service.get_config_path.return_value = ".teddy/config.yaml"
 
+    init_service = Mock(spec=IInitUseCase)
+    init_service.check_drift.return_value = DriftReport()
+
     repository = Mock(spec=ISessionRepository)
     repository.load_meta.return_value = {
         "agent_name": "assistant",
@@ -83,6 +88,7 @@ def _build_resume_harness() -> SimpleNamespace:
             ILlmClient: llm_client,
             ISessionLoopGuard: loop_guard,
             IMarkdownReportFormatter: report_formatter,
+            IInitUseCase: init_service,
             InterruptGuard: InterruptGuard(monotonic=time.monotonic),
             IQuitKeyListener: FakeQuitKeyListener(),
         }

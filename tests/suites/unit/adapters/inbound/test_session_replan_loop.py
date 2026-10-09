@@ -19,6 +19,7 @@ from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+from teddy_executor.core.domain.models.drift_report import DriftReport
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.adapters.inbound.session_cli_handlers import (
@@ -43,7 +44,9 @@ def test_handle_new_session_loops_multiple_turns_when_non_interactive():
     mock_loop_guard = create_autospec(ISessionLoopGuard)
     mock_prompt_manager = Mock(spec=IPromptManager)
 
-    container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
+    init_mock = Mock(spec=IInitUseCase)
+    init_mock.check_drift.return_value = DriftReport()
+    container.register(IInitUseCase, instance=init_mock)
     container.register(IPromptManager, instance=mock_prompt_manager)
     container.register(ISessionManager, instance=mock_session_manager)
     container.register(IUserInteractor, instance=mock_user_interactor)
@@ -115,7 +118,9 @@ def test_handle_resume_session_loops_multiple_turns_when_non_interactive():
     mock_loop_guard = create_autospec(ISessionLoopGuard)
     mock_prompt_manager = Mock(spec=IPromptManager)
 
-    container.register(IInitUseCase, instance=Mock(spec=IInitUseCase))
+    init_mock = Mock(spec=IInitUseCase)
+    init_mock.check_drift.return_value = DriftReport()
+    container.register(IInitUseCase, instance=init_mock)
     container.register(IPromptManager, instance=mock_prompt_manager)
     container.register(ISessionManager, instance=mock_session_manager)
     container.register(IRunPlanUseCase, instance=mock_orchestrator)
