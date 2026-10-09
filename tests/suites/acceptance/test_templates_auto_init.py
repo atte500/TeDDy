@@ -1,33 +1,17 @@
-"""Acceptance: bare ``teddy init`` auto-creates ``docs/templates/``.
+"""Acceptance: bare ``teddy init`` does NOT create ``docs/templates/``.
 
-Tracer bullet for the templates auto-initialization wiring. It drives the
-outermost CLI boundary (``teddy init`` with no subcommand) and asserts the
-final success state: the bundled Markdown templates are scaffolded into
-``docs/templates/`` on first initialization.
+Reversed contract (Item 1): ``docs/templates/`` is scaffolded ONLY by the
+explicit ``teddy init templates`` subcommand. Bare ``teddy init`` -- and the
+``teddy start`` / ``teddy resume`` paths that share
+``InitService.ensure_initialized`` -- must leave ``docs/templates/`` untouched.
 """
 
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 
-# The acceptance layer must not import core internals, so the expected
-# template names are declared locally rather than imported from InitService.
-EXPECTED_TEMPLATES = [
-    "specification-document.md",
-    "task-brief.md",
-    "case-file.md",
-    "vertical-slice.md",
-    "milestone.md",
-    "component-design.md",
-    "ARCHITECTURE.md",
-    "PROJECT.md",
-    "makefile.md",
-    "ci.md",
-    "pre-commit.md",
-]
 
-
-def test_bare_teddy_init_scaffolds_docs_templates(tmp_path, monkeypatch):
-    """``teddy init`` (no subcommand) creates ``docs/templates/`` with all bundled templates."""
+def test_bare_teddy_init_does_not_scaffold_docs_templates(tmp_path, monkeypatch):
+    """``teddy init`` (no subcommand) must NOT create ``docs/templates/``."""
     env = TestEnvironment(monkeypatch, tmp_path)
     env.setup().with_real_config().with_real_filesystem().with_real_init_service()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
@@ -39,7 +23,7 @@ def test_bare_teddy_init_scaffolds_docs_templates(tmp_path, monkeypatch):
     assert result.exit_code == 0, result.stdout
 
     templates_dir = tmp_path / "docs" / "templates"
-    assert templates_dir.is_dir(), "docs/templates/ should be created on bare init"
-
-    for name in EXPECTED_TEMPLATES:
-        assert (templates_dir / name).is_file(), f"{name} should be scaffolded"
+    assert not templates_dir.exists(), (
+        "docs/templates/ must NOT be created by bare `teddy init`; only the "
+        "explicit `teddy init templates` subcommand may scaffold it"
+    )

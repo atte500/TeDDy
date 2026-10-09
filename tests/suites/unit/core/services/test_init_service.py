@@ -134,19 +134,18 @@ def test_ensure_initialized_copies_prompts_to_teddy(service, mock_fs):
 
 
 def test_ensure_initialized_returns_summary_when_everything_exists(service, mock_fs):
-    """All files exist → "Config: unchanged. Prompts: unchanged. Templates: unchanged." """
+    """All files exist → "Config: unchanged. Prompts: unchanged." (no Templates segment)."""
     mock_fs.path_exists.return_value = True  # Everything exists
     result = service.ensure_initialized()
     mock_fs.write_file.assert_not_called()
-    assert result == ("Config: unchanged. Prompts: unchanged. Templates: unchanged.")
+    assert result == "Config: unchanged. Prompts: unchanged."
 
 
 def test_ensure_initialized_returns_summary_when_files_missing(service, mock_fs):
-    """Missing .teddy files → config/prompts updated; templates unchanged.
+    """Missing .teddy files → config and prompts updated; NO templates segment.
 
-    The ``service`` fixture sets no ``templates_dir``, so the template resources
-    live outside the mocked ``/mock/config`` tree and resolve to None; the
-    templates segment therefore reports "unchanged".
+    ``ensure_initialized`` no longer scaffolds templates, so the summary never
+    reports a ``Templates:`` segment regardless of the templates directory.
     """
 
     def mock_exists(p):
@@ -159,9 +158,7 @@ def test_ensure_initialized_returns_summary_when_files_missing(service, mock_fs)
     mock_fs.read_file.return_value = "mock content"
 
     result = service.ensure_initialized()
-    assert result == (
-        "Config: updated (4 files). Prompts: updated (6 files). Templates: unchanged."
-    )
+    assert result == "Config: updated (4 files). Prompts: updated (6 files)."
 
 
 def test_ensure_prompts_initialized_overwrite_true(service, mock_fs):

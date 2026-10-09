@@ -2,11 +2,15 @@
 scaffolding to the current working directory.
 
 A bare ``init`` unconditionally runs the real ``IInitUseCase.ensure_initialized()``,
-which scaffolds ``.teddy/`` and ``docs/templates/``. ``LocalFileSystemAdapter``
-resolves its default root (``"."``) lazily against the process CWD, so a test
-that drives this command without changing CWD leaks ``docs/templates/`` into
-the repo root and trips the session-scoped ``_assert_no_test_pollution``
-Poka-Yoke (the macOS CI failure this regression guards against).
+which scaffolds ``.teddy/``. ``LocalFileSystemAdapter`` resolves its default
+root (``"."``) lazily against the process CWD, so a test that drives this
+command without changing CWD leaks ``.teddy/`` into the repo root and trips the
+session-scoped ``_assert_no_test_pollution`` Poka-Yoke (the macOS CI failure
+this regression guards against).
+
+Note: ``docs/templates/`` is NOT part of the bare-init scaffold (it is written
+only by the explicit ``teddy init templates`` subcommand), so this test no
+longer asserts its creation.
 
 This test pins the observable confinement contract: given an isolated CWD, the
 scaffold lands in that workspace and no ancestor directory is polluted.
@@ -37,7 +41,5 @@ def test_bare_init_confines_scaffolding_to_cwd(tmp_path, monkeypatch, container)
     assert result.exit_code == 0, result.stdout
     # The scaffold is confined to the isolated CWD ...
     assert (workspace / ".teddy").is_dir()
-    assert (workspace / "docs" / "templates").is_dir()
     # ... and never leaks into a parent directory.
     assert not (tmp_path / ".teddy").exists()
-    assert not (tmp_path / "docs").exists()

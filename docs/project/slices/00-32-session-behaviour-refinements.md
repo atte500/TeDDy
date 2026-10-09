@@ -140,7 +140,7 @@ Add a single canonical-casing helper (agent name → the resolved prompt file st
 
 ## Deliverables
 
-- [▶] **Logic** — Item 1: drop the `_init_templates` call (and the trailing `Templates:` summary segment) from `InitService.ensure_initialized`; reverse the acceptance contract in `tests/suites/acceptance/test_templates_auto_init.py` and update the two summary-string assertions in `tests/suites/unit/core/services/test_init_service.py` in the same change set.
+- [x] **Logic** — Item 1: drop the `_init_templates` call (and the trailing `Templates:` summary segment) from `InitService.ensure_initialized`; reverse the acceptance contract in `tests/suites/acceptance/test_templates_auto_init.py` and update the two summary-string assertions in `tests/suites/unit/core/services/test_init_service.py` in the same change set.
 - [ ] **Logic** — Item 2: compose+persist in `SessionService.create_session`; verbatim reuse in `PromptManager.fetch_system_prompt`; recompose in `set_session_agent`.
 - [ ] **Logic** — Item 6: canonicalise agent casing in `_echo_config_success` and meta persistence.
 - [ ] **Contract** — Item 5: add the two config toggle keys to the bundled `config.yaml` (additive; read via `IConfigService.get_setting`).
@@ -152,7 +152,18 @@ Add a single canonical-casing helper (agent name → the resolved prompt file st
 
 ## Implementation Notes
 
-Filled by the Developer as things get implemented.
+### Item 1 — Templates explicit-only (complete)
+
+**Production change.** `InitService.ensure_initialized()` no longer calls `_init_templates(overwrite=False)` and no longer appends a `Templates:` segment to its summary; it now returns `f"Config: {config_status}. Prompts: {prompts_status}."`, and its docstring documents the explicit-only contract. The explicit `teddy init templates` path (`ensure_templates_initialized` → `_init_templates`) is untouched and stays GREEN. This reverses the completed decision recorded in slice `03-03-templates-and-init` (whose doc is updated separately by the Cleanup deliverable).
+
+**Contract reversal — the blast radius was THREE test files, not two.** The Plan Audit identified two coupling sites, but the Phase 3 full-suite gate surfaced a third:
+- `tests/suites/acceptance/test_templates_auto_init.py` — reversed to assert that bare `teddy init` does NOT create `docs/templates/` (renamed test `test_bare_teddy_init_does_not_scaffold_docs_templates`).
+- `tests/suites/unit/core/services/test_init_service.py` — the two `ensure_initialized` summary assertions dropped the `Templates:` segment (`"Config: unchanged. Prompts: unchanged."` and `"Config: updated (4 files). Prompts: updated (6 files)."`).
+- `tests/suites/unit/adapters/inbound/test_cli_init_command_isolation.py` — the CWD-confinement guard asserted `(workspace / "docs" / "templates").is_dir()`, which the Item 1 change invalidated. Classified as a **Local Flaw** (Phase 3 Step 2): the fix required editing ONLY this existing test file, no out-of-scope production change. Its meaningful `.teddy/` confinement guards were preserved; the now-vacuous `docs/templates` assertion and the parent-`docs/` assertion (bare init no longer creates `docs/`) were removed, and the docstring was refreshed.
+
+**Blast-radius lesson.** The missed coupling expressed the path as SEPARATE components (`tmp_path / "docs" / "templates"`), so a literal `git grep "docs/templates"` did not flag it. Future audits of path-coupling reversals MUST also sweep the path TAIL component (e.g. `git grep '"templates"'`).
+
+**Verification.** Red (Turn 8): `3 failed, 17 passed`. Green (Turn 9): targeted run `21 passed`. Phase 3 (Turn 13): full suite `1683 passed, 5 skipped`.
 
 ## Verification
 
