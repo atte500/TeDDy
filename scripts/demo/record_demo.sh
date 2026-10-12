@@ -10,13 +10,14 @@ PORT="${FAKE_LLM_PORT:-8124}"
 export FAKE_LLM_PORT="$PORT"
 export FAKE_LLM_STATE="$WORK/fake_state"
 export FAKE_LLM_LOG="$WORK/fake_llm.log"
-export FAKE_LLM_DELAY_MIN="0.8"
-export FAKE_LLM_DELAY_MAX="1.2"
+export FAKE_LLM_DELAY_MIN="2.2"
+export FAKE_LLM_DELAY_MAX="3.2"
 export WORK_DIR="$WORK"
 export REPO_ROOT
 export LANG="en_US.UTF-8"
 export LC_ALL="en_US.UTF-8"
 export PYTHONUTF8="1"
+export PROMPT_TOOLKIT_NO_CPR="1"
 unset VIRTUAL_ENV
 
 cleanup() { kill "${FAKE_PID:-}" 2>/dev/null || true; }
@@ -45,7 +46,7 @@ echo "# Demo Project" > README.md
 git add -A && git commit -qm init
 mkdir -p .teddy
 cat > .teddy/config.yaml <<EOF
-editor: "disabled"
+editor: "nvim"
 checks:
   prompts: false
   templates: false

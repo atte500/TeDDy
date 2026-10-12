@@ -1,10 +1,10 @@
 # Extend the Greeting Helper
-- **Status:** Green 🟢
-- **Plan Type:** Implementation
 - **Agent:** Developer
+- **Plan Type:** Implementation
+- **Status:** ON-TRACK 🟢
 
 ## Rationale
-````
+~~~~~~
 1. Synthesis
 The greeting module exists. We add a farewell helper alongside greet.
 
@@ -20,7 +20,7 @@ Goal: Build a greeting helper.
 PHASES:
 - [✓] Scaffold module and test
 - [▶] Extend the helper
-````
+~~~~~~
 
 ## Action Plan
 
@@ -29,16 +29,19 @@ PHASES:
 - **Description:** Add a farewell helper next to greet.
 
 #### `FIND:`
-```
+~~~~~~
 def greet(name: str) -> str:
+    """Return a personalized greeting message."""
     return f"Hello, {name}!"
-```
+~~~~~~
 #### `REPLACE:`
-```
+~~~~~~
 def greet(name: str) -> str:
+    """Return a personalized greeting message."""
     return f"Hello, {name}!"
 
 
 def farewell(name: str) -> str:
+    """Return a personalized farewell message."""
     return f"Goodbye, {name}!"
-```
+~~~~~~

@@ -1,10 +1,10 @@
 # Wrap Up the Greeting Helper
-- **Status:** Green 🟢
-- **Plan Type:** Conclusion
 - **Agent:** Developer
+- **Plan Type:** Conclusion
+- **Status:** ON-TRACK 🟢
 
 ## Rationale
-````
+~~~~~~
 1. Synthesis
 The greeting helper is scaffolded and extended.
 
@@ -21,7 +21,7 @@ PHASES:
 - [✓] Scaffold module and test
 - [✓] Extend the helper
 - [▶] Wrap up
-````
+~~~~~~
 
 ## Message
 

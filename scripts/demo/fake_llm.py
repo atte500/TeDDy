@@ -3,8 +3,7 @@
 
 Serves an OpenAI-compatible chat-completions endpoint that LiteLLM calls
 when TeDDy's llm.model is "openai/<name>" and llm.api_base points here.
-Each planning request returns the next canned plan from plans/turn*.md,
-cycling in order, so a multi-turn session is deterministic and offline.
+Each planning request returns the next canned plan from plans/turn*.md.
 """
 
 import json
@@ -37,7 +36,10 @@ def _next_plan():
             index = int(STATE_FILE.read_text(encoding="utf-8").strip())
         except (ValueError, OSError):
             index = 0
-    plan = plans[index % len(plans)]
+    if index >= len(plans):
+        # Do not cycle back to turn 1 — work is finished
+        return "# Complete\n\n## Message\n\nSession finished.\n"
+    plan = plans[index]
     STATE_FILE.write_text(str(index + 1), encoding="utf-8")
     _log("serving " + plan.name + " (index " + str(index) + ")")
     return plan.read_text(encoding="utf-8")
@@ -72,8 +74,8 @@ class Handler(BaseHTTPRequestHandler):
         except json.JSONDecodeError:
             request = {}
         _log("POST " + self.path + " stream=" + str(request.get("stream")))
-        delay_min = float(os.environ.get("FAKE_LLM_DELAY_MIN", "3.0"))
-        delay_max = float(os.environ.get("FAKE_LLM_DELAY_MAX", "5.0"))
+        delay_min = float(os.environ.get("FAKE_LLM_DELAY_MIN", "2.2"))
+        delay_max = float(os.environ.get("FAKE_LLM_DELAY_MAX", "3.2"))
         time.sleep(random.uniform(delay_min, delay_max))
         content = _next_plan()
         model_name = os.environ.get("FAKE_LLM_MODEL", "deepseek/deepseek-v4.1-flash")

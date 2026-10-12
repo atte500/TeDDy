@@ -1,10 +1,10 @@
 # Scaffold a Greeting Module
-- **Status:** Green 🟢
-- **Plan Type:** Implementation
 - **Agent:** Developer
+- **Plan Type:** Implementation
+- **Status:** ON-TRACK 🟢
 
 ## Rationale
-````
+~~~~~~
 1. Synthesis
 The project has no greeting module yet. We scaffold the module and its test, following Test-Driven Development.
 
@@ -20,25 +20,32 @@ Goal: Build a greeting helper.
 PHASES:
 - [▶] Scaffold module and test
 - [ ] Extend the helper
-````
+~~~~~~
 
 ## Action Plan
 
 ### `CREATE`
 - **File Path:** [src/greeting.py](/src/greeting.py)
 - **Description:** Create the greeting module.
-```
+~~~~~~
 def greet(name: str) -> str:
     return f"Hello, {name}!"
-```
+~~~~~~
 
 ### `CREATE`
 - **File Path:** [tests/test_greeting.py](/tests/test_greeting.py)
 - **Description:** Create the test for the greeting helper.
-```
+~~~~~~
 from src.greeting import greet
 
 
 def test_greet() -> None:
     assert greet("World") == "Hello, World!"
-```
+~~~~~~
+
+### `EXECUTE`
+- **Description:** Run test suite to verify initial setup.
+- **Expected Outcome:** Tests pass.
+~~~~~~
+python -m unittest tests/test_greeting.py
+~~~~~~
