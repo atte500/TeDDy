@@ -81,7 +81,7 @@ TeDDy integrates automated pre-commit hooks, local test suites, and CI/CD pipeli
 
 ## What Makes TeDDy Special
 
-1. **Markdown as the interface.** Inspired by [Obsidian](https://obsidian.md/), living documents such as specs, architecture contracts, and vertical slices mediate every agent transition across the SDLC. All agent responses and tool calls are also plain Markdown, fully controllable via the built-in TUI while leveraging your native editor instead of restricting the means of development to a chat window.
+1. **Markdown as the interface.** Inspired by [Obsidian](https://obsidian.md/), living documents such as specs, architecture contracts, and vertical slices mediate every part of the SDLC. All agent responses and tool calls are also plain Markdown, fully controllable via the built-in TUI while leveraging your native editor instead of restricting the means of development to a chat window.
 2. **Local-first architecture.** Inspired by the [UNIX philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) of small, sharp tools, TeDDy runs entirely inside your existing workspace with no cloud dependencies, proprietary databases, or background telemetry. It integrates cleanly with standard developer environments, allowing your terminal, local Git hooks, and preferred editor to drive the workflow.
 3. **Auditable by design.** Inspired by [Git](https://git-scm.com/)'s ledger model, every session maintains an immutable history of what the agent intended and what actually executed. Each plan enforces a structured rationale covering synthesis, justification, and expected outcomes, making agent reasoning fully traceable, searchable, and easy to parse with your own scripts for analysis.
 
