@@ -210,35 +210,39 @@ teddy resume -m "your next instruction"
 - `--agent` / `-a`: Select agent persona (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`). Default: `pathfinder`.
 - `--context` / `-c`: Supply additional context files or directories. Repeatable (`-c a.py -c b.md`) or comma-separated (`-c "a.py,b.md"`).
 - `--model`: Override the default configured model.
-- `--yolo` / `-y`: Auto-approve all actions. To make this default, set `yolo_default: true` in `.teddy/config.yaml`.
+- `--yolo` / `-y`: Auto-approve all actions.s To make this default, set `yolo_default: true` in `.teddy/config.yaml`.
 - `--no-yolo` / `-n`: Force interactive mode for a single run.
 - `--message` / `-m`: Initial instruction to pass directly to the agent.
 - `--pipeline` / `-p`: Pipeline mode. Auto-approves actions, requires `-m`, and exits immediately after the first message turn.
 
-### Browser Chat Usage
+### Chat-Oriented Workflow (CHOP)
 
-1. Copy the system prompt of the target agent: `teddy get-prompt -a assistant`
-2. Copy project context to your clipboard: `teddy context`
-3. Paste context and system prompt into any external chat interface (Claude, ChatGPT, Google AI Studio, etc.) alongside your request.
-4. Prompt the model to return an executable Markdown plan.
-5. Copy the generated response and run `teddy execute` (or `teddy execute -y`).
+You do not need API keys or per-token billing to use TeDDy. If you already have an active subscription (ChatGPT, Claude, Gemini, etc.), you can also use TeDDy to practice **[Chat-Oriented Programming (CHOP)](https://sourcegraph.com/blog/chat-oriented-programming-in-action)** from your web browser without fragile, error-prone manual copy-pasting.
+
+TeDDy packages your workspace context into a single clipboard payload, and the agent prompts instruct the model to automatically format its response as an executable, self-contained Markdown plan.
+
+1. **Grab the agent prompt:** Copy your chosen persona's system prompt to your clipboard with `teddy get-prompt -a <agent_name>`.
+2. **Bundle project context:** Export your workspace context to the clipboard with `teddy context`. This bundles system information, current git status, project structure, and the full verbatim contents of all files listed in `.teddy/init.context` into a single Markdown payload.
+3. **Prompt the AI:** Paste both the prompt and context into your browser chat alongside your task request. The model will automatically structure its answer as an executable Markdown plan.
+4. **Apply changes:** Copy the full Markdown plan to your clipboard and run `teddy execute` to validate, review diffs, and apply changes automatically—or copy and run individual snippets manually as you would in standard CHOP.
+5. **Report back:** When `teddy execute` finishes, it automatically copies a concise execution report back to your clipboard to paste into the chat. If you executed changes manually, run `teddy context` again (or paste your test/command output) to provide the model with the updated state for the next turn.
 
 ---
 
 ## Command Reference
 
-| Command          | Description                                                                   |
-| :--------------- | :---------------------------------------------------------------------------- |
-| `init`           | Initialize `.teddy` workspace with defaults and pre-warm dependencies.        |
-| `init prompts`   | Overwrite bundled prompt XMLs in `.teddy/prompts/` with defaults.             |
-| `init config`    | Overwrite `config.yaml`, `.gitignore`, and `init.context` with defaults.      |
-| `init templates` | Overwrite bundled Markdown templates in `docs/templates/` with defaults.      |
-| `start`          | Start an interactive agent session.                                           |
-| `resume`         | Resume an existing session.                                                   |
-| `update`         | Check for updates and display upgrade instructions.                           |
-| `execute`        | Execute a Markdown plan. Reads from clipboard if no file path is provided.    |
-| `context`        | Export project context (file tree + selected file contents) to clipboard.     |
-| `get-prompt`     | Retrieve agent system prompts. Respects local overrides in `.teddy/prompts/`. |
+| Command          | Description                                                                                                  |
+| :--------------- | :----------------------------------------------------------------------------------------------------------- |
+| `init`           | Initialize `.teddy` workspace with defaults and pre-warm dependencies.                                       |
+| `init prompts`   | Overwrite bundled prompt XMLs in `.teddy/prompts/` with defaults.                                            |
+| `init config`    | Overwrite `config.yaml`, `.gitignore`, and `init.context` with defaults.                                     |
+| `init templates` | Overwrite bundled Markdown templates in `docs/templates/` with defaults.                                     |
+| `start`          | Start an interactive agent session.                                                                          |
+| `resume`         | Resume an existing session.                                                                                  |
+| `update`         | Check for updates and display upgrade instructions.                                                          |
+| `execute`        | Execute a Markdown plan. Reads from clipboard if no file path is provided.                                   |
+| `context`        | Export context payload (system info, git status, file tree, and files from `init.context`) to the clipboard. |
+| `get-prompt`     | Retrieve agent system prompts. Respects local overrides in `.teddy/prompts/`.                                |
 
 *Note: By default, `execute` and `context` copy output to the clipboard. Use `--no-copy` to bypass.*
 
