@@ -244,7 +244,8 @@ TeDDy packages your workspace context into a single clipboard payload, and the a
 | `context`                     | Export context payload (system info, git status, file tree, `init.context`). |
 | <nobr>`get-prompt`</nobr>     | Retrieve agent system prompts (respects overrides in `.teddy/prompts/`).     |
 
-*Note: By default, `execute` and `context` copy output to the clipboard. Use `--no-copy` to bypass.*
+> [!NOTE]
+> By default, `execute` and `context` copy output to the clipboard. Use `--no-copy` to bypass.
 
 ---
 
