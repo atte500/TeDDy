@@ -55,7 +55,7 @@ TeDDy addresses these bottlenecks by bringing proven engineering practices like 
 
 <br />
 
-Skills sit on top of your harness's built-in system prompt. When instructions conflict, the harness prompt takes priority over your rules. Upstream updates also change that prompt over time, which can break your setup without warning. TeDDy instead splits the work across specialist agents with separate system prompts that you control directly. You can still use your existing skill files alongside them.
+Skills are designed for task-specific procedures, but stretching them to manage the entire software development lifecycle quickly becomes unmaintainable. Because they sit on top of your harness's built-in system prompt, upstream updates will often alter that base prompt without warning, introducing subtle conflicts or workflow drift over time. TeDDy instead organizes the full SDLC across specialized agents, where each follows a process structured into phases and concrete steps via dedicated system prompts that you fully control. Your existing skill files can still be passed to these agents as context for the task-specific jobs they were built for.
 
 </details>
 
@@ -161,14 +161,7 @@ Use subcommands to overwrite specific defaults:
 
 ### Configuration
 
-The first execution of `teddy start` runs an interactive setup that writes your LLM API key to `.teddy/.env` and your preferred editor to `.teddy/config.yaml`.
-
-To configure manually, edit `.teddy/config.yaml`:
-- `llm.model`: Model path from [openrouter.ai/models](https://openrouter.ai/models) (default: OpenRouter).
-- `llm.api_key`: Defaults to `${TEDDY_LLM_API_KEY}` via `.teddy/.env` or literal string.
-- `editor`: Executable name in `PATH`, absolute path, or `"disabled"`.
-
-All `llm.*` keys pass through to [LiteLLM](https://docs.litellm.ai/docs/completion/input), including parameters like `extra_body`.
+The first execution of `teddy start` runs an interactive setup to configure your API key and preferred editor. For deeper customization, edit `.teddy/config.yaml`. All `llm.*` settings pass directly through to [LiteLLM](https://docs.litellm.ai/docs/completion/input), allowing you to route to cloud providers or local endpoints (Ollama, llama.cpp, or any OpenAI-compatible server via `api_base`). The config file also lets you adjust your external editor, command execution timeouts, diff similarity thresholds, and automated context pruning budgets.
 
 ---
 
@@ -210,14 +203,14 @@ teddy resume -m "your next instruction"
 - `--agent` / `-a`: Select agent persona (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`). Default: `pathfinder`.
 - `--context` / `-c`: Supply additional context files or directories. Repeatable (`-c a.py -c b.md`) or comma-separated (`-c "a.py,b.md"`).
 - `--model`: Override the default configured model.
-- `--yolo` / `-y`: Auto-approve all actions.s To make this default, set `yolo_default: true` in `.teddy/config.yaml`.
+- `--yolo` / `-y`: Auto-approve all actions. To make this default, set `yolo_default: true` in `.teddy/config.yaml`.
 - `--no-yolo` / `-n`: Force interactive mode for a single run.
 - `--message` / `-m`: Initial instruction to pass directly to the agent.
 - `--pipeline` / `-p`: Pipeline mode. Auto-approves actions, requires `-m`, and exits immediately after the first message turn.
 
 ### Chat-Oriented Workflow (CHOP)
 
-You do not need API keys or per-token billing to use TeDDy. If you already have an active subscription (ChatGPT, Claude, Gemini, etc.), you can also use TeDDy to practice **[Chat-Oriented Programming (CHOP)](https://sourcegraph.com/blog/chat-oriented-programming-in-action)** from your web browser.
+You do not need API keys or per-token billing to use TeDDy. If you already have an active subscription (ChatGPT, Claude, Gemini, etc.), you can also use TeDDy to practice **[Chat-Oriented Programming (CHOP)](https://self.md/concepts/chat-oriented-programming/)** from your web browser.
 
 TeDDy packages your workspace context into a single clipboard payload, and the agent prompts instruct the model to automatically format its response as an executable, self-contained Markdown plan.
 
@@ -265,7 +258,7 @@ No. TeDDy collects zero telemetry, zero analytics, and runs no background tracki
 
 <br />
 
-TeDDy uses LiteLLM under the hood. You can route to any provider supported by LiteLLM, including OpenRouter, Anthropic, OpenAI, Google Gemini, or local models running via Ollama or vLLM.
+TeDDy uses [LiteLLM](https://docs.litellm.ai/) under the hood. You can route to any provider supported by LiteLLM, including OpenRouter, Anthropic, OpenAI, and Google Gemini. For local models, it supports Ollama, vLLM, LM Studio, llama.cpp, and any OpenAI-compatible endpoint.
 
 </details>
 
