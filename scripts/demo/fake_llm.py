@@ -37,7 +37,8 @@ def _next_plan():
         except (ValueError, OSError):
             index = 0
     if index >= len(plans):
-        # Do not cycle back to turn 1 — work is finished
+        # Do not return a plan — sleep so the recording cuts while waiting
+        time.sleep(30.0)
         return "# Complete\n\n## Message\n\nSession finished.\n"
     plan = plans[index]
     STATE_FILE.write_text(str(index + 1), encoding="utf-8")

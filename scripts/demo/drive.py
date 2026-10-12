@@ -199,9 +199,12 @@ def main() -> None:
     type_in_child("ok thanks!", 0.045)
     sleep_and_drain(0.6)
     child.send("\r")
-    sleep_and_drain(2.5)  # Hold on screen so viewers see the submitted reply
 
-    # Clean termination right after reply confirmation so no turn 4 occurs
+    # Wait until user message is submitted and next turn's waiting spinner starts
+    child.expect(r"Waiting for Developer to respond\.\.\.", timeout=15)
+    sleep_and_drain(2.0)  # Hold on screen while waiting for Developer
+
+    # Cut recording cleanly while waiting, before any completion or replanning
     try:
         child.terminate(force=True)
     except Exception:
