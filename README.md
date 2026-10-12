@@ -32,7 +32,7 @@ The [2025 DORA report](https://dora.dev/research/2025/) found that AI adoption r
 
 [Bain's 2026 Technology Report](https://www.bain.com/insights/the-missing-architecture-for-agentic-software-development-technology-report-2026/) reaches the same conclusion from the other side: AI has sped up coding, but that has shifted bottlenecks to review, governance, and software delivery. The limiting factor has shifted from the model to the connective architecture around it. Better models will not by themselves fix these emerging issues.
 
-TeDDy addresses these bottlenecks by bringing proven engineering practices like **[Test-Driven Development](https://en.wikipedia.org/wiki/Test-driven_development), [Hexagonal Architecture](https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)), and [Iterative & Incremental Delivery](https://en.wikipedia.org/wiki/Iterative_and_incremental_development)** directly into your agentic workflow, using only local plain text files that you can read, review, and change, with nothing hidden in a proprietary database or cloud service.
+TeDDy solves these issues by embedding proven engineering practices like **[Test-Driven Development](https://en.wikipedia.org/wiki/Test-driven_development), [Hexagonal Architecture](https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)), and [Iterative & Incremental Delivery](https://en.wikipedia.org/wiki/Iterative_and_incremental_development)** directly into the agentic workflow, using only local plain text files that you can read, review, and change, with nothing hidden in a proprietary database or cloud service.
 
 ---
 
@@ -81,7 +81,7 @@ TeDDy integrates automated pre-commit hooks, local test suites, and CI/CD pipeli
 
 ## What Makes TeDDy Special
 
-1. **Markdown as the interface.** Inspired by [Obsidian](https://obsidian.md/)'s file-over-app philosophy, the file system is the interaction medium rather than an ephemeral chat window. Every turn produces explicit Markdown files (`input.md`, `plan.md`, `report.md`), while the built-in TUI provides an interactive review layer to inspect, edit, and approve actions before execution.
+1. **Markdown as the interface.** Inspired by [Obsidian](https://obsidian.md/), living documents such as specs, architecture contracts, and vertical slices mediate every agent transition across the SDLC. All agent responses and tool calls are also plain Markdown, fully controllable via the built-in TUI while leveraging your native editor instead of restricting the means of development to a chat window.
 2. **Local-first architecture.** Inspired by the [UNIX philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) of small, sharp tools, TeDDy runs entirely inside your existing workspace with no cloud dependencies, proprietary databases, or background telemetry. It integrates cleanly with standard developer environments, allowing your terminal, local Git hooks, and preferred editor to drive the workflow.
 3. **Auditable by design.** Inspired by [Git](https://git-scm.com/)'s ledger model, every session maintains an immutable history of what the agent intended and what actually executed. Each plan enforces a structured rationale covering synthesis, justification, and expected outcomes, making agent reasoning fully traceable, searchable, and easy to parse with your own scripts for analysis.
 
