@@ -221,7 +221,7 @@ You do not need API keys or per-token billing to use TeDDy. If you already have 
 
 TeDDy packages your workspace context into a single clipboard payload, and the agent prompts instruct the model to automatically format its response as an executable, self-contained Markdown plan.
 
-1. **Set the system instructions:** Copy your chosen agent persona's prompt with `teddy get-prompt -a <agent_name>` and paste it into your web interface's system prompt or custom instructions field.
+1. **Set the system instructions:** Copy your chosen agent persona's prompt with `teddy get-prompt <agent_name>` and paste it into your web interface's system prompt or custom instructions field.
 2. **Bundle project context:** Export your workspace context to the clipboard with `teddy context`. This bundles system information, current git status, project structure, and the full verbatim contents of all files listed in `.teddy/init.context` into a single Markdown payload.
 3. **Prompt the AI:** Paste the context payload into the chat alongside your task request. Guided by the system instructions, the model will automatically structure its response as an executable Markdown plan.
 4. **Apply changes:** Copy the full Markdown plan to your clipboard and run `teddy execute` to validate, review diffs, and apply approved changes automatically, or copy and run individual snippets manually as you would in standard CHOP.
