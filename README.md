@@ -17,7 +17,9 @@ uv tool install teddy-cli
 ```
 
 <p align="center">
-  <img src="./assets/demo.gif" alt="TeDDy TUI Demo" width="750" />
+
+![TeDDy TUI Demo](./assets/demo.gif)
+
 </p>
 
 [Quickstart](#getting-started) &bull; [Workflow](#the-teddy-workflow) &bull; [Why TeDDy?](#why-not-just-use) &bull; [Architecture](#what-makes-teddy-special) &bull; [Video Walkthrough](https://www.youtube.com/watch?v=2j2fvRBGtag) &bull; [FAQ](#frequently-asked-questions)
