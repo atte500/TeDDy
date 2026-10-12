@@ -318,6 +318,6 @@ If you find TeDDy useful for your workflow, consider giving it a star. It helps 
 
 [![GitHub stars](https://img.shields.io/github/stars/atte500/teddy?style=social)](https://github.com/atte500/teddy)
 
-Need custom agent architectures or team onboarding? **[Get in touch at atteritano.ch](https://atteritano.ch)**
+Need custom agent architectures or team onboarding? **[Let's get in touch!](https://atteritano.ch)**
 
 </div>
