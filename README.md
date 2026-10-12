@@ -40,7 +40,9 @@ TeDDy addresses these bottlenecks by bringing proven engineering practices like 
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=2j2fvRBGtag">
-    <img src="https://img.youtube.com/vi/2j2fvRBGtag/0.jpg" alt="Designing an Opinionated Harness for Coding Agents" width="650" />
+    <img src="https://images.weserv.nl/?url=https://img.youtube.com/vi/2j2fvRBGtag/maxresdefault.jpg&w=720&h=405&fit=cover" alt="Video Walkthrough" width="650" />
+    <br>
+    <img src="https://img.shields.io/badge/YouTube-Watch%20Here-red?style=for-the-badge&logo=youtube" alt="Watch on YouTube" /><br/><br/>
   </a>
 </p>
 
