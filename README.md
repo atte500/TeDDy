@@ -217,7 +217,7 @@ teddy resume -m "your next instruction"
 
 ### Chat-Oriented Workflow (CHOP)
 
-You do not need API keys or per-token billing to use TeDDy. If you already have an active subscription (ChatGPT, Claude, Gemini, etc.), you can also use TeDDy to practice **[Chat-Oriented Programming (CHOP)](https://sourcegraph.com/blog/chat-oriented-programming-in-action)** from your web browser without fragile, error-prone manual copy-pasting.
+You do not need API keys or per-token billing to use TeDDy. If you already have an active subscription (ChatGPT, Claude, Gemini, etc.), you can also use TeDDy to practice **[Chat-Oriented Programming (CHOP)](https://sourcegraph.com/blog/chat-oriented-programming-in-action)** from your web browser.
 
 TeDDy packages your workspace context into a single clipboard payload, and the agent prompts instruct the model to automatically format its response as an executable, self-contained Markdown plan.
 
@@ -231,18 +231,18 @@ TeDDy packages your workspace context into a single clipboard payload, and the a
 
 ## Command Reference
 
-| Command          | Description                                                                                                  |
-| :--------------- | :----------------------------------------------------------------------------------------------------------- |
-| `init`           | Initialize `.teddy` workspace with defaults and pre-warm dependencies.                                       |
-| `init prompts`   | Overwrite bundled prompt XMLs in `.teddy/prompts/` with defaults.                                            |
-| `init config`    | Overwrite `config.yaml`, `.gitignore`, and `init.context` with defaults.                                     |
-| `init templates` | Overwrite bundled Markdown templates in `docs/templates/` with defaults.                                     |
-| `start`          | Start an interactive agent session.                                                                          |
-| `resume`         | Resume an existing session.                                                                                  |
-| `update`         | Check for updates and display upgrade instructions.                                                          |
-| `execute`        | Execute a Markdown plan. Reads from clipboard if no file path is provided.                                   |
-| `context`        | Export context payload (system info, git status, file tree, and files from `init.context`) to the clipboard. |
-| `get-prompt`     | Retrieve agent system prompts. Respects local overrides in `.teddy/prompts/`.                                |
+| Command                       | Description                                                                  |
+| :---------------------------- | :--------------------------------------------------------------------------- |
+| `init`                        | Initialize `.teddy` workspace with defaults and pre-warm dependencies.       |
+| <nobr>`init prompts`</nobr>   | Overwrite bundled prompt XMLs in `.teddy/prompts/` with defaults.            |
+| <nobr>`init config`</nobr>    | Overwrite `config.yaml`, `.gitignore`, and `init.context` with defaults.     |
+| <nobr>`init templates`</nobr> | Overwrite bundled Markdown templates in `docs/templates/` with defaults.     |
+| `start`                       | Start an interactive agent session.                                          |
+| `resume`                      | Resume an existing session.                                                  |
+| `update`                      | Check for updates and display upgrade instructions.                          |
+| `execute`                     | Execute a Markdown plan (reads from clipboard if no path is provided).       |
+| `context`                     | Export context payload (system info, git status, file tree, `init.context`). |
+| <nobr>`get-prompt`</nobr>     | Retrieve agent system prompts (respects overrides in `.teddy/prompts/`).     |
 
 *Note: By default, `execute` and `context` copy output to the clipboard. Use `--no-copy` to bypass.*
 
