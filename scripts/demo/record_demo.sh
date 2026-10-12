@@ -65,6 +65,6 @@ uv run --project "$REPO_ROOT" --with pexpect python -c "import pexpect; print('r
 # Record the interactive session with matching terminal geometry
 asciinema rec --overwrite --window-size 150x26 --command "uv run --project '$REPO_ROOT' --with pexpect python $DEMO_DIR/drive.py" "$WORK/demo.cast"
 mkdir -p "$REPO_ROOT/assets"
-agg --cols 150 --rows 26 --speed 1 "$WORK/demo.cast" "$REPO_ROOT/assets/demo.gif"
+agg --cols 150 --rows 26 --font-size 20 --line-height 1.25 --font-family "JetBrains Mono,Fira Code,Menlo,Monaco,monospace" --fps-cap 30 --speed 1 "$WORK/demo.cast" "$REPO_ROOT/assets/demo.gif"
 
 echo "=== demo recorded to assets/demo.gif ==="

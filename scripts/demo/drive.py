@@ -197,9 +197,9 @@ def main() -> None:
 
     # Reply to message with "ok thanks!"
     type_in_child("ok thanks!", 0.045)
-    sleep_and_drain(0.6)
+    sleep_and_drain(0.4)
     child.send("\r")
-    sleep_and_drain(2.5)  # Hold on screen so viewers see the submitted reply
+    sleep_and_drain(0.12)  # Hold 2-3 frames (~0.12s) after submit before ending
 
     # Clean termination right after reply confirmation so no turn 4 occurs
     try:
