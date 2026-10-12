@@ -5,32 +5,38 @@
 ### The opinionated software engineering harness
 
 <p align="center">
-  <em>Because you should own the means of development</em>
+  <em>Because <b>you</b> should own the means of development</em>
 </p>
 
 [![PyPI version](https://img.shields.io/pypi/v/teddy-cli?color=blue&style=flat-square)](https://pypi.org/project/teddy-cli/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg?style=flat-square)](https://www.python.org/)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-purple.svg?style=flat-square)](LICENSE)
 
-<br />
+```bash
+uv tool install teddy-cli
+```
 
-**TeDDy brings Test-Driven Development, Hexagonal Architecture, and local plaintext workflows to coding agents.**
+<p align="center">
+  <img src="./assets/demo.gif" alt="TeDDy TUI Demo" width="750" />
+</p>
 
-[Quickstart](#getting-started) &bull; [Workflow](#the-teddy-workflow) &bull; [Learn More](#learn-more) &bull; [Video Demo](#video-walkthrough)
+[Quickstart](#getting-started) &bull; [Workflow](#the-teddy-workflow) &bull; [Why TeDDy?](#why-not-just-use) &bull; [Architecture](#what-makes-teddy-special) &bull; [Video Walkthrough](https://www.youtube.com/watch?v=2j2fvRBGtag) &bull; [FAQ](#frequently-asked-questions)
 
 </div>
 
 ---
 
-The [2025 DORA report](https://dora.dev/research/2025/) found that AI adoption raises delivery throughput and product performance, but remains negatively related to delivery stability: code moves faster, but disproportionately more of it breaks. Any gains in raw speed are counterbalanced by increased effort needed for reviewing and reworking "slop" code to avoid technical defects and misalignment from compounding. Teams with fast feedback loops and loosely coupled systems see the most gain, while teams with inefficient processes and tight coupling see little or no benefit.
+## Motivation
 
-[Bain's 2026 Technology Report](https://www.bain.com/insights/the-missing-architecture-for-agentic-software-development-technology-report-2026/) reaches the same conclusion from the other side: the bottleneck has moved. The limiting factor is no longer the model, but the connective architecture around it: *"the system reverts to the throughput of its slowest human checkpoint."* Better models will not by themselves fix the instability they cause.
+The [2025 DORA report](https://dora.dev/research/2025/) found that AI adoption raises delivery throughput and product performance, but remains negatively related to delivery stability: code moves faster, but disproportionately more of it breaks. Any gains in raw speed are counterbalanced by increased effort needed for reviewing and reworking slop code to avoid technical defects and misalignment from compounding. Teams with fast feedback loops and loosely coupled systems see the most gain, while teams with inefficient processes and tight coupling see little or no benefit.
 
-TeDDy addresses these bottlenecks by bringing proven engineering practices like **Test-Driven Development, Hexagonal Architecture, and iterative delivery** directly into your agentic workflow, using only local plaintext files that you can read, review, and change, with nothing hidden in a proprietary database or cloud service.
+[Bain's 2026 Technology Report](https://www.bain.com/insights/the-missing-architecture-for-agentic-software-development-technology-report-2026/) reaches the same conclusion from the other side: AI has sped up coding, but that has shifted bottlenecks to review, governance, and software delivery. The limiting factor has shifted from the model to the connective architecture around it. Better models will not by themselves fix these emerging issues.
+
+TeDDy addresses these bottlenecks by bringing proven engineering practices like **[Test-Driven Development](https://en.wikipedia.org/wiki/Test-driven_development), [Hexagonal Architecture](https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)), and [Iterative & Incremental Delivery](https://en.wikipedia.org/wiki/Iterative_and_incremental_development)** directly into your agentic workflow, using only local plain text files that you can read, review, and change, with nothing hidden in a proprietary database or cloud service.
 
 ---
 
-### Video Walkthrough
+## Video Walkthrough
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=2j2fvRBGtag">
@@ -47,9 +53,7 @@ TeDDy addresses these bottlenecks by bringing proven engineering practices like 
 
 <br />
 
-With skills, you most often carry out the process yourself, switching between multiple ad hoc skill files as you go, so you end up driving the process instead of setting the direction. Skills also add overhead, and they stack on top of your harness's own system prompt, which shifts under you with new versions and can conflict with your own instructions.
-
-A skill file describes a process; TeDDy runs it, splitting the work across specialist agents and keeping the instructions as part of the system prompt rather than the context window, where large skills get truncated and older ones get dropped as the session grows. Skills are best kept as a tactical addition, and your existing skill files still work inside TeDDy.
+Skills sit on top of your harness's built-in system prompt. When instructions conflict, the harness prompt takes priority over your rules. Upstream updates also change that prompt over time, which can break your setup without warning. TeDDy instead splits the work across specialist agents with separate system prompts that you control directly. You can still use your existing skill files alongside them.
 
 </details>
 
@@ -58,9 +62,7 @@ A skill file describes a process; TeDDy runs it, splitting the work across speci
 
 <br />
 
-Spec-driven development makes you write down exactly what the software should do before writing any code. Leaving aside the fact that any spec detailed enough just becomes code, this is essentially just the [waterfall model](https://en.wikipedia.org/wiki/Waterfall_model) in a new outfit, which front-loads the analysis on the assumption that the requirements defined up front will be correct.
-
-That assumption rarely holds. People often do not know what they want until they see it, and any non-trivial system will run into edge cases that could not have been predicted upfront. Agile was born to shorten the loop between building something and using it, so mistakes surface while they are still cheap to fix and the design can adapt to what you learn along the way. TeDDy does use specifications, but as living documents inside an iterative process built around incremental design.
+Spec-driven development requires you to define everything upfront before writing code. This is essentially the [waterfall model](https://en.wikipedia.org/wiki/Waterfall_model) under a new name, relying on the assumption that initial requirements will be completely accurate. That assumption rarely holds, as non-trivial systems always uncover edge cases and evolving requirements during development. TeDDy still uses specifications, but treats them as living documents within an iterative process more akin to [Agile](https://en.wikipedia.org/wiki/Agile_software_development), allowing the design to adapt as you build.
 
 </details>
 
@@ -69,9 +71,7 @@ That assumption rarely holds. People often do not know what they want until they
 
 <br />
 
-A common reaction to the drawbacks agents cause, like more review and more rework, is to stack more agent automations on top, such as pre-PR review bots. This relocates the bottleneck instead of removing it.
-
-Bain's report puts it directly: companies that speed up code generation without redesigning the surrounding process *"don't compound their gains; they redistribute their pain. Every bottleneck AI removes exposes the next one."* Adding another review step on top of an unchanged process just moves the slowest checkpoint further down the line.
+TeDDy integrates automated pre-commit hooks, local test suites, and CI/CD pipelines directly into the agent workflow. Even so, automated tests alone cannot prevent misalignment or verify intent. As [Bain's report](https://www.bain.com/insights/the-missing-architecture-for-agentic-software-development-technology-report-2026/) notes, speeding up code generation without redesigning the surrounding process does not compound gains; it just redistributes the pain to the slowest human checkpoint. TeDDy pairs these automated quality gates with a human-in-the-loop workflow mediated through specific Markdown documents across each phase of the software delivery lifecycle.
 
 </details>
 
@@ -79,25 +79,21 @@ Bain's report puts it directly: companies that speed up code generation without 
 
 ## What Makes TeDDy Special
 
-1. **Markdown as the interface.** Inspired by [Obsidian](https://obsidian.md/)'s file-over-app philosophy, the file system is the interface, not a chat box. Documents are the medium of communication, editable in any editor, and responses are plain Markdown, executable through the CLI or any external UI.
-2. **Local-first architecture.** Inspired by the [UNIX philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) of small, sharp tools communicating via plain text, everything lives directly on disk in your workspace with no cloud dependency and no vendor lock-in. Your configuration and the agent workflows are stored as plain, open files.
-3. **Auditable by design.** Inspired by [Git](https://git-scm.com/)'s self-contained local ledger model, every turn records the agent's reasoning, justification, and expectations in plaintext on disk, making sessions traceable, searchable, and auditable even on closed-token models.
+1. **Markdown as the interface.** Inspired by [Obsidian](https://obsidian.md/)'s file-over-app philosophy, the file system is the interaction medium rather than an ephemeral chat window. Every turn produces explicit Markdown files (`input.md`, `plan.md`, `report.md`), while the built-in TUI provides an interactive review layer to inspect, edit, and approve actions before execution.
+2. **Local-first architecture.** Inspired by the [UNIX philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) of small, sharp tools, TeDDy runs entirely inside your existing workspace with no cloud dependencies, proprietary databases, or background telemetry. It integrates cleanly with standard developer environments, allowing your terminal, local Git hooks, and preferred editor to drive the workflow.
+3. **Auditable by design.** Inspired by [Git](https://git-scm.com/)'s ledger model, every session maintains an immutable history of what the agent intended and what actually executed. Each plan enforces a structured rationale covering synthesis, justification, and expected outcomes, making agent reasoning fully traceable, searchable, and easy to parse with your own scripts for analysis.
 
 ---
 
 ## Why Working Code Is Not Enough
 
-A coding agent is a language model paired with a harness. LLMs are trained for next-token prediction and optimized for short, atomic tasks, so they are good at producing code that works in the moment and poorly suited to the long game of keeping code, intent, and a team aligned over time. Left alone, a model tries to generate the final solution in one shot, and the defects it introduces compound turn after turn.
+LLMs are pre-trained on next-token prediction and fine-tuned with reinforcement learning to solve discrete and well-defined tasks, making them effective at writing code that works in isolation, but poorly equipped to navigate uncertainty or keep code and intent aligned over time. LLMs are also evaluated and trained on generating the final solution in one shot instead of working iteratively and incrementally, which, if left unchecked, leads to defects compounding on top of each other over time.
 
-The defects that reach production come in two kinds:
+Defects in software come in two kinds: technical defects, where <u>code matches your intent but breaks on edge cases or bugs</u>, and misalignment, where the <u>code works but is not what you actually wanted</u>. Most coding harnesses do little to address either one, forcing teams to patch extra tools and components into their software development lifecycle just to keep code on track. TeDDy instead tackles both types of defects directly within the harness, preventing them before they happen and mitigating them as early as possible when they do.
 
-- **Technical:** code that does not work the way it was intended.
-- **Misalignment:** code that works but is not what the user or the team actually wanted.
+For **technical defects**, TeDDy prevents structural failures through Design by Contract, enforcing Hexagonal Architecture through ports and adapters. To mitigate bugs during development, it uses a strict Test-Driven (Red-Green-Refactor) cycle to write tests first and commit code in small units to surface errors early.
 
-Most coding harnesses do little to address either one, leaving users bolting on external systems like MCP servers, skill files, and spec-driven tooling. TeDDy addresses both:
-
-- **Technical defects:** Builds a strict **Test-Driven (Red-Green-Refactor)** cycle into the workflow and enforces the commit gate through Git hooks. The agent writes a test first and commits in small units, surfacing errors early. At startup, the harness verifies that Git and the hooks are in place, and the post-commit test run keeps checks passing before and after every change.
-- **Misalignment:** Specific **Markdown documents** mediate every phase transition, anchoring the agents and providing a high-level steering interface. The workflow moves from **Specification Documents and Milestones** to **Component Design Docs** enforcing **Hexagonal Architecture** through defined ports and contracts. Features ship through **Vertical Slices** and **Gherkin Scenarios** for continuous verification.
+For **misalignment**, TeDDy prevents building the wrong thing by using spikes and prototypes to de-risk uncertain solutions before committing to an architecture. During implementation, it mitigates drift by delivering features through small vertical slices. Specific Markdown documents mediate every phase transition, anchoring the agents and providing a high-level steering interface to keep humans in the loop.
 
 <p align="center">
   <img src="./assets/matrix.png" alt="Workflow Matrix" width="800" />
@@ -113,15 +109,15 @@ TeDDy breaks down the development process into distinct agents, each with a spec
   <img src="./assets/workflow-schematic.png" alt="TeDDy Workflow" width="850" />
 </p>
 
-1. **Pathfinder:** Navigates from a vague idea to a technically-grounded roadmap. Explores *why*, *what*, and *how*, then concretizes it into an actionable plan.
-2. **Architect:** Defines contracts, boundaries, and vertical slices for implementation. Uses spikes to de-risk uncertain approaches before committing to an architecture.
-3. **Prototyper:** Builds standalone prototypes to validate uncertain features before implementation.
-4. **Developer:** Implements features one deliverable at a time using a strict **Red-Green-Refactor** loop.
-5. **Debugger:** Uses the scientific method to isolate root causes by building minimal reproduction cases.
-6. **Assistant:** A flexible agent that follows instructions without enforcing strict processes. Useful as a template for custom agents or lightweight tasks.
+1. **Pathfinder:** Dissects goals from first principles to produce grounded roadmaps and milestones.
+2. **Architect:** Enforces Ports & Adapters boundaries, defines component contracts, and decomposes features into vertical slices.
+3. **Prototyper:** Validates behavioral scenarios in an isolated sandbox, refining specs and edge cases before implementation begins.
+4. **Developer:** Delivers features one atomic deliverable at a time through a strict **Red-Green-Refactor** TDD cycle.
+5. **Debugger:** Isolates root causes using Minimal Reproducible Examples (MREs) and verifies fixes in sandboxes before touching production code.
+6. **Assistant:** Executes tactical chores, one-off scripts, and ad-hoc edits through a fast loop without enforcing strict methodology.
 
 > [!NOTE]
-> Each agent's workflow is defined in plain-text XML files under `.teddy/prompts/`. You can customize existing agents or add new ones for specific use cases.
+> Each agent's prompt lives in `.teddy/prompts/` inside your project. You can inspect and tune existing agents or add your own. Updates will never overwrite these files automatically, ensuring your instructions remain stable and entirely under your control.
 
 ---
 
@@ -130,7 +126,7 @@ TeDDy breaks down the development process into distinct agents, each with a spec
 ### Prerequisites
 
 - Python 3.11 or later
-- `pip` (included with Python) or `uv` (recommended)
+- `uv` (recommended) or `pip` (included with Python)
 
 ### Install TeDDy
 
@@ -199,7 +195,9 @@ teddy resume .teddy/sessions/20260825_151900-my-feature-branch
 teddy resume -a developer
 ```
 
-Interrupt a running session with `q` or `Ctrl+C` at any time. The action currently in flight will stop immediately, remaining actions will be skipped, and the report will be written to preserve the audit trail. Resume or steer with:
+Interrupt a running session with `q` or `Ctrl+C` at any time. The action currently in flight will stop immediately, remaining actions will be skipped, and the report will be written to preserve the audit trail.
+
+Resume with additional instructions:
 
 ```bash
 teddy resume -m "your next instruction"
@@ -244,8 +242,75 @@ teddy resume -m "your next instruction"
 
 ---
 
+## Frequently Asked Questions
+
+<details>
+<summary><strong>Does TeDDy collect telemetry or phone home?</strong></summary>
+
+<br />
+
+No. TeDDy collects zero telemetry, zero analytics, and runs no background tracking. All requests go directly to whichever LLM provider or local endpoint you configure in your local config file.
+
+</details>
+
+<details>
+<summary><strong>Which models and providers are supported?</strong></summary>
+
+<br />
+
+TeDDy uses LiteLLM under the hood. You can route to any provider supported by LiteLLM, including OpenRouter, Anthropic, OpenAI, Google Gemini, or local models running via Ollama or vLLM.
+
+</details>
+
+<details>
+<summary><strong>Do I need to migrate my existing codebase to use this?</strong></summary>
+
+<br />
+
+No. TeDDy is designed to run inside existing repositories. It only creates a `.teddy/` directory in your project root to hold prompts, configuration, and session history.
+
+</details>
+
+<details>
+<summary><strong>How do teams collaborate with TeDDy?</strong></summary>
+
+<br />
+
+All strategic artifacts created by agents (roadmaps in `docs/project/`, component designs, and vertical slices) are saved directly in your repository's `docs/` directory and committed to Git like regular code. The internal `.teddy/` directory is ignored by default, keeping private session logs and environment credentials local to each developer.
+
+</details>
+
+<details>
+<summary><strong>Are there hidden fees? How is TeDDy licensed and monetized?</strong></summary>
+
+<br />
+
+There are no subscriptions, hidden fees, or token markups. You bring your own API keys or local models and pay providers directly at standard rates with zero middleman.
+
+TeDDy is completely free software under the AGPL-3.0 license. As a copyleft license, if you modify and distribute TeDDy itself, your changes must also be open-sourced under the AGPL. However, using TeDDy as a development harness to write your own software does not affect your codebase; you fully own all code generated by the agents under whatever license you choose.
+
+The tool itself is not monetized. If your team needs custom agent architectures, workflow design, or dedicated onboarding support, professional consulting is available at [atteritano.ch](https://atteritano.ch).
+
+</details>
+
+---
+
 ## Learn More
 
 - [Project Roadmap & Vision](/docs/project/PROJECT.md)
 - [System Architecture](/docs/architecture/ARCHITECTURE.md)
 - [Agent Prompt Templates](/src/teddy_executor/resources/config/prompts/)
+
+---
+
+<div align="center">
+
+### Star TeDDy on GitHub
+
+If you find TeDDy useful for your workflow, consider giving it a star. It helps other developers find the project.
+
+[![GitHub stars](https://img.shields.io/github/stars/atte500/teddy?style=social)](https://github.com/atte500/teddy)
+
+Need custom agent architectures or team onboarding? **[Get in touch at atteritano.ch](https://atteritano.ch)**
+
+</div>
