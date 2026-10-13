@@ -93,6 +93,9 @@ def main(argv):
         entry = _find_run(data, run_id)
         if entry is None:
             return 1
+        if "--log-failed" in args:
+            sys.stdout.write(entry.get("failed_log", ""))
+            return 0
         json_fields = ""
         jq = ""
         index = 3
@@ -303,6 +306,12 @@ def test_make_push_does_not_block_on_a_non_blocking_job_failure() -> None:
                     "CI": {
                         "run_id": "new-run",
                         "conclusion": "success",
+                        "failed_log": (
+                            "Quality Checks\tRun Pre-commit Hooks (fast: formatters, secrets)\t"
+                            "2026-10-13T00:00:00.0000000Z Error: detect-secrets flagged 2 potential secrets\n"
+                            "Quality Checks\tRun Pre-commit Hooks (fast: formatters, secrets)\t"
+                            "2026-10-13T00:00:01.0000000Z Error: ruff-lint found 104 errors\n"
+                        ),
                         "jobs": [
                             {
                                 "name": "Test Suite (ubuntu-latest)",
@@ -330,6 +339,7 @@ def test_make_push_does_not_block_on_a_non_blocking_job_failure() -> None:
         assert "YOUR regression" not in result.stdout
         assert "Quality Checks" in result.stdout
         assert "Run Pre-commit Hooks (fast: formatters, secrets)" in result.stdout
+        assert "detect-secrets flagged 2 potential secrets" in result.stdout
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

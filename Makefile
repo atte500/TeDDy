@@ -42,6 +42,9 @@ commit:
 # CI registration lag is tolerated by a bounded retry (RETRY_POLLS x RETRY_SLEEP,
 # default 10 x 1s); if no run registers within the budget the target fails safe.
 # It answers ONE question: did this push turn a BLOCKING gate red?
+# When any step fails (blocking or NOT) the target also prints that step's log
+# details (gh run view --log-failed, ANSI/timestamp-stripped, indented, bounded
+# to DETAIL_LINES) so the cause is visible without leaving the session.
 # The pushed RUN's own conclusion is authoritative -- it already folds in
 # `continue-on-error`, so a non-blocking job (e.g. the CI "Quality Checks" job)
 # can NEVER block the session; it is reported as a triage item instead.
@@ -56,6 +59,7 @@ commit:
 # operations (see .githooks/post-commit.py).
 RETRY_POLLS ?= 10
 RETRY_SLEEP ?= 1
+DETAIL_LINES ?= 50
 
 push:
 	git pull --rebase
@@ -84,7 +88,10 @@ push:
 	  NEWCONC=$$(gh run view "$$NEW" --json conclusion --jq '.conclusion'); \
 	  NEWFAIL=$$(gh run view "$$NEW" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")'); \
 	  NEWSTEPS=$$(gh run view "$$NEW" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .steps[]? | select(.conclusion=="failure") | .name] | sort | join(", ")'); \
-	  if [ -n "$$NEWSTEPS" ]; then echo "$$WF: failing step(s): $$NEWSTEPS"; fi; \
+	  if [ -n "$$NEWSTEPS" ]; then \
+	    echo "$$WF: failing step(s): $$NEWSTEPS"; \
+	    gh run view "$$NEW" --log-failed 2>/dev/null | awk -F'\t' '{ l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/) next; gsub(/^##\[error\]/,"Error: ",l); print l }' | tail -n $(DETAIL_LINES) | sed 's/^/    /'; \
+	  fi; \
 	  if [ "$$NEWCONC" != "failure" ]; then \
 	    if [ -n "$$NEWFAIL" ]; then \
 	      echo "$$WF: PASSED (run=$$NEWCONC) — non-blocking failure(s) [$$NEWFAIL] — triage, does not block"; \
