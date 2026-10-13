@@ -62,7 +62,7 @@ The post-commit hook (`.githooks/post-commit.py`) currently runs the full suite 
 
 - [x] **Logic** - Add `_in_progress_git_operation() -> bool` to `.githooks/post-commit.py` (resolve the git dir via `git rev-parse --git-dir`; `True` iff any of `rebase-merge`, `rebase-apply`, `MERGE_HEAD`, `CHERRY_PICK_HEAD` exists under it). Add `tests/suites/unit/test_postcommit_hook_rebase_guard.py` (load the script via `importlib.util.spec_from_file_location`; `tempfile.mkdtemp()` + `git init` fake git dir; assert `False` with no markers and `True` for EACH marker). Additive, no caller -> Green-to-Green.
 - [x] **Wiring** - Call the guard as the FIRST statement in `main()` and `return` immediately when it is `True` (skip the uv/pytest pre-flight and the suite). Add `tests/suites/acceptance/test_postcommit_hook_rebase_guard.py` running the real script as a subprocess in a temp git repo (rebase marker + failing fake `uv` -> exit 0; no marker + failing fake `uv` -> exit 1). Tracer Bullet / final behavioral gate.
-- [ ] **Cleanup** - Verify and align both `pre-commit.md` template trees ([docs/templates/pre-commit.md](/docs/templates/pre-commit.md) and [src/teddy_executor/resources/templates/pre-commit.md](/src/teddy_executor/resources/templates/pre-commit.md)) so the documented helper name and four markers match the implementation; correct only real drift.
+- [x] **Cleanup** - Verify and align both `pre-commit.md` template trees ([docs/templates/pre-commit.md](/docs/templates/pre-commit.md) and [src/teddy_executor/resources/templates/pre-commit.md](/src/teddy_executor/resources/templates/pre-commit.md)) so the documented helper name and four markers match the implementation; correct only real drift.
 
 ## Implementation Notes
 
@@ -93,6 +93,18 @@ The post-commit hook (`.githooks/post-commit.py`) currently runs the full suite 
 **Integration.** The Phase 3 full-suite gate (Turn 17, `make test`, no filters, observed via the same redirect + explicit exit-code echo + `exit 0` wrapper) returned `1732 passed, 5 skipped in 11.26s` — the D1-complete baseline of `1730 passed, 5 skipped` plus D2's two net-new acceptance test functions. No regressions.
 
 **No `[DEBT]`.** The Phase 2 Refactor Scope Heuristic surfaced no local refactor opportunity and no cross-cutting debt for this deliverable.
+
+### D3 — Verify the `pre-commit.md` template trees match the implementation (Cleanup)
+
+**No production or test change.** D3 is a verification-only deliverable: its mandate was to verify both `pre-commit.md` template trees and "correct only real drift". The verification proved ZERO guard drift, so no source, test, or template file was modified.
+
+**Verification method.** A single discovery action compared the guard-relevant lines across all three files (`git grep -nE "_in_progress_git_operation|rebase-merge|rebase-apply|MERGE_HEAD|CHERRY_PICK_HEAD"`) and ran a full `diff` between the two template trees. The helper name `_in_progress_git_operation`, the four-marker tuple `("rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD")`, and the `if _in_progress_git_operation(): return` guard call are IDENTICAL across [.githooks/post-commit.py](/.githooks/post-commit.py), [docs/templates/pre-commit.md](/docs/templates/pre-commit.md), and [src/teddy_executor/resources/templates/pre-commit.md](/src/teddy_executor/resources/templates/pre-commit.md). The two templates differ by EXACTLY ONE hunk (line 74) — the deliberate `../../project/specs/` Quality-Gate-Bypass-Policy link that the project template keeps and the bundled template omits (to avoid a broken reference in fresh projects). That is a known, deliberate, non-guard divergence, NOT drift, and was correctly left untouched.
+
+**Integration.** The Phase 3 full-suite gate (Turn 21, `make test`, no filters, observed via the same redirect + explicit exit-code echo + `exit 0` wrapper) returned `1732 passed, 5 skipped in 11.16s` — identical to D2's committed baseline, proving a verification-only deliverable introduces zero regressions.
+
+**As-Built finalization (Phase 4 Step 4).** The slice's Component Design Docs — both `pre-commit.md` trees and [ARCHITECTURE.md](/docs/architecture/ARCHITECTURE.md) — were confirmed to already reflect the as-built reality: ARCHITECTURE.md's "Post-commit Execution" convention already documents the exact four markers and the skip-first behaviour ("The hook MUST first skip automated git operations (`rebase-merge`, `rebase-apply`, `MERGE_HEAD`, `CHERRY_PICK_HEAD`) so that `git pull --rebase` cannot silently drop replayed commits."), and both template trees carry the implemented helper name and the same four markers. Neither Component Doc carries a status header, so no status change applies. No correction was required, so D3's verification IS the Step 4 As-Built update.
+
+**No `[DEBT]`.** The Phase 2 Refactor Scope Heuristic surfaced no local refactor and no cross-cutting debt for this verification-only deliverable.
 
 ## Verification
 
