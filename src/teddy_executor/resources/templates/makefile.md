@@ -128,14 +128,16 @@ commit:
 
 ## Push (Deferred to Conclusion)
 
-`make push` runs `git pull --rebase`, captures the base and the pushed SHA, pushes, then discovers **every** CI run for the pushed SHA (`gh run list --commit <sha>`) and waits for and reports each workflow with its jobs. It blocks only on failures **your push introduced**:
+`make push` runs `git pull --rebase`, captures the base and the pushed SHA, pushes, then discovers **every** CI run for the pushed SHA (`gh run list --commit <sha>`) and waits for and reports each workflow with its jobs. It answers ONE question: **did this push turn a BLOCKING gate red?**
 
-- **base green → new red** = your regression → **exit 1** (fix before concluding).
+The pushed RUN's own conclusion is authoritative: it already folds in `continue-on-error`, so a **non-blocking** job (e.g. the CI `Quality Checks` job) can NEVER block the session — it is reported as a triage item instead. Only when the run-level conclusion is `failure` does attribution run, comparing the pushed run's failing-JOB set against the base run's:
+
+- **base green/absent/job-less → new red** = your regression → **exit 1** (fix before concluding).
 - **base red → new red (same jobs)** = pre-existing → **report and exit 0** (do not wait, do not duplicate the fix).
-- **all green** → PASSED.
-- **unknown base** → fail-safe: treat as yours (block).
+- **all green / non-blocking** → PASSED → **exit 0**.
+- **job-less base** → NOT green: a base run that exists but carries zero jobs (an invalid-workflow failure) is treated as an unknown base and fails safe (block).
 
-Attribution is deterministic: SHA → run → per-job conclusion (never "the latest run").
+Attribution is deterministic: SHA → run → run-level + per-job conclusion (never "the latest run").
 
 Three behaviors make the attribution trustworthy:
 
@@ -172,14 +174,36 @@ push:
 	fi; \
 	for WF in $$WFS; do \
 	  NEW=$$(gh run list --commit "$$SHA" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
-	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
 	  gh run watch "$$NEW" --exit-status >/dev/null 2>&1 || true; \
+	  NEWCONC=$$(gh run view "$$NEW" --json conclusion --jq '.conclusion'); \
 	  NEWFAIL=$$(gh run view "$$NEW" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")'); \
-	  if [ -z "$$NEWFAIL" ]; then echo "$$WF: PASSED"; continue; fi; \
-	  if [ -z "$$OLD" ]; then echo "$$WF: FAILED ($$NEWFAIL) — unknown base, treating as YOUR regression"; STATUS=1; continue; fi; \
+	  NEWSTEPS=$$(gh run view "$$NEW" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .steps[]? | select(.conclusion=="failure") | .name] | sort | join(", ")'); \
+	  if [ -n "$$NEWSTEPS" ]; then echo "$$WF: failing step(s): $$NEWSTEPS"; fi; \
+	  if [ "$$NEWCONC" != "failure" ]; then \
+	    if [ -n "$$NEWFAIL" ]; then \
+	      echo "$$WF: PASSED (run=$$NEWCONC) — non-blocking failure(s) [$$NEWFAIL] — triage, does not block"; \
+	    else \
+	      echo "$$WF: PASSED"; \
+	    fi; \
+	    continue; \
+	  fi; \
+	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
+	  if [ -z "$$OLD" ]; then \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — base has no run (unknown base) — YOUR regression"; \
+	    STATUS=1; continue; \
+	  fi; \
+	  OLDJOBS=$$(gh run view "$$OLD" --json jobs --jq '.jobs | length'); \
+	  if [ "$$OLDJOBS" = "0" ]; then \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — base run is job-less (invalid workflow, not green) — YOUR regression"; \
+	    STATUS=1; continue; \
+	  fi; \
 	  OLDFAIL=$$(gh run view "$$OLD" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")'); \
-	  if [ "$$NEWFAIL" = "$$OLDFAIL" ]; then echo "$$WF: pre-existing failure ($$NEWFAIL) — not yours"; \
-	  else echo "$$WF: NEW failure ($$NEWFAIL) — YOUR regression"; STATUS=1; fi; \
+	  if [ "$$NEWFAIL" = "$$OLDFAIL" ]; then \
+	    echo "$$WF: pre-existing BLOCKING failure ($$NEWFAIL) — not yours"; \
+	  else \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — YOUR regression"; \
+	    STATUS=1; \
+	  fi; \
 	done; \
 	exit $$STATUS
 ```

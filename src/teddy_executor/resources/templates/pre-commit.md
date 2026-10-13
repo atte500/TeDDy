@@ -31,6 +31,8 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-toml
+      - id: check-yaml
+      - id: check-json
       - id: check-added-large-files
         args: ['--maxkb=500']
       - id: check-case-conflict

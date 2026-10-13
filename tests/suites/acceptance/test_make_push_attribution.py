@@ -6,8 +6,12 @@ prepended to ``PATH`` that answers the recipe's exact query surface. This is the
 committed behavioural gate for the slice's happy-path Gherkin scenarios:
 
 * the attribution base is captured BEFORE the push (the pre-push remote tip),
-  so a regression the push introduced is reported as YOUR regression; and
-* a repository with no CI configured short-circuits with a notice and exits 0.
+  so a regression the push introduced is reported as YOUR regression;
+* a repository with no CI configured short-circuits with a notice and exits 0;
+* a NON-BLOCKING job failure (the RUN conclusion stays ``success``) is reported
+  as a triage item and does NOT block; and
+* a JOB-LESS base run (an invalid-workflow failure with zero jobs) is NOT read
+  as green and fails safe.
 
 POSIX-only: ``make`` and a ``/bin/sh``-executable shim host do not exist on
 Windows CI, so this test is skipped there (mirroring the sanctioned
@@ -37,7 +41,9 @@ _posix_only = pytest.mark.skipif(
 )
 
 # Minimal stand-in for the GitHub CLI surface the `push:` recipe queries. Reads
-# its state from $FAKE_GH_STATE: {"<sha>": {"<workflow>": {"run_id": ..., "failures": [...]}}}
+# its state from $FAKE_GH_STATE:
+#   {"<sha>": {"<workflow>": {"run_id": ..., "conclusion": ...,
+#                             "jobs": [{"name": ..., "conclusion": ...}]}}}
 _FAKE_GH_IMPL = """\
 import json
 import os
@@ -50,6 +56,14 @@ def _load():
         return {}
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def _find_run(data, run_id):
+    for runs in data.values():
+        for entry in runs.values():
+            if str(entry.get("run_id")) == str(run_id):
+                return entry
+    return None
 
 
 def main(argv):
@@ -76,12 +90,43 @@ def main(argv):
         return 0
     if args[:2] == ["run", "view"]:
         run_id = args[2] if len(args) > 2 else None
-        for runs in data.values():
-            for entry in runs.values():
-                if entry["run_id"] == run_id:
-                    print(",".join(entry["failures"]))
-                    return 0
-        return 1
+        entry = _find_run(data, run_id)
+        if entry is None:
+            return 1
+        json_fields = ""
+        jq = ""
+        index = 3
+        while index < len(args):
+            if args[index] == "--json" and index + 1 < len(args):
+                json_fields = args[index + 1]
+                index += 2
+            elif args[index] == "--jq" and index + 1 < len(args):
+                jq = args[index + 1]
+                index += 2
+            else:
+                index += 1
+        if json_fields == "conclusion":
+            print(entry.get("conclusion", ""))
+            return 0
+        if json_fields == "jobs":
+            jobs = entry.get("jobs", [])
+            if "steps" in jq:
+                failures = sorted(
+                    step["name"]
+                    for job in jobs
+                    for step in job.get("steps", [])
+                    if step.get("conclusion") == "failure"
+                )
+                print(", ".join(failures))
+            elif "length" in jq:
+                print(len(jobs))
+            else:
+                failures = sorted(
+                    job["name"] for job in jobs if job.get("conclusion") == "failure"
+                )
+                print(",".join(failures))
+            return 0
+        return 0
     if args[:2] == ["run", "watch"]:
         return 0
     return 0
@@ -179,8 +224,30 @@ def test_make_push_captures_pre_push_base_and_blocks_a_regression() -> None:
             root,
             "ci",
             {
-                base: {"CI": {"run_id": "base-run", "failures": []}},
-                new: {"CI": {"run_id": "new-run", "failures": ["tests"]}},
+                base: {
+                    "CI": {
+                        "run_id": "base-run",
+                        "conclusion": "success",
+                        "jobs": [
+                            {
+                                "name": "Test Suite (ubuntu-latest)",
+                                "conclusion": "success",
+                            }
+                        ],
+                    }
+                },
+                new: {
+                    "CI": {
+                        "run_id": "new-run",
+                        "conclusion": "failure",
+                        "jobs": [
+                            {
+                                "name": "Test Suite (ubuntu-latest)",
+                                "conclusion": "failure",
+                            }
+                        ],
+                    }
+                },
             },
         )
 
@@ -207,5 +274,144 @@ def test_make_push_skips_attribution_when_no_ci_configured() -> None:
         assert result.returncode == 0, result.stdout + result.stderr
         assert "No CI configured - skipping attribution" in result.stdout
         assert not marker.exists() or marker.read_text(encoding="utf-8") == ""
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+@_posix_only
+def test_make_push_does_not_block_on_a_non_blocking_job_failure() -> None:
+    root = Path(tempfile.mkdtemp(prefix="teddy-push-wiring-"))
+    try:
+        work, base, new = _make_repo(root, "nonblocking", with_ci=True)
+        bin_dir, state_file = _make_fake_gh(
+            root,
+            "nonblocking",
+            {
+                base: {
+                    "CI": {
+                        "run_id": "base-run",
+                        "conclusion": "success",
+                        "jobs": [
+                            {
+                                "name": "Test Suite (ubuntu-latest)",
+                                "conclusion": "success",
+                            }
+                        ],
+                    }
+                },
+                new: {
+                    "CI": {
+                        "run_id": "new-run",
+                        "conclusion": "success",
+                        "jobs": [
+                            {
+                                "name": "Test Suite (ubuntu-latest)",
+                                "conclusion": "success",
+                            },
+                            {
+                                "name": "Quality Checks",
+                                "conclusion": "failure",
+                                "steps": [
+                                    {
+                                        "name": "Run Pre-commit Hooks (fast: formatters, secrets)",
+                                        "conclusion": "failure",
+                                    }
+                                ],
+                            },
+                        ],
+                    }
+                },
+            },
+        )
+
+        result = _run_push(work, bin_dir, state_file)
+
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "YOUR regression" not in result.stdout
+        assert "Quality Checks" in result.stdout
+        assert "Run Pre-commit Hooks (fast: formatters, secrets)" in result.stdout
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+@_posix_only
+def test_make_push_does_not_treat_a_job_less_base_as_green() -> None:
+    root = Path(tempfile.mkdtemp(prefix="teddy-push-wiring-"))
+    try:
+        work, base, new = _make_repo(root, "jobless", with_ci=True)
+        bin_dir, state_file = _make_fake_gh(
+            root,
+            "jobless",
+            {
+                base: {
+                    "CI": {
+                        "run_id": "base-run",
+                        "conclusion": "failure",
+                        "jobs": [],
+                    }
+                },
+                new: {
+                    "CI": {
+                        "run_id": "new-run",
+                        "conclusion": "failure",
+                        "jobs": [
+                            {
+                                "name": "Test Suite (ubuntu-latest)",
+                                "conclusion": "failure",
+                            }
+                        ],
+                    }
+                },
+            },
+        )
+
+        result = _run_push(work, bin_dir, state_file)
+
+        assert result.returncode != 0, result.stdout + result.stderr
+        assert "YOUR regression" in result.stdout
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+@_posix_only
+def test_make_push_reports_a_pre_existing_failure_without_blocking() -> None:
+    root = Path(tempfile.mkdtemp(prefix="teddy-push-wiring-"))
+    try:
+        work, base, new = _make_repo(root, "preexisting", with_ci=True)
+        bin_dir, state_file = _make_fake_gh(
+            root,
+            "preexisting",
+            {
+                base: {
+                    "CI": {
+                        "run_id": "base-run",
+                        "conclusion": "failure",
+                        "jobs": [
+                            {
+                                "name": "Test Suite (ubuntu-latest)",
+                                "conclusion": "failure",
+                            }
+                        ],
+                    }
+                },
+                new: {
+                    "CI": {
+                        "run_id": "new-run",
+                        "conclusion": "failure",
+                        "jobs": [
+                            {
+                                "name": "Test Suite (ubuntu-latest)",
+                                "conclusion": "failure",
+                            }
+                        ],
+                    }
+                },
+            },
+        )
+
+        result = _run_push(work, bin_dir, state_file)
+
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "pre-existing" in result.stdout
     finally:
         shutil.rmtree(root, ignore_errors=True)
