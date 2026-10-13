@@ -49,9 +49,9 @@ commit:
 # operations (see .githooks/post-commit.py).
 push:
 	git pull --rebase
-	git push
-	@SHA=$$(git rev-parse HEAD); \
-	BASE=$$(git rev-parse origin/main); \
+	@BASE=$$(git rev-parse origin/main); \
+	SHA=$$(git rev-parse HEAD); \
+	git push || exit $$?; \
 	STATUS=0; \
 	echo "Pushed $$SHA (base $$BASE)"; \
 	for WF in $$(gh run list --commit "$$SHA" --json workflowName --jq '.[].workflowName' | sort -u); do \
