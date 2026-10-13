@@ -1,5 +1,6 @@
 import pytest
 from pathlib import Path
+from typing import Optional
 
 from teddy_executor.core.services.prompt_manager import PromptManager
 
@@ -349,3 +350,91 @@ def test_fetch_system_prompt_returns_empty_when_agent_xml_missing(
     )
 
     assert result == ""
+
+
+class _StubContentPromptManager(PromptManager):
+    """Test double that injects the resolved prompt content directly.
+
+    ``compose_system_prompt`` resolves its content through the public
+    ``get_prompt_content`` seam, which delegates to
+    ``prompts.find_prompt_content`` and therefore walks the REAL
+    ``Path.cwd()`` -- it does NOT route through ``IFileSystemManager``.
+    Overriding that one public seam keeps these tests hermetic without global
+    patching and without a bare mock.
+    """
+
+    def __init__(self, content: Optional[str], **kwargs):
+        super().__init__(**kwargs)
+        self._stub_content = content
+
+    def get_prompt_content(self, agent_name: str) -> Optional[str]:
+        return self._stub_content
+
+
+def _stub_manager(tmp_path, mock_fs, content: Optional[str]) -> PromptManager:
+    """Builds a content-injecting manager backed by a real MRP resource root."""
+    return _StubContentPromptManager(
+        content=content,
+        file_system_manager=mock_fs,
+        mrp_resource_root=_write_mrp_root(tmp_path),
+    )
+
+
+def test_compose_system_prompt_assembles_header_agent_xml_and_mrp(tmp_path, mock_fs):
+    """``compose_system_prompt`` returns the agent-name header, then the
+    agent-specific XML, then the shared MRP protocol -- in that order."""
+    manager = _stub_manager(tmp_path, mock_fs, "<agent>AGENT_SPECIFIC</agent>")
+
+    # Act
+    result = manager.compose_system_prompt("pathfinder")
+
+    # Assert
+    assert result is not None
+    assert result.startswith("Agent Name: Pathfinder\n\n")
+    assert "<agent>AGENT_SPECIFIC</agent>" in result
+    assert "<mrp>SHARED_PROTOCOL</mrp>" in result
+    assert result.index("<agent>AGENT_SPECIFIC</agent>") < result.index(
+        "<mrp>SHARED_PROTOCOL</mrp>"
+    )
+
+
+@pytest.mark.parametrize("unresolved", [None, ""])
+def test_compose_system_prompt_returns_none_when_content_unresolved(
+    tmp_path, mock_fs, unresolved
+):
+    """No resolvable content yields ``None`` (the CLI's not-found signal),
+    rather than a header-only or MRP-only fragment."""
+    manager = _stub_manager(tmp_path, mock_fs, unresolved)
+
+    # Act / Assert
+    assert manager.compose_system_prompt("ghost") is None
+
+
+def test_compose_system_prompt_skips_mrp_when_response_format_present(
+    tmp_path, mock_fs
+):
+    """A legacy prompt that already carries ``<response_format>`` keeps the
+    agent-name header but does NOT receive the shared MRP block."""
+    legacy = "<agent><response_format>INLINE</response_format></agent>"
+    manager = _stub_manager(tmp_path, mock_fs, legacy)
+
+    # Act
+    result = manager.compose_system_prompt("pathfinder")
+
+    # Assert
+    assert result is not None
+    assert result.startswith("Agent Name: Pathfinder\n\n")
+    assert legacy in result
+    assert "<mrp>SHARED_PROTOCOL</mrp>" not in result
+
+
+def test_compose_system_prompt_canonicalises_agent_name_header(tmp_path, mock_fs):
+    """The header canonicalises ANY input casing via the shared helper."""
+    manager = _stub_manager(tmp_path, mock_fs, "<agent/>")
+
+    # Act
+    result = manager.compose_system_prompt("DeVeLoPeR")
+
+    # Assert
+    assert result is not None
+    assert result.startswith("Agent Name: Developer\n\n")

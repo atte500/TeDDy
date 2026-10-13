@@ -38,6 +38,16 @@ class IPromptManager(ABC):
         ...
 
     @abstractmethod
+    def compose_system_prompt(self, _agent_name: str) -> Optional[str]:
+        """Composes the full system prompt for an agent without a turn path.
+
+        Resolves the agent-specific content and assembles it (agent-name
+        header + agent XML + shared MRP base prompt). Returns ``None`` when no
+        content can be resolved.
+        """
+        ...
+
+    @abstractmethod
     def log_telemetry(self, _token_count: Any, _turn_cost: Any) -> float:
         """Logs planning telemetry."""
         ...

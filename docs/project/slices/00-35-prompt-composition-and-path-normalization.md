@@ -70,7 +70,7 @@ Order: A and B are independent and each test-first; consolidation follows, migra
 
 ## Deliverables
 
-- [ ] **Contract** - Add `compose_system_prompt(self, agent_name: str) -> Optional[str]` to `IPromptManager` AND implement it in `PromptManager` atomically: extract `_assemble_composed_prompt(agent_name, content)` from `fetch_system_prompt`'s lazy-compose branch (preserving the `<response_format>` legacy short-circuit), reuse it inside `fetch_system_prompt`, and implement `compose_system_prompt` (resolve content via `get_prompt_content`, return `None` when unresolved). Merged with the former `Logic` deliverable: adding the abstract method without its implementation makes `PromptManager` un-instantiable and breaks the eight test sites that construct it directly.
+- [x] **Contract** - Add `compose_system_prompt(self, agent_name: str) -> Optional[str]` to `IPromptManager` AND implement it in `PromptManager` atomically: extract `_assemble_composed_prompt(agent_name, content)` from `fetch_system_prompt`'s lazy-compose branch (preserving the `<response_format>` legacy short-circuit), reuse it inside `fetch_system_prompt`, and implement `compose_system_prompt` (resolve content via `get_prompt_content`, return `None` when unresolved). Merged with the former `Logic` deliverable: adding the abstract method without its implementation makes `PromptManager` un-instantiable and breaks the eight test sites that construct it directly.
 - [ ] **Wiring** - Rewire the `get-prompt` command in `__main__.py` to resolve `IPromptManager` from the base container and echo `compose_system_prompt(prompt_name)`; keep the not-found branch unchanged.
 - [ ] **Harness** - Acceptance test asserting composed `get-prompt` output (header + agent XML + MRP, in order) and the not-found exit-1 branch.
 - [ ] **Logic** - Route `SessionService._prepare_session_context` entries through `_extract_resource_path`.
@@ -82,6 +82,14 @@ Order: A and B are independent and each test-first; consolidation follows, migra
 ## Implementation Notes
 
 _Sandbox-proven: both fixes were validated via the Shadow File methodology (MREs + shadow replicas) before any production edit; the full verification record lives in [Case File 05](/docs/project/debugging/05-get-prompt-composition-and-context-links.md) (Investigation History entries 7-10)._
+
+### Contract deliverable — `compose_system_prompt` (prompt-composition)
+
+- **What shipped.** Added the abstract `compose_system_prompt(self, _agent_name: str) -> Optional[str]` to `IPromptManager`, and implemented it on `PromptManager`. Extracted `_assemble_composed_prompt(agent_name, content)` from `fetch_system_prompt`'s lazy-compose branch; `fetch_system_prompt` now delegates to it (byte-identical logic, so its empty-content `""` contract is preserved at the caller), and `compose_system_prompt` resolves content via the existing public `get_prompt_content` seam, returning `None` when unresolved (the CLI's not-found signal).
+- **Why it landed atomically.** `IPromptManager` is an ABC and the test suite constructs `PromptManager` directly at eight sites; adding the abstract method without its implementation would have rendered the concrete class un-instantiable and reddened those sites. The port method and its implementation were therefore merged into a single deliverable.
+- **Red evidence.** Five `compose_system_prompt` items failed with `AttributeError: '_StubContentPromptManager' object has no attribute 'compose_system_prompt'` before the change — a genuine absence, not a fixture error.
+- **Green evidence.** `tests/suites/unit/core/services/test_prompt_manager.py` → 19 passed (5 new + 14 pre-existing); full suite (`make test`) → 1730 passed, 5 skipped.
+- **Test design.** The new method resolves content through `get_prompt_content` → `prompts.find_prompt_content` → the REAL `Path.cwd()`, bypassing `IFileSystemManager`. The tests inject content via a hand-written `_StubContentPromptManager` subclass overriding only that public seam (no global patching, no bare mock); the MRP half uses a real `tmp_path` resource root injected through `mrp_resource_root=`.
 
 ## Verification
 

@@ -155,6 +155,16 @@ class PromptManager(IPromptManager):
             # contract (no header, no MRP) rather than fabricating a prompt.
             return ""
 
+        return self._assemble_composed_prompt(agent_name, content)
+
+    def _assemble_composed_prompt(self, agent_name: str, content: str) -> str:
+        """Assembles a composed system prompt from an agent name and content.
+
+        Prepends the canonical agent-name header, then appends the shared MRP
+        base prompt AFTER the agent-specific content. A resolved prompt that
+        already carries its own ``<response_format>`` (e.g. a customized
+        ``.teddy/prompts/`` override) keeps the header but skips the MRP block.
+        """
         assembled = f"Agent Name: {canonical_agent_name(agent_name)}\n\n{content}"
 
         # Legacy compatibility: a resolved prompt that already carries its own
@@ -166,6 +176,18 @@ class PromptManager(IPromptManager):
         # Both the agent-specific XML and the MRP block live inside the
         # assembled ``<system>`` prompt; MRP is appended AFTER the agent content.
         return f"{assembled}\n\n{self._load_mrp_base_prompt()}"
+
+    def compose_system_prompt(self, agent_name: str) -> Optional[str]:
+        """Composes the full system prompt for an agent WITHOUT a turn path.
+
+        Resolves the agent-specific content via ``get_prompt_content`` (the
+        canonical ``.teddy/prompts/`` source) and assembles it. Returns
+        ``None`` when no content can be resolved, signalling "not found".
+        """
+        content = self.get_prompt_content(agent_name)
+        if not content:
+            return None
+        return self._assemble_composed_prompt(agent_name, content)
 
     def log_telemetry(self, token_count: Any, turn_cost: Any) -> float:
         def safe_float(v: Any, default: float = 0.0) -> float:
