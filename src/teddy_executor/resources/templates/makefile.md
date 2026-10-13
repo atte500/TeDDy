@@ -128,7 +128,7 @@ commit:
 
 ## Push (Deferred to Conclusion)
 
-`make push` runs `git pull --rebase`, pushes, then discovers **every** CI run for the pushed SHA (`gh run list --commit <sha>`) and waits for and reports each workflow with its jobs. It blocks only on failures **your push introduced**:
+`make push` runs `git pull --rebase`, captures the base and the pushed SHA, pushes, then discovers **every** CI run for the pushed SHA (`gh run list --commit <sha>`) and waits for and reports each workflow with its jobs. It blocks only on failures **your push introduced**:
 
 - **base green → new red** = your regression → **exit 1** (fix before concluding).
 - **base red → new red (same jobs)** = pre-existing → **report and exit 0** (do not wait, do not duplicate the fix).
@@ -137,17 +137,40 @@ commit:
 
 Attribution is deterministic: SHA → run → per-job conclusion (never "the latest run").
 
+Three behaviors make the attribution trustworthy:
+
+1. **The base is captured BEFORE the push.** `BASE=$$(git rev-parse origin/main)` is read immediately after `git pull --rebase` and before `git push`; otherwise the push advances `origin/main` and `BASE` collapses onto the pushed SHA, making every comparison trivially equal (a real regression would be silently misclassified as pre-existing). `git push` is folded into the same shell block behind `|| exit $$?` so a rejected push still aborts the target.
+2. **Registration lag is tolerated by a bounded retry.** CI may not have registered a run for the pushed SHA yet; the target polls `gh run list --commit <sha>` up to `RETRY_POLLS × RETRY_SLEEP` (default 10 × 1s ≈ 10s) before attributing, then fails safe if the run never registers.
+3. **No CI is non-blocking.** If the repository has no workflow files under `.github/workflows/` (`*.yml`/`*.yaml`), the target logs `No CI configured - skipping attribution` and exits 0 — a CI-less repo is never blocked. This is distinct from a repo WITH CI whose pushed SHA registered no run (that still fail-safe blocks).
+
 ### Example
 
 ```makefile
+RETRY_POLLS ?= 10
+RETRY_SLEEP ?= 1
+
 push:
 	git pull --rebase
-	git push
-	@SHA=$$(git rev-parse HEAD); \
-	BASE=$$(git rev-parse origin/main); \
-	STATUS=0; \
-	echo "Pushed $$SHA (base $$BASE)"; \
-	for WF in $$(gh run list --commit "$$SHA" --json workflowName --jq '.[].workflowName' | sort -u); do \
+	@BASE=$$(git rev-parse origin/main); \
+	SHA=$$(git rev-parse HEAD); \
+	git push || exit $$?; \
+	if [ -z "$$(ls .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null)" ]; then \
+	  echo "No CI configured - skipping attribution"; \
+	  exit 0; \
+	fi; \
+	STATUS=0; ATTEMPTS=0; WFS=""; \
+	while [ -z "$$WFS" ] && [ $$ATTEMPTS -lt $(RETRY_POLLS) ]; do \
+	  WFS=$$(gh run list --commit "$$SHA" --json workflowName --jq '.[].workflowName' | sort -u); \
+	  [ -n "$$WFS" ] && break; \
+	  ATTEMPTS=$$((ATTEMPTS + 1)); \
+	  sleep $(RETRY_SLEEP); \
+	done; \
+	echo "Pushed $$SHA (base $$BASE) after $$ATTEMPTS poll(s)"; \
+	if [ -z "$$WFS" ]; then \
+	  echo "CI: no run registered for $$SHA after $(RETRY_POLLS) poll(s) - fail-safe block"; \
+	  exit 1; \
+	fi; \
+	for WF in $$WFS; do \
 	  NEW=$$(gh run list --commit "$$SHA" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
 	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
 	  gh run watch "$$NEW" --exit-status >/dev/null 2>&1 || true; \
