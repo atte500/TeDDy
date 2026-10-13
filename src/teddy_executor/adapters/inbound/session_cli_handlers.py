@@ -415,6 +415,7 @@ def _display_drift_notification(container: Container) -> list[str]:
     config = container.resolve(IConfigService)
     report = container.resolve(IInitUseCase).check_drift()
     fired: list[str] = []
+    drift_lines: list[str] = []
 
     if config.get_setting("checks.prompts", True) and report.prompts_drifted:
         clause = _format_drift_clause(
@@ -424,9 +425,9 @@ def _display_drift_notification(container: Container) -> list[str]:
             report.edited_prompts,
             report.missing_prompts,
         )
-        typer.echo(
+        drift_lines.append(
             typer.style(
-                f"ℹ {clause}. To overwrite, run: teddy init prompts\n",
+                f"ℹ {clause}. To update them, run: teddy init prompts",
                 fg=typer.colors.YELLOW,
             )
         )
@@ -440,13 +441,20 @@ def _display_drift_notification(container: Container) -> list[str]:
             report.edited_templates,
             report.missing_templates,
         )
-        typer.echo(
+        drift_lines.append(
             typer.style(
-                f"ℹ {clause}. To overwrite, run: teddy init templates\n",
+                f"ℹ {clause}. To update them, run: teddy init templates",
                 fg=typer.colors.YELLOW,
             )
         )
         fired.append("checks.templates")
+
+    if drift_lines:
+        # A single leading blank separates this block from the
+        # ``Checking configurations...`` line above it. The lines carry no
+        # trailing newline, so the shared disable-footer (emitted next) abuts
+        # the final drift line.
+        typer.echo("\n" + "\n".join(drift_lines))
 
     return fired
 
@@ -640,10 +648,13 @@ def _echo_config_success(
         resolved_model = model
     else:
         resolved_model = config_service.get_setting("llm.model", "unknown")
-    msg = f"API key valid! Model: {resolved_model}"
+    identity_lines: list[str] = []
     if agent:
-        msg += f" | Agent: {canonical_agent_name(agent)}"
-    typer.echo(msg, err=True)
+        identity_lines.append(f"Agent: {canonical_agent_name(agent)}")
+    identity_lines.append(f"Model: {resolved_model}")
+    # A leading blank separates the identity block from whatever precedes it
+    # (``Checking configurations...`` or the drift block/footer).
+    typer.echo("\n" + "\n".join(identity_lines), err=True)
 
 
 def _run_cli_preflight_check(
@@ -1080,14 +1091,14 @@ def handle_resume_session(  # noqa: PLR0913
         # 2. Resolve session name
         session_name = _resolve_session_name(container, path)
 
-        # 3. Display session path
-        session_relative_path = str(Path(".teddy") / "sessions" / session_name)
-        typer.echo(f"Resuming session: {session_relative_path}")
-
-        # 4. Display actual_model and sync config overrides
+        # 3. Display actual_model and sync config overrides
         _sync_and_display_session_meta(
             container, session_name, model=model, api_key=api_key
         )
+
+        # 4. Display session path (below the Agent/Model identity block)
+        session_relative_path = str(Path(".teddy") / "sessions" / session_name)
+        typer.echo(f"\nResuming session: {session_relative_path}")
 
         # 5. Agent switch: if -a/--agent provided, update session agent permanently
         if agent:

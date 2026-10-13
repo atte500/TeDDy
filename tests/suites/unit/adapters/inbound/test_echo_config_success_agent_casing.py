@@ -38,3 +38,13 @@ def test_echo_config_success_canonicalises_displayed_agent_name(
         f"Expected canonical 'Agent: {expected_agent}' in banner, got: "
         f"{captured.err.strip()!r}"
     )
+    assert "API key valid" not in captured.err, (
+        "The banner must not claim the API key is valid (it is not verified)."
+    )
+    assert "| Agent:" not in captured.err, (
+        "Agent and model must render on separate lines, not the legacy "
+        "'Model: ... | Agent: ...' form."
+    )
+    assert "Model:" in captured.err, (
+        f"Expected a 'Model:' line in the banner, got: {captured.err.strip()!r}"
+    )

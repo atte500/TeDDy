@@ -35,9 +35,9 @@ The `checks.prompts_templates` key MUST NOT survive anywhere.
 #### Step 2: Rewrite `_display_drift_notification` — per-channel, count-aware, returns fired keys
 - **File:** [src/teddy_executor/adapters/inbound/session_cli_handlers.py](/src/teddy_executor/adapters/inbound/session_cli_handlers.py)
 - **Change:** Give the helper the signature `_display_drift_notification(container: Container) -> list[str]`. Read `checks.prompts` (default `True`) and `checks.templates` (default `True`) INDEPENDENTLY via `IConfigService.get_setting`. Call `IInitUseCase.check_drift()`. For each channel that is BOTH enabled AND drifted, emit exactly ONE yellow line (`typer.echo(typer.style(..., fg=typer.colors.YELLOW))`) and append its key to the returned list. Emit the PROMPTS channel before the TEMPLATES channel; return `["checks.prompts"]`, `["checks.templates"]`, both, or `[]`. Locked wording for the prompts channel (mirror for templates with `docs/templates/`, `template(s)`, and `teddy init templates`). Let `d` = number of edited files, `m` = number of missing files, `n = d + m`; singular/plural is driven by `n == 1` (`prompt`/`prompts`, `differs`/`differ`, `is`/`are`):
-  - changed only (`d > 0`, `m == 0`): `ℹ {n} {noun} in .teddy/prompts/ differ(s) from this version's defaults. To overwrite, run: teddy init prompts`
-  - missing only (`d == 0`, `m > 0`): `ℹ {n} {noun} in .teddy/prompts/ is/are missing. To overwrite, run: teddy init prompts`
-  - both (`d > 0`, `m > 0`): `ℹ {n} {noun} in .teddy/prompts/ differ(s) from this version's defaults ({d} changed, {m} missing). To overwrite, run: teddy init prompts`
+  - changed only (`d > 0`, `m == 0`): `ℹ {n} {noun} in .teddy/prompts/ differ(s) from this version's defaults. To update them, run: teddy init prompts`
+  - missing only (`d == 0`, `m > 0`): `ℹ {n} {noun} in .teddy/prompts/ is/are missing. To update them, run: teddy init prompts`
+  - both (`d > 0`, `m > 0`): `ℹ {n} {noun} in .teddy/prompts/ differ(s) from this version's defaults ({d} changed, {m} missing). To update them, run: teddy init prompts`
 
 #### Step 3: Make `_display_update_notification` return its fired key
 - **File:** [src/teddy_executor/adapters/inbound/session_cli_handlers.py](/src/teddy_executor/adapters/inbound/session_cli_handlers.py)

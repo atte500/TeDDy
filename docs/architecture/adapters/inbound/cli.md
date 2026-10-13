@@ -133,6 +133,8 @@ Editor validation is skipped entirely for runs that will not read the terminal: 
 
 All three toggles are read additively via `IConfigService.get_setting`, so a config that lacks the `checks` block behaves as enabled (backwards compatible).
 
+**Output layout.** On the healthy path the preflight prints, in order: `Checking configurations...`, a blank line, the drift block (each channel's yellow advice line immediately followed by the shared disable-footer, so the footer abuts the final drift line), a blank line, and the `Agent:`/`Model:` identity block. The advice wording is `... To update them, run: teddy init <prompts|templates>`. When no notification fires, the blank line before the identity block is the only separator after `Checking configurations...`.
+
 ### Startup Health Checks (`_run_health_checks`)
 
 `_run_health_checks()` runs two advisory checks on session start/resume (`handle_new_session`, `handle_resume_session`): `_ensure_commit_hooks()` and `_check_git_initialized()`.
@@ -150,7 +152,7 @@ Resumes an existing session. The optional positional `[PATH|SLUG]` accepts eithe
     2. ONLY on `ValueError`, resolution falls back to `ISessionManager.resolve_session_from_slug(path)`, which matches the argument's timestamp-stripped slug EXACTLY and case-insensitively (`teddy resume add-user-auth` → `.teddy/sessions/20260124_153000-add-user-auth`) and resolves LATEST-WINS when several sessions share a slug.
     3. When no argument is supplied, the branch is unchanged: climb from the CWD, then `get_latest_session_name()`.
     Resolution follows the Hexagonal convention (port → service → repository); no filesystem I/O is performed in the CLI adapter.
-*   **Output:** `handle_resume_session` echoes `Resuming session: .teddy/sessions/<resolved-name>`, surfacing the chosen folder.
+*   **Output:** `handle_resume_session` prints the `Agent:`/`Model:` identity block first (a leading blank line, then `Agent: <name>` and `Model: <model>` on separate lines), followed by a blank line and `Resuming session: .teddy/sessions/<resolved-name>`, surfacing the chosen folder.
 
 ### Utility Command: `init`
 

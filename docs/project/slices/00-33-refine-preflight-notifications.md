@@ -57,9 +57,9 @@ Workstream A is a PRESENTATION + CONFIG-SCHEMA change with ZERO core-domain, Por
 **Config schema.** `config.yaml`'s `checks:` block loses `prompts_templates` and gains `prompts` + `templates` (keeping `update`), each read independently via `IConfigService.get_setting(key, True)`. The old combined key MUST NOT survive anywhere. The bundled-config contract test asserts the two new keys and the ABSENCE of the old one.
 
 **Drift notification.** `_display_drift_notification(container) -> list[str]` reads `checks.prompts` and `checks.templates` INDEPENDENTLY, calls `check_drift()`, and for each channel that is BOTH enabled AND drifted emits exactly ONE yellow count-aware line (prompts before templates), appending its key to the returned list. Wording (prompts; mirror for templates with `docs/templates/`, `template(s)`, `teddy init templates`), with `d`=edited, `m`=missing, `n=d+m` and singular/plural driven by `n == 1`:
-- changed only (`d>0`, `m==0`): `ℹ {n} {noun} in .teddy/prompts/ {differs|differ} from this version's defaults. To overwrite, run: teddy init prompts`
-- missing only (`d==0`, `m>0`): `ℹ {n} {noun} in .teddy/prompts/ {is|are} missing. To overwrite, run: teddy init prompts`
-- both (`d>0`, `m>0`): `ℹ {n} {noun} in .teddy/prompts/ {differs|differ} from this version's defaults ({d} changed, {m} missing). To overwrite, run: teddy init prompts`
+- changed only (`d>0`, `m==0`): `ℹ {n} {noun} in .teddy/prompts/ {differs|differ} from this version's defaults. To update them, run: teddy init prompts`
+- missing only (`d==0`, `m>0`): `ℹ {n} {noun} in .teddy/prompts/ {is|are} missing. To update them, run: teddy init prompts`
+- both (`d>0`, `m>0`): `ℹ {n} {noun} in .teddy/prompts/ {differs|differ} from this version's defaults ({d} changed, {m} missing). To update them, run: teddy init prompts`
 
 **Update notification.** `_display_update_notification(container, cache_path) -> list[str]` returns `["checks.update"]` when the toggle is enabled AND a newer version is actually displayed, else `[]` (preserving the toggle gate, the prerelease-vs-stable upgrade-command selection, and the debug-log-on-failure).
 
@@ -152,6 +152,17 @@ Workstream A is a PRESENTATION + CONFIG-SCHEMA change with ZERO core-domain, Por
 **Red-Green evidence (docs-only).** D7 is a Markdown-only reconciliation with NO executable code seam, so no Red test loop applies — the change itself (Turn 66) was the "Green". The verification EXECUTE (Turn 66) confirmed the two target docs carry NO live `teddy plan` or `checks.prompts_templates` reference; the residual `teddy plan` hits are confined to historical slice/task-brief artifacts plus the `parser_metadata.md` case-insensitive false positive ("a TeDDy plan" = the plan document), and the residual `checks.prompts_templates` hits to the absence-asserting contract test (`test_bundled_config_notification_toggles.py`) plus historical notes — verification items 5 and 6 are therefore satisfied as scoped.
 
 **Integration.** The Phase 3 full-suite gate (Turn 67, observed via a redirect + `|| true` guard + `exit 0` wrapper to sidestep the EXECUTE-harness false-positive prompt sentinel) returned `1717 passed, 5 skipped` — IDENTICAL to D6's committed baseline, since D7 is documentation-only and adds no tests. No regressions.
+
+### D8 — Follow-up refinement: co-located drift block, "To update them" wording, split identity banner (2026-10-13)
+
+A follow-up UX session refined the shipped preflight output (no new milestone/slice; an ad-hoc extension of this slice):
+
+- **Drift wording.** Every drift advice line now reads `... To update them, run: teddy init <prompts|templates>`.
+- **Co-located drift block.** `_display_drift_notification` buffers its per-channel lines and emits them with ONE leading blank and NO trailing newline, so the shared disable-footer abuts the final drift line (previously a blank separated them).
+- **Identity banner.** `_echo_config_success` no longer prefixes `API key valid!` (the key is never verified) and renders `Agent: <name>` then `Model: <model>` on two separate lines, preceded by one blank. The former single-line banner is retired.
+- **Resume order.** `handle_resume_session` prints the `Agent:`/`Model:` identity block BEFORE the `Resuming session: <relpath>` line (which gains a leading blank).
+
+**Tests.** Added `test_drift_notification_uses_update_wording` and extended `test_echo_config_success_agent_casing` to pin the identity split; the whole inbound unit suite plus the drift and CLI-UX acceptance files passed (`254 passed`).
 
 ## Verification
 

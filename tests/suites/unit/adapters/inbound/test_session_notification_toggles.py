@@ -167,6 +167,24 @@ def test_drift_notification_count_aware_wording(env, capsys, report, expected):
     )
 
 
+def test_drift_notification_uses_update_wording(env, capsys):
+    # The drift advice directs the user to UPDATE the files, not overwrite them.
+    config = env.mock_port(IConfigService)
+    config.get_setting.side_effect = lambda key, default=None: default
+    init = env.mock_port(IInitUseCase)
+    init.check_drift.return_value = DriftReport(edited_prompts=("pathfinder.xml",))
+
+    _display_drift_notification(env.container)
+
+    captured = capsys.readouterr()
+    assert "To update them, run: teddy init prompts" in captured.out, (
+        f"Drift advice must say 'To update them'; got: {captured.out!r}"
+    )
+    assert "To overwrite" not in captured.out, (
+        f"The retired 'To overwrite' wording must not appear; got: {captured.out!r}"
+    )
+
+
 def test_drift_notification_reports_both_channel_keys(env, capsys):
     # Both channels drifted and enabled -> both fired keys reported, prompts first.
     config = env.mock_port(IConfigService)
