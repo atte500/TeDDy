@@ -1,10 +1,17 @@
-from typing import Any
+from typing import Any, Optional
+
+from punq import Container
 
 
 class RealAdapterMixin:
     """
     Mixin for TestEnvironment that handles the registration of real outbound adapters.
     """
+
+    # Declared explicitly so the Optional lifecycle (None before setup(), then a
+    # real Container) is shared with TestEnvironment.__init__ instead of being
+    # inferred as non-Optional from the single assignment in with_real_filesystem.
+    container: Optional[Container]
 
     def with_real_system_environment(self: Any) -> Any:
         from teddy_executor.core.ports.outbound import ISystemEnvironment
