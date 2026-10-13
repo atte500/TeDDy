@@ -249,7 +249,48 @@ def _determine_session_name(name: Optional[str], message: Optional[str]) -> str:
     return "session-auto"
 
 
-def _orchestrate_session_loop(
+def _resolve_initial_turn(session_manager: ISessionManager, session_name: str) -> int:
+    """Resolves the process-relative turn baseline for the guardrails.
+
+    get_latest_turn returns a path string whose folder name is the turn ID. A
+    fresh session seeds turn 01 before the loop starts, so the baseline is 0; a
+    resume's latest turn is the last completed turn, so the baseline is that
+    turn. Non-numeric names (or test doubles) fall back to 0.
+    """
+    latest_turn_path = session_manager.get_latest_turn(session_name)
+    try:
+        latest_turn = int(Path(latest_turn_path).name) if latest_turn_path else 0
+        return max(0, latest_turn - 1) if latest_turn_path else 0
+    except (ValueError, TypeError):
+        # Handle non-numeric turn names or MagicMocks in tests
+        return 0
+
+
+def _emit_guard_termination(guard_reason: Optional[str]) -> None:
+    """Prints a guardrail termination reason: first line red, remainder plain."""
+    reason = guard_reason or "YOLO guardrail limit reached."
+    lines = reason.lstrip("\n").split("\n", 1)
+    typer.secho("")
+    typer.secho(lines[0], fg=typer.colors.RED)
+    if len(lines) > 1:
+        typer.secho(lines[1])
+
+
+def _should_exit_pipeline(pipeline: bool, report: Any) -> bool:
+    """True when a pipeline run's report carries a MESSAGE action to exit on.
+
+    Short-circuits on ``not pipeline`` so a non-pipeline run never touches
+    report.action_logs (mirroring the original guard order).
+    """
+    if not pipeline or not report.action_logs:
+        return False
+    return any(
+        (getattr(log_entry, "action_type", None) or "").upper() == "MESSAGE"
+        for log_entry in report.action_logs
+    )
+
+
+def _orchestrate_session_loop(  # noqa: PLR0913
     container: Container,
     session_name: str,
     interactive: bool,
@@ -265,20 +306,7 @@ def _orchestrate_session_loop(
     session_manager = container.resolve(ISessionManager)
 
     # Resolve initial state for process-relative guardrails
-    latest_turn_path = session_manager.get_latest_turn(session_name)
-    try:
-        # get_latest_turn returns a path string; the turn ID is the folder name.
-        # For a fresh session, create_session seeds turn 01 (the initial request)
-        # BEFORE the loop starts, so the latest turn = 1. The loop then processes
-        # turn 01 again (turn_count starts at 1). Subtracting 1 makes the baseline
-        # 0 for fresh sessions so delta after turn 01 = 1.
-        # For resume, the latest turn is the last completed turn, and the loop
-        # processes the NEXT turn (turn_count = latest + 1), so delta is correct.
-        latest_turn = int(Path(latest_turn_path).name) if latest_turn_path else 0
-        initial_turn = max(0, latest_turn - 1) if latest_turn_path else 0
-    except (ValueError, TypeError):
-        # Handle non-numeric turn names or MagicMocks in tests
-        initial_turn = 0
+    initial_turn = _resolve_initial_turn(session_manager, session_name)
 
     # Resolve initial cost for process-relative guardrails
     initial_cost = session_manager.get_cumulative_cost(session_name)
@@ -338,23 +366,12 @@ def _orchestrate_session_loop(
                 turn_count, cumulative_cost, interactive
             )
             if not should_continue:
-                reason = guard_reason or "YOLO guardrail limit reached."
-                lines = reason.lstrip("\n").split("\n", 1)
-                typer.secho("")
-                typer.secho(lines[0], fg=typer.colors.RED)
-                if len(lines) > 1:
-                    typer.secho(lines[1])
+                _emit_guard_termination(guard_reason)
                 break
 
             # Pipeline mode: exit cleanly after the first ## Message
-            if pipeline and report.action_logs:
-                for log_entry in report.action_logs:
-                    action_type = getattr(log_entry, "action_type", None) or ""
-                    if action_type.upper() == "MESSAGE":
-                        break  # break inner for
-                else:
-                    continue  # no MESSAGE found, continue outer loop
-                break  # MESSAGE found, exit session loop
+            if _should_exit_pipeline(pipeline, report):
+                break
     except KeyboardInterrupt:
         # Immediate-exit semantics (Task Brief): Ctrl+C while nothing is in
         # flight (prompts, planning) terminates the session with a notice —
