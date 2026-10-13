@@ -1,5 +1,5 @@
 # Slice: Pipeline Mode Defaults to the Assistant Agent
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Specs:** N/A
 - **Prototype:** N/A
@@ -103,11 +103,11 @@ The `--agent` option cannot keep a plain string default and also detect "the use
 
 ## Verification
 
-1. `uv run pytest tests/suites/unit/adapters/inbound/test_start_agent_resolution.py` passes with all four matrix cells.
-2. `uv run pytest tests/suites/acceptance/test_pipeline_default_agent.py` passes.
-3. `teddy start --help` shows the updated `--agent` help text ("Defaults to 'pathfinder' ('assistant' in pipeline mode).").
-4. Manual: `teddy start -p -m "..."` selects `assistant` (`Agent Name: Assistant` / metadata `agent_name: assistant`).
-5. Manual: `teddy start -m "..."` (no `-p`) still uses `pathfinder` (`Agent Name: Pathfinder`).
-6. Manual: `teddy start -a architect -p -m "..."` — the explicit `-a` wins (agent is `architect`).
-7. Manual: `teddy resume -p -m "..."` on an existing session leaves its agent unchanged (resume is out of scope).
-8. `make test` (full suite, no filters) is GREEN; no pre-existing test regresses, and any test asserting the OLD pipeline default is updated (never weakened).
+1. [x] `uv run pytest tests/suites/unit/adapters/inbound/test_start_agent_resolution.py` passes with all four matrix cells.
+2. [x] `uv run pytest tests/suites/acceptance/test_pipeline_default_agent.py` passes.
+3. [x] `teddy start --help` shows the updated `--agent` help text ("Defaults to 'pathfinder' ('assistant' in pipeline mode).").
+4. [x] Manual: `teddy start -p -m "..."` selects `assistant` (`Agent Name: Assistant` / metadata `agent_name: assistant`).
+5. [x] Manual: `teddy start -m "..."` (no `-p`) still uses `pathfinder` (`Agent Name: Pathfinder`).
+6. [x] Manual: `teddy start -a architect -p -m "..."` — the explicit `-a` wins (agent is `architect`).
+7. [x] Manual: `teddy resume -p -m "..."` on an existing session leaves its agent unchanged (resume is out of scope).
+8. [x] `make test` (full suite, no filters) is GREEN; no pre-existing test regresses, and any test asserting the OLD pipeline default is updated (never weakened).
