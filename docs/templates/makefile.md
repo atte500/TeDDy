@@ -137,7 +137,7 @@ The pushed RUN's own conclusion is authoritative: it already folds in `continue-
 - **all green / non-blocking** → PASSED → **exit 0**.
 - **job-less base** → NOT green: a base run that exists but carries zero jobs (an invalid-workflow failure) is treated as an unknown base and fails safe (block).
 
-When any step fails — blocking or not — the target also prints that step's log details via `gh run view <id> --log-failed` (ANSI/timestamp-stripped and indented), bounded to `DETAIL_LINES` lines (default 50), so the cause is visible without leaving the session.
+When any step fails — blocking or not — the target prints the failing step's name and its run id, then that step's log details (ANSI/timestamp-stripped and indented), bounded to `DETAIL_LINES` lines (default 50), and points to `make logs <run-id> '<step-name>'` for the full step log when needed.
 
 Attribution is deterministic: SHA → run → run-level + per-job conclusion (never "the latest run").
 
@@ -182,8 +182,9 @@ push:
 	  NEWFAIL=$$(gh run view "$$NEW" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")'); \
 	  NEWSTEPS=$$(gh run view "$$NEW" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .steps[]? | select(.conclusion=="failure") | .name] | sort | join(", ")'); \
 	  if [ -n "$$NEWSTEPS" ]; then \
-	    echo "$$WF: failing step(s): $$NEWSTEPS"; \
+	    echo "$$WF: failing step(s): $$NEWSTEPS (run $$NEW)"; \
 	    gh run view "$$NEW" --log-failed 2>/dev/null | awk -F'\t' '{ l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/) next; gsub(/^##\[error\]/,"Error: ",l); print l }' | tail -n $(DETAIL_LINES) | sed 's/^/    /'; \
+	    echo "  full log: make logs $$NEW '$$NEWSTEPS'"; \
 	  fi; \
 	  if [ "$$NEWCONC" != "failure" ]; then \
 	    if [ -n "$$NEWFAIL" ]; then \

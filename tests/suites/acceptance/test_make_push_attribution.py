@@ -340,6 +340,7 @@ def test_make_push_does_not_block_on_a_non_blocking_job_failure() -> None:
         assert "Quality Checks" in result.stdout
         assert "Run Pre-commit Hooks (fast: formatters, secrets)" in result.stdout
         assert "detect-secrets flagged 2 potential secrets" in result.stdout
+        assert "make logs new-run" in result.stdout
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
