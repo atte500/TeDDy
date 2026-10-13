@@ -103,13 +103,12 @@ class SessionService(ISessionManager):
             if line.strip() and not line.strip().startswith("#")
         ]
 
-        # Merge additional context with path normalization
-        for path in options.additional_context:
-            if path:
-                normalized = path.strip().replace("\\", "/")
-                if normalized.startswith("./"):
-                    normalized = normalized[2:]
-                normalized = normalized.lstrip("/")
+        # Merge additional context, routing each entry through the canonical
+        # link-aware normalizer so `[label](target)` entries seed the target
+        # (a strict superset of the prior inline normalization).
+        for entry in options.additional_context:
+            if entry:
+                normalized = self._extract_resource_path(entry)
                 if normalized and normalized not in clean_lines:
                     clean_lines.append(normalized)
 

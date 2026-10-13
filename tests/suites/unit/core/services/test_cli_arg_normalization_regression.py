@@ -7,24 +7,34 @@ Regression tests for CLI arg normalization:
    leading slashes, ./ prefixes, and normalize backslashes.
 """
 
-from unittest.mock import MagicMock
 from datetime import datetime, timezone
 
 import pytest
 
 from teddy_executor.core.domain.models.session import SessionOptions
+from teddy_executor.core.ports.inbound.init import IInitUseCase
+from teddy_executor.core.ports.outbound import IConfigService, IFileSystemManager
+from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+from teddy_executor.core.ports.outbound.time_service import ITimeService
 from teddy_executor.core.services.session_service import SessionService
+from tests.harness.setup.mocking import register_mock
 
 
 @pytest.fixture
-def mock_deps():
-    """Minimal mocked dependencies for SessionService."""
-    fs = MagicMock()
-    repo = MagicMock()
-    time_ = MagicMock()
-    pm = MagicMock()
-    init = MagicMock()
-    config = MagicMock()
+def mock_deps(container):
+    """Minimal, auto-specced dependencies for SessionService.
+
+    Uses the harness ``register_mock`` helper so each collaborator port is
+    bound to its contract (``POSIXPathMock(spec=...)``), preventing signature
+    drift while keeping the unit under test free of real infrastructure.
+    """
+    fs = register_mock(container, IFileSystemManager)
+    repo = register_mock(container, ISessionRepository)
+    time_ = register_mock(container, ITimeService)
+    pm = register_mock(container, IPromptManager)
+    init = register_mock(container, IInitUseCase)
+    config = register_mock(container, IConfigService)
 
     time_.now.return_value = datetime(2026, 8, 21, 10, 0, 0, tzinfo=timezone.utc)
     time_.now_utc.return_value = datetime(2026, 8, 21, 10, 0, 0, tzinfo=timezone.utc)
@@ -60,7 +70,6 @@ class TestAgentNameCaseInsensitivity:
         fs.path_exists.side_effect = _path_exists
         fs.list_directory.return_value = ["developer.xml"]
         fs.read_file.return_value = "<prompt>developer content</prompt>"
-        fs.write_file = MagicMock()
 
         service = SessionService(**mock_deps)
         options = SessionOptions(name="test", agent_name="Developer")
@@ -85,7 +94,6 @@ class TestAgentNameCaseInsensitivity:
         fs.path_exists.side_effect = _path_exists
         fs.list_directory.return_value = ["developer.xml"]
         fs.read_file.return_value = "<prompt>developer content</prompt>"
-        fs.write_file = MagicMock()
 
         service = SessionService(**mock_deps)
         options = SessionOptions(name="test", agent_name="developer")
@@ -106,7 +114,6 @@ class TestAgentNameCaseInsensitivity:
         fs.path_exists.side_effect = _path_exists
         fs.list_directory.return_value = ["DEVELOPER.XML"]
         fs.read_file.return_value = "<prompt>content</prompt>"
-        fs.write_file = MagicMock()
 
         service = SessionService(**mock_deps)
         options = SessionOptions(name="test", agent_name="developer")
@@ -126,7 +133,6 @@ class TestAgentNameCaseInsensitivity:
         fs.path_exists.side_effect = _path_exists
         fs.list_directory.return_value = ["developer.xml"]
         fs.read_file.return_value = "<prompt>content</prompt>"
-        fs.write_file = MagicMock()
 
         service = SessionService(**mock_deps)
         options = SessionOptions(name="test", agent_name="DeVeLoPeR")
@@ -144,7 +150,6 @@ class TestContextPathNormalization:
         fs = mock_deps["file_system_manager"]
         fs.path_exists.side_effect = lambda p: p == ".teddy/init.context"
         fs.read_file.return_value = "# init\nsome/path.md\n"
-        fs.write_file = MagicMock()
         return SessionService(**mock_deps)
 
     def test_leading_slash_is_stripped(self, service):
@@ -211,7 +216,7 @@ class TestContextPathNormalization:
             additional_context=["/valid/path.md", ""],
         )
         result = service._prepare_session_context(".teddy/sessions/test", options)
-        lines = [l for l in result.strip().split("\n") if l]
+        lines = [line for line in result.strip().split("\n") if line]
         # Should not contain an empty line
         assert "" not in lines
 
@@ -222,3 +227,30 @@ class TestContextPathNormalization:
         )
         result = service._prepare_session_context(".teddy/sessions/test", options)
         assert ".hidden/file.md" in result
+
+    @pytest.mark.parametrize(
+        "raw_entry",
+        [
+            "[docs/readme.md](docs/readme.md)",
+            "[docs/readme.md](docs\\readme.md)",
+        ],
+    )
+    def test_markdown_link_entry_extracts_target(self, service, raw_entry):
+        """Scenario: a `-c` Markdown-link entry seeds the link TARGET.
+
+        A `[label](target)` entry (forward- or back-slash target) must be
+        reduced to the normalized target path, never seeded verbatim. Whole-line
+        assertions are required because the target is a SUBSTRING of the raw
+        link, which would make a plain membership check pass spuriously.
+        """
+        options = SessionOptions(
+            name="test",
+            agent_name="developer",
+            additional_context=[raw_entry],
+        )
+
+        result = service._prepare_session_context(".teddy/sessions/test", options)
+
+        lines = result.strip().split("\n")
+        assert "docs/readme.md" in lines
+        assert raw_entry not in lines
