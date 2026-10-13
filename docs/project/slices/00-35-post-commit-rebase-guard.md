@@ -60,11 +60,25 @@ The post-commit hook (`.githooks/post-commit.py`) currently runs the full suite 
 
 ## Deliverables
 
-- [ ] **Logic** - Add `_in_progress_git_operation() -> bool` to `.githooks/post-commit.py` (resolve the git dir via `git rev-parse --git-dir`; `True` iff any of `rebase-merge`, `rebase-apply`, `MERGE_HEAD`, `CHERRY_PICK_HEAD` exists under it). Add `tests/suites/unit/test_postcommit_hook_rebase_guard.py` (load the script via `importlib.util.spec_from_file_location`; `tempfile.mkdtemp()` + `git init` fake git dir; assert `False` with no markers and `True` for EACH marker). Additive, no caller -> Green-to-Green.
+- [x] **Logic** - Add `_in_progress_git_operation() -> bool` to `.githooks/post-commit.py` (resolve the git dir via `git rev-parse --git-dir`; `True` iff any of `rebase-merge`, `rebase-apply`, `MERGE_HEAD`, `CHERRY_PICK_HEAD` exists under it). Add `tests/suites/unit/test_postcommit_hook_rebase_guard.py` (load the script via `importlib.util.spec_from_file_location`; `tempfile.mkdtemp()` + `git init` fake git dir; assert `False` with no markers and `True` for EACH marker). Additive, no caller -> Green-to-Green.
 - [ ] **Wiring** - Call the guard as the FIRST statement in `main()` and `return` immediately when it is `True` (skip the uv/pytest pre-flight and the suite). Add `tests/suites/acceptance/test_postcommit_hook_rebase_guard.py` running the real script as a subprocess in a temp git repo (rebase marker + failing fake `uv` -> exit 0; no marker + failing fake `uv` -> exit 1). Tracer Bullet / final behavioral gate.
 - [ ] **Cleanup** - Verify and align both `pre-commit.md` template trees ([docs/templates/pre-commit.md](/docs/templates/pre-commit.md) and [src/teddy_executor/resources/templates/pre-commit.md](/src/teddy_executor/resources/templates/pre-commit.md)) so the documented helper name and four markers match the implementation; correct only real drift.
 
 ## Implementation Notes
+
+### D1 — Add the `_in_progress_git_operation` guard helper (Logic)
+
+**Production change.** `.githooks/post-commit.py`: added `from pathlib import Path` to the import block (the hook previously imported only `subprocess` and `sys`) and inserted a module-level `_in_progress_git_operation() -> bool` immediately before `main()`. The helper resolves the git dir via `git rev-parse --git-dir` (honouring worktrees / `GIT_DIR` / a custom `core.hooksPath` rather than hard-coding `.git`) and returns `True` iff any of `rebase-merge`, `rebase-apply`, `MERGE_HEAD`, or `CHERRY_PICK_HEAD` exists under that resolved directory. It mirrors the reference sketch already documented in both `pre-commit.md` template trees, and keeps the file's single-line-docstring style.
+
+**Test change.** `tests/suites/unit/test_postcommit_hook_rebase_guard.py` (new): loads the standalone hook via `importlib.util.spec_from_file_location` (the idiom shared by the two existing `.githooks/*` tests) and drives the helper inside a real, throwaway git repository created with `tempfile.mkdtemp()` + `git init -q` and entered via `monkeypatch.chdir` (the project temp-file standard — keeps the `.git` out of the real workspace so the session-scoped `_assert_no_test_pollution` gate stays satisfied, and makes `git rev-parse --git-dir` resolve deterministically). `test_returns_false_without_markers` asserts `False` with no markers; `test_returns_true_for_each_marker` is parametrized over all four markers and asserts `True` for each.
+
+**Red–Green evidence.** Red (Turn 06): the targeted run failed with `AttributeError: module 'post_commit_hook' has no attribute '_in_progress_git_operation'` (5 failed) — a genuine Red proving the harness loads the script and the temp-repo fixture resolves the git dir correctly. The count was 5, not the 2 forecast, because the single marker test is parametrized over four markers (4 + 1 no-marker case = 5 test IDs) — strictly better evidence. Green (Turn 07): after the two additive edits, `uv run pytest tests/suites/unit/test_postcommit_hook_rebase_guard.py -q` returned `5 passed in 1.15s`.
+
+**Green-to-Green.** D1 is deliberately additive: the helper has NO caller yet (wiring it into `main()` is D2), so it cannot regress the suite. `_in_progress_git_operation` is a brand-new module-local function and `main()`'s signature is unchanged — neither is a Shared Seam (`git grep` outside the hook has zero hits).
+
+**Integration.** The Phase 3 full-suite gate (Turn 09, `make test`, no filters, observed via the redirect + explicit exit-code echo + `exit 0` wrapper that sidesteps the EXECUTE-harness false-positive `Interactive prompt detected` sentinel) returned `1730 passed, 5 skipped in 11.53s` — the pre-D1 baseline of `1725 passed, 5 skipped` plus D1's five net-new test IDs. No regressions.
+
+**No `[DEBT]`.** The Phase 2 Refactor Scope Heuristic surfaced no local refactor opportunity and no cross-cutting debt for this deliverable.
 
 ## Verification
 

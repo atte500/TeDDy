@@ -12,6 +12,7 @@ Dependencies: poetry run pytest (project's test runner)
 
 import subprocess
 import sys
+from pathlib import Path
 
 
 def _fail(message: str, detail: str | None = None) -> None:
@@ -28,6 +29,20 @@ def _fail(message: str, detail: str | None = None) -> None:
     print()
     subprocess.run(["git", "reset", "--soft", "HEAD~1"], check=True)
     sys.exit(1)
+
+
+def _in_progress_git_operation() -> bool:
+    """True during rebase/merge/cherry-pick, when the suite must NOT run."""
+    git_dir = Path(
+        subprocess.run(
+            ["git", "rev-parse", "--git-dir"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    )
+    markers = ("rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD")
+    return any((git_dir / marker).exists() for marker in markers)
 
 
 def main() -> None:
