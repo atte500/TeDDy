@@ -424,14 +424,18 @@ def get_prompt(
     ),
 ):
     """
-    Retrieves and displays the content of a specified prompt.
+    Retrieves and displays the composed system prompt for a specified agent.
 
-    Searches for root-relative overrides in ./.teddy/prompts/ before falling back to defaults.
+    The output matches the system prompt the agent actually receives: the
+    agent-name header, the agent-specific XML, and the shared MRP base prompt.
     """
     from teddy_executor.adapters.inbound.cli_helpers import echo_and_copy
-    from teddy_executor.prompts import find_prompt_content, list_prompt_names
+    from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+    from teddy_executor.prompts import list_prompt_names
 
-    prompt_content = find_prompt_content(prompt_name)
+    container = get_container()
+    prompt_manager = container.resolve(IPromptManager)
+    prompt_content = prompt_manager.compose_system_prompt(prompt_name)
 
     if prompt_content:
         echo_and_copy(prompt_content, no_copy)

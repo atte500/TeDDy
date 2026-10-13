@@ -65,6 +65,38 @@ def test_get_prompt_fails_for_non_existent_prompt(tmp_path, monkeypatch):
     )
 
 
+def test_get_prompt_emits_full_composed_system_prompt(tmp_path, monkeypatch):
+    """Scenario: get-prompt emits the full composed system prompt.
+
+    The output must carry the agent-name header, the agent-specific XML, and the
+    shared MRP base prompt -- with the MRP block appearing AFTER the
+    agent-specific content.
+    """
+    env = TestEnvironment(monkeypatch, tmp_path)
+    env.setup()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+
+    # Mock pyperclip to prevent exceptions in headless environment
+    monkeypatch.setattr("pyperclip.copy", lambda x: None)
+
+    prompts_dir = tmp_path / ".teddy" / "prompts"
+    prompts_dir.mkdir(parents=True)
+    (prompts_dir / "pathfinder.xml").write_text(
+        "<prompt>Pathfinder</prompt>", encoding="utf-8"
+    )
+
+    result = adapter.run_cli_command(["get-prompt", "pathfinder"])
+
+    assert result.exit_code == 0
+    output = result.stdout
+    assert output.startswith("Agent Name: Pathfinder")
+    assert "<prompt>Pathfinder</prompt>" in output
+    assert "<response_format>" in output
+    assert output.index("<prompt>Pathfinder</prompt>") < output.index(
+        "<response_format>"
+    )
+
+
 def test_config_check_message_is_localized_to_start_command(tmp_path, monkeypatch):
     """Scenario: 'Checking configurations...' message is only shown for 'start'."""
     from tests.harness.setup.test_environment import TestEnvironment
