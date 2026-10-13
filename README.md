@@ -200,13 +200,13 @@ teddy resume -m "your next instruction"
 
 ### Optional Flags
 
-- `--agent` / `-a`: Select agent persona (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`). Default: `pathfinder`.
+- `--agent` / `-a`: Select agent persona (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`). Default: `pathfinder` (`assistant` in pipeline mode).
 - `--context` / `-c`: Supply additional context files or directories. Repeatable (`-c a.py -c b.md`) or comma-separated (`-c "a.py,b.md"`).
 - `--model`: Override the default configured model.
 - `--yolo` / `-y`: Auto-approve all actions. To make this default, set `yolo_default: true` in `.teddy/config.yaml`.
 - `--no-yolo` / `-n`: Force interactive mode for a single run.
 - `--message` / `-m`: Initial instruction to pass directly to the agent.
-- `--pipeline` / `-p`: Pipeline mode. Auto-approves actions, requires `-m`, and exits immediately after the first message turn.
+- `--pipeline` / `-p`: Pipeline mode. Auto-approves actions, requires `-m`, exits immediately after the first message turn, and defaults to the `assistant` agent.
 
 ### Chat-Oriented Workflow (CHOP)
 

@@ -176,8 +176,14 @@ OPT_PIPELINE = typer.Option(
 @app.command()
 def start(  # noqa: PLR0913
     name: Optional[str] = typer.Argument(None, help="The name of the new session."),
-    agent: str = typer.Option(
-        "pathfinder", "--agent", "-a", help="Agent prompt to use."
+    agent: Optional[str] = typer.Option(
+        None,
+        "--agent",
+        "-a",
+        help=(
+            "Agent prompt to use. Defaults to 'pathfinder' "
+            "('assistant' in pipeline mode)."
+        ),
     ),
     yolo: Optional[bool] = typer.Option(
         None,
@@ -232,7 +238,7 @@ def start(  # noqa: PLR0913
     handle_new_session(
         container=container,
         name=name,
-        agent=agent,
+        agent=_resolve_agent(agent, pipeline),
         interactive=interactive,
         setup_editor=_resolve_setup_editor(
             system_env, interactive=interactive, message=message, pipeline=pipeline

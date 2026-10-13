@@ -58,7 +58,7 @@ The `--agent` option cannot keep a plain string default and also detect "the use
 ## Deliverables
 
 - [x] **Logic** - Add `_resolve_agent(agent: Optional[str], pipeline: bool) -> str` next to `_resolve_yolo` in `src/teddy_executor/__main__.py` (explicit value wins; else `assistant` if `pipeline` else `pathfinder`). Add `tests/suites/unit/adapters/inbound/test_start_agent_resolution.py` with the four-cell resolution matrix. Additive, no caller -> Green-to-Green.
-- [ ] **Wiring** - In the `start` command, defer the `agent` default to `None` via `typer.Option(None, ...)` with pipeline-aware help text, and pass `agent=_resolve_agent(agent, pipeline)` to `handle_new_session`. Update the two README default-agent statements in the SAME commit. Add `tests/suites/acceptance/test_pipeline_default_agent.py` proving `start -p -m` selects Assistant and `start -m` selects Pathfinder. Leave `resume` untouched. Tracer Bullet / final behavioral gate.
+- [x] **Wiring** - In the `start` command, defer the `agent` default to `None` via `typer.Option(None, ...)` with pipeline-aware help text, and pass `agent=_resolve_agent(agent, pipeline)` to `handle_new_session`. Update the two README default-agent statements in the SAME commit. Add `tests/suites/acceptance/test_pipeline_default_agent.py` proving `start -p -m` selects Assistant and `start -m` selects Pathfinder. Leave `resume` untouched. Tracer Bullet / final behavioral gate.
 - [ ] **Cleanup** - Update `docs/architecture/adapters/inbound/cli.md` (As-Built) to document the deferred `--agent` default and the pipeline-mode `assistant` default.
 
 ## Implementation Notes
@@ -74,6 +74,20 @@ The `--agent` option cannot keep a plain string default and also detect "the use
 **Green-to-Green.** D1 is a brand-new module-local function with NO caller yet (wiring the `start` command is D2), so the change is additive and cannot regress the suite. The Phase 2 Refactor heuristic surfaced no local refactor opportunity and no `[DEBT]`.
 
 **Integration.** The Phase 3 full-suite gate (Turn 7, `make test`, no filters, observed via a redirect + explicit exit-code echo + `exit 0` wrapper to sidestep the EXECUTE-harness false-positive `Interactive prompt detected` sentinel) returned `1723 passed, 5 skipped` — the committed baseline plus D1's five net-new test functions. No regressions.
+
+### D2 — Wire `_resolve_agent` into the `start` command (Wiring)
+
+**Production change.** `src/teddy_executor/__main__.py`: in the `start` command, changed the `agent` option from the hard-coded `str = typer.Option("pathfinder", "--agent", "-a", help="Agent prompt to use.")` to a deferred `Optional[str] = typer.Option(None, "--agent", "-a", help="Agent prompt to use. Defaults to 'pathfinder' ('assistant' in pipeline mode).")`, and replaced the `agent=agent,` argument in the `handle_new_session(...)` call with `agent=_resolve_agent(agent, pipeline),`. The `handle_new_session` FIND was anchored on the preceding `name=name,` line so the identically-spelled `agent=agent,` line in `resume`'s `handle_resume_session(...)` call was NOT matched. The `resume` command — its `agent` option and its handler call — is untouched, exactly as the task brief's deliberate-scope note requires (a bare `agent=agent,` FIND would have required `Match All` and corrupted `resume`).
+
+**README change (same commit).** `README.md`: the `--agent` / `-a` bullet now reads `Default: pathfinder (assistant in pipeline mode)` and the `--pipeline` / `-p` bullet now ends `..., exits immediately after the first message turn, and defaults to the assistant agent.` **Deviation:** the task brief's Step 3 supplied verbatim FIND strings (a prose sentence "If you omit `-a`..." and a dash-separated bullet "- `--agent` / `-a` – ...") that no longer exist in the current README; the ACTUAL statements corrected were the `--agent` bullet and the `--pipeline` bullet. The atomicity intent (never update the README ahead of the code) was honoured: both README edits land in this same D2 commit.
+
+**Test change.** `tests/suites/acceptance/test_pipeline_default_agent.py` (new): two subcutaneous acceptance tests driving real sessions through `CliTestAdapter`. `test_pipeline_run_defaults_to_assistant_agent` drives `["start", "-p", "-m", "..."]` with a MESSAGE-only plan (`.with_real_interactor()`) so the pipeline loop terminates cleanly, and asserts the captured system prompt starts with `Agent Name: Assistant`. `test_non_pipeline_run_defaults_to_pathfinder_agent` drives `["start", "-y", "-m", "..."]` with an EXECUTE plan (`.with_real_shell()`) and asserts `Agent Name: Pathfinder`. A local `_seed_agent_prompt` helper seeds `.teddy/prompts/assistant.xml` (the shared `setup_project` seeds only `pathfinder.xml`) so the resolved-agent path is exercised deterministically. The file imports only `ILlmClient` + the harness (no internal core services/models), per the Acceptance-layer boundary.
+
+**Red-Green evidence.** Red (Turn 11): `uv run pytest tests/suites/acceptance/test_pipeline_default_agent.py -q` returned `1 failed, 1 passed`. The pipeline case failed on `assert system_content.startswith("Agent Name: Assistant")` with the captured prompt beginning `'Agent Name: Pathfinder\n\n<prompt>Pathfinder</prompt>\n\n<mrp>...'`, proving the `start` command still hard-coded `pathfinder` and ignored `-p`; the non-pipeline companion passed (characterization guard). Green (Turn 12): after the wiring + README edits, the targeted run returned `2 passed`.
+
+**Atomicity.** The `README.md` default-agent statements became false the moment the code change landed, so both were corrected in the same working set as the code/test changes, per the task brief's atomicity note.
+
+**Integration.** The Phase 3 full-suite gate (Turn 13, `make test`, no filters, same redirect + exit-code wrapper) returned `1725 passed, 5 skipped` — the D1-complete baseline (`1723 passed`) plus D2's two net-new acceptance test functions. No regressions.
 
 ## Verification
 
