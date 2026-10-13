@@ -64,6 +64,18 @@ def _resolve_yolo(yolo: Optional[bool], config_service: IConfigService) -> bool:
     return bool(config_service.get_setting("yolo_default", False))
 
 
+def _resolve_agent(agent: Optional[str], pipeline: bool) -> str:
+    """Resolve the effective agent name (single-sourced across commands).
+
+    An explicit ``--agent`` / ``-a`` value always wins. When the flag is
+    unset, pipeline runs default to the action-first ``assistant`` agent;
+    every other run defaults to ``pathfinder``.
+    """
+    if agent is not None:
+        return agent
+    return "assistant" if pipeline else "pathfinder"
+
+
 def _resolve_setup_editor(
     system_env: ISystemEnvironment,
     interactive: bool,

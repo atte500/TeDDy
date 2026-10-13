@@ -57,11 +57,23 @@ The `--agent` option cannot keep a plain string default and also detect "the use
 
 ## Deliverables
 
-- [ ] **Logic** - Add `_resolve_agent(agent: Optional[str], pipeline: bool) -> str` next to `_resolve_yolo` in `src/teddy_executor/__main__.py` (explicit value wins; else `assistant` if `pipeline` else `pathfinder`). Add `tests/suites/unit/adapters/inbound/test_start_agent_resolution.py` with the four-cell resolution matrix. Additive, no caller -> Green-to-Green.
+- [x] **Logic** - Add `_resolve_agent(agent: Optional[str], pipeline: bool) -> str` next to `_resolve_yolo` in `src/teddy_executor/__main__.py` (explicit value wins; else `assistant` if `pipeline` else `pathfinder`). Add `tests/suites/unit/adapters/inbound/test_start_agent_resolution.py` with the four-cell resolution matrix. Additive, no caller -> Green-to-Green.
 - [ ] **Wiring** - In the `start` command, defer the `agent` default to `None` via `typer.Option(None, ...)` with pipeline-aware help text, and pass `agent=_resolve_agent(agent, pipeline)` to `handle_new_session`. Update the two README default-agent statements in the SAME commit. Add `tests/suites/acceptance/test_pipeline_default_agent.py` proving `start -p -m` selects Assistant and `start -m` selects Pathfinder. Leave `resume` untouched. Tracer Bullet / final behavioral gate.
 - [ ] **Cleanup** - Update `docs/architecture/adapters/inbound/cli.md` (As-Built) to document the deferred `--agent` default and the pipeline-mode `assistant` default.
 
 ## Implementation Notes
+
+### D1 — Add the `_resolve_agent` resolution helper (Logic)
+
+**Production change.** `src/teddy_executor/__main__.py`: added a private module-level `_resolve_agent(agent: Optional[str], pipeline: bool) -> str` immediately after `_resolve_yolo`, co-locating the three resolution helpers at the top of the module. The helper returns `agent` verbatim when it is not `None` (an explicit `--agent` / `-a` always wins); otherwise it returns `"assistant"` when `pipeline` is set and `"pathfinder"` for every other run. It is pure and config-independent — it never consults `IConfigService`. `Optional` and `IConfigService` were already imported, so no import change was needed.
+
+**Test change.** `tests/suites/unit/adapters/inbound/test_start_agent_resolution.py` (new): a four-cell `pytest.mark.parametrize` matrix (`(None, False) -> pathfinder`, `(None, True) -> assistant`, `("architect", False) -> architect`, `("architect", True) -> architect`) plus a `test_resolve_agent_explicit_pathfinder_wins_in_pipeline_mode` edge case proving an explicit `-a pathfinder` is NOT overridden by the pipeline default. The file mirrors the `_resolve_yolo` pattern in `test_yolo_default_resolution.py`.
+
+**Red-Green evidence.** Red (Turn 5): `uv run pytest tests/suites/unit/adapters/inbound/test_start_agent_resolution.py -q` failed at COLLECTION with `ImportError: cannot import name '_resolve_agent' from 'teddy_executor.__main__'` (`1 error in 0.84s`) — no test executed, proving the helper was genuinely absent (greenfield). Green (Turn 6): after the single additive EDIT, the targeted run returned `5 passed`.
+
+**Green-to-Green.** D1 is a brand-new module-local function with NO caller yet (wiring the `start` command is D2), so the change is additive and cannot regress the suite. The Phase 2 Refactor heuristic surfaced no local refactor opportunity and no `[DEBT]`.
+
+**Integration.** The Phase 3 full-suite gate (Turn 7, `make test`, no filters, observed via a redirect + explicit exit-code echo + `exit 0` wrapper to sidestep the EXECUTE-harness false-positive `Interactive prompt detected` sentinel) returned `1723 passed, 5 skipped` — the committed baseline plus D1's five net-new test functions. No regressions.
 
 ## Verification
 
