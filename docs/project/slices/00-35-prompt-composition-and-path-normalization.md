@@ -1,5 +1,5 @@
 # Slice: Prompt Composition & Path Normalization Consolidation
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc)
 - **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 - **Prototype:** N/A
@@ -54,9 +54,9 @@ And the five pre-existing normalization contracts are preserved
 ## Key Unknowns
 
 - [x] [Formal] Slice numbering/milestone: Resolved — ad-hoc `00-35` (the driving defects are ad-hoc; the user directed the Milestone-6 normalization debt to be absorbed into this slice rather than scheduled separately).
-- [x] [Technical] Does adding an abstract method to `IPromptManager` break consumers? Resolved — `PromptManager` is the sole production implementer; all tests use spec-bound mocks.
+- [x] [Technical] Does adding an abstract method to `IPromptManager` break consumers? Resolved — `PromptManager` is the sole PRODUCTION implementer, but the TEST suite constructs `PromptManager` directly at eight sites (`test_prompt_manager.py`, `test_bug_03_prompt_resolution.py`, `test_bug_19_model_prefix_preservation.py`, `test_session_service_pruning.py`), so the port method and its implementation MUST land atomically (merged `Contract` deliverable).
 - [x] [Technical] Does `_extract_resource_path` preserve existing `-c` normalization? Resolved — preservation probe passed all five cases plus the link case.
-- [ ] [Technical] Do all six duplicated call sites share identical normalization semantics with the extracted helper? The Developer MUST diff each call site and confirm before migrating; otherwise scope the migration.
+- [x] [Technical] Do all six duplicated call sites share identical normalization semantics with the extracted helper? Resolved — NO. Only `session_pruning_service.py:74,97` and `validation_rules/helpers.py:167,173` share the exact full pipeline. The parser helpers (`normalize_path` percent-decodes and preserves URLs; `normalize_link_target` does OS-aware absolute-path detection) and `local_file_system_adapter._resolve_path` (drive-letter handling) have genuinely divergent semantics; `session_pruning_service.py:145`, `session_replanner.py:97`, `filesystem_helpers.py:63`, and `local_file_system_adapter.py:137` are partial. Migration is scoped to the strict-superset sites; divergent/partial sites keep and document their local rule.
 
 ## Implementation Plan
 
@@ -64,20 +64,20 @@ And the five pre-existing normalization contracts are preserved
 
 **Defect B (context links).** In `SessionService._prepare_session_context`, replace the inline per-entry normalization with a call to the existing `_extract_resource_path`. This single-sources normalization and gains `[label](target)` extraction with no regression (proven by the preservation probe).
 
-**Consolidation (paid debt).** Extract a module-level pure function (e.g. `core/utils/paths.py::normalize_resource_path`) equivalent to `_extract_resource_path`, and delegate both `SessionService._extract_resource_path` and the six duplicated call sites to it — subject to the open Key Unknown above.
+**Consolidation (paid debt).** Extract a module-level pure function `core/utils/paths.py::normalize_resource_path` equivalent to `_extract_resource_path`, delegate `SessionService._extract_resource_path` to it, and migrate only the call sites for which it is a strict superset (`session_pruning_service.py:74,97`, `validation_rules/helpers.py:167,173`). The parser percent-decoding/URL helpers, the `_resolve_path` drive-letter logic, and the partial-normalization sites are intentionally NOT migrated (each local rule kept and documented) to avoid silent behavior changes.
 
 Order: A and B are independent and each test-first; consolidation follows, migrated one call site at a time with the full suite green between migrations.
 
 ## Deliverables
 
-- [ ] **Contract** - Add `compose_system_prompt(self, agent_name: str) -> Optional[str]` to `IPromptManager`.
-- [ ] **Logic** - Extract `_assemble_composed_prompt(agent_name, content)` in `PromptManager`; reuse it in `fetch_system_prompt`; implement `compose_system_prompt`.
-- [ ] **Wiring** - Rewire the `get-prompt` command in `__main__.py` to resolve `IPromptManager` and echo the composed prompt.
-- [ ] **Harness** - Acceptance test asserting composed `get-prompt` output (header + agent XML + MRP, in order).
+- [ ] **Contract** - Add `compose_system_prompt(self, agent_name: str) -> Optional[str]` to `IPromptManager` AND implement it in `PromptManager` atomically: extract `_assemble_composed_prompt(agent_name, content)` from `fetch_system_prompt`'s lazy-compose branch (preserving the `<response_format>` legacy short-circuit), reuse it inside `fetch_system_prompt`, and implement `compose_system_prompt` (resolve content via `get_prompt_content`, return `None` when unresolved). Merged with the former `Logic` deliverable: adding the abstract method without its implementation makes `PromptManager` un-instantiable and breaks the eight test sites that construct it directly.
+- [ ] **Wiring** - Rewire the `get-prompt` command in `__main__.py` to resolve `IPromptManager` from the base container and echo `compose_system_prompt(prompt_name)`; keep the not-found branch unchanged.
+- [ ] **Harness** - Acceptance test asserting composed `get-prompt` output (header + agent XML + MRP, in order) and the not-found exit-1 branch.
 - [ ] **Logic** - Route `SessionService._prepare_session_context` entries through `_extract_resource_path`.
 - [ ] **Harness** - Unit test for `-c` link parsing plus the five preserved normalization cases.
-- [ ] **Refactor** - Extract a shared pure path-normalization helper (e.g. `core/utils/paths.py`) and delegate `SessionService._extract_resource_path` + the six duplicated call sites to it.
-- [ ] **Harness** - Unit test for the shared helper covering all normalization cases (incl. link extraction).
+- [ ] **Refactor** - Extract a shared pure helper `core/utils/paths.py::normalize_resource_path(resource_str)` (link-aware extraction + the full normalization pipeline: backslash → slash, strip the exact `./` prefix, strip leading `/`) and delegate `SessionService._extract_resource_path` to it.
+- [ ] **Refactor** - Migrate the strict-superset duplicated call sites to `normalize_resource_path`: `session_pruning_service.py:74,97` and `validation_rules/helpers.py:167,173`. Do NOT migrate the divergent sites (`parser_infrastructure.py:114` percent-decoding + URL preservation, `:136` OS-aware absolute-path detection, `local_file_system_adapter.py:56,62` drive-letter resolution) nor the partial sites (`session_pruning_service.py:145`, `session_replanner.py:97`, `filesystem_helpers.py:63`, `local_file_system_adapter.py:137`) unless the helper is confirmed a strict superset for their inputs; otherwise keep and document each local rule (no silent behavior change).
+- [ ] **Harness** - Unit test for `normalize_resource_path` covering all normalization cases (incl. link extraction).
 
 ## Implementation Notes
 
