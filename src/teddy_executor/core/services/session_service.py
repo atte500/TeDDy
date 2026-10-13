@@ -17,6 +17,7 @@ from teddy_executor.core.ports.outbound.session_manager import (
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 from teddy_executor.core.ports.outbound.time_service import ITimeService
+from teddy_executor.core.utils.paths import normalize_resource_path
 from teddy_executor.core.utils.string import canonical_agent_name, slugify
 
 
@@ -236,24 +237,12 @@ class SessionService(ISessionManager):
         self._repository.save_meta(f"{turn_dir}/meta.yaml", data)
 
     def _extract_resource_path(self, resource_str: str) -> str:
+        """Extracts the path from a Markdown link or returns the string if not a link.
+
+        Delegates to the shared pure helper ``normalize_resource_path`` so the
+        normalization pipeline is single-sourced across modules.
         """
-        Extracts the path from a Markdown link or returns the string if not a link.
-        Normalizes all slashes to forward slashes.
-        Only strips the exact "./" prefix if present, preserving leading dots.
-        """
-        match = re.search(r"\[.*\]\((.*)\)", resource_str)
-        if match:
-            path = match.group(1)
-            normalized = path.replace("\\", "/")
-            # Only strip the exact "./" prefix if present (preserves leading dots)
-            if normalized.startswith("./"):
-                normalized = normalized.removeprefix("./")
-            return normalized.lstrip("/")
-        normalized = resource_str.strip().replace("\\", "/")
-        # Only strip the exact "./" prefix if present (preserves leading dots)
-        if normalized.startswith("./"):
-            normalized = normalized.removeprefix("./")
-        return normalized.lstrip("/")
+        return normalize_resource_path(resource_str)
 
     def transition_to_next_turn(
         self,
