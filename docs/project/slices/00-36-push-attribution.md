@@ -2,7 +2,7 @@
 - **Status:** Planned
 - **Milestone:** N/A (ad-hoc)
 - **Specs:** N/A
-- **Prototype:** N/A
+- **Prototype:** [spikes/prototypes/push-attribution/](/spikes/prototypes/push-attribution/)
 - **Component Docs:** [makefile.md](/docs/templates/makefile.md)
 - **Scope Slug:** `push-attribution`
 
@@ -26,36 +26,73 @@ When `make push` queries CI runs
 Then it retries briefly until the run appears before attributing any failure
 ```
 
+```gherkin
+Given the repository has no CI configured (no workflow files under `.github/workflows/`)
+When `make push` rebases and pushes commit C
+Then it logs a "no CI configured" notice and exits 0 (non-blocking)
+```
+
 ## Edge Cases
 
 - **Push fast-forwards without a new commit**: If the pushed SHA already equals the pre-push base, then the comparison against the base still runs (and reports PASSED / pre-existing), because the base capture is taken from the remote tip, not from HEAD.
 - **Base never registered (brand-new branch)**: If `gh run list --commit <BASE>` yields no run, then the target keeps its fail-safe behavior (treat as yours / block), because an unknown base must never silently pass.
 - **CI registration slower than the retry budget**: If the run for the SHA still has not appeared after the bounded retry, then the target proceeds with the same fail-safe semantics and reports the situation, because silently passing is worse than a noisy block.
-- **No CI configured**: If no workflow runs for the SHA, then the target does not hang past the retry budget.
+- **No CI configured**: If the repository has no CI configured (no workflow files under `.github/workflows/`), then the target logs a clear "no CI configured" notice and exits 0 (non-blocking), because a CI-less repo must not be blocked on every push. This is distinct from the lagging case above: a repo WITH CI configured but whose run has not yet registered is still subject to the bounded retry and the fail-safe block.
+- **Push rejected (non-fast-forward / branch protection)**: If `git push` is rejected, then the target MUST abort with a non-zero exit and MUST NOT run CI attribution, because the pushed SHA was never published. Preserved by folding `git push` into the attribution shell block behind `|| exit $$?`.
+- **CI configured but the pushed SHA registers no run**: If CI is configured yet the specific SHA never registers a run within the retry budget, then the target fail-safe blocks (non-zero exit), because "configured CI that stayed silent" must never be confused with "no CI". (Probe scenario `never`.)
 
 ## Key Unknowns
 
 - [x] [Technical] The defect is confirmed by inspection of `Makefile` `push`: `BASE=$$(git rev-parse origin/main)` is read AFTER `git push`, so the pushed SHA advances `origin/main` and `BASE` collapses onto `SHA`.
   - **Design Sensitivity:** if the base were captured correctly → the comparison is meaningful; it is not, so the fix must move the capture before the push.
-- [ ] [Technical] How to make the Makefile shell logic unit-testable: either (a) invoke the recipe in a scratch repo with fake `git`/`gh` shims via a spike, or (b) extract the attribution block into a testable script under `scripts/`. Resolve at Orientation of THIS slice (before implementation).
-  - **Design Sensitivity:** if (a) → no production structure change; if (b) → a `Refactor` deliverable precedes the `Logic` fix and `make push` gains a script dependency.
+- [x] [Technical] How to make the Makefile shell logic unit-testable: RESOLVED to approach (a) — drive the real recipe via `make` in a throwaway repo (REAL `git`) with a fake `gh` on PATH. Validated empirically by `spikes/prototypes/push-attribution/probe.py` and `probe_retry.py` (both `ALL PASS`); NO production structure change, `makefile.md` templates stay portable.
+  - **Design Sensitivity:** (a) → no production structure change. Confirmed.
+- [x] [Formal] Policy for the "no CI configured" case: RESOLVED at the Showcase Gate (2026-10-13) — a repository with no CI configured MUST log a clear "no CI configured" notice and exit 0 (non-blocking) rather than fail-safe blocking every push. Detected via the absence of workflow files under `.github/workflows/`.
+  - **Design Sensitivity:** non-blocking for the no-CI case → a CI-less repo is never blocked; the fail-safe block is reserved for a repo that HAS CI configured but whose run never registers within the bounded retry budget.
 
 ## Implementation Plan
 
-To be finalized at this slice's Orientation (the active slice is 00-35). The intended shape: capture the base ref immediately after `git pull --rebase` and BEFORE `git push`, then attribute using that captured base; add a bounded wait/retry around the `gh run list --commit <SHA>` discovery so registration lag cannot silently misclassify a regression. Mirror any Makefile change into both `makefile.md` template trees.
+Validated empirically (probes [probe.py](/spikes/prototypes/push-attribution/probe.py) and [probe_retry.py](/spikes/prototypes/push-attribution/probe_retry.py), both `RESULT: ALL PASS`; fake GitHub CLI in [fake_gh.py](/spikes/prototypes/push-attribution/fake_gh.py)). The shape:
+
+1. **Base capture (core defect fix).** Consolidate the attribution block so `BASE` is captured immediately after `git pull --rebase` and BEFORE `git push`, and fold `git push` into the same shell block behind `|| exit $$?` so a rejected / non-fast-forward push still aborts the target with a non-zero exit.
+2. **No-CI short-circuit.** Immediately after the push, detect the absence of workflow files (`.github/workflows/*.yml` / `*.yaml`); if none exist, echo `No CI configured - skipping attribution` and `exit 0` (non-blocking). This MUST run BEFORE the retry loop so a CI-less repo never blocks.
+3. **Bounded registration retry.** When CI IS configured, poll `gh run list --commit "$$SHA" --json workflowName` up to a bounded budget (`RETRY_POLLS` × `RETRY_SLEEP`, default 10 × 1s ≈ 10s) so registration lag cannot silently miss a regression; if the run still has not registered, fail safe (`exit 1`).
+4. **Deterministic attribution.** Attribute per workflow: SHA → run id → per-job conclusion, blocking only on failures the push introduced (`base green → new red` = YOUR regression; `base red → new red, same jobs` = pre-existing; `unknown base` = fail-safe block).
+5. **Mirror.** Apply the identical recipe to BOTH `makefile.md` template trees, which are byte-aligned today.
+
+### Delta Analysis (exact codebase modifications)
+
+- **[Makefile](/Makefile) `push:` target** — the sole production defect site: `BASE=$$(git rev-parse origin/main)` (line 54) is read AFTER `git push` (line 2 of the recipe). Rewrite the recipe per steps 1–4. `git pull --rebase` stays a separate recipe line.
+- **[docs/templates/makefile.md](/docs/templates/makefile.md)** (line 147) and **[src/teddy_executor/resources/templates/makefile.md](/src/teddy_executor/resources/templates/makefile.md)** (line 147) — carry the same buggy recipe in their `push:` example block; update to the validated recipe and keep both byte-aligned.
+- **Prose-only references (no recipe change needed):** [docs/architecture/ARCHITECTURE.md](/docs/architecture/ARCHITECTURE.md) and [src/.../ARCHITECTURE.md](/src/teddy_executor/resources/templates/ARCHITECTURE.md) (line 20), [docs/project/inbox/01-harness-workflow-improvements.md](/docs/project/inbox/01-harness-workflow-improvements.md), [docs/project/tasks/03-post-commit-rebase-guard.md](/docs/project/tasks/03-post-commit-rebase-guard.md), and both `pre-commit.md` trees — all mention `make push` descriptively and remain accurate.
+- **Tests:** no test pins the recipe text. [test_init_templates_command.py](/tests/suites/acceptance/test_init_templates_command.py) asserts only that template FILENAMES are scaffolded/overwritten; template CONTENT is unconstrained.
 
 ## Deliverables
 
-- [ ] **Logic** - Capture the base ref (`origin/main`) BEFORE `git push` in the `make push` recipe, so attribution compares against the pre-push remote tip.
-- [ ] **Logic** - Add a bounded wait/retry for CI run registration around the `gh run list --commit <SHA>` discovery.
-- [ ] **Cleanup** - Sync the change into both `makefile.md` template trees ([docs/templates/makefile.md](/docs/templates/makefile.md) and [src/teddy_executor/resources/templates/makefile.md](/src/teddy_executor/resources/templates/makefile.md)).
+Dependency-ordered. All three Logic deliverables edit the single `push:` recipe in the root [Makefile](/Makefile); the Cleanup deliverables mirror the finalized recipe into the template trees afterward.
+
+- [ ] **Logic** - In [Makefile](/Makefile), capture `BASE=$$(git rev-parse origin/main)` BEFORE `git push` and fold `git push` into the same shell block behind `|| exit $$?`, so attribution compares against the pre-push remote tip and a rejected push still aborts.
+- [ ] **Logic** - In [Makefile](/Makefile), add the no-CI short-circuit (absence of `.github/workflows/*.yml`/`*.yaml`) that logs `No CI configured - skipping attribution` and exits 0, placed BEFORE the retry loop.
+- [ ] **Logic** - In [Makefile](/Makefile), add the bounded registration retry (`RETRY_POLLS` × `RETRY_SLEEP`, default 10 × 1s) around the `gh run list --commit <SHA>` discovery, with a fail-safe `exit 1` when no run registers.
+- [ ] **Cleanup** - Mirror the finalized recipe into [docs/templates/makefile.md](/docs/templates/makefile.md).
+- [ ] **Cleanup** - Mirror the finalized recipe into [src/teddy_executor/resources/templates/makefile.md](/src/teddy_executor/resources/templates/makefile.md) and keep both template trees byte-aligned.
 
 ## Implementation Notes
 
+- **Prototype evidence:** the approved prototype [spikes/prototypes/push-attribution/](/spikes/prototypes/push-attribution/) drives the REAL recipe bodies through `make` inside throwaway git repos (REAL `git`) with a fake `gh` shim ([fake_gh.py](/spikes/prototypes/push-attribution/fake_gh.py)) prepended to PATH. [probe.py](/spikes/prototypes/push-attribution/probe.py) covers base-capture (regression / pre-existing); [probe_retry.py](/spikes/prototypes/push-attribution/probe_retry.py) covers registration lag (lag-green / lag-red / never) and the no-CI case. Both report `RESULT: ALL PASS`. `probe_retry.py` exposes knobs `--scenario {lag-green|lag-red|never|no-ci|all}`, `--poll-budget`, `--sleep`.
+- **"No CI" detection heuristic:** the absence of `*.yml`/`*.yaml` under `.github/workflows/` (guarded `ls ... 2>/dev/null` + `-z`). Deliberately distinct from "CI configured but the pushed SHA registered no run" — the latter still fail-safe blocks.
+- **Push-rejection semantics:** folding `git push` into the `@` shell block requires an explicit `|| exit $$?` so a rejected / non-fast-forward push still aborts the target (preserving the current behavior).
+- **Retry budget:** `RETRY_POLLS ?= 10` × `RETRY_SLEEP ?= 1` ≈ a 10s fail-safe window; both are Make variables (overridable). Accepted by the user at the Showcase Gate (2026-10-13).
+- **Canonical template source:** [src/teddy_executor/resources/templates/makefile.md](/src/teddy_executor/resources/templates/makefile.md) is the bundled canonical copy; [docs/templates/makefile.md](/docs/templates/makefile.md) is the project copy produced by `teddy init templates`. Keep them byte-aligned.
+- **Testability (Key Unknown #2 resolved):** approach (a) verified — drive the real recipe via `make` with fakes on PATH; no production restructuring, templates stay portable.
+- **No test pins the recipe text:** [test_init_templates_command.py](/tests/suites/acceptance/test_init_templates_command.py) asserts only template FILENAMES, so template-content edits are unconstrained.
+
 ## Verification
 
-1. Automated check of the attribution logic (recipe-with-shims spike or extracted-script test, per the resolved Key Unknown).
+1. **Automated (probe):** `uv run python spikes/prototypes/push-attribution/probe.py` and `uv run python spikes/prototypes/push-attribution/probe_retry.py` both print `RESULT: ALL PASS` — proving base-before-push capture, the bounded retry, and the no-CI short-circuit against real throwaway repos.
 2. `make test` (full suite, no filters) is GREEN.
-3. Manual (spike/scratch remote): a deliberately failing pushed commit whose base was green is reported as YOUR regression (non-zero exit).
-4. Manual: a pre-existing base failure is reported as pre-existing (zero exit).
-5. Manual: both `makefile.md` template trees stay aligned with the implementation.
+3. **Manual (spike/scratch remote):** a deliberately failing pushed commit whose base was green is reported as YOUR regression (non-zero exit).
+4. **Manual:** a pre-existing base failure is reported as pre-existing (zero exit).
+5. **Manual:** a rejected `git push` aborts the target with a non-zero exit (no CI attribution runs).
+6. **Manual:** a repo with no CI configured logs `No CI configured` and exits 0 (non-blocking), while a repo WITH CI configured but no registered run still fail-safe blocks — proving the two cases are distinguished.
+7. **Manual:** both `makefile.md` template trees stay byte-aligned with the implementation.
