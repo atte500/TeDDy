@@ -39,6 +39,8 @@ commit:
 #
 # Runs `git pull --rebase`, pushes, then discovers EVERY CI run for the pushed SHA
 # (gh run list --commit <sha>) and waits for and reports each workflow with its jobs.
+# CI registration lag is tolerated by a bounded retry (RETRY_POLLS x RETRY_SLEEP,
+# default 10 x 1s); if no run registers within the budget the target fails safe.
 # It blocks ONLY on failures your push introduced:
 #   - base green -> new red           = your regression  -> exit 1 (fix before concluding)
 #   - base red -> new red (same jobs) = pre-existing     -> report and exit 0
@@ -47,6 +49,9 @@ commit:
 # Attribution is deterministic: SHA -> run -> per-job conclusion (never "the latest run").
 # `git pull --rebase` is safe because the post-commit hook skips automated git
 # operations (see .githooks/post-commit.py).
+RETRY_POLLS ?= 10
+RETRY_SLEEP ?= 1
+
 push:
 	git pull --rebase
 	@BASE=$$(git rev-parse origin/main); \
@@ -56,9 +61,19 @@ push:
 	  echo "No CI configured - skipping attribution"; \
 	  exit 0; \
 	fi; \
-	STATUS=0; \
-	echo "Pushed $$SHA (base $$BASE)"; \
-	for WF in $$(gh run list --commit "$$SHA" --json workflowName --jq '.[].workflowName' | sort -u); do \
+	STATUS=0; ATTEMPTS=0; WFS=""; \
+	while [ -z "$$WFS" ] && [ $$ATTEMPTS -lt $(RETRY_POLLS) ]; do \
+	  WFS=$$(gh run list --commit "$$SHA" --json workflowName --jq '.[].workflowName' | sort -u); \
+	  [ -n "$$WFS" ] && break; \
+	  ATTEMPTS=$$((ATTEMPTS + 1)); \
+	  sleep $(RETRY_SLEEP); \
+	done; \
+	echo "Pushed $$SHA (base $$BASE) after $$ATTEMPTS poll(s)"; \
+	if [ -z "$$WFS" ]; then \
+	  echo "CI: no run registered for $$SHA after $(RETRY_POLLS) poll(s) - fail-safe block"; \
+	  exit 1; \
+	fi; \
+	for WF in $$WFS; do \
 	  NEW=$$(gh run list --commit "$$SHA" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
 	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
 	  gh run watch "$$NEW" --exit-status >/dev/null 2>&1 || true; \
