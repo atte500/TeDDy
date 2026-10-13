@@ -30,13 +30,14 @@ Then [expected outcome]
 ## Key Unknowns
 
 **Format:** Checklist of unresolved risks, each tagged with one of three tiers. Mark as `[x]` when resolved.
-- `[Formal]` — Ambiguities in business rules, policy decisions, domain definitions, or scope boundaries. Resolve by asking the user directly in an alignment turn; speculative coding or prototyping for formal questions is forbidden.
+- `[Domain]` — Ambiguities in business rules, policy decisions, domain definitions, or scope boundaries. Resolve by asking the user directly in an alignment turn; speculative coding or prototyping for domain questions is forbidden.
 - `[Technical]` (works-like) — External dependencies, third-party libraries, APIs, runtime performance, concurrency, or data-storage feasibility. Resolve via automated assertion probes and benchmarks.
 - `[Functional]` (looks-like) — User-facing ergonomics, CLI flags, terminal rendering, interactive flows, or layout aesthetic. Resolve via interactive demo runners with configurable knobs.
 
 **Design Sensitivity (log-only):** For EVERY unknown, record a one-line Design Sensitivity stating how the design reacts to each resolution (e.g., "if this resolves as X → contracts hold; if Y → this port/DTO changes"). The Architect logs this line; the Prototyper empirically de-risks it.
 
-- [ ] [Tag] Title: Description of the unknown. Optional Design Sensitivity (If this resolves as X → ...; if Y → ...)
+- [ ] [Tag] Title: Description of the unknown.
+  - **Design Sensitivity:** If this resolves as X → ...; if Y → ...
 
 ## Implementation Plan
 
@@ -55,5 +56,5 @@ Filled by the Developer as things get implemented.
 
 ## Verification
 
-**Format:** Numbered checklist. Each entry describes a test to run or a behavior to verify manually.
-Checklist of manual smoke-test scenarios that the Developer executes before marking the slice as Complete.
+**Format:** Checklist. Mark `[x]` when verified. Each entry describes a test to run or a behavior to verify manually.
+- [ ] Manual smoke-test scenario the Developer executes before marking the slice as Complete.

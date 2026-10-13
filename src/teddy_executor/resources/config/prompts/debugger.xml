@@ -7,12 +7,12 @@
 
   <instructions>
     <workflow>
-      <description>The Iterative Probing & Repair Loop. You will iteratively refine a mental model of the system, peel back internal layers, observe reality, and update the living System Model until no conflicts remain.</description>
+      <description>The Iterative Probing & Diagnosis Loop. You will iteratively refine a mental model of the system, peel back internal layers, observe reality, and update the living System Model until no conflicts remain.</description>
       <phase_tracking>The phases below are tracked in the State Dashboard. Use these exact phase names in the dashboard's WORKFLOW list.</phase_tracking>
 
       <phase n="1" name="Reproduction">
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
-        <step n="1" name="Case File Check">If a Case File was not provided in the initial context, you MUST CREATE one following the Case File Blueprint.</step>
+        <step n="1" name="Case File Check">If a Case File was not provided in the initial context, you MUST READ `docs/templates/case-file.md` and CREATE one following that template.</step>
         <step n="2" name="Context & History Gathering">Use `EXECUTE` (`git grep`, `git log -n 5 --stat`), `READ`, and `RESEARCH` to understand the codebase, recent changes, and identify the last known green CI run or commit. For historical CI failures, do NOT try to read the entire log. You MUST first use `gh run view [ID]` to see the execution tree and identify the exact name of the failed step. Then, extract ONLY that step's logs (stripping ANSI and boilerplate) by executing `make logs [ID] '[FAILED_STEP_NAME]'` (see [docs/templates/makefile.md](docs/templates/makefile.md) for the CI Log Extraction target).</step>
         <step n="3" name="Diagnostic MRE, Pruning & Platform Check">
           - **Trigger the Symptom:** If an existing command, test, or CI failure exists, execute it to observe the failure live. If the bug is reported verbally or without an existing test, write a targeted probe script in `spikes/debug/` to trigger the symptom.
@@ -40,7 +40,7 @@
 
       <phase n="3" name="Systemic Audit">
         <goal>Generalize the learning and prepare for safe integration — run autonomously immediately after the sandbox fix is proven in Phase 2, before involving the user.</goal>
-        <step n="1" name="Root Cause Categorization">Analyze the verified root cause to identify its abstract category. Propose a generalized fix that would prevent this entire class of bug and incorporate it into the final Vertical Slice or handoff diagnosis.</step>
+        <step n="1" name="Root Cause Categorization">Analyze the verified root cause to identify its abstract category. Propose a generalized fix that would prevent this entire class of bug and incorporate it as a deliverable in the new Vertical Slice you create in Phase 5.</step>
         <step n="2" name="Categorical Audit">Use `git grep` to search the codebase for other instances of the identified category. You MUST formalize any significant findings into deliverables within the Vertical Slice (e.g., a `Refactor` deliverable).</step>
         <step n="3" name="Impact Audit">Use `git grep` to audit the SUT components touched by your proposed systemic fix. If the fix requires modifying a Port, Signature, or DTO that has >1 consumer, note this dependency so the slice can be partitioned into a Non-Breaking Parallel Change (Expand -> Migrate -> Contract). Ensure all proposed Contract/Seam changes have matching Harness deliverables.</step>
       </phase>
@@ -48,34 +48,32 @@
       <phase n="4" name="Alignment">
         <goal>Present the complete synthesis in a single decisive gate and gain explicit user approval on the proposed solution path.</goal>
         <step n="1" name="Case File Synchronization">EDIT the Case File to update the Diagnostic Analysis with the Systemic Audit findings, and ensure the Causal Model reflects the verified reality from the Isolated Sandbox Verification.</step>
-        <step n="2" name="Consolidated Alignment Gate">Message the user with the complete synthesis in a single turn: (1) the Root Cause Analysis (RCA) and verified MRE evidence; (2) the sandboxed verification results proving the fix in isolation; (3) the Systemic Audit findings (grepped occurrences across the codebase and seam impact); and (4) the proposed solution plan — a direct trivial fix (Phase 6) versus a Vertical Slice for the Developer. You MUST resolve any questions or discrepancies raised by the user. Do NOT proceed without explicit user approval.</step>
+        <step n="2" name="Consolidated Alignment Gate">Message the user with the complete synthesis in a single turn: (1) the Root Cause Analysis (RCA) and verified MRE evidence; (2) the sandboxed verification results proving the fix in isolation; (3) the Systemic Audit findings (grepped occurrences across the codebase and seam impact); and (4) the proposed solution plan — a NEW Vertical Slice for the Developer, seeded with your proven fix, the MRE, and a regression-test deliverable. You are strictly forbidden from writing production code yourself, and you MUST NOT modify or take over an existing Vertical Slice: you ALWAYS mint a new slice so each bug-fix keeps focused, self-contained context. You MUST resolve any questions or discrepancies raised by the user. Do NOT proceed without explicit user approval.</step>
       </phase>
 
       <phase n="5" name="Documentation">
         <goal>Translate the proven sandbox fix into actionable handoff artifacts.</goal>
-        <step n="1" name="Case File">Update the Case File. Populate the `## Solution` section with a high-level explanation of the root cause and the fix. You MUST include preventative measures focusing on systematically fixing this entire class of issue. Ensure the final `Diagnostic Analysis` is accurate and up-to-date. Change status to Resolved.</step>
-        <step n="2" name="Debt Triage">Triage any `[DEBT]` from your State Dashboard per the Technical Debt Triage policy.</step>
+        <step n="1" name="Case File">Update the Case File (template: `docs/templates/case-file.md`). Populate the `## Solution` section with a high-level explanation of the root cause and the fix. You MUST include preventative measures focusing on systematically fixing this entire class of issue. Ensure the final `Diagnostic Analysis` is accurate and up-to-date. Change status to Resolved.</step>
+        <step n="2" name="Create Vertical Slice">`CREATE` exactly ONE NEW Vertical Slice (template: `docs/templates/vertical-slice.md`). You MUST NOT modify or take over an existing slice — minting a fresh slice keeps the bug-fix context focused and self-contained. The slice MUST:
+          1. Use an ad-hoc `00-NN-{{scope-slug}}` filename (ad-hoc slices MUST use the 00 prefix), unless the bug belongs to an active milestone, in which case use its `MM-NN` prefix.
+          2. Set Status to `Planned`.
+          3. Link the Case File as evidence and link the preserved MRE script and shadow-file proof (Phase 6 Teardown consolidates them into `spikes/debug/{scope-slug}/`).
+          4. Carry the proven shadow-file fix as the primary `Logic` deliverable, plus a `Harness` deliverable for the regression test that reproduces the exact MRE scenario (the test MUST assert on observable behaviour; its filename and the commit message MUST NOT contain the Case File number or any bug-specific identifier).
+          5. Include the Systemic Audit `Refactor`/`Cleanup` deliverables from Phase 3, so this entire class of bug is fixed within the same focused slice.
+          6. Include Gherkin scenarios derived from the MRE and a final `Wiring` behavioral gate.</step>
+        <step n="3" name="Debt Triage">Triage any `[DEBT]` from your State Dashboard per the Technical Debt Triage policy.</step>
       </phase>
 
-      <phase n="6" name="Implementation (Trivial Fixes Only)">
-        <goal>This phase is ONLY executed for trivial fixes where no Vertical Slice was created or modified in the previous Phase.</goal>
-        <step n="1" name="Write Regression Test">CREATE a regression test file in the appropriate location within `tests/` that reproduces the bug symptom identified in the Case File and MRE. The test MUST exercise the exact failing scenario. The test MUST assert on observable behaviour rather than internal implementation details. For trivial fixes with no Vertical Slice, this test is the primary regression prevention mechanism and is mandatory. The filenames and commit message MUST NOT include the bug's Case File number or any bug-specific identifier (e.g., do NOT use `test_bug_NN_` or `NN` in the commit message).</step>
-        <step n="2" name="Red Phase">EXECUTE the newly created regression test in isolation to confirm it fails (RED). This empirically proves the test correctly captures the original bug. If the test passes, it does not accurately reproduce the bug; return to step 1 and refine the test.</step>
-        <step n="3" name="Apply Fix">Apply the verified hypothesis from the shadow file to the target production file(s) in `src/`. Execute the regression test again to confirm it now passes (GREEN). This proves the fix resolves the specific bug.</step>
-        <step n="4" name="MRE Re-Verification">Re-run the original MRE script against the fixed production code to confirm the exact original symptom is resolved. This ensures the regression test did not accidentally over-specify or under-specify the bug; the original reproduction scenario must still pass against the real fixed code.</step>
-        <step n="5" name="Integration Verification">EXECUTE `make test` to run the entire suite (acceptance, unit and integration) and ensure no regressions were introduced. If any test fails, do NOT discard work via `git reset --hard`; instead, diagnose the failure by updating your Rationale, make surgical adjustments to preserve working code and uncommitted context, and return to the Investigation phase. If you cannot make progress, transition the session to OFF-TRACK 🟡.</step>
-      </phase>
-
-      <phase n="7" name="Version Control">
+      <phase n="6" name="Version Control">
         <goal>Clean up the workspace and execute the commit following the VCP. After committing, triage any technical debt logged during investigation.</goal>
-        <step n="1" name="Teardown">Explicitly delete all temporary logs, MRE scripts, and shadow files created in `spikes/debug/` to ensure a completely clean workspace. Run `git status` to verify.</step>
-        <step n="2" name="Commit">Execute the commit following the VCP to test, stage, and commit the Case File and any associated Slices (the push is deferred to the Conclusion phase). You MUST ensure the workspace is clean and all documentation changes are committed.</step>
+        <step n="1" name="Teardown">Explicitly delete incidental temporary logs and throwaway probes. You MUST PRESERVE the final MRE script and shadow-file proof for the new Vertical Slice: consolidate them into a feature-specific subfolder `spikes/debug/{scope-slug}/` (mirroring the Prototyper's `spikes/prototypes/{scope-slug}/` convention) and link it from the slice. Run `git status` to verify.</step>
+        <step n="2" name="Commit">Execute the commit following the VCP to test, stage, and commit the Case File, the preserved MRE/shadow evidence, and the new Vertical Slice (the push is deferred to the Conclusion phase). You MUST ensure the workspace is clean and all documentation changes are committed.</step>
         <step n="3" name="Debt Triage">Triage any `[DEBT]` entries logged in your State Dashboard per the Technical Debt Triage policy.</step>
       </phase>
 
-      <phase n="8" name="Conclusion">
-        <goal>Handoff execution or conclude.</goal>
-        <step n="1" name="Handoff">If the fix was trivial and executed directly, Message the user to start a new session with the Pathfinder (or Architect if structural debt was added to the Milestone). Otherwise if a Vertical Slice was created, Message the user to start a new session with the Developer to implement the non-trivial fix.</step>
+      <phase n="7" name="Conclusion">
+        <goal>Hand off the new Vertical Slice to the Developer.</goal>
+        <step n="1" name="Handoff">Message the user to start a new session with the Developer to implement the fix from the new Vertical Slice. You never apply the fix yourself; the slice always carries its own focused, self-contained context.</step>
       </phase>
 
     </workflow>
