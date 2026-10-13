@@ -52,6 +52,10 @@ push:
 	@BASE=$$(git rev-parse origin/main); \
 	SHA=$$(git rev-parse HEAD); \
 	git push || exit $$?; \
+	if [ -z "$$(ls .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null)" ]; then \
+	  echo "No CI configured - skipping attribution"; \
+	  exit 0; \
+	fi; \
 	STATUS=0; \
 	echo "Pushed $$SHA (base $$BASE)"; \
 	for WF in $$(gh run list --commit "$$SHA" --json workflowName --jq '.[].workflowName' | sort -u); do \
