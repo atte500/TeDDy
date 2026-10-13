@@ -1,5 +1,5 @@
 # Slice: Fix `make push` CI Attribution and CI-Registration Lag
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Specs:** N/A
 - **Prototype:** [spikes/prototypes/push-attribution/](/spikes/prototypes/push-attribution/)
@@ -100,10 +100,10 @@ Dependency-ordered. All three Logic deliverables edit the single `push:` recipe 
 
 ## Verification
 
-1. **Automated (probe):** `uv run python spikes/prototypes/push-attribution/probe.py`, `uv run python spikes/prototypes/push-attribution/probe_retry.py`, `uv run python spikes/prototypes/push-attribution/probe_production.py`, `uv run python spikes/prototypes/push-attribution/probe_production_no_ci.py`, and `uv run python spikes/prototypes/push-attribution/probe_production_retry.py` all print `RESULT: ALL PASS` — proving base-before-push capture, the bounded retry, and the no-CI short-circuit against real throwaway repos and against the REAL production [Makefile](/Makefile).
-2. `make test` (full suite, no filters) is GREEN.
-3. **Manual (spike/scratch remote):** a deliberately failing pushed commit whose base was green is reported as YOUR regression (non-zero exit).
-4. **Manual:** a pre-existing base failure is reported as pre-existing (zero exit).
-5. **Manual:** a rejected `git push` aborts the target with a non-zero exit (no CI attribution runs).
-6. **Manual:** a repo with no CI configured logs `No CI configured` and exits 0 (non-blocking), while a repo WITH CI configured but no registered run still fail-safe blocks — proving the two cases are distinguished.
-7. **Manual:** both `makefile.md` template trees stay byte-aligned with the implementation.
+1. [x] **Automated (probe):** `uv run python spikes/prototypes/push-attribution/probe.py`, `uv run python spikes/prototypes/push-attribution/probe_retry.py`, `uv run python spikes/prototypes/push-attribution/probe_production.py`, `uv run python spikes/prototypes/push-attribution/probe_production_no_ci.py`, and `uv run python spikes/prototypes/push-attribution/probe_production_retry.py` all print `RESULT: ALL PASS` — proving base-before-push capture, the bounded retry, and the no-CI short-circuit against real throwaway repos and against the REAL production [Makefile](/Makefile). **Verified (Turn 47):** all five probes `RESULT: ALL PASS` (assertion counts 6/0, 8/0, 2/0, 3/0, 4/0; exit 0 each).
+2. [x] `make test` (full suite, no filters) is GREEN. **Verified (Turn 46):** `1734 passed, 5 skipped` — the Cleanup-2 baseline plus the two Wiring acceptance tests; no `Test suite left filesystem pollution!` failure.
+3. [x] **Manual (spike/scratch remote):** a deliberately failing pushed commit whose base was green is reported as YOUR regression (non-zero exit). **Verified:** covered by the `regression`/`lag-red` scenarios of [probe.py](/spikes/prototypes/push-attribution/probe.py), [probe_retry.py](/spikes/prototypes/push-attribution/probe_retry.py), and [probe_production_retry.py](/spikes/prototypes/push-attribution/probe_production_retry.py) (`YOUR regression` + non-zero exit) and by `test_make_push_captures_pre_push_base_and_blocks_a_regression`.
+4. [x] **Manual:** a pre-existing base failure is reported as pre-existing (zero exit). **Verified (Turn 47):** transient production driver printed `[PASS] pre-existing base failure exits 0` (identical base+new failing job → exit 0, `pre-existing failure`).
+5. [x] **Manual:** a rejected `git push` aborts the target with a non-zero exit (no CI attribution runs). **Verified (Turn 47):** transient production driver printed `[PASS] rejected push aborts non-zero with no attribution` (rejecting `pre-receive` hook on the bare origin → non-zero exit, zero `gh` invocations, no `Pushed` line).
+6. [x] **Manual:** a repo with no CI configured logs `No CI configured` and exits 0 (non-blocking), while a repo WITH CI configured but no registered run still fail-safe blocks — proving the two cases are distinguished. **Verified:** [probe_production_no_ci.py](/spikes/prototypes/push-attribution/probe_production_no_ci.py) (`No CI configured - skipping attribution`, exit 0, no `gh` calls) and [probe_production_retry.py](/spikes/prototypes/push-attribution/probe_production_retry.py) `never` (`after 10 poll(s)` + `fail-safe block` + non-zero exit).
+7. [x] **Manual:** both `makefile.md` template trees stay byte-aligned with the implementation. **Verified (Turn 44/47):** `diff docs/templates/makefile.md src/teddy_executor/resources/templates/makefile.md` → `byte-aligned` (zero-length diff).
