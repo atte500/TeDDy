@@ -1,5 +1,5 @@
 # Slice: Fix `make push` CI Attribution and CI-Registration Lag
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc)
 - **Specs:** N/A
 - **Prototype:** [spikes/prototypes/push-attribution/](/spikes/prototypes/push-attribution/)
@@ -63,7 +63,8 @@ Validated empirically (probes [probe.py](/spikes/prototypes/push-attribution/pro
 ### Delta Analysis (exact codebase modifications)
 
 - **[Makefile](/Makefile) `push:` target** — the sole production defect site: `BASE=$$(git rev-parse origin/main)` (line 54) is read AFTER `git push` (line 2 of the recipe). Rewrite the recipe per steps 1–4. `git pull --rebase` stays a separate recipe line.
-- **[docs/templates/makefile.md](/docs/templates/makefile.md)** (line 147) and **[src/teddy_executor/resources/templates/makefile.md](/src/teddy_executor/resources/templates/makefile.md)** (line 147) — carry the same buggy recipe in their `push:` example block; update to the validated recipe and keep both byte-aligned.
+- **[docs/templates/makefile.md](/docs/templates/makefile.md)** — already carries the corrected `push:` recipe and the new prose (verified at audit: `@BASE=$$(git rev-parse origin/main)` precedes the push). The Cleanup deliverable only verifies it stays identical to the finalized recipe.
+- **[src/teddy_executor/resources/templates/makefile.md](/src/teddy_executor/resources/templates/makefile.md)** (line 147) — still carries the pre-fix recipe (`BASE` captured after the push) and the pre-fix prose; bring it into byte-alignment with the [docs/templates/makefile.md](/docs/templates/makefile.md) copy.
 - **Prose-only references (no recipe change needed):** [docs/architecture/ARCHITECTURE.md](/docs/architecture/ARCHITECTURE.md) and [src/.../ARCHITECTURE.md](/src/teddy_executor/resources/templates/ARCHITECTURE.md) (line 20), [docs/project/inbox/01-harness-workflow-improvements.md](/docs/project/inbox/01-harness-workflow-improvements.md), [docs/project/tasks/03-post-commit-rebase-guard.md](/docs/project/tasks/03-post-commit-rebase-guard.md), and both `pre-commit.md` trees — all mention `make push` descriptively and remain accurate.
 - **Tests:** no test pins the recipe text. [test_init_templates_command.py](/tests/suites/acceptance/test_init_templates_command.py) asserts only that template FILENAMES are scaffolded/overwritten; template CONTENT is unconstrained.
 
@@ -71,11 +72,12 @@ Validated empirically (probes [probe.py](/spikes/prototypes/push-attribution/pro
 
 Dependency-ordered. All three Logic deliverables edit the single `push:` recipe in the root [Makefile](/Makefile); the Cleanup deliverables mirror the finalized recipe into the template trees afterward.
 
-- [ ] **Logic** - In [Makefile](/Makefile), capture `BASE=$$(git rev-parse origin/main)` BEFORE `git push` and fold `git push` into the same shell block behind `|| exit $$?`, so attribution compares against the pre-push remote tip and a rejected push still aborts.
+- [▶] **Logic** - In [Makefile](/Makefile), capture `BASE=$$(git rev-parse origin/main)` BEFORE `git push` and fold `git push` into the same shell block behind `|| exit $$?`, so attribution compares against the pre-push remote tip and a rejected push still aborts.
 - [ ] **Logic** - In [Makefile](/Makefile), add the no-CI short-circuit (absence of `.github/workflows/*.yml`/`*.yaml`) that logs `No CI configured - skipping attribution` and exits 0, placed BEFORE the retry loop.
 - [ ] **Logic** - In [Makefile](/Makefile), add the bounded registration retry (`RETRY_POLLS` × `RETRY_SLEEP`, default 10 × 1s) around the `gh run list --commit <SHA>` discovery, with a fail-safe `exit 1` when no run registers.
 - [ ] **Cleanup** - Mirror the finalized recipe into [docs/templates/makefile.md](/docs/templates/makefile.md).
 - [ ] **Cleanup** - Mirror the finalized recipe into [src/teddy_executor/resources/templates/makefile.md](/src/teddy_executor/resources/templates/makefile.md) and keep both template trees byte-aligned.
+- [ ] **Wiring** - Add a committed acceptance test under [tests/suites/acceptance/](/tests/suites/acceptance/) that drives the real [Makefile](/Makefile) `push` target end-to-end (throwaway git repo + a fake `gh` on `PATH`) and asserts the happy-path base-capture-before-push behavior and the no-CI short-circuit — the final behavioral gate for the slice's Gherkin scenarios. Guarded with `skipif` so it only runs where `make`, `git`, and a POSIX shim host exist, keeping the OS test matrix green.
 
 ## Implementation Notes
 
@@ -86,6 +88,8 @@ Dependency-ordered. All three Logic deliverables edit the single `push:` recipe 
 - **Canonical template source:** [src/teddy_executor/resources/templates/makefile.md](/src/teddy_executor/resources/templates/makefile.md) is the bundled canonical copy; [docs/templates/makefile.md](/docs/templates/makefile.md) is the project copy produced by `teddy init templates`. Keep them byte-aligned.
 - **Testability (Key Unknown #2 resolved):** approach (a) verified — drive the real recipe via `make` with fakes on PATH; no production restructuring, templates stay portable.
 - **No test pins the recipe text:** [test_init_templates_command.py](/tests/suites/acceptance/test_init_templates_command.py) asserts only template FILENAMES, so template-content edits are unconstrained.
+- **Behavioral gate (Wiring):** a committed acceptance test drives the real `make push` target inside a throwaway repo (real `git`, fake `gh` on `PATH`) and asserts base-before-push capture plus the no-CI short-circuit. It is `skipif`-guarded so it only runs where `make`, `git`, and a POSIX shim host exist; the [probes](/spikes/prototypes/push-attribution/) remain the primary POSIX verification and are reused for the per-deliverable Red/Green checks.
+- **Audit finding:** [docs/templates/makefile.md](/docs/templates/makefile.md) already carries the corrected recipe and prose (the reference target); only the root [Makefile](/Makefile) and [src/teddy_executor/resources/templates/makefile.md](/src/teddy_executor/resources/templates/makefile.md) still carry the defect.
 
 ## Verification
 
