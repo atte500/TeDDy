@@ -2,25 +2,119 @@
 
 - **Status:** Active (working backlog)
 - **Owner:** Pathfinder
-- **Last Updated:** 2026-10-09
+- **Last Updated:** 2026-10-13
 
 ## Purpose
 
-Single source of truth for improvement ideas raised during the harness/prompt review. The document is split into two clean halves so status is never ambiguous:
+Single source of truth for improvement ideas raised during the harness/prompt review. The document is organized into chronological **phases** so status is never ambiguous:
 
-- **To Do** — the actionable backlog, ordered by execution priority (each entry notes its blocker/dependency).
+- **Phase 2 (2026-10-13)** — the active workflow & developer-ergonomics batch raised during the 2026-10-13 critical review. Tracked here in lieu of a dedicated milestone (item 8).
+- **Phase 1 (2026-10-09)** — the original harness & prompt overhaul. Implementation-verified on disk except the two items called out in its banner.
 - **Done** — a compact record of completed work, kept only for traceability so later sessions do not re-litigate settled points.
 
-Bracketed numbers refer to the original 40-item list; `Nx` marks new items raised during review; `Sx` marks strategic items raised during the 2026-10-09 prompt/workflow review. A theme appears under **To Do** only while it still has open work; fully completed themes live only under **Done**.
+Bracketed numbers refer to the original 40-item list; `Nx` marks new items raised during review; `Sx` marks strategic items raised during the 2026-10-09 prompt/workflow review; `P2-N` marks items in Phase 2. Every item carries a status marker from the legend below.
 
 ## Status Legend
 
 - ⬜ Ready to implement (decisions settled)
+- ✅ Done / Landed (verified on disk)
+- ⏭️ Deferred (agreed to postpone)
 - 🚫 Dropped / Rejected (kept in context for rationale)
 
 ---
 
-## To Do
+## Phase 2 — Workflow & Developer Ergonomics (2026-10-13) — ⬜ Active
+
+New batch raised during the 2026-10-13 critical review of the harness workflow. All strategic decisions are settled; each theme names the exact files to change. This phase has **no dedicated milestone** — it is tracked here in lieu of one (item 8). Items are labelled `P2-N`.
+
+### Theme A — State Dashboard Vocabulary (P2-1, P2-5)
+*Focus: Plainer names for the two State Dashboard blocks, with no collision against `## Action Plan`.*
+
+- **[P2-1] Rename `PHASES` → `WORKFLOW` (Resolved):** ⬜
+  - In the MRP State Dashboard template (Rule 2) and each agent prompt's `phase_tracking` directive, rename the dashboard list `PHASES` to `WORKFLOW`.
+  - `PLAN` was rejected (it collides with the `## Action Plan` section); `PROGRESS` was considered; `WORKFLOW` chosen.
+- **[P2-5] Rename `WIP & REMINDERS` → `NOTES` (Resolved):** ⬜
+  - In MRP Rule 2 (State Dashboard template) and Rule 13 (Communication Hygiene), rename `WIP & REMINDERS` to `NOTES`. Blast radius is tiny — only `MRP.xml` names the block; the `[TODO]`/`[!]`/`[?]` tags carry the actionability.
+
+### Theme B — Version Control: Local Commit + Push at Conclusion with CI Attribution (P2-2, P2-8)
+*Focus: Commit locally per deliverable; push once per session and surface CI results back to the agent, blocking only on failures the push introduced.*
+
+- **[P2-2] Defer Push to the Conclusion Phase; Report CI Results (Resolved):** ⬜
+  - **`make commit` becomes local-only.** Recipe: `git add .` → advisory `pre-commit run` (auto-fix pass) → `git add .` → `git commit -m "$(ARGS)"`. Remove `git pull --rebase` and `git push`.
+  - **Drop `--no-verify` (reversal of Phase 1 [S2]).** `make commit` MUST commit **without** `--no-verify`, so Git's own pre-commit hook is the real local gate. This closes the confirmed defect where advisory `-pre-commit run` + `git commit --no-verify` let a staged secret through locally (the post-commit gate runs tests only; the CI quality job is `continue-on-error`). Pre-commit therefore runs twice — the explicit auto-fix pass plus Git's own hook — which is accepted because after P2-3 the local hook set is only formatters + `detect-secrets` + conflict check.
+  - **Staging note (MRP).** Document in `MRP.xml` that `make commit` stages **all** local changes, including unstaged ones (`git add .`).
+  - **New `make push` target.** Runs `git pull --rebase`, pushes, then **discovers every CI run for the pushed SHA** (`gh run list --commit <sha>`) and **waits for and reports each workflow + its jobs**.
+  - **Attribution — only block on YOUR regression.** Compare the **failing-job set** of the pushed SHA's run against the base run (`origin/main` before the push), per workflow: base green → new red = **your regression → exit 1** (fix before concluding); base red → new red (same jobs) = **pre-existing → report, exit 0** (do not wait, do not duplicate the fix); all green → PASSED. Unknown base → **fail-safe**: treat as yours (block). Deterministic via SHA → run → per-job conclusion (never "the latest run"). This lets an agent on a passing platform push through a pre-existing red without being blocked.
+  - **MRP Rule 6.** Instruct agents to run `make push` in the **Conclusion** phase. If CI is red, fix immediately before concluding. **Tests MUST always be fixed**; quality-gate failures MUST be fixed or explicitly planned in.
+  - **Primary impact: Developer.** It commits locally for every deliverable of the slice and pushes once at session end.
+  - **Accepted trade-off.** Deferring push widens the divergence window and can raise merge-conflict odds when agents run concurrently. Accepted because the local post-commit full-suite gate still verifies correctness per commit; CI's added value is the cross-platform (Windows/macOS) matrix + quality-gate surface, not basic correctness. `make push` rebases immediately before pushing.
+  - **Files:** [Makefile](/Makefile), [docs/templates/makefile.md](/docs/templates/makefile.md), [src/teddy_executor/resources/MRP.xml](/src/teddy_executor/resources/MRP.xml) (Rule 6 + staging note), [docs/architecture/ARCHITECTURE.md](/docs/architecture/ARCHITECTURE.md) (Conventions), [developer.xml](/src/teddy_executor/resources/config/prompts/developer.xml).
+- **[P2-8] Guard the Post-Commit Hook Against Rebase Data Loss (Resolved):** ⬜
+  - **Confirmed defect (spike):** during `git pull --rebase`, Git fires the `post-commit` hook once per replayed commit; because the hook reverts on failure (`git reset --soft HEAD~1`), a failing replay **silently drops that commit** while the rebase still reports success (exit 0). The `pre-commit` hook does NOT fire during rebase.
+  - **Fix:** add a guard at the top of [.githooks/post-commit.py](/.githooks/post-commit.py) that exits immediately (skipping the suite) when an automated git operation is in progress — check for `rebase-merge`, `rebase-apply`, `MERGE_HEAD`, or `CHERRY_PICK_HEAD` under the git dir.
+  - **Verified (spike):** with the guard, the hook skips each replay and all local commits survive the rebase. This is what makes `make push`'s `git pull --rebase` safe.
+  - **Files:** [.githooks/post-commit.py](/.githooks/post-commit.py), [docs/templates/pre-commit.md](/docs/templates/pre-commit.md).
+
+### Theme C — Pre-commit Scope & Bypass Policy (P2-3)
+*Focus: Keep the local loop fast; move noisy, false-positive-prone checks to CI.*
+
+- **[P2-3] Formatters-Only Pre-commit; Heavy Checks to CI (Resolved):** ⬜
+  - **Keep in pre-commit:** fast auto-fixers (`ruff check --fix`, `ruff format`, `trailing-whitespace`, `end-of-file-fixer`) plus `detect-secrets` and `check-merge-conflict`.
+  - **Move to CI-only:** `mypy`, `bandit`, `pip-audit`, and the five custom structural checkers (`check-core-di-boundary`, `check-explicit-utf8`, `no-hardcoded-tmp-paths`, `no-unguarded-posix-patches`, `no-unisolated-raw-cli-invoke`) — they already run non-blocking in the CI `quality-checks` job.
+  - **Keep unchanged:** the unskippable **post-commit full-suite gate**. Note: `make commit` no longer uses `--no-verify` (see P2-2), so Git's own pre-commit hook is the real local gate.
+  - **Bypass policy (lands as a new MRP rule).** Prefer **config-level** bypasses (pyproject `per-file-ignores`, pre-commit `exclude`) for anything repeated or file-wide; allow a **narrowly-scoped inline** `# type: ignore[code]` / `# noqa: CODE` **with a reason comment** for genuine one-offs. Bare `# noqa` / `# type: ignore` are forbidden. Prompt steps reference this policy by NAME, never by rule number.
+  - **Rationale.** Git pre-commit hooks are always bypassable (`--no-verify`, or a plain `git commit` from an editor). The post-commit hook is the only unskippable gate. The real friction is hook **false positives** forcing inline suppressions, not blocking.
+  - **Files:** [.pre-commit-config.yaml](/.pre-commit-config.yaml), [docs/templates/pre-commit.md](/docs/templates/pre-commit.md), [src/teddy_executor/resources/MRP.xml](/src/teddy_executor/resources/MRP.xml) (new Quality-Gate Bypass Policy rule), [docs/architecture/ARCHITECTURE.md](/docs/architecture/ARCHITECTURE.md) (Conventions — currently mandates static type-checkers in pre-commit; needs editing).
+
+### Theme D — Feasibility & Design Sensitivity (P2-4)
+*Focus: Make "is this feasible?" always happen without blurring the Architect/Prototyper boundary.*
+
+- **[P2-4] Architect Logs Design Sensitivity; Prototyper De-risks (Resolved):** ⬜
+  - **Architect (always, log-only):** for **every** slice, record a one-line **Design Sensitivity** per Key Unknown — e.g. "if this resolves as X → contracts hold; if Y → this port/DTO changes". The Architect does **not** spike.
+  - **Prototyper (always, empirical):** de-risk every `[Technical]`/`[Functional]` unknown with a probe/runner; route `[Formal]` unknowns to the user.
+  - **Template:** add a **Design Sensitivity** field directly to `## Key Unknowns` in [docs/templates/vertical-slice.md](/docs/templates/vertical-slice.md).
+  - **Files:** [docs/templates/vertical-slice.md](/docs/templates/vertical-slice.md), [architect.xml](/src/teddy_executor/resources/config/prompts/architect.xml), [prototyper.xml](/src/teddy_executor/resources/config/prompts/prototyper.xml).
+
+### Theme E — Plain Language Everywhere (P2-6)
+*Focus: Cut unnecessary jargon so humans can read Messages, docs, and Rationale.*
+
+- **[P2-6] Plain-English Instruction (Resolved):** ⬜
+  - **No style-guide or spec artifact.** Add a short instruction to [src/teddy_executor/resources/MRP.xml](/src/teddy_executor/resources/MRP.xml): write plainly, avoid unnecessary jargon, use one term per concept, prefer short sentences — applied to **Message contents, docs, AND Rationale**. Keep the rigor of the Rationale reasoning; only remove needless complexity.
+  - **Files:** [src/teddy_executor/resources/MRP.xml](/src/teddy_executor/resources/MRP.xml).
+
+### Theme F — SDLC Friction Sweep (P2-9)
+*Focus: Remove redundant touch points found in the 2026-10-13 friction audit.*
+
+- **[P2-9.1] Consolidate the Architect's Two Pre-Slice Gates (Resolved):** ⬜
+  - Merge the Architect's Phase 2 Alignment Gate and Phase 3 Step 10 Approval Gate into **one** approval — unless a systemic-debt rewrite decision genuinely forces a separate checkpoint.
+  - **Files:** [architect.xml](/src/teddy_executor/resources/config/prompts/architect.xml).
+- **[P2-9.2] Full Test Suite on Every Commit — No Change (Rejected):** 🚫
+  - Keep the full suite running on **every** local commit (the post-commit gate). The "fast subset on commit" idea was rejected.
+- **[P2-9.3] One Consolidated Pathfinder Pre-Code Gate (Resolved):** ⬜
+  - Pathfinder keeps a **single** user Message gate after orientation/discovery is complete, instead of a separate Triage Critical Dialogue **and** a Synthesis Alignment Gate. No fast-track/skip path.
+  - **Files:** [pathfinder.xml](/src/teddy_executor/resources/config/prompts/pathfinder.xml).
+- **[P2-9.4] Single-Source the `[DEBT]` 3-Tier Triage (Resolved):** ⬜
+  - Move the 3-Tier Debt Triage step text (currently repeated in nearly every phase of all six prompts) into a shared [src/teddy_executor/resources/MRP.xml](/src/teddy_executor/resources/MRP.xml) rule, and have agents reference it.
+  - **Files:** [src/teddy_executor/resources/MRP.xml](/src/teddy_executor/resources/MRP.xml) + all six agent prompts.
+- **[P2-9.5] No Pipeline-Mode Auto-Handoff (Rejected):** 🚫
+  - Do **not** auto-hand-off between agents in `--pipeline` mode. Handoffs stay user-mediated.
+- **[P2-9.6] Document `make commit` Message-Input Robustness (Resolved):** ⬜
+  - Keep `make commit` as is (the `$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))` capture). Document the **supported input contract** in [docs/templates/makefile.md](/docs/templates/makefile.md).
+  - **Finding (spike `spikes/debug/make-args/`):** single-line Conventional Commits survive verbatim; `$VAR` is swallowed to empty; backticks and quotes are stripped; **multiline messages fail hard** (`/bin/sh: unexpected EOF`, exit 2). Guard note: use one line; avoid `$`.
+  - **Files:** [docs/templates/makefile.md](/docs/templates/makefile.md).
+
+### Theme G — Prompt Format Migration: XML → Markdown (P2-7) — ⏭️ Deferred
+
+- **[P2-7] Migrate Agent Prompts to Markdown (Deferred):** ⏭️
+  - **Decision (2026-10-13): Logged as deferred** to a later batch; the upgrade path is **dual-read** (see below). It is a structural change — the `Agent Name:` injection seam, `PromptManager`, `InitService._PROMPT_FILES`, `teddy init prompts`, README, ARCHITECTURE §5, and several tests — not a quick win.
+  - **When done — upgrade strategy:** **dual-read `.xml` + `.md`** so existing `.teddy/prompts/*.xml` overrides keep working; do **not** force a re-init.
+  - **Touch points:** the six agent prompts + `MRP.xml` + `PromptManager` + `InitService._PROMPT_FILES` + `teddy init prompts` + `README.md` + `ARCHITECTURE.md` §5 + tests (`test_mrp_prompt_assembly`, `test_prompt_resource_relocation`, `test_prompts`, `test_agent_template_directives`).
+
+---
+
+## Phase 1 — Harness & Prompt Overhaul (2026-10-09) — ✅ Implementation Verified
+
+> **Status (2026-10-13):** Every item in this phase is implemented and verified on disk, **except** two: the **pipeline-default clause of [S4]** (`teddy start -p` still defaults to `pathfinder`; [docs/project/tasks/02-pipeline-default-agent.md](/docs/project/tasks/02-pipeline-default-agent.md) is drafted but the resolver is not wired) and the **Tier-4 [N6] final sanity pass**. Treat the ⬜ markers below as historical; the work is landed.
 
 Ordered by execution priority. Every theme has been evaluated and all strategic decisions are resolved.
 
@@ -232,7 +326,7 @@ Ordered by execution priority. Every theme has been evaluated and all strategic 
 
 ---
 
-## Concrete File-by-File Changes Specification
+## Phase 1 — Concrete File-by-File Changes Specification
 
 Here is the exact breakdown of every file that will change and the specific modifications required:
 
