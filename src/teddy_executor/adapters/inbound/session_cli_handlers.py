@@ -18,7 +18,7 @@ from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGu
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 from teddy_executor.core.utils.interrupt_guard import INTERRUPT_REASON, InterruptGuard
-from teddy_executor.core.utils.string import canonical_agent_name, slugify
+from teddy_executor.core.utils.string import slugify
 from teddy_executor.adapters.inbound.cli_formatter import format_project_context
 from teddy_executor.adapters.inbound.cli_helpers import (
     echo_and_copy,
@@ -415,6 +415,7 @@ def _display_drift_notification(container: Container) -> list[str]:
     config = container.resolve(IConfigService)
     report = container.resolve(IInitUseCase).check_drift()
     fired: list[str] = []
+    lines: list[str] = []
 
     if config.get_setting("checks.prompts", True) and report.prompts_drifted:
         clause = _format_drift_clause(
@@ -424,9 +425,9 @@ def _display_drift_notification(container: Container) -> list[str]:
             report.edited_prompts,
             report.missing_prompts,
         )
-        typer.echo(
+        lines.append(
             typer.style(
-                f"ℹ {clause}. To overwrite, run: teddy init prompts\n",
+                f"ℹ {clause}. To update them, run: teddy init prompts",
                 fg=typer.colors.YELLOW,
             )
         )
@@ -440,13 +441,18 @@ def _display_drift_notification(container: Container) -> list[str]:
             report.edited_templates,
             report.missing_templates,
         )
-        typer.echo(
+        lines.append(
             typer.style(
-                f"ℹ {clause}. To overwrite, run: teddy init templates\n",
+                f"ℹ {clause}. To update them, run: teddy init templates",
                 fg=typer.colors.YELLOW,
             )
         )
         fired.append("checks.templates")
+
+    if lines:
+        typer.echo("")  # blank separator ABOVE the notification block
+        for line in lines:
+            typer.echo(line)
 
     return fired
 
@@ -502,10 +508,11 @@ def _display_update_notification(container: Container, cache_path: Path) -> list
                 command = "uv tool install teddy-cli --force"
             else:
                 command = "uv tool upgrade teddy-cli"
+            typer.echo("")  # blank separator ABOVE the notification block
             typer.echo(
                 typer.style(
                     f"ℹ A new version {latest} is available. "
-                    f"To upgrade, run: {command}\n",
+                    f"To upgrade, run: {command}",
                     fg=typer.colors.YELLOW,
                 )
             )
@@ -569,7 +576,6 @@ def handle_new_session(  # noqa: PLR0913
             )
         )
         _display_checks_footer(fired)
-        _echo_config_success(container, agent, model=model)
 
         session_manager: ISessionManager = container.resolve(ISessionManager)
         user_interactor: IUserInteractor = container.resolve(IUserInteractor)
@@ -615,35 +621,6 @@ def handle_new_session(  # noqa: PLR0913
         else:
             typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(code=1)
-
-
-def _echo_config_success(
-    container: Container,
-    agent: Optional[str] = None,
-    model: Optional[str] = None,
-    actual_model: Optional[str] = None,
-) -> None:
-    """Retrieves and echoes the active model and agent configuration on success.
-
-    Args:
-        container: The DI container with resolved services.
-        agent: Optional agent name to display.
-        model: Optional model override from CLI. If provided, this takes
-               precedence over the config file value.
-        actual_model: Optional actual serving model from meta.yaml. If provided,
-                      this takes precedence over the model parameter.
-    """
-    config_service = container.resolve(IConfigService)
-    if actual_model:
-        resolved_model = actual_model
-    elif model:
-        resolved_model = model
-    else:
-        resolved_model = config_service.get_setting("llm.model", "unknown")
-    msg = f"API key valid! Model: {resolved_model}"
-    if agent:
-        msg += f" | Agent: {canonical_agent_name(agent)}"
-    typer.echo(msg, err=True)
 
 
 def _run_cli_preflight_check(
@@ -1016,9 +993,8 @@ def _sync_and_display_session_meta(
 
     latest_turn_path = session_manager.get_latest_turn(session_name)
     meta = repository.load_meta(latest_turn_path)
-    # Clear actual_model so display falls through to current model (override or config)
+    # Clear actual_model so it is not carried into the next turn's meta.yaml
     meta.pop("actual_model", None)
-    _echo_config_success(container, agent=meta.get("agent_name"), model=model)
 
     # Sync latest turn's meta.yaml with current config model/overrides
     config_model = config_service.get_setting("llm.model", "unknown")
