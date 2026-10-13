@@ -1,5 +1,5 @@
 # Slice: Guard the Post-Commit Hook Against Rebase Data Loss
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Specs:** N/A
 - **Prototype:** N/A
@@ -108,8 +108,8 @@ The post-commit hook (`.githooks/post-commit.py`) currently runs the full suite 
 
 ## Verification
 
-1. `uv run pytest tests/suites/unit/test_postcommit_hook_rebase_guard.py` passes (False with no markers; True for each of the four markers).
-2. `uv run pytest tests/suites/acceptance/test_postcommit_hook_rebase_guard.py` passes.
-3. `make test` (full suite, no filters) is GREEN; no pre-existing test regresses.
-4. Manual: in a scratch git repository mid-rebase (`git rebase` paused), the hook exits without running the suite; on a normal commit the suite still runs and reverts on failure.
-5. Manual: both `pre-commit.md` template trees document the same helper name and four markers as the implementation.
+1. [x] `uv run pytest tests/suites/unit/test_postcommit_hook_rebase_guard.py` passes (False with no markers; True for each of the four markers).
+2. [x] `uv run pytest tests/suites/acceptance/test_postcommit_hook_rebase_guard.py` passes.
+3. [x] `make test` (full suite, no filters) is GREEN; no pre-existing test regresses.
+4. [x] Manual: in a scratch git repository mid-rebase (`git rebase` paused), the hook exits without running the suite; on a normal commit the suite still runs and reverts on failure.
+5. [x] Manual: both `pre-commit.md` template trees document the same helper name and four markers as the implementation.
