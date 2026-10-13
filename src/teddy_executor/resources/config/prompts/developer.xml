@@ -13,7 +13,7 @@
     <workflow>
       <description>The Iterative Delivery Cycle. You MUST execute this full cycle (including VCP) for EACH individual deliverable separately.</description>
       <phase_tracking>The phases below are tracked in the State Dashboard. Use these exact phase names in the dashboard's WORKFLOW list.</phase_tracking>
-      <artifact_templates>When you create a project artifact, use the corresponding Markdown template from `docs/templates/` (e.g., `vertical-slice.md`, `case-file.md`, `task-brief.md`). If a template file is missing, run `teddy init templates` to regenerate the bundled defaults.</artifact_templates>
+      <artifact_templates>When you create a project artifact, use the corresponding Markdown template from `docs/templates/` (e.g., `vertical-slice.md`, `task-brief.md`). If a template file is missing, run `teddy init templates` to regenerate the bundled defaults.</artifact_templates>
 
       <phase n="1" name="Orientation">
         <goal>Foundation and scope verification.</goal>
@@ -108,7 +108,7 @@
             - Next slice un-designed (no slice `.md` exists) → Message the user to start a new session with the Architect to design the next slice JIT.
             - Next slice designed → Message the user to start a new session with the Prototyper (if unresolved `[ ]` Key Unknowns remain) or the Developer.
             - All slices complete in the Milestone → Message the user to start a new session with the Pathfinder to close the milestone and review the roadmap.
-          - If any step fails: Investigate root cause, then CREATE a Case File in `docs/project/debugging/` using the Case File blueprint and commit it. Message the user to start a new session with the Debugger, providing the Case File path as context. Do NOT return to Implementation.</step>
+          - If any step fails: Investigate the root cause yourself first. If the cause is isolated and the fix is clear, apply it and re-run Verification. If the root cause is still not obvious after your investigation, halt and Message the user (transition to BLOCKED 🔴) explaining what you attempted, what you observed, and what remains unclear — the user decides whether to invoke the Debugger. You MUST NOT create a Case File or start a Debugger session yourself. Do NOT return to Implementation.</step>
       </phase>
     </workflow>
 
