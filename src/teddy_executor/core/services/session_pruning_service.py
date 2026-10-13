@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
+from teddy_executor.core.utils.paths import normalize_resource_path
 
 
 class SessionPruningService:
@@ -70,8 +71,8 @@ class SessionPruningService:
                 item, selected=False, auto_prune_reason="File deleted from disk"
             )
 
-        # Normalize path for consistent string matching
-        posix_path = item.path.replace("\\", "/").removeprefix("./").lstrip("/")
+        # Normalize path for consistent string matching (link-aware)
+        posix_path = normalize_resource_path(item.path)
 
         # Match numeric turn directories (e.g. '01', '02')
         turn_id = self._extract_turn_id(posix_path)
@@ -93,8 +94,8 @@ class SessionPruningService:
         """Extracts the last numeric directory segment from the path."""
         if not isinstance(path, str):
             return None
-        # Normalize to forward slashes and strip prefixes for consistent matching
-        normalized = path.replace("\\", "/").removeprefix("./").lstrip("/")
+        # Normalize to forward slashes and strip prefixes for consistent matching (link-aware)
+        normalized = normalize_resource_path(path)
         # Turn IDs are typically 1-3 digits. 4+ digits usually represent years or other data.
         matches = re.findall(r"(?:^|/)(\d{1,3})(?=/|$)", normalized)
         return matches[-1] if matches else None

@@ -13,6 +13,7 @@ from teddy_executor.core.domain.models.plan import (
     ValidationError,
 )
 from teddy_executor.core.ports.outbound import IConfigService, IFileSystemManager
+from teddy_executor.core.utils.paths import normalize_resource_path
 
 ContextPaths = Dict[str, Sequence[str]]
 ValidationResult = List[ValidationError]
@@ -163,15 +164,13 @@ def is_path_in_context(
     if check_turn:
         scopes.append("Turn")
 
-    # Normalize target: convert backslashes BEFORE removing leading slash/dot-slash
-    normalized_target = path_str.replace("\\", "/").removeprefix("./").lstrip("/")
+    # Normalize target via the shared link-aware helper
+    normalized_target = normalize_resource_path(path_str)
 
     for scope in scopes:
         context_files = context_paths.get(scope, [])
-        # Normalize context: convert backslashes BEFORE removing leading slash/dot-slash
-        normalized_context = [
-            p.replace("\\", "/").removeprefix("./").lstrip("/") for p in context_files
-        ]
+        # Normalize context via the shared link-aware helper
+        normalized_context = [normalize_resource_path(p) for p in context_files]
         if normalized_target in normalized_context:
             return True
 

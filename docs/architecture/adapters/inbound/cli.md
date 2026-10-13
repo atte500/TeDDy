@@ -99,7 +99,7 @@ Initializes a new session.
     2.  If `NAME` is omitted, it uses a temporary ISO-timestamped name.
     3.  Automatically Renames: If created with a timestamped name, the session is renamed to a slugified version of the first generated plan's H1 title.
     4.  Triggers immediate planning and enters the interactive execution loop.
-    5.  `--context` / `-c` is repeatable: each occurrence adds one path (e.g., `-c a.py -c b.md`). Comma-separated values within a single occurrence are also split for backward compatibility (`-c "a.py,b.md"`). Limitation: paths containing a literal comma cannot be expressed.
+    5.  `--context` / `-c` is repeatable: each occurrence adds one path (e.g., `-c a.py -c b.md`). Comma-separated values within a single occurrence are also split for backward compatibility (`-c "a.py,b.md"`). Limitation: paths containing a literal comma cannot be expressed. Each entry is normalized by `SessionService._prepare_session_context`: a `[label](target)` Markdown-link entry seeds the TARGET, and backslashes / a leading `./` / a leading `/` are normalized.
 
 ### Agent Resolution (`--agent` / `-a`) (As-Built, 2026-10-13)
 
@@ -212,17 +212,16 @@ This command provides a comprehensive snapshot of the project for an AI agent.
 ### Utility Command: `get-prompt`
 **Status:** Implemented
 
-This command provides a convenient way for users to access and override system prompts.
+This command emits the FULL composed system prompt for an agent — the `Agent Name: {Name}` header, the agent-specific XML, and the shared MRP base prompt (`<response_format>` … `State Transition Protocol`) — so a CHOP user can paste it straight into a web chat's system-prompt field and get executable Markdown plans.
 
 *   **Signature:** `teddy get-prompt <PROMPT_NAME> [--no-copy]`
 *   **Input:**
-    *   `PROMPT_NAME` (Positional Argument, Required): The name of the prompt to retrieve (e.g., `architect`, `dev`).
+    *   `PROMPT_NAME` (Positional Argument, Required): The name of the prompt to retrieve (e.g., `architect`, `developer`).
     *   `--no-copy` (Optional Flag): If provided, suppresses the default behavior of copying the output to the system clipboard.
-*   **Behavior:**
-    1.  The command first searches for a custom prompt in the local `.teddy/prompts/` directory. It looks for a file that starts with `<PROMPT_NAME>`, ignoring the file extension.
-    2.  If a local override is not found, it falls back to searching for a default prompt in a root-level `/prompts/` directory. The root is identified by searching upwards from the current directory for a `.git` folder.
-    3.  If found, the content of the prompt is printed to `stdout` and copied to the clipboard, following the standard output handling rules.
-    4.  If the prompt is not found in either location, an error is printed to `stderr` and the command exits with a non-zero status code.
+*   **Behavior (As-Built, 2026-10-13):**
+    1.  The command resolves `IPromptManager` from the base container (`get_container().resolve(IPromptManager)`) — no `_ensure_project_initialized` is required, because the port's dependencies (`IFileSystemManager`, `IUserInteractor`) are base-registered.
+    2.  It echoes `prompt_manager.compose_system_prompt(prompt_name)`, the composed prompt assembled by the SAME `_assemble_composed_prompt` helper that `fetch_system_prompt` uses. The agent-specific content is resolved from `.teddy/prompts/` (searching upward from the CWD), with the agent-name header prepended and the MRP base prompt appended after it.
+    3.  If the prompt is not found, an error is printed to `stderr` (listing the available prompts, e.g. `Prompt 'unknown' not found. Available prompts: architect, developer`) and the command exits with status code 1.
 
 ### Auto-Initialization Callback
 **)**

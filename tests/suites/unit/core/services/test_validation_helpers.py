@@ -1,3 +1,5 @@
+import pytest
+
 from teddy_executor.core.services.validation_rules.helpers import is_path_in_context
 
 
@@ -54,3 +56,22 @@ def test_is_path_in_context_respects_scopes():
         )
         is True
     )
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        "[src/logic.py](src/logic.py)",
+        "[src/logic.py](src\\logic.py)",
+    ],
+)
+def test_is_path_in_context_extracts_markdown_link_target(target):
+    """Scenario: A plan resource written as a Markdown link matches the context.
+
+    Single-sourcing the normalization through the shared helper makes
+    ``is_path_in_context`` link-aware: the link TARGET (not the raw
+    ``[label](target)`` string) is compared against the normalized context.
+    """
+    context_paths = {"Turn": ["src/logic.py"]}
+
+    assert is_path_in_context(target, context_paths) is True

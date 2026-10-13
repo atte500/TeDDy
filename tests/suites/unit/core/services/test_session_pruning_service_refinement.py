@@ -236,3 +236,13 @@ def test_global_budget_strictly_protects_initial_request(service, mock_config):
     assert init_req_item.selected is True
     assert turn_item.selected is False
     assert turn_item.auto_prune_reason == "Pruned to fit context budget"
+
+
+def test_extract_turn_id_extracts_target_from_markdown_link(service):
+    """Scenario: A link-shaped path resolves to the target's turn id.
+
+    Single-sourcing the normalization through the shared helper makes
+    ``_extract_turn_id`` link-aware, so a ``[label](target)`` path yields the
+    numeric turn directory of the TARGET rather than the raw link string.
+    """
+    assert service._extract_turn_id("[01/report.md](01/report.md)") == "01"
