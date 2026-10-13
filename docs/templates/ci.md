@@ -29,6 +29,86 @@ The CI pipeline consists of two parallel jobs:
 
 See [Pre-Commit Template](./pre-commit.md) for the local-vs-CI hook split.
 
+### How to create it
+
+Create `.github/workflows/ci.yml` in your project with the following structure:
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Job 1: Blocking OS matrix test suite.
+  test-suite:
+    name: Test Suite (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.3.2
+
+      - name: Install dependencies
+        run: {runner} sync --frozen
+
+      - name: Run Tests
+        run: {runner} pytest
+
+  # Job 2: Non-blocking quality checks (continue-on-error).
+  quality-checks:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.3.2
+
+      - name: Install dependencies
+        run: {runner} sync --frozen
+
+      # Quote any step name that contains a colon. An unquoted YAML plain
+      # scalar cannot contain ": " (colon+space) — it would be parsed as a
+      # nested mapping and fail the entire workflow.
+      - name: "Run Pre-commit Hooks (fast: formatters, secrets)"
+        run: |
+          {runner} pre-commit run --all-files
+
+      - name: "Run Pre-commit Hooks (heavy: types, security, structural)"
+        run: |
+          {runner} pre-commit run --all-files --hook-stage manual
+```
+
 ## Debug Workflow (Remote Probing Protocol)
 
 The Debugger uses a remote probing workflow to investigate platform-specific or CI-only bugs that cannot be reproduced locally.

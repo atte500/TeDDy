@@ -84,11 +84,11 @@ jobs:
     - name: Install dependencies
       run: uv sync --frozen
 
-    - name: Run Pre-commit Hooks (fast: formatters, secrets)
+    - name: "Run Pre-commit Hooks (fast: formatters, secrets)"
       run: |
         uv run pre-commit run --all-files
 
-    - name: Run Pre-commit Hooks (heavy: types, security, structural)
+    - name: "Run Pre-commit Hooks (heavy: types, security, structural)"
       # The heavy hooks (mypy, bandit, pip-audit, and the structural checkers)
       # are scoped to the non-default `manual` stage so they never slow down the
       # local pre-commit loop; they run here instead.
