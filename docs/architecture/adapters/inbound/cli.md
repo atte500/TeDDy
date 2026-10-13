@@ -101,6 +101,18 @@ Initializes a new session.
     4.  Triggers immediate planning and enters the interactive execution loop.
     5.  `--context` / `-c` is repeatable: each occurrence adds one path (e.g., `-c a.py -c b.md`). Comma-separated values within a single occurrence are also split for backward compatibility (`-c "a.py,b.md"`). Limitation: paths containing a literal comma cannot be expressed.
 
+### Agent Resolution (`--agent` / `-a`) (As-Built, 2026-10-13)
+
+`start` declares `--agent` / `-a` as a **deferred** option — `agent: Optional[str] = typer.Option(None, "--agent", "-a", ...)` — so Typer can distinguish "the user passed `-a`" from "the user omitted `-a`" (a plain string default cannot). Resolution is single-sourced through the `_resolve_agent(agent, pipeline)` helper in `src/teddy_executor/__main__.py` (Poka-Yoke: the effective value cannot drift from the documented default):
+
+1. An explicit `--agent` / `-a` always wins; the passed value is used verbatim with or without `--pipeline`.
+2. When the flag is unset, a pipeline run (`--pipeline` / `-p`) resolves to the action-first `assistant` agent, so automated / CI invocations begin executing actions immediately instead of opening with Pathfinder's discovery loop.
+3. When the flag is unset and `--pipeline` is not set, the run resolves to `pathfinder`.
+
+The `start` `--agent` help text states the default explicitly: `Agent prompt to use. Defaults to 'pathfinder' ('assistant' in pipeline mode).`
+
+**`resume` is deliberately NOT affected.** `resume`'s `--agent` / `-a` already defaults to `None` and means "switch persona for the existing session". It is intentionally excluded from the pipeline default so `teddy resume -p` never silently switches an already-established session's agent.
+
 ### YOLO Mode Resolution (Tri-State `--yolo/--no-yolo`)
 
 `start`, `resume`, and `execute` all expose a **tri-state** `yolo` flag declared with the combined Typer form `typer.Option(None, "--yolo/--no-yolo", "-y/-n")`, yielding `None` (unset) / `True` (`--yolo` / `-y`) / `False` (`--no-yolo` / `-n`). Resolution is single-sourced through the `_resolve_yolo(yolo, config_service)` helper in `src/teddy_executor/__main__.py` (Poka-Yoke: the three commands cannot drift):

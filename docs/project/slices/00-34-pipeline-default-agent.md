@@ -59,7 +59,7 @@ The `--agent` option cannot keep a plain string default and also detect "the use
 
 - [x] **Logic** - Add `_resolve_agent(agent: Optional[str], pipeline: bool) -> str` next to `_resolve_yolo` in `src/teddy_executor/__main__.py` (explicit value wins; else `assistant` if `pipeline` else `pathfinder`). Add `tests/suites/unit/adapters/inbound/test_start_agent_resolution.py` with the four-cell resolution matrix. Additive, no caller -> Green-to-Green.
 - [x] **Wiring** - In the `start` command, defer the `agent` default to `None` via `typer.Option(None, ...)` with pipeline-aware help text, and pass `agent=_resolve_agent(agent, pipeline)` to `handle_new_session`. Update the two README default-agent statements in the SAME commit. Add `tests/suites/acceptance/test_pipeline_default_agent.py` proving `start -p -m` selects Assistant and `start -m` selects Pathfinder. Leave `resume` untouched. Tracer Bullet / final behavioral gate.
-- [ ] **Cleanup** - Update `docs/architecture/adapters/inbound/cli.md` (As-Built) to document the deferred `--agent` default and the pipeline-mode `assistant` default.
+- [x] **Cleanup** - Update `docs/architecture/adapters/inbound/cli.md` (As-Built) to document the deferred `--agent` default and the pipeline-mode `assistant` default.
 
 ## Implementation Notes
 
@@ -88,6 +88,18 @@ The `--agent` option cannot keep a plain string default and also detect "the use
 **Atomicity.** The `README.md` default-agent statements became false the moment the code change landed, so both were corrected in the same working set as the code/test changes, per the task brief's atomicity note.
 
 **Integration.** The Phase 3 full-suite gate (Turn 13, `make test`, no filters, same redirect + exit-code wrapper) returned `1725 passed, 5 skipped` — the D1-complete baseline (`1723 passed`) plus D2's two net-new acceptance test functions. No regressions.
+
+### D3 — Document the deferred `--agent` default in the CLI adapter doc (Cleanup / As-Built)
+
+**Documentation change.** `docs/architecture/adapters/inbound/cli.md`: inserted a new `### Agent Resolution (--agent / -a) (As-Built, 2026-10-13)` subsection in the `start` command section — immediately after the Behavior list and immediately before the pre-existing `### YOLO Mode Resolution (Tri-State --yolo/--no-yolo)` heading — mirroring that precedent's single-sourced-helper style. It records: (a) the deferred `agent: Optional[str] = typer.Option(None, ...)` declaration and the reason (Typer cannot distinguish an explicit `-a` value equal to the default from the default itself); (b) the three-cell resolution rule single-sourced through `_resolve_agent(agent, pipeline)` (an explicit flag always wins; unset + `-p` -> `assistant`; unset + no `-p` -> `pathfinder`); (c) the verbatim as-built help text `Agent prompt to use. Defaults to 'pathfinder' ('assistant' in pipeline mode).`; and (d) an explicit "`resume` is deliberately NOT affected" note. The content reflects the ACTUAL as-built strings and wiring (`__main__.py:67`, `:179`, `:241`), not the task brief's original proposal wording.
+
+**No behavioral change.** D3 is documentation-only — no production or test code was modified — so there is no Red-Green cycle for this deliverable; the "implementation" of a Cleanup deliverable is the doc edit itself.
+
+**Integration.** The Phase 3 full-suite gate (Turn 21, `make test`, no filters, observed via the same redirect + exit-code wrapper) returned `1725 passed, 5 skipped` — identical to the D2 baseline, proving the documentation-only change introduces zero regressions.
+
+**No `[DEBT]`.** The Phase 2 Refactor heuristic surfaced no local refactor and no cross-cutting opportunity for this doc-only deliverable.
+
+**As-Built finalization (Phase 4 Step 4).** `cli.md` IS this slice's Component Design Doc, and D3's edit IS its As-Built update, so Step 4 is satisfied by this deliverable; the doc's `**Status:** Implemented` header already reflects the shipped reality (no further correction required).
 
 ## Verification
 
