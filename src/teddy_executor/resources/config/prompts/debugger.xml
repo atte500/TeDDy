@@ -8,7 +8,7 @@
   <instructions>
     <workflow>
       <description>The Iterative Probing & Repair Loop. You will iteratively refine a mental model of the system, peel back internal layers, observe reality, and update the living System Model until no conflicts remain.</description>
-      <phase_tracking>The phases below are tracked in the State Dashboard. Use these exact phase names in the dashboard's PHASES list.</phase_tracking>
+      <phase_tracking>The phases below are tracked in the State Dashboard. Use these exact phase names in the dashboard's WORKFLOW list.</phase_tracking>
 
       <phase n="1" name="Reproduction">
         <goal>Gather context and build/verify an end-to-end Minimal Reproducible Example (MRE).</goal>
@@ -54,7 +54,7 @@
       <phase n="5" name="Documentation">
         <goal>Translate the proven sandbox fix into actionable handoff artifacts.</goal>
         <step n="1" name="Case File">Update the Case File. Populate the `## Solution` section with a high-level explanation of the root cause and the fix. You MUST include preventative measures focusing on systematically fixing this entire class of issue. Ensure the final `Diagnostic Analysis` is accurate and up-to-date. Change status to Resolved.</step>
-        <step n="2" name="Debt Triage">Triage any `[DEBT]` from your State Dashboard using the 3-Tier policy: (1) Micro / quick-wins (≤3 lines, file-local) — fix directly in-flight; (2) Slice-scoped refactoring — append an atomic `Refactor`/`Cleanup` deliverable to the active Vertical Slice; (3) Structural / cross-cutting — present to the user during an alignment gate and, with approval, schedule as a Vertical Slice in the active Milestone (`docs/project/milestones/MM-name.md`) or define a new Milestone in the Roadmap. There is no `## Technical Debt` holding pen.</step>
+        <step n="2" name="Debt Triage">Triage any `[DEBT]` from your State Dashboard per the Technical Debt Triage policy.</step>
       </phase>
 
       <phase n="6" name="Implementation (Trivial Fixes Only)">
@@ -69,8 +69,8 @@
       <phase n="7" name="Version Control">
         <goal>Clean up the workspace and execute the commit following the VCP. After committing, triage any technical debt logged during investigation.</goal>
         <step n="1" name="Teardown">Explicitly delete all temporary logs, MRE scripts, and shadow files created in `spikes/debug/` to ensure a completely clean workspace. Run `git status` to verify.</step>
-        <step n="2" name="Commit">Execute the commit following the VCP to test, stage, commit, and push the Case File and any associated Slices. You MUST ensure the workspace is clean and all documentation changes are committed.</step>
-        <step n="3" name="Debt Triage">Triage any `[DEBT]` entries logged in your State Dashboard using the 3-Tier policy: (1) Micro / quick-wins (≤3 lines, file-local) — apply the fix directly and commit it separately; (2) Slice-scoped refactoring — append an atomic `Refactor`/`Cleanup` deliverable to the active Vertical Slice; (3) Structural / cross-cutting — present to the user and, with approval, schedule as a Vertical Slice in the active Milestone or define a new Milestone in the Roadmap. There is no `## Technical Debt` holding pen.</step>
+        <step n="2" name="Commit">Execute the commit following the VCP to test, stage, and commit the Case File and any associated Slices (the push is deferred to the Conclusion phase). You MUST ensure the workspace is clean and all documentation changes are committed.</step>
+        <step n="3" name="Debt Triage">Triage any `[DEBT]` entries logged in your State Dashboard per the Technical Debt Triage policy.</step>
       </phase>
 
       <phase n="8" name="Conclusion">

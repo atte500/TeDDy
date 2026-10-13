@@ -13,7 +13,12 @@ make commit 'feat(templates): add PROJECT.md template'
 ```
 
 **What is `.PHONY`?**
-`.PHONY` is a Makefile directive that declares `commit`, `probe`, `test`, and `logs` as phony targets — they do not correspond to actual files. Without `.PHONY`, if a file named `commit` or `probe` existed in the directory (e.g., a script called `commit`), Make would see it as up-to-date and skip the target entirely. By declaring them phony, Make always runs the recipe when you call `make commit`, `make probe`, or `make test`.
+`.PHONY` is a Makefile directive that declares `commit`, `push`, `probe`, `test`, and `logs` as phony targets — they do not correspond to actual files. Without `.PHONY`, if a file named `commit` or `probe` existed in the directory (e.g., a script called `commit`), Make would see it as up-to-date and skip the target entirely. By declaring them phony, Make always runs the recipe when you call `make commit`, `make push`, `make probe`, or `make test`.
+
+### Push
+```shell
+make push
+```
 
 ### Test
 ```shell
@@ -68,11 +73,11 @@ EOF
 
 ## Cross-Platform Design
 
-The Makefile uses Make's built-in `-` prefix for error suppression (`-pre-commit run`, `-git pull --rebase`, `-git push`) instead of shell-level `|| true` or `&&`/`||` chaining. This ensures cross-platform compatibility:
+The Makefile uses Make's built-in `-` prefix for error suppression (`-pre-commit run`) instead of shell-level `|| true` or `&&`/`||` chaining. This ensures cross-platform compatibility:
 
 - **POSIX shells (bash, sh, zsh):** `-` prefix works because Make handles error suppression natively before passing the recipe line to the shell.
 - **Windows (cmd.exe):** `-` prefix works because Make suppresses the exit code check, avoiding shell-specific `||` operators that cmd.exe does not support.
-- **Error transparency:** If pre-commit, pull, or push fail, the commit still succeeds locally. The post-commit test gate is the real safety net; remote failures appear as non-zero exit codes in the terminal output.
+- **Error transparency:** The pre-commit pass is advisory — if it fails, the commit still succeeds locally; the post-commit test gate is the real safety net. `make push` runs `git pull --rebase` and `git push` WITHOUT suppression, so a rebase conflict or push rejection surfaces as a non-zero exit.
 
 ## Test Workflow
 
@@ -87,7 +92,11 @@ test:
 
 ## VCP Commit Workflow
 
-`make commit` runs the pre-commit hooks once (via `pre-commit run`) and re-stages any auto-formatted files, then commits with `--no-verify` to suppress Git's own redundant second invocation of the pre-commit hook. This skips ONLY the pre-commit stage — the post-commit test gate (`.githooks/post-commit.py`) is a separate hook and remains fully active and unskippable.
+`make commit` is **local-only**: it stages all local changes, runs the pre-commit hooks once (an advisory auto-fix pass that re-stages any auto-formatted files), and commits. It does **not** pull or push — the push is deferred to the session Conclusion via `make push` (see [Push (Deferred to Conclusion)](#push-deferred-to-conclusion)).
+
+`make commit` commits **without** `--no-verify`, so Git's own `pre-commit` hook is the real local gate. The unskippable post-commit test gate (`.githooks/post-commit.py`) runs the full suite on every commit. Running the pre-commit hook twice (the explicit auto-fix pass plus Git's own invocation) is accepted because the local hook set is only formatters + `detect-secrets` + conflict check (see [pre-commit.md](./pre-commit.md)).
+
+**Staging note:** `make commit` stages **all** local changes, including currently unstaged ones (`git add .`), not just the files you intended to commit.
 
 ### Example
 
@@ -99,9 +108,7 @@ commit:
 	git add .
 	-pre-commit run
 	git add .
-	git commit -m "$(ARGS)" --no-verify
-	-git pull --rebase
-	-git push
+	git commit -m "$(ARGS)"
 
 %:
 	@:
@@ -109,6 +116,52 @@ commit:
 
 **Usage:**
 - `make commit 'feat(templates): add PROJECT.md template'`
+
+**Message-input contract:** the recipe captures the message from the extra `make` goals via `$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))`. Supported input (verified by the `spikes/debug/make-args/` findings):
+
+- ✅ **Single-line Conventional Commits survive verbatim** — e.g. `make commit 'feat(scope): add thing'`.
+- ❌ **`$VAR` is swallowed to empty** — `make` expands `$(...)`/`$X` before the recipe runs; avoid `$`.
+- ❌ **Backticks and quotes are stripped** by the shell quoting layer.
+- ❌ **Multiline messages fail hard** (`/bin/sh: unexpected EOF`, exit 2).
+
+**Guard:** keep the commit message to a single line and avoid `$` characters.
+
+## Push (Deferred to Conclusion)
+
+`make push` runs `git pull --rebase`, pushes, then discovers **every** CI run for the pushed SHA (`gh run list --commit <sha>`) and waits for and reports each workflow with its jobs. It blocks only on failures **your push introduced**:
+
+- **base green → new red** = your regression → **exit 1** (fix before concluding).
+- **base red → new red (same jobs)** = pre-existing → **report and exit 0** (do not wait, do not duplicate the fix).
+- **all green** → PASSED.
+- **unknown base** → fail-safe: treat as yours (block).
+
+Attribution is deterministic: SHA → run → per-job conclusion (never "the latest run").
+
+### Example
+
+```makefile
+push:
+	git pull --rebase
+	git push
+	@SHA=$$(git rev-parse HEAD); \
+	BASE=$$(git rev-parse origin/main); \
+	STATUS=0; \
+	echo "Pushed $$SHA (base $$BASE)"; \
+	for WF in $$(gh run list --commit "$$SHA" --json workflowName --jq '.[].workflowName' | sort -u); do \
+	  NEW=$$(gh run list --commit "$$SHA" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
+	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
+	  gh run watch "$$NEW" --exit-status >/dev/null 2>&1 || true; \
+	  NEWFAIL=$$(gh run view "$$NEW" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")'); \
+	  if [ -z "$$NEWFAIL" ]; then echo "$$WF: PASSED"; continue; fi; \
+	  if [ -z "$$OLD" ]; then echo "$$WF: FAILED ($$NEWFAIL) — unknown base, treating as YOUR regression"; STATUS=1; continue; fi; \
+	  OLDFAIL=$$(gh run view "$$OLD" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")'); \
+	  if [ "$$NEWFAIL" = "$$OLDFAIL" ]; then echo "$$WF: pre-existing failure ($$NEWFAIL) — not yours"; \
+	  else echo "$$WF: NEW failure ($$NEWFAIL) — YOUR regression"; STATUS=1; fi; \
+	done; \
+	exit $$STATUS
+```
+
+**Usage:** `make push`
 
 ## Remote Probing Protocol (RPP)
 
@@ -162,7 +215,8 @@ logs:
 ## Implementation Notes
 
 - This project uses `uv run` as its designated runner.
-- Pre-commit hooks include: ruff, mypy, detect-secrets, pip-audit.
+- Local pre-commit hooks include only fast auto-fixers (`ruff`) + `detect-secrets` + `check-merge-conflict`; heavier checks (`mypy`, `bandit`, `pip-audit`, and the structural checkers) run non-blocking in CI (see [pre-commit.md](./pre-commit.md)).
 - Post-commit hook lives at `.githooks/post-commit.py` and runs the full `uv run pytest` suite.
-- Ensure `gh` (GitHub CLI) is authenticated for both the Remote Probing Protocol and CI Log Extraction.
+- Ensure `gh` (GitHub CLI) is authenticated for `make push`, the Remote Probing Protocol, and CI Log Extraction.
 - The `make logs` target abstracts the Debugger's CI-log extraction (Phase 1, Step 2). See [CI Log Extraction](#ci-log-extraction).
+- `make push` runs in the session Conclusion phase (see [Push (Deferred to Conclusion)](#push-deferred-to-conclusion)); it rebases, pushes, and reports CI results back.

@@ -1,4 +1,9 @@
 exclude: '^spikes/'
+# Keep the local pre-commit loop fast: only the hooks below run at the default
+# `pre-commit` stage. Heavier checks (mypy, bandit, pip-audit, and the structural
+# checkers) are scoped to the non-default `manual` stage and run explicitly in CI
+# (see .github/workflows/ci.yml).
+default_stages: [pre-commit]
 repos:
 -   repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
@@ -18,6 +23,8 @@ repos:
         args: ["-c", "pyproject.toml"]
         # Exclude tests and experimental code from bandit checks
         exclude: ^(tests|spikes)/
+        # CI-only: noisy security scan runs in the non-blocking quality job.
+        stages: [manual]
 
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -57,7 +64,8 @@ repos:
         language: system
         types: [python]
         require_serial: true
-
+        # CI-only: static typing runs in the non-blocking quality job.
+        stages: [manual]
 
     -   id: pip-audit
         name: Vulnerability Scanning (pip-audit)
@@ -65,6 +73,8 @@ repos:
         language: system
         pass_filenames: false
         files: ^(pyproject\.toml|uv\.lock)$
+        # CI-only: dependency vulnerability scan runs in the quality job.
+        stages: [manual]
 
     -   id: check-core-di-boundary
         name: Check Core DI Boundary (No punq in core)
@@ -72,6 +82,8 @@ repos:
         language: system
         types: [python]
         files: ^src/teddy_executor/core/
+        # CI-only: repository-wide structural check.
+        stages: [manual]
 
     -   id: check-explicit-utf8
         name: Enforce Explicit UTF-8 Encoding (Production)
@@ -79,6 +91,8 @@ repos:
         language: system
         types: [python]
         files: ^src/
+        # CI-only: repository-wide structural check.
+        stages: [manual]
 
     -   id: no-hardcoded-tmp-paths
         name: No Hardcoded /tmp/ Paths in Test Files
@@ -88,6 +102,8 @@ repos:
         files: ^tests/
         pass_filenames: false
         always_run: true
+        # CI-only: repository-wide structural check.
+        stages: [manual]
 
     -   id: no-unguarded-posix-patches
         name: No Unguarded POSIX-Only Symbol Patches in Tests
@@ -95,6 +111,8 @@ repos:
         language: system
         types: [python]
         files: ^tests/
+        # CI-only: repository-wide structural check.
+        stages: [manual]
 
     -   id: no-unisolated-raw-cli-invoke
         name: No Unisolated Raw Side-Effecting CLI Invocations in Tests
@@ -102,6 +120,8 @@ repos:
         language: system
         types: [python]
         files: ^tests/
+        # CI-only: repository-wide structural check.
+        stages: [manual]
 
     -   id: post-commit-test-gate
         name: Post-commit test gate

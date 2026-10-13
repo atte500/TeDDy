@@ -1,26 +1,29 @@
-.PHONY: commit probe test logs
+.PHONY: commit push probe test logs
 
-# commit - VCP workflow: stage, pre-commit, commit, pull, push
+# commit - VCP workflow (LOCAL ONLY): stage, advisory pre-commit auto-fix pass, commit.
 # Usage:
 #   make commit '<type>(<scope>): <description>'
 #
-# The '-' prefix on pre-commit, pull, and push tells Make to ignore non-zero exit codes.
-# This is cross-platform (works on both POSIX shells and Windows cmd.exe) and avoids
+# This target is LOCAL-ONLY: it does NOT pull or push. The push is deferred to the
+# session Conclusion via `make push` (see below).
+#
+# The '-' prefix on pre-commit tells Make to ignore a non-zero exit code. This is
+# cross-platform (works on both POSIX shells and Windows cmd.exe) and avoids
 # shell-specific error-suppression operators (||, &&) that behave differently per OS.
-# Pre-commit failure does NOT block the commit (it's advisory); the post-commit test
-# gate is the real safety net. Pull/push failure does NOT block the local commit.
+# Pre-commit failure does NOT block the commit (it is an advisory auto-fix pass); the
+# post-commit test gate (.githooks/post-commit.py) is the real safety net.
 
 # Target-specific variables capture positional arguments before recipe execution.
 # These are Make variables, not shell variables, so they persist across all recipe lines.
 # $(wordlist 2,...) drops only the FIRST goal (the target name) and preserves every
 # remaining word of the message verbatim -- including the literal word "commit".
 #
-# `git commit` is invoked with `--no-verify` to suppress Git's own redundant second
-# invocation of the pre-commit hook: this target already runs `pre-commit run` once
-# (below) and re-stages any auto-formatted files, so letting Git fire the hook again
-# would double the work and block on minor linter warnings. `--no-verify` skips ONLY
-# the pre-commit stage; the post-commit test gate (.githooks/post-commit.py) remains
-# fully active and unskippable.
+# `git commit` is invoked WITHOUT `--no-verify`, so Git's own pre-commit hook is the
+# real local gate. The local hook set is only formatters + detect-secrets + conflict
+# check (see .pre-commit-config.yaml), so running it twice -- this advisory pass plus
+# Git's own invocation -- is cheap and accepted.
+#
+# `git add .` stages ALL local changes, including currently unstaged ones.
 commit: ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
 commit:
@@ -28,9 +31,41 @@ commit:
 	git add .
 	-pre-commit run
 	git add .
-	git commit -m "$(ARGS)" --no-verify
-	-git pull --rebase
-	-git push
+	git commit -m "$(ARGS)"
+
+# push - VCP workflow (Conclusion phase): rebase, push, then attribute CI results.
+# Usage:
+#   make push
+#
+# Runs `git pull --rebase`, pushes, then discovers EVERY CI run for the pushed SHA
+# (gh run list --commit <sha>) and waits for and reports each workflow with its jobs.
+# It blocks ONLY on failures your push introduced:
+#   - base green -> new red           = your regression  -> exit 1 (fix before concluding)
+#   - base red -> new red (same jobs) = pre-existing     -> report and exit 0
+#   - all green                       = PASSED
+#   - unknown base                    = fail-safe: treat as yours (block)
+# Attribution is deterministic: SHA -> run -> per-job conclusion (never "the latest run").
+# `git pull --rebase` is safe because the post-commit hook skips automated git
+# operations (see .githooks/post-commit.py).
+push:
+	git pull --rebase
+	git push
+	@SHA=$$(git rev-parse HEAD); \
+	BASE=$$(git rev-parse origin/main); \
+	STATUS=0; \
+	echo "Pushed $$SHA (base $$BASE)"; \
+	for WF in $$(gh run list --commit "$$SHA" --json workflowName --jq '.[].workflowName' | sort -u); do \
+	  NEW=$$(gh run list --commit "$$SHA" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
+	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
+	  gh run watch "$$NEW" --exit-status >/dev/null 2>&1 || true; \
+	  NEWFAIL=$$(gh run view "$$NEW" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")'); \
+	  if [ -z "$$NEWFAIL" ]; then echo "$$WF: PASSED"; continue; fi; \
+	  if [ -z "$$OLD" ]; then echo "$$WF: FAILED ($$NEWFAIL) — unknown base, treating as YOUR regression"; STATUS=1; continue; fi; \
+	  OLDFAIL=$$(gh run view "$$OLD" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")'); \
+	  if [ "$$NEWFAIL" = "$$OLDFAIL" ]; then echo "$$WF: pre-existing failure ($$NEWFAIL) — not yours"; \
+	  else echo "$$WF: NEW failure ($$NEWFAIL) — YOUR regression"; STATUS=1; fi; \
+	done; \
+	exit $$STATUS
 
 # probe - Remote Probing Protocol: push probe, trigger CI workflow, retrieve logs
 # Usage:

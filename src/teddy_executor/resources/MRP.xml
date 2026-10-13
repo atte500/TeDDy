@@ -16,18 +16,18 @@
     </rule>
 
     <rule n="2" name="State Dashboard">
-      <description>Maintain orientation via the State Dashboard placed at the end of the `Rationale` block. You MUST preserve all items in the `WIP & REMINDERS` section across all turns, updating their status but never removing them from the list. The `PHASES` list MUST mirror the phases defined in your agent workflow.</description>
+      <description>Maintain orientation via the State Dashboard placed at the end of the `Rationale` block. You MUST preserve all items in the `NOTES` section across all turns, updating their status but never removing them from the list. The `WORKFLOW` list MUST mirror the phases defined in your agent workflow.</description>
       <template>
 Goal: [The objective of the current task/session]
 Reference Files: [Root-relative paths to the key artifacts guiding this work]
 
-PHASES:
+WORKFLOW:
 - [✓ | ▶ |  ] [Phase 1]
 - [✓ | ▶ |  ] [Phase 2]
 - [✓ | ▶ |  ] [Phase 3]
 ...
 
-WIP & REMINDERS:
+NOTES:
 - [TODO] [Pending task]
 - [DOC] [Documentation task/note]
 - [!] [Critical constraint/risk]
@@ -47,11 +47,12 @@ WIP & REMINDERS:
     </rule>
 
     <rule n="6" name="Version Control Protocol (VCP)">
-      The entire commit cycle (test, stage, commit, push) MUST occur in a dedicated Version Control turn.
+      The entire commit cycle (test, stage, commit) MUST occur in a dedicated Version Control turn. Pushing is deferred to the Conclusion phase (see step 5).
       1. Pre-conditions: Clean up temporary files (spikes/, .tmp/). If unsure of changes, `EXECUTE git add . && git diff HEAD`.
       2. Commit Message: Use Conventional Commits '<type>(<scope>): <description>' wrapped in single quotes. Use imperative mood. Append ! for breaking changes.
-      3. Execution: You MUST test, stage, commit locally, pull safely with rebase, and push by running `make commit '<type>(<scope>): <description>'`. There is no `no-verify` flag: the `make commit` target runs the pre-commit hooks once via `pre-commit run` (re-staging any auto-formatted files) and then commits with `git commit --no-verify`, which suppresses Git's own redundant second invocation of the pre-commit hook. The post-commit test gate is unaffected by this flag and always runs.
-      4. Post-conditions: All tests MUST pass — the post-commit hook runs the full suite and reverts the commit on failure; this gate is unskippable and MUST NEVER be bypassed. The pre-commit stage is advisory (its failures do not block the local commit), but if it reported non-trivial quality-gate issues (e.g. file length), you MUST make a follow-up cleanup commit that resolves them before resuming feature work. Triage any resulting `[DEBT]` per the 3-Tier Debt Triage policy — there is no `## Technical Debt` holding pen.
+      3. Execution: Run `make commit '<type>(<scope>): <description>'` to stage, run the local pre-commit hooks, and commit. `make commit` stages ALL local changes, including currently unstaged ones (`git add .`). The target commits WITHOUT `--no-verify`, so Git's own pre-commit hook is a real local gate; the post-commit test gate always runs and is unaffected.
+      4. Post-conditions: All tests MUST pass — the post-commit hook runs the full suite and reverts the commit on failure; this gate is unskippable and MUST NEVER be bypassed. The pre-commit stage is advisory (its failures do not block the local commit), but if it reported non-trivial quality-gate issues (e.g. file length), you MUST make a follow-up cleanup commit that resolves them before resuming feature work. Triage any resulting `[DEBT]` per the Technical Debt Triage policy — there is no `## Technical Debt` holding pen.
+      5. Push at Conclusion: In the Conclusion phase, run `make push` to rebase onto the remote, push, and wait for and report the CI results. `make push` compares the pushed SHA's failing-job set against the base run (`origin/main` before the push), per workflow: base green → new red = YOUR regression → fix it immediately before concluding (exit 1); base red → new red (same jobs) = pre-existing → report it and continue (exit 0); all green → PASSED. An unknown base is treated as yours (fail-safe). Tests MUST always be fixed; quality-gate failures MUST be fixed or explicitly planned in before you conclude.
     </rule>
 
     <rule n="7" name="Standardized Plan Types">
@@ -87,7 +88,23 @@ WIP & REMINDERS:
     </rule>
 
     <rule n="13" name="Communication Hygiene">
-      <description>Applies to all user-facing Messages and turn titles: (1) Do not repeat the same title across consecutive turns — each turn's title MUST reflect its distinct responsibility, and if you detect a vicious loop with no new progress you MUST transition to BLOCKED 🔴 rather than repeating yourself. (2) Do not restate content already delivered in a prior Message, and do not send a new Message until the work previously agreed in the last Message is complete — the only exception is entering BLOCKED 🔴. (3) Record important findings and constraints as `[!]` entries in the State Dashboard so they persist across turns. (4) End every Message with a concise TL;DR line summarizing the key point or the decision requested. (5) Whenever the user sends a message, immediately log every user decision, constraint, or directive into the State Dashboard's `WIP & REMINDERS` as `[TODO]` (for tasks) or `[!]` (for constraints). You are strictly forbidden from sending another `## Message` until all such `[TODO]` items are marked `[✓]` (or unless you transition to BLOCKED 🔴). Never re-ask a question the user has already answered, and never restate decisions or explanations already delivered in prior messages.</description>
+      <description>Applies to all user-facing Messages and turn titles: (1) Do not repeat the same title across consecutive turns — each turn's title MUST reflect its distinct responsibility, and if you detect a vicious loop with no new progress you MUST transition to BLOCKED 🔴 rather than repeating yourself. (2) Do not restate content already delivered in a prior Message, and do not send a new Message until the work previously agreed in the last Message is complete — the only exception is entering BLOCKED 🔴. (3) Record important findings and constraints as `[!]` entries in the State Dashboard so they persist across turns. (4) End every Message with a concise TL;DR line summarizing the key point or the decision requested. (5) Whenever the user sends a message, immediately log every user decision, constraint, or directive into the State Dashboard's `NOTES` as `[TODO]` (for tasks) or `[!]` (for constraints). You are strictly forbidden from sending another `## Message` until all such `[TODO]` items are marked `[✓]` (or unless you transition to BLOCKED 🔴). Never re-ask a question the user has already answered, and never restate decisions or explanations already delivered in prior messages.</description>
+    </rule>
+
+    <rule n="14" name="Plain Language">
+      Write plainly. Avoid unnecessary jargon, use one term per concept, and prefer short sentences. This applies to Message contents, documentation, AND the Rationale — keep the rigor of the reasoning, but remove needless complexity.
+    </rule>
+
+    <rule n="15" name="Quality-Gate Bypass Policy">
+      Prefer config-level bypasses (pyproject `per-file-ignores`, pre-commit `exclude`) for anything repeated or file-wide. Allow a narrowly-scoped inline `# type: ignore[code]` / `# noqa: CODE` WITH a reason comment for genuine one-offs. Bare `# noqa` / `# type: ignore` are forbidden. Prompt steps reference this policy by NAME, never by rule number.
+    </rule>
+
+    <rule n="16" name="Technical Debt Triage">
+      Triage every `[DEBT]` from your State Dashboard using the 3-Tier policy:
+      1. Micro / quick-wins (≤3 lines, file-local) — fix directly in-flight.
+      2. Slice-scoped refactoring — append an atomic `Refactor`/`Cleanup` deliverable to the active Vertical Slice.
+      3. Structural / cross-cutting — present to the user during an alignment gate and, with approval, schedule as a Vertical Slice in the active Milestone (`docs/project/milestones/MM-name.md`) or define a new Milestone in the Roadmap.
+      There is no `## Technical Debt` holding pen.
     </rule>
   </general_rules>
 
@@ -226,12 +243,12 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
 4. State Dashboard
 Goal: Lorem ipsum dolor sit amet.
 
-PHASES:
+WORKFLOW:
 - [✓] Lorem
 - [▶] Ipsum
 - [ ] Dolor
 
-WIP & REMINDERS:
+NOTES:
 - [TODO] Consectetur adipiscing elit.
 - [!] Sed do eiusmod tempor incididunt.
 ~~~~~~

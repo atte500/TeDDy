@@ -7,7 +7,7 @@ This section defines foundational engineering practices. Each entry MUST be a sp
 **Template format:** `- **Rule Name:** Description and enforcement mechanism.`
 
 ### Recommended: customize per project
-- **Version Control:** Branch strategy and commit conventions. Every commit MUST leave the suite in a **Continuous Green State** — the full test suite passes before and after each change.
+- **Version Control:** Branch strategy and commit conventions. Every commit MUST leave the suite in a **Continuous Green State** — the full test suite passes before and after each change. Commit locally per deliverable; defer the push to the session Conclusion and report CI results back (blocking only on failures the push introduced).
 - **Run Environment:** Designated runner (e.g., `uv run`, `poetry run`).
 - **Failure Transparency:** Error handling policy — specific exceptions only, no silent suppression.
 - **Testing Strategy:** Test types (Unit/Integration/Acceptance), boundaries, and filesystem hygiene. Mandate **Test Double Integrity**: ban global patching, use in-memory fakes for state-managing outbound ports, and strictly autospec-bound mocks only for un-fakeable external side-effects.
@@ -15,9 +15,9 @@ This section defines foundational engineering practices. Each entry MUST be a sp
 - **Dependency Injection:** Constructor injection mandate; forbid Service Locator and global containers.
 - **Centralized Configuration:** Config file location, prohibition of magic numbers.
 - **CI Pipeline:** Two parallel jobs — 1) Blocking OS matrix test suite with strict test coverage targets. 2) Non-blocking (continue-on-error: true) quality checks running fast formatters, linters, security/secret scanners, type checkers, and repository-wide structural checks (excluding sandboxes and third-party dependencies).
-- **Pre-commit Hooks:** Scope (staged files only), required hooks (formatters, linters, type checkers, security scanners).
+- **Pre-commit Hooks:** Scope (staged files only) and keep the local loop fast — formatters, secret scanners, and merge-conflict checks only. Move heavy, false-positive-prone checks (type checkers, security scanners, repository-wide structural checkers) to the non-blocking CI quality job, scoped to a non-default pre-commit stage.
 - **Post-commit Execution:** Full test suite run on commit, automatic revert on failure.
-- **Makefile Commands:** The `Makefile` is the canonical entry point for the VCP commit workflow and on-demand test runs. `make test` runs the full suite, `make commit '<msg>'` performs a VCP commit (it runs the pre-commit hooks once and commits with `--no-verify`, while the post-commit test gate remains unskippable), and `make probe '<reason>'` runs the Remote Probing Protocol. See [docs/templates/makefile.md](docs/templates/makefile.md).
+- **Makefile Commands:** The `Makefile` is the canonical entry point for the VCP commit workflow and on-demand test runs. `make test` runs the full suite, `make commit '<msg>'` performs a LOCAL-ONLY VCP commit (it runs the pre-commit hooks once as an advisory auto-fix pass and commits WITHOUT `--no-verify`, so Git's own pre-commit hook is the real local gate, while the post-commit test gate remains unskippable), `make push` rebases, pushes, and reports CI results back (deferred to the session Conclusion), and `make probe '<reason>'` runs the Remote Probing Protocol. See [docs/templates/makefile.md](docs/templates/makefile.md).
 
 ### Pre-commit Quick-Start
 

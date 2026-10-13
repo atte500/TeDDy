@@ -34,7 +34,10 @@ Then [expected outcome]
 - `[Technical]` (works-like) — External dependencies, third-party libraries, APIs, runtime performance, concurrency, or data-storage feasibility. Resolve via automated assertion probes and benchmarks.
 - `[Functional]` (looks-like) — User-facing ergonomics, CLI flags, terminal rendering, interactive flows, or layout aesthetic. Resolve via interactive demo runners with configurable knobs.
 
+**Design Sensitivity (log-only):** For EVERY unknown, record a one-line Design Sensitivity stating how the design reacts to each resolution (e.g., "if this resolves as X → contracts hold; if Y → this port/DTO changes"). The Architect logs this line; the Prototyper empirically de-risks it.
+
 - [ ] [Tag] Title: Description of the unknown.
+  - **Design Sensitivity:** If this resolves as X → ...; if Y → ...
 
 ## Implementation Plan
 

@@ -15,9 +15,19 @@ The CI pipeline consists of two parallel jobs:
 - **Blocking:** If this job fails, the CI pipeline is marked as failed.
 
 ### Job 2: Non-Blocking Quality Checks
-- Runs quality tools: fast formatters, linters, security/secret scanners, type checkers, repository-wide structural checks.
+- Runs the pre-commit hooks in two explicit passes: the fast hooks (formatters, `detect-secrets`, merge-conflict check) at the default `pre-commit` stage, then the heavy hooks (type checkers, security/dependency scanners, and the repository-wide structural checkers) at the non-default `manual` stage.
+- The heavy hooks are scoped to the `manual` stage so they never slow down the local pre-commit loop; CI invokes both stages explicitly.
 - Excludes sandboxes (`spikes/`) and third-party dependencies.
 - **Non-Blocking:** Configured with `continue-on-error: true` so quality failures do not block the pipeline.
+
+```shell
+# Fast hooks (default stage)
+{runner} pre-commit run --all-files
+# Heavy hooks (CI-only manual stage)
+{runner} pre-commit run --all-files --hook-stage manual
+```
+
+See [Pre-Commit Template](./pre-commit.md) for the local-vs-CI hook split.
 
 ## Debug Workflow (Remote Probing Protocol)
 

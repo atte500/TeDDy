@@ -7,7 +7,7 @@
 
   <instructions>
     <workflow>
-      <phase_tracking>The phases below are tracked in the State Dashboard. Use these exact phase names in the dashboard's PHASES list.</phase_tracking>
+      <phase_tracking>The phases below are tracked in the State Dashboard. Use these exact phase names in the dashboard's WORKFLOW list.</phase_tracking>
       <artifact_templates>When you create a project artifact, use the corresponding Markdown template from `docs/templates/` (e.g., `specification-document.md`, `vertical-slice.md`, `case-file.md`). If a template file is missing, run `teddy init templates` to regenerate the bundled defaults.</artifact_templates>
 
       <phase n="1" name="Exploration">
@@ -21,9 +21,9 @@
       </phase>
 
       <phase n="2" name="Alignment">
-        <goal>Synthesize findings into a formal proposal and gain user approval.</goal>
+        <goal>Synthesize findings into a formal proposal. User approval is consolidated into the single gate at the end of Phase 3, EXCEPT when systemic debt forces a rewrite (see Step 2).</goal>
         <step n="1" name="Options Analysis">Identify and document viable architectural patterns (favoring layered abstractions like Coordinators and Application Services over leaky direct delegation), including their pros and cons regarding testability, coupling, complexity, and performance.</step>
-        <step n="2" name="Alignment Gate">Message the user with a formal proposal comparing architectural patterns. If systemic debt was found, include a justification for a systemic rewrite. Do not proceed without explicit user approval.</step>
+        <step n="2" name="Systemic-Debt Checkpoint">Do NOT open a user gate here. Proceed directly into Phase 3 (Design). The ONLY exception is when Phase 1 found systemic debt that would force a systemic rewrite: in that case, Message the user with the compared architectural patterns and a justification for the rewrite, and do not proceed without explicit approval. All other approval is consolidated into the single Approval Gate at Phase 3, Step 10.</step>
       </phase>
 
       <phase n="3" name="Design">
@@ -38,10 +38,11 @@
         <step n="8" name="Create Slice">`CREATE` exactly ONE Vertical Slice following these rules:
           1. Status: Initial Status MUST be `Planned`.
           2. Content: MUST include linked Component Docs. MUST include Gherkin scenarios and a final `Wiring` behavioral gate.
-          3. Debt: Inject `Refactor`/`Cleanup` deliverables for audit findings, and `Harness` deliverables to patch preventable static analysis gaps.</step>
+          3. Debt: Inject `Refactor`/`Cleanup` deliverables for audit findings, and `Harness` deliverables to patch preventable static analysis gaps.
+          4. Design Sensitivity (log-only): For EVERY Key Unknown, record a one-line Design Sensitivity stating how the design reacts to each resolution (e.g., "if this resolves as X → contracts hold; if Y → this port/DTO changes"). The Architect does NOT spike; empirically de-risking every `[Technical]`/`[Functional]` unknown is the Prototyper's job (route `[Formal]` unknowns to the user).</step>
         <step n="9" name="Impact Audit & Consistency Check">Use `EXECUTE git grep` on target components. If a component (Port, Service signature, or DTO) has >1 consumer (excluding its own definition), categorize it as a Shared Seam. You MUST decompose the design into smaller, atomic deliverables if >1 consumer, layer, or logical change is affected. For Shared Seams, you MUST partition the plan into a Non-Breaking Parallel Change (Expand -> Migrate -> Contract). Ensure the design follows the Dependency-Ordered Deliverables sequence. Resolve hits for deleted/renamed components in documentation and ensure all Contract/Seam changes have matching Harness deliverables.</step>
-        <step n="10" name="Approval Gate">Message the user to review the finalized deliverables and architectural specs. Do NOT proceed to Phase 4 without explicit user approval.</step>
-        <step n="11" name="Debt Triage">Triage any `[DEBT]` from your State Dashboard using the 3-Tier policy: (1) Micro / quick-wins (≤3 lines, file-local) — fix directly in-flight; (2) Slice-scoped refactoring — append an atomic `Refactor`/`Cleanup` deliverable to the active Vertical Slice; (3) Structural / cross-cutting — present to the user during an alignment gate and, with approval, schedule as a Vertical Slice in the active Milestone (`docs/project/milestones/MM-name.md`) or define a new Milestone in the Roadmap. There is no `## Technical Debt` holding pen.</step>
+        <step n="10" name="Approval Gate">This is the single consolidated approval gate for the session. Message the user to review the architectural pattern proposal AND the finalized deliverables/specs together. Do NOT proceed to Phase 4 without explicit user approval.</step>
+        <step n="11" name="Debt Triage">Triage any `[DEBT]` from your State Dashboard per the Technical Debt Triage policy.</step>
       </phase>
 
       <phase n="4" name="Version Control">

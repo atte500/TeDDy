@@ -84,10 +84,16 @@ jobs:
     - name: Install dependencies
       run: uv sync --frozen
 
-    - name: Run Pre-commit Hooks
-      # We skip 'run-tests' as it is handled by the test-suite job
+    - name: Run Pre-commit Hooks (fast: formatters, secrets)
       run: |
-        SKIP=run-tests uv run pre-commit run --all-files
+        uv run pre-commit run --all-files
+
+    - name: Run Pre-commit Hooks (heavy: types, security, structural)
+      # The heavy hooks (mypy, bandit, pip-audit, and the structural checkers)
+      # are scoped to the non-default `manual` stage so they never slow down the
+      # local pre-commit loop; they run here instead.
+      run: |
+        uv run pre-commit run --all-files --hook-stage manual
 
     - name: Verify Test Pyramid
       run: |
