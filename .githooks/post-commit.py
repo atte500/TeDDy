@@ -46,6 +46,9 @@ def _in_progress_git_operation() -> bool:
 
 
 def main() -> None:
+    # Guard: skip during automated git operations (rebase/merge/cherry-pick).
+    if _in_progress_git_operation():
+        return
     # Pre-flight: ensure uv is installed
     try:
         subprocess.run(
