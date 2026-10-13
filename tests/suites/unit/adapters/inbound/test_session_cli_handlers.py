@@ -383,6 +383,10 @@ def test_handle_new_session_starts_background_check_thread(monkeypatch):
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
         lambda container, session_name, interactive, no_copy, **kwargs: None,
     )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._echo_config_success",
+        lambda container, agent=None, model=None, actual_model=None: None,
+    )
     # Mock ensure_initialized to a no-op (container.resolve returns a Mock)
     monkeypatch.setattr(
         "teddy_executor.core.ports.inbound.init.IInitUseCase.ensure_initialized",
