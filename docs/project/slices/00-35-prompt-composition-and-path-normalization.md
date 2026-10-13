@@ -1,5 +1,5 @@
 # Slice: Prompt Composition & Path Normalization Consolidation
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 - **Prototype:** N/A
@@ -123,8 +123,8 @@ _Sandbox-proven: both fixes were validated via the Shadow File methodology (MREs
 
 ## Verification
 
-1. `teddy get-prompt pathfinder` prints `Agent Name: Pathfinder`, the agent XML, and the MRP `<response_format>` block, in that order.
-2. `teddy get-prompt <unknown>` prints the not-found error and exits non-zero.
-3. `teddy start -m "hi" -c "[docs/readme.md](docs/readme.md)"` seeds `docs/readme.md` (not the literal link) into `session.context`.
-4. The five pre-existing `-c` normalization cases still pass (leading slash, `./`, backslashes, `.hidden`, empty entry).
-5. `make test` is green after each migration step and at slice completion.
+1. [x] `teddy get-prompt pathfinder` prints `Agent Name: Pathfinder`, the agent XML, and the MRP `<response_format>` block, in that order.
+2. [x] `teddy get-prompt <unknown>` prints the not-found error and exits non-zero.
+3. [x] `teddy start -m "hi" -c "[docs/readme.md](docs/readme.md)"` seeds `docs/readme.md` (not the literal link) into `session.context`.
+4. [x] The five pre-existing `-c` normalization cases still pass (leading slash, `./`, backslashes, `.hidden`, empty entry).
+5. [x] `make test` is green after each migration step and at slice completion.
