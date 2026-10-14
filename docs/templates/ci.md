@@ -15,8 +15,8 @@ The CI pipeline consists of two parallel jobs:
 - **Blocking:** If this job fails, the CI pipeline is marked as failed.
 
 ### Job 2: Non-Blocking Quality Checks
-- Runs the pre-commit hooks in two explicit passes: the fast hooks (formatters, `detect-secrets`, merge-conflict check) at the default `pre-commit` stage, then the heavy hooks (type checkers, security/dependency scanners, and the repository-wide structural checkers) at the non-default `manual` stage.
-- The heavy hooks are scoped to the `manual` stage so they never slow down the local pre-commit loop; CI invokes both stages explicitly.
+- Runs granular quality checks in separate steps with `if: success() || failure()`, ensuring that all checks execute and report their outcomes even if an earlier check fails.
+- Scopes heavy checks (type checkers, security/dependency scanners, structural checkers) to the non-default `manual` stage so they never slow down the local pre-commit loop.
 - Excludes sandboxes (`spikes/`) and third-party dependencies.
 - **Non-Blocking:** Configured with `continue-on-error: true` so quality failures do not block the pipeline.
 
@@ -97,16 +97,32 @@ jobs:
       - name: Install dependencies
         run: {runner} sync --frozen
 
-      # Quote any step name that contains a colon. An unquoted YAML plain
-      # scalar cannot contain ": " (colon+space) — it would be parsed as a
-      # nested mapping and fail the entire workflow.
-      - name: "Run Pre-commit Hooks (fast: formatters, secrets)"
+      # Each check runs with `if: success() || failure()` so all checks run
+      # even if an earlier check fails.
+      - name: "Secrets Check (detect-secrets)"
+        if: success() || failure()
         run: |
-          {runner} pre-commit run --all-files
+          {runner} pre-commit run detect-secrets --all-files
 
-      - name: "Run Pre-commit Hooks (heavy: types, security, structural)"
+      - name: "Code Formatting (ruff format)"
+        if: success() || failure()
         run: |
-          {runner} pre-commit run --all-files --hook-stage manual
+          {runner} pre-commit run ruff-format --all-files
+
+      - name: "Linter (ruff check)"
+        if: success() || failure()
+        run: |
+          {runner} pre-commit run ruff-lint --all-files
+
+      - name: "Type Checker (mypy)"
+        if: success() || failure()
+        run: |
+          {runner} pre-commit run mypy --all-files --hook-stage manual
+
+      - name: "Security Audit (bandit & pip-audit)"
+        if: success() || failure()
+        run: |
+          {runner} pre-commit run bandit pip-audit --all-files --hook-stage manual
 ```
 
 ## Debug Workflow (Remote Probing Protocol)

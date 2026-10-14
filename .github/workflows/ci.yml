@@ -84,25 +84,54 @@ jobs:
     - name: Install dependencies
       run: uv sync --frozen
 
-    - name: "Run Pre-commit Hooks (fast: formatters, secrets)"
+    # Granular quality checks: each runs with `if: success() || failure()`
+    # so every check executes and reports findings even if an earlier step failed.
+    - name: "Secrets Check (detect-secrets)"
+      if: success() || failure()
       run: |
-        uv run pre-commit run --all-files
+        uv run pre-commit run detect-secrets --all-files
 
-    - name: "Run Pre-commit Hooks (heavy: types, security, structural)"
-      # The heavy hooks (mypy, bandit, pip-audit, and the structural checkers)
-      # are scoped to the non-default `manual` stage so they never slow down the
-      # local pre-commit loop; they run here instead.
+    - name: "File Hygiene (whitespace, formatting markers, JSON/TOML/YAML)"
+      if: success() || failure()
       run: |
-        uv run pre-commit run --all-files --hook-stage manual
+        uv run pre-commit run trailing-whitespace end-of-file-fixer check-toml check-yaml check-json check-added-large-files check-case-conflict check-merge-conflict --all-files
 
-    - name: Verify Test Pyramid
+    - name: "Formatter (ruff format)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run ruff-format --all-files
+
+    - name: "Linter (ruff check)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run ruff-lint --all-files
+
+    - name: "Type Checker (mypy)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run mypy --all-files --hook-stage manual
+
+    - name: "Security Audit (bandit & pip-audit)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run bandit pip-audit --all-files --hook-stage manual
+
+    - name: "Structural Checks (DI boundaries, UTF-8, test isolation)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run check-core-di-boundary check-explicit-utf8 no-hardcoded-tmp-paths no-unguarded-posix-patches no-unisolated-raw-cli-invoke --all-files --hook-stage manual
+
+    - name: "Verify Test Pyramid"
+      if: success() || failure()
       run: |
         uv run python scripts/verify_test_pyramid.py
 
-    - name: Check Python File Length (Max 300 Lines)
+    - name: "Check Python File Length (Max 300 Lines)"
+      if: success() || failure()
       run: |
         find src tests -name "*.py" | xargs wc -l | awk '$1 > 300 && $2 != "total" {print "File " $2 " is too long (" $1 " lines)."; exit 1}'
 
-    - name: Detect Code Duplication
+    - name: "Detect Code Duplication (jscpd)"
+      if: success() || failure()
       run: |
         npx jscpd --min-tokens 25 --threshold 0 --ignore "**/.venv/**,**/ports/**,**/prompts/**,**/spikes/**"
