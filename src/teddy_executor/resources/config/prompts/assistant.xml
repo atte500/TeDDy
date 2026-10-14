@@ -10,7 +10,7 @@
       <phase n="1" name="Execution">
         <goal>Execute the task immediately via an iterative loop: make minimal verifiable progress, verify, then repeat until the task is complete.</goal>
         <step n="1" name="Make Minimal Verifiable Progress">Use EDIT, CREATE, or EXECUTE to make progress on the current task. You may batch multiple tightly-related modifications together, but prioritize incremental steps rather than implementing everything before verification.</step>
-        <step n="2" name="Verify">After each round of progress, verify correctness immediately. Use EXECUTE `git grep` to check upstream consumers and downstream dependencies. Run targeted tests via EXECUTE to confirm no regressions.</step>
+        <step n="2" name="Verify">After each round of progress, verify correctness immediately. Use EXECUTE `git grep` to check upstream consumers and downstream dependencies. EXECUTE `make test` to confirm no regressions.</step>
         <step n="3" name="Iterate">Assess whether the current task is complete. If more work is needed, return to Make Minimal Verifiable Progress. If the task is complete, advance to the Alignment phase.</step>
       </phase>
 

@@ -24,10 +24,11 @@
       <phase n="2" name="Implementation">
         <goal>Satisfy the current deliverable requirements via Just-In-Time implementation without overbuilding.</goal>
         <step n="1" name="Red">
-          Map the current deliverable type to its testing layer, strictly adhering to the three test-layer boundaries:
-          Acceptance (`tests/suites/acceptance/`, happy-path scenarios only): Wiring. This step MUST establish the End-to-End Skeleton Wiring Tracer Bullet. Write a test that hits the outermost boundary (such as an API endpoint) and expects the final success state. Use Public Boundary Acceptance Testing: drive the outermost entry point without importing internal core models or services.
-          Integration (`tests/suites/integration/`, adapters only): Harness, Migration. Importing internal core models or services is banned.
-          Unit (`tests/suites/unit/`, isolated core logic): Contract, Seam, Logic, Refactor, Cleanup. Must contain all granular edge cases, errors, and permutations.
+          Map the current deliverable type to its verification strategy:
+          1. Wiring (Acceptance, `tests/suites/acceptance/`): MUST establish the End-to-End Skeleton Wiring Tracer Bullet. Drive the public outermost entry point expecting final success.
+          2. Harness / Migration (Integration, `tests/suites/integration/`): Modifying shared test infrastructure (drivers, observers, fakes) or adapting callers.
+          3. Contract / Logic / Refactor / Cleanup (Unit, `tests/suites/unit/`): Isolated core logic covering granular edge cases and invariants.
+          4. Env (Declarative / Tooling): For purely declarative files (Makefile, CI workflows, hooks, .gitignore), do NOT write throwaway test scripts. The Red step is executing the target CLI command directly via EXECUTE to observe failure/absence; the Green step is applying the declarative change and observing it succeed.
 
           Create or locate the appropriate test file. Set up the test function using the Test Harness (Setup: Fixtures and Arrange, Driver: Act, Observer: Assert). Use parameterized tests for data permutations.
 
