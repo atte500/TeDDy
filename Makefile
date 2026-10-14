@@ -1,4 +1,4 @@
-.PHONY: commit push probe test logs
+.PHONY: commit push ci-watch probe test logs
 
 # commit - VCP workflow (LOCAL ONLY): stage, advisory pre-commit auto-fix pass, commit.
 # Usage:
@@ -33,40 +33,26 @@ commit:
 	git add .
 	git commit -m "$(ARGS)"
 
-# push - VCP workflow (Conclusion phase): rebase, push, then attribute CI results.
+# push - VCP workflow (Conclusion phase): fast rebase and push.
 # Usage:
 #   make push
 #
-# Runs `git pull --rebase`, pushes, then discovers EVERY CI run for the pushed SHA
-# (gh run list --commit <sha>) and waits for and reports each workflow with its jobs.
-# CI registration lag is tolerated by a bounded retry (RETRY_POLLS x RETRY_SLEEP,
-# default 10 x 1s); if no run registers within the budget the target fails safe.
-# It answers ONE question: did this push turn a BLOCKING gate red?
-# When any step fails (blocking or NOT) the target prints the failing step's
-# NAME and its run id, then that step's log details (--log-failed, stripped
-# and indented, bounded to DETAIL_LINES), and points to `make logs <run-id>
-# '<step-name>'` for the FULL step log when needed.
-# The pushed RUN's own conclusion is authoritative -- it already folds in
-# `continue-on-error`, so a non-blocking job (e.g. the CI "Quality Checks" job)
-# can NEVER block the session; it is reported as a triage item instead.
-# Only when the run-level conclusion is `failure` does attribution run, comparing
-# the pushed run's failing-JOB set against the base run's, where the base is
-# classified as absent / job-less / red / green (a job-less base is NOT green):
-#   - base green/absent/job-less -> new red = your regression -> exit 1
-#   - base red -> new red (same jobs)       = pre-existing     -> report and exit 0
-#   - all green / non-blocking              = PASSED           -> exit 0
-# Attribution is deterministic: SHA -> run -> run-level + per-job conclusion.
-# `git pull --rebase` is safe because the post-commit hook skips automated git
-# operations (see .githooks/post-commit.py).
-RETRY_POLLS ?= 10
-RETRY_SLEEP ?= 1
-DETAIL_LINES ?= 50
-
+# Runs `git pull --rebase` and pushes local commits to remote without blocking on CI.
 push:
 	git pull --rebase
-	@BASE=$$(git rev-parse origin/main); \
-	SHA=$$(git rev-parse HEAD); \
-	git push || exit $$?; \
+	git push
+
+# ci-watch - Monitor and attribute CI results for HEAD or an explicit commit.
+# Usage:
+#   make ci-watch                # watches CI for current HEAD
+#   make ci-watch COMMIT=<sha>   # watches CI for a specific commit
+RETRY_POLLS ?= 10
+RETRY_SLEEP ?= 2
+DETAIL_LINES ?= 50
+
+ci-watch:
+	@SHA=$$(git rev-parse $${COMMIT:-HEAD}); \
+	BASE=$$(git rev-parse $${COMMIT:-HEAD}~1 2>/dev/null || echo ""); \
 	if [ -z "$$(ls .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null)" ]; then \
 	  echo "No CI configured - skipping attribution"; \
 	  exit 0; \
@@ -78,9 +64,9 @@ push:
 	  ATTEMPTS=$$((ATTEMPTS + 1)); \
 	  sleep $(RETRY_SLEEP); \
 	done; \
-	echo "Pushed $$SHA (base $$BASE) after $$ATTEMPTS poll(s)"; \
+	echo "Watching CI for $$SHA (base $${BASE:-none}) after $$ATTEMPTS poll(s)"; \
 	if [ -z "$$WFS" ]; then \
-	  echo "CI: no run registered for $$SHA after $(RETRY_POLLS) poll(s) - fail-safe block"; \
+	  echo "CI: no run registered for $$SHA after $$(( $(RETRY_POLLS) * $(RETRY_SLEEP) ))s - fail-safe block"; \
 	  exit 1; \
 	fi; \
 	for WF in $$WFS; do \
@@ -101,6 +87,10 @@ push:
 	      echo "$$WF: PASSED"; \
 	    fi; \
 	    continue; \
+	  fi; \
+	  if [ -z "$$BASE" ]; then \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — no base commit — YOUR regression"; \
+	    STATUS=1; continue; \
 	  fi; \
 	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
 	  if [ -z "$$OLD" ]; then \

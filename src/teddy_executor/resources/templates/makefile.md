@@ -13,12 +13,20 @@ make commit 'feat(templates): add PROJECT.md template'
 ```
 
 **What is `.PHONY`?**
-`.PHONY` is a Makefile directive that declares `commit`, `push`, `probe`, `test`, and `logs` as phony targets — they do not correspond to actual files. Without `.PHONY`, if a file named `commit` or `probe` existed in the directory (e.g., a script called `commit`), Make would see it as up-to-date and skip the target entirely. By declaring them phony, Make always runs the recipe when you call `make commit`, `make push`, `make probe`, or `make test`.
+`.PHONY` is a Makefile directive that declares `commit`, `push`, `ci-watch`, `probe`, `test`, and `logs` as phony targets — they do not correspond to actual files. Without `.PHONY`, if a file named `commit` or `probe` existed in the directory (e.g., a script called `commit`), Make would see it as up-to-date and skip the target entirely. By declaring them phony, Make always runs the recipe when you call `make commit`, `make push`, `make ci-watch`, `make probe`, or `make test`.
 
 ### Push
 ```shell
 make push
 ```
+
+### CI Watch
+```shell
+make ci-watch
+```
+
+**What does `make ci-watch` do?**
+`make ci-watch` resolves the commit hash from `HEAD` (or an explicit `COMMIT=<sha>`), polls GitHub Actions to allow for workflow registration lag, watches all running workflows for that commit, prints failing step details, and attributes regressions. It is used by the Developer at slice conclusion to verify remote CI without slowing down routine pushes.
 
 ### Test
 ```shell
@@ -128,7 +136,21 @@ commit:
 
 ## Push (Deferred to Conclusion)
 
-`make push` runs `git pull --rebase`, captures the base and the pushed SHA, pushes, then discovers **every** CI run for the pushed SHA (`gh run list --commit <sha>`) and waits for and reports each workflow with its jobs. It answers ONE question: **did this push turn a BLOCKING gate red?**
+`make push` is fast and non-blocking: it runs `git pull --rebase` and pushes local commits to remote.
+
+### Example
+
+```makefile
+push:
+	git pull --rebase
+	git push
+```
+
+**Usage:** `make push`
+
+## CI Watch & Attribution
+
+`make ci-watch` discovers **every** CI run for the target commit (`HEAD` by default, or `COMMIT=<sha>`), waits for and reports each workflow with its jobs. It answers ONE question: **did this commit turn a BLOCKING gate red?**
 
 The pushed RUN's own conclusion is authoritative: it already folds in `continue-on-error`, so a **non-blocking** job (e.g. the CI `Quality Checks` job) can NEVER block the session — it is reported as a triage item instead. Only when the run-level conclusion is `failure` does attribution run, comparing the pushed run's failing-JOB set against the base run's:
 
@@ -141,24 +163,22 @@ When any step fails — blocking or not — the target prints the failing step's
 
 Attribution is deterministic: SHA → run → run-level + per-job conclusion (never "the latest run").
 
-Three behaviors make the attribution trustworthy:
+Key behaviors:
 
-1. **The base is captured BEFORE the push.** `BASE=$$(git rev-parse origin/main)` is read immediately after `git pull --rebase` and before `git push`; otherwise the push advances `origin/main` and `BASE` collapses onto the pushed SHA, making every comparison trivially equal (a real regression would be silently misclassified as pre-existing). `git push` is folded into the same shell block behind `|| exit $$?` so a rejected push still aborts the target.
-2. **Registration lag is tolerated by a bounded retry.** CI may not have registered a run for the pushed SHA yet; the target polls `gh run list --commit <sha>` up to `RETRY_POLLS × RETRY_SLEEP` (default 10 × 1s ≈ 10s) before attributing, then fails safe if the run never registers.
-3. **No CI is non-blocking.** If the repository has no workflow files under `.github/workflows/` (`*.yml`/`*.yaml`), the target logs `No CI configured - skipping attribution` and exits 0 — a CI-less repo is never blocked. This is distinct from a repo WITH CI whose pushed SHA registered no run (that still fail-safe blocks).
+1. **Automatic SHA and BASE resolution.** `SHA` defaults to current `HEAD` (or `COMMIT=<sha>`), and `BASE` defaults to `HEAD~1`.
+2. **Registration lag is tolerated by a bounded retry.** CI may not have registered a run for the pushed SHA immediately; the target polls `gh run list --commit <sha>` up to `RETRY_POLLS × RETRY_SLEEP` (default 10 × 2s ≈ 20s) before attributing, then fails safe if the run never registers.
+3. **No CI is non-blocking.** If the repository has no workflow files under `.github/workflows/` (`*.yml`/`*.yaml`), the target logs `No CI configured - skipping attribution` and exits 0.
 
 ### Example
 
 ```makefile
 RETRY_POLLS ?= 10
-RETRY_SLEEP ?= 1
+RETRY_SLEEP ?= 2
 DETAIL_LINES ?= 50
 
-push:
-	git pull --rebase
-	@BASE=$$(git rev-parse origin/main); \
-	SHA=$$(git rev-parse HEAD); \
-	git push || exit $$?; \
+ci-watch:
+	@SHA=$$(git rev-parse $${COMMIT:-HEAD}); \
+	BASE=$$(git rev-parse $${COMMIT:-HEAD}~1 2>/dev/null || echo ""); \
 	if [ -z "$$(ls .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null)" ]; then \
 	  echo "No CI configured - skipping attribution"; \
 	  exit 0; \
@@ -170,9 +190,9 @@ push:
 	  ATTEMPTS=$$((ATTEMPTS + 1)); \
 	  sleep $(RETRY_SLEEP); \
 	done; \
-	echo "Pushed $$SHA (base $$BASE) after $$ATTEMPTS poll(s)"; \
+	echo "Watching CI for $$SHA (base $${BASE:-none}) after $$ATTEMPTS poll(s)"; \
 	if [ -z "$$WFS" ]; then \
-	  echo "CI: no run registered for $$SHA after $(RETRY_POLLS) poll(s) - fail-safe block"; \
+	  echo "CI: no run registered for $$SHA after $$(( $(RETRY_POLLS) * $(RETRY_SLEEP) ))s - fail-safe block"; \
 	  exit 1; \
 	fi; \
 	for WF in $$WFS; do \
@@ -193,6 +213,10 @@ push:
 	      echo "$$WF: PASSED"; \
 	    fi; \
 	    continue; \
+	  fi; \
+	  if [ -z "$$BASE" ]; then \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — no base commit — YOUR regression"; \
+	    STATUS=1; continue; \
 	  fi; \
 	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
 	  if [ -z "$$OLD" ]; then \
@@ -215,7 +239,9 @@ push:
 	exit $$STATUS
 ```
 
-**Usage:** `make push`
+**Usage:**
+- `make ci-watch` (watches CI for current `HEAD`)
+- `make ci-watch COMMIT=<sha>` (watches CI for a specific commit)
 
 ## Remote Probing Protocol (RPP)
 
@@ -273,4 +299,5 @@ logs:
 - Post-commit hook lives at `.githooks/post-commit.py` and runs the full `uv run pytest` suite.
 - Ensure `gh` (GitHub CLI) is authenticated for `make push`, the Remote Probing Protocol, and CI Log Extraction.
 - The `make logs` target abstracts the Debugger's CI-log extraction (Phase 1, Step 2). See [CI Log Extraction](#ci-log-extraction).
-- `make push` runs in the session Conclusion phase (see [Push (Deferred to Conclusion)](#push-deferred-to-conclusion)); it rebases, pushes, and reports CI results back.
+- `make push` runs in the session Conclusion phase (see [Push (Deferred to Conclusion)](#push-deferred-to-conclusion)); it rebases and pushes.
+- `make ci-watch` monitors and attributes CI results for `HEAD` or an explicit commit (see [CI Watch & Attribution](#ci-watch--attribution)).
