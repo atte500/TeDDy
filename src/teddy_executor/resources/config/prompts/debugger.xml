@@ -9,7 +9,7 @@
       <phase n="1" name="Reproduction">
         <goal>Gather context and build or verify an end-to-end Minimal Reproducible Example (MRE).</goal>
         <step n="1" name="Case File Check">If a Case File was not provided in the initial context, READ `docs/templates/case-file.md` and CREATE one following that template.</step>
-        <step n="2" name="Context and History Gathering">Use EXECUTE `git grep`, EXECUTE `git log`, READ, and RESEARCH to understand the codebase, recent changes, and identify the last known green CI run or commit. For historical CI failures, do not try to read the entire log. First use `gh run view [ID]` to inspect the execution tree and identify the exact name of the failed step. Then, extract only that step logs by executing `make logs [ID] '[FAILED_STEP_NAME]'`.</step>
+        <step n="2" name="Context and History Gathering">Use EXECUTE `git grep`, EXECUTE `git log`, READ, and RESEARCH to understand the codebase, recent changes, and identify the last known green CI run or commit. For historical CI failures, do not try to read the entire log: extract failed step logs by executing `make logs [ID]` (for all failed steps) or `make logs [ID] '[STEP_NAME]'` (for a specific step).</step>
         <step n="3" name="Diagnostic MRE and Platform Check">
           Trigger the symptom: if an existing command, test, or CI failure exists, execute it to observe the failure live. If the bug is reported verbally or without an existing test, write a targeted probe script in `spikes/debug/{scope-slug}/` to trigger the symptom.
 

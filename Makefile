@@ -78,7 +78,8 @@ ci-watch:
 	  if [ -n "$$NEWSTEPS" ]; then \
 	    echo "$$WF: failing step(s): $$NEWSTEPS (run $$NEW)"; \
 	    gh run view "$$NEW" --log-failed 2>/dev/null | awk -F'\t' '{ l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/) next; gsub(/^##\[error\]/,"Error: ",l); print l }' | tail -n $(DETAIL_LINES) | sed 's/^/    /'; \
-	    echo "  full log: make logs $$NEW '$$NEWSTEPS'"; \
+	    echo "  view all failed logs: make logs $$NEW"; \
+	    echo "  view specific step:   make logs $$NEW '<step-name>'"; \
 	  fi; \
 	  if [ "$$NEWCONC" != "failure" ]; then \
 	    if [ -n "$$NEWFAIL" ]; then \
@@ -136,21 +137,25 @@ probe:
 	gh run download "$$RUN_ID" --name probe-result --dir spikes/debug >/dev/null 2>&1 && \
 	cat spikes/debug/probe_output.txt 2>/dev/null || echo "(no output file)"
 
-# logs - CI Log Extraction: extract a single failed step's logs from a GitHub Actions run.
+# logs - CI Log Extraction: extract logs for all failed steps or a specific step.
 # Usage:
-#   make logs <run-id> '<step-name>'
+#   make logs <run-id>                # extracts logs for ALL failed steps
+#   make logs <run-id> '<step-name>'  # extracts logs for a specific step (substring match)
 #
-# The run ID comes from `gh run list`; the step name comes from `gh run view <id>`
-# (the execution tree). The awk program isolates ONLY that step's output, strips
-# ANSI escapes and GitHub's ##[group]/##[endgroup] boilerplate, and prefixes
-# ##[error] lines with "Error: ". See docs/templates/makefile.md (CI Log Extraction).
+# If no step name is provided, extracts all failed steps using `gh run view --log-failed`.
+# If a step name is given, matches against the step name using substring matching.
+# Strips ANSI escapes and GitHub boilerplate, adding clean [job > step] headers.
 
 logs: LOGS_RUN := $(word 2,$(MAKECMDGOALS))
 logs: LOGS_STEP := $(wordlist 3,99,$(MAKECMDGOALS))
 
 logs:
-	@[ -n "$(LOGS_RUN)" ] || { echo "Usage: make logs <run-id> '<step-name>'"; exit 1; }
-	@gh run view "$(LOGS_RUN)" --log | awk -F'\t' -v step="$(LOGS_STEP)" '$$2==step { if(j!=$$1){j=$$1; print "\n["j"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/, "", l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/, "", l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/, "Error: ", l); print l }'
+	@[ -n "$(LOGS_RUN)" ] || { echo "Usage: make logs <run-id> ['<step-name>']"; exit 1; }
+	@if [ -z "$(LOGS_STEP)" ]; then \
+	  gh run view "$(LOGS_RUN)" --log-failed 2>/dev/null | awk -F'\t' '{ if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
+	else \
+	  gh run view "$(LOGS_RUN)" --log 2>/dev/null | awk -F'\t' -v step="$(LOGS_STEP)" 'index($$2, step) > 0 { if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
+	fi
 
 # test - Run the full test suite via the project's designated runner (uv).
 #

@@ -38,11 +38,12 @@ The Remote Probing Protocol requires a reason string because it is passed as the
 
 ### Logs
 ```shell
-make logs 12345 'Run tests'
+make logs 12345              # extract logs for ALL failed steps
+make logs 12345 'Run tests'  # extract logs for a specific step (substring match)
 ```
 
-**Why does `logs` take two arguments?**
-The first argument is the GitHub Actions run ID (as shown by `gh run list`); the second is the exact name of a step in that run's execution tree (as shown by `gh run view <id>`). The target extracts ONLY that step's logs, stripping ANSI escapes and GitHub's group/boilerplate markers so you see the failure without the noise of the full log. See the [CI Log Extraction](#ci-log-extraction) section for the recipe.
+**How does `make logs` work?**
+The first argument is the GitHub Actions run ID (as shown by `gh run list`). If invoked without a second argument, it extracts and formats logs for **all failed steps** using `gh run view --log-failed`. An optional second argument filters down to a specific step using substring matching, stripping ANSI escapes and GitHub boilerplate so you see the failure without noise. See [CI Log Extraction](#ci-log-extraction).
 
 ## Probe Script
 
@@ -184,7 +185,8 @@ push:
 	  if [ -n "$$NEWSTEPS" ]; then \
 	    echo "$$WF: failing step(s): $$NEWSTEPS (run $$NEW)"; \
 	    gh run view "$$NEW" --log-failed 2>/dev/null | awk -F'\t' '{ l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/) next; gsub(/^##\[error\]/,"Error: ",l); print l }' | tail -n $(DETAIL_LINES) | sed 's/^/    /'; \
-	    echo "  full log: make logs $$NEW '$$NEWSTEPS'"; \
+	    echo "  view all failed logs: make logs $$NEW"; \
+	    echo "  view specific step:   make logs $$NEW '<step-name>'"; \
 	  fi; \
 	  if [ "$$NEWCONC" != "failure" ]; then \
 	    if [ -n "$$NEWFAIL" ]; then \
@@ -241,7 +243,7 @@ probe:
 
 ## CI Log Extraction
 
-The Debugger's Reproduction phase needs to read the logs of a specific failed CI step without drowning in the full run log. The `make logs` target wraps the `gh run view <id> --log | awk ...` pipeline that isolates the named step's output, strips ANSI escapes, and removes GitHub's `##[group]`/`##[endgroup]` boilerplate.
+The Debugger's Reproduction phase needs to read CI logs without drowning in the full run output. The `make logs` target wraps the `gh run view` pipeline, strips ANSI escapes, and removes GitHub's `##[group]`/`##[endgroup]` boilerplate.
 
 ### Example
 
@@ -250,21 +252,26 @@ logs: LOGS_RUN := $(word 2,$(MAKECMDGOALS))
 logs: LOGS_STEP := $(wordlist 3,99,$(MAKECMDGOALS))
 
 logs:
-	@[ -n "$(LOGS_RUN)" ] || { echo "Usage: make logs <run-id> '<step-name>'"; exit 1; }
-	@gh run view "$(LOGS_RUN)" --log | awk -F'\t' -v step="$(LOGS_STEP)" '$$2==step { if(j!=$$1){j=$$1; print "\n["j"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/, "", l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/, "", l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/, "Error: ", l); print l }'
+	@[ -n "$(LOGS_RUN)" ] || { echo "Usage: make logs <run-id> ['<step-name>']"; exit 1; }
+	@if [ -z "$(LOGS_STEP)" ]; then \
+	  gh run view "$(LOGS_RUN)" --log-failed 2>/dev/null | awk -F'\t' '{ if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
+	else \
+	  gh run view "$(LOGS_RUN)" --log 2>/dev/null | awk -F'\t' -v step="$(LOGS_STEP)" 'index($$2, step) > 0 { if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
+	fi
 
 %:
 	@:
 ```
 
 **Usage:**
-- `make logs 12345 'Run tests'` — extract the logs of the step named `Run tests` from run `12345`.
-- First discover the run ID and the failed step name with `gh run view 12345` (the execution tree), then pass both to `make logs`.
+- `make logs 12345` — extract logs for ALL failed steps from run `12345`.
+- `make logs 12345 'Run tests'` — extract logs for a specific step (substring match) from run `12345`.
 
 **How it works:**
-- `$(word 2,$(MAKECMDGOALS))` takes the run ID and `$(wordlist 3,99,$(MAKECMDGOALS))` takes the (space-containing) step name; the first goal (the `logs` target itself) is dropped.
-- The `awk` program matches rows whose second tab-separated field equals the step name via `-v step=...`, trims the leading timestamp, strips ANSI escape sequences, and removes GitHub's group boilerplate, prefixing `##[error]` lines with `Error: `.
-- It reuses the same cross-platform Make constructs as the other targets (see [Cross-Platform Design](#cross-platform-design)); the `%: @:` catch-all prevents the extra `make` goals from being treated as files.
+- `$(word 2,$(MAKECMDGOALS))` takes the run ID and `$(wordlist 3,99,$(MAKECMDGOALS))` captures any optional step name.
+- When no step name is provided, `gh run view --log-failed` is used so only failed steps are fetched and printed with `[job > step]` headers.
+- When a step name is supplied, `index($2, step) > 0` performs substring matching against column 2.
+- Timestamps and ANSI escapes are stripped, and `##[error]` lines are prefixed with `Error: `.
 
 ## Implementation Notes
 
