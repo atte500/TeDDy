@@ -16,7 +16,6 @@ from tests.harness.drivers.cli_adapter import CliTestAdapter
 # template names are declared locally rather than imported from InitService.
 EXPECTED_TEMPLATES = [
     "specification-document.md",
-    "task-brief.md",
     "case-file.md",
     "vertical-slice.md",
     "milestone.md",

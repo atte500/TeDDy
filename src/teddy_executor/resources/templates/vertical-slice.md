@@ -34,6 +34,11 @@ Then [expected outcome]
 - `[Technical]` (works-like) — External dependencies, third-party libraries, APIs, runtime performance, concurrency, or data-storage feasibility. Resolve via automated assertion probes and benchmarks.
 - `[Functional]` (looks-like) — User-facing ergonomics, CLI flags, terminal rendering, interactive flows, or layout aesthetic. Resolve via interactive demo runners with configurable knobs.
 
+**Mandatory De-risking Triggers:**
+1. Log any new or modified integration with an external system, library, API, storage layer, or performance constraint as an unresolved [Technical] unknown.
+2. Log any new or modified user interaction, CLI flags, terminal formatting, or interactive UX flow as an unresolved [Functional] unknown.
+3. Log any business rule, policy, or scope ambiguity as [Domain] to resolve directly with the user.
+
 **Design Sensitivity (log-only):** For EVERY unknown, record a one-line Design Sensitivity stating how the design reacts to each resolution (e.g., "if this resolves as X → contracts hold; if Y → this port/DTO changes"). The Architect logs this line; the Prototyper empirically de-risks it.
 
 - [ ] [Tag] Title: Description of the unknown.

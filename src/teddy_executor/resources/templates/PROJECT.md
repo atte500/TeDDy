@@ -21,7 +21,6 @@ Defines the high-level artifact lifecycle and conventions for project management
     - **Vertical Slices:** `MM-NN-name.md` (in `docs/project/slices/`) — `MM` is the target Milestone number and `NN` is the sequence number within that milestone.
     - **Milestones:** `MM-name.md` (in `docs/project/milestones/`).
     - **Case Files (Debugger):** `NN-name.md` — numbered sequentially.
-    - **Task Briefs:** `NN-name.md` (in `docs/project/tasks/`) — numbered sequentially.
     - **Milestone 0 (bootstrapping) & Ad-hoc work (not tied to a milestone):** `00-NN-name.md` — `00` is used as the Milestone prefix for Milestone 0 bootstrapping slices and for ad-hoc slices. Ad-hoc slices are NOT tracked in Milestone documents or the Roadmap.
 - **Archiving Policy:** When and how completed artifacts are archived or deleted.
 - **Spec Organization:** Specification documents live in a single flat directory `docs/project/specs/` and are reserved strictly for **permanent system invariants** — formats, contracts, protocols (e.g. the MRP), core data models, and non-negotiable architectural rules. Feature goals, requirements, and acceptance criteria belong in Milestone documents (`docs/project/milestones/`), not in specs. There is no ephemeral `specs/features/` lifecycle.
@@ -39,7 +38,6 @@ Before creating or modifying any documentation artifact, agents MUST read the co
 | `milestone.md` | Milestone documents |
 | `vertical-slice.md` | Vertical slice definitions |
 | `component-design.md` | Component design documents (ports and contracts) |
-| `task-brief.md` | Tactical task briefs |
 | `case-file.md` | Debugger case files |
 | `PROJECT.md` | This project dashboard |
 | `ARCHITECTURE.md` | System architecture document |

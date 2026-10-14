@@ -301,7 +301,7 @@ def test_ensure_config_initialized_overwrite_true_creates_missing_env(service, m
 
 
 def test_init_templates_copies_all_when_missing(templates_service, mock_fs):
-    """No docs/templates/ exists, overwrite=False → creates dir and writes all 11 templates."""
+    """No docs/templates/ exists, overwrite=False → creates dir and writes all 10 templates."""
 
     def mock_exists(p: str) -> bool:
         # Bundled templates exist; docs/templates/ does not.
@@ -317,14 +317,14 @@ def test_init_templates_copies_all_when_missing(templates_service, mock_fs):
         mock_fs.write_file.assert_any_call(
             f"docs/templates/{fname}", f"content::/mock/templates/{fname}"
         )
-    assert mock_fs.write_file.call_count == 11
-    assert result == "updated (11 files)"
+    assert mock_fs.write_file.call_count == 10
+    assert result == "updated (10 files)"
 
 
 def test_init_templates_partial_population_non_destructive(templates_service, mock_fs):
     """Some templates already exist, overwrite=False → only missing ones are written."""
 
-    existing = {"specification-document.md", "task-brief.md"}
+    existing = {"specification-document.md", "vertical-slice.md"}
 
     def mock_exists(p: str) -> bool:
         if p.startswith("/mock/templates"):

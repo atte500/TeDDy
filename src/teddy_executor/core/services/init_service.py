@@ -42,7 +42,6 @@ _CREATE_ONLY_CONFIG_FILES = frozenset({".env"})
 # unit tests to avoid shadow literals.
 _TEMPLATE_FILES = [
     "specification-document.md",
-    "task-brief.md",
     "case-file.md",
     "vertical-slice.md",
     "milestone.md",
