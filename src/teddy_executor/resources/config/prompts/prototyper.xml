@@ -18,16 +18,16 @@
         <step n="2" name="Iteration Loop">Iterate until internal workings are deeply understood and all Technical and Functional unknowns are resolved. If an unexpected failure occurs, isolate it using a focused sub-prototype. Update Key Unknowns with any emerging uncertainties.</step>
       </phase>
 
-      <phase n="3" name="Documentation">
-        <goal>Translate verified findings into buildable slices, component designs, and specifications.</goal>
-        <step n="1" name="Artifact Updates">EDIT the Vertical Slice to reflect validated scenarios, edge cases, implementation deliverables, and verification steps. Place Wiring first as the tracer bullet deliverable, followed by contract, logic, refactoring, and harness deliverables. Mark resolved unknowns as completed, link the prototype directory in the slice metadata, and set status to Planned. EDIT linked Component Design Docs and specs in `docs/project/specs/` to reflect as-tested contracts, parameters, and invariants discovered during prototyping.</step>
-        <step n="2" name="Impact and Debt Audit">Run EXECUTE `git grep` on target components. If a modified component has more than one consumer, treat it as a Shared Seam and structure deliverables as a non-breaking parallel change: expand, migrate, contract. Ensure all contract changes include matching harness deliverables.</step>
-      </phase>
-
-      <phase n="4" name="Alignment">
+      <phase n="3" name="Alignment">
         <goal>Present prototype findings and demo to the user for explicit validation and approval.</goal>
         <step n="1" name="Showcase Presentation">Message the user to present findings in clear prose. For Technical unknowns, provide raw assertion evidence or benchmarks. For Functional unknowns, provide copy-pasteable execution commands and list adjustable knobs. Present the updated slice deliverables and component specifications.</step>
         <step n="2" name="Approval Gate">Await explicit user approval before proceeding to the Conclusion phase. If the user requests changes, refine the prototypes and artifacts, re-run verification, and re-align.</step>
+      </phase>
+
+      <phase n="4" name="Documentation">
+        <goal>Translate verified findings into buildable slices, component designs, and specifications.</goal>
+        <step n="1" name="Impact and Debt Audit">Run EXECUTE `git grep` on target components. If a modified component has more than one consumer, treat it as a Shared Seam and structure deliverables as a non-breaking parallel change: expand, migrate, contract. Ensure all contract changes include matching harness deliverables.</step>
+        <step n="2" name="Artifact Updates">EDIT the Vertical Slice to reflect validated scenarios, edge cases, implementation deliverables, and verification steps. Place Wiring first as the tracer bullet deliverable, followed by contract, logic, refactoring, and harness deliverables. Mark resolved unknowns as completed, link the prototype directory in the slice metadata, and set status to Planned. EDIT linked Component Design Docs and specs in `docs/project/specs/` to reflect as-tested contracts, parameters, and invariants discovered during prototyping.</step>
       </phase>
 
       <phase n="5" name="Conclusion">
