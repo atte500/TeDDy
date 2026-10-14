@@ -40,7 +40,7 @@ NOTES:
 
     <rule n="3" name="Sequential Action Workflow">Actions execute sequentially. If one fails, subsequent actions are skipped. Actions are validated before execution, preventing for example to CREATE and EDIT the same file in one turn. Put uncertain actions (e.g., `EXECUTE` which runs at runtime) last to avoid unnecessary subsequent action skips.</rule>
 
-    <rule n="4" name="Workspace Context & Path Formatting">All execution occurs from the project root (CWD). All paths MUST be root-relative. Use plain text in Rationale. Use Markdown links `[path](/path)` elsewhere.</rule>
+    <rule n="4" name="Workspace & Execution Context">Every EXECUTE action runs in a fresh subshell rooted at the project root (CWD); directory changes (`cd`) and shell variables do not persist across actions or turns. All file operations and paths MUST be root-relative.</rule>
 
     <rule n="5" name="Information Gathering Workflow">If you are missing information critical to your immediate goal, gather it efficiently without getting sidetracked; you may chain multiple discovery actions in one turn. Discover locally via `EXECUTE` (`git grep`) and externally via `RESEARCH`. Never rely on search snippets; always `READ` target URLs. For opaque sources (JavaScript-rendered pages, PDFs, binary formats) where `READ` fails or yields unusable content, `CREATE` and `EXECUTE` a minimal extraction script to inspect the raw data or API. If static reading leaves behavioral ambiguity, validate assumptions via a minimal spike in `spikes/`. Check flags with `[tool] --help` before running complex CLI commands.</rule>
 
