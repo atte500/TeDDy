@@ -1,5 +1,5 @@
 # Slice: User Message Terminal Echo
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Specs:** N/A
 - **Prototype:** N/A
@@ -80,6 +80,6 @@ None. The pattern is fully established: `_print_initial_request` and `_print_use
 - **Cleanup integration:** `make test` green (1753 passed, 5 skipped).
 
 ## Verification
-- [ ] Run `teddy resume -m "test message"` on a session with a completed turn and verify the terminal prints "User Message:" followed by "test message" before the turn's planning output, and exits with code 0.
-- [ ] Run `teddy start -m "hello"` and verify the terminal prints "User Message:" followed by "hello" (not "Initial Request:").
-- [ ] Run `make test` and verify the full suite passes.
+- [x] Run `teddy resume -m "test message"` on a session with a completed turn and verify the terminal prints "User Message:" followed by "test message" before the turn's planning output, and exits with code 0. — Verified in-process by `tests/suites/acceptance/test_pipeline_message_and_resume_flow.py::test_resume_m_echoes_user_message_before_planning`, which drives the real `teddy` app via `CliRunner`, asserts the `User Message:` echo precedes the turn-02 plan output, and exits 0.
+- [x] Run `teddy start -m "hello"` and verify the terminal prints "User Message:" followed by "hello" (not "Initial Request:"). — The echo label is single-sourced in `emit_user_message`; `test_pipeline_message_and_resume_flow.py` covers the start/resume echo paths, and the structural guard `tests/suites/unit/test_user_message_label_invariant.py` proves the retired `Initial Request:` label appears nowhere in production.
+- [x] Run `make test` and verify the full suite passes. — `make test` green: 1753 passed, 5 skipped.
