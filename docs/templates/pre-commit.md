@@ -73,7 +73,7 @@ repos:
         pass_filenames: false
 ```
 
-**Local vs CI scope:** keep only fast auto-fixers (`ruff --fix`, `ruff format`, `trailing-whitespace`, `end-of-file-fixer`), `detect-secrets`, and `check-merge-conflict` locally. Noisy, false-positive-prone static analysis (`mypy`, `bandit`, `pip-audit`, and repository-wide structural checkers) belongs in CI, where it runs non-blocking — the real friction is hook false positives forcing inline suppressions, not blocking. See the [Quality-Gate Bypass Policy](../../project/specs/) for the config-level-vs-inline bypass rule.
+**Local vs CI scope:** keep only fast auto-fixers (`ruff --fix`, `ruff format`, `trailing-whitespace`, `end-of-file-fixer`), `detect-secrets`, and `check-merge-conflict` locally. Noisy, false-positive-prone static analysis (`mypy`, `bandit`, `pip-audit`, and repository-wide structural checkers) belongs in CI, where it runs non-blocking — the real friction is hook false positives forcing inline suppressions, not blocking. See the Quality-Gate Bypass Policy for the config-level-vs-inline bypass rule.
 
 **Tip:** Pin exact `rev` tags so every teammate runs identical checks.
 
@@ -156,5 +156,5 @@ The **post-commit test gate is never bypassable**. Treat a pre-commit bypass as 
 
 ## Reference
 - [ARCHITECTURE.md Template](./ARCHITECTURE.md) — pre-commit + post-commit conventions.
-- [Makefile Template](./makefile.md) — `make test` and the VCP commit workflow.
+- [Makefile Template](./makefile.md) — `make test` and the commit workflow.
 - [Pre-commit documentation](https://pre-commit.com/)

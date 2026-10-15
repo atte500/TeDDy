@@ -1,6 +1,6 @@
 # System Architecture: {{project_name}}
 
-## 1. Conventions & Standards
+## Conventions & Standards
 
 This section defines foundational engineering practices. Each entry MUST be a specific, enforceable rule.
 
@@ -14,38 +14,49 @@ This section defines foundational engineering practices. Each entry MUST be a sp
 - **Runtime Contract Assertions:** Enforce Design-by-Contract with native `assert condition, "message"` for pre/post-conditions and invariants (strippable via `python -O`); never custom exceptions for contract checks.
 - **Dependency Injection:** Constructor injection mandate; forbid Service Locator and global containers.
 - **Centralized Configuration:** Config file location, prohibition of magic numbers.
-- **CI Pipeline:** Two parallel jobs — 1) Blocking OS matrix test suite with strict test coverage targets. 2) Non-blocking (continue-on-error: true) quality checks running fast formatters, linters, security/secret scanners, type checkers, and repository-wide structural checks (excluding sandboxes and third-party dependencies).
-- **Pre-commit Hooks:** Scope (staged files only) and keep the local loop fast — formatters, secret scanners, and merge-conflict checks only. Move heavy, false-positive-prone checks (type checkers, security scanners, repository-wide structural checkers) to the non-blocking CI quality job, scoped to a non-default pre-commit stage.
-- **Post-commit Execution:** Full test suite run on commit, automatic revert on failure.
-- **Makefile Commands:** The `Makefile` is the canonical entry point for the VCP commit workflow and on-demand test runs. `make test` runs the full suite, `make commit '<msg>'` performs a LOCAL-ONLY VCP commit (it runs the pre-commit hooks once as an advisory auto-fix pass and commits WITHOUT `--no-verify`, so Git's own pre-commit hook is the real local gate, while the post-commit test gate remains unskippable), `make push` rebases, pushes, and reports CI results back (deferred to the session Conclusion), and `make probe '<reason>'` runs the Remote Probing Protocol. See [docs/templates/makefile.md](docs/templates/makefile.md).
+- **Continuous Integration & Remote Diagnostics:** Parallel CI jobs: 1) Blocking OS matrix test suite. 2) Non-blocking (`continue-on-error: true`) quality checks running fast formatters, linters, security scanners, type checkers, and repository-wide structural checks. Platform-specific and CI-only issues are investigated via the Remote Probing Protocol (`make probe '<reason>'`). See [docs/templates/ci.md](docs/templates/ci.md).
+- **Local Quality Gates (Pre-commit & Post-commit):** Local pre-commit hooks MUST stay fast, checking only staged files (formatters, secret detection, merge conflict markers). Heavy, false-positive-prone checks run non-blocking in CI. The full test suite runs via the post-commit hook (`.githooks/post-commit.py`) as an unskippable safety net, reverting automatically on failure. See [docs/templates/pre-commit.md](docs/templates/pre-commit.md).
+- **Diagnostic Instrumentation:** High-value diagnostics MUST use zero-cost language-native dead-code elimination (e.g. `if __debug__:`) and Composition Root toggles; mid-logic environment checks are forbidden.
+- **Experimental Code:** The `spikes/` directory is reserved for rapid, isolated experimentation (`debug/`, `prototypes/`, `showcases/`) and is explicitly excluded from all quality gates (linters, type checkers, test suites).
+- **Directory Conventions:**
+  `docs/architecture/BOUNDARY/LAYER/TYPE/name.md` -> Source path: `src/{pkg}/BOUNDARY/LAYER/TYPE/name.ext` -> Test path: `tests/suites/TEST_TYPE/BOUNDARY/LAYER/TYPE/test_name.ext`
+- **Makefile Commands:** The `Makefile` is the canonical entry point for the version control workflow and on-demand test runs: `make test` (full suite), `make commit '<msg>'` (local commit with advisory auto-fix and unskippable post-commit test gate), `make push` (rebase and push), `make ci-watch` (CI monitoring), and `make probe '<reason>'` (Remote Probing Protocol). See [docs/templates/makefile.md](docs/templates/makefile.md).
 
-### Pre-commit Quick-Start
-
-```shell
-pre-commit install                          # install the pre-commit stage hook
-pre-commit install --hook-type post-commit  # install the post-commit test gate
-pre-commit run --all-files                  # run all hooks manually against the repo
-```
-
-## 2. Component & Boundary Map
+## Component & Boundary Map
 
 Single source of truth for system structure, organized by architectural layer.
 
-**Template format (table):**
+### Hexagonal Core
+Domain entities, value objects, ports, and orchestrating services.
 
 | Component         | Description                     | Contract                                     |
 | ----------------- | ------------------------------- | -------------------------------------------- |
 | **ComponentName** | One-line responsibility summary | [Link to design doc](./path/to/component.md) |
 
-### Required Layers:
-- **Hexagonal Core:** Domain models, Ports (inbound/outbound), Services.
-- **Primary Adapters:** CLI, web UI, API controllers.
-- **Outbound Adapters:** File system, database, external APIs, shell.
-- **Test Harness:** Drivers, Observers, Setup fixtures.
+### Inbound Adapters (Driving)
+Entry points initiating calls into the core (CLI, Web UI, API controllers, message consumers).
+
+| Component         | Description                     | Contract                                     |
+| ----------------- | ------------------------------- | -------------------------------------------- |
+| **ComponentName** | One-line responsibility summary | [Link to design doc](./path/to/component.md) |
+
+### Outbound Adapters (Driven)
+Infrastructure implementations fulfilling outbound port contracts (file system, database, external APIs, shell).
+
+| Component         | Description                     | Contract                                     |
+| ----------------- | ------------------------------- | -------------------------------------------- |
+| **ComponentName** | One-line responsibility summary | [Link to design doc](./path/to/component.md) |
+
+### Test Harness
+Test drivers, observers, shared fakes, and test setup fixtures.
+
+| Component         | Description                     | Contract                                     |
+| ----------------- | ------------------------------- | -------------------------------------------- |
+| **ComponentName** | One-line responsibility summary | [Link to design doc](./path/to/component.md) |
 
 Each Contract column links to the Component Design Document or Interface definition.
 
-## 3. Key Architectural Decisions
+## Key Architectural Decisions
 
 A living "System Law" document capturing explicit, prescriptive design decisions.
 

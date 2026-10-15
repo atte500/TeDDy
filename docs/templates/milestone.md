@@ -1,23 +1,17 @@
-# Milestone {{N}}: {{milestone_title}}
+# Milestone: {{milestone_title}}
 - **Status:** [Planned | In Progress | Completed]
 - **Specs:** [links]
 
-## Goal (The "Why")
-Approved problem definition and core objectives.
+## Goal
+Problem definition and core objectives.
 
-## Proposed Solution (The "What")
-Approved tech and trade-offs.
+## Proposed Solution
+Technical architecture, selected patterns, and trade-offs.
 
-## Guidelines (The "How")
-Actionable plan. MUST explicitly include Test Harness strategy.
-
-## Technical Specifications
-
-**Format:** Link to Specification Documents in docs/project/specs/. Key contracts and data models can be summarized inline or referenced.
-API contracts and data models.
+## Guidelines
+Actionable strategy, architectural boundaries, and test harness considerations.
 
 ## Vertical Slices
-
-High-level checklist of implementation steps. Each entry follows the format `{{MM-NN}}: [Description & Requirements]`.
-- [ ] {{MM-NN}}: [Description & Requirements for the slice]
-- [ ] {{MM-NN}}: [Description & Requirements for the slice]
+<!-- Decompose into end-to-end vertical slices cutting across all layers; do not slice horizontally by technical layer. -->
+- [ ] {{MM-NN}}: [Slice Title] — [Tackles Req X: brief scope statement]
+- [ ] {{MM-NN}}: [Slice Title] — [Tackles Req Y: brief scope statement]

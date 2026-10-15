@@ -1,45 +1,38 @@
 # Component Design: {{component_name}}
 - **Status:** [Planned | Implemented | Refactoring]
+- **Source:** [`src/path/to/file.ext`](/src/path/to/file.ext)
 
-## Purpose / Responsibility
+## Purpose
+1-2 sentences summarizing the core responsibility and boundary role of this component.
 
-**Format:** 1-2 sentences describing what this component does and why it exists.
-The core responsibility and role of this component within the system.
+## Consumers
+Upstream callers, controllers, or services that depend on or invoke this component:
+- [`CallerComponent`](./path/to/caller.md): Invokes this component to execute [workflow/operation].
 
-## Failure Modes
-
-**Format:** For each failure mode, describe the precondition or invariant violated and the expected exception/behavior.
-Explicitly list known failure modes for this component.
-- **Failure Title**: Violates the precondition/postcondition 'XYZ'. The component MUST raise a specific exception rather than returning a partial/invalid result.
+## Dependencies
+Downstream components, outbound ports, or external libraries required by this component:
+- [`DependencyComponent`](./path/to/dependency.md): Injected via constructor to fulfill [outbound operation].
 
 ## Class Invariants
+Conditions that must hold true throughout the component lifecycle. If stateless, state: `None — stateless component.`
+- `invariant_statement`: description of condition.
 
-**Format:** Bulleted list of invariants. For stateless components, explicitly state \"None — stateless component.\"
-Document conditions that must always hold true for instances of this component. If none, state: "None — stateless component."
+## Inbound Ports
+Use-case interfaces or API signatures this component exposes to consumers:
+- **`PortName`**: Signature and operations provided.
 
-## Ports
+## Outbound Ports
+Dependency contracts this component requires injected:
+- **`PortName`**: Signature and operations consumed.
 
-**Format:** Describe the interfaces this component depends on (outbound ports) and provides (inbound ports). For each port: name, role, key methods.
-Explicit inbound/outbound relationships.
+## Data Contracts
+Data transfer objects, schemas, payloads, or immutable models managed or exchanged by this component:
+- **`DtoOrPayloadName`**: Structure, fields, types, and constraints.
 
-## Implementation Details / Logic
+## Operations
+Public method specifications. Avoid pseudocode; specify signatures, preconditions, postconditions, and error modes:
 
-**Format:** Pseudocode, algorithm descriptions, or references to external patterns. Include key decision points and rationale.
-Detailed implementation strategy and algorithms.
-
-## Data Contracts / Methods
-
-
-**Format:** For each method, define Preconditions, Postconditions, Exceptions, and optional Invariants. Use the template structure provided below.
-### `method_name`
-
-**Format:** Use subheadings: Preconditions, Postconditions, Exceptions, Invariants (optional).
-- **Preconditions:** What must be true before calling.
-- **Postconditions:** What is guaranteed after successful return.
-- **Exceptions:** What errors can be raised and under what conditions.
-- **Invariants:** (optional) Class-level invariants that must hold before and after this method executes.
-
-**Contract Enforcement:** Implementations MUST validate preconditions with explicit guard clauses. Postcondition failures MUST be surfaced as specific exceptions, never swallowed.
-
-### Directory Conventions
-Doc path: `docs/architecture/BOUNDARY/LAYER/TYPE/name.md` -> Source path: `src/{pkg}/BOUNDARY/LAYER/TYPE/name.py` -> Test path: `tests/suites/TEST_TYPE/BOUNDARY/LAYER/TYPE/test_name.py`
+### `method_name(args) -> ReturnType`
+- **Preconditions:** What must hold before calling (validated via guard clauses or runtime assertions).
+- **Postconditions:** What is guaranteed upon successful return.
+- **Exceptions:** Specific exceptions raised when preconditions or operations fail (never generic or swallowed errors).
