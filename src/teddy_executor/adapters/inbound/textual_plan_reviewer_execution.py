@@ -5,6 +5,8 @@ import io
 import logging
 from typing import TYPE_CHECKING, Any
 
+from teddy_executor.core.utils.terminal import emit_user_message
+
 if TYPE_CHECKING:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_app import ReviewerApp
     from teddy_executor.core.domain.models.plan import ActionData
@@ -183,11 +185,7 @@ async def orchestrate_execution(app: ReviewerApp, node: Any, update_fn: Any) -> 
             and isinstance(log.details, str)
             and log.details.strip()
         ):
-            import typer
-
-            typer.secho("")
-            typer.secho("User Message:")
-            typer.secho(log.details.strip())
+            emit_user_message(log.details)
     except Exception as e:
         logging.getLogger(__name__).debug("Background execution failed: %s", e)
         action.executed, action.state = True, ExecutionStatus.FAILURE
