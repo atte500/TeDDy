@@ -31,6 +31,16 @@ Audit and fix all unnecessary inline quality suppression comments (`# noqa`, `# 
 - **Quality Bypass Audit Scope:**
     - Search for `# noqa`, `# pylint: disable`, `# type: ignore` across `src/` and `tests/`.
     - For each occurrence, determine if it is still necessary. Remove unnecessary ones. Log as debt any that cannot be removed due to external constraints.
+- **Pre-existing failing non-blocking Quality Checks (verified 2026-10-15):** the CI `Quality Checks` job (`continue-on-error: true`) fails the SAME nine steps on `main` independent of any given change (proven by comparing commit `0aed0c42` against its parent `a4168248` — both fail the identical step set). Reconcile each so the job can run cleanly:
+    - `Secrets Check (detect-secrets)`
+    - `File Hygiene (trailing-whitespace, end-of-file-fixer, check-toml/yaml/json, check-added-large-files, check-case-conflict, check-merge-conflict)`
+    - `Linter (ruff check)`
+    - `Type Checker (mypy)`
+    - `Security Audit (bandit & pip-audit)` (pip-audit blocked upstream — see slice 18 below)
+    - `Structural Checks (DI boundaries, UTF-8, test isolation)`
+    - `Verify Test Pyramid`
+    - `Check Python File Length (Max 300 Lines)`
+    - `Detect Code Duplication (jscpd)` (duplication owned by Milestone 6)
 
 ## Vertical Slices
 > Slice definitions will be created by the Architect during the Design phase. The following high-level breakdown is anticipated:
@@ -62,3 +72,4 @@ Audit and fix all unnecessary inline quality suppression comments (`# noqa`, `# 
 > 22. Coincidentally-passing sibling test double in `test_planning_service_logging.py`: `test_generate_plan_handles_zero_usage_gracefully` passes only via retry exhaustion. Rebuild its `get_completion` double to drive a clean single generation.
 > 23. `EditSimulator._apply_single_edit` matcher-invariant defence-in-depth: it evaluates ambiguity before the threshold guard; correct only because the matcher now gates `is_ambiguous` on the effective threshold. Add the symmetric `and score >= threshold` guard.
 > 24. EXECUTE harness false-positive interactive-prompt detection on large outputs: the `ShellAdapter._detect_interactive_prompt` sentinel fires when a command exits non-zero AND its output incidentally contains a prompt-like substring — a full `make test` run can do this, replacing the entire stream and hiding the real result. Refine the heuristic to require a genuine TTY/stdin signal rather than a bare substring match.
+> 25. Pre-existing non-blocking Quality Checks reconciliation: drive the CI `Quality Checks` job (`continue-on-error: true`) to green by reconciling the nine checks that fail identically on `main` (detect-secrets, file hygiene, ruff, mypy, bandit/pip-audit, structural, test pyramid, file length, jscpd). See the corresponding Technical Specifications bullet.
