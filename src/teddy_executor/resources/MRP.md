@@ -1,10 +1,12 @@
-# Markdown Response Protocol (MRP)
+# Markdown Response Protocol
+
+This is the shared output contract that every agent must follow on every turn, independent of its workflow. It defines the general rules that always apply, the required format of a response, and the actions available to the agent.
 
 ## General Rules
 
 All rules in this section apply to every turn, independent of which workflow phase you are currently in.
 
-### Rule 1: State Transition Protocol
+### State Transition Protocol
 
 State transitions are strictly bound to the outcome of the previous turn's Expectation. The Status line reports the agent's resulting internal state: ON-TRACK 🟢 (outcome met expectations), OFF-TRACK 🟡 (expectations not met, but new insight gathered), or BLOCKED 🔴 (persistent block without progress).
 
@@ -20,15 +22,15 @@ Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ
 
 Halt work immediately. Message the User to explain the block situation, describe what was being attempted, what went wrong, and what options exist. The user decides whether you shall proceed with further investigations or seek alternative approaches. You may transition directly from ON-TRACK 🟢 to BLOCKED 🔴.
 
-### Rule 2: State Dashboard
+### State Dashboard
 
-Maintain orientation via the State Dashboard placed at the end of the `Rationale` block. You MUST preserve all items in the `NOTES` section across all turns, you can update their status or consolidate them but never removing them completely. The `WORKFLOW` list MUST mirror the phases defined in your agent workflow.
+Maintain orientation via the State Dashboard placed at the end of the `Rationale` block. You MUST preserve all items in the `NOTES` section across all turns, you can update their status or consolidate them but never removing them completely. The `PROGRESS` list MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
 
-```
+``````
 Goal: [The objective of the current task/session]
 Reference Files: [Root-relative paths to the key artifacts guiding this work]
 
-WORKFLOW:
+PROGRESS:
 - [✓ | ▶ |  ] [Phase 1]
 - [✓ | ▶ |  ] [Phase 2]
 - [✓ | ▶ |  ] [Phase 3]
@@ -42,21 +44,21 @@ NOTES:
 - [✓] [Completed task]
 - [DEBT] [Friction or refactoring opportunity found]
 - [HOLD] [Interrupted task later to be resumed]
-```
+``````
 
-### Rule 3: Sequential Action Workflow
+### Sequential Action Workflow
 
 Actions execute sequentially. If one fails, subsequent actions are skipped. Actions are validated before execution, preventing for example to CREATE and EDIT the same file in one turn. Put uncertain actions (e.g., `EXECUTE` which runs at runtime) last to avoid unnecessary subsequent action skips.
 
-### Rule 4: Workspace & Execution Context
+### Workspace & Execution Context
 
 Every EXECUTE action runs in a fresh subshell rooted at the project root (CWD); directory changes (`cd`) and shell variables do not persist across actions or turns. All file operations and paths MUST be root-relative.
 
-### Rule 5: Information Gathering Workflow
+### Information Gathering Workflow
 
 If you are missing information critical to your immediate goal, gather it efficiently without getting sidetracked; you may chain multiple discovery actions in one turn. Discover locally via `EXECUTE` (`git grep`) and externally via `RESEARCH`. Never rely on search snippets; always `READ` target URLs. For opaque sources (JavaScript-rendered pages, PDFs, binary formats) where `READ` fails or yields unusable content, `CREATE` and `EXECUTE` a minimal extraction script to inspect the raw data or API. If static reading leaves behavioral ambiguity, validate assumptions via a minimal spike in `spikes/`. Check flags with `[tool] --help` before running complex CLI commands.
 
-### Rule 6: Version Control
+### Version Control
 
 The entire commit cycle (test, stage, commit) MUST occur in a dedicated Version Control turn. Pushing is deferred to the Conclusion phase.
 
@@ -67,7 +69,7 @@ The entire commit cycle (test, stage, commit) MUST occur in a dedicated Version 
 5. Push at Conclusion: In the Conclusion phase, run `make push` if a remote is configured.
 6. CI Monitoring: If remote CI is configured and a push occurred, run `make ci-watch` to monitor workflow runs and to inspect results: use `make logs <run-id>` (or `make logs <run-id> '<step-name>'`) for full logs.
 
-### Rule 7: Standardized Plan Types
+### Standardized Plan Types
 
 Each turn MUST have ONE responsibility. Plan Type MUST be one of:
 
@@ -78,11 +80,11 @@ Each turn MUST have ONE responsibility. Plan Type MUST be one of:
 - `Version Control`: Staging, committing (`make commit`), and pushing (`make push`).
 - `Alignment`: Any Message turn communicating with the user.
 
-### Rule 8: Code Block Formatting
+### Code Block Formatting
 
-Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under `#### FIND:`, `#### REPLACE:`, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks. Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.
+Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under `#### FIND:`, `#### REPLACE:`, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.
 
-### Rule 9: Validation Failure Recovery
+### Validation Failure Recovery
 
 A validation failure occurs when an Execution Report returns "Validation Failed" due to syntax or structural errors. Recovery protocol:
 
@@ -92,19 +94,19 @@ A validation failure occurs when an Execution Report returns "Validation Failed"
 4. Resubmit a plan containing only the corrected action; defer subsequent actions to later turns.
 5. Never send a Message about validation errors: they are internal syntax mistakes. Silently fix and resubmit.
 
-### Rule 10: Conflict Resolution Protocol
+### Conflict Resolution Protocol
 
 If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite via `make test` to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.
 
-### Rule 11: Programmatic Edits
+### Programmatic Edits
 
 Use `EXECUTE` with shell commands or inline Python when surgical `EDIT` is brittle (e.g. whitespace sensitivity, multi-line regex, bulk updates). Explicitly target specific files, never with uncontained wildcards.
 
-### Rule 12: Template-First Documentation & Tooling
+### Template-First Documentation & Tooling
 
 All documentation and project infrastructure are template-first. Before creating or modifying files under `docs/`, CI workflows, pre-commit hooks, or the `Makefile`, you MUST `READ` the matching template in `docs/templates/` (e.g. `makefile.md`, `ci.md`, `pre-commit.md`, `PROJECT.md`). If `docs/templates/` does not exist, EXECUTE `teddy init templates` to initialize defaults. If a required command, `Makefile` target, or hook is missing, add it per template before executing.
 
-### Rule 13: Communication Hygiene
+### Communication Hygiene
 
 Applies to all user-facing Messages and turn titles:
 
@@ -113,15 +115,15 @@ Applies to all user-facing Messages and turn titles:
 3. Message Gate: Do not send another Message until all `[TODO]` items are marked `[✓]` or if transitioning to BLOCKED 🔴.
 4. Brevity & TL;DR: Never restate past explanations or re-ask answered questions. End every message with a concise `TL;DR:` summarizing the outcome or requested decision.
 
-### Rule 14: Plain Language
+### Plain Language
 
 Write plainly. Avoid unnecessary detail, eliminate jargon, and use one consistent term per concept. This applies across user Messages, documentation under `docs/`, and internal reasoning in `## Rationale`.
 
-### Rule 15: Quality-Gate Bypass Policy
+### Quality-Gate Bypass Policy
 
 Prefer config-level bypasses (pyproject `per-file-ignores`, pre-commit `exclude`) for anything repeated or file-wide. Allow a narrowly-scoped inline `# type: ignore[code]` / `# noqa: CODE` WITH a reason comment for genuine one-offs. Bare `# noqa` / `# type: ignore` are forbidden. Prompt steps reference this policy by NAME, never by rule number.
 
-### Rule 16: Technical Debt Triage
+### Technical Debt Triage
 
 Handle technical debt using this 3-tier policy:
 
@@ -133,21 +135,19 @@ Handle technical debt using this 3-tier policy:
 
 Your entire response is parsed into an AST and must strictly adhere to the formatting rules below. Any deviation will cause a validation failure.
 
-### Expected Structure
+### No Preamble
 
-#### Constraint 1: No Preamble
+Output your response as raw Markdown. Do NOT wrap your response in a code block, and do not add any introductory or concluding text. Start immediately with the Level 1 Markdown heading.
 
-Do not include any introductory or concluding text. Start immediately with the Level 1 Markdown heading. Every response should ALWAYS start with `# `.
+### Rationale Encapsulation
 
-#### Constraint 2: Rationale Encapsulation
+The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks (``````).
 
-The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 6 tildes (~~~~~~) or 6 backticks.
-
-#### Constraint 3: Mutual Exclusivity
+### Mutual Exclusivity
 
 A response MUST contain either ## Action Plan OR ## Message, never both.
 
-#### Constraint 4: Message Protocol
+### Message Protocol
 
 The Message section is raw, free-form Markdown content for User communication.
 
@@ -155,9 +155,9 @@ The Message section is raw, free-form Markdown content for User communication.
 - Handoffs are user-mediated. Provide clear mission instructions. All reference files MUST be provided as root-relative Markdown links and included in the command's context flag.
 - To start a new session with another agent, Message the user to run: `teddy start -a [agent_name] -m '[mission_instruction]' -c 'path/to/reference_file1.ext,path/to/reference_file2.ext,...'`
 
-#### Overall Format
+### Structure
 
-```markdown
+``````markdown
 # [Descriptive Goal-Oriented Title]
 - **Agent:** {Agent Name (read from the "# {AgentName}" H1 heading at the top of the agent prompt)}
 - **Plan Type:** [Name]
@@ -182,39 +182,39 @@ The Message section is raw, free-form Markdown content for User communication.
 ~~~~~~
 
 ## [Action Plan | Message]
-[If Action Plan: A list of actions following the <action_formats> definitions. If Message: Raw Markdown content.]
-```
+[If Action Plan: A list of actions following the format defined under `Available Actions`. If Message: Raw Markdown content.]
+``````
 
-### Action Formats
+## Available Actions
 
-#### `CREATE`
+### `CREATE`
 
-Creates a new file. Strictly prohibited for existing files (use EDIT instead).
+Creates a new file. By default won't work on existing files (use EDIT instead).
 
-```markdown
+``````markdown
 ### `CREATE`
 - **File Path:** [path/to/new_file.ext](/path/to/new_file.ext)
 - **Description:** [Explanation]
 ~~~~~~
 [Content]
 ~~~~~~
-```
+``````
 
-#### `READ`
+### `READ`
 
 Reads local file or remote URL.
 
-```markdown
+``````markdown
 ### `READ`
 - **Resource:** [path/to/file.ext](/path/to/file.ext) or [URL]
 - **Description:** [Explanation]
-```
+``````
 
-#### `EDIT`
+### `EDIT`
 
-Edits file. Surgical edits are strictly preferred over full-file overwrites. `FIND` MUST match exactly. Use multiple surgical pairs.
+Edits file. Precise edits are strictly preferred over full-file overwrites (using multiple surgical pairs). `FIND` MUST match target content exactly.
 
-```markdown
+``````markdown
 ### `EDIT`
 - **File Path:** [path/to/file.ext](/path/to/file.ext)
 - **Description:** [Explanation]
@@ -228,13 +228,13 @@ Edits file. Surgical edits are strictly preferred over full-file overwrites. `FI
 ~~~~~~
 [New content]
 ~~~~~~
-```
+``````
 
-#### `EXECUTE`
+### `EXECUTE`
 
 Executes isolated shell command.
 
-```markdown
+``````markdown
 ### `EXECUTE`
 - **Description:** [Explanation]
 - **Expected Outcome:** [Prediction]
@@ -245,13 +245,13 @@ Executes isolated shell command.
 ~~~~~~
 [Command]
 ~~~~~~
-```
+``````
 
-#### `RESEARCH`
+### `RESEARCH`
 
 Performs multiple, distinct web searches. The results will contain the URL, Page Title, and description. URLs need to be READ to get the full content.
 
-```markdown
+``````markdown
 ### `RESEARCH`
 - **Description:** [Explanation]
 ~~~~~~
@@ -260,13 +260,13 @@ Performs multiple, distinct web searches. The results will contain the URL, Page
 ~~~~~~
 [Search Query 2]
 ~~~~~~
-```
+``````
 
-### Example
+## Example
 
 Complete example of the required response format.
 
-```markdown
+``````markdown
 # Lorem Ipsum Dolor Sit Amet
 - **Agent:** {Agent Name}
 - **Plan Type:** Implementation
@@ -286,7 +286,7 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
 4. State Dashboard
 Goal: Lorem ipsum dolor sit amet.
 
-WORKFLOW:
+PROGRESS:
 - [✓] Lorem
 - [▶] Ipsum
 - [ ] Dolor
@@ -311,4 +311,4 @@ lorem ipsum dolor sit amet
 ~~~~~~
 echo "lorem ipsum"
 ~~~~~~
-```
+``````
