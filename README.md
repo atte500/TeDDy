@@ -131,7 +131,7 @@ TeDDy is built on the belief that you should own your software delivery lifecycl
 - **Command Automation (`Makefile`):** Instead of hardcoding shell commands inside agent prompts, common development and verification operations are routed through the Makefile. When you need to change a flag, runner, or environment setup, you change it once in the Makefile instead of updating instructions across multiple agent prompts.
 
 > [!TIP]
-> *Interested in bringing TeDDy into your team or designing custom agent workflows?*
+> *Interested in bringing TeDDy into your team or designing custom agent workflows?* <br>
 > **[Professional consulting is available!](https://atteritano.ch)**
 
 ---
