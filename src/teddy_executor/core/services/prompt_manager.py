@@ -9,14 +9,13 @@ from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemMa
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
-from teddy_executor.core.utils.string import canonical_agent_name
 
 # The bundled Markdown Response Protocol base prompt. It lives OUTSIDE
 # ``config/prompts/`` so it is never grouped with the user-overridable agent
 # prompts, and is loaded as a package resource rather than via the file system
 # port.
 _MRP_PACKAGE = "teddy_executor.resources"
-_MRP_FILENAME = "MRP.xml"
+_MRP_FILENAME = "MRP.md"
 
 
 class PromptManager(IPromptManager):
@@ -155,27 +154,27 @@ class PromptManager(IPromptManager):
             # contract (no header, no MRP) rather than fabricating a prompt.
             return ""
 
-        return self._assemble_composed_prompt(agent_name, content)
+        return self._assemble_composed_prompt(content)
 
-    def _assemble_composed_prompt(self, agent_name: str, content: str) -> str:
-        """Assembles a composed system prompt from an agent name and content.
+    def _assemble_composed_prompt(self, content: str) -> str:
+        """Assembles a composed system prompt from agent content.
 
-        Prepends the canonical agent-name header, then appends the shared MRP
-        base prompt AFTER the agent-specific content. A resolved prompt that
-        already carries its own ``<response_format>`` (e.g. a customized
-        ``.teddy/prompts/`` override) keeps the header but skips the MRP block.
+        Appends the shared MRP base prompt AFTER the agent-specific content,
+        separated by a Markdown horizontal rule (``---``) padded by a blank line
+        above and below. A resolved prompt that already carries its own
+        ``<response_format>`` (e.g. a customized ``.teddy/prompts/`` override) is
+        returned UNCHANGED, without the MRP block or the separator.
         """
-        assembled = f"Agent Name: {canonical_agent_name(agent_name)}\n\n{content}"
-
         # Legacy compatibility: a resolved prompt that already carries its own
         # response format (e.g. a customized ``.teddy/prompts/`` override) is
-        # returned without the shared MRP block, but keeps the agent-name header.
+        # returned unchanged, without the shared MRP block.
         if "<response_format>" in content:
-            return assembled
+            return content
 
-        # Both the agent-specific XML and the MRP block live inside the
-        # assembled ``<system>`` prompt; MRP is appended AFTER the agent content.
-        return f"{assembled}\n\n{self._load_mrp_base_prompt()}"
+        # Both the agent content and the MRP block live inside the assembled
+        # ``<system>`` prompt; MRP is appended AFTER the agent content, separated
+        # by a Markdown horizontal rule padded by a blank line above and below.
+        return f"{content}\n\n---\n\n{self._load_mrp_base_prompt()}"
 
     def compose_system_prompt(self, agent_name: str) -> Optional[str]:
         """Composes the full system prompt for an agent WITHOUT a turn path.
@@ -187,7 +186,7 @@ class PromptManager(IPromptManager):
         content = self.get_prompt_content(agent_name)
         if not content:
             return None
-        return self._assemble_composed_prompt(agent_name, content)
+        return self._assemble_composed_prompt(content)
 
     def log_telemetry(self, token_count: Any, turn_cost: Any) -> float:
         def safe_float(v: Any, default: float = 0.0) -> float:

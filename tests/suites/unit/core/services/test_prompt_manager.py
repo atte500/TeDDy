@@ -8,7 +8,7 @@ _MRP_SENTINEL = "<mrp>SHARED_PROTOCOL</mrp>"
 
 
 def _write_mrp_root(tmp_path: Path, content: str = _MRP_SENTINEL) -> Path:
-    """Creates a real, ``Traversable``-compatible resource root holding MRP.xml.
+    """Creates a real, ``Traversable``-compatible resource root holding MRP.md.
 
     Injecting a real directory (instead of patching ``importlib.resources``)
     keeps the test hermetic and patch-free while fully controlling the MRP
@@ -16,7 +16,7 @@ def _write_mrp_root(tmp_path: Path, content: str = _MRP_SENTINEL) -> Path:
     """
     root = tmp_path / "teddy_executor_resources"
     root.mkdir()
-    (root / "MRP.xml").write_text(content, encoding="utf-8")
+    (root / "MRP.md").write_text(content, encoding="utf-8")
     return root
 
 
@@ -97,9 +97,12 @@ def test_fetch_system_prompt_resolves_from_teddy_prompts(mrp_prompt_manager, moc
     # Act
     content = mrp_prompt_manager.fetch_system_prompt("pathfinder", turn_path)
 
-    # Assert: the agent-specific content survives and the name header is present
-    assert "Agent Name: Pathfinder" in content
+    # Assert: the agent-specific content survives and the MRP block is appended
     assert "<prompt>From .teddy/prompts/</prompt>" in content
+    assert _MRP_SENTINEL in content
+    assert content.index("<prompt>From .teddy/prompts/</prompt>") < content.index(
+        _MRP_SENTINEL
+    )
 
 
 def test_fetch_system_prompt_returns_persisted_composed_prompt_verbatim(
@@ -201,11 +204,11 @@ def test_get_available_agents_includes_all_files(prompt_manager, mock_fs):
     assert agents == ["architect", "debugger", "notes", "README"]
 
 
-def test_fetch_system_prompt_assembles_name_agent_xml_and_mrp(
+def test_fetch_system_prompt_assembles_agent_content_and_mrp(
     mrp_prompt_manager, mock_fs
 ):
-    """The assembled prompt is the agent-name header, then the agent-specific
-    XML, then the shared MRP protocol content appended at the end."""
+    """The assembled prompt is the agent-specific content, then a ``---``
+    separator, then the shared MRP protocol content."""
     turn_path = _arrange_teddy_prompt_resolution(
         mock_fs,
         agent_file="pathfinder.xml",
@@ -216,63 +219,16 @@ def test_fetch_system_prompt_assembles_name_agent_xml_and_mrp(
     result = mrp_prompt_manager.fetch_system_prompt("pathfinder", turn_path)
 
     # Assert
-    assert result.startswith("Agent Name: Pathfinder\n\n")
-    assert "<agent>AGENT_SPECIFIC</agent>" in result
-    assert "<mrp>SHARED_PROTOCOL</mrp>" in result
-    assert result.index("<agent>AGENT_SPECIFIC</agent>") < result.index(
-        "<mrp>SHARED_PROTOCOL</mrp>"
+    assert (
+        result == "<agent>AGENT_SPECIFIC</agent>\n\n---\n\n<mrp>SHARED_PROTOCOL</mrp>"
     )
-
-
-def test_fetch_system_prompt_capitalizes_agent_name_in_header(
-    mrp_prompt_manager, mock_fs
-):
-    """The agent-name header capitalizes the first letter of the agent slug."""
-    turn_path = _arrange_teddy_prompt_resolution(
-        mock_fs,
-        agent_file="architect.xml",
-        content="<architect/>",
-    )
-
-    result = mrp_prompt_manager.fetch_system_prompt("architect", turn_path)
-
-    assert result.startswith("Agent Name: Architect\n\n")
-
-
-@pytest.mark.parametrize(
-    ("raw_agent", "agent_file", "expected_header"),
-    [
-        ("ARCHITECT", "architect.xml", "Agent Name: Architect\n\n"),
-        ("DeVeLoPeR", "developer.xml", "Agent Name: Developer\n\n"),
-    ],
-)
-def test_fetch_system_prompt_canonicalises_agent_name_for_any_input_casing(
-    mrp_prompt_manager, mock_fs, raw_agent, agent_file, expected_header
-):
-    """The agent-name header uses canonical casing for ANY input casing.
-
-    Refactor (session-behaviour): the header must single-source the shared
-    canonical_agent_name helper (rather than an inline .capitalize()), so
-    -a DeVeLoPeR / -a ARCHITECT render exactly like their lowercase forms,
-    matching the persisted meta.yaml value and the CLI banner.
-    """
-    turn_path = _arrange_teddy_prompt_resolution(
-        mock_fs,
-        agent_file=agent_file,
-        content="<agent/>",
-    )
-
-    result = mrp_prompt_manager.fetch_system_prompt(raw_agent, turn_path)
-
-    assert result.startswith(expected_header)
 
 
 def test_fetch_system_prompt_skips_mrp_when_response_format_present(
     mrp_prompt_manager, mock_fs
 ):
     """A resolved prompt that already carries ``<response_format>`` is a legacy
-    override: the agent-name header is still injected, but the shared MRP block
-    is NOT appended."""
+    override: it is returned UNCHANGED -- no MRP block and no ``---`` separator."""
     legacy_content = "<agent><response_format>INLINE</response_format></agent>"
     turn_path = _arrange_teddy_prompt_resolution(
         mock_fs,
@@ -282,18 +238,17 @@ def test_fetch_system_prompt_skips_mrp_when_response_format_present(
 
     result = mrp_prompt_manager.fetch_system_prompt("pathfinder", turn_path)
 
-    assert result.startswith("Agent Name: Pathfinder\n\n")
-    assert legacy_content in result
+    assert result == legacy_content
     assert "<mrp>SHARED_PROTOCOL</mrp>" not in result
 
 
 def test_fetch_system_prompt_raises_when_mrp_missing(
     tmp_path, mock_fs, mock_user_interactor
 ):
-    """Missing ``MRP.xml`` is a fatal protocol error: fail fast, never degrade
+    """Missing ``MRP.md`` is a fatal protocol error: fail fast, never degrade
     silently."""
     empty_root = tmp_path / "teddy_executor_resources"
-    empty_root.mkdir()  # no MRP.xml written
+    empty_root.mkdir()  # no MRP.md written
     prompt_manager = PromptManager(
         file_system_manager=mock_fs,
         user_interactor=mock_user_interactor,
@@ -312,8 +267,8 @@ def test_fetch_system_prompt_raises_when_mrp_missing(
 def test_fetch_system_prompt_appends_empty_mrp_without_error(
     tmp_path, mock_fs, mock_user_interactor
 ):
-    """An existing but empty ``MRP.xml`` is a degenerate-but-valid case: the
-    assembly succeeds and appends nothing."""
+    """An existing but empty ``MRP.md`` is a degenerate-but-valid case: the
+    assembly succeeds and appends an empty MRP block after the separator."""
     prompt_manager = PromptManager(
         file_system_manager=mock_fs,
         user_interactor=mock_user_interactor,
@@ -327,7 +282,7 @@ def test_fetch_system_prompt_appends_empty_mrp_without_error(
 
     result = prompt_manager.fetch_system_prompt("pathfinder", turn_path)
 
-    assert result == "Agent Name: Pathfinder\n\n<agent/>\n\n"
+    assert result == "<agent/>\n\n---\n\n"
 
 
 def test_fetch_system_prompt_returns_empty_when_agent_xml_missing(
@@ -380,21 +335,17 @@ def _stub_manager(tmp_path, mock_fs, content: Optional[str]) -> PromptManager:
     )
 
 
-def test_compose_system_prompt_assembles_header_agent_xml_and_mrp(tmp_path, mock_fs):
-    """``compose_system_prompt`` returns the agent-name header, then the
-    agent-specific XML, then the shared MRP protocol -- in that order."""
+def test_compose_system_prompt_assembles_agent_content_and_mrp(tmp_path, mock_fs):
+    """``compose_system_prompt`` returns the agent-specific content, then a
+    ``---`` separator, then the shared MRP protocol."""
     manager = _stub_manager(tmp_path, mock_fs, "<agent>AGENT_SPECIFIC</agent>")
 
     # Act
     result = manager.compose_system_prompt("pathfinder")
 
     # Assert
-    assert result is not None
-    assert result.startswith("Agent Name: Pathfinder\n\n")
-    assert "<agent>AGENT_SPECIFIC</agent>" in result
-    assert "<mrp>SHARED_PROTOCOL</mrp>" in result
-    assert result.index("<agent>AGENT_SPECIFIC</agent>") < result.index(
-        "<mrp>SHARED_PROTOCOL</mrp>"
+    assert (
+        result == "<agent>AGENT_SPECIFIC</agent>\n\n---\n\n<mrp>SHARED_PROTOCOL</mrp>"
     )
 
 
@@ -413,8 +364,8 @@ def test_compose_system_prompt_returns_none_when_content_unresolved(
 def test_compose_system_prompt_skips_mrp_when_response_format_present(
     tmp_path, mock_fs
 ):
-    """A legacy prompt that already carries ``<response_format>`` keeps the
-    agent-name header but does NOT receive the shared MRP block."""
+    """A legacy prompt that already carries ``<response_format>`` is returned
+    UNCHANGED -- no MRP block and no ``---`` separator."""
     legacy = "<agent><response_format>INLINE</response_format></agent>"
     manager = _stub_manager(tmp_path, mock_fs, legacy)
 
@@ -422,19 +373,5 @@ def test_compose_system_prompt_skips_mrp_when_response_format_present(
     result = manager.compose_system_prompt("pathfinder")
 
     # Assert
-    assert result is not None
-    assert result.startswith("Agent Name: Pathfinder\n\n")
-    assert legacy in result
+    assert result == legacy
     assert "<mrp>SHARED_PROTOCOL</mrp>" not in result
-
-
-def test_compose_system_prompt_canonicalises_agent_name_header(tmp_path, mock_fs):
-    """The header canonicalises ANY input casing via the shared helper."""
-    manager = _stub_manager(tmp_path, mock_fs, "<agent/>")
-
-    # Act
-    result = manager.compose_system_prompt("DeVeLoPeR")
-
-    # Assert
-    assert result is not None
-    assert result.startswith("Agent Name: Developer\n\n")

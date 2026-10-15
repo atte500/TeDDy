@@ -48,7 +48,7 @@ def test_pipeline_run_defaults_to_assistant_agent(tmp_path: Path, monkeypatch):
 
     # Assert: the pipeline run resolved the assistant agent.
     system_content = llm.get_completion.call_args[1]["messages"][0]["content"]
-    assert system_content.startswith("Agent Name: Assistant")
+    assert system_content.startswith("<prompt>Assistant</prompt>")
 
 
 @pytest.mark.timeout(30)
@@ -69,4 +69,4 @@ def test_non_pipeline_run_defaults_to_pathfinder_agent(tmp_path: Path, monkeypat
 
     # Assert: the non-pipeline run keeps the pathfinder agent.
     system_content = llm.get_completion.call_args[1]["messages"][0]["content"]
-    assert system_content.startswith("Agent Name: Pathfinder")
+    assert system_content.startswith("<prompt>Pathfinder</prompt>")

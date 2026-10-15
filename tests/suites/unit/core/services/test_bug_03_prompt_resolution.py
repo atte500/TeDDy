@@ -1,7 +1,7 @@
 """Regression tests for Bug #03: Case-insensitive prompt resolution and duplicate Initial Request."""
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch  # noqa: TID251
+from unittest.mock import Mock
 
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import SessionState
@@ -20,7 +20,7 @@ class TestPromptCaseSensitivity:
         """fetch_system_prompt with 'Pathfinder' must find 'pathfinder.xml'."""
         mrp_root = tmp_path / "teddy_executor_resources"
         mrp_root.mkdir()
-        (mrp_root / "MRP.xml").write_text("<mrp/>", encoding="utf-8")
+        (mrp_root / "MRP.md").write_text("<mrp/>", encoding="utf-8")
         prompt_manager = PromptManager(
             file_system_manager=mock_fs,
             user_interactor=mock_user_interactor,
@@ -51,87 +51,90 @@ class TestPromptCaseSensitivity:
         }.get(p, "")
 
         result = prompt_manager.fetch_system_prompt(agent_name, turn_path)
-        assert result.startswith("Agent Name: Pathfinder")
-        assert "You are a pathfinder agent." in result
+        assert result == "You are a pathfinder agent.\n\n---\n\n<mrp/>"
 
 
 class TestLifecyclePrintsInitialRequest:
     """Verifies that the lifecycle manager prints the initial request."""
 
-    def test_lifecycle_manager_prints_initial_request(self):
+    def test_lifecycle_manager_prints_initial_request(self, monkeypatch):
         """When resuming first turn, lifecycle manager must call _print_initial_request."""
-        # Arrange: mock _print_initial_request on the session_orchestrator module
-        with patch(
-            "teddy_executor.core.services.session_orchestrator._print_initial_request"
-        ) as mock_print:
-            # Build minimal mock ports object
-            ports = MagicMock()
-            ports.session_service = MagicMock()
-            ports.session_service.get_session_state.return_value = (
-                SessionState.EMPTY,
-                ".teddy/sessions/test/01",
-            )
-            ports.session_service.transition_to_next_turn.return_value = (
-                ".teddy/sessions/test/02",
-            )
-            ports.file_system_manager = MagicMock()
-            ports.report_formatter = MagicMock()
-            ports.user_interactor = MagicMock()
-            ports.session_planner = MagicMock()
-            ports.session_planner.trigger_new_plan.return_value = ("test", None)
-            ports.replanner = MagicMock()
+        # Arrange: replace _print_initial_request on the session_orchestrator module
+        mock_print = Mock()
+        monkeypatch.setattr(
+            "teddy_executor.core.services.session_orchestrator._print_initial_request",
+            mock_print,
+        )
+        # Build minimal mock ports object
+        ports = Mock()
+        ports.session_service = Mock()
+        ports.session_service.get_session_state.return_value = (
+            SessionState.EMPTY,
+            ".teddy/sessions/test/01",
+        )
+        ports.session_service.transition_to_next_turn.return_value = (
+            ".teddy/sessions/test/02",
+        )
+        ports.file_system_manager = Mock()
+        ports.report_formatter = Mock()
+        ports.user_interactor = Mock()
+        ports.session_planner = Mock()
+        ports.session_planner.trigger_new_plan.return_value = ("test", None)
+        ports.replanner = Mock()
 
-            lifecycle = SessionLifecycleManager(ports)
+        lifecycle = SessionLifecycleManager(ports)
 
-            # Act: simulate resume for EMPTY state
-            mock_orchestrator = MagicMock(spec=IRunPlanUseCase)
-            mock_orchestrator.execute.return_value = MagicMock(run_summary=MagicMock())
-            lifecycle.resume(
-                "test",
-                mock_orchestrator,
-                interactive=False,
-            )
+        # Act: simulate resume for EMPTY state
+        mock_orchestrator = Mock(spec=IRunPlanUseCase)
+        mock_orchestrator.execute.return_value = Mock(run_summary=Mock())
+        lifecycle.resume(
+            "test",
+            mock_orchestrator,
+            interactive=False,
+        )
 
-            # Assert: _print_initial_request should have been called once
-            mock_print.assert_called_once()
-            call_args = mock_print.call_args
-            assert call_args[0][0] is None, "message should be None"
-            assert call_args[0][1] is True, "is_session should be True"
+        # Assert: _print_initial_request should have been called once
+        mock_print.assert_called_once()
+        call_args = mock_print.call_args
+        assert call_args[0][0] is None, "message should be None"
+        assert call_args[0][1] is True, "is_session should be True"
 
     def test_lifecycle_manager_does_not_print_initial_request_on_subsequent_turns(
-        self,
+        self, monkeypatch
     ):
         """When handling a non-first turn (turn_dir name != "01"), lifecycle manager must NOT call _print_initial_request."""
-        with patch(
-            "teddy_executor.core.services.session_orchestrator._print_initial_request"
-        ) as mock_print:
-            ports = MagicMock()
-            ports.file_system_manager = MagicMock()
-            ports.report_formatter = MagicMock()
-            ports.user_interactor = MagicMock()
-            ports.session_planner = MagicMock()
-            ports.session_planner.trigger_new_plan.return_value = ("test", None)
-            ports.replanner = MagicMock()
-            ports.session_service = MagicMock()
-            ports.session_service.get_session_state.return_value = (
-                SessionState.EMPTY,
-                "/some/path",
-            )
+        mock_print = Mock()
+        monkeypatch.setattr(
+            "teddy_executor.core.services.session_orchestrator._print_initial_request",
+            mock_print,
+        )
+        ports = Mock()
+        ports.file_system_manager = Mock()
+        ports.report_formatter = Mock()
+        ports.user_interactor = Mock()
+        ports.session_planner = Mock()
+        ports.session_planner.trigger_new_plan.return_value = ("test", None)
+        ports.replanner = Mock()
+        ports.session_service = Mock()
+        ports.session_service.get_session_state.return_value = (
+            SessionState.EMPTY,
+            "/some/path",
+        )
 
-            lifecycle = SessionLifecycleManager(ports)
+        lifecycle = SessionLifecycleManager(ports)
 
-            mock_orchestrator = MagicMock(spec=IRunPlanUseCase)
-            mock_orchestrator.execute.return_value = MagicMock(run_summary=MagicMock())
+        mock_orchestrator = Mock(spec=IRunPlanUseCase)
+        mock_orchestrator.execute.return_value = Mock(run_summary=Mock())
 
-            # Directly call _handle_planning_and_execution with a turn_dir for turn "02"
-            lifecycle._handle_planning_and_execution(
-                turn_dir="/root/session/turns/02",
-                orchestrator=mock_orchestrator,
-                interactive=False,
-            )
+        # Directly call _handle_planning_and_execution with a turn_dir for turn "02"
+        lifecycle._handle_planning_and_execution(
+            turn_dir="/root/session/turns/02",
+            orchestrator=mock_orchestrator,
+            interactive=False,
+        )
 
-            # Assert: _print_initial_request should NOT have been called for turn 02+
-            mock_print.assert_not_called()
+        # Assert: _print_initial_request should NOT have been called for turn 02+
+        mock_print.assert_not_called()
 
     def test_print_initial_request_resolves_path_with_parent(
         self, tmp_path, monkeypatch

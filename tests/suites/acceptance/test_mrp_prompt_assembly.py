@@ -2,8 +2,8 @@
 
 Subcutaneous end-to-end test: drive a real session through the CLI, capture the
 system prompt the harness fake LLM receives, and assert it carries the assembled
-agent-name header, the agent-specific content, and the shared MRP protocol rules
-in the correct order.
+agent-specific content and the shared MRP protocol rules in the correct order,
+separated by a Markdown horizontal rule.
 
 This test imports only the ``ILlmClient`` outbound port and the test harness (no
 internal core services/models) per the Acceptance-layer boundary.
@@ -18,12 +18,12 @@ from tests.suites.acceptance.helpers import mock_response, setup_project
 from teddy_executor.core.ports.outbound import ILlmClient
 
 
-def test_session_system_prompt_assembles_header_agent_content_and_mrp(
+def test_session_system_prompt_assembles_agent_content_and_mrp(
     tmp_path: Path, monkeypatch
 ):
     """Scenario: The assembled system prompt delivered to the LLM starts with the
-    agent-name header, contains the agent-specific XML, and appends the shared MRP
-    protocol rules after it."""
+    agent-specific content, then a ``---`` separator, then the shared Markdown MRP
+    protocol rules."""
     # Arrange: real workspace (anchors a real filesystem) + seeded agent prompt.
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
@@ -40,17 +40,17 @@ def test_session_system_prompt_assembles_header_agent_content_and_mrp(
     # The system prompt is the first message handed to the LLM.
     system_content = llm.get_completion.call_args[1]["messages"][0]["content"]
 
-    # Assert: agent-name header derived from the XML filename, capitalized.
-    assert system_content.startswith("Agent Name: Pathfinder")
+    # Assert: the agent-specific content comes first.
+    assert system_content.startswith("<prompt>Pathfinder</prompt>")
 
-    # Assert: the agent-specific content is present.
-    assert "<prompt>Pathfinder</prompt>" in system_content
+    # Assert: a Markdown horizontal rule separates the agent content from MRP.
+    assert "\n\n---\n\n" in system_content
 
-    # Assert: the shared MRP protocol rules are appended...
-    assert "<response_format>" in system_content
+    # Assert: the shared Markdown MRP protocol rules are appended...
+    assert "## Response Format" in system_content
     assert "State Transition Protocol" in system_content
 
     # ...AFTER the agent-specific content.
     assert system_content.index("<prompt>Pathfinder</prompt>") < system_content.index(
-        "<response_format>"
+        "State Transition Protocol"
     )

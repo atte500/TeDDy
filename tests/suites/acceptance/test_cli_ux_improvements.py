@@ -68,9 +68,8 @@ def test_get_prompt_fails_for_non_existent_prompt(tmp_path, monkeypatch):
 def test_get_prompt_emits_full_composed_system_prompt(tmp_path, monkeypatch):
     """Scenario: get-prompt emits the full composed system prompt.
 
-    The output must carry the agent-name header, the agent-specific XML, and the
-    shared MRP base prompt -- with the MRP block appearing AFTER the
-    agent-specific content.
+    The output must carry the agent-specific content, then a ``---`` separator,
+    then the shared Markdown MRP base prompt.
     """
     env = TestEnvironment(monkeypatch, tmp_path)
     env.setup()
@@ -89,11 +88,11 @@ def test_get_prompt_emits_full_composed_system_prompt(tmp_path, monkeypatch):
 
     assert result.exit_code == 0
     output = result.stdout
-    assert output.startswith("Agent Name: Pathfinder")
-    assert "<prompt>Pathfinder</prompt>" in output
-    assert "<response_format>" in output
+    assert output.startswith("<prompt>Pathfinder</prompt>")
+    assert "\n\n---\n\n" in output
+    assert "## Response Format" in output
     assert output.index("<prompt>Pathfinder</prompt>") < output.index(
-        "<response_format>"
+        "## Response Format"
     )
 
 
