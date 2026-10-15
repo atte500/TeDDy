@@ -84,7 +84,7 @@ And it re-prompts for the LLM API key only when the key is missing
 - [x] **Refactor** - Extract the API-key gate (`_is_llm_api_key_missing` + `_llm_model_requires_api_key` + `_prompt_for_api_key`) into a shared helper in `session_cli_handlers.py`, called from `_run_cli_preflight_check`. Keep the preflight ordering: the API-key prompt still runs before `ILlmClient` is resolved.
 - [x] **Wiring** - Wire bare `teddy init` and `teddy init config` to the shared API-key helper and `_validate_editor_config`, gated on `ISystemEnvironment.isatty()`. Run the gates after scaffolding/overwrite so `init config` re-prompts for the reset editor. Reuse the existing helpers; add no new prompt logic.
 - [x] **Logic** - Add init-time prompt coverage (e.g. `tests/suites/unit/adapters/inbound/test_init_interactive_setup.py`): bare `init` on a TTY prompts for the API key (when missing and required) and the editor (when unconfigured); a non-TTY init prompts for neither; `init config` re-prompts for the editor.
-- [ ] **Cleanup** - Review `docs/architecture/adapters/inbound/cli.md` and `docs/architecture/core/services/init_service.md`; update only if they document the prompt wording or the init command's behavior.
+- [x] **Cleanup** - Review `docs/architecture/adapters/inbound/cli.md` and `docs/architecture/core/services/init_service.md`; update only if they document the prompt wording or the init command's behavior.
 
 ## Implementation Notes
 
@@ -105,6 +105,10 @@ A single module-level helper `_run_init_setup_gates(container)` in `__main__.py`
 ### Deliverable 5 (init-time prompt coverage)
 
 `tests/suites/unit/adapters/inbound/test_init_setup_gates.py` fills the init-time prompt matrix left open by the acceptance tracer bullet, with four scenarios: a non-TTY run returns early so NEITHER gate fires; on a TTY the gates run in preflight order (API key, then editor); a TTY bare `teddy init` discovers and persists an `nvim` editor when none is configured; and `teddy init config` re-runs the gates, re-prompting for the reset editor. Tests 1-2 drive the `_run_init_setup_gates` seam directly with the two helpers spied (pinning the TTY gate and the call order); tests 3-4 drive the real commands through `CliTestAdapter`, reusing the existing preflight `_validate_editor_config` gate (no new prompt logic). The API-key-through-init path is deliberately not duplicated here — the acceptance bullet already pins it. The file reported 4 passed on the first run — the expected outcome for a coverage deliverable, since the deliverable-4 wiring already implemented the behavior; `make test` stayed green (1766 passed, 5 skipped).
+
+### Deliverable 6 (init docs cleanup)
+
+Only `docs/architecture/adapters/inbound/cli.md` needed reconciling; `docs/architecture/core/services/init_service.md` documents `InitService`, which this slice did not change, and carries no prompt wording, so it was deliberately left untouched. The `cli.md` `init` section was updated to as-built reality: the summary line now says the command "runs the same one-time interactive setup gates as `teddy start` (LLM API key + editor) when a terminal is attached" instead of the obsolete "auto-launches `teddy login` if no credentials exist", and the stale step ("Checks `.teddy/credentials.yaml` … auto-launches the OAuth login browser flow") was replaced by the TTY-gated API-key + editor description, noting that `teddy init config` re-runs the gates after overwriting `config.yaml`. The API-key prompt wording is NOT documented in `docs/` (only in `src` and the tests), so deliverable 1 required no doc change. The doc-only change kept `make test` green (1766 passed, 5 skipped, identical to the turn-30 baseline).
 
 ## Verification
 

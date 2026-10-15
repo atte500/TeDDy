@@ -170,7 +170,7 @@ Resumes an existing session. The optional positional `[PATH|SLUG]` accepts eithe
 
 **Status:** Implemented
 
-Creates the `.teddy/` directory with default files (config, gitignore, init.context, .env), pre-warms heavy imports, and auto-launches `teddy login` if no credentials exist.
+Creates the `.teddy/` directory with default files (config, gitignore, init.context, .env), pre-warms heavy imports, and runs the same one-time interactive setup gates as `teddy start` (LLM API key + editor) when a terminal is attached.
 
 - **Signature:** `teddy init`
 - **No options** (kept simple).
@@ -178,7 +178,7 @@ Creates the `.teddy/` directory with default files (config, gitignore, init.cont
   1. Calls the existing `InitService.ensure_initialized()` to create `.teddy/` and seed default files.
   2. Pre-warms heavy imports (`litellm`, `trafilatura`, `pyperclip`, `bs4`, `ddgs`, `tiktoken`) by importing them. The tiktoken prewarm eliminates the cold encoding load from the first session turn (2.03s on Windows CI).
   3. Echoes a success message: `"TeDDy initialized in .teddy folder."`
-  4. Checks `.teddy/credentials.yaml`. If missing or empty, echoes `"No credentials found. Launching login to OpenRouter..."` and auto-launches the OAuth login browser flow.
+  4. Runs the interactive setup gates (Slice 00-37): when a terminal is attached (`ISystemEnvironment.isatty()`), it prompts for the required LLM API key (only when the key is missing and the configured model requires one) and then for the editor (only when no editor is configured), reusing the same preflight helpers as `teddy start` so no prompt logic is duplicated. A non-interactive run (stdin is not a TTY) prompts for neither. The `teddy init config` subcommand runs the same gates after overwriting `config.yaml`, so the reset editor re-prompts.
   5. **Idempotent:** Safe to run multiple times.
 
 ### Main Command: `execute`
