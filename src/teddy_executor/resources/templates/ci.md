@@ -171,5 +171,4 @@ jobs:
 
 ## Reference
 - [Makefile Template](./makefile.md) for `make probe` command.
-- [Debugger RPP Rule](../prompts/debugger.xml) for protocol details.
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)

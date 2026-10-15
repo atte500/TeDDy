@@ -159,7 +159,7 @@ The Message section is raw, free-form Markdown content for User communication.
 
 ``````markdown
 # [Descriptive Goal-Oriented Title]
-- **Agent:** {Agent Name (read from the "# {AgentName}" H1 heading at the top of the agent prompt)}
+- **Agent:** {Agent Name}
 - **Plan Type:** [Name]
 - **Status:** [ON-TRACK 🟢 | OFF-TRACK 🟡 | BLOCKED 🔴]
 
