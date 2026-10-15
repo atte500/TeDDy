@@ -14,6 +14,7 @@ from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.services.session_replanner import SessionReplanner
 from teddy_executor.core.utils.io import Tee as _Tee
+from teddy_executor.core.utils.terminal import emit_user_message
 import typer
 
 logger = logging.getLogger(__name__)
@@ -58,9 +59,7 @@ def _print_initial_request(
                 )
     if not message or not message.strip():
         return
-    typer.secho("")
-    typer.secho("Initial Request:")
-    typer.secho(message.strip())
+    emit_user_message(message)
 
 
 def _print_header_bar(plan: Any, is_session: bool) -> None:
@@ -146,9 +145,7 @@ def _print_user_message(
     if not message or not message.strip():
         return
 
-    typer.secho("")
-    typer.secho("User Message:")
-    typer.secho(message.strip())
+    emit_user_message(message)
 
 
 class SessionOrchestrator(IRunPlanUseCase):

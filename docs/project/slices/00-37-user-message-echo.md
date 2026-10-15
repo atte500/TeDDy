@@ -50,7 +50,7 @@ None. The pattern is fully established: `_print_initial_request` and `_print_use
 
 ## Deliverables
 - [x] **Wiring** — Introduce `emit_user_message(content)` and call it for the injected `resume -m` message before the turn. Proves the seam end-to-end: `resume -m "X"` prints "User Message: X" before planning.
-- [ ] **Refactor** — Route `_print_initial_request` and `_print_user_message` through `emit_user_message`; rename the "Initial Request:" label to "User Message:".
+- [x] **Refactor** — Route `_print_initial_request` and `_print_user_message` through `emit_user_message`; rename the "Initial Request:" label to "User Message:".
 - [ ] **Migration** — Route the TUI `m`-key echo in `orchestrate_execution` through `emit_user_message`.
 - [ ] **Cleanup** — Delete the now-dead inline print and any remaining "Initial Request:" literal.
 
@@ -68,6 +68,10 @@ None. The pattern is fully established: `_print_initial_request` and `_print_use
 - **Tracer bullet:** `tests/suites/acceptance/test_pipeline_message_and_resume_flow.py::test_resume_m_echoes_user_message_before_planning` drives `resume -m` on a completed turn and asserts `User Message:` precedes the turn-02 plan output.
 - **Integration:** `make test` green (1751 passed, 5 skipped).
 - **Commit-gate unblock (pre-existing debt):** the pre-commit `ruff-lint` hook flagged three PRE-EXISTING `PLR0913` violations in `session_lifecycle_manager.py` (`resume`, `_consume_awaiting_reply`, `_handle_planning_and_execution`); HEAD's committed blob fails identically. Suppressed inline with `# noqa: PLR0913`, matching the file's existing `trigger_replan` bypass and the codebase convention (18 sites); signatures are untouched.
+- **Refactor (deliverable 2):** `session_orchestrator.py` now imports `emit_user_message`, and BOTH `_print_initial_request` and `_print_user_message` delegate their output to it. Each helper keeps its own content-resolution priority (`_print_initial_request`: direct `message` → `initial_request.md` via `Path(plan_path).parent`; `_print_user_message`: direct → `plan.metadata["user_request"]` → MESSAGE `action_logs`) and its `is_session`/empty guard, so the "blank line + label + content" format is single-sourced and the label is now "User Message:". Both helper signatures are unchanged (shared seams: `session_lifecycle_manager` + `session_orchestrator.execute` + several tests).
+- **Refactor tests:** the two label assertions now expect "User Message:" — `test_session_orchestrator.py::TestConsoleVisibilityHelpers::test_print_initial_request` and `test_bug_03_prompt_resolution.py::TestLifecyclePrintsInitialRequest::test_print_initial_request_resolves_path_with_parent`. Both modules patch the shared `typer` module's `secho` (dotted-path and direct-assignment styles), so the delegation is transparent to both capture styles.
+- **Refactor integration:** `make test` green (1751 passed, 5 skipped).
+- **Commit-gate unblock #2 (pre-existing debt):** the pre-commit `ruff-lint` hook flagged two PRE-EXISTING `TID251` violations on the `from unittest.mock import MagicMock, patch` line of `test_bug_03_prompt_resolution.py`; HEAD's committed blob fails identically. Suppressed inline with `# noqa: TID251`, matching the codebase convention (8 sites: `tests/harness/setup/mocking.py`, `test_session_orchestrator.py`, `test_bug_40_q_cancel_message_terminal_output.py`, and others).
 
 ## Verification
 - [ ] Run `teddy resume -m "test message"` on a session with a completed turn and verify the terminal prints "User Message:" followed by "test message" before the turn's planning output, and exits with code 0.

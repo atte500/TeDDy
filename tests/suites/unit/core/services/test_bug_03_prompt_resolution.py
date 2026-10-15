@@ -1,7 +1,7 @@
 """Regression tests for Bug #03: Case-insensitive prompt resolution and duplicate Initial Request."""
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch  # noqa: TID251
 
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import SessionState
@@ -172,7 +172,7 @@ class TestLifecyclePrintsInitialRequest:
             f"Expected 3 calls (blank, label, content), got {len(calls)}: {calls}"
         )
         assert calls[0] == "", "First call should be blank line"
-        assert calls[1] == "Initial Request:", "Second call should be the label"
+        assert calls[1] == "User Message:", "Second call should be the label"
         assert calls[2] == "Hello from test", (
             f"Third call should be the file content, got: {calls[2]}"
         )
