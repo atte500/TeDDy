@@ -1,6 +1,6 @@
 # Slice: Init Interactive Setup and API Key Guidance
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc task; source: initial user request)
 - **Specs:** N/A
 - **Prototype:** N/A
@@ -74,7 +74,7 @@ And it re-prompts for the LLM API key only when the key is missing
 
 ## Deliverables
 
-- [ ] **Logic** - Update the yellow warning in `_prompt_for_api_key` to name OpenRouter as the default provider and tell the user to change `llm.model` in `.teddy/config.yaml`. Keep the leading `No LLM API key configured.` sentence, the stderr channel, and the hidden-input prompt. Proposed wording (stderr, yellow):
+- [▶] **Logic** - Update the yellow warning in `_prompt_for_api_key` to name OpenRouter as the default provider and tell the user to change `llm.model` in `.teddy/config.yaml`. Keep the leading `No LLM API key configured.` sentence, the stderr channel, and the hidden-input prompt. Proposed wording (stderr, yellow):
 
   ```
   ⚠ No LLM API key configured. OpenRouter is the default provider. Paste your key below.
