@@ -16,9 +16,10 @@ def test_start_advises_init_prompts_when_a_prompt_has_drifted(tmp_path, monkeypa
     env.setup().with_real_filesystem()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
-    # Arrange: a workspace whose pathfinder prompt DIFFERS from the bundled default.
-    # init's _init_prompts(overwrite=False) will not clobber it and will fill in the
-    # remaining defaults, leaving exactly one EDITED prompt.
+    # Arrange: a workspace with a stale `.xml` prompt and no `.md` prompts. After
+    # the migration the prompt manifest is the `.md` names, so init's
+    # _init_prompts(overwrite=False) treats the same-stem `.xml` as present and
+    # leaves `pathfinder.md` absent, which the drift check reports as MISSING.
     prompts_dir = tmp_path / ".teddy" / "prompts"
     prompts_dir.mkdir(parents=True, exist_ok=True)
     (prompts_dir / "pathfinder.xml").write_text(

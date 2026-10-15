@@ -80,17 +80,17 @@ def test_init_service_default_path_resolution(mock_fs):
 
 
 PROMPT_FILES = [
-    "architect.xml",
-    "assistant.xml",
-    "debugger.xml",
-    "developer.xml",
-    "pathfinder.xml",
-    "prototyper.xml",
+    "architect.md",
+    "assistant.md",
+    "debugger.md",
+    "developer.md",
+    "pathfinder.md",
+    "prototyper.md",
 ]
 
 
 def test_ensure_initialized_copies_prompts_to_teddy(service, mock_fs):
-    """Verifies that ensure_initialized copies prompt XMLs to .teddy/prompts/."""
+    """Verifies ensure_initialized copies prompt Markdown files to .teddy/prompts/."""
 
     # Given
     def mock_exists(p: str) -> bool:
@@ -106,12 +106,12 @@ def test_ensure_initialized_copies_prompts_to_teddy(service, mock_fs):
         return {
             "/mock/config/config.yaml": "mock config",
             "/mock/config/init.context": "mock context",
-            "/mock/config/prompts/architect.xml": "architect prompt",
-            "/mock/config/prompts/assistant.xml": "assistant prompt",
-            "/mock/config/prompts/debugger.xml": "debugger prompt",
-            "/mock/config/prompts/developer.xml": "developer prompt",
-            "/mock/config/prompts/pathfinder.xml": "pathfinder prompt",
-            "/mock/config/prompts/prototyper.xml": "prototyper prompt",
+            "/mock/config/prompts/architect.md": "architect prompt",
+            "/mock/config/prompts/assistant.md": "assistant prompt",
+            "/mock/config/prompts/debugger.md": "debugger prompt",
+            "/mock/config/prompts/developer.md": "developer prompt",
+            "/mock/config/prompts/pathfinder.md": "pathfinder prompt",
+            "/mock/config/prompts/prototyper.md": "prototyper prompt",
         }.get(p, "")
 
     mock_fs.read_file.side_effect = mock_read
@@ -125,7 +125,7 @@ def test_ensure_initialized_copies_prompts_to_teddy(service, mock_fs):
     mock_fs.write_file.assert_any_call(".teddy/config.yaml", "mock config")
     mock_fs.write_file.assert_any_call(".teddy/init.context", "mock context")
     for fname in PROMPT_FILES:
-        prompt_name = fname.replace(".xml", "")
+        prompt_name = fname.replace(".md", "")
         expected_content = f"{prompt_name} prompt"
         mock_fs.write_file.assert_any_call(f".teddy/prompts/{fname}", expected_content)
 
@@ -201,6 +201,66 @@ def test_ensure_prompts_initialized_missing_prompts_non_overwrite(service, mock_
     result = service.ensure_prompts_initialized(overwrite=False)
     assert mock_fs.write_file.call_count == 6
     assert result == "Prompts updated (6 files)."
+
+
+# ── Stem-identity copy: a stale .xml is replaced by the new .md ───────────────
+
+
+def test_init_prompts_overwrite_replaces_same_stem_xml_with_md(service, mock_fs):
+    """`teddy init prompts` (overwrite=True) replaces a stale `.xml` with the `.md`.
+
+    With `.teddy/prompts/pathfinder.xml` present and the manifest pointing at
+    `pathfinder.md`, the copy writes `pathfinder.md` AND removes the stale
+    `pathfinder.xml`, so exactly one file with the stem ``pathfinder`` remains.
+    """
+
+    def mock_exists(p: str) -> bool:
+        if p.startswith("/mock/config"):
+            return True
+        if p == ".teddy/prompts":
+            return True
+        return p == ".teddy/prompts/pathfinder.xml"
+
+    mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": ["pathfinder.xml"],
+    }.get(d, [])
+    mock_fs.read_file.side_effect = lambda p: f"content::{p}"
+
+    service._init_prompts(overwrite=True)
+
+    mock_fs.write_file.assert_any_call(
+        ".teddy/prompts/pathfinder.md", "content::/mock/config/prompts/pathfinder.md"
+    )
+    mock_fs.remove_file.assert_any_call(".teddy/prompts/pathfinder.xml")
+
+
+def test_init_prompts_non_overwrite_skips_when_same_stem_xml_present(service, mock_fs):
+    """Non-destructive init treats a same-stem `.xml` as already present.
+
+    With `overwrite=False` and only `.teddy/prompts/pathfinder.xml` present, no
+    `pathfinder.md` is written (same stem = present), while the other agents'
+    `.md` prompts are still filled in.
+    """
+
+    def mock_exists(p: str) -> bool:
+        if p.startswith("/mock/config"):
+            return True
+        if p == ".teddy/prompts":
+            return True
+        return p == ".teddy/prompts/pathfinder.xml"
+
+    mock_fs.path_exists.side_effect = mock_exists
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": ["pathfinder.xml"],
+    }.get(d, [])
+    mock_fs.read_file.side_effect = lambda p: f"content::{p}"
+
+    service._init_prompts(overwrite=False)
+
+    written = [call.args[0] for call in mock_fs.write_file.call_args_list]
+    assert ".teddy/prompts/pathfinder.md" not in written
+    assert ".teddy/prompts/architect.md" in written
 
 
 def test_ensure_config_initialized_overwrite_true(service, mock_fs):

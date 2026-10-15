@@ -1,7 +1,9 @@
 import logging
 import os
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from importlib import resources
+from pathlib import Path
 
 import yaml
 
@@ -53,18 +55,31 @@ _TEMPLATE_FILES = [
     "pre-commit.md",
 ]
 
-# Bundled prompt XMLs copied into a project's ``.teddy/prompts/`` by
+# Bundled Markdown prompts copied into a project's ``.teddy/prompts/`` by
 # ``_init_prompts`` and compared by ``check_drift``. Kept as a fixed manifest
 # (mirroring ``_TEMPLATE_FILES``) so the copy routine and the drift check share
 # one single source of truth.
 _PROMPT_FILES = [
-    "architect.xml",
-    "assistant.xml",
-    "debugger.xml",
-    "developer.xml",
-    "pathfinder.xml",
-    "prototyper.xml",
+    "architect.md",
+    "assistant.md",
+    "debugger.md",
+    "developer.md",
+    "pathfinder.md",
+    "prototyper.md",
 ]
+
+
+@dataclass(frozen=True)
+class _CopyPolicy:
+    """Optional copy behaviours for ``_copy_bundled_files``.
+
+    Groups the two optional behaviours (the config copy's create-only files and
+    the prompt copy's stem identity) so the shared helper keeps a small
+    signature, mirroring the project's ``*Ports`` dataclasses.
+    """
+
+    create_only: frozenset[str] = frozenset()
+    stem_identity: bool = False
 
 
 class InitService(IInitUseCase):
@@ -126,13 +141,30 @@ class InitService(IInitUseCase):
             return f"overwritten ({count} files)"
         return f"updated ({count} files)"
 
+    @staticmethod
+    def _stem_key(filename: str) -> str:
+        """Returns a filename's case-folded stem for identity comparison."""
+        return Path(filename).stem.casefold()
+
+    def _prune_same_stem(self, dest_dir: str, filename: str) -> None:
+        """Removes same-stem files with a different name (stem identity).
+
+        After writing ``filename`` into ``dest_dir``, any other entry sharing its
+        stem (e.g. a stale ``.xml`` beside the new ``.md``) is removed so two
+        same-stem files never coexist after a write.
+        """
+        stem = self._stem_key(filename)
+        for name in self._file_system.list_directory(dest_dir):
+            if name != filename and self._stem_key(name) == stem:
+                self._file_system.remove_file(f"{dest_dir}/{name}")
+
     def _copy_bundled_files(
         self,
         dest_dir: str,
         filenames: Sequence[str],
         resolve_content: Callable[[str], str | None],
         overwrite: bool,
-        create_only: frozenset[str] = frozenset(),
+        policy: _CopyPolicy = _CopyPolicy(),
     ) -> str:
         """Copies bundled resources into ``dest_dir`` via the file-system port.
 
@@ -141,17 +173,36 @@ class InitService(IInitUseCase):
         in ``create_only``, which are written only when absent. Content is
         supplied by ``resolve_content``; a ``None`` result silently skips a
         missing bundled resource. Returns the shared copy-result status string.
+
+        When ``stem_identity`` is set (prompt copies only), a destination entry
+        sharing an entry's stem under ANY extension counts as present, and an
+        overwrite removes any same-stem file with a different name so a stale
+        ``.xml`` is replaced by the new ``.md`` instead of being left beside it.
         """
+        create_only = policy.create_only
+        stem_identity = policy.stem_identity
         if not self._file_system.path_exists(dest_dir):
             self._file_system.create_directory(dest_dir)
+        same_stems = (
+            {
+                self._stem_key(name)
+                for name in self._file_system.list_directory(dest_dir)
+            }
+            if stem_identity
+            else set()
+        )
         count = 0
         for fname in filenames:
             target_path = f"{dest_dir}/{fname}"
-            exists = self._file_system.path_exists(target_path)
+            exists = self._file_system.path_exists(target_path) or (
+                stem_identity and self._stem_key(fname) in same_stems
+            )
             if not exists or (overwrite and fname not in create_only):
                 content = resolve_content(fname)
                 if content is not None:
                     self._file_system.write_file(target_path, content)
+                    if stem_identity:
+                        self._prune_same_stem(dest_dir, fname)
                     count += 1
         return self._format_init_status(count, overwrite)
 
@@ -188,11 +239,15 @@ class InitService(IInitUseCase):
             filenames=["config.yaml", ".gitignore", "init.context", ".env"],
             resolve_content=self._get_default_content,
             overwrite=overwrite,
-            create_only=_CREATE_ONLY_CONFIG_FILES,
+            policy=_CopyPolicy(create_only=_CREATE_ONLY_CONFIG_FILES),
         )
 
     def _init_prompts(self, overwrite: bool = False) -> str:
-        """Copies bundled prompt XMLs to .teddy/prompts/.
+        """Copies bundled Markdown prompts to .teddy/prompts/.
+
+        A destination file sharing a prompt's stem under any extension counts as
+        present; on ``overwrite`` the ``.md`` is written and any stale same-stem
+        file (e.g. a pre-migration ``.xml``) is removed.
 
         Args:
             overwrite: If True, always overwrite existing files. If False, only write missing ones.
@@ -205,6 +260,7 @@ class InitService(IInitUseCase):
             filenames=_PROMPT_FILES,
             resolve_content=lambda fname: self._get_default_content(f"prompts/{fname}"),
             overwrite=overwrite,
+            policy=_CopyPolicy(stem_identity=True),
         )
 
     def _init_templates(self, overwrite: bool = False) -> str:
@@ -247,7 +303,7 @@ class InitService(IInitUseCase):
 
     def ensure_prompts_initialized(self, overwrite: bool = True) -> str:
         """
-        Ensures prompt XML files are present in the .teddy/prompts/ directory.
+        Ensures prompt Markdown files are present in the .teddy/prompts/ directory.
 
         Args:
             overwrite: If True, always overwrite existing prompt files with defaults.
@@ -322,7 +378,7 @@ class InitService(IInitUseCase):
     def check_drift(self) -> DriftReport:
         """Compares the user's prompts and templates against bundled defaults.
 
-        Reports which ``.teddy/prompts/*.xml`` and ``docs/templates/*.md`` files
+        Reports which ``.teddy/prompts/*.md`` and ``docs/templates/*.md`` files
         have been EDITED away from their bundled default and which are MISSING,
         so the CLI preflight can advise ``teddy init prompts`` /
         ``teddy init templates``. An absent ``.teddy/prompts/`` directory simply

@@ -1,9 +1,9 @@
 """Unit: the drift-check helper compares user prompts/templates against bundled defaults.
 
 Seam Items 3/4 (session-behaviour): ``InitService.check_drift`` reports which
-user prompt XMLs and template Markdown files have been EDITED away from their
-bundled default and which are MISSING from the user's project, so the CLI
-preflight can advise ``teddy init prompts`` / ``teddy init templates``.
+user prompt Markdown files and template Markdown files have been EDITED away
+from their bundled default and which are MISSING from the user's project, so
+the CLI preflight can advise ``teddy init prompts`` / ``teddy init templates``.
 
 The check enumerates the canonical default file set (``_PROMPT_FILES`` /
 ``_TEMPLATE_FILES``), so an absent user directory simply makes every file in
@@ -27,7 +27,7 @@ def _build_service(container):
     def _read_file(path: str) -> str:
         # The user edited exactly one prompt; every other file is byte-identical
         # to its bundled default (same basename -> same content).
-        if path == ".teddy/prompts/pathfinder.xml":
+        if path == ".teddy/prompts/pathfinder.md":
             return "<user-edited pathfinder/>"
         return f"<{path.rsplit('/', 1)[-1]}>"
 
@@ -47,7 +47,7 @@ def test_check_drift_reports_edited_prompt_and_missing_template(container):
 
     report = service.check_drift()
 
-    assert report.edited_prompts == ("pathfinder.xml",)
+    assert report.edited_prompts == ("pathfinder.md",)
     assert report.missing_prompts == ()
     assert report.edited_templates == ()
     assert report.missing_templates == ("ci.md",)
@@ -85,3 +85,34 @@ def test_check_drift_reports_every_prompt_missing_when_prompts_dir_absent(contai
     assert report.edited_prompts == ()
     assert report.missing_templates == ()
     assert report.edited_templates == ()
+
+
+def test_check_drift_reports_stale_xml_as_missing_md(container):
+    """A user's old `.xml` prompt makes the `.md` manifest entry report MISSING.
+
+    After the migration the prompt manifest is the `.md` names, so a stale
+    ``.teddy/prompts/pathfinder.xml`` surfaces as a missing ``pathfinder.md``;
+    the ``teddy start`` preflight then advises ``teddy init prompts``.
+    """
+    fs = register_mock(container, IFileSystemManager)
+
+    def _path_exists(path: str) -> bool:
+        if path == ".teddy/prompts/pathfinder.xml":
+            return True
+        if path.startswith(".teddy/prompts/"):
+            return False
+        # Bundled defaults and docs/templates/ defaults are present.
+        return True
+
+    fs.path_exists.side_effect = _path_exists
+    fs.read_file.side_effect = lambda p: f"<{p.rsplit('/', 1)[-1]}>"
+
+    service = InitService(
+        file_system=fs,
+        config_dir="bundled/config",
+        templates_dir="bundled/templates",
+    )
+
+    report = service.check_drift()
+
+    assert "pathfinder.md" in report.missing_prompts

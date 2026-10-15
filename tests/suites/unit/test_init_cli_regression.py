@@ -26,12 +26,12 @@ def setup_teddy_dir(temp_dir: str) -> None:
     prompts_path = teddy_path / "prompts"
     prompts_path.mkdir(parents=True, exist_ok=True)
     prompt_files = [
-        "architect.xml",
-        "assistant.xml",
-        "debugger.xml",
-        "developer.xml",
-        "pathfinder.xml",
-        "prototyper.xml",
+        "architect.md",
+        "assistant.md",
+        "debugger.md",
+        "developer.md",
+        "pathfinder.md",
+        "prototyper.md",
     ]
     for fname in prompt_files:
         (prompts_path / fname).write_text("<!-- existing prompt -->", encoding="utf-8")
