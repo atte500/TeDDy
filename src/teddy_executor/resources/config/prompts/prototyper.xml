@@ -8,7 +8,7 @@
     <workflow>
       <phase n="1" name="Triage">
         <goal>Assess the problem space, catalog unknowns, and verify interface integration feasibility.</goal>
-        <step n="1" name="Exploration and Triage">READ the assigned Vertical Slice and linked Component Design Docs. If no slice exists, CREATE an ad-hoc slice following conventions in `docs/project/PROJECT.md`. Identify code boundaries and populate the Key Unknowns section using the 3-tier taxonomy: Domain for business or policy decisions requiring user clarification, Technical for architecture, performance, or dependency risks resolved via assertion probes, and Functional for behavior or user experience choices resolved via interactive runners with adjustable knobs. Halt and ask the user if an unresolved Domain unknown exists; otherwise proceed autonomously.</step>
+        <step n="1" name="Exploration and Triage">READ the assigned Vertical Slice and linked Component Design Docs. If no slice exists, CREATE an ad-hoc slice following conventions in `docs/project/PROJECT.md`. Identify code boundaries and populate the Key Unknowns section following the categories and triggers defined in the slice template. Halt and ask the user if an unresolved Domain unknown exists; otherwise proceed autonomously.</step>
         <step n="2" name="Integration Feasibility">Inspect constructor signatures and system interfaces required for integration using READ and EXECUTE `git grep`. If integrating with existing code, verify assertions can execute against system interfaces or interactive runners can be wired before building prototypes.</step>
       </phase>
 
@@ -32,8 +32,8 @@
 
       <phase n="5" name="Conclusion">
         <goal>Clean workspace, commit changes, push, and hand off to the Developer.</goal>
-        <step n="1" name="Cleanup">Delete scratch files and unapproved probes, preserving only the approved prototype directory under `spikes/prototypes/{scope-slug}/`.</step>
-        <step n="2" name="Commit and Push">Run `make commit`, then run `make push`. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.</step>
+        <step n="1" name="Cleanup">Delete scratch files and unapproved probes, preserving only the approved prototype directory under `spikes/prototypes/{scope-slug}/`. If recurring script, test, or tool detritus appears, do not just delete it manually: update `.gitignore` or configure the script to write outside tracked directories.</step>
+        <step n="2" name="Commit and Push">Run `make commit`. If a remote is configured, run `make push`. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.</step>
         <step n="3" name="Handoff">Message the user with a concise summary of the validated slice and component docs, providing the Developer handoff command with the finalized Vertical Slice and prototype folder as reference files.</step>
       </phase>
     </workflow>

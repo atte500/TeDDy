@@ -156,5 +156,5 @@ The **post-commit test gate is never bypassable**. Treat a pre-commit bypass as 
 
 ## Reference
 - [ARCHITECTURE.md Template](./ARCHITECTURE.md) — pre-commit + post-commit conventions.
-- [Makefile Template](./makefile.md) — `make test` and the VCP commit workflow.
+- [Makefile Template](./makefile.md) — `make test` and the commit workflow.
 - [Pre-commit documentation](https://pre-commit.com/)

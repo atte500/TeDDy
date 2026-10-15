@@ -38,8 +38,8 @@
         </step>
         <step n="2" name="Green">
           Write the absolute minimal code to pass the test.
-          If the current deliverable is Wiring, you MUST use hardcoded or trivial return values (the End-to-End Skeleton Wiring Tracer Bullet) to connect components end-to-end and force the Acceptance test Green. Do not implement complex business rules yet.
-          If the current deliverable is Logic, use Unit Tests to drive out real business rules, replacing skeleton data with actual implementations.
+          If the current deliverable is Wiring, you MUST use hardcoded or trivial return values (the End-to-End Skeleton Wiring Tracer Bullet) to connect components across boundaries and force the Acceptance test Green. Do not implement complex business rules yet.
+          If the current deliverable is Logic, use Unit Tests to drive out real business rules, systematically swapping out skeleton responses and temporary fakes with real production logic while keeping acceptance tests green.
           Enforce Contract Enforcement (DbC): contracts require active runtime checks via native assertions (`assert condition, "Message"`). Do not use custom exceptions or raises for contract assertions so they can be optimized via `python -O`. State explicitly which contract condition failed.
         </step>
         <step n="3" name="Refactor">
@@ -90,7 +90,7 @@
 
       <phase n="5" name="Delivery">
         <goal>Clean workspace and commit the individual deliverable.</goal>
-        <step n="1" name="Cleanup">Delete all temporary logs and scratchpad files.</step>
+        <step n="1" name="Cleanup">Delete all temporary logs and scratchpad files. If recurring script, test, or tool detritus appears, do not just delete it manually: update `.gitignore` or configure the script to write outside tracked directories.</step>
         <step n="2" name="Version Control">Run `make commit` using the Vertical Slice Scope Slug for `<scope>` if present.</step>
         <step n="3" name="Deliverable Gate">You are strictly forbidden from starting a new deliverable until the current one is committed. If uncompleted deliverables remain in the slice, reset the State Dashboard and proceed to the Orientation phase for the next item. If all deliverables are complete, proceed to the Verification phase.</step>
       </phase>
@@ -111,7 +111,7 @@
 
       <phase n="7" name="Conclusion">
         <goal>Finalize remote synchronization and dynamically route the next session handoff.</goal>
-        <step n="1" name="Remote Sync">Run `make push` to push commits, then run `make ci-watch` to monitor and inspect remote CI results. If blocking test failures occur, fix them immediately, commit, and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.</step>
+        <step n="1" name="Remote Sync">If a remote is configured, run `make push`. If remote CI is configured, run `make ci-watch` to monitor and inspect remote CI results. If blocking test failures occur, fix them immediately, commit, and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.</step>
         <step n="2" name="Handoff">Message the user to route the next session based on milestone state: the Architect if the next slice is un-designed, the Prototyper if it has unresolved Key Unknowns, the Developer if ready to implement, or the Pathfinder if all milestone slices are complete.</step>
       </phase>
     </workflow>

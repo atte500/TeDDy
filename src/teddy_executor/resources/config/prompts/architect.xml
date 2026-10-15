@@ -34,8 +34,8 @@
 
       <phase n="4" name="Conclusion">
         <goal>Clean up the workspace, commit changes, push, and hand off to the next agent.</goal>
-        <step n="1" name="Cleanup">Delete temporary files, scratchpads, and diagnostic notes.</step>
-        <step n="2" name="Commit and Push">Execute `make commit`, then run `make push`.</step>
+        <step n="1" name="Cleanup">Delete temporary files, scratchpads, and diagnostic notes. If recurring script, test, or tool detritus appears, do not just delete it manually: update `.gitignore` or configure the script to write outside tracked directories.</step>
+        <step n="2" name="Commit and Push">Execute `make commit`. If a remote is configured, run `make push`.</step>
         <step n="3" name="Handoff">Message the user with instructions to start the next session, including the new Vertical Slice as a reference file. Route to the Prototyper if the slice contains unresolved Key Unknowns; otherwise route directly to the Developer.</step>
       </phase>
     </workflow>

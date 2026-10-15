@@ -25,11 +25,11 @@ Then [expected outcome]
 
 **Taxonomy:**
 - `[Domain]` = Ambiguities in business rules, policy decisions, domain definitions, or scope boundaries. Resolve by asking the user directly.
-- `[Technical]` = External dependencies, third-party libraries, APIs, runtime performance, concurrency, or data-storage feasibility. Resolve via automated assertion probes in `spikes/`.
-- `[Functional]` = User-facing ergonomics, CLI flags, terminal rendering, interactive flows, or layout aesthetic. Resolve via interactive scenario runners in `spikes/`.
+- `[Technical]` = External dependencies, third-party libraries, APIs, internal state machines, complex algorithms, concurrency, performance, or data storage. Resolve via works-like prototypes.
+- `[Functional]` = User-facing ergonomics, CLI flags, terminal rendering, interactive flows, or layout aesthetics. Resolve via looks-like prototypes.
 
-**Mandatory De-risking Triggers:**
-1. Log any new or modified integration with an external system, library, API, storage layer, or performance constraint as `[Technical]`.
+**Mandatory De-risking Triggers (must include, but are not limited to):**
+1. Log any new or modified integration with an external system, library, API, or storage layer as `[Technical]`.
 2. Log any new or modified user interaction, CLI flags, terminal formatting, or interactive UX flow as `[Functional]`.
 3. Log any business rule, policy, or scope ambiguity as `[Domain]`.
 
@@ -49,10 +49,10 @@ Surface of affected components classified by the Parallel Change model:
 
 **Types:**
 - **Env:** Declarative tooling, build files, CI workflows, hooks, or config templates.
-- **Wiring:** Outermost boundary tracer bullet returning skeleton/fake data.
+- **Wiring:** Outermost boundary tracer bullet returning skeleton/fake data to connect layers end-to-end.
 - **Contract:** Signatures, ports, interfaces, DTOs, domain models.
 - **Harness:** Modifying or extending shared test infrastructure (Drivers, Observers, Fakes, Setup fixtures).
-- **Logic:** Core domain logic and business rules driven by unit tests.
+- **Logic:** Core domain logic and business rules driven by unit tests, systematically replacing skeleton returns and temporary fakes with real implementations.
 - **Migration:** Adapting existing consumers to new contracts.
 - **Refactor:** Improving code design without altering behavior (DRY, SRP, extracting helpers).
 - **Cleanup:** Removing deprecated methods, dead code, and temporary shims.

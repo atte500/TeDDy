@@ -2,7 +2,7 @@
 
 > **⚠️ This is an example template.** Adapt the runner, test commands, and tool-specific details (e.g., `uv run pytest`, pre-commit hook list) to match your project's actual setup. The concrete examples shown may not work verbatim in all environments.
 
-This template defines the standard commands for the VCP (Version Control Protocol) commit workflow
+This template defines the standard commands for the commit workflow
 and the Debugger's Remote Probing Protocol (RPP). Below are concrete examples adapted for the TeDDy project.
 
 ## Usage
@@ -99,7 +99,7 @@ test:
 
 **Usage:** `make test`
 
-## VCP Commit Workflow
+## Commit Workflow
 
 `make commit` is **local-only**: it stages all local changes, runs the pre-commit hooks once (an advisory auto-fix pass that re-stages any auto-formatted files), and commits. It does **not** pull or push — the push is deferred to the session Conclusion via `make push` (see [Push (Deferred to Conclusion)](#push-deferred-to-conclusion)).
 
@@ -137,7 +137,7 @@ commit:
 
 ## Push (Deferred to Conclusion)
 
-`make push` is fast and non-blocking: it runs `git pull --rebase` and pushes local commits to remote.
+`make push` is fast and non-blocking: it runs `git pull --rebase` and pushes local commits to remote. Only include and configure this target if a remote is configured or planned for the project.
 
 ### Example
 
@@ -151,7 +151,7 @@ push:
 
 ## CI Watch & Attribution
 
-`make ci-watch` discovers **every** CI run for the target commit (`HEAD` by default, or `COMMIT=<sha>`), waits for and reports each workflow with its jobs. It answers ONE question: **did this commit turn a BLOCKING gate red?**
+`make ci-watch` discovers **every** CI run for the target commit (`HEAD` by default, or `COMMIT=<sha>`), waits for and reports each workflow with its jobs. It answers ONE question: **did this commit turn a BLOCKING gate red?** Only include and configure this target if a remote CI pipeline is configured or planned for the project.
 
 The pushed RUN's own conclusion is authoritative: it already folds in `continue-on-error`, so a **non-blocking** job (e.g. the CI `Quality Checks` job) can NEVER block the session — it is reported as a triage item instead. Only when the run-level conclusion is `failure` does attribution run, comparing the pushed run's failing-JOB set against the base run's:
 

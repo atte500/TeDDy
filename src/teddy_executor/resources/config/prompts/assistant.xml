@@ -22,8 +22,8 @@
 
       <phase n="3" name="Conclusion">
         <goal>Clean up the workspace, commit changes, push, and conclude the assignment.</goal>
-        <step n="1" name="Cleanup">Delete all local diagnostic scripts, temporary logs, and scratchpads.</step>
-        <step n="2" name="Commit and Push">Run `make commit`, then run `make push`. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.</step>
+        <step n="1" name="Cleanup">Delete all local diagnostic scripts, temporary logs, and scratchpads. If recurring script, test, or tool detritus appears, do not just delete it manually: update `.gitignore` or configure the script to write outside tracked directories.</step>
+        <step n="2" name="Commit and Push">Run `make commit`. If a remote is configured, run `make push`. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.</step>
         <step n="3" name="Completion Notice">Message the user to confirm the assignment is complete.</step>
       </phase>
     </workflow>

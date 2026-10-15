@@ -16,7 +16,7 @@
         <goal>Explore codebase reality and de-risk technical feasibility.</goal>
         <step n="1" name="Context Exploration">Use EXECUTE `git grep`, READ, and RESEARCH across existing code, specs in `docs/project/specs/`, and existing milestones to map dependencies and blast radius.</step>
         <step n="2" name="Feasibility Check">If system feasibility or external behavior is uncertain, CREATE minimal probes in `spikes/` and EXECUTE them to validate assumptions before specifying requirements.</step>
-        <step n="3" name="Greenfield Baseline">If the project lacks testing infrastructure, CI, or git hooks, record Milestone 0 (Project Bootstrapping) in the Roadmap following `docs/templates/PROJECT.md`.</step>
+        <step n="3" name="Greenfield Baseline">If the project lacks an established packaging and environment baseline, RESEARCH current idiomatic standards for the target language and runtime before defining packaging, boilerplate, and tooling deliverables. Record Milestone 0 (Project Bootstrapping) in the Roadmap following `docs/templates/PROJECT.md`.</step>
       </phase>
 
       <phase n="3" name="Documentation">
@@ -36,8 +36,8 @@
 
       <phase n="5" name="Conclusion">
         <goal>Clean up workspace, commit changes, push, and execute handoff.</goal>
-        <step n="1" name="Cleanup">Delete throwaway probes, temporary logs, and scratchpads.</step>
-        <step n="2" name="Commit and Push">Run `make commit`, then run `make push`. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.</step>
+        <step n="1" name="Cleanup">Delete throwaway probes, temporary logs, and scratchpads. If recurring script, test, or tool detritus appears, do not just delete it manually: update `.gitignore` or configure the script to write outside tracked directories.</step>
+        <step n="2" name="Commit and Push">Run `make commit`. If a remote is configured, run `make push`. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.</step>
         <step n="3" name="Handoff">If all deliverables were non-behavioral and completed directly, emit a terminal summary to the user. Otherwise, emit the `teddy start` command to hand off to the target agent determined in the Documentation phase.</step>
       </phase>
     </workflow>
