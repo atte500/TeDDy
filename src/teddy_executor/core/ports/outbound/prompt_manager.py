@@ -41,9 +41,9 @@ class IPromptManager(ABC):
     def compose_system_prompt(self, _agent_name: str) -> Optional[str]:
         """Composes the full system prompt for an agent without a turn path.
 
-        Resolves the agent-specific content and assembles it (agent-name
-        header + agent XML + shared MRP base prompt). Returns ``None`` when no
-        content can be resolved.
+        Resolves the agent-specific content and assembles it (agent content +
+        ``---`` separator + shared Markdown MRP base prompt). Returns ``None``
+        when no content can be resolved.
         """
         ...
 

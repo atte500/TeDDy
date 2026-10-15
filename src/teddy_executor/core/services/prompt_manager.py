@@ -106,7 +106,7 @@ class PromptManager(IPromptManager):
         return f"{directory}/{preferred}"
 
     def _resolve_agent_prompt_content(self, agent_name: str, turn_path: Path) -> str:
-        """Resolves the agent-specific prompt XML from the canonical
+        """Resolves the agent-specific prompt content from the canonical
         ``.teddy/prompts/`` directory (the user-editable source).
 
         Returns an empty string (with a warning) when no prompt file is found,

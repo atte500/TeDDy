@@ -65,7 +65,7 @@ class SessionService(ISessionManager):
         # 2. Prompt population — compose the full system prompt and persist it.
         # `_resolve_agent_prompt` validates the agent and resolves the target
         # filename; `PromptManager.fetch_system_prompt` assembles the composed
-        # system prompt (agent-name header + agent XML + MRP). Because the
+        # system prompt (agent content + `---` separator + MRP). Because the
         # session root is still empty here, this forces the compose path from
         # `.teddy/prompts/`. Persisting the composed value makes the session
         # root hold the exact prompt sent to the model, which later turns reuse
@@ -524,9 +524,9 @@ class SessionService(ISessionManager):
     def set_session_agent(self, session_name: str, agent_name: str) -> None:
         """
         Permanently changes the session's agent. Updates meta.yaml with the
-        new agent_name and replaces the session's prompt XML with the
-        RECOMPOSED system prompt for the new agent (agent-name header + agent
-        XML + MRP), so later turns reuse it verbatim (Option A).
+        new agent_name and replaces the session's prompt file with the
+        RECOMPOSED system prompt for the new agent (agent content + `---`
+        separator + MRP), so later turns reuse it verbatim (Option A).
         """
         session_root = f".teddy/sessions/{session_name}"
         latest_turn_path = self.get_latest_turn(session_name)
@@ -538,7 +538,7 @@ class SessionService(ISessionManager):
 
         # 2. Resolve the target filename (validates the agent) and recompose the
         #    full system prompt. Option A: switching agents must recompose
-        #    (agent-name header + agent XML + MRP) via the prompt manager and
+        #    (agent content + `---` separator + MRP) via the prompt manager and
         #    persist THAT composed value -- never the raw `.teddy/prompts/`
         #    content -- so later turns reuse it verbatim. Because the session
         #    root does not yet hold the new agent's file, the prompt manager

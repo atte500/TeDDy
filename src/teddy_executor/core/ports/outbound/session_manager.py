@@ -129,6 +129,6 @@ class ISessionManager(Protocol):
         """
         Permanently changes the session's agent. Updates meta.yaml
         with the new agent_name and replaces the session's prompt
-        XML with the new agent's prompt from .teddy/prompts/.
+        file with the new agent's prompt from .teddy/prompts/.
         """
         ...

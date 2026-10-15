@@ -280,7 +280,7 @@ def init_callback(ctx: typer.Context):
 @init_app.command()
 def prompts():
     """
-    Overwrites bundled prompt XMLs in .teddy/prompts/ with defaults.
+    Overwrites bundled prompt Markdown files in .teddy/prompts/ with defaults.
     """
     from teddy_executor.core.ports.inbound.init import IInitUseCase
 
@@ -427,7 +427,8 @@ def get_prompt(
     Retrieves and displays the composed system prompt for a specified agent.
 
     The output matches the system prompt the agent actually receives: the
-    agent-name header, the agent-specific XML, and the shared MRP base prompt.
+    agent-specific content and the shared Markdown MRP base prompt, separated
+    by a Markdown horizontal rule.
     """
     from teddy_executor.adapters.inbound.cli_helpers import echo_and_copy
     from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
