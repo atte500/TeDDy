@@ -130,7 +130,9 @@ TeDDy is built on the belief that you should own your software delivery lifecycl
 - **Agent Prompts (`.teddy/prompts/`):** To change the process itself, customize the agent prompts. Each agent's workflow is broken down into structured phases and individual steps, defined entirely in Markdown. You can tweak instructions, add domain-specific quality gates, or introduce brand-new agent personas to match how your team builds software.
 - **Command Automation (`Makefile`):** Instead of hardcoding shell commands inside agent prompts, common development and verification operations are routed through the Makefile. When you need to change a flag, runner, or environment setup, you change it once in the Makefile instead of updating instructions across multiple agent prompts.
 
-> Interested in bringing TeDDy into your team or designing custom agent workflows? [Professional consulting is available](https://atteritano.ch).
+> [!TIP]
+> *Interested in bringing TeDDy into your team or designing custom agent workflows?*
+> **[Professional consulting is available!](https://atteritano.ch)**
 
 ---
 
