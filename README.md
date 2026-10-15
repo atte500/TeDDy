@@ -20,7 +20,7 @@ uv tool install teddy-cli
   <img src="./assets/demo.gif" alt="TeDDy TUI Demo" width="100%" style="max-width: 100%; height: auto;" />
 </p>
 
-[Quickstart](#getting-started) &bull; [Workflow](#the-teddy-workflow) &bull; [Why TeDDy?](#why-not-just-use) &bull; [Architecture](#what-makes-teddy-special) &bull; [Video Walkthrough](https://www.youtube.com/watch?v=2j2fvRBGtag) &bull; [FAQ](#frequently-asked-questions)
+[Why TeDDy?](#why-not-just-use) &bull; [TeDDy's SDLC](#teddys-software-delivery-lifecycle) &bull; [Owning Your SDLC](#owning-your-sdlc) &bull; [Quickstart](#getting-started) &bull; [Usage](#usage) &bull; [FAQ](#frequently-asked-questions)
 
 </div>
 
@@ -55,7 +55,7 @@ TeDDy addresses them instead by embedding proven engineering practices like **[T
 
 <br />
 
-Skills are designed for task-specific procedures, but stretching them to manage the entire software development lifecycle quickly becomes unmaintainable. Because they sit on top of your harness's built-in system prompt, upstream updates will often alter that base prompt without warning, introducing subtle conflicts or workflow drift over time. TeDDy instead organizes the full SDLC across specialized agents, where each follows a process structured into phases and concrete steps via dedicated system prompts that you fully control. Your existing skill files can still be passed to these agents as context for the task-specific jobs they were built for.
+Skills are designed for task-specific procedures, but stretching them to manage the entire [software delivery lifecycle](#teddys-software-delivery-lifecycle) quickly becomes unmaintainable. Because they sit on top of your harness's built-in system prompt, upstream updates will often alter that base prompt without warning, introducing subtle conflicts or workflow drift over time. TeDDy instead organizes the full [SDLC](#teddys-software-delivery-lifecycle) across specialized agents, where each follows a process structured into phases and concrete steps via dedicated system prompts that you fully control. Your existing skill files can still be passed to these agents as context for the task-specific jobs they were built for.
 
 </details>
 
@@ -73,7 +73,7 @@ Spec-driven development requires you to define everything upfront before writing
 
 <br />
 
-TeDDy integrates automated pre-commit hooks, local test suites, and CI/CD pipelines directly into the agent workflow. Even so, automated tests alone cannot prevent misalignment or verify intent. As [Bain's report](https://www.bain.com/insights/the-missing-architecture-for-agentic-software-development-technology-report-2026/) notes, speeding up code generation without redesigning the surrounding process does not compound gains; it just redistributes the pain to the slowest human checkpoint. TeDDy pairs these automated quality gates with a human-in-the-loop workflow mediated through specific Markdown documents across each phase of the software delivery lifecycle.
+TeDDy integrates automated pre-commit hooks, local test suites, and CI/CD pipelines directly into the agent workflow. Even so, automated tests alone cannot prevent misalignment or verify intent. As [Bain's report](https://www.bain.com/insights/the-missing-architecture-for-agentic-software-development-technology-report-2026/) notes, speeding up code generation without redesigning the surrounding process does not compound gains; it just redistributes the pain to the slowest human checkpoint. TeDDy pairs these automated quality gates with a human-in-the-loop workflow mediated through specific Markdown documents across each phase of the [software delivery lifecycle](#teddys-software-delivery-lifecycle).
 
 </details>
 
@@ -81,7 +81,7 @@ TeDDy integrates automated pre-commit hooks, local test suites, and CI/CD pipeli
 
 ## What Makes TeDDy Special
 
-1. **Markdown as the interface.** Inspired by [Obsidian](https://obsidian.md/), living documents such as specs, architecture contracts, and vertical slices mediate every part of the SDLC. All agent responses and tool calls are also plain Markdown, fully controllable via the built-in TUI while leveraging your native editor instead of restricting the means of development to a chat window.
+1. **Markdown as the interface.** Inspired by [Obsidian](https://obsidian.md/), living documents such as specs, architecture contracts, and vertical slices mediate every part of the [SDLC](#teddys-software-delivery-lifecycle). All agent responses and tool calls are also plain Markdown, fully controllable via the built-in TUI while leveraging your native editor instead of restricting the means of development to a chat window.
 2. **Local-first architecture.** Inspired by the [UNIX philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) of small, sharp tools, TeDDy runs entirely inside your existing workspace with no cloud dependencies, proprietary databases, or background telemetry. It integrates cleanly with standard developer environments, allowing your terminal, local Git hooks, and preferred editor to drive the workflow.
 3. **Auditable by design.** Inspired by [Git](https://git-scm.com/)'s ledger model, every session maintains an immutable history of what the agent intended and what actually executed. Each plan enforces a structured rationale covering synthesis, justification, and expected outcomes, making agent reasoning fully traceable, searchable, and easy to parse with your own scripts for analysis.
 
@@ -103,23 +103,34 @@ For **misalignment**, TeDDy prevents building the wrong thing by using spikes an
 
 ---
 
-## The TeDDy Workflow
+## TeDDy's Software Delivery Lifecycle
 
-TeDDy breaks down the development process into distinct agents, each with a specific mandate. Their interaction is mediated through documents, letting you steer the project at a high level throughout.
+Instead of winging the process on the go or taking the shortest path to generate code, agents follow a structured delivery process mediated by plain Markdown documents:
 
 <p align="center">
   <img src="./assets/workflow-schematic.png" alt="TeDDy Workflow" width="850" />
 </p>
 
-1. **Pathfinder:** Dissects goals from first principles to produce grounded roadmaps and milestones.
-2. **Architect:** Enforces Ports & Adapters boundaries, defines component contracts, and decomposes features into vertical slices.
-3. **Prototyper:** Validates behavioral scenarios in an isolated sandbox, refining specs and edge cases before implementation begins.
-4. **Developer:** Delivers features one atomic deliverable at a time through a strict **Red-Green-Refactor** TDD cycle.
-5. **Debugger:** Isolates root causes using Minimal Reproducible Examples (MREs) and verifies fixes in sandboxes before touching production code.
-6. **Assistant:** Executes tactical chores, one-off scripts, and ad-hoc edits through a fast loop without enforcing strict methodology.
+1. **Strategic Alignment & Roadmapping:** The **Pathfinder** aligns incoming requests with the product vision, roadmap, and permanent system invariant specifications.
+2. **Contract-First Architecture:** The **Architect** enforces Ports & Adapters boundaries, drafts component contracts, and decomposes milestones into vertical slices that deliver complete end-to-end functionality across all layers.
+3. **Sandbox De-Risking:** The **Prototyper** conducts isolated [spikes](https://en.wikipedia.org/wiki/Spike_(software_development)) to de-risk technical and functional unknowns before any production code is touched.
+4. **Atomic Test-Driven Delivery:** The **Developer** implements vertical slices through test-driven (Red-Green-Refactor) cycles, committing one atomic deliverable at a time to maintain a continuous green state.
+5. **Empirical Diagnostics:** When bugs or regressions occur, the **Debugger** isolates root causes using Minimal Reproducible Examples (MREs) and validates fixes against isolated replicas before touching production code.
+6. **Automated Quality Gates & CI/CD:** Local pre-commit hooks catch formatting, secret, and merge issues on staged files, while continuous integration automatically validates test suites and quality checks across platforms.
+7. **Tactical Chores:** The **Assistant** handles one-off scripts, simple refactors, and ad-hoc maintenance through a fast feedback loop without heavy ceremonial overhead.
 
-> [!NOTE]
-> Each agent's prompt lives in `.teddy/prompts/` inside your project. You can inspect and tune existing agents or add your own. Updates will never overwrite these files automatically, ensuring your instructions remain stable and entirely under your control.
+---
+
+## Owning Your SDLC
+
+TeDDy is built on the belief that you should own your software delivery lifecycle. Even though TeDDy comes with opinionated defaults handcrafted from my own engineering preferences and daily development experience, every part of the process is designed to be easily tailored to your team's workflow without touching any application code:
+
+- **High-Level Governance Rules (`PROJECT.md` & `ARCHITECTURE.md`):** The simplest way to guide agents. Define product roadmaps, engineering principles, system laws, and component boundaries in living Markdown documents that agents read on every turn.
+- **Artifact Templates (`docs/templates/`):** Standardize the artifacts produced during development. Customize the Markdown templates for vertical slices, specifications, case files, and milestones to match your documentation standards.
+- **Agent Prompts (`.teddy/prompts/`):** To change the process itself, customize the agent prompts. Each agent's workflow is broken down into structured phases and individual steps, defined entirely in Markdown. You can tweak instructions, add domain-specific quality gates, or introduce brand-new agent personas to match how your team builds software.
+- **Command Automation (`Makefile`):** Instead of hardcoding shell commands inside agent prompts, recurring tasks like running tests, committing changes, or watching CI are routed through the `Makefile`. When you need to change a flag, runner, or environment setup, you change it once in the Makefile instead of updating instructions across multiple agent prompts.
+
+> Interested in bringing TeDDy into your team or designing custom agent workflows? [Professional consulting is available](https://atteritano.ch).
 
 ---
 
