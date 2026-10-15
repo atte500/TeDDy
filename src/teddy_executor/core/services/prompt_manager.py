@@ -34,7 +34,7 @@ class PromptManager(IPromptManager):
         self._user_interactor = user_interactor
         # Injectable resource seam: a Traversable (or any object exposing the
         # ``Traversable`` contract — ``is_file`` + ``read_text``) that anchors
-        # ``MRP.xml``. When ``None``, the bundled package resource is resolved
+        # ``MRP.md``. When ``None``, the bundled package resource is resolved
         # lazily. Tests inject a real ``pathlib.Path`` to avoid global patching.
         self._mrp_resource_root = mrp_resource_root
 

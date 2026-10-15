@@ -23,7 +23,7 @@ class IInitUseCase(ABC):
     @abstractmethod
     def ensure_prompts_initialized(self, overwrite: bool = False) -> str:
         """
-        Ensures prompt XML files are present in the .teddy/prompts/ directory.
+        Ensures prompt Markdown files are present in the .teddy/prompts/ directory.
 
         Args:
             overwrite: If True, always overwrite existing prompt files with defaults.
@@ -69,7 +69,7 @@ class IInitUseCase(ABC):
         Compares the user's prompts and templates against the bundled defaults.
 
         Returns:
-            A DriftReport enumerating which ``.teddy/prompts/*.xml`` and
+            A DriftReport enumerating which ``.teddy/prompts/*.md`` and
             ``docs/templates/*.md`` files are edited or missing relative to the
             bundled defaults.
         """

@@ -168,7 +168,7 @@ teddy init
 
 Use subcommands to overwrite specific defaults:
 
-- `teddy init prompts`: Overwrite bundled prompt XMLs in `.teddy/prompts/` (useful after upgrades).
+- `teddy init prompts`: Overwrite bundled prompt Markdown files in `.teddy/prompts/` (useful after upgrades).
 - `teddy init config`: Overwrite `config.yaml`, `.gitignore`, and `init.context` with defaults. Preserves existing `.env` files.
 - `teddy init templates`: Overwrite bundled Markdown templates in `docs/templates/` with defaults.
 
@@ -240,7 +240,7 @@ TeDDy packages your workspace context into a single clipboard payload, and the a
 | Command                       | Description                                                                  |
 | :---------------------------- | :--------------------------------------------------------------------------- |
 | `init`                        | Initialize `.teddy` workspace with defaults and pre-warm dependencies.       |
-| <nobr>`init prompts`</nobr>   | Overwrite bundled prompt XMLs in `.teddy/prompts/` with defaults.            |
+| <nobr>`init prompts`</nobr>   | Overwrite bundled prompt Markdown files in `.teddy/prompts/` with defaults. |
 | <nobr>`init config`</nobr>    | Overwrite `config.yaml`, `.gitignore`, and `init.context` with defaults.     |
 | <nobr>`init templates`</nobr> | Overwrite bundled Markdown templates in `docs/templates/` with defaults.     |
 | `start`                       | Start an interactive agent session.                                          |

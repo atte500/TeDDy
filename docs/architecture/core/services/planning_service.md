@@ -17,14 +17,14 @@ The `PlanningService` is responsible for generating an AI plan based on a user m
 -   **Uses Outbound Ports:**
     -   `IGetContextUseCase` (ContextService)
     -   `ILlmClient` (LiteLLMAdapter)
-    -   `IFileSystemManager` (to read `[agent_name].xml` and write `plan.md`)
+    -   `IFileSystemManager` (to read `[agent_name].md` and write `plan.md`)
     -   `IConfigService` (to resolve planning model settings)
 
 ## 3. Implementation Details / Logic
 
 0.  **Preflight Check:** Calls `ILlmClient.validate_config()`. If errors are found, raises `ConfigurationError` with the config file path.
 1.  **Gather Context:** Calls `IGetContextUseCase.get_context()` (with session/turn files if applicable).
-2.  **Fetch System Prompt:** Reads the local `[agent_name].xml` prompt from the current turn directory.
+2.  **Fetch System Prompt:** Reads the local `[agent_name].md` prompt from the current turn directory.
 3.  **Contextual Hints:** If operating in Turn 01, it injects an alignment hint into the user message to encourage the agent to clarify goals.
 4.  **LLM Call:** Passes the formatted context, system prompt, and user message to `ILlmClient.get_completion()`.
 5.  **Retry Loop (Application Level):** Implements a retry loop (configured via `llm.max_retries`, default 3) specifically for "empty content" responses. This handles edge cases where the LLM returns successfully but with empty message content. Each billed attempt's cost is ACCUMULATED into the turn total (`turn_cost += attempt_cost`, with the attempt's cost bound into a local first), so a billed empty-response attempt that triggers a retry is never discarded from the session total, and the final successful attempt is counted exactly once.
@@ -42,7 +42,7 @@ The `PlanningService` is responsible for generating an AI plan based on a user m
 -   **Description:** Generates a new `plan.md` file in the specified directory. **Defensive Design:** If `context_files` is omitted, it auto-resolves session/turn manifests from `turn_dir` via `SessionManager`. **Single-Gather Point:** the `ProjectContext` assembled here is returned (not discarded) so callers thread it to execution — project context is gathered exactly once per turn.
 -   **Preconditions:**
     -   `turn_dir` must exist.
-    -   The agent prompt file (`[agent_name].xml`) must exist in `turn_dir`.
+    -   The agent prompt file (`[agent_name].md`) must exist in `turn_dir`.
 -   **Postconditions:**
     -   A valid `plan.md` is written to `turn_dir`.
     -   Returns `(plan_path, turn_cost, project_context)` — the gathered `ProjectContext` (identity of the context produced by `IGetContextUseCase.get_context`) is threaded to the caller.

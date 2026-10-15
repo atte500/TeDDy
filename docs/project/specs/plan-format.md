@@ -132,7 +132,7 @@ For all actions, the parser must ignore and clean up unforeseen codeblocks or th
 -   **Format:**
     ``````markdown
     ### `EDIT`
-    - **File Path:** [prompts/architect.xml](/prompts/architect.xml)
+    - **File Path:** [prompts/architect.md](/prompts/architect.md)
     - **Match All:** `true`
     - **Description:** Update the output formatting instructions.
 
@@ -274,7 +274,7 @@ To streamline the end-of-task workflow by automating final code/documentation cl
 ---
 
 ### `EDIT`
-- **File Path:** [prompts/pathfinder.xml](/prompts/pathfinder.xml)
+- **File Path:** [prompts/pathfinder.md](/prompts/pathfinder.md)
 - **Description:** Temporarily add the Finisher agent to the Pathfinder's list of handoff targets.
 
 #### `FIND:`

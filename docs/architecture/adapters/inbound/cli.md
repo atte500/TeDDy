@@ -212,7 +212,7 @@ This command provides a comprehensive snapshot of the project for an AI agent.
 ### Utility Command: `get-prompt`
 **Status:** Implemented
 
-This command emits the FULL composed system prompt for an agent — the `Agent Name: {Name}` header, the agent-specific XML, and the shared MRP base prompt (`<response_format>` … `State Transition Protocol`) — so a CHOP user can paste it straight into a web chat's system-prompt field and get executable Markdown plans.
+This command emits the FULL composed system prompt for an agent — the agent-specific content, a `---` separator, and the shared MRP base prompt (`<response_format>` … `State Transition Protocol`) — so a CHOP user can paste it straight into a web chat's system-prompt field and get executable Markdown plans.
 
 *   **Signature:** `teddy get-prompt <PROMPT_NAME> [--no-copy]`
 *   **Input:**
@@ -220,7 +220,7 @@ This command emits the FULL composed system prompt for an agent — the `Agent N
     *   `--no-copy` (Optional Flag): If provided, suppresses the default behavior of copying the output to the system clipboard.
 *   **Behavior (As-Built, 2026-10-13):**
     1.  The command resolves `IPromptManager` from the base container (`get_container().resolve(IPromptManager)`) — no `_ensure_project_initialized` is required, because the port's dependencies (`IFileSystemManager`, `IUserInteractor`) are base-registered.
-    2.  It echoes `prompt_manager.compose_system_prompt(prompt_name)`, the composed prompt assembled by the SAME `_assemble_composed_prompt` helper that `fetch_system_prompt` uses. The agent-specific content is resolved from `.teddy/prompts/` (searching upward from the CWD), with the agent-name header prepended and the MRP base prompt appended after it.
+    2.  It echoes `prompt_manager.compose_system_prompt(prompt_name)`, the composed prompt assembled by the SAME `_assemble_composed_prompt` helper that `fetch_system_prompt` uses. The agent-specific content is resolved from `.teddy/prompts/` (searching upward from the CWD), with the MRP base prompt appended after it (separated by a `---` horizontal rule).
     3.  If the prompt is not found, an error is printed to `stderr` (listing the available prompts, e.g. `Prompt 'unknown' not found. Available prompts: architect, developer`) and the command exits with status code 1.
 
 ### Auto-Initialization Callback

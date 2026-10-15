@@ -112,7 +112,7 @@ A textual representation of the repository's file tree, using simple indentation
     core-philosophy.md
 
     ./prompts:
-    architect.xml
+    architect.md
 
     ./src:
     teddy_executor

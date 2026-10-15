@@ -23,7 +23,7 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
         -   **Critical Ordering:** The `initial_request.md` path is added to the merge list **before** deduplication occurs, so it is also deduplicated. Previously, it was appended after joining, which made it impossible to deduplicate.
         -   **Type Safety:** The `to_root_relative()` helper may return non-string types (e.g., `POSIXPathMock` in test environments). The path is explicitly wrapped with `str()` before appending to `clean_lines` to ensure `"\n".join()` receives all strings.
     -   **Link-aware context normalization (slice `00-35`):** Each `additional_context` entry (from `-c` / `--context`) is normalized through the canonical `_extract_resource_path` helper, which delegates to the shared pure function `core/utils/paths.py::normalize_resource_path`. A `[label](target)` Markdown-link entry therefore seeds the TARGET path, while raw paths keep the pre-existing normalization (backslash → slash, exact `./` strip, leading-`/` strip, `.hidden` leading-dot preservation, empty-entry skip).
-    -   **Prompt Relocation:** Fetches and saves the agent's system prompt exclusively to the session root as `{session_root}/system_prompt.xml`.
+    -   **Prompt Relocation:** Fetches and saves the agent's composed system prompt exclusively to the session root, using the resolved `.teddy/prompts/` filename (e.g. `{session_root}/pathfinder.md`).
     -   Initializes `01/meta.yaml` with `turn_id`, `creation_timestamp`, and any optional LLM overrides (`model`, `provider`, `api_key`).
 2.  **Turn Transition (`transition_to_next_turn`):**
     -   Calculates the next turn ID within the SAME session folder, using `:02d` **minimum-width** padding (`01` -> `02`, … `99` -> `100` -> `101`). There is NO session migration; a session never spawns a continuation folder.
@@ -36,7 +36,7 @@ The `SessionService` is responsible for managing the lifecycle of TeDDy sessions
     -   Always appends the current `report.md` to the next context to ensure the AI has history.
     -   **Defensive Serialization:** Ensures all metadata is cast to primitive types before serialization to prevent hangs (see `ARCHITECTURE.md` rule on serialization).
 
-> **Note (2026-10-05):** Session migration to a continuation folder — previously triggered at turn 99 and cloning `session.context`/`system_prompt.xml` into `{name}-2` — has been **removed**. A session now uses a single folder for any number of turns.
+> **Note (2026-10-05):** Session migration to a continuation folder — previously triggered at turn 99 and cloning `session.context`/`system_prompt.md` into `{name}-2` — has been **removed**. A session now uses a single folder for any number of turns.
 
 ## 5. Data Contracts / Methods
 

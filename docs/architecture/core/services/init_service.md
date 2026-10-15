@@ -8,7 +8,7 @@ The `InitService` is the application service responsible for the idempotent init
 
 ## 2. Failure Modes
 
-- **Resource Not Found**: If a bundled resource file (templates, prompts, config) is missing from the package, `_get_default_content()` returns `None`. This causes a skip, logged at DEBUG level. The init service MUST raise a clear error when MRP.xml is missing (as it is required for prompt assembly), but for other templates/config, missing resources are silently skipped.
+- **Resource Not Found**: If a bundled resource file (templates, prompts, config) is missing from the package, `_get_default_content()` returns `None`. This causes a skip, logged at DEBUG level. The init service MUST raise a clear error when MRP.md is missing (as it is required for prompt assembly), but for other templates/config, missing resources are silently skipped.
 - **Embedded Scaffolding Defaults**: `_get_default_content()` consults the embedded `_EMBEDDED_DEFAULTS` map (`.env` → `_ENV_PLACEHOLDER`, `.gitignore` → `_GITIGNORE_PLACEHOLDER`) BEFORE consulting the bundled config directory. Those two fixed `.teddy` scaffolding files ship as string constants rather than tracked dotfiles because the bundled `resources/config/` directory cannot hold a live `.gitignore` (its `*` rule would be a real ignore rule for the source tree, blocking any sibling dotfile).
 - **Silent Error Swallowing (Known Debt)**: `_get_default_content()` catches `(OSError, yaml.YAMLError, ImportError, AttributeError)` and returns `None`. This can hide errors from Python version changes to `importlib.resources`. This is logged as Technical Debt for Milestone 4.
 
@@ -39,6 +39,10 @@ When `ensure_initialized` is called, the service performs the following checks a
 4.  **Initial Context:** Checks for `.teddy/init.context`. If missing, it is created using bundled defaults.
 5.  **Secrets Placeholder (create-only):** Checks for `.teddy/.env`. If missing, it is created from the embedded `_ENV_PLACEHOLDER` constant — a commented placeholder whose (uncommented) `TEDDY_LLM_API_KEY=` line the bundled `config.yaml` interpolates via `${TEDDY_LLM_API_KEY}`. Unlike the other config files, `.env` is **never overwritten once it exists**, even under `overwrite=True` (i.e. when `teddy init config` runs): it holds the user's non-regenerable LLM API key. Only `config.yaml`, `.gitignore`, and `init.context` are reset by `overwrite=True`.
 6.  **Templates are NOT scaffolded by bare init (explicit-only).** `ensure_initialized()` deliberately does NOT create `docs/templates/`; template scaffolding is performed solely by the explicit `teddy init templates` subcommand (see the Template Initialization Logic below and the `ensure_templates_initialized` contract). This REVERSES the earlier auto-init decision recorded in the completed slice `03-03-templates-and-init` (slice `00-32` Item 1).
+
+### Prompt Initialization Logic
+
+The bundled prompts are Markdown files (`_PROMPT_FILES`) copied into `.teddy/prompts/` by `_init_prompts`. The prompt copy uses **stem identity**: a destination file counts as present when any file in `.teddy/prompts/` shares the manifest entry's stem (case-folded) under ANY extension. When `overwrite=True`, the `.md` is written and any same-stem file with a different name (e.g. a pre-migration `pathfinder.xml`) is removed, so two same-stem files never coexist after a write. Because the manifest lists the `.md` names and the drift check matches by exact name, a stale `.xml` surfaces as a missing `.md` in `check_drift` and the `teddy start` preflight advises `teddy init prompts`. The config and template copies keep exact-name matching (their extensions never change).
 
 ### Template Initialization Logic (new)
 
@@ -79,7 +83,7 @@ The bundled templates directory contains 11 files:
 
 ### `check_drift() -> DriftReport`
 - **Preconditions:** None.
-- **Postconditions:** Enumerates the canonical default file sets (`_PROMPT_FILES`, `_TEMPLATE_FILES`) and returns an immutable `DriftReport` (from `core/domain/models/drift_report.py`) classifying each user `.teddy/prompts/*.xml` and `docs/templates/*.md` file as EDITED (present but differing from a resolvable bundled default), MISSING (absent), or clean. Unresolvable bundled defaults are skipped, never reported as drift. A file is MISSING when the user copy is absent, so an entirely absent user directory simply makes every file in the set report as MISSING (per-file check, no directory special-casing). `DriftReport` exposes `has_drift`, `prompts_drifted` and `templates_drifted` convenience properties consumed by the preflight notification.
+- **Postconditions:** Enumerates the canonical default file sets (`_PROMPT_FILES`, `_TEMPLATE_FILES`) and returns an immutable `DriftReport` (from `core/domain/models/drift_report.py`) classifying each user `.teddy/prompts/*.md` and `docs/templates/*.md` file as EDITED (present but differing from a resolvable bundled default), MISSING (absent), or clean. Unresolvable bundled defaults are skipped, never reported as drift. A file is MISSING when the user copy is absent, so an entirely absent user directory simply makes every file in the set report as MISSING (per-file check, no directory special-casing). `DriftReport` exposes `has_drift`, `prompts_drifted` and `templates_drifted` convenience properties consumed by the preflight notification.
 - **Exceptions:** None.
 - **Contract Dependencies:** Reuses the existing `_config_dir` / `_templates_dir` / `_get_default_content` / `_read_bundled_resource` seams via a `_classify_drift` per-file helper. `check_drift` is an ADDITIVE member of `IInitUseCase` (no breaking signature change; every port double is spec-based).
 

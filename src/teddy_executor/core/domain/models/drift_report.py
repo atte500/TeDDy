@@ -13,7 +13,7 @@ from dataclasses import dataclass
 class DriftReport:
     """Immutable summary of user files that diverge from bundled defaults.
 
-    Each field holds the *basenames* (e.g. ``pathfinder.xml``) of the affected
+    Each field holds the *basenames* (e.g. ``pathfinder.md``) of the affected
     files, preserving the canonical manifest order for deterministic output.
     """
 
