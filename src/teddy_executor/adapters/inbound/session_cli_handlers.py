@@ -808,7 +808,9 @@ def _prompt_for_api_key(config_service: IConfigService) -> None:
     typer.secho("LLM API Key", fg=typer.colors.CYAN, bold=True, err=True)
     typer.echo("", err=True)
     typer.secho(
-        "\u26a0 No LLM API key configured. Paste your provider key below.",
+        "\u26a0 No LLM API key configured. OpenRouter is the default provider. "
+        "Paste your key below.\n"
+        "To use a different provider, change llm.model in .teddy/config.yaml.",
         fg=typer.colors.YELLOW,
         err=True,
     )

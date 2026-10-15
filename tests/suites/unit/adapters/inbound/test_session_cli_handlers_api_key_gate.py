@@ -104,6 +104,26 @@ def test_prompt_for_api_key_persists_both_forms_and_confirms(monkeypatch):
     )
 
 
+def test_prompt_for_api_key_warning_names_openrouter_and_config_path(monkeypatch):
+    """The yellow warning names OpenRouter as the default provider and points
+    the user at ``llm.model`` in ``.teddy/config.yaml`` to switch providers."""
+    config = _RecordingConfigService(None)
+    messages = _capture_secho(monkeypatch)
+    monkeypatch.setattr("typer.prompt", lambda *a, **k: "sk-entered")
+
+    _prompt_for_api_key(config)
+
+    yellow_warnings = [
+        message for message, fg, err in messages if fg == typer.colors.YELLOW and err
+    ]
+    assert any(
+        "OpenRouter" in message
+        and "llm.model" in message
+        and ".teddy/config.yaml" in message
+        for message in yellow_warnings
+    ), f"Expected an OpenRouter + llm.model warning on stderr, got: {yellow_warnings}"
+
+
 def test_prompt_for_api_key_strips_surrounding_whitespace(monkeypatch):
     """The persisted key is the stripped entry, not the raw input."""
     config = _RecordingConfigService(None)
