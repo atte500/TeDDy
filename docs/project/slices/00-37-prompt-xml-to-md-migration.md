@@ -1,5 +1,5 @@
 # Slice: Prompt XML→Markdown Migration
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Ad-hoc (not tracked in the Roadmap per PROJECT.md)
 - **Specs:** [interactive-session-workflow](/docs/project/specs/interactive-session-workflow.md), [teddy-directory-structure](/docs/project/specs/teddy-directory-structure.md)
 - **Prototype:** N/A (no unresolved technical/functional unknown)
@@ -168,12 +168,22 @@ Deliverable 2 was decomposed into two atomic deliverables during the Orientation
 - **Consistency sweep:** `git grep -niF "xml" -- src/teddy_executor` returns only the intentional `.md`-priority/stem-identity descriptions (`init_service.py` 153/180/250, `prompt_manager.py:93`, `paths.py` 8/46, `prompts.py:11`) plus the unrelated `web_scraper_adapter.py:159` (`application/xhtml+xml` Accept header).
 
 ## Verification
-- [ ] Run `make test` and verify the full suite passes (green-to-green).
-- [ ] Run `git grep -nF ".xml" -- src/teddy_executor/resources` and verify it returns nothing.
-- [ ] Run `ls src/teddy_executor/resources/config/prompts/` and verify 6 `.md` files and no `.xml` files.
-- [ ] Run `teddy get-prompt pathfinder` and verify the output starts with `# Pathfinder`, contains a `---` separator line (with a blank line above and below) between the agent prompt and the Markdown MRP, and ends with the Markdown MRP content.
-- [ ] In a temp project with both `.teddy/prompts/pathfinder.xml` and `.teddy/prompts/pathfinder.md`, run `teddy get-prompt pathfinder` and verify the `.md` content is returned (`.md` wins).
-- [ ] In a temp project with `.teddy/prompts/pathfinder.xml` present, run `teddy start -y -m hello` and verify the preflight advises `teddy init prompts`.
-- [ ] In a temp project with `.teddy/prompts/pathfinder.xml` present, run `teddy init prompts` and verify `pathfinder.md` exists and `pathfinder.xml` is gone.
-- [ ] In a temp project with only `.teddy/prompts/pathfinder.xml`, run bare `teddy init` and verify no `pathfinder.md` is created (same-stem = present).
-- [ ] Run `teddy init templates` and verify templates are unaffected.
+- [x] Run `make test` and verify the full suite passes (green-to-green).
+- [x] Run `git grep -nF ".xml" -- src/teddy_executor/resources` and verify it returns nothing.
+- [x] Run `ls src/teddy_executor/resources/config/prompts/` and verify 6 `.md` files and no `.xml` files.
+- [x] Run `teddy get-prompt pathfinder` and verify the output starts with `# Pathfinder`, contains a `---` separator line (with a blank line above and below) between the agent prompt and the Markdown MRP, and ends with the Markdown MRP content.
+- [x] In a temp project with both `.teddy/prompts/pathfinder.xml` and `.teddy/prompts/pathfinder.md`, run `teddy get-prompt pathfinder` and verify the `.md` content is returned (`.md` wins).
+- [x] In a temp project with `.teddy/prompts/pathfinder.xml` present, run `teddy start -y -m hello` and verify the preflight advises `teddy init prompts`.
+- [x] In a temp project with `.teddy/prompts/pathfinder.xml` present, run `teddy init prompts` and verify `pathfinder.md` exists and `pathfinder.xml` is gone.
+- [x] In a temp project with only `.teddy/prompts/pathfinder.xml`, run bare `teddy init` and verify no `pathfinder.md` is created (same-stem = present).
+- [x] Run `teddy init templates` and verify templates are unaffected.
+
+### Verification Evidence
+- **Item 1:** `make test` reported the full suite green (1753 passed, 5 skipped) at the committed HEAD; the unskippable post-commit gate re-ran it green on the final commit (`124fc383`).
+- **Items 2–3:** `git grep -nF ".xml" -- src/teddy_executor/resources` returns nothing; `ls src/teddy_executor/resources/config/prompts/` lists `architect.md`, `assistant.md`, `debugger.md`, `developer.md`, `pathfinder.md`, `prototyper.md` and no `.xml`.
+- **Item 4:** `teddy get-prompt pathfinder --no-copy` emits `# Pathfinder` on line 1, a `---` separator on its own line (line 62), and the Markdown MRP block (exactly one `## Response Format`) at the end.
+- **Item 5:** in a temp project containing both `pathfinder.xml` and `pathfinder.md`, `get-prompt` returned the `.md` content (`.md` marker present, `.xml` marker absent).
+- **Item 6 (probe limitation):** a bare temp project cannot exercise this path via the CLI because the API-key/config preflight aborts (exit 1) before the drift advice is reached. The behaviour is instead proven by the passing acceptance test `tests/suites/acceptance/test_preflight_drift_notification.py::test_start_advises_init_prompts_when_a_prompt_has_drifted`, which seeds a stale `pathfinder.xml` and asserts the `teddy init prompts` advice fires. Marked PASS on that basis.
+- **Item 7:** `teddy init prompts` wrote `pathfinder.md` and removed the stale `pathfinder.xml`, leaving exactly one same-stem file.
+- **Item 8:** bare `teddy init` left the stale `pathfinder.xml` in place and created no `pathfinder.md` (same-stem counts as present).
+- **Item 9:** `teddy init templates` wrote the ten bundled templates into `docs/templates/`, unaffected by the prompt migration.
