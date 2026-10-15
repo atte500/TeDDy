@@ -38,7 +38,7 @@ def _print_initial_request(
 
     Only prints when is_session=True and message is non-empty.
     Output::
-        Initial Request:
+        User Message:
         {content}
         (blank line separator)
     """

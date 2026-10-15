@@ -62,13 +62,13 @@ The `SessionOrchestrator` is a decorator-style service that wraps the stateless 
 
 ## Console Visibility Helpers
 
-Four helper functions are defined in this module to improve user visibility during session execution:
+The terminal-echo format (blank line + `User Message:` label + content) is single-sourced in `core/utils/terminal.py::emit_user_message`, shared by `_print_initial_request`, `_print_user_message`, and the TUI adapter's MESSAGE echo. Four helper functions are defined in this module to improve user visibility during session execution:
 
-### `_print_initial_request(message, is_session)`
+### `_print_initial_request(message, is_session, plan_path=None)`
 Prints the initial user request before the turn header/telemetry block.
-- **Input**: `message` (Optional[str]), `is_session` (bool)
-- **Behavior**: Only prints when `is_session=True` and `message` is non-empty.
-- **Output**: `Initial Request:\n{message}\n`
+- **Input**: `message` (Optional[str]), `is_session` (bool), `plan_path` (Optional[str], default `None`)
+- **Behavior**: Only prints when `is_session=True`. When `message` is empty and `plan_path` is set, falls back to reading `<session_root>/initial_request.md`. Output is delegated to the shared `emit_user_message` helper.
+- **Output**: blank line + `User Message:` + `{content}` (via `emit_user_message`)
 
 ### `_print_header_bar(plan, is_session)`
 Prints the plan status emoji and title after the telemetry block, before action execution logs.
@@ -77,11 +77,11 @@ Prints the plan status emoji and title after the telemetry block, before action 
 - **Note**: A local emoji extraction helper was implemented using simple substring containment (`if emoji in raw_status`) instead of importing `extract_status_emoji` from `textual_plan_reviewer_helpers.py` to maintain Hexagonal Architecture boundaries (core must not depend on adapters).
 - **Output**: `{emoji} {title}` (no blank lines around it)
 
-### `_print_user_message(message, is_session)`
+### `_print_user_message(message, is_session, plan=None, action_logs=None)`
 Prints the user message after all actions execute.
-- **Input**: `message` (Optional[str]), `is_session` (bool)
-- **Behavior**: Only prints when `is_session=True` and `message` is non-empty.
-- **Output**: `\nUser Message:\n{message}\n`
+- **Input**: `message` (Optional[str]), `is_session` (bool), `plan` (Optional[Any]), `action_logs` (Optional[list])
+- **Behavior**: Resolves content by priority (direct `message` → `plan.metadata["user_request"]` → MESSAGE `action_logs`), then delegates output to the shared `emit_user_message` helper. Only prints when `is_session=True` and the resolved content is non-empty.
+- **Output**: blank line + `User Message:` + `{content}` (via `emit_user_message`)
 
 ### `_print_message_from_teddy(content)`
 Prints the agent's MESSAGE in the canonical presentation: a blank separator, a CYAN `--- MESSAGE from TeDDy ---` frame, then the message body (As-Built, 2026-10-02; Bug 54 / defect 4a).

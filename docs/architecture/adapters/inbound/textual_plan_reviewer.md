@@ -50,5 +50,5 @@ Refer to the [IPlanReviewer](/docs/architecture/core/ports/inbound/plan_reviewer
   - `r`: Revert manual modifications (conditionally enabled).
   - `v`: View the original plan file (read-only).
   - `x`: Execute Step (marks the action as executed/successful).
-  - `m`: Add/Edit User Message (Instruction Bridge).
+  - `m`: Add/Edit User Message (Instruction Bridge). When the MESSAGE action executes, the user's typed reply is echoed to the terminal via the shared `core/utils/terminal.py::emit_user_message` helper (label `User Message:`), so the echo format stays single-sourced with the core service paths.
   - `q`: Cancel and exit.
