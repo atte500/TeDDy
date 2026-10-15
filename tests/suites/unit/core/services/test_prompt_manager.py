@@ -105,6 +105,22 @@ def test_fetch_system_prompt_resolves_from_teddy_prompts(mrp_prompt_manager, moc
     )
 
 
+def test_find_prompt_file_prefers_md_when_stem_has_both_extensions(
+    prompt_manager, mock_fs
+):
+    """When a stem has both a ``.xml`` and a ``.md`` file, the ``.md`` file wins
+    regardless of directory listing order."""
+    # Arrange: the .xml is listed FIRST, so a naive first-match would return it.
+    mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.return_value = ["pathfinder.xml", "pathfinder.md"]
+
+    # Act
+    result = prompt_manager._find_prompt_file(".teddy/prompts", "pathfinder")
+
+    # Assert
+    assert result == ".teddy/prompts/pathfinder.md"
+
+
 def test_fetch_system_prompt_returns_persisted_composed_prompt_verbatim(
     mrp_prompt_manager, mock_fs
 ):

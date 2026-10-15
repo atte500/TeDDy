@@ -17,7 +17,7 @@ from teddy_executor.core.ports.outbound.session_manager import (
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 from teddy_executor.core.ports.outbound.time_service import ITimeService
-from teddy_executor.core.utils.paths import normalize_resource_path
+from teddy_executor.core.utils.paths import normalize_resource_path, prefer_markdown
 from teddy_executor.core.utils.string import canonical_agent_name, slugify
 
 
@@ -166,11 +166,12 @@ class SessionService(ISessionManager):
                 )
             raise ValueError(msg)
 
-        prompt_filename = None
-        for f in self._file_system_manager.list_directory(prompts_dir):
-            if Path(f).stem.casefold() == agent_name.casefold():
-                prompt_filename = f
-                break
+        matches = [
+            f
+            for f in self._file_system_manager.list_directory(prompts_dir)
+            if Path(f).stem.casefold() == agent_name.casefold()
+        ]
+        prompt_filename = prefer_markdown(matches)
 
         if prompt_filename is None:
             available = self._prompt_manager.get_available_agents()

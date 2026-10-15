@@ -8,6 +8,7 @@ import yaml
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+from teddy_executor.core.utils.paths import prefer_markdown
 from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
 
 # The bundled Markdown Response Protocol base prompt. It lives OUTSIDE
@@ -86,13 +87,23 @@ class PromptManager(IPromptManager):
         return resolved
 
     def _find_prompt_file(self, directory: str, agent_name: str) -> Optional[str]:
-        """Searches a directory for a file with the given agent name (any extension)."""
+        """Searches a directory for a file with the given agent name.
+
+        Extension-agnostic, but when several files share the stem the Markdown
+        file wins so a pre-authored ``.md`` prompt overrides a stale ``.xml``
+        regardless of directory listing order.
+        """
         if not self._file_system_manager.path_exists(directory):
             return None
-        for f in self._file_system_manager.list_directory(directory):
-            if Path(f).stem.casefold() == agent_name.casefold():
-                return f"{directory}/{f}"
-        return None
+        matches = [
+            f
+            for f in self._file_system_manager.list_directory(directory)
+            if Path(f).stem.casefold() == agent_name.casefold()
+        ]
+        preferred = prefer_markdown(matches)
+        if preferred is None:
+            return None
+        return f"{directory}/{preferred}"
 
     def _resolve_agent_prompt_content(self, agent_name: str, turn_path: Path) -> str:
         """Resolves the agent-specific prompt XML from the canonical

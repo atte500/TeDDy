@@ -91,3 +91,26 @@ def test_list_prompt_names_includes_non_xml_files(fs):
 
     # Assert: all files included by stem
     assert result == ["architect", "debugger", "notes"]
+
+
+# ---------------------------------------------------------------------------
+# .md-priority resolution: a pre-authored .md must win over a stale .xml
+# ---------------------------------------------------------------------------
+
+
+def test_find_prompt_content_prefers_md_over_xml(fs):
+    """
+    Verifies that find_prompt_content() returns the .md content when a stem has
+    both a .xml and a .md file. The .xml is created FIRST so a naive
+    first-stem-match would return it; the resolver must actively prefer .md.
+    """
+    # Arrange
+    Path(".teddy/prompts").mkdir(parents=True, exist_ok=True)
+    (Path(".teddy/prompts") / "pathfinder.xml").write_text("<prompt>xml</prompt>")
+    (Path(".teddy/prompts") / "pathfinder.md").write_text("# Markdown pathfinder")
+
+    # Act
+    result = prompts.find_prompt_content("pathfinder")
+
+    # Assert: the Markdown prompt wins regardless of listing order
+    assert result == "# Markdown pathfinder"

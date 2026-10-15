@@ -1,16 +1,28 @@
 from pathlib import Path
 from typing import Optional
 
+from teddy_executor.core.utils.paths import prefer_markdown
+
 
 def _search_prompt_in_dir(directory: Path, prompt_name: str) -> Optional[str]:
-    """Searches a directory for a prompt file and returns its content."""
+    """Searches a directory for a prompt file and returns its content.
+
+    When several files share the stem, the Markdown file wins so a pre-authored
+    ``.md`` prompt overrides a stale ``.xml`` regardless of directory listing
+    order.
+    """
     if not directory.is_dir():
         return None
     prompt_name_cased = prompt_name.casefold()
-    for f in directory.iterdir():
-        if f.is_file() and f.stem.casefold() == prompt_name_cased:
-            return f.read_text(encoding="utf-8")
-    return None
+    matches = [
+        f
+        for f in directory.iterdir()
+        if f.is_file() and f.stem.casefold() == prompt_name_cased
+    ]
+    preferred = prefer_markdown(matches)
+    if preferred is None:
+        return None
+    return preferred.read_text(encoding="utf-8")
 
 
 def find_prompt_content(prompt_name: str) -> Optional[str]:
