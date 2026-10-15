@@ -29,3 +29,14 @@ def format_interrupt_notice(source: Optional[str] = None) -> str:
     """
     key = source or DEFAULT_INTERRUPT_KEY
     return f"{INTERRUPT_REASON.removesuffix('.')} ({key}). {RESUME_HINT}"
+
+
+def format_termination_notice(reason: str) -> str:
+    """Compose a one-line termination notice ending with the shared resume hint.
+
+    ``reason`` is the situation-specific lead-in (e.g. ``"Session terminated."``
+    or ``"Session terminated (empty message)."``); the shared ``RESUME_HINT``
+    is appended so every termination notice ends with the same actionable next
+    step on a single line.
+    """
+    return f"{reason} {RESUME_HINT}"

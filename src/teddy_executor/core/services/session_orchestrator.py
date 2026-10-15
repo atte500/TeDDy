@@ -14,6 +14,7 @@ from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.services.session_replanner import SessionReplanner
 from teddy_executor.core.utils.io import Tee as _Tee
+from teddy_executor.core.utils.session_notices import format_termination_notice
 from teddy_executor.core.utils.terminal import emit_user_message
 import typer
 
@@ -304,12 +305,10 @@ class SessionOrchestrator(IRunPlanUseCase):
                 )
                 if user_reply is not None and not user_reply.strip():
                     typer.secho(
-                        "\nSession terminated (empty message).",
-                        fg=typer.colors.RED,
-                        err=True,
-                    )
-                    typer.secho(
-                        "To continue the session, use `teddy resume [session_path]`.",
+                        format_termination_notice(
+                            "Session terminated (empty message)."
+                        ),
+                        fg=typer.colors.YELLOW,
                         err=True,
                     )
                     return None  # type: ignore
@@ -334,9 +333,9 @@ class SessionOrchestrator(IRunPlanUseCase):
             elif is_session and plan_path:
                 report = self._handle_aborted_session(report, plan)
                 if report is None:
-                    typer.secho("\nSession terminated.", fg=typer.colors.RED, err=True)
                     typer.secho(
-                        "To continue the session, use `teddy resume [session_path]`.",
+                        format_termination_notice("Session terminated."),
+                        fg=typer.colors.YELLOW,
                         err=True,
                     )
                     return None  # type: ignore

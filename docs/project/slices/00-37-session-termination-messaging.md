@@ -69,7 +69,7 @@ Feature: Termination notices are yellow and single-line
 ## Deliverables
 
 - [x] **Wiring** - End-to-end key-tagged interrupt notice: add the `source` marker + `record_source()` to `InterruptGuard`; wire the container's `IQuitKeyListener` factory to record `q` before self-delivering SIGINT; render the interrupt notice at both session-loop sites as one yellow line naming the key (`guard.source or "Ctrl+C"`) plus the shared `RESUME_HINT`. Introduce `RESUME_HINT` (single source). Update the existing interrupt-wiring test in the same change set to keep green.
-- [ ] **Logic** - Recolor and simplify both `session_orchestrator` termination notices (empty-message and aborted) to one yellow line ending with the shared `RESUME_HINT`.
+- [x] **Logic** - Recolor and simplify both `session_orchestrator` termination notices (empty-message and aborted) to one yellow line ending with the shared `RESUME_HINT`.
 - [ ] **Harness** - Regression tests: the interrupt notice names `q` (via the listener/guard seam) and `Ctrl+C` (default); the termination notices are yellow, single-line, and carry the simplified hint.
 
 ## Implementation Notes
@@ -81,6 +81,14 @@ Feature: Termination notices are yellow and single-line
 - **Container composition root** now injects an `on_quit` hook into the `IQuitKeyListener` factory via `_record_quit_source(container)`: it records `"q"` on the shared `InterruptGuard` singleton, THEN `os.kill`s the process with SIGINT. The self-delivery is required because `TerminalQuitKeyListener._trigger` returns after invoking a supplied `on_quit` callback; the self-delivered SIGINT drives the guard's already-tested branch unchanged. The `on_quit=None` default path in the listener is unchanged.
 - **`session_cli_handlers._orchestrate_session_loop`** renders `format_interrupt_notice(interrupt_guard.source)` at BOTH interrupt sites (the graceful-drain branch and the `KeyboardInterrupt` catch), both on stdout in yellow. The now-unused `INTERRUPT_REASON` import was dropped from this module.
 - **Test updates:** `tests/suites/unit/adapters/inbound/test_session_loop_interrupt_wiring.py` was updated in the same change set — the pre-existing `"(Ctrl+C)" not in captured.out` assertion directly contradicted the new notice, so it was replaced with the combined-notice assertion, and a new `test_session_loop_names_the_quit_key_when_recorded` case pins the `q`-source path. Focused run: 5 passed; Integration `make test`: 1753 passed, 5 skipped.
+
+### Logic (termination notices)
+
+- **`core/utils/session_notices.py`** gained a second composer, `format_termination_notice(reason)`, alongside `format_interrupt_notice`: it returns `f"{reason} {RESUME_HINT}"`, appending the SAME shared hint so every notice — interrupt or termination — ends with the identical actionable next step. The situation lead-in is passed in by the caller so one helper serves both termination sites.
+- **`session_orchestrator.execute`** now calls `format_termination_notice(...)` at BOTH termination sites, each as exactly ONE `typer.secho(..., fg=typer.colors.YELLOW, err=True)` call: the empty-message termination (`"Session terminated (empty message)."`) and the aborted-session termination (`"Session terminated."`). The previous two-line RED form — a leading-`"\n"` situation line plus a bare-hint line — was removed from both sites, and the retired literal ``"To continue the session, use `teddy resume [session_path]`."`` is gone from this module.
+- **Stream unchanged:** both notices stay on STDERR (`err=True`); only the color (RED→YELLOW) and the two-line→one-line collapse changed, so the exit-stream contract holds.
+- **Non-breaking:** `test_bug_15_empty_message_termination.py:136` only substring-checks the lead-in `"Session terminated (empty message)."` (preserved), and `test_abort_handling_regression.py` asserts only `result is None` / `finalize_turn` — neither pins color, line count, or the retired hint, so no existing test needed updating in this change set.
+- **New test file:** `tests/suites/unit/core/services/test_session_termination_notices.py` pins the composer directly and drives the real `execute` empty-message and aborted paths (recording `typer.secho` calls) to assert each notice is ONE yellow stderr line ending with the hint. Focused run: 3 passed; Integration `make test`: 1756 passed, 5 skipped.
 
 ## Verification
 
