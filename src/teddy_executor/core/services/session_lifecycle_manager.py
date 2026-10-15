@@ -50,7 +50,7 @@ class SessionLifecycleManager:
         self._report_assembler = ports.report_assembler
         self.tee_active = False
 
-    def resume(
+    def resume(  # noqa: PLR0913
         self,
         session_name: str,
         orchestrator: IRunPlanUseCase,
@@ -245,7 +245,7 @@ class SessionLifecycleManager:
         content += f"\n\n## User Request\n{fence}text\n{message}\n{fence}\n"
         self._file_system_manager.write_file(report_path, content)
 
-    def _consume_awaiting_reply(
+    def _consume_awaiting_reply(  # noqa: PLR0913
         self,
         turn_path: str,
         turn_meta: dict[str, Any],
@@ -407,7 +407,7 @@ class SessionLifecycleManager:
             )
         )
 
-    def _handle_planning_and_execution(
+    def _handle_planning_and_execution(  # noqa: PLR0913
         self,
         turn_dir: str,
         orchestrator: IRunPlanUseCase,
@@ -451,13 +451,20 @@ class SessionLifecycleManager:
                 tee = None
 
         try:
-            # Print initial request before turn header (before planning)
+            # Print initial request before turn header (before planning).
+            # Turn 01 is covered by the initial-request echo (the injected
+            # message is appended to initial_request.md); every later turn
+            # echoes the injected `resume -m` message directly so resuming
+            # gives the same visible confirmation as starting.
             from teddy_executor.core.services.session_orchestrator import (
                 _print_initial_request,
             )
+            from teddy_executor.core.utils.terminal import emit_user_message
 
             if Path(turn_dir).name == "01":
                 _print_initial_request(None, True, plan_path=Path(turn_dir).as_posix())
+            elif message and message.strip():
+                emit_user_message(message)
             new_name, gathered_context = self._session_planner.trigger_new_plan(
                 turn_dir, message=message
             )

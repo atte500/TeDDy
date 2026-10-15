@@ -10,7 +10,25 @@ import logging
 import os
 import sys
 
+import typer
+
 logger = logging.getLogger(__name__)
+
+
+def emit_user_message(content: str) -> None:
+    """Echo a user's message to the terminal under the "User Message:" label.
+
+    The single source of truth for the terminal-echo format, shared by the
+    initial-request echo, the post-execution user-message echo, and the
+    injected ``resume -m`` echo. Renders a blank separator, the
+    "User Message:" label, then the stripped content. Empty or
+    whitespace-only content is a no-op so an empty echo never becomes noise.
+    """
+    if not content or not content.strip():
+        return
+    typer.secho("")
+    typer.secho("User Message:")
+    typer.secho(content.strip())
 
 
 def restore_cooked_mode() -> None:

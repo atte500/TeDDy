@@ -416,3 +416,70 @@ def test_resume_m_y_on_non_communication_pending_plan_honors_message(
     )
     # Executing the pending turn opens the successor turn.
     assert (turn_dir.parent / "02").exists()
+
+
+@pytest.mark.timeout(30)
+def test_resume_m_echoes_user_message_before_planning(tmp_path, monkeypatch):
+    """Scenario: `resume -m` echoes the injected message as "User Message:".
+
+    Given a session that has already completed a turn,
+    When I run `teddy resume -m "Also add OAuth support"`,
+    Then the terminal prints a blank line, then "User Message:", then
+    "Also add OAuth support",
+    And the echo appears BEFORE the new turn's planning/execution.
+    """
+    env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    adapter = CliTestAdapter(monkeypatch, tmp_path)
+    setup_robust_env(tmp_path)
+
+    first_plan = MarkdownPlanBuilder("First Plan").add_execute("echo 1").build()
+    second_plan = MarkdownPlanBuilder("Second Plan").add_execute("echo 2").build()
+
+    mock_llm = env.get_service(ILlmClient)
+    mock_llm.get_completion.return_value = make_mock_response(first_plan)
+
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
+    fixed_now = datetime(2026, 4, 17, 12, 0, 0)
+    mock_time = env.mock_port(ITimeService)
+    mock_time.now.return_value = fixed_now
+    mock_time.now_utc.return_value = fixed_now
+
+    # Phase 1: complete turn 01 normally (plan.md + report.md on disk).
+    start_result = adapter.run_start(["echo-session"], input="prompt\ny\n")
+    assert start_result.exit_code == 0
+
+    session_dirs = list((tmp_path / ".teddy" / "sessions").glob("20260417_120000-*"))
+    assert session_dirs, "No session directory found under .teddy/sessions"
+    session_dir = session_dirs[0]
+    assert (session_dir / "01" / "report.md").exists()
+
+    # Phase 2: resume -m must echo the injected message to the terminal.
+    mock_llm.get_completion.return_value = make_mock_response(second_plan)
+    resume_result = adapter.run_cli_command(
+        [
+            "resume",
+            f".teddy/sessions/{session_dir.name}",
+            "--no-copy",
+            "-m",
+            "Also add OAuth support",
+        ],
+        input="prompt\ny\ny\ny\n",
+    )
+    assert resume_result.exit_code == 0
+
+    output = resume_result.stdout + resume_result.stderr
+    assert "User Message:" in output, (
+        "resume -m must echo the injected message with the 'User Message:' label."
+    )
+    assert "Also add OAuth support" in output, (
+        "The echoed message content must appear in the terminal."
+    )
+    # The echo must fire BEFORE the new turn's planning/execution; the
+    # turn-02 plan title is printed by the header bar during execution.
+    echo_pos = output.index("User Message:")
+    planning_pos = output.index("Second Plan")
+    assert echo_pos < planning_pos, (
+        "The 'User Message:' echo must appear before the new turn's "
+        "planning/execution output."
+    )
