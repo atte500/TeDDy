@@ -21,6 +21,7 @@ import pytest
 import typer
 
 from teddy_executor.adapters.inbound.session_cli_handlers import (
+    _ensure_api_key_configured,
     _is_llm_api_key_missing,
     _llm_model_requires_api_key,
     _prompt_for_api_key,
@@ -245,3 +246,79 @@ def test_llm_model_requires_api_key_true_when_model_unconfigured(model):
     assert (
         _llm_model_requires_api_key(_RecordingConfigService(None, model=model)) is True
     )
+
+
+# --- _ensure_api_key_configured: composite gate truth table ----------------
+
+
+def _spy_on_api_key_prompt(monkeypatch) -> list:
+    """Replace ``_prompt_for_api_key`` with a recorder; return the call log."""
+    calls: list = []
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._prompt_for_api_key",
+        lambda config_service: calls.append(config_service),
+    )
+    return calls
+
+
+def test_ensure_api_key_configured_prompts_when_enabled_key_missing_and_required(
+    monkeypatch,
+):
+    """A truthy signal + missing key + key-requiring model fires the prompt once."""
+    import litellm
+
+    config = _RecordingConfigService(None, model="openai/gpt-4o")
+    monkeypatch.setattr(
+        litellm,
+        "validate_environment",
+        Mock(return_value={"missing_keys": ["OPENAI_API_KEY"]}),
+    )
+    calls = _spy_on_api_key_prompt(monkeypatch)
+
+    _ensure_api_key_configured(config, setup_api_key=True)
+
+    assert calls == [config]
+
+
+@pytest.mark.parametrize(
+    "setup_api_key, api_key",
+    [
+        (None, None),
+        (False, None),
+        (True, "sk-present"),
+    ],
+)
+def test_ensure_api_key_configured_skips_when_gate_closed(
+    monkeypatch, setup_api_key, api_key
+):
+    """A falsy signal OR an already-present key keeps the gate closed."""
+    import litellm
+
+    config = _RecordingConfigService(api_key, model="openai/gpt-4o")
+    monkeypatch.setattr(
+        litellm,
+        "validate_environment",
+        Mock(return_value={"missing_keys": ["OPENAI_API_KEY"]}),
+    )
+    calls = _spy_on_api_key_prompt(monkeypatch)
+
+    _ensure_api_key_configured(config, setup_api_key=setup_api_key)
+
+    assert calls == []
+
+
+def test_ensure_api_key_configured_skips_for_keyless_local_model(monkeypatch):
+    """A keyless local model keeps the gate closed even with a truthy signal."""
+    import litellm
+
+    config = _RecordingConfigService(None, model="lm_studio/local")
+    monkeypatch.setattr(
+        litellm,
+        "validate_environment",
+        Mock(return_value={"keys_in_environment": True, "missing_keys": []}),
+    )
+    calls = _spy_on_api_key_prompt(monkeypatch)
+
+    _ensure_api_key_configured(config, setup_api_key=True)
+
+    assert calls == []

@@ -81,7 +81,7 @@ And it re-prompts for the LLM API key only when the key is missing
   To use a different provider, change llm.model in .teddy/config.yaml.
   ```
 - [x] **Logic** - Extend `tests/suites/unit/adapters/inbound/test_session_cli_handlers_api_key_gate.py` to assert the warning names OpenRouter and mentions `llm.model` in `.teddy/config.yaml` (capture the warning via the existing `_capture_secho` helper).
-- [ ] **Refactor** - Extract the API-key gate (`_is_llm_api_key_missing` + `_llm_model_requires_api_key` + `_prompt_for_api_key`) into a shared helper in `session_cli_handlers.py`, called from `_run_cli_preflight_check`. Keep the preflight ordering: the API-key prompt still runs before `ILlmClient` is resolved.
+- [x] **Refactor** - Extract the API-key gate (`_is_llm_api_key_missing` + `_llm_model_requires_api_key` + `_prompt_for_api_key`) into a shared helper in `session_cli_handlers.py`, called from `_run_cli_preflight_check`. Keep the preflight ordering: the API-key prompt still runs before `ILlmClient` is resolved.
 - [ ] **Wiring** - Wire bare `teddy init` and `teddy init config` to the shared API-key helper and `_validate_editor_config`, gated on `ISystemEnvironment.isatty()`. Run the gates after scaffolding/overwrite so `init config` re-prompts for the reset editor. Reuse the existing helpers; add no new prompt logic.
 - [ ] **Logic** - Add init-time prompt coverage (e.g. `tests/suites/unit/adapters/inbound/test_init_interactive_setup.py`): bare `init` on a TTY prompts for the API key (when missing and required) and the editor (when unconfigured); a non-TTY init prompts for neither; `init config` re-prompts for the editor.
 - [ ] **Cleanup** - Review `docs/architecture/adapters/inbound/cli.md` and `docs/architecture/core/services/init_service.md`; update only if they document the prompt wording or the init command's behavior.
@@ -93,6 +93,10 @@ No new port, contract, or harness work: the prompt helpers already exist and are
 ### Deliverables 1 & 2 (warning wording + test)
 
 The yellow warning in `_prompt_for_api_key` now reads (stderr, yellow): "⚠ No LLM API key configured. OpenRouter is the default provider. Paste your key below.\nTo use a different provider, change llm.model in .teddy/config.yaml." The leading `No LLM API key configured.` sentence, the stderr channel, and the hidden-input prompt are unchanged. The new unit test `test_prompt_for_api_key_warning_names_openrouter_and_config_path` in `test_session_cli_handlers_api_key_gate.py` pins the wording via the existing `_capture_secho` helper. Red confirmed the assertion failed against the old literal; Green made the gate file 19 passed; `make test` stayed green (1756 passed, 5 skipped).
+
+### Deliverable 3 (shared API-key gate helper)
+
+The three-part gate previously inlined in `_run_cli_preflight_check` now lives in a single module-level helper `_ensure_api_key_configured(config_service, setup_api_key)`, called from `_run_cli_preflight_check` in the SAME position (before `ILlmClient` is resolved). Behavior is unchanged: it fires `_prompt_for_api_key` only when `setup_api_key` is truthy, `llm.api_key` is missing, and the model requires a key; the three sub-helpers are untouched. A new composite truth table in `test_session_cli_handlers_api_key_gate.py` pins the helper directly (prompt fires once when enabled + missing + required; gate stays closed for a falsy signal or an already-present key; a keyless local model never prompts). Red confirmed a collection-time `ImportError`; Green made the gate file 24 passed; `make test` stayed green (1761 passed, 5 skipped).
 
 ## Verification
 

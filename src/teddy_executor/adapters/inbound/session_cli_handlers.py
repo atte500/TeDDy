@@ -711,14 +711,11 @@ def _run_cli_preflight_check(
     from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 
     # API-key setup runs BEFORE the LLM client is resolved so its transient
-    # config-service instance reads the freshly-persisted on-disk state.
+    # config-service instance reads the freshly-persisted on-disk state. The
+    # gate itself is single-sourced in ``_ensure_api_key_configured`` so the
+    # ``init`` command shares identical gating.
     config_service = container.resolve(IConfigService)
-    if (
-        setup_api_key
-        and _is_llm_api_key_missing(config_service)
-        and _llm_model_requires_api_key(config_service)
-    ):
-        _prompt_for_api_key(config_service)
+    _ensure_api_key_configured(config_service, setup_api_key)
 
     llm_client = container.resolve(ILlmClient)
     # Perform local validation only to ensure fast CLI startup.
@@ -748,6 +745,27 @@ def _run_cli_preflight_check(
 
     error_msg = f"Configuration Error: {', '.join(errors)}"
     raise ConfigurationError(error_msg)
+
+
+def _ensure_api_key_configured(
+    config_service: IConfigService,
+    setup_api_key: Optional[bool],
+) -> None:
+    """Runs the interactive API-key gate when the key is missing and required.
+
+    The gate fires only when ``setup_api_key`` is truthy, the resolved
+    ``llm.api_key`` is absent or blank, AND the configured model actually
+    requires a provider key (key-requiredness is delegated to litellm). It is
+    ADDITIVE and inert by default (``setup_api_key`` of ``None``/``False`` ->
+    skip), so callers that never opt in are unaffected. Single-sourced so
+    ``_run_cli_preflight_check`` and the ``init`` command share identical gating.
+    """
+    if (
+        setup_api_key
+        and _is_llm_api_key_missing(config_service)
+        and _llm_model_requires_api_key(config_service)
+    ):
+        _prompt_for_api_key(config_service)
 
 
 def _is_llm_api_key_missing(config_service: IConfigService) -> bool:
