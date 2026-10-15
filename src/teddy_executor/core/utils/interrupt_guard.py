@@ -51,6 +51,10 @@ class InterruptGuard:
         self._grace_window = GRACE_WINDOW_SECONDS
         self._monotonic = monotonic
         self.interrupted = threading.Event()
+        # The key that triggered the interrupt (e.g. "q"), recorded by the
+        # quit-key listener before it self-delivers SIGINT. None means a
+        # genuine Ctrl+C (or a direct interrupted.set() in tests).
+        self.source: Optional[str] = None
         self._executing = False
         self._first_signal_at: Optional[float] = None
 
@@ -61,6 +65,15 @@ class InterruptGuard:
         signal.signal(SIGINT, ...) when the guard's lifetime ends.
         """
         return signal.signal(signal.SIGINT, self._handle_signal)
+
+    def record_source(self, source: str) -> None:
+        """Record which key triggered the interrupt (e.g. ``"q"``).
+
+        The quit-key listener's ``on_quit`` callback calls this BEFORE
+        self-delivering SIGINT so the boundary notice can name the key the
+        user actually pressed instead of defaulting to ``Ctrl+C``.
+        """
+        self.source = source
 
     def _handle_signal(self, signum: int, frame: Optional[FrameType]) -> None:
         """The installed SIGINT handler; branches on the current phase."""

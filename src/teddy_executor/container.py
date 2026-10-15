@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import signal
 import time
 
 import punq
@@ -29,6 +31,20 @@ def create_container() -> punq.Container:
     _register_services(container)
     _register_orchestration(container)
     return container
+
+
+def _record_quit_source(container: punq.Container) -> None:
+    """Record the bare-`q` source on the shared guard, then self-deliver SIGINT.
+
+    Invoked from the quit-key listener's reader thread when `q` is pressed.
+    Recording the source lets the boundary notice name `q` instead of the
+    default `Ctrl+C`; the self-delivered SIGINT then drives the shared guard's
+    already-tested WAITING/EXECUTING branch unchanged.
+    """
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+
+    container.resolve(InterruptGuard).record_source("q")
+    os.kill(os.getpid(), signal.SIGINT)
 
 
 def _register_services(container: punq.Container) -> None:
@@ -176,7 +192,9 @@ def _register_orchestration_services(container: punq.Container) -> None:
     # so ONE instance serves the boundary's install/restore window.
     container.register(
         IQuitKeyListener,
-        factory=lambda: TerminalQuitKeyListener(),
+        factory=lambda: TerminalQuitKeyListener(
+            on_quit=lambda: _record_quit_source(container)
+        ),
         scope=punq.Scope.singleton,
     )
     container.register(

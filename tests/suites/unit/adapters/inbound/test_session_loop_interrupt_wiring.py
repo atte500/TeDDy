@@ -78,11 +78,38 @@ def test_session_loop_catches_keyboard_interrupt_with_termination_notice(capsys)
         no_copy=True,
     )
 
-    # Assert: the boundary converts the signal into the termination notice,
-    # now WITHOUT the inaccurate "(Ctrl+C)" fragment (Bug 56 rewording).
+    # Assert: the boundary converts the signal into the key-tagged interrupt
+    # notice. With no source recorded the notice defaults to (Ctrl+C) and
+    # carries the shared resume hint on one line (Slice 00-37).
     captured = capsys.readouterr()
-    assert "Interrupted by user." in captured.out
-    assert "(Ctrl+C)" not in captured.out
+    assert (
+        "Interrupted by user (Ctrl+C). To continue the session, use `teddy resume`."
+        in captured.out
+    )
+
+
+def test_session_loop_names_the_quit_key_when_recorded(capsys):
+    """When the guard recorded the `q` source (a bare quit-key press), the
+    boundary notice names `q` instead of the default `Ctrl+C` (Slice 00-37)."""
+    # Arrange
+    container, _ = _build_interrupt_harness()
+    guard = container.resolve(InterruptGuard)
+    guard.record_source("q")
+
+    # Act
+    _orchestrate_session_loop(
+        container=container,
+        session_name="test-session",
+        interactive=False,
+        no_copy=True,
+    )
+
+    # Assert: the notice names the key the user actually pressed.
+    captured = capsys.readouterr()
+    assert (
+        "Interrupted by user (q). To continue the session, use `teddy resume`."
+        in captured.out
+    )
 
 
 def test_handler_installed_during_the_turn_loop(monkeypatch):

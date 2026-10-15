@@ -68,13 +68,19 @@ Feature: Termination notices are yellow and single-line
 
 ## Deliverables
 
-- [▶] **Wiring** - End-to-end key-tagged interrupt notice: add the `source` marker + `record_source()` to `InterruptGuard`; wire the container's `IQuitKeyListener` factory to record `q` before self-delivering SIGINT; render the interrupt notice at both session-loop sites as one yellow line naming the key (`guard.source or "Ctrl+C"`) plus the shared `RESUME_HINT`. Introduce `RESUME_HINT` (single source). Update the existing interrupt-wiring test in the same change set to keep green.
+- [x] **Wiring** - End-to-end key-tagged interrupt notice: add the `source` marker + `record_source()` to `InterruptGuard`; wire the container's `IQuitKeyListener` factory to record `q` before self-delivering SIGINT; render the interrupt notice at both session-loop sites as one yellow line naming the key (`guard.source or "Ctrl+C"`) plus the shared `RESUME_HINT`. Introduce `RESUME_HINT` (single source). Update the existing interrupt-wiring test in the same change set to keep green.
 - [ ] **Logic** - Recolor and simplify both `session_orchestrator` termination notices (empty-message and aborted) to one yellow line ending with the shared `RESUME_HINT`.
 - [ ] **Harness** - Regression tests: the interrupt notice names `q` (via the listener/guard seam) and `Ctrl+C` (default); the termination notices are yellow, single-line, and carry the simplified hint.
 
 ## Implementation Notes
 
-(To be filled during implementation.)
+### Wiring (key-tagged interrupt notice)
+
+- **New `core/utils/session_notices.py`** is the single source for the shared resume hint (`RESUME_HINT = "To continue the session, use \`teddy resume\`."`), the `Ctrl+C` default key label (`DEFAULT_INTERRUPT_KEY`), and the composer `format_interrupt_notice(source)`. The composer derives its prefix from `INTERRUPT_REASON.removesuffix(".")` so the boundary notice and the audit-trail skip reason stay byte-locked; it renders `"Interrupted by user (<key>). <RESUME_HINT>"` on one line, defaulting `<key>` to `Ctrl+C` when no source was recorded.
+- **`InterruptGuard`** gained an additive `source: Optional[str]` field (default `None`) and `record_source(source)`. `install()` and the phase context managers are untouched, so the WAITING/EXECUTING contract is unchanged.
+- **Container composition root** now injects an `on_quit` hook into the `IQuitKeyListener` factory via `_record_quit_source(container)`: it records `"q"` on the shared `InterruptGuard` singleton, THEN `os.kill`s the process with SIGINT. The self-delivery is required because `TerminalQuitKeyListener._trigger` returns after invoking a supplied `on_quit` callback; the self-delivered SIGINT drives the guard's already-tested branch unchanged. The `on_quit=None` default path in the listener is unchanged.
+- **`session_cli_handlers._orchestrate_session_loop`** renders `format_interrupt_notice(interrupt_guard.source)` at BOTH interrupt sites (the graceful-drain branch and the `KeyboardInterrupt` catch), both on stdout in yellow. The now-unused `INTERRUPT_REASON` import was dropped from this module.
+- **Test updates:** `tests/suites/unit/adapters/inbound/test_session_loop_interrupt_wiring.py` was updated in the same change set — the pre-existing `"(Ctrl+C)" not in captured.out` assertion directly contradicted the new notice, so it was replaced with the combined-notice assertion, and a new `test_session_loop_names_the_quit_key_when_recorded` case pins the `q`-source path. Focused run: 5 passed; Integration `make test`: 1753 passed, 5 skipped.
 
 ## Verification
 
