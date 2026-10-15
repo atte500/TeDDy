@@ -1034,8 +1034,13 @@ def _sync_and_display_session_meta(
     session_name: str,
     model: Optional[str] = None,
     api_key: Optional[str] = None,
+    agent: Optional[str] = None,
 ) -> None:
-    """Reads latest turn meta.yaml, syncs config overrides, and clears actual_model."""
+    """Reads latest turn meta.yaml, syncs config overrides, and clears actual_model.
+
+    The identity banner reflects the EFFECTIVE agent: the ``-a/--agent`` override
+    when one was passed, otherwise the session's persisted ``agent_name``.
+    """
     from teddy_executor.core.ports.outbound.config_service import IConfigService
 
     session_manager = container.resolve(ISessionManager)
@@ -1046,7 +1051,7 @@ def _sync_and_display_session_meta(
     meta = repository.load_meta(latest_turn_path)
     # Clear actual_model so display falls through to current model (override or config)
     meta.pop("actual_model", None)
-    _echo_config_success(container, agent=meta.get("agent_name"), model=model)
+    _echo_config_success(container, agent=agent or meta.get("agent_name"), model=model)
 
     # Sync latest turn's meta.yaml with current config model/overrides
     config_model = config_service.get_setting("llm.model", "unknown")
@@ -1110,7 +1115,7 @@ def handle_resume_session(  # noqa: PLR0913
 
         # 3. Display actual_model and sync config overrides
         _sync_and_display_session_meta(
-            container, session_name, model=model, api_key=api_key
+            container, session_name, model=model, api_key=api_key, agent=agent
         )
 
         # 4. Display session path (below the Agent/Model identity block)
