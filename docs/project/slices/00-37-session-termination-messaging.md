@@ -1,0 +1,86 @@
+# Slice: Session Termination & Interrupt Messaging Refinements
+- **Status:** Planned
+- **Milestone:** N/A
+- **Specs:** N/A
+- **Prototype:** N/A
+- **Component Docs:** [SessionOrchestrator](/docs/architecture/core/services/session_orchestrator.md)
+- **Scope Slug:** `session-notices`
+
+## Business Goal
+
+Make every session-termination and interrupt notice consistent, actionable, and self-explanatory: the resume hint is simplified to `teddy resume`, the interrupt notice names the exact key the user pressed (`q` or `Ctrl+C`), and each notice renders as a single yellow line so the user always sees one clear next step.
+
+## Scenarios
+
+> As a user, I want the interrupt notice to tell me which key I pressed and how to continue.
+
+```gherkin
+Feature: Interrupt notice names the key and shows the resume hint on one yellow line
+  Scenario: Bare `q` during a turn
+    Given a session is executing a turn
+    When the user presses `q`
+    Then the terminal shows "Interrupted by user (q). To continue the session, use `teddy resume`." in yellow on one line
+
+  Scenario: Ctrl+C while idle
+    Given a session is idle (waiting at a prompt or planning)
+    When the user presses Ctrl+C
+    Then the terminal shows "Interrupted by user (Ctrl+C). To continue the session, use `teddy resume`." in yellow on one line
+```
+
+> As a user, I want termination notices to be yellow and give me the next step on the same line.
+
+```gherkin
+Feature: Termination notices are yellow and single-line
+  Scenario: Empty message termination
+    Given a communication turn whose user reply is empty
+    When the turn completes
+    Then the terminal shows "Session terminated (empty message). To continue the session, use `teddy resume`." in yellow on one line
+
+  Scenario: Aborted session termination
+    Given the session is aborted
+    When the turn completes
+    Then the terminal shows "Session terminated. To continue the session, use `teddy resume`." in yellow on one line
+```
+
+## Edge Cases
+
+- **Unset interrupt source**: If the guard's source marker is unset (a genuine Ctrl+C, or a test that sets `interrupted` directly), the notice defaults to `(Ctrl+C)`.
+- **YOLO guardrail limit**: The guardrail-limit notice (`_emit_guard_termination`) stays RED and is NOT merged with the resume hint — it is a hard stop, not an interruption.
+- **Audit-trail reason unchanged**: `INTERRUPT_REASON` ("Interrupted by user.") remains the single source for the report skip reason; only the boundary notice adds the key tag and hint.
+- **Exit stream unchanged**: Termination notices stay on stderr (`err=True`); interrupt notices stay on stdout — no test-stream churn.
+
+## Key Unknowns
+
+- [x] [Technical] How to convey the pressed key (`q` vs `Ctrl+C`) from the quit-key reader thread to the notice site, given both converge on SIGINT? Resolved: record the source on the shared `InterruptGuard` singleton (the one object both the boundary and the notice sites resolve) from the listener's `on_quit` callback, before it self-delivers SIGINT. Design Sensitivity: no new port is required; if the guard could not carry the marker, a new seam would be needed.
+- [x] [Functional] One combined line vs. two lines? Resolved: one line (notice + hint merged).
+- [x] [Functional] Keep the `(q)`/`(Ctrl+C)` key tag? Resolved: keep it (deliberately reverses the Bug 56 "(Ctrl+C)" removal, now that the source is accurate).
+
+## Scope & Impact
+
+- `[NEW]` `core/utils/session_notices.py` — single source for the resume hint and the notice-composition helpers.
+- `[EXPAND]` `InterruptGuard` — additive `source` marker + `record_source()` (no signature change to `install()` or the phase managers).
+- `[EXPAND]` `container` `IQuitKeyListener` factory — inject an `on_quit` callback that records `q` on the guard, then self-delivers SIGINT.
+- `[MIGRATE]` `session_cli_handlers._orchestrate_session_loop` — two interrupt notice sites (interrupt drain + `KeyboardInterrupt`).
+- `[MIGRATE]` `session_orchestrator.execute` — two termination notice sites (empty message + aborted).
+- `[MIGRATE]` `tests/suites/unit/adapters/inbound/test_session_loop_interrupt_wiring.py` — update the notice assertion.
+
+**Impact Notes:** `InterruptGuard` is a documented singleton exception to the transient-scope rule, so the source marker is shared by the boundary and the notice sites with no scope churn. `INTERRUPT_REASON` has two consumers (audit trail + boundary notice) but is NOT modified. The container factory change touches only the `IQuitKeyListener` composition; the listener's `on_quit=None` default path is unchanged.
+
+## Deliverables
+
+- [ ] **Wiring** - End-to-end key-tagged interrupt notice: add the `source` marker + `record_source()` to `InterruptGuard`; wire the container's `IQuitKeyListener` factory to record `q` before self-delivering SIGINT; render the interrupt notice at both session-loop sites as one yellow line naming the key (`guard.source or "Ctrl+C"`) plus the shared `RESUME_HINT`. Introduce `RESUME_HINT` (single source). Update the existing interrupt-wiring test in the same change set to keep green.
+- [ ] **Logic** - Recolor and simplify both `session_orchestrator` termination notices (empty-message and aborted) to one yellow line ending with the shared `RESUME_HINT`.
+- [ ] **Harness** - Regression tests: the interrupt notice names `q` (via the listener/guard seam) and `Ctrl+C` (default); the termination notices are yellow, single-line, and carry the simplified hint.
+
+## Implementation Notes
+
+(To be filled during implementation.)
+
+## Verification
+
+- [ ] Start a session, press `q`, and verify the terminal shows `Interrupted by user (q). To continue the session, use teddy resume.` in yellow on one line.
+- [ ] Start a session, press Ctrl+C while idle, and verify the terminal shows `Interrupted by user (Ctrl+C). To continue the session, use teddy resume.` in yellow on one line.
+- [ ] Trigger an empty-message termination and verify the terminal shows `Session terminated (empty message). To continue the session, use teddy resume.` in yellow on one line.
+- [ ] Trigger an aborted-session termination and verify the terminal shows `Session terminated. To continue the session, use teddy resume.` in yellow on one line.
+- [ ] Verify the YOLO guardrail-limit notice remains red.
+- [ ] Full suite green (`make test`).
