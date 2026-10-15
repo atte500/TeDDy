@@ -60,6 +60,15 @@ The `SessionOrchestrator` is a decorator-style service that wraps the stateless 
     4.  **COMPLETE_TURN**: Transition to next turn (appending a smart-fenced `## User Request` section when an injected `-m` reply is present) -> Plan the new turn (using the injected message when present, else prompting) -> Resolve actual path via `SessionService` -> Call `execute`.
 - **Recursion Safety:** To prevent recursion loops and handle dynamic renaming, the state machine resolves the current turn's path from the `SessionService` after planning/renaming and delegates directly to `execute`.
 
+## Session Termination Notices (As-Built, 2026-10-15)
+
+Both termination sites in `execute()` render exactly ONE yellow stderr line through the shared composer `format_termination_notice(reason)` (`core/utils/session_notices.py`), which appends the shared `RESUME_HINT` ("To continue the session, use `teddy resume`.") to the situation lead-in:
+
+- **Empty-message termination** (a communication turn whose MESSAGE reply is empty): "Session terminated (empty message). To continue the session, use `teddy resume`."
+- **Aborted termination** (`_handle_aborted_session` returns `None` after the user declines to supply a new message): "Session terminated. To continue the session, use `teddy resume`."
+
+The notices stay on STDERR (`typer.secho(..., err=True)`); only the color (RED→YELLOW) and the two-line→one-line collapse changed, so the exit-stream contract is unchanged. The retired two-line RED form — a leading-`"\n"` situation line plus a bare-hint line carrying the obsolete `[session_path]` token — is gone. The YOLO guardrail-limit notice (`_emit_guard_termination`, in the CLI boundary) remains RED and is deliberately NOT merged with the resume hint (a hard stop, not an interruption).
+
 ## Console Visibility Helpers
 
 The terminal-echo format (blank line + `User Message:` label + content) is single-sourced in `core/utils/terminal.py::emit_user_message`, shared by `_print_initial_request`, `_print_user_message`, and the TUI adapter's MESSAGE echo. Four helper functions are defined in this module to improve user visibility during session execution:

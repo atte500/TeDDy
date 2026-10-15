@@ -70,7 +70,7 @@ Feature: Termination notices are yellow and single-line
 
 - [x] **Wiring** - End-to-end key-tagged interrupt notice: add the `source` marker + `record_source()` to `InterruptGuard`; wire the container's `IQuitKeyListener` factory to record `q` before self-delivering SIGINT; render the interrupt notice at both session-loop sites as one yellow line naming the key (`guard.source or "Ctrl+C"`) plus the shared `RESUME_HINT`. Introduce `RESUME_HINT` (single source). Update the existing interrupt-wiring test in the same change set to keep green.
 - [x] **Logic** - Recolor and simplify both `session_orchestrator` termination notices (empty-message and aborted) to one yellow line ending with the shared `RESUME_HINT`.
-- [ ] **Harness** - Regression tests: the interrupt notice names `q` (via the listener/guard seam) and `Ctrl+C` (default); the termination notices are yellow, single-line, and carry the simplified hint.
+- [x] **Harness** - Regression tests: the interrupt notice names `q` (via the listener/guard seam) and `Ctrl+C` (default); the termination notices are yellow, single-line, and carry the simplified hint.
 
 ## Implementation Notes
 
@@ -89,6 +89,13 @@ Feature: Termination notices are yellow and single-line
 - **Stream unchanged:** both notices stay on STDERR (`err=True`); only the color (RED→YELLOW) and the two-line→one-line collapse changed, so the exit-stream contract holds.
 - **Non-breaking:** `test_bug_15_empty_message_termination.py:136` only substring-checks the lead-in `"Session terminated (empty message)."` (preserved), and `test_abort_handling_regression.py` asserts only `result is None` / `finalize_turn` — neither pins color, line count, or the retired hint, so no existing test needed updating in this change set.
 - **New test file:** `tests/suites/unit/core/services/test_session_termination_notices.py` pins the composer directly and drives the real `execute` empty-message and aborted paths (recording `typer.secho` calls) to assert each notice is ONE yellow stderr line ending with the hint. Focused run: 3 passed; Integration `make test`: 1756 passed, 5 skipped.
+
+### Harness (quit-source seam regression)
+
+- **New integration test:** `tests/suites/integration/core/services/test_quit_source_wiring.py` pins the composition-root listener→guard seam against the REAL container. It resolves the shared `InterruptGuard` and the `IQuitKeyListener`, stubs `os.kill` (via `monkeypatch.setattr` — the recorder self-delivers SIGINT AFTER recording, so the test observes the recording half of the seam without raising `KeyboardInterrupt`), drives the wired listener's quit hook (`listener._trigger()`), and asserts the shared guard's `source` becomes `q` and `format_interrupt_notice(guard.source)` names `q`.
+- **Anti-duplication:** the `Ctrl+C` default and both termination notices were ALREADY pinned by `test_session_loop_interrupt_wiring.py` and `test_session_termination_notices.py`, so the Harness added ONLY the composition-root seam regression — no duplicate assertions.
+- **Suite placement:** the seam spans the composition root (container) and the boundary-resolved guard, so it lives in `tests/suites/integration/core/services/` (the Harness/Integration mapping), not the unit suite.
+- **Focused run:** 1 passed; Integration `make test`: 1757 passed, 5 skipped.
 
 ## Verification
 
