@@ -126,9 +126,7 @@ Prefer config-level bypasses (pyproject `per-file-ignores`, pre-commit `exclude`
 
 ### Code and Naming Hygiene
 
-All code comments and file names must remain self-contained without fragile document citations:
-- **Code Comments:** Explain intent, invariants, edge cases, and rationale directly in the code. Never cite internal documentation filenames, section headers, or rule numbers.
-- **File and Test Naming:** Name files, functions, and tests after the domain concept, scenario, or behavior under test. Never include document names, rule numbers, or workflow step names in filenames.
+All code comments and file names must remain self-contained without fragile document citations. Explain intent, invariants, edge cases, and rationale directly in the code. Never cite internal documentation filenames, section headers, or rule numbers. Name files, functions, and tests after the domain concept, scenario, or behavior under test. Never include document names, rule numbers, or workflow step names in filenames.
 
 ### Technical Debt Triage
 
