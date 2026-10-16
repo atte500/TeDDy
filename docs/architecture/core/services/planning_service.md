@@ -1,60 +1,53 @@
-# Component: PlanningService
+# Component Design: PlanningService
 - **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/planning_service.py`](/src/teddy_executor/core/services/planning_service.py)
 
-## Pure Context Model (Poka-Yoke)
-To maintain architectural purity and statelessness, the `PlanningService` follows a "Pure Context" model:
-- **Instruction-Free Prompting:** The service MUST NOT inject specific user instructions or "Current Tasks" into the LLM's `messages` list or the `input.md` file.
-- **Pure State Snapshot:** `input.md` represents the "Project Reality" at a specific moment. It contains file structures and contents (including `initial_request.md` and previous `report.md` files).
-- **Discovery Mechanism:** The agent prompt (System Message) instructs the AI to determine its next action by analyzing the project state, session goal, and latest audit trail (report) within the provided context.
+## Purpose
+Implements the `IPlanningUseCase` inbound port. It gathers project context, resolves the agent system prompt, calls the LLM, and persists the generated plan to the turn directory, following a pure context model with no injected instructions.
 
-## 1. Purpose / Responsibility
+## Consumers
+- [`SessionPlanner`](./session_planner.md): Calls `generate_plan` to start a turn's planning phase.
+- [`SessionLifecycleManager`](/src/teddy_executor/core/services/session_lifecycle_manager.py): Consumes the planning use case through the session ports bundle.
+- [CLI Adapter](../../adapters/inbound/cli.md): Drives planning for the interactive and manual flows.
+- [Composition Root](/src/teddy_executor/container.py): Registers `PlanningService` and binds it to `IPlanningUseCase`.
 
-The `PlanningService` is responsible for generating an AI plan based on a user message and the current project context. It orchestrates the gathering of context, the retrieval of agent instructions, and the communication with the Large Language Model. It includes a preflight configuration check to ensure API keys and environment variables are valid before invoking the LLM. It also displays pre-response telemetry (Model, Context Usage, Cost) to the user via the `IUserInteractor`.
+## Dependencies
+- [`IGetContextUseCase`](../ports/inbound/get_context_use_case.md): Gathers the project context payload.
+- [`ILlmClient`](../ports/outbound/llm_client.md): Requests completions, token counts, and costs.
+- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Writes `input.md` and `plan.md`.
+- [`IConfigService`](../ports/outbound/config_service.md): Resolves model and retry settings.
+- [`IPromptManager`](/src/teddy_executor/core/ports/outbound/prompt_manager.py): Resolves the agent prompt and persists telemetry.
+- [`IUserInteractor`](../ports/outbound/user_interactor.md): Displays telemetry and retry notices.
+- [`ISessionManager`](../ports/outbound/session_manager.md): Resolves session and turn context manifests.
 
-## 2. Ports
+## Class Invariants
+- `pure_context_model`: The service never injects user instructions into the LLM `messages` or `input.md`.
+- `single_gather_per_turn`: Project context is gathered exactly once and threaded to the caller.
+- `retry_on_empty`: An empty LLM response is retried up to `llm.max_retries` times.
+- `cost_accumulation`: Every billed attempt accumulates into the turn cost.
+- `primitive_serialization`: All metadata is cast to primitive types before serialization.
+- `preflight_once`: The local preflight check runs once per process via a class-level flag.
+- `budget_guard`: A request that strictly exceeds the model context window raises before the LLM call.
 
--   **Implements Inbound Port:** `IPlanningUseCase`
--   **Uses Outbound Ports:**
-    -   `IGetContextUseCase` (ContextService)
-    -   `ILlmClient` (LiteLLMAdapter)
-    -   `IFileSystemManager` (to read `[agent_name].md` and write `plan.md`)
-    -   `IConfigService` (to resolve planning model settings)
+## Inbound Ports
+- **`IPlanningUseCase`**: Exposes `generate_plan(...)`.
 
-## 3. Implementation Details / Logic
+## Outbound Ports
+None declared directly — the service consumes the ports bundled in `PlanningPorts`, listed under Dependencies.
 
-0.  **Preflight Check:** Calls `ILlmClient.validate_config()`. If errors are found, raises `ConfigurationError` with the config file path.
-1.  **Gather Context:** Calls `IGetContextUseCase.get_context()` (with session/turn files if applicable).
-2.  **Fetch System Prompt:** Reads the local `[agent_name].md` prompt from the current turn directory.
-3.  **Contextual Hints:** If operating in Turn 01, it injects an alignment hint into the user message to encourage the agent to clarify goals.
-4.  **LLM Call:** Passes the formatted context, system prompt, and user message to `ILlmClient.get_completion()`.
-5.  **Retry Loop (Application Level):** Implements a retry loop (configured via `llm.max_retries`, default 3) specifically for "empty content" responses. This handles edge cases where the LLM returns successfully but with empty message content. Each billed attempt's cost is ACCUMULATED into the turn total (`turn_cost += attempt_cost`, with the attempt's cost bound into a local first), so a billed empty-response attempt that triggers a retry is never discarded from the session total, and the final successful attempt is counted exactly once.
-6.  **Persistence:** Saves the resulting Markdown response to the turn's `plan.md`. Updates `meta.yaml` with telemetry (model name, provider, token usage, USD cost). Writes the full context used for the generation to `input.md`.
-7.  **Hardening:** Ensures all metadata is cast to primitive types (str, int, float, bool) before serialization to prevent `yaml.dump` from entering infinite recursion hangs when encountering `MagicMock` objects in unit tests.
-8.  **Telemetry Display (`_display_telemetry`):** After the LLM call and `PromptManager.update_meta()`, the service renders a metadata block to the console via `IUserInteractor.display_message()`. The block includes:
-    - **Model & Provider:** `• Model: {model} | {provider}` — where `provider` is the resolved downstream provider extracted from `response._hidden_params["provider"]` by `PromptManager.update_meta()`. Falls back to model-only display (no `| unknown`) when provider is `"unknown"`.
-    - **Context Usage:** `• Context: {used}k / {total}k tokens` — derived from the response's usage data and the model's context window.
-    - **Session Cost:** `• Session Cost: ${cost}` — cumulative cost from `meta["cumulative_cost"]`, formatted to 4 decimal places. Displays `$???` if pricing is not supported for the model.
-9.  **Over-Budget Guardrail (Jidoka):** Immediately after the telemetry display and before the LLM generation call, `generate_plan` invokes `_check_context_budget(token_count, model)`. It computes the model's context window and raises `ConfigurationError` when the window is positive and `token_count` strictly exceeds it. This converts a silent stall on an oversized request into a loud, user-visible error. A non-positive window (unknown) disables the guardrail, and a request that exactly fills the window is allowed, because the comparison is a strict excess.
+## Data Contracts
+- **`PlanningPorts`** (`teddy_executor.core.domain.models.planning_ports`): The injected DTO bundling context, LLM, file system, config, prompts, user interactor, and session manager.
+- **`ProjectContext`** (`teddy_executor.core.domain.models.project_context`): The gathered context returned to the caller.
+- **Return tuple:** `(plan_path, turn_cost, project_context)`.
 
-## 4. Data Contracts / Methods
+## Operations
 
-### `generate_plan(user_message: str, turn_dir: str, context_files: Optional[Dict[str, Sequence[str]]] = None) -> tuple[str, float, ProjectContext]`
+### `generate_plan(user_message, turn_dir, context_files=None) -> tuple[str, float, ProjectContext]`
+- **Preconditions:** `turn_dir` exists; the agent prompt file exists in the turn directory.
+- **Postconditions:** Writes `plan.md` and `input.md`, updates `meta.yaml` telemetry, and returns the plan path, the turn cost, and the gathered `ProjectContext`.
+- **Exceptions:** `ConfigurationError` when configuration is invalid or the request exceeds the context window; `FileNotFoundError` when the system prompt is missing.
 
--   **Description:** Generates a new `plan.md` file in the specified directory. **Defensive Design:** If `context_files` is omitted, it auto-resolves session/turn manifests from `turn_dir` via `SessionManager`. **Single-Gather Point:** the `ProjectContext` assembled here is returned (not discarded) so callers thread it to execution — project context is gathered exactly once per turn.
--   **Preconditions:**
-    -   `turn_dir` must exist.
-    -   The agent prompt file (`[agent_name].md`) must exist in `turn_dir`.
--   **Postconditions:**
-    -   A valid `plan.md` is written to `turn_dir`.
-    -   Returns `(plan_path, turn_cost, project_context)` — the gathered `ProjectContext` (identity of the context produced by `IGetContextUseCase.get_context`) is threaded to the caller.
--   **Exceptions:**
-    -   `ConfigurationError`: Raised if API keys or environment variables are missing or invalid, or if the request token count strictly exceeds the model's context window (see `_check_context_budget`).
-    -   `LlmCommunicationError`: Raised if the LLM client fails.
-    -   `FileNotFoundError`: Raised if the system prompt is missing.
-
-### `_check_context_budget(token_count: int, model: str) -> None`
-
--   **Description:** Turns an over-budget request into a loud, user-visible failure (Jidoka). It computes the model's context window via `int(self._safe_float(self._llm_client.get_context_window(model=model)))` and raises when the request strictly exceeds it.
--   **Preconditions:** `token_count` is the assembled request token count. `model` is the resolved planning model.
--   **Postconditions:** Returns normally when the context window is non-positive (unknown) or when `token_count` is less than or equal to the window. The guardrail never invokes the LLM.
--   **Exceptions:** `ConfigurationError`: Raised when the context window is positive and `token_count` strictly exceeds it. The message names the request token count, the window, and the model.
+### `_check_context_budget(token_count, model) -> None`
+- **Preconditions:** `token_count` is the assembled request token count; `model` is the resolved model.
+- **Postconditions:** Returns normally when the context window is unknown or the request fits; the guardrail never calls the LLM.
+- **Exceptions:** `ConfigurationError` when the window is positive and the request strictly exceeds it.

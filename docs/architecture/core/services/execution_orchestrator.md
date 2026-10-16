@@ -1,89 +1,52 @@
-# Application Service: ExecutionOrchestrator
+# Component Design: ExecutionOrchestrator
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/execution_orchestrator.py`](/src/teddy_executor/core/services/execution_orchestrator.py)
 
-The `ExecutionOrchestrator` is the stateless core service responsible for the atomic execution of a plan. While it implements the `IRunPlanUseCase`, in the context of the interactive session workflow, it is typically wrapped by the `SessionOrchestrator`, which handles the stateful side-effects like turn transitions.
+## Purpose
+Implements the `IRunPlanUseCase` inbound port. It runs a parsed `Plan` atomically by validating it, optionally reviewing it, dispatching each action, and assembling the final `ExecutionReport`, with no knowledge of session history.
 
-## 1. Design Principles
+## Consumers
+- [CLI Adapter](../../adapters/inbound/cli.md): Drives the `execute` flow and session resumption through the `IRunPlanUseCase` port.
+- [`SessionOrchestrator`](./session_orchestrator.md): Wraps this orchestrator for session-aware turns.
+- [Composition Root](/src/teddy_executor/container.py): Registers `ExecutionOrchestrator` and binds it to `IRunPlanUseCase`.
 
--   **Stateless Execution:** This service is designed to be purely execution-focused, with no knowledge of session history or future turns.
--   **Use Case Controller:** This service directly implements the `run_plan` use case.
--   **Coordination, Not Creation:** Its role is to orchestrate calls to other single-responsibility services (`PlanParser`, `ActionDispatcher`). It does not contain complex business logic itself.
--   **State Management:** It manages the state of the execution run, collecting `ActionLog` objects and building the final `ExecutionReport`.
--   **Port-driven Interaction:** All side effects (user interaction, file I/O) are delegated through outbound ports, keeping the orchestrator's logic pure and testable.
+## Dependencies
+- [`IPlanParser`](../ports/inbound/plan_parser.md): Parses raw plan content into a `Plan`.
+- [`IPlanValidator`](../ports/inbound/plan_validator.md): Runs pre-flight validation.
+- [`ActionExecutor`](/src/teddy_executor/core/services/action_executor.py): Confirms and dispatches each action.
+- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Reads plan files and writes temporary plans.
+- [`IExecutionReportAssembler`](../ports/outbound/execution_report_assembler.md): Builds the final report.
+- [`IUserInteractor`](../ports/outbound/user_interactor.md): Displays messages.
+- [`IPlanReviewer`](../ports/inbound/plan_reviewer.md): Optional interactive review.
+- [`InterruptGuard`](/src/teddy_executor/core/utils/interrupt_guard.py): Optional two-phase Ctrl+C drain.
 
-## 2. Dependencies
+## Class Invariants
+- `stateless_execution`: The service holds no session history and no knowledge of future turns.
+- `ports_via_dto`: Every collaborator arrives through the `OrchestratorPorts` DTO; the service holds no container reference.
+- `halt_on_failure`: A `FAILURE` action without `allow_failure` halts the remaining actions.
+- `communication_turn_bypass`: A communication turn bypasses the reviewer and step-by-step confirmation.
+- `interrupt_drain`: When the interrupt guard is set, every remaining action is skipped with the interrupt reason and the loop exits normally.
+- `temp_plan_cleanup`: A generated temporary plan file is removed in a `finally` block.
 
--   **Inbound Ports & Services:**
-    -   `IPlanReviewer`: (Optional) To allow interactive review and modification of the plan.
-    -   `ActionDispatcher`: To execute each action in the plan.
-    -   `IEditSimulator`: To generate preview content for `EDIT` actions.
--   **Outbound Ports:**
-    -   `IUserInteractor`: To display messages and prompt for step-by-step approval.
-    -   `IFileSystemManager`: For contextual file reading.
-    -   `IExecutionReportAssembler`: To construct the final report.
+## Inbound Ports
+- **`IRunPlanUseCase`**: Exposes `execute(...)`; `resume(...)` raises `NotImplementedError` because sessions are not supported here.
 
-## 3. Core Logic: Message Protocol
-The orchestrator distinguishes between "Acting Turns" and "Communication Turns":
-- **Acting Turns:** Plans containing standard actions. These require user approval via `IPlanReviewer` (TUI) and `IUserInteractor` (step-by-step).
-- **Communication Turns:** Plans containing a single `MESSAGE` action. These bypass the `IPlanReviewer` and display content directly via `IUserInteractor.display_message`.
-- **Validation:** Communication turns MUST NOT be empty. An empty message triggers a `PlanValidationError`.
-- **Deprecation:** Legacy actions (`PROMPT`, `INVOKE`, `RETURN`) trigger terminal-only warnings via `IUserInteractor` to alert the developer. These warnings are EXCLUDED from the `ExecutionReport` to prevent AI confusion and hallucinations.
+## Outbound Ports
+None declared directly — the service consumes the concrete services and ports bundled in `OrchestratorPorts`, listed under Dependencies.
 
-## 4. Public Interface
+## Data Contracts
+- **`OrchestratorPorts`** (`teddy_executor.core.domain.models.orchestrator_ports`): The injected DTO bundling the parser, validator, action executor, file system, report assembler, user interactor, optional reviewer, and optional interrupt guard.
+- **`Plan`** and **`ExecutionReport`** (`teddy_executor.core.domain.models`): The executed object and its result.
+- **`ReportAssemblyData`** (`teddy_executor.core.domain.models.report_assembly_data`): The input DTO for report assembly.
 
-The `ExecutionOrchestrator` service exposes a single method, fulfilling the `IRunPlanUseCase` inbound port.
+## Operations
 
-### `execute`
-Orchestrates the execution of a pre-parsed plan, returning a final report.
+### `execute(plan=None, plan_content=None, plan_path=None, interactive=True, message=None, project_context=None, pipeline=False) -> ExecutionReport`
+- **Preconditions:** Exactly one of `plan`, `plan_content`, or `plan_path` supplies the plan.
+- **Postconditions:** Returns the assembled `ExecutionReport`. The method resolves the plan, validates it, performs the interactive review, dispatches the actions, and assembles the report. A user abort returns an `ABORTED` report.
+- **Exceptions:** `InvalidPlanError` when validation fails; `ValueError` when no plan source is provided.
 
-**Status:** Implemented
-
-```python
-from teddy_executor.core.domain.models import ExecutionReport, Plan
-from teddy_executor.core.ports.outbound import IUserInteractor, IFileSystemManager
-from teddy_executor.core.services import ActionDispatcher
-
-class ExecutionOrchestrator:
-    def __init__(
-        self,
-        action_dispatcher: ActionDispatcher,
-        user_interactor: IUserInteractor,
-        file_system_manager: IFileSystemManager,
-    ):
-        self._action_dispatcher = action_dispatcher
-        self._user_interactor = user_interactor
-        self._file_system_manager = file_system_manager
-
-    def execute(self, plan: Plan, interactive: bool) -> ExecutionReport:
-        """
-        Coordinates the execution of a Plan.
-
-        1.  **Plan Review:** If an `IPlanReviewer` is provided, it is invoked to allow the user to modify the plan (deselect actions or edit parameters) before execution begins.
-        2.  Loops through each action in the plan.
-        2.  Checks for previous failures. If any action has failed (triggering the `halt_execution` flag), subsequent actions are automatically skipped to prevent cascading failures, and `IUserInteractor.notify_skipped_action` is called to warn the user.
-        3.  **Control Flow Interception:** Intercepts `PRUNE`, `INVOKE`, and `RETURN` actions.
-            - `PRUNE`: Automatically skipped in manual mode (context is not persistent).
-            - `INVOKE`/`RETURN`: Always interrupts the flow to request manual confirmation from the user via `IUserInteractor.confirm_manual_handoff`, even in non-interactive mode.
-        4.  **Action Confirmation:** If not intercepted and in interactive mode, coordinates a `ChangeSet` and calls `IUserInteractor.confirm_action`.
-            - **Special Case:** The approval prompt is automatically skipped for `PROMPT` actions.
-        5.  **Dispatch:** If approved (or not in interactive mode), calls the ActionDispatcher.
-        5.  Collects the ActionLog from the dispatcher.
-        6.  Builds and returns the final ExecutionReport.
-
-        Args:
-            plan: The parsed Plan object.
-            interactive: A flag to enable/disable step-by-step user approval.
-
-        Returns:
-            An ExecutionReport summarizing the entire run.
-        """
-        pass
-```
-
-## 4. Domain Models (Input/Output)
-
--   **Input:** `plan: Plan`, `interactive: bool`
--   **Output:** `ExecutionReport` (from `execution_report.md`)
-
-## Two-Phase Ctrl+C Interrupt (As-Built, 2026-10-01)
-
-An optional `InterruptGuard` is delivered via the `OrchestratorPorts` DTO (`interrupt_guard` field, mirroring the optional `plan_reviewer` precedent — all existing construction sites stay valid). During action execution the orchestrator consults `guard.interrupted` after each action completes: when the drain flag is set, every remaining action is skipped via the action executor with the interrupt reason (`INTERRUPT_REASON`, "Interrupted by user.") and the loop exits normally, so the report assembler receives the FULL audit trail (real logs for completed actions + interrupt skips for the rest) and the session finalization path still generates `report.md`. The guard is composed in the container from the real `IConfigService` (grace window) and `time.monotonic`; without a guard the drain check is inert and every action dispatches as before.
+### `resume(session_name, interactive=True, project_context=None) -> tuple[str, Optional[ExecutionReport]]`
+- **Preconditions:** None.
+- **Postconditions:** None — session resumption is not supported by this service.
+- **Exceptions:** `NotImplementedError` always.

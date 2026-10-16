@@ -1,26 +1,40 @@
-# Component: SessionPlanner
+# Component Design: SessionPlanner
 - **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/session_planner.py`](/src/teddy_executor/core/services/session_planner.py)
 
-## 1. Purpose / Responsibility
+## Purpose
+Handles interactive turn planning. It triggers the `PlanningService` to generate a plan for the current turn, delegates context-manifest resolution to that service, and returns the session directory name so the orchestrator can rename an unnamed session.
 
-The `SessionPlanner` handles the interactive turn planning process. It orchestrates the flow of prompting the user for instructions and triggering the `PlanningService` to generate a plan. It also handles the logic for providing session names upon successful planning.
+## Consumers
+- [SessionLifecycleManager](/src/teddy_executor/core/services/session_lifecycle_manager.py): Calls `trigger_new_plan` to start a turn's planning phase.
+- [SessionPorts](/src/teddy_executor/core/domain/models/planning_ports.py): Declares the planner in the session ports bundle.
+- [Composition Root](/src/teddy_executor/container.py): Constructs the planner and injects its collaborators.
 
-## 2. Ports
+## Dependencies
+- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Injected for filesystem access.
+- [`PlanningService`](./planning_service.md): Generates the plan and resolves context manifests.
+- [`IUserInteractor`](../ports/outbound/user_interactor.md): Injected for user interaction.
+- [`ISessionManager`](../ports/outbound/session_manager.md): Injected for session-level metadata.
 
--   **Uses Outbound Ports:**
-    -   `IFileSystemManager`: To check for existing reports/metadata.
-    -   `IPlanningUseCase` (PlanningService): To generate the actual plan.
-    -   `IUserInteractor`: To display messages and gather input.
-    -   `ISessionManager` (SessionService): For session-level metadata.
+## Class Invariants
+- `delegated_resolution`: The planner passes `context_files=None` to `PlanningService.generate_plan` and never builds a context manifest itself.
+- `single_planning_call`: `trigger_new_plan` issues exactly one `generate_plan` call per invocation.
+- `cancel_sentinel`: A `None` plan path yields the `("CANCELLED", None)` result.
 
-## 3. Implementation Details / Logic
+## Inbound Ports
+None — the planner is a concrete service consumed through the session ports bundle.
 
-1.  **Instruction Gathering:** Determines the user's intent by checking CLI arguments, then falling back to previous execution reports or prompting the user.
-2.  **Delegated Resolution:** It no longer manually constructs context manifests. Instead, it calls `PlanningService.generate_plan` with `context_files=None`, relying on the service's defensive resolution logic to find `session.context` and `turn.context`.
-3.  **Session Naming:** Returns the name of the session directory upon successful generation, facilitating dynamic renaming in the orchestrator.
+## Outbound Ports
+- **`PlanningService`**: The planning use case consumed by `trigger_new_plan`.
+- **`IFileSystemManager`**, **`IUserInteractor`**, **`ISessionManager`**: Injected collaborators; see Dependencies.
 
-## 4. Data Contracts / Methods
+## Data Contracts
+- **`ProjectContext`** (`teddy_executor.core.domain.models`): The gathered context threaded back to the caller.
+- **Return tuple:** `(session_name, gathered_context)`; `session_name` is the session directory name, or `"CANCELLED"`.
 
-### `trigger_new_plan(turn_dir: str, message: Optional[str] = None) -> tuple[str, Optional[ProjectContext]]`
--   **Description:** Orchestrates the planning turn.
--   **Returns:** `(session_name, gathered_context)` — the session name if successful, or `("CANCELLED", None)`. The `ProjectContext` gathered by `PlanningService.generate_plan` is threaded to the caller (the `SessionLifecycleManager` funnel, which passes it to `SessionOrchestrator.execute`) instead of being discarded, enforcing the single-gather-per-turn contract.
+## Operations
+
+### `trigger_new_plan(turn_dir, message=None) -> tuple[str, Optional[ProjectContext]]`
+- **Preconditions:** `turn_dir` is the current turn directory.
+- **Postconditions:** Returns `(session_name, gathered_context)`. The `ProjectContext` gathered by `PlanningService.generate_plan` is threaded to the caller instead of being discarded, enforcing the single-gather-per-turn contract.
+- **Exceptions:** None raised by the planner itself.

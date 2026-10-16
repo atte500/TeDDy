@@ -1,81 +1,48 @@
-- **Status:** Refactoring
-- **Last Updated:** 2026-10-03
+# Component Design: SessionPruningService
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/session_pruning_service.py`](/src/teddy_executor/core/services/session_pruning_service.py)
 
-## Purpose / Responsibility
-The `SessionPruningService` is responsible for applying configurable auto-pruning heuristics to session context items. It prunes or deselects context items based on failure status, retention limits, and token budgets, while sparing certain turns (e.g., user-message turns and successful message turns) from pruning.
-Reduces context size by deselecting irrelevant or failed turns from `turn.context`.
+## Purpose
+Applies configurable auto-pruning heuristics to session context items. It deselects context files by failure status, retention limit, and token budget so the turn context stays bounded, while sparing turns that carry user interaction or a successful message.
 
-## Implementation Details / Logic
-### Heuristic 4: Validation Failure Pruning (Guarded by Non-VF Report)
-As of Slice 02-13, Heuristic 4 is guarded by the existence of a report.md whose overall status is **not** "Validation Failed" (a "non-VF report"). Validation-failed turns are **only** pruned when a later non-VF report exists, either on disk (any turn's report.md with a status other than "Validation Failed") or as the current turn's status (`current_status` not containing "Validation Failed"). During chains of consecutive validation failures with no non-VF report, all validation failure turns remain visible in context to preserve the audit trail. This is distinct from Heuristic 3's guard, which checks for green plan status (emoji-based).
+## Consumers
+- [`SessionOrchestrator`](./session_orchestrator.md): Calls `prune` on every session turn before harvesting pruned paths.
 
-### Sparing Logic (Preserved Turns)
+## Dependencies
+- [`IConfigService`](../ports/outbound/config_service.md): Supplies the `auto_pruning.*` settings.
+- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Reads plan and report files during heuristic evaluation.
+- **`normalize_resource_path`** (`teddy_executor.core.utils.paths`): Normalizes link-aware context paths for turn matching.
 
-The pruning service spares two categories of turns from ALL pruning heuristics (retention limit, global budget, non-green recovery, validation failure):
+## Class Invariants
+- `read_cache_scope`: `_read_cache` is cleared at the start of every `prune` call.
+- `config_gate`: When `auto_pruning.enabled` is false, `prune` returns the context unchanged.
+- `turn_scope_budget`: The global budget sums only selected items whose scope is `Turn`.
+- `spared_turns_exempt`: User-request turns and successful message turns are exempt from every heuristic.
+- `failure_transparency`: An unexpected error logs to stderr and returns the original context unchanged.
 
-#### 1. User-Request Turns (Slice 02-10)
-Turns where the user provided an additional message during the review phase (via TUI 'm' key or message reply). These are identified by the `- **User Request:**` metadata line in the turn's `report.md` file.
-- **Detection method**: `_check_report_has_user_request(path)` — reads the report file and matches `r"^- \*\*User Request:\*\*"` with `re.MULTILINE`.
-- **Why on report not plan**: The `user_request` metadata is captured during execution (`execution_orchestrator.py`, `session_orchestrator.py`) and rendered into the report via `execution_report.md.j2`. The report is the canonical source of truth at pruning time.
-- **Edge cases**: Empty value after `- **User Request:**` still spares the turn (the presence of the key itself indicates user interaction).
+## Inbound Ports
+None — the service is consumed directly by `SessionOrchestrator`.
 
-#### 2. Successful Message Turns (Pre-existing)
-Turns with a `## Message` plan section AND a `SUCCESS` report status. Identified by `_check_plan_is_message(path)` + `_check_report_is_success(path)`.
-- **Status**: Pre-existing behavior, preserved by Slice 02-10.
-- **Detection**: Checks the `plan.md` for `^## Message` and the `report.md` for `- **Overall Status:** SUCCESS`.
+## Outbound Ports
+- **`IConfigService`** and **`IFileSystemManager`**: Consumed through their contracts; see Dependencies.
 
-#### Integration
-Both sparing checks are performed in `_update_turn_metadata_from_item`, which collects turn IDs into a single `spared_turns` set. This set is then passed to `_apply_retention_limit` and `_apply_global_budget` to exempt those turns from pruning. Additionally, spared turns are explicitly removed from the `turns_to_prune` dictionary in `_identify_turns_to_prune` to prevent Heuristics 3 & 4 from pruning them.
+## Data Contracts
+- **`ProjectContext`** and **`ContextItem`** (`teddy_executor.core.domain.models.project_context`): The pruned aggregate and its items.
+- **Return value:** A `ProjectContext` whose items carry updated `selected` and `auto_prune_reason` fields.
 
-## Failure Modes
-- **Mis-scoped Threshold Summation**: If `_apply_global_budget` sums items from ALL scopes (Session, System, Turn) instead of ONLY Turn-scope items, Session-scope files (from `session.context`) and System prompts can inflate the total token count, triggering premature pruning of the working set.
-- **Green-State Guard Gap**: If the green-state guard (`is_currently_green or is_latest_green`) is accidentally removed or bypassed, Heuristic 4 will revert to unconditional pruning. All pruning callers must ensure `current_status` is passed and `turn_statuses` is populated.
-- **Zero/Negative Threshold**: If the threshold is set to 0 or negative, the method must be a no-op. Current implementation already handles this via the early return guard.
-- **Missing Report File**: If a turn has a plan but no `report.md` (e.g., execution was aborted), `_check_report_has_user_request` returns `False` gracefully via `_safe_read` path existence check — no crash. Edge case validated in prototype.
-- **Empty User Request Value**: If the `user_request` metadata line is present but the value is empty, the turn is still spared (the presence of the header itself indicates user interaction). This is the correct behavior — an empty user_request still represents a user action (e.g., a blank message submission).
+## Operations
 
-## Ports
-- **Inbound**: Called by `prune()` method during `SessionPlanner`/`SessionOrchestrator` context preparation flow.
-- **Outbound**: Reads `auto_pruning.turn_context_threshold` from `IConfigService`.
+### `prune(context, current_status=None) -> ProjectContext`
+- **Preconditions:** `context` is a `ProjectContext`; `current_status` is the current plan's status string when available.
+- **Postconditions:** Returns a `ProjectContext` with deselected items annotated by `auto_prune_reason`. Heuristics run in order: failure-status pruning, retention limit, then the global Turn-scope budget.
+- **Exceptions:** None — an internal error is logged and the original context is returned.
 
-## Implementation Details / Logic
-### Global Budget Heuristic (`_apply_global_budget`)
-The `_apply_global_budget` method enforces a total token budget for the Turn-scope working set. It is called as Heuristic 2 in the prune pipeline (after Retention Limit).
+### Heuristics
+- **Validation-failure pruning:** A validation-failed turn is pruned only when a later non-validation-failure report exists, either on disk or as the current status. Consecutive validation failures stay visible to preserve the audit trail.
+- **Recovery cleanup:** Non-green turns are pruned once the current status is green or the latest on-disk turn is green.
+- **Retention limit:** Turns older than `auto_pruning.max_turns_retention` are deselected.
+- **Global budget:** When the selected Turn-scope token total exceeds `auto_pruning.turn_context_threshold`, the largest Turn-scope files are deselected first.
 
-#### Current Behavior
-```python
-total_tokens = sum(
-    item.token_count
-    for item in items
-    if item.selected
-    and item.scope == "Turn"
-    and isinstance(item.token_count, (int, float))
-)
-```
-This sums ONLY Turn-scope items (`item.token_count`, not `item.tokens`). Session-scope and System-scope items are excluded from the budget calculation, though they remain in the final payload.
-
-#### Backward Compatibility
-- `auto_pruning.turn_context_threshold` is the sole key. If not set, threshold defaults to 0 (budget heuristic skipped).
-
-## Data Contracts / Methods
-### `_check_report_has_user_request(path: str) -> bool`
-Detects whether a report file contains user-interaction metadata.
-- **Input**: Root-relative path to a `report.md` file.
-- **Output**: `True` if the file contains `- **User Request:**` on its own line (via regex `r"^- \*\*User Request:\*\*"`, multiline mode); `False` if the file is missing, unreadable, or the pattern is absent.
-- **Caching**: Uses `_safe_read` which is cached within a single `prune()` call.
-
-### `prune(context: ProjectContext, current_status: Optional[str]) -> ProjectContext`
-Applies heuristics to deselect items.
-
-### `_apply_global_budget(items) -> list[ContextItem]`
-Enforces the Turn-scope token budget by pruning the largest files.
-- **Parameters**:
-  - `items`: Full list of context items (mixed scopes).
-- **Logic**:
-  1. Read the threshold internally via `_get_turn_context_threshold()` (returns 0 when unset or on parse error).
-  2. If `threshold <= 0`, return items unchanged.
-  3. Calculate `total_tokens = sum(item.token_count for item in items if item.selected and item.scope == "Turn" and isinstance(item.token_count, (int, float)))`.
-  4. If `total_tokens <= threshold`, return items unchanged.
-  5. Sort Turn-scope items by token count descending, prune largest until under budget.
-  6. Non-Turn-scope items are never pruned by this heuristic.
-- **Note**: There is no `spared_ids` parameter and no `system_prompt_tokens` parameter; the sole configuration knob is `auto_pruning.turn_context_threshold`.
+### Sparing rules
+- **User-request turns:** A report containing `- **User Request:**` is spared from every heuristic.
+- **Successful message turns:** A plan containing `## Message` combined with a `SUCCESS` report is spared.

@@ -1,81 +1,64 @@
-# Component: SessionService
-- **Status:** Active
+# Component Design: SessionService
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/session_service.py`](/src/teddy_executor/core/services/session_service.py)
 
-## 1. Purpose / Responsibility
+## Purpose
+Implements the `ISessionManager` outbound port. It manages the on-disk lifecycle of sessions and turns: claiming session roots, bootstrapping turns, persisting metadata, and computing the next turn's context through the turn transition algorithm.
 
-The `SessionService` is responsible for managing the lifecycle of TeDDy sessions and turns on the local filesystem. It handles the creation of session directories, the management of `meta.yaml` and `turn.context` files, and the deterministic "Turn Transition Algorithm" that calculates the state for the next turn based on the current turn's outcome. It also manages execution side-effects, such as automatically adding created or modified files to the next turn's working context.
+## Consumers
+- [`SessionOrchestrator`](./session_orchestrator.md): Drives the turn transition algorithm.
+- [`SessionPlanner`](./session_planner.md): Reads session state during interactive planning.
+- [CLI Adapter](../../adapters/inbound/cli.md): Starts, resumes, and renames sessions.
+- [Composition Root](/src/teddy_executor/container.py): Registers `SessionService` and binds it to `ISessionManager`.
 
-## 3. Ports
+## Dependencies
+- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Performs directory and file operations.
+- [`ISessionRepository`](/src/teddy_executor/core/ports/outbound/session_repository.py): Persists metadata and discovers turns.
+- [`ITimeService`](/src/teddy_executor/core/ports/outbound/time_service.py): Supplies local and UTC timestamps.
+- [`IPromptManager`](/src/teddy_executor/core/ports/outbound/prompt_manager.py): Resolves and composes agent prompts.
+- [`IInitUseCase`](../ports/inbound/init.md): Ensures initialization before seeding context.
+- [`IConfigService`](../ports/outbound/config_service.md): Reads the message-turn preservation toggle.
 
--   **Implements Outbound Port:** `ISessionManager`
--   **Uses Outbound Ports:**
-    -   `IFileSystemManager`: For all directory and file operations.
-    -   `ISessionRepository`: For persistence and turn discovery.
-    -   `IPromptManager`: For resolving agent prompts.
+## Class Invariants
+- `single_folder_lifetime`: A session keeps one folder for its lifetime; a turn may rename it once.
+- `exclusive_root_claim`: Session roots are claimed atomically, so concurrent creators never merge ledgers.
+- `primitive_serialization`: All metadata is cast to primitive types before serialization.
+- `robust_context_read`: A missing or unreadable `turn.context` is treated as empty.
 
-## 4. Implementation Details / Logic
+## Inbound Ports
+None — the service implements an outbound port and is consumed through `ISessionManager`.
 
-1.  **Session Bootstrapping (`create_session`):**
-    -   **Exclusive Root Claim:** Atomically claims the session root via `_claim_session_root(f"{timestamp}-{clean_name}")` BEFORE creating any files. If the root is occupied (concurrent same-name creation within the same second), the helper retries with an incremented trailing `-N` suffix following the continuation-name convention, so colliding creators land on distinct roots instead of silently overwriting each other's audit ledgers.
-    -   Derives `turn_dir = f"{session_root}/01"` and creates it via the tolerant `create_turn_directory` (safe — the root is exclusively owned by the claim winner).
-    -   Seeds `session.context` from `.teddy/init.context`, stripping comments.
-    -   **Context Merging and Deduplication:** If `additional_context` is provided, it is merged into the `session.context` content after the `init.context` content. The merged list of paths is then deduplicated **preserving insertion order** using a `seen` set before joining with newlines. This ensures `session.context` never contains duplicate paths at creation time.
-        -   **Critical Ordering:** The `initial_request.md` path is added to the merge list **before** deduplication occurs, so it is also deduplicated. Previously, it was appended after joining, which made it impossible to deduplicate.
-        -   **Type Safety:** The `to_root_relative()` helper may return non-string types (e.g., `POSIXPathMock` in test environments). The path is explicitly wrapped with `str()` before appending to `clean_lines` to ensure `"\n".join()` receives all strings.
-    -   **Link-aware context normalization (slice `00-35`):** Each `additional_context` entry (from `-c` / `--context`) is normalized through the canonical `_extract_resource_path` helper, which delegates to the shared pure function `core/utils/paths.py::normalize_resource_path`. A `[label](target)` Markdown-link entry therefore seeds the TARGET path, while raw paths keep the pre-existing normalization (backslash → slash, exact `./` strip, leading-`/` strip, `.hidden` leading-dot preservation, empty-entry skip).
-    -   **Prompt Relocation:** Fetches and saves the agent's composed system prompt exclusively to the session root, using the resolved `.teddy/prompts/` filename (e.g. `{session_root}/pathfinder.md`).
-    -   Initializes `01/meta.yaml` with `turn_id`, `creation_timestamp`, and any optional LLM overrides (`model`, `provider`, `api_key`).
-2.  **Turn Transition (`transition_to_next_turn`):**
-    -   Calculates the next turn ID within the SAME session folder, using `:02d` **minimum-width** padding (`01` -> `02`, … `99` -> `100` -> `101`). There is NO session migration; a session never spawns a continuation folder.
-    -   **Context Pruning:** The context-pruning block is delegated to the private `_prune_context_paths(paths, pruned_paths, next_session_dir)` helper (behavior-preserving SRP extraction).
-    -   **Cost Persistence:** Updates `meta.yaml` with `parent_turn_id` links and cumulative cost. Every turn's `meta.yaml` MUST store `turn_cost` and `cumulative_cost`.
+## Outbound Ports
+- **`ISessionManager`**: The implemented contract; see Operations for the exposed behavior.
 
-3.  **Context Management (Turn Transition):**
-    -   Seeds the next `turn.context` with the current one. Reading is robust: if `turn.context` is missing or unreadable, it is treated as an empty set of paths.
-    -   Parses `READ` and `PRUNE` actions from the `ExecutionReport` to update the next context.
-    -   Always appends the current `report.md` to the next context to ensure the AI has history.
-    -   **Defensive Serialization:** Ensures all metadata is cast to primitive types before serialization to prevent hangs (see `ARCHITECTURE.md` rule on serialization).
+## Data Contracts
+- **`SessionOptions`** (`teddy_executor.core.domain.models.session`): The session creation DTO.
+- **`SessionState`** (str Enum): `EMPTY`, `PENDING_PLAN`, `COMPLETE_TURN`.
+- **`ExecutionReport`** (`teddy_executor.core.domain.models`): Carried into `transition_to_next_turn`.
 
-> **Note (2026-10-05):** Session migration to a continuation folder — previously triggered at turn 99 and cloning `session.context`/`system_prompt.md` into `{name}-2` — has been **removed**. A session now uses a single folder for any number of turns.
+## Operations
 
-## 5. Data Contracts / Methods
+### `create_session(options) -> str`
+- **Preconditions:** `options` is a valid `SessionOptions`.
+- **Postconditions:** Atomically claims a session root, bootstraps Turn 1, seeds `session.context`, writes the composed system prompt, and returns the claimed root path.
 
-### `create_session(options: SessionOptions) -> str`
--   **Description:** Exclusively claims a new session root (retrying with an incremented `-N` suffix if occupied), bootstraps the session directory, merges additional context if provided, and returns the claimed root path.
+### `get_session_state(session_name) -> tuple[SessionState, str]`
+- **Preconditions:** The session exists.
+- **Postconditions:** Returns the state derived from the latest turn and the latest turn path.
 
-### `_claim_session_root(base_name: str) -> str` (private)
--   **Description:** Atomically claims `.teddy/sessions/{candidate}` via `IFileSystemManager.create_directory_exclusive` (single atomic OS operation — no check-then-act window), iterating candidates `base_name`, then following the continuation-name convention (`_calculate_continuation_name`): `base-2`, `base-3`, ... Returns the first successfully claimed root path. It guarantees concurrent same-**name** sessions never merge their audit ledgers. (Used solely by `create_session`; the former turn-100 migration call site was removed.)
+### `transition_to_next_turn(plan_path, execution_report=None, turn_cost=0.0, is_validation_failure=False, pruned_paths=None) -> str`
+- **Preconditions:** `plan_path` points to the current turn's plan.
+- **Postconditions:** Creates the next turn directory within the same session, prunes and re-seeds context, persists cumulative cost, and returns the next directory path.
 
-### `get_latest_turn(session_name: str) -> str`
--   **Description:** Returns the directory path of the most recent turn in a session.
+### `rename_session(old_name, new_name) -> str`
+- **Preconditions:** `old_name` exists.
+- **Postconditions:** Renames the session directory and returns the new path.
+- **Exceptions:** `ValueError` when `new_name` already exists.
 
-### `get_session_state(session_name: str) -> tuple[SessionState, str]`
--   **Description:** Determines the current state (EMPTY, PENDING_PLAN, COMPLETE_TURN) and latest turn path for a session.
+### `load_turn_meta(turn_dir) -> dict` and `save_turn_meta(turn_dir, data) -> None`
+- **Preconditions:** None, and `turn_dir` exists respectively.
+- **Postconditions:** Loads or persists the turn's `meta.yaml` through the repository seam.
 
-### `transition_to_next_turn(plan_path: str, execution_report: ExecutionReport) -> str`
--   **Description:** Executes the Turn Transition Algorithm to prepare the next turn directory.
-
-### `rename_session(old_name: str, new_name: str) -> str`
--   **Description:** Safely renames a session directory on the filesystem.
--   **Exceptions:** `ValueError` if the new name already exists.
-
-### `get_latest_session_name() -> str`
--   **Description:** Identifies and returns the name of the most recently modified session.
--   **Exceptions:** `ValueError` if no sessions are found.
-
-### `resolve_session_from_path(path: str) -> str`
--   **Description:** Resolves a session name from a given path (session root, turn dir, or file).
--   **Exceptions:** `ValueError` if the path is not inside a session.
-
-### `resolve_session_from_slug(slug: str) -> str`
--   **Description:** Resolves a session name from its timestamp-stripped slug (EXACT, case-insensitive; LATEST-WINS on ambiguity). Delegates to `ISessionRepository.resolve_session_from_slug` — no filesystem I/O in the adapter layer.
--   **Exceptions:** `ValueError` if no session matches the slug (or if no sessions exist).
-
-## 6. Implementation Notes
-
--   **Dynamic Renaming:** The `rename_session` method is provided to safely move session directories. The `SessionOrchestrator` uses this to rename timestamped sessions to a slugified version of the first plan's title (H1) after generation.
--   **Robust Context Reading:** Uses `_read_context_file` to handle missing or malformed `turn.context` files gracefully, treating them as empty.
--   **Session Name Collision Guard:** `_claim_session_root` provides atomic exclusive creation of session roots (`mkdir()` without `exist_ok` via `IFileSystemManager.create_directory_exclusive`), eliminating the TOCTOU race where two concurrent creators both observe a free path. The retry chain follows the continuation-name convention. Covered by unit tests (helper retry chain, `create_session` collision) and a sibling-integrity integration gate asserting a pre-existing sibling session's ledger stays byte-identical.
--   **Complexity Management:** The context-pruning block of `transition_to_next_turn` is extracted into the private `_prune_context_paths(paths, pruned_paths, next_session_dir)` helper, keeping the transition method under the project's cyclomatic-complexity threshold.
--   **Turn-Meta Seam (`load_turn_meta` / `save_turn_meta`, 2026-10-01):** Public, symmetric methods exposing repository-backed turn-meta persistence (`load_meta(turn_dir)` / `save_meta(path, data)` under the hood — the repository's filename asymmetry stays encapsulated behind this seam). Core consumers (e.g., the pipeline MESSAGE suppression path persisting `awaiting_reply: true`) use these Constructor-Injected methods instead of hand-rolled yaml handling or direct repository access.
--   **Shared path normalization (slice `00-35`):** `_extract_resource_path` is a one-line delegate to the shared pure helper `core/utils/paths.py::normalize_resource_path`, which single-sources the Markdown-link target extraction and the raw-path normalization pipeline (backslash → slash, exact `./` strip, leading-`/` strip). The `-c` seeding loop and the action-effects sites both route through it, so the link-aware capability cannot drift across modules.
+### `set_session_agent(session_name, agent_name) -> None`
+- **Preconditions:** The session exists.
+- **Postconditions:** Updates the session's agent and recomposes the session-root prompt for the new agent, removing stale prompt files.

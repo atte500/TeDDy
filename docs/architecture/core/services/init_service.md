@@ -1,96 +1,53 @@
-# Application Service: `InitService`
+# Component Design: InitService
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/init_service.py`](/src/teddy_executor/core/services/init_service.py)
 
-**Status:** Implemented
+## Purpose
+Implements the `IInitUseCase` inbound port. It idempotently initializes a project by writing the `.teddy/` scaffolding, prompt files, and `docs/templates/` from bundled defaults, and it reports drift between user files and the bundled defaults.
 
-## 1. Purpose
+## Consumers
+- [`SessionService`](./session_service.md): Injects the init use case to ensure initialization before seeding context.
+- [CLI Adapter](../../adapters/inbound/cli.md): Serves the `teddy init` and `teddy init templates` subcommands.
+- [Composition Root](/src/teddy_executor/container.py): Registers `InitService` and binds it to `IInitUseCase`.
 
-The `InitService` is the application service responsible for the idempotent initialization of a TeDDy project. It implements the `IInitUseCase` port and centralizes the logic for creating the foundational directory structure, default templates, and user-editable prompt files. It supports a configurable template directory to ensure isolation in test environments. Changes are always non-destructive unless `overwrite=True` is explicitly passed, with one deliberate exception: `.teddy/.env` is **create-only** — it is written only when absent and is never overwritten once it exists, because it holds the user's non-regenerable LLM API key (`config.yaml`, `.gitignore`, and `init.context` remain regenerable defaults and ARE reset by `overwrite=True`).
+## Dependencies
+- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Creates directories, writes files, and reads bundled resources.
 
-## 2. Failure Modes
+## Class Invariants
+- `non_destructive_default`: No existing file is overwritten unless `overwrite` is `True`.
+- `env_create_only`: `.teddy/.env` is written only when absent and is never overwritten, because it holds the non-regenerable API key.
+- `stem_identity_prompts`: A prompt destination counts as present when any file shares its stem under any extension.
+- `templates_explicit_only`: Bare `ensure_initialized` never creates `docs/templates/`; only `ensure_templates_initialized` does.
 
-- **Resource Not Found**: If a bundled resource file (templates, prompts, config) is missing from the package, `_get_default_content()` returns `None`. This causes a skip, logged at DEBUG level. The init service MUST raise a clear error when MRP.md is missing (as it is required for prompt assembly), but for other templates/config, missing resources are silently skipped.
-- **Embedded Scaffolding Defaults**: `_get_default_content()` consults the embedded `_EMBEDDED_DEFAULTS` map (`.env` → `_ENV_PLACEHOLDER`, `.gitignore` → `_GITIGNORE_PLACEHOLDER`) BEFORE consulting the bundled config directory. Those two fixed `.teddy` scaffolding files ship as string constants rather than tracked dotfiles because the bundled `resources/config/` directory cannot hold a live `.gitignore` (its `*` rule would be a real ignore rule for the source tree, blocking any sibling dotfile).
-- **Silent Error Swallowing (Known Debt)**: `_get_default_content()` catches `(OSError, yaml.YAMLError, ImportError, AttributeError)` and returns `None`. This can hide errors from Python version changes to `importlib.resources`. This is logged as Technical Debt for Milestone 4.
+## Inbound Ports
+- **`IInitUseCase`**: Exposes `ensure_initialized`, `ensure_prompts_initialized`, `ensure_config_initialized`, `ensure_templates_initialized`, and `check_drift`.
 
-## 3. Class Invariants
+## Outbound Ports
+- **`IFileSystemManager`**: The driven contract used for all file and directory operations.
 
-- `_config_dir` is always a non-empty string pointing to the bundled config resource directory.
-- `_file_system` is never None after initialization.
-- The service MUST NOT modify or overwrite existing project files unless `overwrite=True` is explicitly passed.
-- `.teddy/.env` is exempt from `overwrite=True`: it is **create-only** and MUST be preserved once it exists, because the user's LLM API key it holds is non-regenerable. `config.yaml`, `.gitignore`, and `init.context` are regenerable defaults and ARE overwritten under `overwrite=True`.
+## Data Contracts
+- **`DriftReport`** (`teddy_executor.core.domain.models.drift_report`): Classifies prompt and template files as edited, missing, or clean.
+- **`_CopyPolicy`** (frozen dataclass): Groups the optional copy behaviors `create_only` and `stem_identity`.
+- **Template manifests:** `_TEMPLATE_FILES` and `_PROMPT_FILES` name the bundled defaults.
 
-## 4. Used Outbound Ports
+## Operations
 
-*   [`FileSystemManager`](../ports/outbound/file_system_manager.md): To check for the existence of files and directories and to create them when missing.
-
-## 5. Implemented Inbound Ports
-
-*   [`IInitUseCase`](../ports/inbound/init.md)
-
-## 6. Logic
-
-### Initialization Logic (existing)
-
-When `ensure_initialized` is called, the service performs the following checks and actions relative to the current working directory:
-
-1.  **Directory Creation:** Checks for the `.teddy/` directory. If it does not exist, it is created.
-2.  **Security Gate:** Checks for `.teddy/.gitignore`. If missing, it is created from the embedded `_GITIGNORE_PLACEHOLDER` constant with a global ignore pattern (`*`) to prevent sensitive configuration from being accidentally committed to version control.
-3.  **Default Configuration:** Checks for `.teddy/config.yaml`. If missing, it is created using the bundled baseline.
-4.  **Initial Context:** Checks for `.teddy/init.context`. If missing, it is created using bundled defaults.
-5.  **Secrets Placeholder (create-only):** Checks for `.teddy/.env`. If missing, it is created from the embedded `_ENV_PLACEHOLDER` constant — a commented placeholder whose (uncommented) `TEDDY_LLM_API_KEY=` line the bundled `config.yaml` interpolates via `${TEDDY_LLM_API_KEY}`. Unlike the other config files, `.env` is **never overwritten once it exists**, even under `overwrite=True` (i.e. when `teddy init config` runs): it holds the user's non-regenerable LLM API key. Only `config.yaml`, `.gitignore`, and `init.context` are reset by `overwrite=True`.
-6.  **Templates are NOT scaffolded by bare init (explicit-only).** `ensure_initialized()` deliberately does NOT create `docs/templates/`; template scaffolding is performed solely by the explicit `teddy init templates` subcommand (see the Template Initialization Logic below and the `ensure_templates_initialized` contract). This REVERSES the earlier auto-init decision recorded in the completed slice `03-03-templates-and-init` (slice `00-32` Item 1).
-
-### Prompt Initialization Logic
-
-The bundled prompts are Markdown files (`_PROMPT_FILES`) copied into `.teddy/prompts/` by `_init_prompts`. The prompt copy uses **stem identity**: a destination file counts as present when any file in `.teddy/prompts/` shares the manifest entry's stem (case-folded) under ANY extension. When `overwrite=True`, the `.md` is written and any same-stem file with a different name (e.g. a pre-migration `pathfinder.xml`) is removed, so two same-stem files never coexist after a write. The config and template copies keep exact-name matching (their extensions never change).
-
-### Shared Stem Predicate
-
-The prompt copy routine and the drift check share one stem-membership predicate, so the two sibling routines cannot diverge. `_present_stems(dest_dir)` returns the case-folded stems of every directory entry, or an empty set when `dest_dir` is absent (the file-system adapter raises `FileNotFoundError` when asked to list a missing directory, so the scan is guarded by `path_exists`). `_entry_is_present(target_path, filename, present_stems)` returns true when the exact file OR a same-stem sibling exists. `_copy_bundled_files` and `_classify_drift` both consume this predicate, so a manifest `.md` present only as a same-stem sibling (e.g. a pre-migration `.xml`) reports as EDITED in `check_drift` and the `teddy start` preflight advises `teddy init prompts`.
-
-### Template Initialization Logic (new)
-
-When `ensure_templates_initialized` is called, the service:
-
-1.  Checks if `docs/templates/` directory exists. If not, creates it.
-2.  Loads each bundled template from `src/teddy_executor/resources/templates/` via `_read_bundled_resource()` targeting the templates resource directory.
-3.  For each template file, copies it to `docs/templates/{filename}`. If `overwrite=True`, always overwrites; otherwise only writes missing files.
-4.  Returns a human-readable status string.
-
-### Template Files
-
-The bundled templates directory contains 11 files:
-- `specification-document.md` — Template for Specification Documents
-- `task-brief.md` — Template for Task Briefs
-- `case-file.md` — Template for Case Files
-- `vertical-slice.md` — Template for Vertical Slices
-- `milestone.md` — Template for Milestone documents
-- `component-design.md` — Template for Component Design Documents
-- `ARCHITECTURE.md` — Template for ARCHITECTURE.md Conventions section
-- `PROJECT.md` — Template for PROJECT.md Roadmap section (references `docs/templates/makefile.md` as part of Milestone 0 foundational tasks)
-- `makefile.md` — Makefile template for VCP commit and Remote Probing Protocol commands
-- `ci.md` — CI workflow template for the Remote Probing Protocol (used by the Debugger).
-- `pre-commit.md` — Pre-commit configuration template (the quality-gate baseline for a new project).
-
-## 7. Contracts / Methods
-
-### `_init_templates(overwrite: bool = False) -> str`
-- **Preconditions:** None. The service is initialized with a valid `_config_dir` pointing to the package resources.
-- **Postconditions:** If the resource directory exists and contains template files, they are written to `docs/templates/` (create or overwrite based on `overwrite`). Returns a status string ("unchanged", "updated (N files)", or "overwritten (N files)").
-- **Exceptions:** None. Missing resources are silently skipped (logged at DEBUG). File system errors propagate from `IFileSystemManager`.
-
-### `ensure_templates_initialized(overwrite: bool = False) -> str`
+### `ensure_initialized() -> str`
 - **Preconditions:** None.
-- **Postconditions:** Delegates to `_init_templates()`. Returns a human-readable string prefixed with "Templates" (e.g., "Templates updated (11 files).").
-- **Exceptions:** None.
-- **Contract Dependencies:** Relies on `_read_bundled_resource()` loading from `src/teddy_executor/resources/templates/`.
+- **Postconditions:** Ensures `.teddy/` holds its config and prompt files and returns a summary string. It does not create `docs/templates/`.
+
+### `ensure_prompts_initialized(overwrite=True) -> str`
+- **Preconditions:** None.
+- **Postconditions:** Ensures prompt files exist in `.teddy/prompts/`, overwriting when `overwrite` is `True` and removing stale same-stem files.
+
+### `ensure_config_initialized(overwrite=True) -> str`
+- **Preconditions:** None.
+- **Postconditions:** Ensures `config.yaml`, `.gitignore`, `init.context`, and `.env` exist. `.env` is create-only.
+
+### `ensure_templates_initialized(overwrite=False) -> str`
+- **Preconditions:** None.
+- **Postconditions:** Ensures the bundled templates exist in `docs/templates/`, overwriting only when `overwrite` is `True`.
 
 ### `check_drift() -> DriftReport`
 - **Preconditions:** None.
-- **Postconditions:** Enumerates the canonical default file sets (`_PROMPT_FILES`, `_TEMPLATE_FILES`) and returns an immutable `DriftReport` (from `core/domain/models/drift_report.py`) classifying each user `.teddy/prompts/*.md` and `docs/templates/*.md` file as EDITED (present but differing from a resolvable bundled default), MISSING (absent), or clean. Unresolvable bundled defaults are skipped, never reported as drift. The prompts channel opts into stem identity, so a manifest `.md` present only as a same-stem sibling (e.g. a pre-migration `.xml`) reports as EDITED rather than MISSING. The templates channel keeps exact-name matching, so an entirely absent user directory simply makes every template report as MISSING (per-file check, no directory special-casing). `DriftReport` exposes `has_drift`, `prompts_drifted` and `templates_drifted` convenience properties consumed by the preflight notification.
-- **Exceptions:** None.
-- **Contract Dependencies:** Reuses the existing `_config_dir` / `_templates_dir` / `_get_default_content` / `_read_bundled_resource` seams via a `_classify_drift` per-file helper that shares the `_present_stems` / `_entry_is_present` stem predicate with the prompt copy routine. `check_drift` is an ADDITIVE member of `IInitUseCase` (no breaking signature change; every port double is spec-based).
-
-## 8. Non-Destructive Guarantee
-
-All operations are designed to be non-destructive; the service will never modify or overwrite an existing project file unless `overwrite=True`. The single exception is `.teddy/.env`, which is **create-only** and is preserved once it exists, even under `overwrite=True` (see §6).
+- **Postconditions:** Returns a `DriftReport` comparing user prompts and templates against the bundled defaults.
