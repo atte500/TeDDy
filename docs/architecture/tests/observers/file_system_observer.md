@@ -1,19 +1,39 @@
-# Test Adapter: FileSystemObserver (Inverse Adapter)
-- **Status:** Planned
+# Component Design: FileSystemObserver
+- **Status:** Implemented
+- **Source:** [`tests/harness/observers/file_system_observer.py`](/tests/harness/observers/file_system_observer.py)
 
-## 1. Purpose / Responsibility
-Acting as the **Observer** in the Test Harness, the `FileSystemObserver` is a specialized test utility responsible for performing complex assertions against the local file system. It abstracts away low-level `pathlib` or `os` calls into a high-level, expressive API for verifying the results of file system operations.
+## Purpose
+A test-harness observer that performs assertions against the local file system. It turns low-level `pathlib` checks into a small, expressive assertion API for verifying the side effects of file operations.
 
-## 2. Ports
-- **Primary Driving Adapter:** Used by Integration and Acceptance tests to verify file system side-effects.
+## Consumers
+- Integration and acceptance test suites: Verify file and directory side effects after a command runs.
 
-## 3. Implementation Details / Logic
-- **Recursive Matching:** Provides methods to verify the structure and content of entire directories using glob patterns.
-- **Content Verification:** Encapsulates common file content checks (e.g., "file contains string," "file matches regex").
-- **Stateless Analysis:** Operates purely as a reader, never modifying the file system.
+## Dependencies
+None — the observer uses only the Python standard library.
 
-## 4. Data Contracts / Methods
-- `assert_file_exists(path: Path) -> None`: Raises AssertionError if the file is missing.
-- `assert_file_content_equals(path: Path, expected: str) -> None`: Verified exact content matching.
-- `assert_directory_contains(root: Path, expected_files: list[str]) -> None`: Verifies that a directory contains exactly the specified relative paths.
-- `assert_file_matches_pattern(path: Path, pattern: str) -> None`: Verified content against a regex.
+## Class Invariants
+- `read_only`: Every method inspects the file system and never mutates it.
+- `fail_loud`: A failed assertion raises `AssertionError` carrying the expected and actual values.
+
+## Inbound Ports
+None — this is a test harness component.
+
+## Outbound Ports
+None — this is a test harness component.
+
+## Data Contracts
+- **Assertion inputs:** `pathlib.Path` targets and expected content values.
+
+## Operations
+
+### `assert_file_exists(path) -> None`
+- **Postconditions:** Returns when the file exists; otherwise raises `AssertionError`.
+
+### `assert_file_content_equals(path, expected) -> None`
+- **Postconditions:** Returns when the file content equals `expected`; otherwise raises `AssertionError` with both values.
+
+### `assert_directory_contains(root, expected_files) -> None`
+- **Postconditions:** Returns when the sorted set of relative file paths under `root` equals the sorted `expected_files`; otherwise raises `AssertionError`.
+
+### `assert_file_matches_pattern(path, pattern) -> None`
+- **Postconditions:** Returns when the file content matches the regular expression `pattern`; otherwise raises `AssertionError`.

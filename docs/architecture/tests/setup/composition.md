@@ -1,18 +1,42 @@
-# Test Context: Test Composition
+# Component Design: Test Composition
 - **Status:** Implemented
+- **Source:** [`tests/harness/setup/composition.py`](/tests/harness/setup/composition.py)
 
-## 1. Purpose / Responsibility
-The `Test Composition` component acts as the "Composition Root" for the testing suite. Its primary responsibility is to ensure absolute test isolation by providing a fresh Dependency Injection (DI) container for every test and managing global mocks for heavy or side-effect-prone external libraries. It serves as the foundation for the higher-level `TestEnvironment` harness.
+## Purpose
+The composition root of the test suite. It installs a global `litellm` mock, re-exports the shared port mocks, and provides the pytest fixtures that every test uses for a fresh DI container and an isolated workspace.
 
-## 2. Ports
-- **Primary Driving Adapter:** Drives the `Core` services by injecting mocks/stubs into the `container`.
-- **Secondary Driven Port:** Uses `pytest` fixtures and `monkeypatch` to isolate the system environment.
+## Consumers
+- The full test suite: Consumes the `container`, `env`, `real_env`, `tee_log_path`, `installed_tee`, `openrouter_mock`, and `temp_cache_dir` fixtures.
 
-## 3. Implementation Details / Logic
-- **Global Mocking (Performance):** To maintain the "Inner Loop" speed, heavy libraries (like `litellm`) are mocked at the `sys.modules` level before any tests run. This prevents expensive imports (1.2s+) from occurring multiple times or at all during the suite.
-- **Container Isolation:** The `container` fixture creates a fresh `punq.Container` for each test. Crucially, it uses `monkeypatch` to replace the global container instance in `teddy_executor.__main__`, ensuring that the CLI entry point uses the test-configured services.
-- **Transient Registration:** All services are registered with `punq.Scope.transient` to prevent state leakage between individual service resolutions within a single test run.
+## Dependencies
+- [`TestEnvironment`](./test_environment.md): Builds the managed workspace and container used by the `env` and `real_env` fixtures.
+- **`tests.harness.setup.mocks`** (`teddy_executor` test harness): Supplies the re-exported port-mock fixtures. This module has no component doc yet.
+- **`pytest`** (external): Provides the fixture decorator, `monkeypatch`, and `httpserver`.
 
-## 4. Data Contracts / Methods
-- `container(monkeypatch)`: A pytest fixture that returns a fresh, patched DI container.
-- `mock_[port_name](container)`: A suite of specialized fixtures (e.g., `mock_fs`, `mock_shell`) that register a `unittest.mock.Mock` for a specific outbound port and return the mock object for assertion.
+## Class Invariants
+- `litellm_mocked_before_import`: `sys.modules["litellm"]` is replaced with a configured `Mock` at module load, so the heavy import never runs during the suite.
+- `safe_default_completion`: The global `litellm.completion` double returns a minimal valid plan, so an unconfigured LLM call never crashes a test.
+- `killpg_poka_yoke`: The autouse `guard_os_killpg` fixture blocks `os.killpg` on a non-integer or protected process-group id.
+- `fresh_container_per_test`: The `container` fixture builds a new container and patches the global singleton.
+
+## Inbound Ports
+None — this is a test harness component.
+
+## Outbound Ports
+None — this is a test harness component.
+
+## Data Contracts
+- **`env`** (fixture): A `TestEnvironment` with mocked ports.
+- **`real_env`** (fixture): A `TestEnvironment` with a real filesystem, shell, and init service.
+- **`container`** (fixture): A fresh `punq.Container` bound to the CLI entry point.
+
+## Operations
+
+### Fixtures
+`guard_os_killpg` blocks dangerous `os.killpg` calls. `tee_log_path` yields a temporary log path. `installed_tee` installs and tears down a `Tee`. `container` builds and patches a fresh container. `env` yields a mocked `TestEnvironment`. `real_env` yields a real-adapter `TestEnvironment`. `openrouter_mock` configures the `httpserver` with the OpenRouter model payload. `temp_cache_dir` yields a temporary update-cache directory.
+
+### `is_tee_active() -> bool`
+- **Postconditions:** Returns `True` when `sys.stderr` is a `_TeeWriter` proxy, meaning the `Tee` context is installed.
+
+### `_default_completion_mock`
+- **Postconditions:** Supplies a completion whose message content is a minimal valid plan, so tests that trigger an unconfigured LLM call observe a parseable plan.
