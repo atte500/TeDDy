@@ -43,12 +43,14 @@ The change is module-local to `session_cli_handlers.py`. No port, DTO, or shared
 2. `[REFACTOR]` `session_cli_handlers` — extract the shared startup preamble and error handler.
 
 ## Deliverables
-- [▶] **Harness** - Add regression tests pinning the banner spacing for both `handle_new_session` and `handle_resume_session`, since no test currently asserts either banner string.
+- [x] **Harness** - Add regression tests pinning the banner spacing for both `handle_new_session` and `handle_resume_session`, since no test currently asserts either banner string.
 - [ ] **Logic** - Remove the leading `\n` from `handle_resume_session`'s `Resuming session:` echo so both entry points share identical banner spacing.
 - [ ] **Refactor** - Extract the duplicated session-startup preamble (background update thread, update-notification capture, health checks, `Checking configurations...` preflight, disable-footer) and the identical `ConfigurationError` and generic error handler into shared module-level helpers. Preserve the intended differences: `handle_new_session` passes `agent` to the preflight and resolves the message and session, while `handle_resume_session` resolves the session name and syncs meta.
 
 ## Implementation Notes
 The banner-emission helper `_echo_config_success` is already shared by both entry points, so only the surrounding startup preamble and the error handler need consolidation. Milestone 6 does not schedule this duplication, so it is slice-scoped refactoring rather than cross-cutting debt. The user's report showed two command outputs divided by a separator, not one command emitting two banners.
+
+**Harness (banner regression pin).** Added `tests/suites/unit/adapters/inbound/test_session_startup_banner.py`, which drives both handlers through the `env` fixture and captures stdout/stderr via `capsys`. The tests pin the CURRENT spacing: `start` emits `Session created at: ...` with no leading blank line, and `resume` emits `\nResuming session: ...` with a leading blank line. The pin is green against current behavior; the Logic deliverable flips the resume expectation when it drops the leading newline. The identity block reads `Agent: Pathfinder` because `_echo_config_success` canonicalizes the agent name.
 
 ## Verification
 - [ ] **CLI**: Run `teddy start -m hi` and verify the session path line sits directly beneath the `Model:` line with no blank line between them.
