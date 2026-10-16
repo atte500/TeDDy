@@ -1,90 +1,47 @@
 # Component Design: ConsoleToolingHelper
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/adapters/outbound/console_tooling.py`](/src/teddy_executor/adapters/outbound/console_tooling.py)
 
-**Status:** Implemented
+## Purpose
+A utility that centralizes editor and diff-viewer discovery. It locates editor executables on `PATH`, resolves the configuration preference, honors the `disabled` sentinel, and maps editors to their diff-viewer flags.
 
-## Purpose / Responsibility
+## Consumers
+- **`ConsoleInteractorAdapter`** (`teddy_executor.adapters.outbound.console_interactor`): Resolves the editor and diff viewer for prompts and previews.
+- [`TextualPlanReviewer`](../inbound/textual_plan_reviewer.md): Resolves the editor for context-aware editing in the TUI.
+- **`session_cli_handlers`** (`teddy_executor.adapters.inbound.session_cli_handlers`): Validates the configured editor during preflight.
 
-The `ConsoleToolingHelper` is a utility service that provides centralized discovery and resolution of external editors and diff viewers. It abstracts the logic of locating editor executables on `PATH`, resolving configuration preferences, handling the "disabled" sentinel, and mapping editors to their appropriate diff viewer flags.
-
-## Failure Modes
-
-- **Unconfigured editor returns None**: When `editor` config is empty and no `VISUAL`/`EDITOR` env var is set, `find_editor()` returns `None`. This is a valid state; callers MUST handle `None` gracefully (e.g., log a message, skip editor launch).
-- **"disabled" sentinel bypasses env fallback**: If `editor` is set to `"disabled"`, `find_editor()` returns `None` immediately without checking `VISUAL`/`EDITOR` env vars. This is intentional — the user explicitly disabled editor functionality.
-- **Unknown editor with diff viewer**: `get_diff_viewer_command()` returns the editor path with no flags for editors not in `_DIFF_FLAGS`. The caller MUST pass both file paths as separate arguments for the editor to open in separate tabs.
-- **`diff_flags` config override must be validated**: If `diff_flags` config key is set but is not a list of strings, `get_diff_viewer_command()` MUST skip the override and fall through to the translation table. This prevents crashes from malformed config values.
-- **`diff_flags` config override outranks `TEDDY_DIFF_TOOL`**: When `diff_flags` is a valid list in config, `get_diff_viewer_command()` returns `[editor_path] + diff_flags`, bypassing both `TEDDY_DIFF_TOOL` and `_DIFF_FLAGS` translation. `TEDDY_DIFF_TOOL` (env var) outranks `_DIFF_FLAGS` but is itself outranked by the config override; if the custom tool is not found via `which()`, returns `None` (no fallback to editor flags).
+## Dependencies
+- [`ISystemEnvironment`](../../core/ports/outbound/system_environment.md): Provides `which()` and `get_env()`.
+- [`IConfigService`](../../core/ports/outbound/config_service.md): Provides `get_setting()` for the `editor` and `diff_flags` keys.
 
 ## Class Invariants
+- `constant_editor_list`: `KNOWN_EDITORS` is a class-level constant list and is never modified at runtime.
+- `constant_diff_flags`: `_DIFF_FLAGS` is a class-level constant dictionary and is never modified at runtime.
+- `injected_collaborators`: `_system_env` and `_config_service` are never `None` after construction.
 
-- `_DIFF_FLAGS` is a class-level constant dictionary that MUST NOT be modified at runtime.
-- `KNOWN_EDITORS` is a class-level constant list that MUST NOT be modified at runtime.
-- `_system_env` and `_config_service` MUST NOT be `None` after initialization.
+## Inbound Ports
+None — this is a utility service injected into adapters through constructor injection.
 
-## Ports
+## Outbound Ports
+- **`ISystemEnvironment`**: Consumed for command resolution and environment reads.
+- **`IConfigService`**: Consumed for the `editor` and `diff_flags` settings.
 
-- **Type:** Utility service (injected into adapters via constructor injection)
-- **Dependencies:**
-  - `ISystemEnvironment` — for `which()`, `get_env()` methods
-  - `IConfigService` — for `get_setting()` and `set_setting()` methods
-- **Consumed By:**
-  - `ConsoleInteractorAdapter` (via `ConsoleAskLoop`)
-  - `TextualPlanReviewer` (via `ReviewerApp._console_tooling`)
-  - `session_cli_handlers` (for preflight editor validation)
+## Data Contracts
+- **`KNOWN_EDITORS`** (`list[str]`): The curated editor list scanned by `discover_editors()`, ordered terminal editors first, then GUI and IDE editors.
+- **`_DIFF_FLAGS`** (`dict[str, list[str]]`): Maps editor basenames to diff-viewer flags. Known entries include `vim`, `vi`, and `nvim` (`-d`), `code`, `cursor`, `codium`, and `zed` (`--diff`), and the JetBrains family (`diff`).
+- **`discover_editors` return:** A list of `(basename, resolved_path)` pairs, deduplicated by resolved path.
 
-## Implementation Details / Logic
-
-### Editor Discovery (`discover_editors`)
-
-Scans `PATH` for all executables in `KNOWN_EDITORS` using `ISystemEnvironment.which()`. Deduplicates by resolved path (same binary under different aliases). Returns list of `(basename, resolved_path)` tuples sorted by the order in `KNOWN_EDITORS`.
-
-### Editor Resolution (`find_editor`)
-
-Priority chain:
-1. **Check for "disabled" sentinel**: If `config_service.get_setting("editor")` returns `"disabled"` (case-insensitive, stripped), return `None` immediately.
-2. **Config value**: If config has a non-empty editor string, resolve it via `_resolve_editor_cmd()`. If found, return the command list.
-3. **Env var fallback**: Check `VISUAL` then `EDITOR`. If found, resolve and return.
-4. **Return None**: No editor found.
-
-### Diff Viewer Command (`get_diff_viewer_command`)
-
-Priority chain:
-1. **`diff_flags` config override**: If `config_service.get_setting("diff_flags")` returns a list, prepend the resolved editor path from `find_editor()` and return `[editor_path] + diff_flags`.
-2. **`TEDDY_DIFF_TOOL` env var**: Parse with `shlex.split()`, resolve the first word via `which()`, return the full command.
-3. **Translation table**: Resolve editor via `find_editor()`, extract basename, look up in `_DIFF_FLAGS`. If found, return `[editor_path] + flags`.
-4. **Unknown editor fallback**: Return `[editor_path]` with no flags. The caller passes both file paths as arguments, so the editor opens both files in separate tabs (reliable no-guess fallback).
-5. **Return None**: No editor found, no env var set.
-
-## Data Contracts / Methods
-
-### `KNOWN_EDITORS`
-- **Type:** `class-level constant: list[str]`
-- **Preconditions:** None (static constant).
-- **Postconditions:** Contains a comprehensive list of known editor executable names (terminal and GUI).
-
-### `_DIFF_FLAGS`
-- **Type:** `class-level constant: dict[str, list[str]]`
-- **Preconditions:** None (static constant).
-- **Postconditions:** Maps editor basenames to their correct diff viewer flags. Known entries: vim(-d), vi(-d), nvim(-d), code(--diff), cursor(--diff), codium(--diff), zed(--diff), idea(diff), idea.sh(diff), webstorm(diff), phpstorm(diff), pycharm(diff), rubymine(diff), goland(diff), clion(diff), fleet(diff).
+## Operations
 
 ### `discover_editors() -> list[tuple[str, str]]`
-- **Preconditions:** `KNOWN_EDITORS` must be defined. `ISystemEnvironment.which()` must resolve executables from PATH.
-- **Postconditions:** Returns a list of `(basename, resolved_path)` pairs. Deduplicates by resolved path. May return empty list if no known editors are on PATH.
-- **Exceptions:** None (returns empty list on failure).
-- **Invariants:** `KNOWN_EDITORS` is not modified.
+- **Postconditions:** Returns every `KNOWN_EDITORS` entry resolved on `PATH`, deduplicated by resolved path and ordered by the `KNOWN_EDITORS` sequence. Returns an empty list when no known editor is found.
 
 ### `find_editor() -> Optional[list[str]]`
-- **Preconditions:** `_config_service` and `_system_env` must be initialized.
-- **Postconditions:** Returns a list of strings (editor command) if a valid editor is found, `None` otherwise. If config value is `"disabled"`, returns `None` without checking env vars.
-- **Exceptions:** None (returns `None` on failure).
-- **Invariants:** The "disabled" sentinel bypasses env fallback.
+- **Postconditions:** Returns the resolved editor command. Priority: the `disabled` sentinel returns `None` immediately without consulting the environment; the config `editor` value; then the `VISUAL` or `EDITOR` environment variable; then `None`.
 
 ### `get_diff_viewer_command() -> Optional[list[str]]`
-- **Preconditions:** `_config_service` and `_system_env` must be initialized.
-- **Postconditions:** Returns a command list for invoking a diff viewer. Priority: `diff_flags` config override > `TEDDY_DIFF_TOOL` env var > `_DIFF_FLAGS` translation table > unknown editor fallback (editor path only, no flags). Returns `None` if no editor or diff tool is found.
-- **Exceptions:** None (returns `None` on failure).
-- **Invariants:** `diff_flags` config override is validated to be a list; invalid types are skipped.
+- **Postconditions:** Returns a diff-viewer command. Priority: a valid `diff_flags` config list prepended with the editor path; the `TEDDY_DIFF_TOOL` environment variable; the `_DIFF_FLAGS` translation table; then the editor path with no flags for an unknown editor. Returns `None` when no editor or tool is found. A `diff_flags` value that is not a list is skipped, and a configured `TEDDY_DIFF_TOOL` that is not found returns `None` with no fallback.
 
-### `_resolve_editor_cmd(editor_str: Optional[str]) -> Optional[list[str]]`
-- **Preconditions:** `editor_str` may be `None` or a non-empty string.
-- **Postconditions:** If `editor_str` is non-empty and its first token resolves via `which()`, returns a command list with the resolved path. Returns `None` otherwise.
-- **Exceptions:** None.
+### `_resolve_editor_cmd(editor_str) -> Optional[list[str]]`
+- **Preconditions:** `editor_str` is `None` or a non-empty string.
+- **Postconditions:** Parses the string with `shlex.split`, expands a leading `~`, resolves the first token through `which()`, and returns the command list. Returns `None` when the executable is not found.

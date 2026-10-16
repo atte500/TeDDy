@@ -1,70 +1,70 @@
-**Status:** Implemented
+# Component Design: LiteLLMAdapter
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/adapters/outbound/litellm_adapter.py`](/src/teddy_executor/adapters/outbound/litellm_adapter.py)
 
-## 1. Purpose / Responsibility
+## Purpose
+Implements the `ILlmClient` outbound port using the `litellm` library. It provides multi-provider completions, token counts, context-window lookups, and cost telemetry, with lazy initialization, config validation, and bounded retries.
 
-The `LiteLLMAdapter` is responsible for interacting with various Large Language Models using the `litellm` library. It provides a concrete implementation for the `ILlmClient` port.
+## Consumers
+- [`PlanningService`](../../core/services/planning_service.md): Requests plan completions and computes the context-window and token budgets.
+- [Composition Root](/src/teddy_executor/container.py): Registers `LiteLLMAdapter` against `ILlmClient`.
 
-## 2. Ports
+## Dependencies
+- [`IConfigService`](../../core/ports/outbound/config_service.md): Reads the `llm.*` settings and the API key.
+- **`IOpenRouterHydrator`** (`teddy_executor.adapters.outbound.litellm_adapter`): An internal adapter-layer protocol that fetches live model metadata from OpenRouter.
+- **`ITimeService`** (`teddy_executor.core.ports.outbound.time_service`): Optional; supplies the retry backoff sleep.
+- **`litellm`** (external): Imported lazily and silenced before and after import.
+- **`tiktoken`** (external): Imported lazily for the text token count.
 
--   **Type:** Outbound Adapter
--   **Implements:** `ILlmClient`
--   **Uses:**
-    - `IConfigService`: For retrieving model settings and API keys.
-    - `IOpenRouterHydrator` (Internal): For dynamic metadata fetching from OpenRouter.
+## Class Invariants
+- `lazy_initialization`: The `litellm` import and the `ThreadPoolExecutor` are created lazily under `_init_lock`.
+- `validated_flag`: `_validated` is guarded by `_init_lock`, so concurrent first calls validate exactly once.
+- `auth_not_retried`: Authentication errors are never retried; they surface immediately as `ConfigurationError`.
+- `error_translation`: Provider failures surface as `LlmApiError` or `ConfigurationError`, never as a raw provider exception.
+- `cost_never_raises`: `get_completion_cost` returns `0.0` on any failure and never raises.
 
-## 3. Failure Modes
+## Inbound Ports
+None — this is an outbound (driven) adapter.
 
-- **Configuration Errors (Invalid API Key / Missing Model):** Detected at startup by `validate_config()` and raised as `ConfigurationError` immediately — no completion call is made. This check runs at two levels:
-  - **Caller-Level (Primary Gate):** `planning_service.py` and `session_cli_handlers.py` call `validate_config()` before `get_completion()`.
-  - **Provider-Aware Key Validation (Slice 00-29):** A missing model is always an error. An API key is required ONLY when litellm's `validate_environment(model)` reports a missing `*_API_KEY` entry, so keyless local backends (`lm_studio`, `vllm`) validate cleanly and `ollama`'s `OLLAMA_API_BASE` (a base URL) is treated as advisory, not a hard block. An empty/blank key is dropped from the completion params so litellm applies the provider's own default.
-  - **Adapter-Level (Defense-in-Depth):** A `_validated` flag (protected by `_init_lock` for thread safety) ensures that even if `get_completion()` is called directly without prior validation, the config is checked on the first invocation.
-- **Transient Failures (Network, Server Errors, Timeouts):** After config validation has passed, all NON-auth exceptions during `litellm.completion()` are treated as transient and retried with exponential backoff (0.5s * 2^attempt). Max attempts is determined by `llm.max_retries` (default: 3). This includes:
-  - SSL handshake errors (e.g., `SSLV3_ALERT_BAD_RECORD_MAC`)
-  - API timeouts (OpenRouter / provider)
-  - Generic network errors (e.g., `Connection refused`)
-  - Server errors (e.g., `500 Internal Server Error`)
-- **Authentication Failures (Fail Fast):** An auth error is NOT transient — retrying a wrong or expired key cannot succeed — so it is NOT retried. `_is_auth_error` detects it two ways: (a) the message matches a known hint (`API_KEY_INVALID`, `invalid_api_key`, `Incorrect API key`, `API key expired`, `api_key client option must be set`, `No cookie auth credentials`), or (b) the exception is an instance of `litellm.AuthenticationError` (the type check is guarded by `isinstance(candidate, type)` so dynamically-created mock attributes are ignored). The adapter raises `ConfigurationError` on the FIRST attempt — zero backoff, zero wasted API calls.
-- **Permanent Errors (After Retry Exhaustion):** If all retry attempts are exhausted for a non-auth error, `LlmApiError` is raised preserving the original exception message.
-- **Timeout Passthrough:** The optional `timeout` key under the `llm` config section is passed directly to `litellm.completion()` via `params.update(llm_config)`. If not configured, defaults to 300 seconds (5 minutes). No timeout or `timeout: null` uses litellm's own default (no forced timeout).
+## Outbound Ports
+- **`ILlmClient`**: The driven contract implemented by this adapter. See the [ILlmClient design](../../core/ports/outbound/llm_client.md).
+- **`IOpenRouterHydrator`**: An internal port consumed for OpenRouter metadata hydration.
 
-## 4. Implementation Details / Logic
+## Data Contracts
+- **`messages`** (`List[Dict[str, str]]`): The chat-completion payload.
+- **`llm.*` config keys:** The entire `llm` section passes through to `litellm.completion()`. The adapter reads `llm.model`, `llm.api_key`, `llm.max_retries` (default 3), and `llm.timeout` (default 300 seconds).
+- **Model registry cache:** JSON at `.teddy/.model_registry_cache.json`, payload `{"version": 1, "fetched_at_epoch": <int>, "models": [...]}`, with a 7-day TTL.
 
--   **Lazy Validation Guard:** After `__init__`, `_validated` is set to `False`. On first `get_completion()` call, the adapter checks this flag under the `_init_lock` (thread-safe). If not validated, it calls `validate_config()`. If errors are returned, `ConfigurationError` is raised immediately with no litellm call. On success, `_validated` is set to `True` and subsequent calls skip validation entirely. This ensures defense-in-depth even if `get_completion()` is called directly without prior validation by callers.
--   **Retry-All-Errors Logic (minus auth):** Once config validation has passed (either via the internal guard or by external callers), `_should_retry_completion()` retries on all NON-auth exceptions — not just SSL/Timeout. Auth errors (detected by `_is_auth_error` via message hint OR the `litellm.AuthenticationError` type) short-circuit to no-retry, so a wrong/expired key surfaces immediately as `ConfigurationError` instead of wasting the backoff budget. For all other errors the method checks `attempt < max_attempts - 1` and applies exponential backoff (`0.5 * 2**attempt` seconds).
--   **Timeout Passthrough:** The `timeout` key under the `llm` config section (with default `300` in `config.yaml`) is passed through automatically by `params.update(llm_config)` in `_prepare_completion_params()`. No special handling is needed — the layering mechanism handles it.
--   **Thread Safety:** All lazy initialization (litellm import, encoding cache, validation flag) uses the same `_init_lock` pattern. Five concurrent calls to `get_completion()` have been validated to all succeed with validation running exactly once.
--   **Stateful Retries:** `get_completion` implements a retry loop for all exceptions after validation passes. Each attempt is logged to the debug stream.
--   **Lazy Initialization:** To maintain CLI responsiveness (initialization < 500ms), both the `litellm` library and the `ThreadPoolExecutor` are loaded lazily and protected by an internal lock.
--   **Logging Suppression:** The adapter performs a double-pass silencing protocol (once before and once after `litellm` import). It sets `LITELLM_LOG=CRITICAL` and configures the `LiteLLM` logger to `CRITICAL` level to suppress noisy `botocore` warnings.
--   **OpenRouter Resilience:** Implements a trigger-and-retry mechanism. Upon receiving a `NotFoundError`, the adapter extracts the model ID from the error message and uses the hydrator to inject metadata (context window, pricing) into `litellm.model_cost` before retrying.
--   **Remote Check Timeouts:** All remote connectivity and configuration checks (e.g., `litellm.check_valid_key`) are capped at a 10.0-second timeout via a background executor to accommodate library initialization and network latency.
--   **Ultra-Lazy Validation:** The missing-model check is performed before importing the heavy `litellm` library, ensuring sub-second response times for the most common error. Determining whether the configured model REQUIRES an API key delegates to `litellm.validate_environment` (imported lazily), so keyless local models are supported without weakening cloud-model validation.
--   **Error Handling:** Wraps all `litellm` operations to re-raise specific failures as `LlmApiError` or `ConfigurationError`, ensuring transparent CLI feedback.
--   **Cost-Failure Transparency (Slice 00-24):** `get_completion_cost` never raises — a cost-computation failure preserves the `0.0` return contract (cost is non-critical-path telemetry on an already-successful completion). Before each `return 0.0` it calls `_log_cost_failure(error, completion_response, model_override)` with `exc_info=True`, tiered by severity: `logger.warning` when the resolved model HAS pricing metadata (`input_cost_per_token` present in its `litellm.model_cost` entry) yet `completion_cost` raised (an anomaly — real spend silently lost), `logger.debug` when the model is unpriced (an expected miss, mirroring the TUI `$???` placeholder). Model identity is resolved `model_override` → `completion_response.model` → config `llm.model`; the usage summary is extracted defensively (prompt/completion tokens plus optional `cached_tokens`/`reasoning_tokens`). `supports_pricing` is hardened against a non-dict `litellm.model_cost` shape (treated as unpriced).
--   **Provider Resolution:** After each successful `litellm.completion()`, the actual downstream provider that served the request is available in `response._hidden_params["provider"]` (e.g., `"deepseek"`, `"together"`, `"openai"`). This value is extracted by `PromptManager.update_meta` for display in the CLI telemetry. The adapter does NOT special-case the `llm.provider` config value — the entire `llm` config section passes through transparently to litellm via `params.update(llm_config)`, allowing any litellm-supported parameter (including OpenRouter's `extra_body.provider` object for routing) to be set directly in `config.yaml`.
--   **`:nitro` / `:floor` Shortcuts:** The `openrouter_hydrator` strips `:nitro` and `:floor` suffixes from model names to derive the base model ID for metadata fetching. These suffixes are OpenRouter routing conventions for selecting performance/cost tiers and are transparent to litellm.
+## Operations
 
-## 4. Data Contracts / Methods
+### `get_completion(messages, model=None, **kwargs) -> Any`
+- **Preconditions:** The config carries a model and, when the provider requires one, an API key.
+- **Postconditions:** Returns the provider completion object. The first call validates the config once; later calls skip validation.
+- **Exceptions:** `ConfigurationError` for a missing model, a missing required key, or an auth failure; `LlmApiError` after retry exhaustion.
 
-This adapter implements the methods defined in the `ILlmClient` port contract:
+### `get_token_count(messages, model=None) -> int`
+- **Postconditions:** Returns the token count from `litellm.token_counter`.
 
-### `get_completion(model, messages, **kwargs) -> Any`
--   **Description:** Fetches a chat completion from the configured LLM.
+### `get_text_token_count(text, model=None) -> int`
+- **Postconditions:** Returns the token count of a raw string through the cached `tiktoken` encoding. Returns `0` for empty text.
 
-### `get_token_count(model, messages) -> int`
--   **Description:** Uses `litellm.token_counter` to provide a pre-flight token estimate.
+### `get_completion_cost(completion_response, model_override=None) -> float`
+- **Postconditions:** Returns the USD cost. On failure it logs with tiered severity (WARNING for a priced-model anomaly, DEBUG for an unpriced-model miss) and returns `0.0`.
 
-### `get_completion_cost(completion_response) -> float`
--   **Description:** Uses `litellm.completion_cost` to calculate the precise USD cost of a response. On any cost-computation failure it logs at a tiered level (WARNING for a priced-model anomaly, DEBUG for an unpriced-model miss) and returns `0.0` — see Cost-Failure Transparency above.
+### `validate_config(include_remote=False) -> List[str]`
+- **Postconditions:** Returns configuration error messages; an empty list means valid. Key-requiredness delegates to `litellm.validate_environment`, so keyless local models validate cleanly and a non-key requirement is advisory. When `include_remote` is `True`, a connectivity check runs with a 10-second timeout.
 
-## 5. OpenRouterMetadataHydrator: Persistent Registry Cache (Slice 00-20)
+### `get_context_window(model=None) -> int`
+- **Postconditions:** Returns the model context window, or `0` when unknown. It pre-emptively hydrates an unknown model so first-turn telemetry shows real values.
 
-`OpenRouterMetadataHydrator` (implements `IOpenRouterHydrator`) fetches the OpenRouter catalog for models not present in `litellm.model_cost`. It gains a **persistent cache**:
+### `validate_model(model=None) -> bool`
+- **Postconditions:** Returns `True` when the model is known to `litellm` or when no override is given. Returns `False` for an unknown override.
 
-- **Storage:** JSON at `.teddy/.model_registry_cache.json`; payload `{"version": 1, "fetched_at_epoch": <int>, "models": [...]}`. The path is covered by the shipped `.teddy/.gitignore` template (bare `*` rule).
-- **TTL:** 7 days default (configurable via `IConfigService`); `now - fetched_at_epoch >= ttl` → expired → one refetch on the next hydration, then rewrite.
-- **Failure handling:** missing/corrupt cache → treated as empty → refetch; never serve wrong metadata.
-- **Cache-pricing broadcast (Slice 00-24):** `_find_model` maps the catalog's per-token cache rates `input_cache_read`/`input_cache_write` to litellm's `cache_read_input_token_cost`/`cache_creation_input_token_cost`, float-parsed inside the existing `ValueError`/`TypeError` guard and emitted ONLY when present AND parsed `> 0` (a `0.0` rate is equivalent to the cached-tokens-billed-at-$0 defect and is therefore omitted; absent keys ⇒ keys omitted ⇒ prior behaviour). Without this, hydrated models lacked cache rates in `litellm.model_cost`, so cached tokens billed at $0 and Anthropic-shaped usage could yield a negative prompt cost.
-- **Writes:** atomic (`<name>.tmp` + `os.replace`).
-- **Injection:** the cache loader/path is constructor-injected at the `registries/infrastructure.py` factory (the hydrator is registered with singleton scope). Per-instance in-memory memoization is unchanged.
-- Pre-emptive hydration (via `get_context_window` in `PlanningService.generate_plan`) is retained so first-turn telemetry shows real values.
+### `supports_pricing(model=None) -> bool`
+- **Postconditions:** Returns `True` when the model's registry entry carries `input_cost_per_token`. A non-dict registry is treated as unpriced.
+
+### Retry and authentication handling
+The retry loop attempts `llm.max_retries` times with exponential backoff (`0.5 * 2**attempt`). `_is_auth_error` detects an auth failure by message hint or by the `litellm.AuthenticationError` type, so a wrong or expired key fails on the first attempt with no backoff.
+
+### OpenRouter metadata hydration
+`OpenRouterMetadataHydrator` implements `IOpenRouterHydrator`. It fetches the OpenRouter catalog for models absent from `litellm.model_cost`, caches the catalog at `.teddy/.model_registry_cache.json` with a 7-day TTL, writes atomically, and treats a missing or corrupt cache as empty. On a `NotFoundError`, the adapter extracts the model ID, hydrates `litellm.model_cost`, and retries once. The `:nitro` and `:floor` OpenRouter routing suffixes are stripped when deriving the base model ID.
