@@ -1,6 +1,6 @@
 # Slice: Init Drift Reporting
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** Ad-hoc (not tracked in the Roadmap per PROJECT.md)
 - **Depends On:** None
 - **Specs:** N/A
@@ -52,7 +52,7 @@ The change is slice-scoped: one wiring point in `__main__.py`. No port, contract
 
 Ordering follows `docs/templates/vertical-slice.md`. The slice introduces no new boundary, so the Wiring deliverable is the tracer bullet that connects the `teddy init` command to the existing drift helpers.
 
-- [ ] **Wiring** - Wire bare `teddy init` to the existing drift helpers, with an acceptance tracer bullet. In `init_callback`, after `typer.echo(f"TeDDy initialized in .teddy folder. {summary}")` and before `_run_init_setup_gates(container)`, add a small module-level helper `_display_init_drift(container)` that lazily imports `_display_drift_notification` and `_display_checks_footer` from `session_cli_handlers` and calls `_display_checks_footer(_display_drift_notification(container))`. Place the call inside the bare-init branch, after the `ctx.invoked_subcommand is not None` early return. Add `tests/suites/acceptance/test_init_drift_reporting.py` mirroring `test_preflight_drift_notification.py`: create a workspace with a stale `pathfinder.xml` prompt, run bare `teddy init`, and assert the output contains `teddy init prompts` and the shared disable-footer names the fired checks.
+- [x] **Wiring** - Wire bare `teddy init` to the existing drift helpers, with an acceptance tracer bullet. In `init_callback`, after `typer.echo(f"TeDDy initialized in .teddy folder. {summary}")` and before `_run_init_setup_gates(container)`, add a small module-level helper `_display_init_drift(container)` that lazily imports `_display_drift_notification` and `_display_checks_footer` from `session_cli_handlers` and calls `_display_checks_footer(_display_drift_notification(container))`. Place the call inside the bare-init branch, after the `ctx.invoked_subcommand is not None` early return. Add `tests/suites/acceptance/test_init_drift_reporting.py` mirroring `test_preflight_drift_notification.py`: create a workspace with a stale `pathfinder.xml` prompt, run bare `teddy init`, and assert the output contains `teddy init prompts` and the shared disable-footer names the fired checks.
 - [ ] **Logic** - Add `tests/suites/unit/adapters/inbound/test_init_drift_reporting.py` pinning the init seam: bare `teddy init` invokes the drift helpers (spy on `_display_init_drift`) after the summary; a non-TTY run still invokes them (the advice is not TTY-gated, unlike the setup gates); `teddy init prompts` and `teddy init templates` do NOT invoke them. Keep `tests/suites/unit/test_init_cli_regression.py` green.
 - [ ] **Cleanup** - Update `docs/architecture/adapters/inbound/cli.md` (the `init` command section) to document that bare `teddy init` prints the same drift advice as `teddy start` after its summary. Reconcile `docs/architecture/core/services/init_service.md` only if needed; this slice does not change `InitService`.
 
@@ -63,6 +63,7 @@ Ordering follows `docs/templates/vertical-slice.md`. The slice introduces no new
 - **Templates advice on a fresh init.** Bare `teddy init` does not scaffold `docs/templates/`, so a project without that directory always sees the `teddy init templates` advice. This is consistent with `teddy start` and useful: it guides the user to scaffold templates.
 - **Import pattern.** The lazy import of the two private helpers mirrors `_run_init_setup_gates`, which already lazily imports `_ensure_api_key_configured` and `_validate_editor_config` from the same module. If the Developer prefers a named public seam, a `display_drift_advice(container)` wrapper in `session_cli_handlers.py` is an acceptable alternative, but the preflight keeps its combined drift-plus-update footer, so the wrapper would serve only the init path.
 - **Out of scope.** The destructive subcommands (`init prompts`, `init templates`) stay unchanged; rewording the `unchanged` summary stays out of scope.
+- **Wiring as-built.** Added the module-level `_display_init_drift(container)` helper to `__main__.py` (after `_run_init_setup_gates`). It lazily imports the two shared helpers and calls `_display_checks_footer(_display_drift_notification(container))`. The call sits inside the bare-init branch after the summary echo and before `_run_init_setup_gates`, so the destructive subcommands are untouched. The acceptance tracer bullet `tests/suites/acceptance/test_init_drift_reporting.py` passes, and the full suite is green (1781 passed, 5 skipped).
 
 ## Verification
 

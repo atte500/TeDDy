@@ -137,6 +137,24 @@ def _run_init_setup_gates(container) -> None:
     _validate_editor_config(container)
 
 
+def _display_init_drift(container) -> None:
+    """Print the prompt/template drift advice after bare ``teddy init``.
+
+    Bare ``teddy init`` reuses the SAME advice ``teddy start`` prints, so its
+    "unchanged" summary cannot mislead: it flags drifted prompts and missing
+    templates and names the actionable ``teddy init prompts`` /
+    ``teddy init templates`` commands. The two shared helpers are imported
+    lazily, mirroring ``_run_init_setup_gates``, and they are advisory only --
+    they never block the command.
+    """
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        _display_checks_footer,
+        _display_drift_notification,
+    )
+
+    _display_checks_footer(_display_drift_notification(container))
+
+
 def _ensure_project_initialized(container, root_dir: str | None = None) -> None:
     """Lazily performs project anchoring and initialization.
 
@@ -300,6 +318,7 @@ def init_callback(ctx: typer.Context):
     init_use_case = container.resolve(IInitUseCase)
     summary = init_use_case.ensure_initialized()
     typer.echo(f"TeDDy initialized in .teddy folder. {summary}")
+    _display_init_drift(container)
     _run_init_setup_gates(container)
 
 
