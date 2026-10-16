@@ -82,6 +82,7 @@ def ci_repo() -> Iterator[Path]:
         _git(repo, "init", "-q")
         _git(repo, "commit", "--allow-empty", "-q", "-m", "one")
         _git(repo, "commit", "--allow-empty", "-q", "-m", "two")
+        _git(repo, "commit", "--allow-empty", "-q", "-m", "three")
         workflows = repo / ".github" / "workflows"
         workflows.mkdir(parents=True)
         (workflows / "ci.yml").write_text("name: CI\n", encoding="utf-8")
@@ -138,3 +139,129 @@ def test_shipped_target_reaches_gh_and_emits_a_verdict(ci_repo: Path) -> None:
     # so a blocking verdict surfaces here as a non-zero status.
     assert "CI:" in result.stdout, result.stdout
     assert result.returncode != 0, result.stdout
+
+
+@_posix_only
+def test_improvement_subset_is_attributed_pre_existing(ci_repo: Path) -> None:
+    """A push that clears part of a pre-existing failure is not a regression."""
+    tip_sha = _git(ci_repo, "rev-parse", "HEAD")
+    base_sha = _git(ci_repo, "rev-parse", "HEAD~1")
+    scenario_dir = ci_repo / "scenario"
+    invocation_log = ci_repo / "gh-invocations.log"
+
+    CiWatchScenario(
+        runs=(
+            RunResult(
+                database_id=222,
+                workflow="CI",
+                head_sha=tip_sha,
+                conclusion="failure",
+                jobs=(
+                    JobResult(
+                        "Test Suite",
+                        "failure",
+                        steps=(("Run tests", "failure"),),
+                    ),
+                ),
+            ),
+            RunResult(
+                database_id=111,
+                workflow="CI",
+                head_sha=base_sha,
+                conclusion="failure",
+                jobs=(
+                    JobResult("Test Suite", "failure"),
+                    JobResult("Quality Checks", "failure"),
+                ),
+            ),
+        )
+    ).write(scenario_dir)
+
+    result = _run_ci_watch(ci_repo, scenario_dir, invocation_log)
+
+    assert result.returncode == 0, result.stdout
+    assert "pre-existing" in result.stdout, result.stdout
+
+
+@_posix_only
+def test_regression_superset_blocks_the_session(ci_repo: Path) -> None:
+    """A push that turns a new blocking gate red is the developer's regression."""
+    tip_sha = _git(ci_repo, "rev-parse", "HEAD")
+    base_sha = _git(ci_repo, "rev-parse", "HEAD~1")
+    scenario_dir = ci_repo / "scenario"
+    invocation_log = ci_repo / "gh-invocations.log"
+
+    CiWatchScenario(
+        runs=(
+            RunResult(
+                database_id=222,
+                workflow="CI",
+                head_sha=tip_sha,
+                conclusion="failure",
+                jobs=(
+                    JobResult(
+                        "Test Suite",
+                        "failure",
+                        steps=(("Run tests", "failure"),),
+                    ),
+                    JobResult("Quality Checks", "failure"),
+                ),
+            ),
+            RunResult(
+                database_id=111,
+                workflow="CI",
+                head_sha=base_sha,
+                conclusion="success",
+                jobs=(
+                    JobResult("Test Suite", "success"),
+                    JobResult("Quality Checks", "success"),
+                ),
+            ),
+        )
+    ).write(scenario_dir)
+
+    result = _run_ci_watch(ci_repo, scenario_dir, invocation_log)
+
+    assert result.returncode != 0, result.stdout
+    assert "regression" in result.stdout, result.stdout
+
+
+@_posix_only
+def test_multi_commit_push_resolves_the_run_bearing_ancestor(ci_repo: Path) -> None:
+    """On a multi-commit push the base is the newest ancestor that has a run."""
+    tip_sha = _git(ci_repo, "rev-parse", "HEAD")
+    root_sha = _git(ci_repo, "rev-parse", "HEAD~2")
+    scenario_dir = ci_repo / "scenario"
+    invocation_log = ci_repo / "gh-invocations.log"
+
+    # Only the tip and the root carry runs; HEAD~1 has none. A hardcoded
+    # HEAD~1 base would fail safe against an absent run and falsely block.
+    CiWatchScenario(
+        runs=(
+            RunResult(
+                database_id=222,
+                workflow="CI",
+                head_sha=tip_sha,
+                conclusion="failure",
+                jobs=(
+                    JobResult(
+                        "Test Suite",
+                        "failure",
+                        steps=(("Run tests", "failure"),),
+                    ),
+                ),
+            ),
+            RunResult(
+                database_id=111,
+                workflow="CI",
+                head_sha=root_sha,
+                conclusion="failure",
+                jobs=(JobResult("Test Suite", "failure"),),
+            ),
+        )
+    ).write(scenario_dir)
+
+    result = _run_ci_watch(ci_repo, scenario_dir, invocation_log)
+
+    assert result.returncode == 0, result.stdout
+    assert "pre-existing" in result.stdout, result.stdout

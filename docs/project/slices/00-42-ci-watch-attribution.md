@@ -66,7 +66,7 @@ And it attributes the failure against that base
 ## Deliverables
 - [x] **Wiring** - Add a fake `gh` test double and a tracer-bullet acceptance test that runs the real `make ci-watch` target on a synthetic tip failure and asserts it reaches the shipped target and emits a verdict, proving end-to-end connectivity.
 - [x] **Logic** - Create a POSIX shell helper with the corrected attribution decision and cover the edge cases with unit tests: the subset verdict, the blocking-conclusion set, and the ancestor base resolution.
-- [▶] **Migration** - Bake the validated helper logic into the `ci-watch` target inline, keeping the Makefile self-contained; extend the fake-`gh` acceptance test to assert the corrected verdicts; mirror the logic and the push-triggered scope note into both template copies.
+- [x] **Migration** - Bake the validated helper logic into the `ci-watch` target inline, keeping the Makefile self-contained; extend the fake-`gh` acceptance test to assert the corrected verdicts; mirror the logic and the push-triggered scope note into both template copies.
 - [ ] **Cleanup** - Remove the throwaway helper once its logic is baked into the Makefile.
 
 ## Implementation Notes
@@ -84,6 +84,15 @@ And it attributes the failure against that base
 - `classify-conclusion` maps `success` to `pass`, `failure` to `attribute`, and every other value to `block` (fail-safe).
 - `resolve-base` walks ancestors from `tip~1` and prints the first SHA carrying a run for the workflow, or nothing when none does.
 - The helper is POSIX-only (no arrays, no `[[ ]]`, no `${var//}`) because the Make recipe runs under `sh` (`dash` on Linux). It remains throwaway: the Migration deliverable bakes the logic inline and the Cleanup deliverable deletes this file.
+
+### Migration (inline ci-watch recipe)
+- The corrected logic is baked inline into the `ci-watch` target in the project `Makefile`. Per-workflow ancestor base resolution replaces the hardcoded `HEAD~1`: the recipe walks `SHA~1`, `SHA~2`, and so on, and stops at the first ancestor that carries a run for that workflow, bounded by `BASE_DEPTH` (default 50).
+- The conclusion check is fail-safe: only `success` passes, only `failure` attributes, and any other value (`timed_out`, `cancelled`, `startup_failure`) blocks with `STATUS=1`.
+- The exact-equality `NEWFAIL`/`OLDFAIL` comparison became an in-memory `awk` subset verdict. The recipe prints `pre-existing` when every newly failing job also failed on the base, else `regression`. The `awk` split reads stdin from `/dev/null` and uses no temporary files, so the Makefile stays self-contained.
+- The existing fail-safes are preserved: an absent run-bearing ancestor blocks, and a job-less base run blocks.
+- `tests/suites/acceptance/test_ci_watch_attribution.py` gained three behavioural scenarios: the improvement (subset) that attributes pre-existing and exits 0, the regression (superset) that blocks, and a multi-commit push whose tip and root carry runs while `HEAD~1` carries none. The fixture now creates three commits so the multi-commit scenario has a run-bearing grandparent.
+- Both template copies (`docs/templates/makefile.md` and `src/teddy_executor/resources/templates/makefile.md`) mirror the corrected recipe and the push-triggered scope note. A mirror script extracts the recipe from the shipped `Makefile` and splices it, so the three files stay consistent by construction; the two template copies are byte-identical (hash `2b9662c03c5e`).
+- The `ci-watch` section documents the push-triggered scope: only push-triggered workflows are attributed; a downstream workflow that registers from a `workflow_run` event is not a regression in this commit.
 
 ## Verification
 - [ ] **Improvement attribution:**

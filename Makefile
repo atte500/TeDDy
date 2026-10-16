@@ -46,13 +46,17 @@ push:
 # Usage:
 #   make ci-watch                # watches CI for current HEAD
 #   make ci-watch COMMIT=<sha>   # watches CI for a specific commit
+#
+# Attribution answers ONE question: did this push turn a BLOCKING gate red?
+# Only push-triggered workflows are attributed. A downstream workflow that
+# registers from a workflow_run event is not a regression in this commit.
 RETRY_POLLS ?= 10
 RETRY_SLEEP ?= 2
 DETAIL_LINES ?= 50
+BASE_DEPTH ?= 50
 
 ci-watch:
 	@SHA=$$(git rev-parse $${COMMIT:-HEAD}); \
-	BASE=$$(git rev-parse $${COMMIT:-HEAD}~1 2>/dev/null || echo ""); \
 	if [ -z "$$(ls .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null)" ]; then \
 	  echo "No CI configured - skipping attribution"; \
 	  exit 0; \
@@ -64,7 +68,7 @@ ci-watch:
 	  ATTEMPTS=$$((ATTEMPTS + 1)); \
 	  sleep $(RETRY_SLEEP); \
 	done; \
-	echo "Watching CI for $$SHA (base $${BASE:-none}) after $$ATTEMPTS poll(s)"; \
+	echo "Watching CI for $$SHA after $$ATTEMPTS poll(s)"; \
 	if [ -z "$$WFS" ]; then \
 	  echo "CI: no run registered for $$SHA after $$(( $(RETRY_POLLS) * $(RETRY_SLEEP) ))s - fail-safe block"; \
 	  exit 1; \
@@ -81,7 +85,7 @@ ci-watch:
 	    echo "  view all failed logs: make logs $$NEW"; \
 	    echo "  view specific step:   make logs $$NEW '<step-name>'"; \
 	  fi; \
-	  if [ "$$NEWCONC" != "failure" ]; then \
+	  if [ "$$NEWCONC" = "success" ]; then \
 	    if [ -n "$$NEWFAIL" ]; then \
 	      echo "$$WF: PASSED (run=$$NEWCONC) — non-blocking failure(s) [$$NEWFAIL] — triage, does not block"; \
 	    else \
@@ -89,22 +93,32 @@ ci-watch:
 	    fi; \
 	    continue; \
 	  fi; \
+	  if [ "$$NEWCONC" != "failure" ]; then \
+	    echo "$$WF: BLOCKING (run=$$NEWCONC) — unknown conclusion — fail-safe block"; \
+	    STATUS=1; continue; \
+	  fi; \
+	  BASE=""; CUR="$$SHA"; DEPTH=0; \
+	  while [ $$DEPTH -lt $(BASE_DEPTH) ]; do \
+	    CUR=$$(git rev-parse "$$CUR~1" 2>/dev/null) || break; \
+	    [ -n "$$CUR" ] || break; \
+	    if [ -n "$$(gh run list --commit "$$CUR" --workflow "$$WF" --json databaseId --jq '.[0].databaseId')" ]; then \
+	      BASE="$$CUR"; break; \
+	    fi; \
+	    DEPTH=$$((DEPTH + 1)); \
+	  done; \
 	  if [ -z "$$BASE" ]; then \
-	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — no base commit — YOUR regression"; \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — no run-bearing ancestor (unknown base) — YOUR regression"; \
 	    STATUS=1; continue; \
 	  fi; \
 	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
-	  if [ -z "$$OLD" ]; then \
-	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — base has no run (unknown base) — YOUR regression"; \
-	    STATUS=1; continue; \
-	  fi; \
 	  OLDJOBS=$$(gh run view "$$OLD" --json jobs --jq '.jobs | length'); \
 	  if [ "$$OLDJOBS" = "0" ]; then \
 	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — base run is job-less (invalid workflow, not green) — YOUR regression"; \
 	    STATUS=1; continue; \
 	  fi; \
 	  OLDFAIL=$$(gh run view "$$OLD" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")'); \
-	  if [ "$$NEWFAIL" = "$$OLDFAIL" ]; then \
+	  SUBSET=$$(awk -v new="$$NEWFAIL" -v old="$$OLDFAIL" 'BEGIN { n=split(new,na,","); m=split(old,oa,","); for (i=1;i<=n;i++) { if (na[i]=="") continue; f=0; for (j=1;j<=m;j++) { if (oa[j]==na[i]) { f=1; break } } if (!f) { print "regression"; exit } } print "pre-existing" }' </dev/null); \
+	  if [ "$$SUBSET" = "pre-existing" ]; then \
 	    echo "$$WF: pre-existing BLOCKING failure ($$NEWFAIL) — not yours"; \
 	  else \
 	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — YOUR regression"; \
