@@ -49,7 +49,7 @@ Surface of affected components using the Parallel Change model. The two changes 
 
 ## Deliverables
 - [x] **Wiring** — Connect the over-budget guardrail end-to-end: add a minimal guardrail in `PlanningService.generate_plan` that raises when `token_count` exceeds `get_context_window(model)`, and an acceptance test that drives the session boundary with an over-budget double and asserts a user-visible error.
-- [ ] **Logic** — Harden the context-budget guardrail: unit tests for the non-positive window, exact-boundary, and over-budget cases, plus a clear error message. Reuse the existing `ConfigurationError` type.
+- [x] **Logic** — Harden the context-budget guardrail: unit tests for the non-positive window, exact-boundary, and over-budget cases, plus a clear error message. Reuse the existing `ConfigurationError` type.
 - [ ] **Logic** — Re-enable `ISIG` in `TerminalQuitKeyListener._enter_noncanonical_mode`: unit tests assert `ISIG` is set regardless of inherited state and that `ICANON` and `ECHO` stay cleared.
 - [ ] **Cleanup** — Update the `planning_service` component doc, record the delivered measures in the case file, and resolve the stale case-file header link.
 
@@ -64,6 +64,16 @@ Surface of affected components using the Parallel Change model. The two changes 
 - **Red evidence (turn 103):** `tests/suites/acceptance/test_over_budget_guardrail.py` drove `CliTestAdapter.run_start` with `get_token_count` 200_000 and `get_context_window` 128_000. It failed with `assert 0 != 0` because no guardrail existed and the session stalling path exited code 0.
 - **Green evidence (turn 104):** the same test reported `1 passed`. It asserts `result.exit_code != 0`, `Context Window Exceeded`, `200000`, `128000`, and `mock_llm_client.get_completion.assert_not_called()`.
 - **Integration evidence (turn 105):** `make test` reported `1808 passed, 5 skipped`, proving the additive guardrail caused no regression.
+
+### Logic (deliverable 2) — context-budget guardrail edge cases
+
+- **Test file:** `tests/suites/unit/core/services/test_planning_service_context_budget.py`, four tests in the pinned-matrix style.
+- **Seam:** the tests drive the extracted `PlanningService._check_context_budget(token_count, model)` helper directly, mirroring the established `test_run_preflight_check_raises_on_error` precedent. This is a Logic deliverable that pins behaviour the Wiring helper already encoded, so no production change was needed.
+- **Construction:** resolved the service via `env.get_service(PlanningService)` and injected an auto-specced `ILlmClient` double via `env.mock_port(ILlmClient)`. No global patching and no bare mock objects.
+- **Edge cases pinned:** over-budget (`window + 1`) raises `ConfigurationError`; exact boundary (`token_count == window`) does not raise; zero window (unknown) does not raise; negative window (unknown) does not raise.
+- **Message assertions:** the over-budget test asserts `Context Window Exceeded`, the request count, the window count, and the model name all appear in the error.
+- **Red evidence (turn 113):** all four tests passed on the first run (`4 passed in 1.18s`). The Red step was a confirming run rather than a failing one, because the helper already satisfied the edge-case contract.
+- **Integration evidence (turn 114):** `make test` reported `1812 passed, 5 skipped`, proving the new unit tests integrate cleanly.
 
 ## Verification
 - [ ] **Over-budget guardrail surfaces a visible error:**
