@@ -1166,8 +1166,11 @@ def handle_resume_session(  # noqa: PLR0913
             container, session_name, model=model, api_key=api_key, agent=agent
         )
 
-        # 4. Display session path (below the Agent/Model identity block)
-        session_relative_path = str(Path(".teddy") / "sessions" / session_name)
+        # 4. Display session path (below the Agent/Model identity block).
+        # `.as_posix()` keeps the banner separator-identical on every OS
+        # (Windows would otherwise emit backslashes) and matches the POSIX
+        # f-string that `create_session` returns for the `start` banner.
+        session_relative_path = (Path(".teddy") / "sessions" / session_name).as_posix()
         typer.echo(f"Resuming session: {session_relative_path}")
 
         # 5. Agent switch: if -a/--agent provided, update session agent permanently
