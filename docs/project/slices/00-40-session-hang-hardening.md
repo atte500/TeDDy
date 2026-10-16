@@ -50,7 +50,7 @@ Surface of affected components using the Parallel Change model. The two changes 
 ## Deliverables
 - [x] **Wiring** — Connect the over-budget guardrail end-to-end: add a minimal guardrail in `PlanningService.generate_plan` that raises when `token_count` exceeds `get_context_window(model)`, and an acceptance test that drives the session boundary with an over-budget double and asserts a user-visible error.
 - [x] **Logic** — Harden the context-budget guardrail: unit tests for the non-positive window, exact-boundary, and over-budget cases, plus a clear error message. Reuse the existing `ConfigurationError` type.
-- [ ] **Logic** — Re-enable `ISIG` in `TerminalQuitKeyListener._enter_noncanonical_mode`: unit tests assert `ISIG` is set regardless of inherited state and that `ICANON` and `ECHO` stay cleared.
+- [x] **Logic** — Re-enable `ISIG` in `TerminalQuitKeyListener._enter_noncanonical_mode`: unit tests assert `ISIG` is set regardless of inherited state and that `ICANON` and `ECHO` stay cleared.
 - [ ] **Cleanup** — Update the `planning_service` component doc, record the delivered measures in the case file, and resolve the stale case-file header link.
 
 ## Implementation Notes
@@ -74,6 +74,14 @@ Surface of affected components using the Parallel Change model. The two changes 
 - **Message assertions:** the over-budget test asserts `Context Window Exceeded`, the request count, the window count, and the model name all appear in the error.
 - **Red evidence (turn 113):** all four tests passed on the first run (`4 passed in 1.18s`). The Red step was a confirming run rather than a failing one, because the helper already satisfied the edge-case contract.
 - **Integration evidence (turn 114):** `make test` reported `1812 passed, 5 skipped`, proving the new unit tests integrate cleanly.
+
+### Logic (deliverable 3) — Ctrl+C ISIG re-enablement
+
+- **Test file:** `tests/suites/unit/adapters/outbound/test_terminal_quit_key_listener_reader.py`, new test `test_enter_noncanonical_mode_reenables_isig_when_inherited_clear`.
+- **Seam:** the canonical fake-`termios` double `_FakeTermios(attrs=...)` injected via `monkeypatch.setitem(sys.modules, "termios", fake)`, then `_force_posix_tty(monkeypatch)`, then `listener._enter_noncanonical_mode()`.
+- **Gap proven (turn 118):** the source line `attrs[3] &= ~(termios.ICANON | termios.ECHO)` only PRESERVES the inherited ISIG bit. The pre-existing test exercised the default fake whose lflags already had ISIG set, so it never covered the inherited-clear branch. The new test builds a fake with ISIG deliberately cleared and failed with `AssertionError: ISIG must be re-enabled regardless of the inherited state` (`1 failed, 12 passed`).
+- **Green fix (turn 119):** replaced the clearing assignment with `attrs[3] = (attrs[3] & ~(termios.ICANON | termios.ECHO)) | termios.ISIG`, so ISIG is set explicitly while ICANON and ECHO stay cleared. Updated the docstring to state that the method re-enables ISIG rather than preserves it. The focused run reported `13 passed`.
+- **Integration evidence (turn 120):** `make test` reported `1813 passed, 5 skipped`, proving the terminal-mode change caused no regression.
 
 ## Verification
 - [ ] **Over-budget guardrail surfaces a visible error:**

@@ -68,15 +68,18 @@ class TerminalQuitKeyListener:
     # --- terminal mode (POSIX) ---
 
     def _enter_noncanonical_mode(self) -> None:
-        """Switch the controlling TTY to non-canonical mode, keeping ISIG SET."""
+        """Switch the controlling TTY to non-canonical mode, re-enabling ISIG."""
         if sys.platform == "win32":
             return
         termios = cast(Any, importlib.import_module("termios"))
         fd = sys.stdin.fileno()
         attrs = termios.tcgetattr(fd)
-        # Disable canonical line editing and echo, but KEEP ISIG so a real
-        # Ctrl+C still generates SIGINT alongside the bare-`q` trigger.
-        attrs[3] &= ~(termios.ICANON | termios.ECHO)
+        # Disable canonical line editing and echo, but RE-ENABLE ISIG so a real
+        # Ctrl+C still generates SIGINT alongside the bare-`q` trigger. ISIG is
+        # set explicitly, not merely preserved, because a prior raw-mode reader
+        # such as prompt_toolkit's vt100 mode clears it and restores it only on a
+        # clean exit, which can leave the terminal unable to deliver SIGINT.
+        attrs[3] = (attrs[3] & ~(termios.ICANON | termios.ECHO)) | termios.ISIG
         attrs[6][termios.VMIN] = 1
         attrs[6][termios.VTIME] = 0
         termios.tcsetattr(fd, termios.TCSAFLUSH, attrs)

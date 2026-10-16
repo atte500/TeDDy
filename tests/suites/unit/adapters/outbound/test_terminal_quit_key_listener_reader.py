@@ -143,6 +143,39 @@ def test_enter_noncanonical_mode_keeps_isig_and_sets_vmin_vtime(
     assert attrs[6][_FakeTermios.VTIME] == 0
 
 
+def test_enter_noncanonical_mode_reenables_isig_when_inherited_clear(monkeypatch):
+    """Regression: ISIG must be SET even when a prior reader CLEARED it.
+
+    The bare-`q` listener must not merely PRESERVE an inherited ISIG state.
+    prompt_toolkit's vt100 raw mode clears ISIG while active, so an inherited
+    cleared state leaves the terminal unable to GENERATE SIGINT on Ctrl+C. The
+    listener must re-enable ISIG explicitly, regardless of the inherited state,
+    while still clearing ICANON and ECHO for single-key input.
+    """
+    inherited_clear = [
+        _FakeTermios.ICRNL,
+        0,
+        0,
+        _FakeTermios.ICANON | _FakeTermios.ECHO,  # ISIG deliberately CLEARED
+        0,
+        0,
+        [0] * 32,
+    ]
+    fake = _FakeTermios(attrs=inherited_clear)
+    monkeypatch.setitem(sys.modules, "termios", fake)
+    _force_posix_tty(monkeypatch)
+    listener = TerminalQuitKeyListener()
+
+    listener._enter_noncanonical_mode()
+
+    _fd, _when, attrs = fake.tcsetattr_calls[-1]
+    assert attrs[3] & _FakeTermios.ISIG, (
+        "ISIG must be re-enabled regardless of the inherited state"
+    )
+    assert not (attrs[3] & _FakeTermios.ICANON), "canonical mode must stay disabled"
+    assert not (attrs[3] & _FakeTermios.ECHO), "echo must stay disabled"
+
+
 def test_stop_delegates_restore_to_shared_helper(fake_termios, monkeypatch):
     """stop() must route the terminal restore through the shared helper.
 
