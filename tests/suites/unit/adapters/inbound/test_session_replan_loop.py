@@ -211,7 +211,7 @@ def test_handle_report_output_does_not_exit_in_session_mode():
 
 def test_termination_message_printed_when_guard_stops(capsys):
     """
-    Verify that a YOLO guardrail termination message is printed via typer.secho
+    Verify that a guardrail termination message is printed via typer.secho
     when _orchestrate_session_loop stops due to the guard returning (False, reason).
     """
     # Arrange
@@ -241,7 +241,7 @@ def test_termination_message_printed_when_guard_stops(capsys):
     # Guard returns (False, reason) on first check — stops immediately
     mock_loop_guard.should_continue.return_value = (
         False,
-        "YOLO guardrail limit reached.",
+        "Guardrail limit reached.",
     )
 
     fake_report = Mock(spec=ExecutionReport)
@@ -267,9 +267,9 @@ def test_termination_message_printed_when_guard_stops(capsys):
         no_copy=True,
     )
 
-    # Assert — should print only the bare reason: "YOLO guardrail limit reached."
+    # Assert — should print only the bare reason: "Guardrail limit reached."
     captured = capsys.readouterr()
-    assert captured.out == "\nYOLO guardrail limit reached.\n", (
+    assert captured.out == "\nGuardrail limit reached.\n", (
         f"Expected bare reason in stdout with leading empty line, got: {captured.out!r}"
     )
 
@@ -307,7 +307,7 @@ def test_guard_reason_split_with_leading_newline(capsys):
     # Guard returns a reason with leading newline + two sentences
     mock_loop_guard.should_continue.return_value = (
         False,
-        "YOLO turn limit reached: 2/1 turns in this run.\n"
+        "Turn limit reached: 2/1 turns in this run.\n"
         "To change this limit, set 'guardrails.max_turns' in .teddy/config.yaml.",
     )
 
@@ -337,6 +337,6 @@ def test_guard_reason_split_with_leading_newline(capsys):
     captured = capsys.readouterr()
     assert captured.out == (
         "\n"
-        "YOLO turn limit reached: 2/1 turns in this run.\n"
+        "Turn limit reached: 2/1 turns in this run.\n"
         "To change this limit, set 'guardrails.max_turns' in .teddy/config.yaml.\n"
     ), f"Expected both sentences in stdout (split correctly), got: {captured.out!r}"

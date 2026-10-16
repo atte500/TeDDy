@@ -334,7 +334,7 @@ def _resolve_initial_turn(session_manager: ISessionManager, session_name: str) -
 
 def _emit_guard_termination(guard_reason: Optional[str]) -> None:
     """Prints a guardrail termination reason: first line red, remainder plain."""
-    reason = guard_reason or "YOLO guardrail limit reached."
+    reason = guard_reason or "Guardrail limit reached."
     lines = reason.lstrip("\n").split("\n", 1)
     typer.secho("")
     typer.secho(lines[0], fg=typer.colors.RED)

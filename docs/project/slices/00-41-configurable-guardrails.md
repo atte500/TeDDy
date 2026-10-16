@@ -61,7 +61,7 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 - [x] **Logic** - Implement the precedence chain (CLI flag > env var > config value > default), the `TEDDY_MAX_TURNS` and `TEDDY_MAX_SESSION_COST` overrides, the legacy `yolo_guardrails` fallback read, the 150-turn default, and the message-turn reset gated by `guardrails.message_reset`.
 - [x] **Migration** - Rename `yolo_guardrails` to `guardrails` in the bundled config, the guard, the guard tests, and the `session_loop_guard.md` component doc. Correct the component doc's stale config-missing defaults.
 - [x] **Refactor** - Extract the limit resolution into a single helper.
-- [ ] **Cleanup** - Remove the stale `--yolo`-only wording. Keep the legacy `yolo_guardrails` fallback read for existing user configs.
+- [x] **Cleanup** - Remove the stale `--yolo`-only wording. Keep the legacy `yolo_guardrails` fallback read for existing user configs.
 
 ## Implementation Notes
 
@@ -111,6 +111,15 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 - The two resolvers stay private, so the extraction is non-breaking.
 - Refactor proof: the guard suites reported `17 passed` both before and after the edit, proving the extraction preserved behavior.
 - Integration proof: `make test` reports `1835 passed, 5 skipped`.
+
+### Cleanup (delivered)
+
+- Stripped the stale `YOLO ` prefix from the three user-facing limit messages, because the limits apply to every non-interactive run, not only `--yolo`: the guard's turn message (`Turn limit reached: ...`), the guard's cost message (`Cost limit reached: ...`), and the CLI fallback (`Guardrail limit reached.`).
+- Renamed the matching stale wording in the two shared harness guard doubles (`composition.py`, `test_environment.py`) and the self-consistent session-replan test doubles and their assertions.
+- Kept the load-bearing legacy `yolo_guardrails` fallback read in `_read_config`, so existing user configs keep working.
+- Left the legitimate `--yolo`-flag prose, the `yolo_default` tests, and the immutable `v0.1.14.md` release notes untouched.
+- Cleanup proof: the Red step failed with `3 failed, 9 passed` on the three stale messages; the Green step passed with `23 passed`.
+- Integration proof: `make test` reports `1838 passed, 5 skipped`.
 
 ### Harness constraint
 

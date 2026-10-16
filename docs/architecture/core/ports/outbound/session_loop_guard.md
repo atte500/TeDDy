@@ -29,3 +29,7 @@ None — this is an outbound (driven) port.
 ### `should_continue(turn_count, cumulative_cost, interactive) -> tuple[bool, Optional[str]]`
 - **Preconditions:** `turn_count` and `cumulative_cost` are measured as deltas from the process-start baseline.
 - **Postconditions:** Returns `(True, None)` when the loop may continue, or `(False, reason)` when a guardrail limit is hit.
+
+### `reset_baseline(turn_count, cumulative_cost) -> None`
+- **Preconditions:** The caller has just completed a human-approved message turn.
+- **Postconditions:** Re-anchors the turn-count and cost baselines to the given values, so every later `should_continue` call is measured as a delta from the new baselines.

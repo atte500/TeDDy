@@ -139,7 +139,7 @@ def test_production_guard_reason_includes_config_key_and_path():
         turn_count=2, cumulative_cost=0.0, interactive=False
     )
 
-    # Assert – currently fails because reason is "YOLO guardrail limit reached."
+    # Assert – delta = 1 (>= limit 1) -> STOP and name the renamed config key.
     assert should_continue is False
     assert "'guardrails.max_turns'" in reason, (
         f"Reason should mention the config key, got: {reason!r}"

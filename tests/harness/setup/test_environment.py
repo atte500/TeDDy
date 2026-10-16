@@ -258,7 +258,7 @@ class TestEnvironment(RealAdapterMixin):
         def _side_effect(turn_count, cost, interactive):
             if turn_count < max_turns:
                 return True, None
-            return False, "Test YOLO guardrail limit reached."
+            return False, "Test guardrail limit reached."
 
         mock.should_continue.side_effect = _side_effect
 

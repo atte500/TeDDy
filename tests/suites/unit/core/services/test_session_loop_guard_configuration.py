@@ -108,3 +108,29 @@ def test_reset_disabled_leaves_baselines_fixed():
     guard.reset_baseline(turn_count=10, cumulative_cost=1.5)
     assert guard.should_continue(149, 0.0, False) == (True, None)
     assert guard.should_continue(150, 0.0, False)[0] is False
+
+
+def test_turn_limit_message_uses_neutral_wording():
+    """The turn-limit message must not claim the limit is --yolo-only."""
+    guard = _guard(config_values={"guardrails.max_turns": 1})
+
+    should_continue, reason = guard.should_continue(1, 0.0, False)
+
+    assert should_continue is False
+    assert "YOLO" not in reason, (
+        f"Turn-limit message must not carry stale --yolo-only wording, got: {reason!r}"
+    )
+    assert "turn limit reached" in reason.lower()
+
+
+def test_cost_limit_message_uses_neutral_wording():
+    """The cost-limit message must not claim the limit is --yolo-only."""
+    guard = _guard(config_values={"guardrails.max_session_cost": 1.0})
+
+    should_continue, reason = guard.should_continue(0, 1.0, False)
+
+    assert should_continue is False
+    assert "YOLO" not in reason, (
+        f"Cost-limit message must not carry stale --yolo-only wording, got: {reason!r}"
+    )
+    assert "cost limit reached" in reason.lower()

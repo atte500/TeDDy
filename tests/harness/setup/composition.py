@@ -148,7 +148,7 @@ def container(monkeypatch):
             max_turns = int(os.getenv("TEDDY_MAX_TURNS", "1"))
             if turn_count < max_turns:
                 return True, None
-            return False, "Test YOLO guardrail limit reached."
+            return False, "Test guardrail limit reached."
 
     c.register(ISessionLoopGuard, TestSessionLoopGuard)
 

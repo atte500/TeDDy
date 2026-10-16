@@ -32,3 +32,7 @@ None — this is a concrete implementation of an outbound port.
 ### `should_continue(turn_count, cumulative_cost, interactive) -> tuple[bool, Optional[str]]`
 - **Preconditions:** `turn_count` and `cumulative_cost` are measured as deltas from the process-start baseline.
 - **Postconditions:** Returns `(True, None)` when interactive mode is active, when the guardrail is disabled, or when both deltas are under their limits. Returns `(False, reason)` naming the exceeded limit and the config file to edit.
+
+### `reset_baseline(turn_count, cumulative_cost) -> None`
+- **Preconditions:** The caller has just completed a human-approved message turn.
+- **Postconditions:** Re-anchors `_initial_turn` and `_initial_cost` when `guardrails.message_reset` is enabled (default `True`); a disabled setting leaves both baselines fixed for the whole run.
