@@ -45,23 +45,44 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
             value = self._config_service.get_setting(f"yolo_guardrails.{key}", _UNSET)
         return default if value is _UNSET else value
 
+    def _resolve_limit(
+        self,
+        override: Optional[float],
+        env_key: str,
+        config_key: str,
+        default: float,
+    ) -> Any:
+        """Resolves one limit through the precedence chain.
+
+        Order: an explicit CLI override, then the environment variable, then the
+        config value, then the default. The config value falls back to the
+        default when it is absent or falsy; an explicit override of 0 still wins.
+        """
+        if override is not None:
+            return override
+        env_value = self._system_environment.get_env(env_key)
+        if env_value:
+            return env_value
+        return self._read_config(config_key, default) or default
+
     def _resolve_max_turns(self) -> int:
         """Resolves the turn limit: CLI flag, then env var, then config, then 150."""
-        if self._max_turns_override is not None:
-            return int(self._max_turns_override)
-        env_value = self._system_environment.get_env("TEDDY_MAX_TURNS")
-        if env_value:
-            return int(env_value)
-        return int(self._read_config("max_turns", 150) or 150)
+        return int(
+            self._resolve_limit(
+                self._max_turns_override, "TEDDY_MAX_TURNS", "max_turns", 150
+            )
+        )
 
     def _resolve_max_cost(self) -> float:
         """Resolves the cost limit: CLI flag, then env var, then config, then 5.0."""
-        if self._max_cost_override is not None:
-            return float(self._max_cost_override)
-        env_value = self._system_environment.get_env("TEDDY_MAX_SESSION_COST")
-        if env_value:
-            return float(env_value)
-        return float(self._read_config("max_session_cost", 5.0) or 5.0)
+        return float(
+            self._resolve_limit(
+                self._max_cost_override,
+                "TEDDY_MAX_SESSION_COST",
+                "max_session_cost",
+                5.0,
+            )
+        )
 
     def should_continue(
         self, turn_count: int, cumulative_cost: float, interactive: bool

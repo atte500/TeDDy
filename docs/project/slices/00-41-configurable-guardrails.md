@@ -60,7 +60,7 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 - [x] **Contract** - Extend `ISessionLoopGuard` with the additive `reset_baseline(turn_count, cumulative_cost)` operation.
 - [x] **Logic** - Implement the precedence chain (CLI flag > env var > config value > default), the `TEDDY_MAX_TURNS` and `TEDDY_MAX_SESSION_COST` overrides, the legacy `yolo_guardrails` fallback read, the 150-turn default, and the message-turn reset gated by `guardrails.message_reset`.
 - [x] **Migration** - Rename `yolo_guardrails` to `guardrails` in the bundled config, the guard, the guard tests, and the `session_loop_guard.md` component doc. Correct the component doc's stale config-missing defaults.
-- [ ] **Refactor** - Extract the limit resolution into a single helper.
+- [x] **Refactor** - Extract the limit resolution into a single helper.
 - [ ] **Cleanup** - Remove the stale `--yolo`-only wording. Keep the legacy `yolo_guardrails` fallback read for existing user configs.
 
 ## Implementation Notes
@@ -103,13 +103,22 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 - Migration proof: `tests/suites/integration/core/services/test_guardrails_namespace_migration.py` pins the shipped namespace and the guard message. The Red step failed with `2 failed`; the Green step passed.
 - Integration proof: `make test` reports `1835 passed, 5 skipped`.
 
+### Refactor (delivered)
+
+- Extracted a single `_resolve_limit(override, env_key, config_key, default)` helper in `ProductionSessionLoopGuard`. Both `_resolve_max_turns` and `_resolve_max_cost` now delegate to it and keep their `int` and `float` casts.
+- The helper preserves the exact precedence order (CLI override, then environment variable, then config value, then default) and keeps the `or default` fallback on the config read only, so an explicit override of 0 still wins.
+- The helper takes four parameters, so it stays under the `PLR0913` limit without a new suppression.
+- The two resolvers stay private, so the extraction is non-breaking.
+- Refactor proof: the guard suites reported `17 passed` both before and after the edit, proving the extraction preserved behavior.
+- Integration proof: `make test` reports `1835 passed, 5 skipped`.
+
 ### Harness constraint
 
 - `TestEnvironment.setup()` registers `ISessionLoopGuard` as an instance mock that ignores resolve kwargs. The acceptance test therefore re-registers `ProductionSessionLoopGuard` as a class after setup, because the later class registration wins and receives the threaded kwargs.
 
 ### Debt
 
-- The new acceptance test carries a minimal project-setup helper that mirrors `helpers.setup_project`. Consolidate it in the Refactor deliverable.
+- The new acceptance test carries a minimal project-setup helper that mirrors `helpers.setup_project`. The Refactor deliverable covered the limit resolution only, so this consolidation remains pending.
 
 ## Verification
 - [ ] **Turn limit:**
