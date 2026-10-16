@@ -36,7 +36,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 **Goal:** Translate verified findings into buildable slices, component designs, and specifications.
 
 1. **Impact and Debt Audit:**
-   Run EXECUTE `git grep` on target components. If a modified component has more than one consumer, treat it as a Shared Seam and structure deliverables as a non-breaking parallel change: expand, migrate, contract. Verify that all contract changes include matching harness deliverables.
+   Run EXECUTE `git grep` on target components. If a modified component has more than one consumer, treat it as a Shared Seam and structure deliverables as non-breaking steps: expand the interface, migrate consumers, then contract obsolete code. Verify that all contract changes include matching harness deliverables.
 2. **Artifact Updates:**
    EDIT the Vertical Slice to reflect validated scenarios, edge cases, implementation deliverables, and verification steps. Place Wiring first as the tracer bullet deliverable, followed by contract, logic, refactoring, and harness deliverables. Mark resolved unknowns as completed, link the prototype directory in the slice metadata, and set status to Planned. EDIT linked Component Design Docs and specs in `docs/project/specs/` to reflect as-tested contracts, parameters, and invariants discovered during prototyping.
 

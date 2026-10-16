@@ -118,7 +118,7 @@ Applies to all user-facing Messages and turn titles:
 ### Pragmatic Simplified Technical English
 
 All text in Rationale, Message, action descriptions, and documentation must adhere to Pragmatic STE:
-Write in grammatically complete sentences using active voice, standard articles, and no semicolons, avoiding conversational fluff and clipped fragments. Limit procedural instructions to 20 words in the imperative mood with conditions placed before actions; limit descriptive statements to 25 words with one fact per sentence. Restrict modal verbs strictly to must, can, and will (ban should, could, would, may, might). Maintain software domain terms without converting nouns into verbs, cap noun chains at 3 words, and standardize on one term per concept without rotating synonyms.
+Write in grammatically complete sentences using active voice, standard articles, and no semicolons, avoiding conversational fluff and clipped fragments. Limit procedural instructions to 20 words in the imperative mood with conditions placed before actions. Limit descriptive statements to 25 words with one fact per sentence. Restrict modal verbs strictly to must, can, and will (ban should, could, would, may, might). Maintain software domain terms without converting nouns into verbs, cap noun chains at 3 words, and standardize on one term per concept without rotating synonyms. Use only standard industry terms instead of invented jargon and metaphors.
 
 ### Quality-Gate Bypass Policy
 

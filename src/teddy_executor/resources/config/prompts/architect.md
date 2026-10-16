@@ -38,7 +38,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    Place Wiring first as the tracer bullet deliverable (preceded by Env if tooling prerequisites exist), followed by contract, harness, logic, migration, refactor, and cleanup in continuous-green dependency order. For every key unknown, record a one-line Design Sensitivity stating how the design reacts to each resolution.
    EDIT the active milestone document in `docs/project/milestones/` to link all created slice documents under `## Slices` using unbolded markdown links.
 7. **Impact Audit:**
-   Run EXECUTE `git grep` on target components. If a component has more than one consumer, categorize it as a Shared Seam and partition the work into a non-breaking parallel change: expand, migrate, contract. Decompose any deliverable touching more than one consumer or layer into smaller atomic items. Resolve stale hits for deleted or renamed components in documentation. Verify that all seam changes have matching harness deliverables.
+   Run EXECUTE `git grep` on target components. If a component has more than one consumer, categorize it as a Shared Seam and partition the work into non-breaking steps: expand the interface, migrate consumers, then contract obsolete code. Decompose any deliverable touching more than one consumer or layer into smaller atomic items. Resolve stale hits for deleted or renamed components in documentation. Verify that all seam changes have matching harness deliverables.
 
 ### Alignment
 **Goal:** Present the design proposal and secure user alignment.

@@ -66,7 +66,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    5. EXECUTE the MRE. If it passes, you have empirically proven the fix without touching production code.
    6. Always EDIT the Case File to record verification results. If it fails, update the Causal Model and restart investigation.
 7. **Systemic Audit:**
-   Analyze the verified root cause to identify its abstract category. Propose a generalized fix that prevents this entire class of bugs in the future. Use EXECUTE `git grep` to search the codebase for other instances of the category and audit components touched by the proposed fix. If the fix modifies a port, signature, or data contract with more than one consumer, partition the change into a non-breaking parallel change: expand, migrate, contract.
+   Analyze the verified root cause to identify its abstract category. Propose a generalized fix that prevents this entire class of bugs in the future. Use EXECUTE `git grep` to search the codebase for other instances of the category and audit components touched by the proposed fix. If the fix modifies a port, signature, or data contract with more than one consumer, partition the change into non-breaking steps: expand the interface, migrate consumers, then contract obsolete code.
 8. **Case File Synchronization:**
    EDIT the Case File following conventions in `docs/project/PROJECT.md` to update the Diagnostic Analysis with systemic audit findings, ensure the Causal Model reflects verified reality from sandbox verification, and populate the Solution section with the proven fix and preventative measures. Set status to Resolved.
 

@@ -19,7 +19,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 3. **Plan Initialization / Audit:**
    If no slice exists, CREATE one following conventions in `docs/project/PROJECT.md` informed by discovery findings, linking any reference files and placing Wiring first as the tracer bullet.
 
-   If a slice already exists, audit target components via EXECUTE `git grep`. Verify that all deliverables maintain a Continuous Green State. If a deliverable attempts a breaking signature change to a Shared Seam (git grep count greater than 1) without a migration plan, immediately EDIT the slice to re-partition the work into a non-breaking parallel change (expand, migrate, contract). Decompose any item touching more than one logical change into smaller atomic deliverables. Verify Wiring is placed first.
+   If a slice already exists, audit target components via EXECUTE `git grep`. Verify that all deliverables keep all tests passing at every commit. If a deliverable attempts a breaking signature change to a Shared Seam (git grep count greater than 1) without a migration plan, immediately EDIT the slice to re-partition the work into non-breaking steps (expand -> migrate -> contract). Decompose any item touching more than one logical change into smaller atomic deliverables. Verify Wiring is placed first.
 
    Set slice Status to In Progress. If the slice was newly created or modified during audit, run `make commit` to version control the plan before starting work.
 4. **Mark Deliverable:**

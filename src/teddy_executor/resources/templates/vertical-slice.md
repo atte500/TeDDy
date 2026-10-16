@@ -1,7 +1,7 @@
 # Slice: {{feature_name}}
 - **Status:** [Planned | In Progress | Completed]
-- **Milestone:** [MM-name](../milestones/MM-name.md)
-- **Depends On:** [MM-01-slice-slug.md](./MM-01-slice-slug.md) <!-- Link prerequisite slice or 'None' -->
+- **Milestone:** [link]
+- **Depends On:** [link]
 - **Specs:** [links]
 - **Prototype:** [link]
 - **Component Docs:** [links]
@@ -11,7 +11,8 @@
 1-2 sentences describing the user need and measurable value delivered by this slice.
 
 ## Scenarios
-<!-- Primary user journeys and happy paths. These drive End-to-End Acceptance Tests in the Wiring deliverable. -->
+Primary user journeys and happy paths. These drive End-to-End Acceptance Tests in the Wiring deliverable.
+
 > As a [user type], I want to [action] so that [benefit].
 
 ```gherkin
@@ -21,7 +22,7 @@ Then [expected outcome]
 ```
 
 ## Edge Cases
-<!-- Boundary conditions, errors, and validation edge cases. These drive granular Unit Tests in Logic deliverables. -->
+Boundary conditions, errors, and validation edge cases. These drive granular Unit Tests in Logic deliverables.
 - **Title**: If [condition], then [behavior], because [reason/invariant].
 
 ## Key Unknowns
@@ -42,8 +43,7 @@ Then [expected outcome]
 **Design Sensitivity:** For every unknown, record a one-line Design Sensitivity stating how the design reacts to each resolution (e.g., "if this resolves as X → contracts hold; if Y → this port/DTO changes").
 
 ## Impact
-Surface of affected components using the Parallel Change (Expand-Migrate-Contract) model.
-Execute deliverables strictly in this order to maintain a Continuous Green State (`make test` passes at every commit). Never mutate shared contracts in place when existing consumers exist.
+Map affected components using non-breaking steps (expand -> migrate -> contract) to protect existing consumers.
 
 **Format:**
 1. `[NEW]` `ComponentOrModule` — Create new boundary or component.
@@ -63,8 +63,10 @@ Execute deliverables strictly in this order to maintain a Continuous Green State
 - **Refactor:** Improving code design without altering behavior (DRY, SRP, extracting helpers).
 - **Cleanup:** Removing deprecated methods, dead code, and temporary shims.
 
-**Order:** Order deliverables to maintain a Continuous Green State (`make test` passes at every commit). `(Env)` is placed first whenever tooling or environment setup is a prerequisite:
+**Order:** Order deliverables to keep all tests passing at every commit (`make test`). `(Env)` is placed first whenever tooling or environment setup is a prerequisite:
 `(Env) -> Wiring -> Contract -> Harness -> Logic -> Migration -> Refactor -> Cleanup`
+
+**Tests:** Do not specify individual tests in deliverables. Scenarios and Edge Cases must define test requirements.
 
 **Format:**
 - [ ] **Wiring** - Connect outermost boundaries with skeleton response.
@@ -75,9 +77,7 @@ Execute deliverables strictly in this order to maintain a Continuous Green State
 Free-form notes recording decisions, deviations, or discoveries during implementation.
 
 ## Verification
-<!-- Manual User Acceptance Testing (UAT) steps for the user to execute at slice conclusion. -->
-<!-- Provide clear, step-by-step instructions. Use copy-pasteable commands for CLI/APIs, or exact interactive steps for UI/visual flows. -->
-<!-- Do NOT include running automated tests here; those are covered by the automated test suite. -->
+Manual verification steps for user execution at slice conclusion. Provide clear instructions with copy-pasteable commands or interactive UI steps. Do not include automated test commands.
 
 **Format:**
 - [ ] **Title:**
