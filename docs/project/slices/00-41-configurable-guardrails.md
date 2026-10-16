@@ -62,6 +62,7 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 - [x] **Migration** - Rename `yolo_guardrails` to `guardrails` in the bundled config, the guard, the guard tests, and the `session_loop_guard.md` component doc. Correct the component doc's stale config-missing defaults.
 - [x] **Refactor** - Extract the limit resolution into a single helper.
 - [x] **Cleanup** - Remove the stale `--yolo`-only wording. Keep the legacy `yolo_guardrails` fallback read for existing user configs.
+- [ ] **Refactor** - Consolidate the duplicated acceptance-test project-setup helper into the shared `helpers.setup_project`.
 
 ## Implementation Notes
 
@@ -127,7 +128,8 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 
 ### Debt
 
-- The new acceptance test carries a minimal project-setup helper that mirrors `helpers.setup_project`. The Refactor deliverable covered the limit resolution only, so this consolidation remains pending.
+- The new acceptance test carries a minimal project-setup helper that mirrors `helpers.setup_project`. The quality audit confirmed it is slice-introduced, so it is now the appended Refactor deliverable.
+- `ProductionSessionLoopGuard.should_continue` imports `os` locally and recomputes the relative config path in both limit branches. A `git log -S` probe shows the duplication predates this slice, so it stays out of scope and is recorded here for a later consolidation pass.
 
 ## Verification
 - [ ] **Turn limit:**
