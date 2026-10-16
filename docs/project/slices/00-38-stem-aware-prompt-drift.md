@@ -1,5 +1,5 @@
 # Slice: Stem-Aware Prompt Drift Classification
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Ad-hoc (not tracked in the Roadmap per PROJECT.md)
 - **Depends On:** None
 - **Specs:** N/A
@@ -76,7 +76,7 @@ Ordering follows `docs/templates/vertical-slice.md`. There is NO `Wiring` delive
 - **Integration gate:** `make test` reported the full suite green (1774 passed, 5 skipped).
 
 ## Verification
-- [ ] **CLI:** Run `make test` and verify the full suite passes (green-to-green).
-- [ ] **CLI:** Run `uv run python spikes/debug/xml-prompt-drift/01-xml-prompt-classified-missing-mre.py production` and verify it prints `RESULT: PASS - same-stem .xml prompts reported as DIFFER`.
-- [ ] **CLI:** Run `git grep -n "_classify_drift"` and verify the prompts channel passes through the shared stem predicate.
-- [ ] **Acceptance:** Confirm `tests/suites/acceptance/test_preflight_drift_notification.py::test_start_advises_init_prompts_when_a_prompt_has_drifted` stays green (the stale `pathfinder.xml` still drifts, now as EDITED, so the `teddy init prompts` advice still fires).
+- [x] **CLI:** Run `make test` and verify the full suite passes (green-to-green).
+- [x] **CLI:** Run `uv run python spikes/debug/xml-prompt-drift/01-xml-prompt-classified-missing-mre.py production` and verify it prints `RESULT: PASS - same-stem .xml prompts reported as DIFFER`.
+- [x] **CLI:** Run `git grep -n "_classify_drift"` and verify the prompts channel passes through the shared stem predicate.
+- [x] **Acceptance:** Confirm `tests/suites/acceptance/test_preflight_drift_notification.py::test_start_advises_init_prompts_when_a_prompt_has_drifted` stays green (the stale `pathfinder.xml` still drifts, now as EDITED, so the `teddy init prompts` advice still fires).
