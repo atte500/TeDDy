@@ -55,7 +55,7 @@ Then the embedded workspace section is bounded and no fence amplification occurs
 - [x] **Logic** — Add `embed_in_fence(content, lang)` to `core/utils/markdown.py` that sanitizes via `strip_trailing_open_fence`, then fences via `get_fence_for_content`, returning `f"{fence}{lang}\n{content}\n{fence}"`. Add unit tests covering sanitized and balanced content.
 - [x] **Migration** — Route `ContextService._format_session_history` through `embed_in_fence`. Add an end-to-end test in `tests/suites/unit/core/services/test_context_service.py` driving `get_context` with a degenerate session-history file, proving the section is bounded.
 - [x] **Migration** — Route `ContextService._format_workspace_contents` through `embed_in_fence`. Add an end-to-end test driving `get_context` with a degenerate workspace file, proving the section is bounded.
-- [ ] **Cleanup** — Update `docs/architecture/core/services/context_service.md` to record the shared sanitize-then-fence seam. Run `git grep -n "get_fence_for_content" -- src/teddy_executor/core/services/context_service.py` and confirm both embed sites route through `embed_in_fence`.
+- [x] **Cleanup** — Update `docs/architecture/core/services/context_service.md` to record the shared sanitize-then-fence seam. Run `git grep -n "get_fence_for_content" -- src/teddy_executor/core/services/context_service.py` and confirm both embed sites route through `embed_in_fence`.
 
 ## Implementation Notes
 - **No Wiring deliverable.** The fix reuses the existing `ContextService` embed seam and introduces no new boundary, so no hardcoded-skeleton tracer bullet applies. This mirrors slice `00-37`'s documented precedent. The end-to-end acceptance coverage is carried by the session-history migration deliverable.
@@ -101,6 +101,13 @@ Then the embedded workspace section is bounded and no fence amplification occurs
 - **Green step:** `uv run pytest tests/suites/unit/core/services/test_context_service.py -q` reported `17 passed`.
 - **Integration gate:** `make test` reported the full suite green (1793 passed, 5 skipped), confirming the migration is regression-free.
 - **No local refactor required:** both embed sites now route through the shared seam, and no duplicated literal, magic number, or shadow logic remains.
+
+### Deliverable 5 — As-Built (ContextService component-doc cleanup)
+- **Documentation:** added the "Content Embedding & Fence Sanitization" section to `docs/architecture/core/services/context_service.md`. It names both embed sites (`_format_session_history`, `_format_workspace_contents`), the sanitize-then-fence composition (`strip_trailing_open_fence` then `get_fence_for_content`), the byte-for-byte preservation of well-formed Markdown, and the two distinct whitespace behaviours.
+- **Heading renumbered:** the trailing "Implementation Notes" heading moved from section 6 to section 7 to keep the document's section sequence monotonic.
+- **Verification:** the deliverable grep reports no `get_fence_for_content` match in `context_service.py` and three `embed_in_fence` matches (import line 7, call sites 399 and 474), confirming both embed sites route through the shared seam.
+- **Integration gate:** `make test` reported the full suite green (1793 passed, 5 skipped), confirming the doc-only change is regression-free.
+- **No local refactor required:** the deliverable is a documentation section only; no production code changed.
 
 ## Verification
 - [ ] **CLI:** Run `make test` and verify the full suite passes (green-to-green).

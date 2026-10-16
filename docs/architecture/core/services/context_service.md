@@ -1,6 +1,6 @@
 # Application Service: `ContextService`
 
-**Status:** Updated
+**Status:** Implemented
 
 ## 1. Purpose
 
@@ -80,6 +80,15 @@ When the `get_context` method is called, the `ContextService` performs the follo
     -   `cache_dir`: (Optional) The path to a session directory where `.web_cache.json` is stored. When provided, web content is cached and reused across turns within the same session.
 -   **Returns:** A `ProjectContext` DTO containing the system info, repo tree, and resolved file contents.
 
-## 6. Implementation Notes
+## 6. Content Embedding & Fence Sanitization
+
+Both content embed sites in this service route through a single shared seam, `embed_in_fence(content, lang)` from `core/utils/markdown.py`:
+
+-   `_format_session_history` embeds each session-history file.
+-   `_format_workspace_contents` embeds each workspace file.
+
+`embed_in_fence` first calls `strip_trailing_open_fence` to remove a trailing UNCLOSED opening code fence. It then derives the wrapper fence from the sanitized content via `get_fence_for_content`. This bounds the assembled payload when embedded content contains a degenerate backtick or tilde run. Well-formed Markdown is preserved byte-for-byte. `_format_session_history` strips leading and trailing whitespace before delegating, while `_format_workspace_contents` does not, so each caller keeps its own whitespace behaviour.
+
+## 7. Implementation Notes
 
 -   **Context Configuration:** The `context` command's behavior is explicitly driven by the contents of `.teddy/*.context` files, providing a clear, user-configurable contract.
