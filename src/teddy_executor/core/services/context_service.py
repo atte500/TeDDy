@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 from teddy_executor.core.domain.models import ProjectContext, ContextItem
 from teddy_executor.core.utils.markdown import (
+    embed_in_fence,
     get_fence_for_content,
     get_language_from_path,
     is_session_file_path,
@@ -471,7 +472,6 @@ class ContextService(IGetContextUseCase):
             content = file_contents.get(path) or ""
             content_str = content.strip()
             lang = get_language_from_path(path)
-            fence = get_fence_for_content(content_str)
             parts.append(f"\n### {disp_name}")
-            parts.append(f"{fence}{lang}\n{content_str}\n{fence}")
+            parts.append(embed_in_fence(content_str, lang))
         return parts

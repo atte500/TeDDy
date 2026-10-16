@@ -612,3 +612,40 @@ def test_get_context_content_tokens_zero_when_include_tokens_false(
     # Assert
     assert result.content_tokens == 0
     mock_llm_client.get_text_token_count.assert_not_called()
+
+
+def test_get_context_bounds_degenerate_session_history_fence(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+):
+    """
+    Scenario: Bounded Session History
+
+    A session-history file containing an unclosed giant backtick run must be
+    bounded: the dangling opening fence is stripped before the wrapper fence is
+    derived, so the section cannot amplify.
+    """
+    # Arrange
+    session_path = ".teddy/sessions/20260521_134944-test-session/01/plan.md"
+    degenerate_content = "Plan content\n" + "`" * 10_000
+    mock_file_contents = {session_path: degenerate_content}
+
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = ""
+    mock_inspector.get_full_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_fs.resolve_paths_from_files.side_effect = lambda files: files
+    mock_fs.read_files_in_vault.return_value = mock_file_contents
+
+    # Act
+    result = service.get_context(context_files={"Turn": [session_path]})
+
+    # Assert
+    assert "## Session History" in result.content
+    assert "### Turn 1: Plan" in result.content
+    # The dangling opening fence is stripped before the wrapper fence is derived,
+    # so the section stays bounded instead of amplifying to a 10k-backtick fence.
+    assert "```markdown\nPlan content\n```" in result.content
+    assert "`" * 100 not in result.content
