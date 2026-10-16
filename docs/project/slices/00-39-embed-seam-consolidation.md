@@ -45,7 +45,7 @@ Then the block is bounded and no fence amplification occurs
 - [x] **Migration** — Route `SessionLifecycleManager._append_user_request` through `embed_in_fence`. Add a unit test to `tests/suites/unit/core/services/test_session_lifecycle_user_request_spacing.py` proving the normal output is byte-identical and a degenerate message is bounded.
 - [x] **Migration** — Route `validation_rules/edit.py` (the FIND-block and diff embeds) through `embed_in_fence`. Add unit tests to `tests/suites/unit/core/services/test_validator_edit.py` proving normal diagnostics are unchanged and a degenerate FIND block is bounded.
 - [x] **Migration** — Route `parser_reporting.py` (the expected-structure, AST-view, and structural-mismatch embeds) through `embed_in_fence`. Add unit tests to `tests/suites/unit/core/services/test_parser_reporting.py` proving normal diagnostics are unchanged and a degenerate AST is bounded.
-- [ ] **Migration** — Replace the `fence` Jinja filter in `MarkdownReportFormatter` with an `embed_in_fence`-backed `embed_fence` filter and update `execution_report.md.j2` to call it once per block. Add a test to `tests/suites/unit/core/services/test_report_message_fencing.py` proving a degenerate message action yields a bounded report block.
+- [x] **Migration** — Replace the `fence` Jinja filter in `MarkdownReportFormatter` with an `embed_in_fence`-backed `embed_fence` filter and update `execution_report.md.j2` to call it once per block. Add a test to `tests/suites/unit/core/services/test_report_message_fencing.py` proving a degenerate message action yields a bounded report block.
 - [ ] **Cleanup** — Update the component docs (`markdown_report_formatter.md`, `context_service.md`) to record the single seam. Run `git grep -n "get_fence_for_content" -- src` and confirm only `core/utils/markdown.py` matches.
 
 ## Implementation Notes
@@ -83,6 +83,17 @@ Then the block is bounded and no fence amplification occurs
 - **Integration gate:** `make test` reported the full suite green (1800 passed, 5 skipped), confirming the migration is regression-free.
 - **Recovery note:** the two AST sites shared the identical `fence = get_fence_for_content(ast_text)` text, so each FIND block carried its unique surrounding `_render_ast_view` call line.
 - **Python 3.11 compatibility:** a backslash is illegal inside an f-string expression, so each AST site binds `body = ast_text.rstrip("\n")` outside the f-string.
+
+### Deliverable 4 — As-Built (embed_fence filter migration)
+- **Implementation:** replaced the bare `fence` Jinja filter with an `embed_in_fence`-backed `embed_fence` filter in `MarkdownReportFormatter`. The module import swapped from `get_fence_for_content` to `embed_in_fence`, and the registration became `env.filters["embed_fence"] = embed_in_fence`.
+- **Template migration:** collapsed all 18 `| fence` call sites in `execution_report.md.j2` into 9 `| embed_fence(lang)` calls, one per block. Lang suffixes: `render_resource` uses `path | language_from_path`, `stdout`/`stderr` use `'text'`, `diff` uses `'diff'`, the command uses `'shell'`, user-request uses `'text'`, and the MESSAGE and inline-logs blocks use `''` (bare).
+- **Byte-preservation:** each block composed `<fence><lang>\n<content>\n<fence>` plus the template's trailing newline, which equals `embed_in_fence(content, lang)` plus a trailing newline, so the migration is byte-preserving for well-formed content.
+- **Test coverage:** added `TestReportFenceBounding` to `tests/suites/unit/core/services/test_report_message_fencing.py`, proving a degenerate MESSAGE action with an unclosed 10,000-backtick run yields a bounded report block while the five existing tests stay green.
+- **Red step:** the new `test_degenerate_message_action_yields_bounded_block` failed as predicted (`1 failed, 5 passed`), because the two-call `fence` filter sized the wrapper from the raw 10,000-backtick run and emitted a 10,001-backtick fence.
+- **Green step:** the bulk transform printed `regex replacements: 8` and `OK: 9 blocks migrated to embed_fence`, asserting no leftover `| fence` and exactly nine `| embed_fence` sites. The target file reported `6 passed`.
+- **Integration gate:** `make test` reported the full suite green (1801 passed, 5 skipped), confirming the migration is regression-free.
+- **Recovery note:** the `render_resource` block carried an expression language argument (`path | language_from_path`), so it was migrated separately from the eight uniform blocks.
+- **Whitespace sanitizer:** the `format()` post-processor toggles `in_fence` on `line.strip().startswith("```")`, which still matches `embed_in_fence` output of any fence length, so no change was needed there.
 
 ## Verification
 - [ ] **CLI:** Run `make test` and verify the full suite passes (green-to-green).

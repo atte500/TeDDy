@@ -7,7 +7,7 @@ from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
 from teddy_executor.core.utils.markdown import (
-    get_fence_for_content,
+    embed_in_fence,
     get_language_from_path,
 )
 
@@ -37,7 +37,7 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
                 autoescape=False,  # nosec B701
             )
             env.filters["basename"] = os.path.basename
-            env.filters["fence"] = get_fence_for_content
+            env.filters["embed_fence"] = embed_in_fence
             env.filters["language_from_path"] = get_language_from_path
 
             MarkdownReportFormatter._cached_env = env

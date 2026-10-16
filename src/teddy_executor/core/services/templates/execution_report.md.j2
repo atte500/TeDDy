@@ -15,9 +15,7 @@
 {% else %}
 ### [{{ path }}]({% if not path.startswith('/') %}/{% endif %}{{ path }})
 {% endif %}
-{{ content | fence }}{{ path | language_from_path }}
-{{ content }}
-{{ content | fence }}
+{{ content | embed_fence(path | language_from_path) }}
 {% endmacro %}
 
 {% macro render_action_summary(log) %}
@@ -63,36 +61,26 @@
 {% if log.action_type.upper() == 'MESSAGE' and log.details %}
 {% if log.details is mapping and log.details.get('content') %}
 - **User Reply:**
-{{ log.details.content | trim | fence }}
-{{ log.details.content | trim }}
-{{ log.details.content | trim | fence }}
+{{ log.details.content | trim | embed_fence('') }}
 {% else %}
 - **User Reply:**
-{{ log.details | trim | fence }}
-{{ log.details | trim }}
-{{ log.details | trim | fence }}
+{{ log.details | trim | embed_fence('') }}
 {% endif %}
 
 {% elif log.details and log.details is mapping -%}
 {% if log.details.get("stdout") -%}
 #### `stdout`
-{{ log.details.stdout | trim | fence }}text
-{{ log.details.stdout | trim }}
-{{ log.details.stdout | trim | fence }}
+{{ log.details.stdout | trim | embed_fence('text') }}
 
 {% endif -%}
 {% if log.details.get("stderr") -%}
 #### `stderr`
-{{ log.details.stderr | trim | fence }}text
-{{ log.details.stderr | trim }}
-{{ log.details.stderr | trim | fence }}
+{{ log.details.stderr | trim | embed_fence('text') }}
 
 {% endif -%}
 {% if log.details.get("diff") -%}
 #### `diff`
-{{ log.details.diff | trim | fence }}diff
-{{ log.details.diff | trim }}
-{{ log.details.diff | trim | fence }}
+{{ log.details.diff | trim | embed_fence('diff') }}
 
 {% endif -%}
 {% endif %}
@@ -229,9 +217,7 @@
   {% if cmd %}
 
 - **Command:** {% if '\n' in cmd %}
-{{ '\n' }}{{ cmd | fence }}shell
-{{ cmd }}
-{{ cmd | fence }}
+{{ '\n' }}{{ cmd | embed_fence('shell') }}
 {% else %}`{{ cmd }}`{% endif %}
   {% endif %}
 
@@ -280,9 +266,7 @@ _**Hint:** NOW you MUST use READ on the most promising results_
 {% endif %}
 
 {% if log in report_ns.inline_logs %}
-{{ log.details.content | trim | fence }}
-{{ log.details.content | trim }}
-{{ log.details.content | trim | fence }}
+{{ log.details.content | trim | embed_fence('') }}
 {% endif %}
 
 {{ render_action_blocks(log) }}
@@ -299,7 +283,5 @@ _**Hint:** NOW you MUST use READ on the most promising results_
 {% if report.user_request %}
 
 ## User Request
-{{ report.user_request | fence }}text
-{{ report.user_request }}
-{{ report.user_request | fence }}
+{{ report.user_request | embed_fence('text') }}
 {% endif %}

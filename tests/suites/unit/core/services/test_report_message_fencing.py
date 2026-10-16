@@ -150,3 +150,42 @@ def test_message_action_with_string_details_shows_in_fenced_codeblock(formatter)
     assert "**Details:**" not in markdown
     # Check it's inside a code fence
     assert "```\nreply text from ask_question\n```" in markdown
+
+
+class TestReportFenceBounding:
+    """A degenerate MESSAGE action cannot amplify the report fence.
+
+    The report template routes every embed through the shared `embed_fence`
+    filter backed by `embed_in_fence`, so an unclosed giant backtick run is
+    stripped before the wrapper fence is derived, while well-formed content
+    keeps its exact bytes.
+    """
+
+    def test_degenerate_message_action_yields_bounded_block(self, formatter) -> None:
+        from teddy_executor.core.domain.models import ActionLog, ActionStatus
+
+        # Arrange: an unclosed 10,000-backtick run (the observed defect shape).
+        summary = RunSummary(
+            status=RunStatus.SUCCESS,
+            start_time=datetime.now(),
+            end_time=datetime.now(),
+        )
+        action_log = ActionLog(
+            status=ActionStatus.SUCCESS,
+            action_type="MESSAGE",
+            params={"Description": "Degenerate message"},
+            details={"content": "hello\n" + "`" * 10_000},
+        )
+        report = ExecutionReport(
+            plan_title="Test Plan",
+            run_summary=summary,
+            user_request=None,
+            action_logs=[action_log],
+        )
+
+        # Act
+        markdown = formatter.format(report)
+
+        # Assert: the dangling fence is stripped, so the report block is bounded.
+        assert "`" * 10_001 not in markdown
+        assert "```\nhello\n```" in markdown
