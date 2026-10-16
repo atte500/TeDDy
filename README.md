@@ -244,6 +244,8 @@ teddy resume -m "your next instruction"
 - `--no-yolo` / `-n`: Force interactive mode for a single run.
 - `--message` / `-m`: Initial instruction to pass directly to the agent.
 - `--pipeline` / `-p`: Pipeline mode. Auto-approves actions, requires `-m`, exits immediately after the first message turn, and defaults to the `assistant` agent.
+- `--max-turns`: Maximum turns for a non-interactive run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`.
+- `--max-cost`: Maximum session cost in dollars for a non-interactive run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`.
 
 ### Chat-Oriented Workflow (CHOP)
 

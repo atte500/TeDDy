@@ -31,9 +31,19 @@ Then it names --max-turns and --max-cost with their purpose
 1. `[MIGRATE]` `README.md` `### Optional Flags` list — add the `--max-turns` and `--max-cost` entries.
 
 ## Deliverables
-- [▶] **Cleanup** - Add `--max-turns` and `--max-cost` to the README Optional Flags list.
+- [x] **Cleanup** - Add `--max-turns` and `--max-cost` to the README Optional Flags list.
 
 ## Implementation Notes
+
+### Cleanup (delivered)
+
+- Appended two entries to the README `### Optional Flags` list: `--max-turns` ("Maximum turns for a non-interactive run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`.") and `--max-cost` ("Maximum session cost in dollars for a non-interactive run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`.").
+- Each entry names its overriding config key, per the slice Edge Case, so an operator can find the fallback path.
+- The Environment Variables table already carried `TEDDY_MAX_TURNS` and `TEDDY_MAX_SESSION_COST`, so this slice did not duplicate them.
+- Added a focused unit guard `tests/suites/unit/test_readme_guardrail_flags.py` that scopes its assertion to the `### Optional Flags` section. A whole-file check would falsely pass, because the Environment Variables table already names both variables.
+- Cleanup proof: the Red step reported `2 failed`, each an `AssertionError` naming the missing flag, and the Green step reported `2 passed`.
+- Integration proof: `make test` reports `1840 passed, 5 skipped`.
+- No component-design doc changed, because the slice touched only the user-facing README and one self-contained test.
 
 ## Verification
 - [ ] **README flags:**
