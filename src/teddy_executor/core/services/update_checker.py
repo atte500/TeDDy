@@ -178,6 +178,8 @@ def write_update_cache(cache_path: Path, latest_version: str) -> None:
     """
     Atomically write the cache file (write to temp file, rename).
     Ensures the main thread never reads a partially written file.
+    The write is best-effort: a directory-creation or write failure is
+    logged at debug level and swallowed.
     """
     import json
     from datetime import datetime, timezone
@@ -186,9 +188,9 @@ def write_update_cache(cache_path: Path, latest_version: str) -> None:
         "latest_version": latest_version,
         "checked_at": datetime.now(timezone.utc).isoformat(),
     }
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = cache_path.with_suffix(".tmp")
     try:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path.write_text(
             json.dumps(cache_data, indent=2), encoding="utf-8", newline=""
         )
@@ -206,8 +208,15 @@ def background_check(cache_path: Path, index_url: str = PYPI_URL) -> None:
     """
     Non-blocking background version check.
     Intended to run in a daemon thread. Fetches latest version from PyPI
-    and writes it to cache. All errors are silently caught.
+    and writes it to cache. Every error is swallowed and logged at debug
+    level, so a late cache write can never fail the owning process.
     """
-    latest = fetch_latest_version(index_url)
-    if latest is not None:
-        write_update_cache(cache_path, latest)
+    import logging
+
+    try:
+        latest = fetch_latest_version(index_url)
+        if latest is not None:
+            write_update_cache(cache_path, latest)
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.debug("background_check failed: %s", e)

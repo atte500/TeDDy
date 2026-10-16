@@ -283,6 +283,34 @@ def reset_pyfakefs_use_original():
     fake_os.FakeOsModule.use_original = False
 
 
+@pytest.fixture(autouse=True)
+def _bound_background_update_thread():
+    """Poka-Yoke: no background update-check thread may outlive its test.
+
+    The update check spawns a daemon thread that performs filesystem work
+    through the very modules pyfakefs patches. This fixture joins any live
+    update-check thread at every test boundary, so the thread can never cross
+    into a later ``fs`` test. It complements the fail-silent production guard
+    in ``background_check``.
+    """
+    import threading
+
+    from teddy_executor.core.services.update_checker import background_check
+
+    def _live_update_threads():
+        return [
+            thread
+            for thread in threading.enumerate()
+            if getattr(thread, "_target", None) is background_check
+            and thread.is_alive()
+        ]
+
+    yield
+
+    for thread in _live_update_threads():
+        thread.join(timeout=2)
+
+
 @pytest.fixture
 def temp_path() -> Callable[[str], str]:
     """Platform-aware temp file path factory.

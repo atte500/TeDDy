@@ -67,7 +67,7 @@ And no unhandled thread exception escapes
 ## Deliverables
 - [x] **Wiring** - Add a fake-`gh` acceptance scenario that pins `BASE=<sha>`, and wire the minimal `BASE ?=` override into the shipped `Makefile` so the shipped target honors it end to end.
 - [x] **Logic** - Complete the `ci-watch` override semantics in the shipped `Makefile`: use `BASE=<sha>` verbatim and keep the unknown-base fail-safe when the override carries no run. Add the bad-override acceptance scenario.
-- [ ] **Logic** - Harden the update checker: guard `background_check` to swallow every error and move the cache-directory creation inside the guarded block in `write_update_cache`. Add the fail-silent unit coverage.
+- [x] **Logic** - Harden the update checker: guard `background_check` to swallow every error and move the cache-directory creation inside the guarded block in `write_update_cache`. Add the fail-silent unit coverage, and bound the background thread lifetime at every test boundary.
 - [ ] **Migration** - Mirror the corrected `ci-watch` recipe and the override documentation into both template copies, byte-identical.
 - [ ] **Cleanup** - Remove the two resolved debt entries from the Milestone 5 roadmap section in `docs/project/PROJECT.md`.
 
@@ -88,6 +88,14 @@ And no unhandled thread exception escapes
 - The Green step added one guard immediately after the `OLD` resolution in the shipped `ci-watch` recipe. When `OLD` is empty, the recipe prints `BLOCKING failure (...) — pinned base has no run (unknown base) — YOUR regression` and sets `STATUS=1`.
 - In the walk path `BASE` is set only when a run exists, so `OLD` is always non-empty there and the new guard never fires. The guard therefore fires only on the pinned-runless path, which leaves the default, improvement, regression, multi-commit, and override-pins paths unchanged.
 - The acceptance file passed in full with `6 passed`, and the Integration gate reported `1846 passed, 5 skipped`.
+
+### Logic (update-checker fail-silent hardening)
+- The deliverable hardened `src/teddy_executor/core/services/update_checker.py` in two places. It moved `cache_path.parent.mkdir(parents=True, exist_ok=True)` inside the existing `try` in `write_update_cache`, so a directory-creation `OSError` is caught by the `OSError` branch instead of propagating. It wrapped the `background_check` body in a `try/except Exception` that logs at debug level, honoring the documented "swallows every error" contract. Both functions already used the inline `import logging` idiom, so the guards stay consistent with the file's style.
+- The Red step added three unit tests to `tests/suites/unit/core/services/test_update_checker.py` and confirmed `3 failed, 23 deselected`. The directory-creation test needs no test double: a regular file at the parent path makes `mkdir(parents=True, exist_ok=True)` raise a real `FileExistsError`, because `exist_ok` only suppresses the error when the existing path is a directory. The two `background_check` tests follow the file's `monkeypatch.setattr` idiom on the module functions.
+- The Green step made the two production edits, and the unit file passed in full with `26 passed`.
+- A full-suite Integration run flaked once at `1 failed, 1848 passed, 5 skipped`: `test_file_system_adapter_recursion.py::test_list_directory_recursive_respects_ignores` raised `FileNotFoundError: Directory not found: .`. Four follow-up probes ruled out the update-check thread as the cause. An isolated re-run passed, five full-suite runs passed, and an autouse conftest probe that logged any live update-check thread at every test boundary reported no leaks. The flake is a separate, rare pyfakefs isolation issue, not the update-checker debt.
+- The deliverable also added the autouse `_bound_background_update_thread` fixture to `tests/conftest.py` as a Poka-Yoke. It joins any live update-check thread at every test boundary, so a future test that drives a real session entry point can never leak the thread into a later `fs` test. It complements the fail-silent production guard.
+- The Integration gate reported `1849 passed, 5 skipped`, which is the prior baseline of 1846 plus the three new fail-silent tests.
 
 ## Verification
 - [ ] **Base override pins the baseline:**

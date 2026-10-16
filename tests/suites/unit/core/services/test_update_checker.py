@@ -249,6 +249,24 @@ class TestWriteUpdateCache:
         assert cache_path.is_file()
         assert not tmp_path.exists()
 
+    def test_swallows_directory_creation_failure(self, temp_cache_dir):
+        """A parent path that is a file must not raise; the write is best-effort.
+
+        A regular file at the parent path makes ``mkdir(parents=True,
+        exist_ok=True)`` raise ``FileExistsError``, because ``exist_ok`` only
+        suppresses the error when the existing path is a directory. This
+        exercises the real OS error without a test double.
+        """
+        from teddy_executor.core.services.update_checker import write_update_cache
+
+        parent_file = temp_cache_dir / "afile"
+        parent_file.write_text("not a directory", encoding="utf-8")
+        cache_path = parent_file / ".update_cache.json"
+
+        write_update_cache(cache_path, "5.0.0")
+
+        assert parent_file.is_file()
+
 
 class TestBackgroundCheck:
     """Tests for background_check function."""
@@ -290,3 +308,42 @@ class TestBackgroundCheck:
         background_check(cache_path)
 
         assert not cache_path.exists()
+
+    def test_swallows_fetch_raise(self, monkeypatch, temp_cache_dir):
+        """background_check must swallow an unexpected fetch error."""
+        from teddy_executor.core.services.update_checker import background_check
+
+        def mock_fetch(index_url=None):
+            raise RuntimeError("fetch exploded")
+
+        monkeypatch.setattr(
+            "teddy_executor.core.services.update_checker.fetch_latest_version",
+            mock_fetch,
+        )
+
+        cache_path = temp_cache_dir / ".update_cache.json"
+        background_check(cache_path)
+
+        assert not cache_path.exists()
+
+    def test_swallows_cache_write_raise(self, monkeypatch, temp_cache_dir):
+        """background_check must swallow an unexpected cache-write error."""
+        from teddy_executor.core.services.update_checker import background_check
+
+        def mock_fetch(index_url=None):
+            return "9.0.0"
+
+        def mock_write(cache_path, latest_version):
+            raise OSError("disk full")
+
+        monkeypatch.setattr(
+            "teddy_executor.core.services.update_checker.fetch_latest_version",
+            mock_fetch,
+        )
+        monkeypatch.setattr(
+            "teddy_executor.core.services.update_checker.write_update_cache",
+            mock_write,
+        )
+
+        cache_path = temp_cache_dir / ".update_cache.json"
+        background_check(cache_path)
