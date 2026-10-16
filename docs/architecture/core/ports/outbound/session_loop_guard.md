@@ -6,7 +6,7 @@
 Defines the outbound port that gates the session execution loop. It stops runaway sessions by enforcing turn-count and cost limits in non-interactive runs.
 
 ## Consumers
-- [`SessionOrchestrator`](../../services/session_orchestrator.md): Decides whether the session advances to the next turn.
+- [CLI Adapter](../../../adapters/inbound/cli.md): Calls `should_continue` in the session loop to decide whether to advance to the next turn.
 
 ## Dependencies
 None — this port declares no injected dependencies.

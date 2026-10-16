@@ -1,68 +1,57 @@
 # Component Design: UpdateChecker
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/update_checker.py`](/src/teddy_executor/core/services/update_checker.py)
 
-- **Status:** Validated (prototype confirmed)
+## Purpose
+A lightweight utility module that checks for new TeDDy releases and caches the result locally. It runs the network check in a background thread and surfaces an upgrade instruction without ever upgrading automatically. It is a plain module rather than a port and adapter to minimize architectural overhead.
 
-## Purpose / Responsibility
+## Consumers
+- [CLI Adapter](../../adapters/inbound/cli.md): Serves the `update` command and the session startup notice through `__main__.py` and the session CLI handlers.
 
-Provides a lightweight, non-blocking mechanism to check for new TeDDy releases and cache the result locally. The service is designed as a utility module (not a port/adapter) to minimize architectural overhead while maintaining testability via module-level mocking. The `update` command is notification-only: it surfaces an upgrade instruction but never upgrades automatically.
+## Dependencies
+- `urllib.request` (stdlib): Performs the PyPI JSON API request.
+- `pathlib` (stdlib): Reads and writes the update cache.
+- `importlib.metadata` (stdlib): Reads the installed package version.
+- `packaging.version.Version` (external): Compares PEP 440 versions.
+- `certifi` (external, optional): Supplies the CA bundle when available.
 
-## Failure Modes
+## Class Invariants
+- `fail_silent`: A network failure returns `None` and never blocks CLI execution.
+- `atomic_cache_write`: The cache is written to a temporary file and renamed, so a reader never sees a partial file.
+- `ttl_bound_cache`: A cache entry older than 24 hours is treated as absent.
+- `stdlib_only`: Every public function uses only the standard library plus `packaging`.
 
-- **Network Failure:** PyPI check fails (timeout, DNS, HTTP 5xx). The service MUST treat this as "no update" (fail silently) and NOT block CLI execution. Exceptions from `urllib.request` are caught at the boundary.
-- **Cache Corruption:** `.teddy/.update_cache.json` is malformed. The service MUST treat this as an expired cache (ignore the file, re-fetch on next check).
-- **Stale Index:** The checker reads a package index that no longer receives new releases. Dev pre-releases are published to PyPI (see `.github/workflows/publish.yml`), so the check MUST query `PYPI_URL` for both the stable and experimental channels and never a retired index.
+## Inbound Ports
+None — this module exposes plain functions, not a port.
 
-## Ports
+## Outbound Ports
+None — the module calls the standard library directly and declares no injected ports.
 
-- **Inbound:** Called directly by CLI commands (`__main__.py`) and session handlers (`session_cli_handlers.py`). No formal port interface.
-- **Outbound:**
-  - `urllib.request` (stdlib) for HTTP requests to the PyPI JSON API.
-  - Filesystem (via `pathlib`) for cache read/write at `.teddy/.update_cache.json`.
-  - `importlib.metadata` for reading the current installed version.
+## Data Contracts
+- **Constants:** `PYPI_URL = "https://pypi.org/pypi/teddy-cli/json"`, `CACHE_FILENAME = ".update_cache.json"`, `CACHE_TTL_HOURS = 24`.
+- **Cache file mapping:** `latest_version: str`, `checked_at: str` (ISO 8601 UTC).
 
-## Implementation Details / Logic
+## Operations
 
-The module contains the following top-level functions (all pure or with explicit side-effects):
+### `get_current_version() -> str`
+- **Postconditions:** Returns the installed `teddy-cli` version, or `"0.0.0"` when the package metadata is unavailable.
 
-1. **`get_current_version() -> str`**: Reads installed version from `importlib.metadata.version("teddy-cli")`. Returns `"0.0.0"` on failure (e.g., package not installed in dev mode).
+### `fetch_latest_version(index_url=PYPI_URL, stable_only=True) -> Optional[str]`
+- **Postconditions:** Returns the highest matching version from the PyPI JSON API, filtering pre-releases when `stable_only` is `True`. Returns `None` on any network or parse failure.
 
-2. **`fetch_latest_version(index_url: str = PYPI_URL, stable_only: bool = True) -> Optional[str]`**: Performs a GET request to the PyPI JSON API, scans `data["releases"]`, and returns the highest version — filtering out pre-releases when `stable_only=True`. Returns `None` on any exception.
+### `is_prerelease(version_str) -> bool`
+- **Postconditions:** Returns `True` for a PEP 440 pre-release, and `False` on any parse failure.
 
-3. **`is_prerelease(version_str: str) -> bool`**: Returns `True` if the version is a pre-release (dev/alpha/beta/rc) per PEP 440. Returns `False` on any parse failure.
+### `compare_versions(current, latest) -> bool`
+- **Postconditions:** Returns `True` when `latest > current`, and `False` on any parse failure or equality.
 
-4. **`compare_versions(current: str, latest: str) -> bool`**: Returns `True` if `latest > current` using `packaging.version.Version` comparison.
+### `read_update_cache(cache_path) -> Optional[dict]`
+- **Postconditions:** Returns the cached mapping when it is present, well-formed, and within the TTL. Returns `None` when the file is missing, corrupt, malformed, or expired.
 
-5. **`read_update_cache(cache_path: Path) -> Optional[dict]`**: Reads the JSON cache file, validates structure (must contain `latest_version` and `checked_at`). Returns `None` if file is missing, corrupt, or TTL exceeded (24h).
+### `write_update_cache(cache_path, latest_version) -> None`
+- **Postconditions:** Atomically writes the cache file, creating the parent directory when needed.
 
-6. **`write_update_cache(cache_path: Path, latest_version: str) -> None`**: Atomically writes the cache file (write to temp, rename).
+### `background_check(cache_path, index_url=PYPI_URL) -> None`
+- **Postconditions:** Fetches the latest version and writes it to cache. Intended to run in a daemon thread and swallows every error.
 
-7. **`background_check(cache_path: Path, index_url: str = PYPI_URL) -> None`**: Non-blocking version check intended to run in a daemon thread. Fetches the latest version and writes it to cache.
-
-All functions use stdlib only (plus `packaging` which is a transitive dependency). The `prewarm_imports` helper lives in `cli_helpers.py` (not `update_checker.py`) because it is shared with the `init` command.
-
-## Data Contracts / Methods
-
-```python
-PYPI_URL = "https://pypi.org/pypi/teddy-cli/json"
-CACHE_FILENAME = ".update_cache.json"
-CACHE_TTL_HOURS = 24
-
-def get_current_version() -> str: ...
-
-def fetch_latest_version(index_url: str = PYPI_URL, stable_only: bool = True) -> str | None: ...
-
-def is_prerelease(version_str: str) -> bool: ...
-
-def compare_versions(current: str, latest: str) -> bool:
-    """Returns True if latest > current. Returns False on any parse failure
-    (invalid version strings, empty strings, or equal versions)."""
-
-def read_update_cache(cache_path: Path) -> dict | None: ...
-
-def write_update_cache(cache_path: Path, latest_version: str) -> None: ...
-
-def background_check(cache_path: Path, index_url: str = PYPI_URL) -> None: ...
-
-# Located in cli_helpers.py (shared with init command):
-def prewarm_imports() -> None: ...
-```
+**Note:** The `prewarm_imports` helper lives in [`cli_helpers.py`](/src/teddy_executor/adapters/inbound/cli_helpers.py), not this module, because it is shared with the `init` command.

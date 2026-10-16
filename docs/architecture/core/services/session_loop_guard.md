@@ -1,28 +1,34 @@
-- **Status:** Planned
+# Component Design: ProductionSessionLoopGuard
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/session_loop_guard.py`](/src/teddy_executor/core/services/session_loop_guard.py)
 
-## Purpose / Responsibility
-The `SessionLoopGuard` acts as a safety "Stop the Line" mechanism for automated execution. It prevents infinite loops and runaway costs by enforcing limits configured under `yolo_guardrails`.
+## Purpose
+Implements the `ISessionLoopGuard` outbound port. It stops runaway non-interactive sessions by enforcing turn-count and cost limits relative to a baseline injected at construction.
 
-## Failure Modes
-- **Config Missing**: If `yolo_guardrails` is absent, the guard defaults to conservative limits (10 turns, $1.00) rather than failing open.
+## Consumers
+- [CLI Adapter](../../adapters/inbound/cli.md): Calls `should_continue` in the session loop to decide whether to advance to the next turn.
+- [Composition Root](/src/teddy_executor/container.py): Registers `ProductionSessionLoopGuard` against `ISessionLoopGuard`.
 
-## Ports
-- **Inbound**: `ISessionLoopGuard`
-- **Outbound**: `IConfigService`
+## Dependencies
+- [`IConfigService`](../ports/outbound/config_service.md): Reads the `yolo_guardrails.*` limits and the config path.
 
-## Implementation Details / Logic
-### Process-Relative Tracking
-To support resuming sessions without immediate limit hits, the guard captures the **Session Baseline** upon the first call in a process:
-1. `initial_turn`: The turn count of the first call.
-2. `initial_cost`: The cumulative cost of the first call.
+## Class Invariants
+- `injected_baseline`: The turn-count and cost baselines are injected at construction; every later call is measured as a delta from them.
+- `interactive_always_continues`: An interactive session always returns `(True, None)`.
+- `failure_propagation`: Configuration errors propagate and are never swallowed.
 
-### Enforcement Logic (`should_continue`)
-1. **Interactive Check**: If `interactive=True`, always return `True`.
-2. **Relative Delta Check**:
-   - `delta_turns = current_turn - initial_turn`
-   - `delta_cost = current_cost - initial_cost`
-   - Return `False` if either `delta_turns >= max_turns` or `delta_cost >= max_cost`.
+## Inbound Ports
+None — this is a concrete implementation of an outbound port.
 
-## Data Contracts / Methods
-### `should_continue(current_turn: int, current_cost: float, interactive: bool) -> tuple[bool, str | None]`
-Returns `(True, None)` to continue, or `(False, reason)` to stop with a human-readable explanation. Checks process-relative deltas against configured `yolo_guardrails`.
+## Outbound Ports
+- **`ISessionLoopGuard`**: The driven contract implemented by this service. See the [ISessionLoopGuard design](../ports/outbound/session_loop_guard.md).
+
+## Data Contracts
+- **`should_continue` return:** `(True, None)` to continue, or `(False, reason)` to halt with a human-readable limit message.
+- **Configuration keys:** `yolo_guardrails.enabled` (bool, default `True`), `yolo_guardrails.max_turns` (int, default `99`), `yolo_guardrails.max_session_cost` (float, default `5.0`).
+
+## Operations
+
+### `should_continue(turn_count, cumulative_cost, interactive) -> tuple[bool, Optional[str]]`
+- **Preconditions:** `turn_count` and `cumulative_cost` are measured as deltas from the process-start baseline.
+- **Postconditions:** Returns `(True, None)` when interactive mode is active, when the guardrail is disabled, or when both deltas are under their limits. Returns `(False, reason)` naming the exceeded limit and the config file to edit.

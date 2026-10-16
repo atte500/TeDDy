@@ -1,30 +1,39 @@
-**Status:** Implemented
+# Component Design: MarkdownReportFormatter
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/markdown_report_formatter.py`](/src/teddy_executor/core/services/markdown_report_formatter.py)
 
-## 1. Purpose / Responsibility
-To implement the `IMarkdownReportFormatter` outbound port. This service uses the Jinja2 templating engine to render an `ExecutionReport` object into a Markdown string suitable for CLI output.
+## Purpose
+Implements the `IMarkdownReportFormatter` outbound port. It renders an `ExecutionReport` into a user-facing Markdown string through a cached Jinja2 environment and the `execution_report.md.j2` template, then sanitizes trailing whitespace outside code fences.
 
-## 2. Ports
--   **Implements (Outbound):** `IMarkdownReportFormatter`
+## Consumers
+- `SessionLifecycleManager` (`session_lifecycle_manager.py`): Renders the report for a session turn. This service has no component doc yet.
+- [`SessionPorts`](/src/teddy_executor/core/domain/models/planning_ports.py): Declares `report_formatter: IMarkdownReportFormatter` in the session ports bundle.
+- [CLI Adapter](../../adapters/inbound/cli.md): Renders the report for the manual `execute` flow through `cli_helpers`.
+- [`TextualPlanReviewer`](../../adapters/inbound/textual_plan_reviewer.md): Renders a synthetic single-action report for the reviewer echo.
+- [Composition Root](/src/teddy_executor/container.py): Registers `MarkdownReportFormatter` against `IMarkdownReportFormatter`.
 
-## 3. Implementation Details
-This service will be implemented using the **Jinja2 Template Engine**, as validated by the technical spike.
+## Dependencies
+- `jinja2` (external): Supplies the `Environment` and `PackageLoader` used to render the template.
+- [`execution_report.md.j2`](/src/teddy_executor/core/services/templates/execution_report.md.j2): The Jinja2 template that defines the report layout and macros.
+- [`embed_in_fence` and `get_language_from_path`](/src/teddy_executor/core/utils/markdown.py): Custom filters for fence-safe content embedding.
+- [`scrub_dict_for_serialization`](/src/teddy_executor/core/utils/serialization.py): Neutralizes non-serializable values before rendering.
 
-1.  **Template Loading:** The service will be initialized with a Jinja2 `Environment`. It will be configured to load templates from a dedicated directory within the project's source code (e.g., `src/teddy_executor/core/services/templates/`).
-2.  **Context Preparation:** The `format` method will receive an `ExecutionReport` object. It will transform this object into a simple dictionary (`context`) that is easy to work with inside the Jinja2 template. This separates the domain model from the presentation context.
-3.  **Rendering:** The `format` method will load a specific template (e.g., `execution_report.md.j2`), render it with the prepared context, and return the resulting string.
+## Class Invariants
+- `cached_environment`: The Jinja2 `Environment` and template are cached at class level and shared across instances.
+- `fence_aware_sanitization`: Trailing-whitespace and blank-line sanitization never alters content inside a fenced code block.
+- `no_autoescape`: The environment disables autoescape because the output is Markdown, not HTML.
 
-This approach provides a clean separation of concerns between data preparation (Python) and presentation (the template file).
+## Inbound Ports
+None — this is a concrete implementation of an outbound port.
 
-## 5. Responsibilities
--   **Multi-Modal Reporting:** Supports two primary output modes:
-    -   **Concise (CLI):** Focuses on immediate outcomes and resource contents. Omits rationale and original action plan to save space and reduce noise in manual workflows.
-    -   **Comprehensive (Session):** Provides a full audit trail including rationale and the original action plan. Omits verbatim content of successful `READ` actions (as these are managed by the session's context system).
--   **Modular Rendering:** Uses Jinja2 macros to encapsulate rendering logic for headers, rationales, and action logs, ensuring consistency across modes.
--   **Execution Reporting:** Formats the results of successful or failed actions. Includes the `Similarity Score` for all `EDIT` actions to maintain transparency.
--   **Diff Transparency:** Automatically injects surgical, hunk-based character-level diffs for all successful `EDIT` actions where the `Similarity Score` is less than 1.0, and unified diffs for `CREATE` actions where `Overwrite: true`. Diff injection is suppressed for perfect (1.0) `EDIT` matches.
--   **Validation Reporting:** Renders `validation_result` errors and `failed_resources` (content of files that failed validation) to aid in debugging.
--   **Smart Fencing:** Uses a custom Jinja2 filter (`| embed_fence(lang)`) backed by the shared `embed_in_fence` seam in `core/utils/markdown.py`. The filter sanitizes the content by stripping a trailing unclosed code fence, then wraps it in a fence sized from the sanitized content, so a degenerate backtick run cannot amplify the wrapper fence while nested code blocks remain valid Markdown.
--   **Whitespace Sanitization:** Post-processes the rendered report to remove trailing whitespace and collapse sequences of 3+ newlines into 2. This logic is **code-block aware**, ensuring that whitespace and newlines inside fenced code blocks are preserved verbatim.
+## Outbound Ports
+- **`IMarkdownReportFormatter`**: The driven contract implemented by this service. See the [IMarkdownReportFormatter design](../ports/outbound/markdown_report_formatter.md).
 
-## 4. Data Contracts / Methods
-This service implements the `format` method as defined by the `IMarkdownReportFormatter` port.
+## Data Contracts
+- **`ExecutionReport`** (`teddy_executor.core.domain.models.execution_report`): The report rendered into Markdown.
+
+## Operations
+
+### `format(report) -> str`
+- **Preconditions:** `report` is a valid `ExecutionReport`.
+- **Postconditions:** Returns the rendered Markdown string. The shared template renders two modes: a concise CLI mode that omits the rationale and the original plan, and a comprehensive session mode that carries the full audit trail without verbatim `READ` content. Successful `EDIT` actions with a similarity below 1.0 receive a character-level diff, and overwriting `CREATE` actions receive a unified diff. Fenced content is wrapped through the fence-aware `embed_fence` filter, and trailing whitespace outside code fences is removed.
