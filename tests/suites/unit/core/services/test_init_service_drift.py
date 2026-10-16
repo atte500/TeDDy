@@ -33,6 +33,11 @@ def _build_service(container):
 
     fs.path_exists.side_effect = _path_exists
     fs.read_file.side_effect = _read_file
+    # The prompts channel runs the shared stem scan; every manifest `.md` exists,
+    # so the scan result is unused, but the scan itself must be configured.
+    fs.list_directory.side_effect = lambda path: (
+        list(_PROMPT_FILES) if path == ".teddy/prompts" else []
+    )
 
     return InitService(
         file_system=fs,
@@ -65,13 +70,17 @@ def test_check_drift_reports_every_prompt_missing_when_prompts_dir_absent(contai
     def _path_exists(path: str) -> bool:
         # The user's prompts directory is entirely absent; every bundled default
         # and every docs/templates/ default is present.
-        return not path.startswith(".teddy/prompts/")
+        return not path.startswith(".teddy/prompts")
 
     def _read_file(path: str) -> str:
         return f"<{path.rsplit('/', 1)[-1]}>"
 
     fs.path_exists.side_effect = _path_exists
     fs.read_file.side_effect = _read_file
+    # The absent-directory guard MUST prevent the directory scan: a guarded scan
+    # never calls list_directory on an absent directory, which the real adapter
+    # would reject with FileNotFoundError.
+    fs.list_directory.side_effect = FileNotFoundError(".teddy/prompts")
 
     service = InitService(
         file_system=fs,
@@ -87,12 +96,13 @@ def test_check_drift_reports_every_prompt_missing_when_prompts_dir_absent(contai
     assert report.edited_templates == ()
 
 
-def test_check_drift_reports_stale_xml_as_missing_md(container):
-    """A user's old `.xml` prompt makes the `.md` manifest entry report MISSING.
+def test_check_drift_reports_stale_xml_as_edited_md(container):
+    """A user's old `.xml` prompt makes the `.md` manifest entry report EDITED.
 
-    After the migration the prompt manifest is the `.md` names, so a stale
-    ``.teddy/prompts/pathfinder.xml`` surfaces as a missing ``pathfinder.md``;
-    the ``teddy start`` preflight then advises ``teddy init prompts``.
+    The drift check and the prompt copy routine share one stem-membership
+    predicate, so a stale ``.teddy/prompts/pathfinder.xml`` counts as present
+    for ``pathfinder.md`` and diverges from the bundled default; the ``teddy
+    start`` preflight then advises ``teddy init prompts``.
     """
     fs = register_mock(container, IFileSystemManager)
 
@@ -106,6 +116,9 @@ def test_check_drift_reports_stale_xml_as_missing_md(container):
 
     fs.path_exists.side_effect = _path_exists
     fs.read_file.side_effect = lambda p: f"<{p.rsplit('/', 1)[-1]}>"
+    fs.list_directory.side_effect = lambda path: (
+        ["pathfinder.xml"] if path == ".teddy/prompts" else []
+    )
 
     service = InitService(
         file_system=fs,
@@ -115,4 +128,5 @@ def test_check_drift_reports_stale_xml_as_missing_md(container):
 
     report = service.check_drift()
 
-    assert "pathfinder.md" in report.missing_prompts
+    assert "pathfinder.md" in report.edited_prompts
+    assert "pathfinder.md" not in report.missing_prompts

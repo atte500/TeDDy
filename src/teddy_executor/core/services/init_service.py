@@ -146,6 +146,35 @@ class InitService(IInitUseCase):
         """Returns a filename's case-folded stem for identity comparison."""
         return Path(filename).stem.casefold()
 
+    def _present_stems(self, dest_dir: str) -> set[str]:
+        """Returns the case-folded stems of every entry in ``dest_dir``.
+
+        Returns an empty set when ``dest_dir`` is absent, because the file-system
+        adapter raises ``FileNotFoundError`` when asked to list a missing
+        directory. Single-sources the directory scan shared by the prompt copy
+        routine and the drift check.
+        """
+        if not self._file_system.path_exists(dest_dir):
+            return set()
+        return {
+            self._stem_key(name) for name in self._file_system.list_directory(dest_dir)
+        }
+
+    def _entry_is_present(
+        self, target_path: str, filename: str, present_stems: set[str]
+    ) -> bool:
+        """True when the exact file OR a same-stem sibling exists in the directory.
+
+        ``present_stems`` carries the case-folded stems of the directory entries,
+        so a same-stem file under ANY extension counts as present. An empty set
+        means the caller disabled stem identity or the directory holds no
+        same-stem entry. Single-sources the stem-membership predicate shared by
+        the prompt copy routine and the drift check.
+        """
+        return self._file_system.path_exists(target_path) or (
+            self._stem_key(filename) in present_stems
+        )
+
     def _prune_same_stem(self, dest_dir: str, filename: str) -> None:
         """Removes same-stem files with a different name (stem identity).
 
@@ -183,20 +212,11 @@ class InitService(IInitUseCase):
         stem_identity = policy.stem_identity
         if not self._file_system.path_exists(dest_dir):
             self._file_system.create_directory(dest_dir)
-        same_stems = (
-            {
-                self._stem_key(name)
-                for name in self._file_system.list_directory(dest_dir)
-            }
-            if stem_identity
-            else set()
-        )
+        present_stems = self._present_stems(dest_dir) if stem_identity else set()
         count = 0
         for fname in filenames:
             target_path = f"{dest_dir}/{fname}"
-            exists = self._file_system.path_exists(target_path) or (
-                stem_identity and self._stem_key(fname) in same_stems
-            )
+            exists = self._entry_is_present(target_path, fname, present_stems)
             if not exists or (overwrite and fname not in create_only):
                 content = resolve_content(fname)
                 if content is not None:
@@ -353,6 +373,7 @@ class InitService(IInitUseCase):
         dest_dir: str,
         filenames: Sequence[str],
         resolve_bundled: Callable[[str], str | None],
+        stem_identity: bool = False,
     ) -> tuple[tuple[str, ...], tuple[str, ...]]:
         """Partitions ``filenames`` into (edited, missing) against bundled defaults.
 
@@ -360,13 +381,25 @@ class InitService(IInitUseCase):
         user copy exists, a bundled default is resolvable, and the two contents
         differ. Unresolvable bundled defaults are skipped (never reported as
         drift). Order is preserved from ``filenames`` for deterministic output.
+
+        When ``stem_identity`` is set (prompt checks only), a destination entry
+        sharing an entry's stem under ANY extension (e.g. a pre-migration
+        ``.xml``) counts as PRESENT and is reported as EDITED. Such a file
+        diverges from the bundled ``.md`` default, so it is not missing. This
+        mirrors the stem identity used by the prompt copy routine.
         """
         edited: list[str] = []
         missing: list[str] = []
+        present_stems = self._present_stems(dest_dir) if stem_identity else set()
         for fname in filenames:
             user_path = f"{dest_dir}/{fname}"
-            if not self._file_system.path_exists(user_path):
+            if not self._entry_is_present(user_path, fname, present_stems):
                 missing.append(fname)
+                continue
+            if not self._file_system.path_exists(user_path):
+                # Present only as a same-stem sibling (e.g. a stale ``.xml``);
+                # it diverges from the bundled ``.md`` default.
+                edited.append(fname)
                 continue
             bundled_content = resolve_bundled(fname)
             if bundled_content is None:
@@ -389,6 +422,7 @@ class InitService(IInitUseCase):
             dest_dir=".teddy/prompts",
             filenames=_PROMPT_FILES,
             resolve_bundled=lambda fname: self._get_default_content(f"prompts/{fname}"),
+            stem_identity=True,
         )
         edited_templates, missing_templates = self._classify_drift(
             dest_dir="docs/templates",
