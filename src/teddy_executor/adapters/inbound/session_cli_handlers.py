@@ -241,6 +241,71 @@ def _run_health_checks() -> None:
     _check_git_initialized()
 
 
+def _start_background_update_check(container: Container) -> list[str]:
+    """Start the non-blocking version check and report the update-check keys.
+
+    Both session entry points share this preamble: it spawns the daemon
+    version-fetch thread, then emits the cached update notification (if any).
+    The returned list names the checks that fired so the shared disable-footer
+    can report them.
+    """
+    import threading
+
+    cache_path = find_project_root() / ".teddy" / ".update_cache.json"
+    thread = threading.Thread(
+        target=background_check,
+        args=(cache_path,),
+        daemon=True,
+    )
+    thread.start()
+    return _display_update_notification(container, cache_path)
+
+
+def _run_startup_preamble(
+    container: Container,
+    fired: list[str],
+    agent: Optional[str] = None,
+    setup_editor: Optional[bool] = None,
+    setup_api_key: Optional[bool] = None,
+) -> None:
+    """Run the shared startup preamble for both session entry points.
+
+    The order is fixed so the banner layout cannot drift: health checks, the
+    ``Checking configurations...`` line, the preflight check (whose returned
+    keys extend ``fired``), then the shared disable-footer. ``start`` forwards
+    its ``agent`` so the preflight validates the agent prompt; ``resume``
+    leaves it ``None`` and validates no agent.
+    """
+    _run_health_checks()
+    typer.echo("Checking configurations...", err=True)
+    fired.extend(
+        _run_cli_preflight_check(
+            container,
+            agent=agent,
+            setup_editor=setup_editor,
+            setup_api_key=setup_api_key,
+        )
+    )
+    _display_checks_footer(fired)
+
+
+def _handle_startup_error(container: Container, error: Exception) -> None:
+    """Print a startup error and exit with code 1 (shared by both entry points).
+
+    A ``ConfigurationError`` additionally prints the configuration path hint.
+    """
+    from teddy_executor.core.domain.models.exceptions import ConfigurationError
+
+    if isinstance(error, ConfigurationError):
+        config_service = container.resolve(IConfigService)
+        config_path = config_service.get_config_path()
+        typer.echo(f"Error: {error}", err=True)
+        typer.echo(f"Please update your configuration at: {config_path}", err=True)
+    else:
+        typer.echo(f"Error: {error}", err=True)
+    raise typer.Exit(code=1)
+
+
 def _determine_session_name(name: Optional[str], message: Optional[str]) -> str:
     """Determine session name (slugify message if name is missing)."""
     if name:
@@ -565,17 +630,7 @@ def handle_new_session(  # noqa: PLR0913
     setup_api_key: Optional[bool] = None,
 ):
     """Logic for the 'start' command."""
-    import threading
-
-    # Start non-blocking background version check
-    cache_path = find_project_root() / ".teddy" / ".update_cache.json"
-    thread = threading.Thread(
-        target=background_check,
-        args=(cache_path,),
-        daemon=True,
-    )
-    thread.start()
-    fired = _display_update_notification(container, cache_path)
+    fired = _start_background_update_check(container)
 
     try:
         # 0. Pipeline mode requires an initial message
@@ -587,20 +642,14 @@ def handle_new_session(  # noqa: PLR0913
         # 1. Ensure project is initialized
         container.resolve(IInitUseCase).ensure_initialized()
 
-        # 2. Health checks (advisory, non-blocking)
-        _run_health_checks()
-
-        # 2. Pre-flight checks (Fail-fast before user interaction)
-        typer.echo("Checking configurations...", err=True)
-        fired.extend(
-            _run_cli_preflight_check(
-                container,
-                agent=agent,
-                setup_editor=setup_editor,
-                setup_api_key=setup_api_key,
-            )
+        # 2. Shared startup preamble (health checks + preflight + footer)
+        _run_startup_preamble(
+            container,
+            fired,
+            agent=agent,
+            setup_editor=setup_editor,
+            setup_api_key=setup_api_key,
         )
-        _display_checks_footer(fired)
         _echo_config_success(container, agent, model=model)
 
         session_manager: ISessionManager = container.resolve(ISessionManager)
@@ -635,18 +684,7 @@ def handle_new_session(  # noqa: PLR0913
         )
 
     except Exception as e:
-        from teddy_executor.core.domain.models.exceptions import ConfigurationError
-
-        if isinstance(e, ConfigurationError):
-            from teddy_executor.core.ports.outbound.config_service import IConfigService
-
-            config_service = container.resolve(IConfigService)
-            config_path = config_service.get_config_path()
-            typer.echo(f"Error: {e}", err=True)
-            typer.echo(f"Please update your configuration at: {config_path}", err=True)
-        else:
-            typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(code=1)
+        _handle_startup_error(container, e)
 
 
 def _echo_config_success(
@@ -1109,32 +1147,16 @@ def handle_resume_session(  # noqa: PLR0913
     setup_api_key: Optional[bool] = None,
 ):
     """Logic for the 'resume' command."""
-    import threading
-
-    # Start non-blocking background version check
-    cache_path = find_project_root() / ".teddy" / ".update_cache.json"
-    thread = threading.Thread(
-        target=background_check,
-        args=(cache_path,),
-        daemon=True,
-    )
-    thread.start()
-    fired = _display_update_notification(container, cache_path)
+    fired = _start_background_update_check(container)
 
     try:
-        # 1. Health checks (advisory, non-blocking)
-        _run_health_checks()
-
-        # 2. Pre-flight checks
-        typer.echo("Checking configurations...", err=True)
-        fired.extend(
-            _run_cli_preflight_check(
-                container,
-                setup_editor=setup_editor,
-                setup_api_key=setup_api_key,
-            )
+        # 1. Shared startup preamble (health checks + preflight + footer)
+        _run_startup_preamble(
+            container,
+            fired,
+            setup_editor=setup_editor,
+            setup_api_key=setup_api_key,
         )
-        _display_checks_footer(fired)
 
         # 2. Resolve session name
         session_name = _resolve_session_name(container, path)
@@ -1163,15 +1185,4 @@ def handle_resume_session(  # noqa: PLR0913
         )
 
     except Exception as e:
-        from teddy_executor.core.domain.models.exceptions import ConfigurationError
-
-        if isinstance(e, ConfigurationError):
-            from teddy_executor.core.ports.outbound.config_service import IConfigService
-
-            config_service = container.resolve(IConfigService)
-            config_path = config_service.get_config_path()
-            typer.echo(f"Error: {e}", err=True)
-            typer.echo(f"Please update your configuration at: {config_path}", err=True)
-        else:
-            typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(code=1)
+        _handle_startup_error(container, e)

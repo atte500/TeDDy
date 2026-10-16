@@ -153,6 +153,17 @@ All three toggles are read additively via `IConfigService.get_setting`, so a con
 
 **`_ensure_commit_hooks` compare-and-skip (Slice 00-20):** before spawning `pre-commit install -f -t pre-commit -t post-commit`, the guard verifies each requested shim PER HOOK TYPE (pre-commit installs ONE shim per hook type; each declares only its OWN `--hook-type=<type>`): the shim exists in the resolved hooks directory (`.git/hooks` or `core.hooksPath`), contains `hook-impl`, declares `--config=.pre-commit-config.yaml`, declares its own `--hook-type=`, and embeds an existing `INSTALL_PYTHON` path. All shims valid → the subprocess is skipped and the green notification still shows. Any failure (missing shim, dead interpreter, foreign content) → the real install runs exactly as before (safety never reduced). Byte-comparison is explicitly rejected: shims are deterministic functions of (template, INSTALL_PYTHON, args), but install methods (pipx/uv/pip) produce distinct valid hashes, so byte-comparison would trigger a wasteful reinstall on every interpreter change.
 
+### Shared Startup Helpers (`_start_background_update_check`, `_run_startup_preamble`, `_handle_startup_error`)
+**Status:** Implemented (As-Built, Slice 00-38)
+
+Slice 00-38 consolidated the duplicated session-startup preamble so `handle_new_session` and `handle_resume_session` cannot drift apart. Both entry points now drive startup through three shared module-level helpers:
+
+- **`_start_background_update_check(container)`** spawns the daemon version-fetch thread and returns the update-check keys reported by `_display_update_notification`.
+- **`_run_startup_preamble(container, fired, agent, setup_editor, setup_api_key)`** runs the fixed-order preamble: `_run_health_checks()`, the `Checking configurations...` line, `_run_cli_preflight_check(...)` whose returned keys extend `fired`, then `_display_checks_footer(fired)`.
+- **`_handle_startup_error(container, error)`** prints the error and exits with code 1, adding the configuration-path hint for a `ConfigurationError`.
+
+The intended difference is preserved: `start` forwards its `agent` to the preflight, calls `ensure_initialized()`, and resolves the message and session, while `resume` passes no agent, resolves the session name, and syncs meta. Both entry points emit their session-path line with NO leading blank line, so the identity block is followed immediately by the path.
+
 ### Session Command: `resume`
 **Status:** Implemented
 
@@ -164,7 +175,7 @@ Resumes an existing session. The optional positional `[PATH|SLUG]` accepts eithe
     2. ONLY on `ValueError`, resolution falls back to `ISessionManager.resolve_session_from_slug(path)`, which matches the argument's timestamp-stripped slug EXACTLY and case-insensitively (`teddy resume add-user-auth` → `.teddy/sessions/20260124_153000-add-user-auth`) and resolves LATEST-WINS when several sessions share a slug.
     3. When no argument is supplied, the branch is unchanged: climb from the CWD, then `get_latest_session_name()`.
     Resolution follows the Hexagonal convention (port → service → repository); no filesystem I/O is performed in the CLI adapter.
-*   **Output:** `handle_resume_session` prints the `Agent:`/`Model:` identity block first (a leading blank line, then `Agent: <name>` and `Model: <model>` on separate lines), followed by a blank line and `Resuming session: .teddy/sessions/<resolved-name>`, surfacing the chosen folder.
+*   **Output:** `handle_resume_session` prints the `Agent:`/`Model:` identity block first (a leading blank line, then `Agent: <name>` and `Model: <model>` on separate lines), followed immediately by `Resuming session: .teddy/sessions/<resolved-name>` with no blank line between them (unified with `start` by Slice 00-38), surfacing the chosen folder.
 
 ### Utility Command: `init`
 
