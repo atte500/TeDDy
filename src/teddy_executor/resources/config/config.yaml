@@ -37,10 +37,8 @@ checks:
 # --no-yolo / -n flag always overrides this setting for a single invocation.
 yolo_default: false
 
-# Safety limits enforced in EVERY non-interactive run (--yolo and --pipeline).
-# When a limit is hit the session is terminated with a message explaining how
-# to adjust these values. Limits are per-run: `teddy resume` starts counting
-# from 0 again.
+# Safety limits enforced in non-interactive runs (--yolo and --pipeline).
+# Limits are per-run: `teddy resume` starts counting from 0 again.
 yolo_guardrails:
   enabled: true
   max_turns: 99
