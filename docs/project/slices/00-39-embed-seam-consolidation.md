@@ -1,5 +1,5 @@
 # Slice: Embed-Seam Consolidation
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Ad-hoc (not tracked in the Roadmap per PROJECT.md)
 - **Depends On:** [00-38-session-hang-fence-sanitization.md](./00-38-session-hang-fence-sanitization.md) (Completed; provides the shared `embed_in_fence` seam)
 - **Specs:** N/A (consolidation; no permanent system invariant changes)
@@ -52,7 +52,7 @@ Then the block is bounded and no fence amplification occurs
 - **No Wiring deliverable.** The consolidation reuses the existing `embed_in_fence` seam and introduces no new boundary, so no hardcoded-skeleton tracer bullet applies. This mirrors slice 00-38's documented precedent.
 - **Byte-preservation contract.** Each migrated site already composes its block as `fence + lang + "\n" + content + "\n" + fence` (or the bare-fence variant), so the migration is byte-preserving for well-formed content. A site whose content ends in a newline must strip that newline before delegating.
 - **Jinja filter.** The `fence` filter is replaced by a two-argument `embed_fence` filter; the template calls it once per block instead of twice.
-- **Deferred residual.** A BALANCED giant run (a well-formed block whose delimiter is a giant run) evades unclosed-fence detection and is NOT collapsed by this slice. Case file 07 Preventative Measure 1 defers it ("address it only if such a case ever appears"), and the user rejected a threshold guard in favor of the semantic detector. The migration is therefore byte-preserving for all well-formed content, including a balanced giant run.
+- **Deferred residual.** A BALANCED giant run (a well-formed block whose delimiter is a giant run) evades unclosed-fence detection and is NOT collapsed by this slice. Case file 07 Preventative Measure 1 defers it ("address it only if such a case ever appears"), and the user rejected a threshold guard in favor of the semantic detector. The migration is therefore byte-preserving for all well-formed content, including a balanced giant run. A second residual is the ndiff diagnostic embed in `validation_rules/edit.py`: the diff lines carry `- `, `+ `, `? `, or two-space prefixes, so a giant backtick run on a changed diff line does not match the `^ {0,3}` fence anchor and is not stripped by `embed_in_fence`. Both residuals share the same content-bounding category that case file 07 Preventative Measure 1 defers.
 
 ### Deliverable 1 — As-Built (SessionLifecycleManager._append_user_request migration)
 - **Implementation:** routed `SessionLifecycleManager._append_user_request` through the shared `embed_in_fence` seam. The two-line composition (`fence = get_fence_for_content(message)` plus the f-string assembly) was replaced by `content += f"\n\n## User Request\n{embed_in_fence(message, 'text')}\n"`, and the module import swapped from `get_fence_for_content` to `embed_in_fence`.
