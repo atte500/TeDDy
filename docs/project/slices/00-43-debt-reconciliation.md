@@ -68,7 +68,7 @@ And no unhandled thread exception escapes
 - [x] **Wiring** - Add a fake-`gh` acceptance scenario that pins `BASE=<sha>`, and wire the minimal `BASE ?=` override into the shipped `Makefile` so the shipped target honors it end to end.
 - [x] **Logic** - Complete the `ci-watch` override semantics in the shipped `Makefile`: use `BASE=<sha>` verbatim and keep the unknown-base fail-safe when the override carries no run. Add the bad-override acceptance scenario.
 - [x] **Logic** - Harden the update checker: guard `background_check` to swallow every error and move the cache-directory creation inside the guarded block in `write_update_cache`. Add the fail-silent unit coverage, and bound the background thread lifetime at every test boundary.
-- [ ] **Migration** - Mirror the corrected `ci-watch` recipe and the override documentation into both template copies, byte-identical.
+- [x] **Migration** - Mirror the corrected `ci-watch` recipe and the override documentation into both template copies, byte-identical.
 - [ ] **Cleanup** - Remove the two resolved debt entries from the Milestone 5 roadmap section in `docs/project/PROJECT.md`.
 
 ## Implementation Notes
@@ -96,6 +96,13 @@ And no unhandled thread exception escapes
 - A full-suite Integration run flaked once at `1 failed, 1848 passed, 5 skipped`: `test_file_system_adapter_recursion.py::test_list_directory_recursive_respects_ignores` raised `FileNotFoundError: Directory not found: .`. Four follow-up probes ruled out the update-check thread as the cause. An isolated re-run passed, five full-suite runs passed, and an autouse conftest probe that logged any live update-check thread at every test boundary reported no leaks. The flake is a separate, rare pyfakefs isolation issue, not the update-checker debt.
 - The deliverable also added the autouse `_bound_background_update_thread` fixture to `tests/conftest.py` as a Poka-Yoke. It joins any live update-check thread at every test boundary, so a future test that drives a real session entry point can never leak the thread into a later `fs` test. It complements the fail-silent production guard.
 - The Integration gate reported `1849 passed, 5 skipped`, which is the prior baseline of 1846 plus the three new fail-silent tests.
+
+### Migration (template mirror and override documentation)
+- The deliverable mirrored the corrected `ci-watch` recipe and the `BASE=<sha>` override documentation into both template copies. It documented the override in the `ci-watch` usage list and in the key-behaviors section of `docs/templates/makefile.md`.
+- A splice script extracted the recipe block from the real `Makefile` (from `RETRY_POLLS ?= 10` through `exit $$STATUS`) and wrote it verbatim into the docs template, then copied the file over the bundled template. Byte-identity holds by construction, and the script asserts it. The splice printed `mirror OK; recipe block chars: 4142`.
+- The Red step added `tests/suites/unit/test_makefile_template_mirror.py` with two guards and confirmed `1 failed, 1 passed`. The byte-identity guard passed because the two copies matched, and the recipe-containment guard failed because both copies omitted the four corrected markers (`BASE ?=`, the `BASE="$(BASE)"` seed, the walk-skip guard, and the pinned-no-run guard).
+- The guard extracts the shipped block from the real `Makefile`, so it tracks the source of truth instead of a hardcoded copy. It follows the existing content-guard precedent (`test_readme_guardrail_flags.py`, `test_prompt_resource_relocation.py`) and gives the mirror durable coverage.
+- The Green step made the two documentation edits and ran the splice. The mirror guard passed with `2 passed`, and the Integration gate reported `1851 passed, 5 skipped`, which is the prior baseline of 1849 plus the two new mirror-guard tests.
 
 ## Verification
 - [ ] **Base override pins the baseline:**

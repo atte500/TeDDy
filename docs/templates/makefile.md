@@ -169,7 +169,7 @@ Attribution is deterministic: SHA → run → run-level + per-job conclusion (ne
 
 Key behaviors:
 
-1. **Automatic SHA and BASE resolution.** `SHA` defaults to current `HEAD` (or `COMMIT=<sha>`), and `BASE` resolves per workflow to the most recent ancestor of `SHA` that carries a run for that workflow (bounded by `BASE_DEPTH`, default 50).
+1. **Automatic SHA and BASE resolution.** `SHA` defaults to current `HEAD` (or `COMMIT=<sha>`), and `BASE` resolves per workflow to the most recent ancestor of `SHA` that carries a run for that workflow (bounded by `BASE_DEPTH`, default 50). An explicit `BASE=<sha>` pins the baseline verbatim and skips resolution; if the pinned commit carries no run for the workflow, the target fails safe as an unknown base.
 2. **Registration lag is tolerated by a bounded retry.** CI can fail to register a run for the pushed SHA immediately. The target polls `gh run list --commit <sha>` up to `RETRY_POLLS × RETRY_SLEEP` (default 10 × 2s ≈ 20s) before attributing. It fails safe if the run never registers.
 3. **No CI is non-blocking.** If the repository has no workflow files under `.github/workflows/` (`*.yml`/`*.yaml`), the target logs `No CI configured - skipping attribution` and exits 0.
 
@@ -180,6 +180,7 @@ RETRY_POLLS ?= 10
 RETRY_SLEEP ?= 2
 DETAIL_LINES ?= 50
 BASE_DEPTH ?= 50
+BASE ?=
 
 ci-watch:
 	@SHA=$$(git rev-parse $${COMMIT:-HEAD}); \
@@ -223,8 +224,8 @@ ci-watch:
 	    echo "$$WF: BLOCKING (run=$$NEWCONC) — unknown conclusion — fail-safe block"; \
 	    STATUS=1; continue; \
 	  fi; \
-	  BASE=""; CUR="$$SHA"; DEPTH=0; \
-	  while [ $$DEPTH -lt $(BASE_DEPTH) ]; do \
+	  BASE="$(BASE)"; CUR="$$SHA"; DEPTH=0; \
+	  while [ -z "$$BASE" ] && [ $$DEPTH -lt $(BASE_DEPTH) ]; do \
 	    CUR=$$(git rev-parse "$$CUR~1" 2>/dev/null) || break; \
 	    [ -n "$$CUR" ] || break; \
 	    if [ -n "$$(gh run list --commit "$$CUR" --workflow "$$WF" --json databaseId --jq '.[0].databaseId')" ]; then \
@@ -237,6 +238,10 @@ ci-watch:
 	    STATUS=1; continue; \
 	  fi; \
 	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
+	  if [ -z "$$OLD" ]; then \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — pinned base has no run (unknown base) — YOUR regression"; \
+	    STATUS=1; continue; \
+	  fi; \
 	  OLDJOBS=$$(gh run view "$$OLD" --json jobs --jq '.jobs | length'); \
 	  if [ "$$OLDJOBS" = "0" ]; then \
 	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — base run is job-less (invalid workflow, not green) — YOUR regression"; \
@@ -257,6 +262,7 @@ ci-watch:
 **Usage:**
 - `make ci-watch` (watches CI for current `HEAD`)
 - `make ci-watch COMMIT=<sha>` (watches CI for a specific commit)
+- `make ci-watch BASE=<sha>` (pins the comparison baseline to a commit)
 
 ## Remote Probing Protocol (RPP)
 
