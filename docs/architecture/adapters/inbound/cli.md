@@ -179,7 +179,7 @@ Resumes an existing session. The optional positional `[PATH|SLUG]` accepts eithe
 
 ### Utility Command: `init`
 
-**Status:** Implemented
+**Status:** Implemented (As-Built, Slice 00-39)
 
 Creates the `.teddy/` directory with default files (config, gitignore, init.context, .env), pre-warms heavy imports, and runs the same one-time interactive setup gates as `teddy start` (LLM API key + editor) when a terminal is attached.
 
@@ -189,8 +189,9 @@ Creates the `.teddy/` directory with default files (config, gitignore, init.cont
   1. Calls the existing `InitService.ensure_initialized()` to create `.teddy/` and seed default files.
   2. Pre-warms heavy imports (`litellm`, `trafilatura`, `pyperclip`, `bs4`, `ddgs`, `tiktoken`) by importing them. The tiktoken prewarm eliminates the cold encoding load from the first session turn (2.03s on Windows CI).
   3. Echoes a success message: `"TeDDy initialized in .teddy folder."`
-  4. Runs the interactive setup gates (Slice 00-37): when a terminal is attached (`ISystemEnvironment.isatty()`), it prompts for the required LLM API key (only when the key is missing and the configured model requires one) and then for the editor (only when no editor is configured), reusing the same preflight helpers as `teddy start` so no prompt logic is duplicated. A non-interactive run (stdin is not a TTY) prompts for neither. The `teddy init config` subcommand runs the same gates after overwriting `config.yaml`, so the reset editor re-prompts.
-  5. **Idempotent:** Safe to run multiple times.
+  4. Prints the same drift advice as `teddy start` (Slice 00-39): after the summary echo and before the setup gates, the bare-init branch reuses `_display_drift_notification` and `_display_checks_footer` from `session_cli_handlers`, so a drifted prompt or a missing template names the actionable `teddy init prompts` / `teddy init templates` command and the shared disable-footer names the fired checks. The advice is NOT TTY-gated, so it prints on a non-interactive run too. The destructive subcommands (`init prompts`, `init templates`) skip it, because their early return fires first.
+  5. Runs the interactive setup gates (Slice 00-37): when a terminal is attached (`ISystemEnvironment.isatty()`), it prompts for the required LLM API key (only when the key is missing and the configured model requires one) and then for the editor (only when no editor is configured), reusing the same preflight helpers as `teddy start` so no prompt logic is duplicated. A non-interactive run (stdin is not a TTY) prompts for neither. The `teddy init config` subcommand runs the same gates after overwriting `config.yaml`, so the reset editor re-prompts.
+  6. **Idempotent:** Safe to run multiple times.
 
 ### Main Command: `execute`
 **Status:** Implemented
