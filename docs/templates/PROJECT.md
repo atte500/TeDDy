@@ -1,4 +1,4 @@
-# Project Dashboard: {{project_name}}
+# Project Dashboard: {{Project Name}}
 
 ## Product Vision
 The overarching goals, target audience, unique value proposition, and major future directions for the product.

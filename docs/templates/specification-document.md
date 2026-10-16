@@ -1,5 +1,4 @@
-# Spec: {{invariant}}
-- **Status:** Active
+# Spec: {{Descriptive Title of Invariant}}
 
 ## Overview
 Context for the permanent system invariant, the contract it establishes, and the architectural risk it mitigates.

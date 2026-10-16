@@ -1,15 +1,15 @@
-# Milestone 5: Quality Gate & Debt Reconciliation
+# Milestone: Quality Gate & Debt Reconciliation
 
 - **Status:** Planned
 - **Specs:** TBD
 
-## Goal (The "Why")
+## Goal
 To clean up the codebase by eliminating unnecessary quality bypasses, removing dead code and redundant tests, and fixing pre-existing quality gate violations that block pre-commit and CI. This ensures the quality gates can run cleanly and the codebase is maintainable.
 
-## Proposed Solution (The "What")
+## Solution
 Audit and fix all unnecessary inline quality suppression comments (`# noqa`, `# pylint: disable`, `# type: ignore`). Deprecate and remove `--console` mode and all related dead code paths. Remove tests that duplicate coverage without adding behavioral value. Fix the three known Mypy errors and the C901 complexity issue that currently require `--no-verify` to commit. Audit Git history for bypass commits and verify their justification.
 
-## Guidelines (The "How")
+## Guidelines
 - **Test Harness Strategy:**
     - **Quality Bypass Audit:** Use `git grep` to find all inline suppression comments. Verify each is necessary or remove it.
     - **Dead Code Removal:** Remove `--console` CLI flag and all related code paths. Verify no regressions via full test suite.
@@ -42,7 +42,7 @@ Audit and fix all unnecessary inline quality suppression comments (`# noqa`, `# 
     - `Check Python File Length (Max 300 Lines)`
     - `Detect Code Duplication (jscpd)` (duplication owned by Milestone 6)
 
-## Vertical Slices
+## Slices
 > Slice definitions will be created by the Architect during the Design phase. The following high-level breakdown is anticipated:
 >
 > 1. Inline quality bypass audit and cleanup

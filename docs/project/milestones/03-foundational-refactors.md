@@ -1,12 +1,12 @@
-# Milestone 3: Foundational Refactors
+# Milestone: Foundational Refactors
 
 - **Status:** Completed
 - **Specs:** N/A (editor-validation spec retired — feature shipped as slice 03-01)
 
-## Goal (The "Why")
+## Goal
 Eliminate redundant common rules and response format definitions across all 6 agent prompts by extracting shared content into a central `MRP.xml` file. Reduce prompt maintenance burden and ensure protocol consistency by injecting agent name, agent-specific XML, and MRP.xml as a unified system prompt. The MRP is protocol infrastructure — NOT copied to `.teddy/prompts/` for user modification.
 
-## Proposed Solution (The "What")
+## Solution
 Two workstreams will be executed as independent slices:
 
 ### Slice 03-02: MRP Base Prompt & Agent Name Injection
@@ -23,7 +23,7 @@ Bundled Markdown template files are stored in `src/teddy_executor/resources/temp
 
 - **Auto-init on startup:** `teddy start` and `teddy resume` no longer create `docs/templates/` if the directory is missing (non-destructive — never overwrites existing files). Only `teddy init templates` forces overwrite.
 
-## Guidelines (The "How")
+## Guidelines
 - **Test Harness Strategy:**
     - **Blueprint Extraction:** Verify via `mock_fs` that `ensure_templates_initialized()` writes files to `docs/templates/`. Verify agent XMLs no longer contain `<blueprints>` sections via string search.
     - **MRP.xml Injection:** Verify via unit test that `fetch_system_prompt()` assembled content contains agent name line, agent-specific content, and MRP protocol rules. Verify MRP.xml is NOT written to `.teddy/prompts/` by `ensure_initialized()`.
@@ -78,7 +78,7 @@ Bundled Markdown template files are stored in `src/teddy_executor/resources/temp
     - Raise `FileNotFoundError` if MRP.xml cannot be read.
     - Return the full assembled prompt string.
 
-## Vertical Slices
+## Slices
 - [x] **03-01-Editor-Validation-and-Discovery** — Editor discovery, early PATH validation, interactive selection prompt, persistence to config, "disabled" sentinel handling, and diff flags fallback for unknown editors. See the specification for full details.
 - [x] **03-02-MRP-Base-Prompt** — MRP.xml creation, PromptManager agent name + MRP injection logic, legacy detection, and removal of shared general_rules/response_format from agent XMLs. See the [slice definition](/docs/project/slices/03-02-mrp-base-prompt.md) for deliverables and scenarios.
 - [x] **03-03-Templates-and-Init** — Template files, `teddy init templates` subcommand, InitService changes, and blueprint removal from agent XMLs. See the [slice definition](/docs/project/slices/03-03-templates-and-init.md) for deliverables and scenarios.

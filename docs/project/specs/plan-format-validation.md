@@ -1,4 +1,4 @@
-# Specification: Plan Validation
+# Spec: Plan Validation
 
 ## 1. Overview & Principles
 
@@ -36,7 +36,7 @@ These checks ensure the overall document is well-formed.
 
 ### 3.2. Action Block Checks
 
-These checks ensure the `## Action Plan` section and the individual action blocks are correctly structured according to the [New Plan Format Specs](./new-plan-format.md).
+These checks ensure the `## Action Plan` section and the individual action blocks are correctly structured according to the [Plan Format](./plan-format.md).
 
 -   **[✓] Action headers must be H3:** Each action must be defined by a Level 3 (`###`) heading (e.g., `### `CREATE``).
 

@@ -1,4 +1,4 @@
-# Specification: Context Payload Format
+# Spec: Context Payload Format
 
 ## Overview
 

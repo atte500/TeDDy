@@ -1,4 +1,4 @@
-# Component Design: {{component_name}}
+# Component Design: {{Component Name}}
 - **Status:** [Planned | Implemented | Refactoring]
 - **Source:** [`src/path/to/file.ext`](/src/path/to/file.ext)
 

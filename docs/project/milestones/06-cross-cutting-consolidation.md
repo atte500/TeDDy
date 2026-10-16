@@ -1,15 +1,15 @@
-# Milestone 6: Cross-Cutting Consolidation
+# Milestone: Cross-Cutting Consolidation
 
 - **Status:** Planned
 - **Specs:** TBD
 
-## Goal (The "Why")
+## Goal
 Eliminate duplicated literals, helpers, and test doubles that currently live in more than one place and must be kept in manual lockstep. Each duplication is a latent drift bug: when one copy changes, the others silently diverge. This milestone single-sources every such concept so the codebase has one authoritative location per concern, consolidates split test organization, and performs a bounded Failure-Transparency sweep. Every item was previously parked in the retired `## Technical Debt` section of `docs/project/PROJECT.md`; with that holding pen removed, each is now scheduled here as an explicit requirement.
 
-## Proposed Solution (The "What")
+## Solution
 Extract shared constants and helpers into their canonical modules; consolidate bespoke in-memory test fakes and harness boilerplate into `tests/harness/setup/`; consolidate the split inbound-port contract-test directory; single-source the TUI diff-routing decision; and sweep broad `except` blocks that swallow errors without logging. The work is strictly behavior-preserving and driven out with tests-first at the harness boundary.
 
-## Guidelines (The "How")
+## Guidelines
 - **Test Harness Strategy:**
     - **Single-source proof:** For each extracted constant/helper, add or update a test that imports the canonical definition from both former consumer sites and asserts identity — so a future re-duplication fails loudly.
     - **Shared-fake adoption:** Migrate the bespoke fakes onto the shared harness fake and delete the local copies; the full suite MUST remain green.
@@ -33,7 +33,7 @@ Extract shared constants and helpers into their canonical modules; consolidate b
 - **Contract-violating session doubles:** `test_session_replan_loop.py`, `test_session_start_resequencing.py`, and `test_resume_message_threading.py` build their own containers and register a bare `Mock(spec=IInitUseCase)` whose `check_drift()` returns a dynamic Mock (no `__len__`). Extract a shared pre-configured session-container / ports fixture so doubles stay contract-faithful.
 - **Silent error swallowing (Failure Transparency):** broad `except` blocks without logging across `cli_helpers.py`, `local_file_system_adapter.py`, `shell_adapter.py`, `web_scraper_adapter.py`, `yaml_config_adapter.py`, `action_executor.py`, `context_service.py`, `session_pruning_service.py`, `session_repository.py`, `update_checker.py`, and `io.py`. Narrow the type or add debug-level logging; keep legitimate "safe to ignore" comments.
 
-## Vertical Slices
+## Slices
 
 High-level checklist of implementation steps. Each entry follows the format `{{MM-NN}}: [Description & Requirements]`.
 > Slice definitions will be created by the Architect during the Design phase. The following high-level breakdown is anticipated:

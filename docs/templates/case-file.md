@@ -1,4 +1,4 @@
-# Bug: {{bug_title}}
+# Bug: {{Bug Title}}
 - **Status:** Unresolved
 - **Milestone:** [link]
 - **Vertical Slice:** [link]

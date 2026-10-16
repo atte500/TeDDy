@@ -3,7 +3,6 @@
 - **Milestone:** [03-foundational-refactors](/docs/project/milestones/03-foundational-refactors.md)
 - **Specs:** TBD (Milestone doc serves as spec)
 - **Component Docs:** [PromptManager](/docs/architecture/core/services/prompt_manager.md)
-- **Prototype:** [spikes/prototypes/mrp-base-prompt/](/spikes/prototypes/mrp-base-prompt/)
 - **Scope Slug:** `mrp-base-prompt`
 
 ## Business Goal
@@ -87,7 +86,7 @@ And the Pathfinder XML still contains its Handoff Targets and blueprint definiti
 
 ## Key Unknowns
 - [x] [Technical] MRP.xml location: Approved by user — RELOCATED OUT of `src/teddy_executor/resources/config/prompts/` so it is NOT bundled/grouped with the user-overridable agent prompts. New home: `src/teddy_executor/resources/MRP.xml`, loaded via `importlib.resources.files("teddy_executor.resources") / "MRP.xml"`.
-- [x] [Technical] `importlib.resources` API for loading MRP.xml: RESOLVED & EMPIRICALLY VERIFIED (spike at [spikes/prototypes/mrp-base-prompt/](/spikes/prototypes/mrp-base-prompt/), evidence in FINDINGS.md). Use `importlib.resources.files("teddy_executor.resources") / "MRP.xml"`, then `.read_text(encoding="utf-8")`. In this source checkout `files()` returns a `pathlib.PosixPath` whose `is_file()` is True; production code MUST use only the `Traversable` contract (`is_file`, `read_text`) so it also works under zip/wheel installs. A missing MRP.xml raises `FileNotFoundError` both naturally (via `read_text` on a non-existent name) and via the explicit `is_file()`-guarded fail-fast pattern production should adopt. The existing `prompts.py` still does NOT load from bundled resources; PromptManager loads MRP.xml directly.
+- [x] [Technical] `importlib.resources` API for loading MRP.xml: RESOLVED & EMPIRICALLY VERIFIED. Use `importlib.resources.files("teddy_executor.resources") / "MRP.xml"`, then `.read_text(encoding="utf-8")`. In this source checkout `files()` returns a `pathlib.PosixPath` whose `is_file()` is True; production code MUST use only the `Traversable` contract (`is_file`, `read_text`) so it also works under zip/wheel installs. A missing MRP.xml raises `FileNotFoundError` both naturally (via `read_text` on a non-existent name) and via the explicit `is_file()`-guarded fail-fast pattern production should adopt. The existing `prompts.py` still does NOT load from bundled resources; PromptManager loads MRP.xml directly.
 
 ## Implementation Plan
 
@@ -135,7 +134,6 @@ Before the Developer starts, the Prototyper should verify:
 2. `read_text(encoding="utf-8")` works on the Traversable returned by `files()`.
 3. The FileNotFoundError scenario reproduces correctly when MRP.xml is absent.
 
-The Prototyper spike lives at `spikes/prototypes/mrp-base-prompt/`.
 
 ## Verification
 1. [x] Run `pytest tests/suites/unit/core/services/test_prompt_manager.py -v` — all existing tests pass, new MRP injection tests pass.

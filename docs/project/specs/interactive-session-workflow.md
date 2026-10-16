@@ -1,4 +1,4 @@
-# Interactive Session Workflow Specification
+# Spec: Interactive Session Workflow
 
 ## 1. Overview
 

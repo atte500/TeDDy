@@ -1,4 +1,4 @@
-# Slice: {{feature_name}}
+# Slice: {{Feature Name}}
 - **Status:** [Planned | In Progress | Completed]
 - **Milestone:** [link]
 - **Depends On:** [link]

@@ -1,4 +1,4 @@
-# Milestone: {{milestone_title}}
+# Milestone: {{Milestone Title}}
 - **Status:** [Planned | In Progress | Completed]
 - **Specs:** [links]
 

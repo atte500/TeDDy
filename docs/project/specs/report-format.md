@@ -1,4 +1,4 @@
-# Specification: Execution Reports
+# Spec: Execution Reports
 
 ## 1. Overview
 

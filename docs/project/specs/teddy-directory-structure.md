@@ -1,4 +1,4 @@
-# Specification: TeDDy Directory Structure
+# Spec: TeDDy Directory Structure
 
 ## 1. Overview
 

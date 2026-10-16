@@ -1,4 +1,4 @@
-# System Architecture: {{project_name}}
+# System Architecture: {{Project Name}}
 
 ## Conventions & Standards
 

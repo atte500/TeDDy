@@ -1,4 +1,4 @@
-# Project: TeDDy
+# Project Dashboard: TeDDy
 
 ## Product Vision
 
@@ -23,6 +23,7 @@ This section defines the conventions for our project management artifacts.
 - **Numbering:** Artifacts are numbered sequentially using an `MM-NN-name.md` format, where `MM` represents the target Milestone number and `NN` represents the specific Slice or Case File number. For ad-hoc tasks not tied to an active milestone, `00` is used as the Milestone prefix (e.g., `00-01-ad-hoc-feature.md`). Ad-hoc slices are NOT tracked in Milestone documents or the Roadmap.
 - **Archiving Policy:** Once a feature slice or milestone is fully implemented and merged, its active planning artifacts can be deleted. The Git history serves as the official, permanent archive.
 - **Spec Organization:** Specification documents live in a single flat directory `docs/project/specs/` and are reserved strictly for **permanent system invariants** — formats, contracts, protocols (e.g. the MRP), core data models, and non-negotiable architectural rules. Feature goals, requirements, and acceptance criteria belong in Milestone documents (`docs/project/milestones/`), not in specs. There is no ephemeral `specs/features/` lifecycle.
+- **Build & Run Commands:** The `Makefile` is the canonical entry point for common operations: `make test` (full suite), `make commit '<msg>'` (stage and commit locally), `make push` (rebase and push), `make ci-watch` (monitor CI results), and `make probe '<reason>'` (Remote Probing Protocol).
 - **Release Process:** The release process follows these steps:
     1. **Triage:** Determine the scope (patch, minor, major) by reviewing `git log v<last_tag>..HEAD` for conventional commits.
     2. **Release Notes:** Create a new file at `docs/project/releases/v<new_version>.md` summarizing features and fixes from the commit log.
@@ -31,6 +32,25 @@ This section defines the conventions for our project management artifacts.
     5. **Commit:** Stage changes (including `uv.lock` if it was modified by the version bump build) and commit with `chore(release): bump version to <new_version>`.
     6. **Tag:** Create a local tag with `git tag -a v<new_version> -m "v<new_version>"` and push it with `git push origin v<new_version>`.
     7. **Publish:** Create a GitHub Release using `gh release create v<new_version> --title "v<new_version>" --notes-file docs/project/releases/v<new_version>.md`.
+
+## Templates
+
+Before creating or modifying any documentation artifact, agents MUST read the corresponding template from `docs/templates/`. The bundled templates are:
+
+| Template                    | Purpose                                                               |
+| --------------------------- | --------------------------------------------------------------------- |
+| `specification-document.md` | Specification documents (permanent system invariants)                 |
+| `milestone.md`              | Milestone documents                                                   |
+| `vertical-slice.md`         | Vertical slice definitions                                            |
+| `component-design.md`       | Component design documents (ports and contracts)                      |
+| `case-file.md`              | Debugger case files                                                   |
+| `PROJECT.md`                | This project dashboard                                                |
+| `ARCHITECTURE.md`           | System architecture document                                          |
+| `makefile.md`               | Makefile (commit + Remote Probing Protocol commands)                  |
+| `ci.md`                     | CI workflow template (debug workflow for the Remote Probing Protocol) |
+| `pre-commit.md`             | Pre-commit framework setup (pre-commit + post-commit test gate)       |
+
+These files live in `docs/templates/` and are created or refreshed by `teddy init templates`.
 
 ## Roadmap
 
@@ -50,7 +70,7 @@ This section defines the conventions for our project management artifacts.
 
 ### Milestone 4: TUI & UX Enhancements [PLANNED]
 - **Core Goal:** Improve the interactive experience, provide better visibility into session state, and add foundational quality-of-life features.
-- **Specs:** [docs/project/specs/invariants/interactive-session-workflow.md](/docs/project/specs/invariants/interactive-session-workflow.md)
+- **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 - **Requirements:**
     - **Navigation:** Alt+Up/Down for jumping between Context, Rationale, and Plan/Message sections. If at the bottom, scroll page down instead of looping to top. Allow jumping between context sub-sections (system, session, turn).
     - **Context Interactions:** Pressing `e` on context nodes: if on session/turn root node, open corresponding `.context` file; if on a specific filepath, open the file; if on system node, show agent switch menu.
@@ -61,10 +81,6 @@ This section defines the conventions for our project management artifacts.
     - **MOVE & DELETE Actions:** Add `MOVE` and `DELETE` action types. Both should update context manifest files as well (renaming path/file name if moved, removing if deleted). `MOVE` can also be used for renaming. Both apply to files and folders.
     - **Configurable Limits:** Add `--max-turns` and `--max-cost` with sensible defaults (99 turns or $5 spent — set in config.yaml). These only apply in `-y` mode and are not cumulative (on `teddy resume`, start counting from 0).
     - **Configurable Tree Depth:** Add `max-project-tree-depth` config setting with omission indicators for truncated directories.
-- **Proposed Vertical Slices:**
-    - **`00-03-cli-arg-normalization`:** Apply casefold to all remaining `stem ==` comparisons in `session_service.py` (lines 83, 522), `session_repository.py` (line 139), and make the prompt lookup in `prompts.py` case-insensitive. Additionally, normalize context paths from the `-c` flag by stripping leading slash, `./` prefix, and normalizing backslashes before seeding `session.context`. This fixes two bugs: case-sensitive agent name matching and verbatim path appending without normalization.
-    - **`00-04-remove-bare-except-in-init-service`:** Fix the bare `except: pass` in `InitService._get_default_content()` (lines ~82-84) that catches `(yaml.YAMLError, OSError, ImportError, AttributeError)`. This silently swallows errors from `importlib.resources` API changes (Python 3.12+), returning `None` instead of template content. Action: replace with specific, logged error handling that re-raises unexpected errors, ensuring initialization failures are visible.
-
 ### Milestone 5: Quality Gate & Debt Reconciliation [PLANNED]
 - **Core Goal:** Remove unnecessary inline quality bypasses, deprecate `--console` mode and related dead code, and eliminate redundant test coverage.
 - **Specs:** TBD

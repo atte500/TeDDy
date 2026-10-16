@@ -2,7 +2,7 @@
 
 This document outlines the technical standards, conventions, and setup process for the `TeDDy` project.
 
-## 1. Conventions & Standards
+## Conventions & Standards
 
 - **Version Control:** Default to Trunk-Based Development on main. Commits MUST follow Conventional Commits. `make commit` is LOCAL-ONLY (stage, advisory pre-commit auto-fix pass, commit); the push is deferred to the session Conclusion via `make push`, which rebases, pushes, then reports CI results back, blocking only on failures the push introduced.
 - **Run Environment:** All execution commands MUST be prefixed with the project's designated runner ('uv run').
@@ -14,20 +14,17 @@ This document outlines the technical standards, conventions, and setup process f
 - **Pre-commit Hooks:** Local pre-commit MUST stay fast: scoped strictly to staged files and limited to fast auto-fixers (`ruff check --fix`, `ruff format`, whitespace/EOF fixers), `detect-secrets`, and `check-merge-conflict`. The heavier checks — static type-checking (`mypy`), security scanning (`bandit`, `pip-audit`), the automated DI boundary verifier (ensuring core domain logic has zero external DI container imports), the rules to ban bare mock objects, and the repository-wide structural checkers — are scoped to the non-default `manual` stage and run explicitly in CI's non-blocking quality job.
 - **Post-commit Execution:** The full test suite runs in a post-commit hook as an unskippable safety net. The hook is defined in `.pre-commit-config.yaml` with `stages: [post-commit]`. The hook script lives at `.githooks/post-commit.py` (cross-platform Python). If tests fail, the commit is automatically reverted via `git reset --soft HEAD~1`, keeping changes staged for investigation. This ensures `--no-verify` cannot bypass the test gate. The hook MUST first skip automated git operations (`rebase-merge`, `rebase-apply`, `MERGE_HEAD`, `CHERRY_PICK_HEAD`) so that `git pull --rebase` cannot silently drop replayed commits.
 
-### Experimental Code
-The `spikes/` directory is for rapid, isolated experimentation (including `debug/`, `prototypes/`, and `showcases/`) and is explicitly excluded from all quality gates (linting, types, complexity).
+- **Experimental Code:** The `spikes/` directory is for rapid, isolated experimentation (including `debug/`, `prototypes/`, and `showcases/`) and is explicitly excluded from all quality gates (linting, types, complexity).
 
 ---
 
-## 2. Component & Boundary Map
+## Component & Boundary Map
 
 This section serves as both the strategic **Boundary Map** and the detailed **Component Map** for the system.
 
 **Boundary Analysis:** The `teddy_executor` follows a Hexagonal Architecture. The boundary separates the core business logic (domain models, services, and ports) from the platform-specific integration layer (the CLI) and infrastructure (the local filesystem, shell, and web). **Primary Adapters** act as the explicit translation layer across this boundary, ensuring the core remains isolated and independently testable.
 
-### `teddy_executor` Package
-
-#### Hexagonal Core
+### Hexagonal Core
 
 | Component                     | Description                                                                                                                                         | Contract                                                                         |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -76,12 +73,17 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **MarkdownReportFormatter**   | Implements `IMarkdownReportFormatter` using the Jinja2 template engine to generate CLI reports.                                                     | [MarkdownReportFormatter](./core/services/markdown_report_formatter.md)          |
 | **PlanValidator**             | Implements `IPlanValidator` using a strategy pattern to run pre-flight checks on a plan's actions.                                                  | [PlanValidator](./core/services/plan_validator.md)                               |
 
-#### Primary Adapters
+### Inbound Adapters (Driving)
 
 | Component                      | Description                                                                                                          | Contract                                                                          |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | **CLI Adapter**                | The primary inbound adapter that drives the application via the `Typer` CLI framework.                               | [CLI Adapter](./adapters/inbound/cli.md)                                          |
 | **TextualPlanReviewer**        | Implements `IPlanReviewer` using a dual-pane `Textual` TUI (ActionTree/ParameterDetail) for interactive plan review. | [TextualPlanReviewer](./adapters/inbound/textual_plan_reviewer.md)                |
+
+### Outbound Adapters (Driven)
+
+| Component                      | Description                                                                                                          | Contract                                                                          |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | **ConsoleInteractor**          | Implements `IUserInteractor` for the console, providing diff previews for file operations.                           | [ConsoleInteractorAdapter](./adapters/outbound/console_interactor.md)             |
 | **ConsoleTooling**             | A utility for centralized discovery of editors and diff viewers, respecting configuration and system environment.    | [ConsoleTooling](./adapters/outbound/console_tooling.md)                          |
 | **LiteLLMAdapter**             | Implements `ILlmClient` using the `litellm` library for multi-provider LLM communication.                            | [LiteLLMAdapter](./adapters/outbound/litellm_adapter.md)                          |
@@ -93,7 +95,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **WebSearcherAdapter**         | Implements `IWebSearcher` using the `ddgs` library for DuckDuckGo searches with automated follow-up scraping.        | [WebSearcherAdapter](./adapters/outbound/web_searcher_adapter.md)                 |
 | **YamlConfigAdapter**          | Implements `IConfigService` by reading configuration from a `.teddy/config.yaml` file.                               | [YamlConfigAdapter](./adapters/outbound/yaml_config_adapter.md)                   |
 
-#### Test Harness
+### Test Harness
 
 | Component                        | Description                                                                                                                                | Contract                                               |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
@@ -105,7 +107,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 ---
 
-## 3. Key Architectural Decisions
+## Key Architectural Decisions
 
 This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the prescriptive standards that all development work MUST follow.
 
@@ -140,7 +142,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 
 ---
 
-## 4. Debug Mode & Branch by Abstraction
+## Debug Mode & Branch by Abstraction
 
 - **Activation:** Use scoped environment toggles (e.g., `APP_DEBUG=auth,parser`).
 - **Zero-Cost Guards:** All debug and prototype logic MUST use language-native dead-code elimination (e.g., `if __debug__:`) to ensure zero performance impact in production.
@@ -149,7 +151,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 
 ---
 
-## 5. Prompt Assembly & Template Lifecycle
+## Prompt Assembly & Template Lifecycle
 
 This section documents how the system prompt delivered to the LLM is assembled and how TeDDy manages user-editable prompts and project templates.
 

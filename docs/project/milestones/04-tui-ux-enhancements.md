@@ -1,15 +1,15 @@
-# Milestone 4: TUI & UX Enhancements
+# Milestone: TUI & UX Enhancements
 
 - **Status:** Planned
 - **Specs:** [docs/project/specs/invariants/interactive-session-workflow.md](/docs/project/specs/invariants/interactive-session-workflow.md)
 
-## Goal (The "Why")
+## Goal
 To provide a polished, intuitive interactive experience that gives users full visibility into session state and context, while adding foundational quality-of-life features like MOVE/DELETE actions, configurable limits, and session interrupt.
 
-## Proposed Solution (The "What")
+## Solution
 Expand the TUI with improved navigation, context interactions, and metadata visibility. Add new action types (`MOVE`, `DELETE`) with context manifest awareness. Introduce configurable session limits and tree depth settings. Implement a session interrupt mechanism. Deprecate `--console` mode.
 
-## Guidelines (The "How")
+## Guidelines
 - **Test Harness Strategy:**
     - **TUI Changes:** Use the existing TUI test driver (`TuiDriver`) for navigation and interaction tests. Use `FileSystemObserver` to verify context manifest updates for MOVE/DELETE.
     - **Config Changes:** Use `YamlConfigAdapter` contract tests for new config keys.
@@ -32,7 +32,7 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
     - Editor detection: Long/multiline params open in external editor.
 - **Deprecation:** `--console` flag marked deprecated. No functional removal in this milestone (deferred to M5).
 
-## Vertical Slices
+## Slices
 > Slice definitions will be created by the Architect during the Design phase. The following high-level breakdown is anticipated:
 >
 > 1. TUI navigation improvements (Alt+Up/Down, section jumping)
