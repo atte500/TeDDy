@@ -1,40 +1,36 @@
-# Outbound Adapter: `LocalRepoTreeGenerator`
+# Component Design: LocalRepoTreeGenerator
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/adapters/outbound/local_repo_tree_generator.py`](/src/teddy_executor/adapters/outbound/local_repo_tree_generator.py)
 
-**Status:** Implemented
-**Language:** Python 3.9+
+## Purpose
+Implements the `IRepoTreeGenerator` outbound port. It walks the repository, filters paths through `.gitignore` and `.teddyignore` rules, and renders a recursive `ls -R`-style tree string.
 
-## 1. Purpose
+## Consumers
+- [`ContextService`](../../core/services/context_service.md): Generates the project-structure section of the context payload.
+- [Composition Root](/src/teddy_executor/container.py): Constructs the generator with the project root.
 
-The `LocalRepoTreeGenerator` is an adapter that implements the `IRepoTreeGenerator` port. It interacts with the local file system to generate a file tree, using the `pathspec` library to correctly parse `.gitignore` and `.teddyignore` files to exclude specified paths.
+## Dependencies
+- **`filesystem_helpers`** (`teddy_executor.adapters.outbound.filesystem_helpers`): Loads the ignore spec and walks the tree recursively.
+- **`pathspec`** (external): Matches paths against the combined ignore patterns, imported lazily through the helper.
 
-## 2. Implemented Outbound Port
+## Class Invariants
+- `root_resolution`: The root directory is resolved to an absolute path at construction.
+- `ignore_spec_cached`: The ignore specification is loaded once at construction.
+- `teddyignore_precedence`: `.teddyignore` patterns load after `.gitignore` patterns, so a negation there re-includes an excluded path.
+- `posix_output`: Directory headers always use forward slashes, independent of the host separator.
+- `symlink_exclusion`: Symlinked directories never appear as directory sections.
 
-*   [`IRepoTreeGenerator`](../../contexts/executor/ports/outbound/repo_tree_generator.md)
+## Inbound Ports
+None — this is an outbound (driven) adapter.
 
-## 3. Dependencies
+## Outbound Ports
+- **`IRepoTreeGenerator`**: The driven contract implemented by this adapter. See the [IRepoTreeGenerator design](../../core/ports/outbound/repo_tree_generator.md).
 
-*   `pathspec`: For parsing `.gitignore` patterns (Imported lazily).
+## Data Contracts
+- **`generate_tree` return:** A multi-line `str` in recursive `ls -R` format, where each non-root directory is introduced by a `./relative/path:` header.
 
-## 4. Implementation Details
+## Operations
 
-### Lazy Loading
-To minimize CLI startup lag, the `pathspec` library is imported lazily only when ignore rules need to be loaded during the first generation or instantiation that requires filtering.
-
-### Path Filtering Logic
-The adapter performs a recursive walk of the project directory. For each file and directory, it checks against a `PathSpec` object initialized with patterns from ignore files plus a set of default ignores (e.g., `.git/`, `.venv/`). This ensures the generated tree is a clean representation of the project's relevant files.
-
-### Output Generation
-**Status:** Implemented
-The adapter builds the tree structure in memory and returns it as a single, multi-line string in a recursive "ls -R" style. It **does not** write to any intermediate files. This format provides explicit directory context for every file, making it resilient for LLM parsing.
-
-### `.teddyignore` Precedence Logic
-**Status:** Implemented
-
-To provide ultimate control over the AI's context, the generator also supports a `.teddyignore` file in the project root. This file uses the same syntax as `.gitignore`, but its rules are applied with higher precedence. This is achieved by loading patterns in a specific order:
-
-1.  **Base Rules:** All patterns from all `.gitignore` files are loaded first.
-2.  **Override Rules:** Patterns from the root `.teddyignore` file are loaded last.
-
-The combined list is passed to the `pathspec` library. Because `pathspec` honors the "last match wins" principle, a negation pattern (e.g., `!dist/index.html`) in `.teddyignore` will correctly override a broader ignore pattern (e.g., `dist/`) from a `.gitignore` file.
-
-This ensures a clean separation between the version control context and the context supplied to the AI.
+### `generate_tree() -> str`
+- **Preconditions:** None.
+- **Postconditions:** Returns the filtered tree as a single string. A file and its parent directories survive only when they are not excluded by the ignore spec. The adapter writes no intermediate files.

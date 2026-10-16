@@ -1,153 +1,65 @@
-# Outbound Adapter: `LocalFileSystemAdapter`
+# Component Design: LocalFileSystemAdapter
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/adapters/outbound/local_file_system_adapter.py`](/src/teddy_executor/adapters/outbound/local_file_system_adapter.py)
 
-**Status:** Implemented
+## Purpose
+Implements the `IFileSystemManager` outbound port for the local disk. It resolves every path against a controlled project root, applies exclusive-create and newline-deterministic write semantics, and delegates fuzzy edits to the `IEditSimulator`.
 
-## 1. Responsibility
+## Consumers
+- [`ActionFactory`](../../core/services/action_factory.md): Binds the create, edit, and local read methods to their actions.
+- [`ExecutionOrchestrator`](../../core/services/execution_orchestrator.md): Reads plan files and writes temporary plans.
+- [`PlanValidator`](../../core/services/plan_validator.md): Inspects paths during pre-flight validation.
+- [Composition Root](/src/teddy_executor/container.py): Constructs the adapter with the edit simulator, the root directory, and the read cap.
 
-The `LocalFileSystemAdapter` implements the `FileSystemManager` port to provide concrete file system operations on the local machine where the `teddy` executor is running.
+## Dependencies
+- [`IEditSimulator`](../../core/ports/inbound/edit_simulator.md): Applies FIND/REPLACE edits during `edit_file`.
+- **`filesystem_helpers`** (`teddy_executor.adapters.outbound.filesystem_helpers`): Loads the ignore spec and walks the tree recursively.
+- **`truncate_lines`** (`teddy_executor.core.utils.string`): Applies the head cap on `read_file`.
 
-- Truncate large file reads to a configurable maximum number of lines (default 1000), retaining the **head**.
+## Class Invariants
+- `root_containment`: Every relative path resolves against the project root; leading slashes and Windows drive letters are stripped before joining.
+- `exclusive_create`: `create_file` uses exclusive mode (`x`) unless `overwrite` is set, and re-raises a domain `FileAlreadyExistsError` on collision.
+- `newline_deterministic_writes`: `write_file` and `open_file_for_append` use `newline=""`, so content is emitted verbatim (LF) on every OS.
+- `head_truncation`: `read_file` truncates at the head to `max_read_lines` (default `1000`); `read_raw_file` and `read_files_in_vault` bypass the cap.
+- `lazy_ignore_spec`: The ignore specification and the resolved root are computed once and cached on the instance.
 
-## 2. Implemented Ports
+## Inbound Ports
+None — this is an outbound (driven) adapter.
 
-*   [FileSystemManager](../../core/ports/outbound/file_system_manager.md)
+## Outbound Ports
+- **`IFileSystemManager`**: The driven contract implemented by this adapter. See the [IFileSystemManager design](../../core/ports/outbound/file_system_manager.md).
 
-## 3. Implementation Notes
+## Data Contracts
+- **`EditPair`** (`TypedDict`): `find: str`, `replace: str`, `match_all: bool`.
+- **`edit_file` return:** `list[float]` — the per-edit similarity scores.
+- **`read_files_in_vault` return:** `dict[str, str | None]`, where `None` marks a missing file.
+- **Configuration key:** `max_read_lines` sets the default read cap (`1000`).
 
-The adapter will leverage Python's built-in `pathlib` and `open()` functions for file operations.
+## Operations
 
-*   **File Creation (`create_file`):** To satisfy the port's requirement for exclusive creation (failing if a file already exists), the `create_file` method will use the `'x'` (exclusive creation) mode when calling `open()`.
-*   **Error Handling (`create_file`):** If `open()` is called with `'x'` mode on a path that already exists, it will raise a standard `FileExistsError`. The adapter must catch this and re-raise it as the domain-specific `FileAlreadyExistsError`, attaching the file path to the exception, to fulfill the port's contract.
-*   **File Reading (`read_file`):** The `read_file` method will use the standard `'r'` (read) mode with `utf-8` encoding. It must catch `FileNotFoundError` if the path does not exist and `UnicodeDecodeError` for non-text files, propagating these as failures.
-*   **File Writing (`write_file`):** The `write_file` method will use Python's `pathlib.Path.write_text()` with `newline=""`. This conveniently handles both creating a new file and overwriting an existing one, fulfilling the "upsert" requirement of the port. The `newline=""` argument disables platform newline translation, making writes **newline-deterministic** (LF-verbatim) on every OS — required for byte-exact persistence contracts such as session ledger migration, which must behave identically on POSIX and Windows. (User-facing file mutation via `create_file`/`edit_file` deliberately retains platform round-trip semantics so user project files never receive whole-file line-ending rewrites.)
-*   **File Editing (`edit_file`):** Delegates string manipulation to the `IEditSimulator` using the provided `similarity_threshold`, ensuring that the same resilience applied during validation is respected during execution.
-*   **Path Existence (`path_exists`):** This will be implemented using `pathlib.Path.exists()`, which correctly checks for both files and directories.
-*   **Directory Creation (`create_directory`):** This will use `pathlib.Path.mkdir()` with the `parents=True` and `exist_ok=True` flags. This ensures the method is idempotent and can create parent directories as needed.
-*   **Default Context File Creation (`create_default_context_file`):** This method creates the `.teddy` directory if it doesn't exist, adds a `.gitignore` file inside it to ignore all contents, and creates a default `init.context` file with a simple list of starting files (`README.md`, `docs/ARCHITECTURE.md`).
-*   **Context Path Gathering (`get_context_paths`):** This method finds all files ending with `.context` inside the `.teddy` directory, reads them, and returns a sorted, deduplicated list of all file paths, ignoring comments and empty lines.
-*   **Vault File Reading (`read_files_in_vault`):** This method takes a list of file paths and returns a dictionary mapping each path to its content. If a file is not found, the path is still included in the dictionary, but its value is `None`.
+### `create_file(path, content, overwrite=False) -> None`
+- **Preconditions:** `path` resolves inside the project root.
+- **Postconditions:** Creates the file and its parent directories.
+- **Exceptions:** `FileAlreadyExistsError` when the file exists and `overwrite` is unset; `OSError` on any other I/O failure.
 
-## 4. Key Code Snippets
+### `read_file(path) -> str` and `read_raw_file(path) -> str`
+- **Preconditions:** `path` resolves inside the project root.
+- **Postconditions:** `read_file` returns head-truncated content; `read_raw_file` returns the full content.
+- **Exceptions:** `FileNotFoundError` when no file exists at `path`.
 
-### `create_file`
-```python
-# Note: FileAlreadyExistsError is a custom exception from the domain model
-from teddy.core.domain import FileAlreadyExistsError
+### `write_file(path, content) -> None`
+- **Postconditions:** Upserts the file with LF-verbatim content.
 
-def create_file(self, path: str, content: str) -> None:
-    try:
-        with open(path, "x", encoding="utf-8") as f:
-            f.write(content)
-    except FileExistsError:
-        # Catch the standard Python error and raise the specific domain exception
-        raise FileAlreadyExistsError(file_path=path)
-    except IOError as e:
-        # Propagate other IO errors
-        raise IOError(f"Failed to create file at {path}: {e}") from e
-```
+### `edit_file(path, edits, similarity_threshold=DEFAULT_SIMILARITY_THRESHOLD, match_all=False) -> list[float]`
+- **Preconditions:** The file exists and each edit carries a `find` block.
+- **Postconditions:** Rewrites the file through the injected `IEditSimulator` and returns the similarity scores.
+- **Exceptions:** Propagates the simulator's `SearchTextNotFoundError` and `MultipleMatchesFoundError`.
 
-### `read_file`
-```python
-def read_file(self, path: str) -> str:
-    """
-    Reads the content of a file from the specified path.
-    """
-    try:
-        return Path(path).read_text(encoding="utf-8")
-    except FileNotFoundError:
-        # Re-raise to conform to the port's contract
-        raise
-    except IOError as e:
-        raise IOError(f"Failed to read file at {path}: {e}") from e
-```
+### `read_files_in_vault(paths) -> dict[str, str | None]`
+- **Postconditions:** Returns the full content per path, or `None` for a missing file.
 
-### `write_file`
-```python
-from pathlib import Path
+### `create_directory_exclusive(path) -> bool`
+- **Postconditions:** Creates the directory atomically and returns `True`; returns `False` when the directory already exists. Any other error propagates.
 
-def write_file(self, path: str, content: str) -> None:
-    # newline="" disables platform newline translation: content is written
-    # verbatim (LF) on every OS, keeping byte-exact persistence contracts
-    # platform-agnostic (see Case File 53 / ARCHITECTURE.md encoding law).
-    Path(path).write_text(content, encoding="utf-8", newline="")
-```
-
-### `edit_file`
-The implementation for multiline edits uses a regex-based approach to find the indented block and `textwrap.indent` to apply the correct indentation to the replacement. A simplified code snippet would not accurately capture the logic. Please refer to the implementation notes above and the source code for details.
-
-### `path_exists`
-```python
-from pathlib import Path
-
-def path_exists(self, path: str) -> bool:
-    return Path(path).exists()
-```
-
-### `create_directory`
-```python
-from pathlib import Path
-
-def create_directory(self, path: str) -> None:
-    Path(path).mkdir(parents=True, exist_ok=True)
-```
-
-### `create_default_context_file`
-```python
-def create_default_context_file(self) -> None:
-    teddy_dir = self.root_dir / ".teddy"
-    teddy_dir.mkdir(exist_ok=True)
-
-    gitignore_file = teddy_dir / ".gitignore"
-    gitignore_file.write_text("*", encoding="utf-8")
-
-    perm_context_file = teddy_dir / "init.context"
-    default_content = "README.md\ndocs/ARCHITECTURE.md\n"
-    perm_context_file.write_text(default_content, encoding="utf-8")
-```
-
-### `get_context_paths`
-```python
-def get_context_paths(self) -> list[str]:
-    teddy_dir = self.root_dir / ".teddy"
-    if not teddy_dir.is_dir():
-        return []
-
-    all_paths = set()
-    context_files = list(teddy_dir.glob("*.context"))
-
-    for context_file in context_files:
-        content = context_file.read_text(encoding="utf-8")
-        for line in content.splitlines():
-            stripped_line = line.strip()
-            if stripped_line and not stripped_line.startswith("#"):
-                all_paths.add(stripped_line)
-
-    return sorted(list(all_paths))
-```
-
-### `read_files_in_vault`
-```python
-def read_files_in_vault(self, paths: list[str]) -> dict[str, str | None]:
-    contents: dict[str, str | None] = {}
-    for path in paths:
-        try:
-            full_path = self.root_dir / path
-            contents[path] = self.read_file(str(full_path))
-        except FileNotFoundError:
-            contents[path] = None
-    return contents
-```
-
-
-## 5. Related Spikes
-
-*   [/spikes/technical/02-exclusive-file-creation/](/spikes/technical/02-exclusive-file-creation/): This spike verified that using `open(path, 'x')` correctly raises a `FileExistsError` if the file already exists, confirming the proposed implementation strategy.
-
-## 6. Configuration
-
-- `max_read_lines`: The maximum number of lines to return when reading a file (default: 1000). Truncation occurs at the head.
-
-## 7. External Documentation
-
-*   [Python `open()` function documentation](https://docs.python.org/3/library/functions.html#open)
-*   [Python `pathlib` module documentation](https://docs.python.org/3/library/pathlib.html)
+### Other operations
+`path_exists`, `is_dir`, `list_directory`, `list_directory_recursive`, `create_directory`, `get_mtime`, `move_directory`, `remove_file`, `get_context_paths`, and `resolve_paths_from_files` complete the port surface.

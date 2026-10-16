@@ -1,42 +1,44 @@
-# Outbound Adapter: Shell Adapter
+# Component Design: ShellAdapter
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/adapters/outbound/shell_adapter.py`](/src/teddy_executor/adapters/outbound/shell_adapter.py)
 
-**Status:** Implemented
-**Language:** Python 3.9+
-**Modified in:** [Structured `execute` Action](../../slices/executor/18-structured-execute-action.md)
+## Purpose
+Implements the `IShellExecutor` outbound port. It runs commands through the operating system shell, isolates each child process in its own process group, and returns a structured `ShellOutput` with sanitized, truncated output.
 
-## 1. Purpose
+## Consumers
+- [`ActionFactory`](../../core/services/action_factory.md): Binds the `execute` method to `EXECUTE` actions.
+- [Composition Root](/src/teddy_executor/container.py): Constructs the adapter with the command builder, the output line cap, and the interrupt guard.
 
-The `ShellAdapter` is a "driven" adapter that provides the concrete implementation for running shell commands. It acts as the bridge between the application's core logic and the operating system's shell, handling execution context like working directory and environment variables.
+## Dependencies
+- **`ShellCommandBuilder`** (`teddy_executor.adapters.outbound.shell_command_builder`): Prepares the final command argument list and the shell flag.
+- **`InterruptGuard`** (`teddy_executor.core.utils.interrupt_guard`): Optional shared guard polled while a command is in flight.
+- **`truncate_lines`** (`teddy_executor.core.utils.string`): Applies the stdout tail cap.
 
-### Responsibilities
-- Sanitize output by stripping ANSI escape sequences.
-- Truncate long `stdout` to a configurable maximum number of lines (default 100), retaining the **tail**.
+## Class Invariants
+- `poll_interval_constant`: `_POLL_INTERVAL_SECONDS` is a module-level code constant (`0.1`), not a configurable setting.
+- `timeout_exit_code`: A timed-out command returns exit code `124`.
+- `cwd_containment`: A relative `cwd` must resolve inside the project root, otherwise `execute` raises `ValueError`. Absolute paths pass through as explicit user choices.
+- `output_sanitization`: Every `stdout` and `stderr` value is stripped of ANSI escape sequences before it is returned.
+- `tail_truncation`: `stdout` is truncated at the tail to the effective line cap; `stderr` is never truncated.
+- `process_group_isolation`: On POSIX the child runs in its own session (`setsid`), so a terminal SIGINT cannot reach it and a kill reaches the whole command tree.
+- `guard_optional`: When no interrupt guard is injected, `execute` keeps the legacy single blocking `communicate` path.
 
-## 2. Implemented Ports
+## Inbound Ports
+None — this is an outbound (driven) adapter.
 
-*   **Implements Outbound Port:** [`IShellExecutor`](../../contexts/executor/ports/outbound/shell_executor.md)
+## Outbound Ports
+- **`IShellExecutor`**: The driven contract implemented by this adapter. See the [IShellExecutor design](../../core/ports/outbound/shell_executor.md).
 
-## 3. Implementation Notes
+## Data Contracts
+- **`ShellOutput`** (`TypedDict`): `stdout: str`, `stderr: str`, `return_code: int`, `failed_command: NotRequired[str]`, `interrupted: NotRequired[bool]`. See the [ShellOutput design](../../core/domain/shell_output.md).
+- **Configuration key:** `max_execute_lines` sets the default stdout line cap (`100`).
 
-*   **Technology:** The adapter will be implemented using Python's built-in `subprocess` module.
-*   **Entry Point:** The class `ShellAdapter` will be located in `src/teddy_executor/adapters/outbound/shell_adapter.py`.
+## Operations
 
-### Command Execution
+### `execute(command, cwd=None, env=None, timeout=None, background=False, max_lines=None) -> ShellOutput`
+- **Preconditions:** `command` is a non-empty string; a relative `cwd` resolves inside the project root.
+- **Postconditions:** Returns a `ShellOutput`. In background mode it launches a detached process and returns its PID immediately. In synchronous mode it blocks until the child exits, the guard fires, or the timeout elapses. A non-zero exit carries the parsed `FAILED_COMMAND` marker when present, and an interactive-prompt failure is replaced with the standard detection message.
+- **Exceptions:** `ValueError` when a relative `cwd` escapes the project root.
 
-The `execute` method runs the command string provided by the core. To ensure consistent behavior across platforms while supporting shell features like chaining (`&&`) and directives (`cd`), it utilizes the system shell.
-
-1.  **CWD Validation:** It first validates that the `cwd` parameter resolves to a path within the project directory, preventing any directory traversal exploits.
-2.  **Diagnostic Wrapping (Complex Commands):** To provide granular failure reporting for multi-line or chained blocks, the adapter wraps the command string in platform-specific diagnostic scripts:
-    - **POSIX (High Precision Bash):** Uses a `DEBUG` trap to track the current sub-command (`$BASH_COMMAND`) and an `EXIT` trap (handled by an isolated shell function) to report it upon non-zero termination. This enables the adapter to isolate the specific failing sub-command even within a single-line `&&` chain.
-    - **Windows (CMD):** For all complex commands (multi-line or chained), lines are joined with `&&` and each is injected with an `||` fallback that echoes the failing command to `stderr` (with `^`-escaping for special characters like `(`, `)`, `&`, `|`, `>`, `<`) before terminating the process with `exit 1`.
-3.  **Platform-Specific Execution:** It determines whether to use `shell=True` based on the platform. On POSIX, complex commands use `bash -c` via a list-based argument. On Windows, single-line commands use a "Smart Router" strategy, while complex commands use `cmd /c`.
-4.  **Subprocess Execution (Synchronous):** For standard execution, the adapter uses Python's `subprocess.run` with a `timeout` parameter. On POSIX the child is launched into its own process group via a `preexec_fn` (`setsid`/`setpgrp` with the `SIGTTOU`/`SIGTTIN` suspension guards), shielding an in-flight `EXECUTE` from the terminal's process-group-wide SIGINT delivered by a real Ctrl+C — functionally equivalent to `start_new_session=True`, plus the guards. Windows has no POSIX process-group equivalent: graceful Ctrl+C handling is best-effort and flag-based only, with the second-signal force-kill as the hung-child escape hatch.
-    - **Timeout Handling:** If the command exceeds the timeout, the adapter catches `subprocess.TimeoutExpired`, kills the process, and captures any partial `stdout`/`stderr`. These partial outputs are decoded (UTF-8 with replacement) and returned with a standard exit code of `124`.
-    - **User-Interrupt Handling (Bug 58):** The adapter is Constructor-Injected with the shared process-global `InterruptGuard` (optional; `None` preserves the legacy single blocking `communicate(timeout=…)` path). When a guard is present it awaits the child in a poll loop bounded by the `_POLL_INTERVAL_SECONDS` code constant, checking `guard.interrupted.is_set()` between polls. On set, it `os.killpg(process.pid, SIGKILL)`s the child's isolated process group (valid because the child was launched via `setsid`), collects the partial output, and returns a `ShellOutput` carrying `interrupted: True` plus an interruption notice on `stdout`. `ActionDispatcher` maps this marker to `ActionStatus.INTERRUPTED`.
-5.  **Background Execution (Asynchronous):** If the `background` flag is set, the adapter uses `subprocess.Popen` with `start_new_session=True` to detach the process. It immediately returns a success response containing the new Process ID (PID).
-6.  **Result Mapping & Extraction:** It maps the raw results (or partial results) to a `ShellOutput` DTO. If the execution failed, it parses `stderr` for the `FAILED_COMMAND` marker to populate the `failed_command` field.
-6.  **Debug Mode:** If the `TEDDY_DEBUG` environment variable is set, detailed pre-execution and post-execution logs are printed to `stderr` to aid in diagnostics.
-
-## 4. Configuration
-
-- `max_execute_lines`: The maximum number of lines to retain in the execution report for `stdout` (default: 100). Truncation occurs at the tail.
+### Internal helpers
+`_validate_cwd` resolves and containment-checks the working directory. `_await_process` polls the guard between slices or blocks once. `_handle_timeout` kills the process group and returns exit code `124`. `_process_execution_results` sanitizes, truncates, and maps the raw output. `_detect_interactive_prompt` scans both streams for interactive-input patterns.
