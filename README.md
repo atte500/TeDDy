@@ -176,6 +176,28 @@ Use subcommands to overwrite specific defaults:
 
 The first execution of `teddy start` runs an interactive setup to configure your API key and preferred editor. For deeper customization, edit `.teddy/config.yaml`. All `llm.*` settings pass directly through to [LiteLLM](https://docs.litellm.ai/docs/completion/input), allowing you to route to cloud providers or local endpoints (Ollama, llama.cpp, or any OpenAI-compatible server via `api_base`). The config file also lets you adjust your external editor, command execution timeouts, diff similarity thresholds, and automated context pruning budgets.
 
+### Environment Variables
+
+TeDDy checks the following process environment variables at startup and during a session.
+
+| Variable            | Purpose                                                                                                                                                     |
+| :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TEDDY_LLM_API_KEY` | The LLM API key. The bundled `config.yaml` default references it as `llm.api_key: "${TEDDY_LLM_API_KEY}"`. A shell value wins over the `.teddy/.env` value. |
+| `EDITOR`            | Fallback editor command when `editor` is unset in `.teddy/config.yaml`.                                                                                     |
+| `TEDDY_DIFF_TOOL`   | Overrides the auto-detected diff viewer.                                                                                                                    |
+
+TeDDy also interpolates any `${VAR}` or `${VAR:-default}` token in `.teddy/config.yaml` against `.teddy/.env` layered under the process environment, so you can reference your own secrets from config values.
+
+### Using TeDDy in CI
+
+TeDDy is safe to run in non-interactive environments. When stdin is not a terminal, TeDDy skips the API-key and editor setup prompts automatically, so no command blocks waiting for input.
+
+To run TeDDy in a pipeline, set `TEDDY_LLM_API_KEY` in the environment and pass `--pipeline` (`-p`), which auto-approves actions, requires `-m`, exits after the first message turn, and defaults to the `assistant` agent.
+
+```bash
+TEDDY_LLM_API_KEY="$OPENROUTER_API_KEY" teddy start --pipeline -m "do the thing"
+```
+
 ---
 
 ## Usage
@@ -240,7 +262,7 @@ TeDDy packages your workspace context into a single clipboard payload, and the a
 | Command                       | Description                                                                  |
 | :---------------------------- | :--------------------------------------------------------------------------- |
 | `init`                        | Initialize `.teddy` workspace with defaults and pre-warm dependencies.       |
-| <nobr>`init prompts`</nobr>   | Overwrite bundled prompt Markdown files in `.teddy/prompts/` with defaults. |
+| <nobr>`init prompts`</nobr>   | Overwrite bundled prompt Markdown files in `.teddy/prompts/` with defaults.  |
 | <nobr>`init config`</nobr>    | Overwrite `config.yaml`, `.gitignore`, and `init.context` with defaults.     |
 | <nobr>`init templates`</nobr> | Overwrite bundled Markdown templates in `docs/templates/` with defaults.     |
 | `start`                       | Start an interactive agent session.                                          |
