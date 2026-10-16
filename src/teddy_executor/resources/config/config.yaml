@@ -37,13 +37,15 @@ checks:
 # --no-yolo / -n flag always overrides this setting for a single invocation.
 yolo_default: false
 
-# Safety limits enforced ONLY in --yolo mode. When a limit is hit the session
-# is terminated with a message explaining how to adjust these values.
-# Limits are per-run: `teddy resume` starts counting from 0 again.
+# Safety limits enforced in EVERY non-interactive run (--yolo and --pipeline).
+# When a limit is hit the session is terminated with a message explaining how
+# to adjust these values. Limits are per-run: `teddy resume` starts counting
+# from 0 again.
 yolo_guardrails:
   enabled: true
   max_turns: 99
   max_session_cost: 5.00
+  message_reset: true
 
 # Auto-Pruning Settings
 # Intelligently pre-deselects context files to save tokens and manage complexity.

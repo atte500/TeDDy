@@ -1,0 +1,77 @@
+# Slice: Configurable Guardrails
+- **Status:** Planned
+- **Milestone:** N/A (ad-hoc slice)
+- **Depends On:** N/A
+- **Specs:** N/A
+- **Prototype:** N/A
+- **Component Docs:** [SessionLoopGuard](/docs/architecture/core/services/session_loop_guard.md), [ConfigService](/docs/architecture/core/ports/outbound/config_service.md)
+- **Scope Slug:** `guardrails`
+
+## Business Goal
+Bound the cost and duration of every non-interactive run and let operators tune those bounds per environment. Rename the misleading `yolo_guardrails` namespace to `guardrails`, because the limits apply to every non-interactive run, not only `--yolo`.
+
+## Scenarios
+
+> As an operator, I want a non-interactive run to stop after a configurable number of turns or dollars, so that a runaway loop cannot consume unbounded budget.
+
+```gherkin
+Given a non-interactive run reaches the configured turn limit
+When the loop guard evaluates the next turn
+Then the session terminates with a message that names the limit and the config file
+```
+
+> As an operator, I want to override the limits from the environment, so that CI jobs tune them without editing `.teddy/config.yaml`.
+
+```gherkin
+Given TEDDY_MAX_TURNS is set and no CLI flag overrides it
+When the loop guard resolves the turn limit
+Then the guard uses the environment value instead of the config value
+```
+
+> As an operator, I want each message turn to grant a fresh budget, so that every human-approved segment gets its own allowance.
+
+```gherkin
+Given guardrails.message_reset is true and a message turn completes with a non-empty reply
+When the session continues to the next turn
+Then the turn and cost baselines re-anchor at the current turn count and cost
+```
+
+## Edge Cases
+- **Precedence**: If a CLI flag, an environment variable, a config value, and a default all exist, then the guard uses the CLI flag first, then the environment variable, then the config value, then the default, because operators expect the most specific setting to win.
+- **Reset disabled**: If `guardrails.message_reset` is false, then both baselines stay fixed for the whole run, because the operator opted out of the reset.
+- **Checkpoint reset**: If a message turn completes and `guardrails.message_reset` is true, then the guard re-anchors both baselines BEFORE the limit check, because the human is present and approves continuation. The message turn therefore never trips the limit.
+- **Empty reply**: If a message turn yields an empty reply, then the session terminates before any reset, because the session ends.
+- **Pipeline exit**: If a pipeline run stops after its first message turn, then the reset never applies, because the process exits before the next turn.
+- **Turn limit rounding**: If the turn count lands exactly on the limit, then the guard stops the run, because the comparison is inclusive.
+
+## Key Unknowns
+- [x] [Domain] Rename migration: RESOLVED — the guard MUST fall back to the legacy `yolo_guardrails` key when `guardrails` is absent, so existing user configs keep working. Read `guardrails.X`; when that result is absent, read `yolo_guardrails.X` before the default.
+- [x] [Technical] Baseline re-anchor seam: RESOLVED — add an additive `reset_baseline(turn_count, cumulative_cost)` operation to `ISessionLoopGuard`. The guard already owns `_initial_turn` and `_initial_cost`, so re-anchoring them is the smallest, most testable seam. The session loop calls it after a communication turn, BEFORE the limit check. No test fakes this port, so the extension has zero test blast radius.
+
+## Impact
+1. `[EXPAND]` `ISessionLoopGuard` port — add an additive `reset_baseline(turn_count, cumulative_cost)` operation. No test implements this port, so the extension has zero blast radius.
+2. `[EXPAND]` `ProductionSessionLoopGuard` — read `guardrails.*` with a legacy `yolo_guardrails` fallback, implement `reset_baseline` gated by `guardrails.message_reset`, resolve the limit precedence, and raise the default turn limit to 150.
+3. `[EXPAND]` `_orchestrate_session_loop` in `session_cli_handlers.py` — thread `--max-turns` and `--max-cost` into the guard and call `reset_baseline` after a communication turn, before the limit check.
+4. `[MIGRATE]` Guard messages, bundled `config.yaml`, guard tests, and the `session_loop_guard.md` component doc — rename `yolo_guardrails` to `guardrails` and correct the component doc's stale config-missing defaults (it claims 10 turns / $1.00; the code uses 99 / $5.00, rising to 150). The README Environment Variables rows (`TEDDY_MAX_TURNS`, `TEDDY_MAX_SESSION_COST`) are already present; verify them.
+5. `[CONTRACT]` The bundled `yolo_guardrails` block — remove after the rename. The code keeps the legacy fallback read for existing user configs.
+
+## Deliverables
+- [ ] **Wiring** - Add `--max-turns` and `--max-cost` to `start` and `resume`, thread them to the loop guard, and honor them in the limit checks through a skeleton precedence read.
+- [ ] **Contract** - Extend `ISessionLoopGuard` with the additive `reset_baseline(turn_count, cumulative_cost)` operation.
+- [ ] **Logic** - Implement the precedence chain (CLI flag > env var > config value > default), the `TEDDY_MAX_TURNS` and `TEDDY_MAX_SESSION_COST` overrides, the legacy `yolo_guardrails` fallback read, the 150-turn default, and the message-turn reset gated by `guardrails.message_reset`.
+- [ ] **Migration** - Rename `yolo_guardrails` to `guardrails` in the bundled config, the guard, the guard tests, and the `session_loop_guard.md` component doc. Correct the component doc's stale config-missing defaults.
+- [ ] **Refactor** - Extract the limit resolution into a single helper.
+- [ ] **Cleanup** - Remove the stale `--yolo`-only wording. Keep the legacy `yolo_guardrails` fallback read for existing user configs.
+
+## Implementation Notes
+
+## Verification
+- [ ] **Turn limit:**
+    Run `teddy start -y --max-turns 1 -m "list the files"`.
+    Verify the session stops after one turn with a limit message.
+- [ ] **Environment override:**
+    Run `TEDDY_MAX_TURNS=1 teddy start -y -m "list the files"`.
+    Verify the session stops after one turn.
+- [ ] **Message-turn reset:**
+    Run a session with `guardrails.message_reset: true` and reply to a message turn.
+    Verify the budget re-anchors after the reply.

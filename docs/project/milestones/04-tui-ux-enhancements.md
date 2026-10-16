@@ -1,13 +1,13 @@
 # Milestone: TUI & UX Enhancements
 
 - **Status:** Planned
-- **Specs:** [docs/project/specs/invariants/interactive-session-workflow.md](/docs/project/specs/invariants/interactive-session-workflow.md)
+- **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 
 ## Goal
-To provide a polished, intuitive interactive experience that gives users full visibility into session state and context, while adding foundational quality-of-life features like MOVE/DELETE actions, configurable limits, and session interrupt.
+To provide a polished, intuitive interactive experience that gives users full visibility into session state and context, while adding foundational quality-of-life features like MOVE/DELETE actions, configurable tree depth, and session interrupt.
 
 ## Solution
-Expand the TUI with improved navigation, context interactions, and metadata visibility. Add new action types (`MOVE`, `DELETE`) with context manifest awareness. Introduce configurable session limits and tree depth settings. Implement a session interrupt mechanism. Deprecate `--console` mode.
+Expand the TUI with improved navigation, context interactions, and metadata visibility. Add new action types (`MOVE`, `DELETE`) with context manifest awareness. Introduce a configurable tree depth setting. Implement a session interrupt mechanism. Deprecate `--console` mode.
 
 ## Guidelines
 - **Test Harness Strategy:**
@@ -21,8 +21,6 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
 - **MOVE Action:** Takes `source` and `destination` paths. Validates source exists and destination does not. Updates context manifest: renames path references in `.context` files to reflect the new location. Supports files and directories (renaming).
 - **DELETE Action:** Takes a `path`. Validates path exists. Updates context manifest: removes path references from `.context` files. Supports files and directories.
 - **Config Changes:**
-    - `session.max_turns: 99` (default)
-    - `session.max_cost: 5.0` (default, in dollars)
     - `context.max_tree_depth: 4` (default, 0 = unlimited)
 - **TUI Changes:**
     - Alt+Up/Down: Section navigation with scroll-at-bottom behavior and sub-section awareness.
@@ -43,9 +41,8 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
 > 6. Layout padding consistency
 > 7. MOVE action implementation
 > 8. DELETE action implementation
-> 9. Configurable session limits (max-turns, max-cost)
-> 10. Configurable tree depth
-> 11. Session interrupt mechanism
-> 12. `--console` deprecation marking
-> 13. Ad-hoc: CLI arg normalization (00-03)
-> 14. Ad-hoc: Remove bare except in InitService (00-04)
+> 9. Configurable tree depth
+> 10. Session interrupt mechanism
+> 11. `--console` deprecation marking
+> 12. Ad-hoc: CLI arg normalization (00-03)
+> 13. Ad-hoc: Remove bare except in InitService (00-04)
