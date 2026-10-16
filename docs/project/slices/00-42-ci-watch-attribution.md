@@ -64,12 +64,18 @@ And it attributes the failure against that base
 3. `[MIGRATE]` `src/teddy_executor/resources/templates/makefile.md` — mirror the corrected logic and the scope documentation, byte-identical to the project template.
 
 ## Deliverables
-- [▶] **Wiring** - Add a fake `gh` test double and a tracer-bullet acceptance test that runs the real `make ci-watch` target on a synthetic tip failure and asserts it reaches the shipped target and emits a verdict, proving end-to-end connectivity.
+- [x] **Wiring** - Add a fake `gh` test double and a tracer-bullet acceptance test that runs the real `make ci-watch` target on a synthetic tip failure and asserts it reaches the shipped target and emits a verdict, proving end-to-end connectivity.
 - [ ] **Logic** - Create a POSIX shell helper with the corrected attribution decision and cover the edge cases with unit tests: the subset verdict, the blocking-conclusion set, and the ancestor base resolution.
 - [ ] **Migration** - Bake the validated helper logic into the `ci-watch` target inline, keeping the Makefile self-contained; extend the fake-`gh` acceptance test to assert the corrected verdicts; mirror the logic and the push-triggered scope note into both template copies.
 - [ ] **Cleanup** - Remove the throwaway helper once its logic is baked into the Makefile.
 
 ## Implementation Notes
+
+### Wiring (fake `gh` tracer bullet)
+- `tests/harness/setup/ci_watch_fake_gh.py` writes a deterministic CI scenario and a POSIX `gh` shim. The shim serves only the subcommands the shipped target uses: `run list`, `run view`, and `run watch`. It applies the exact `--jq` programs the target passes and fails loudly on an unknown program, so the harness cannot silently drift from the target.
+- `tests/suites/acceptance/test_ci_watch_attribution.py` runs the REAL shipped `Makefile` inside a throwaway `tempfile.mkdtemp()` git repository. The shim is prepended to `PATH`. This proves the shipped bytes are the tested bytes.
+- The tracer bullet asserts end-to-end connectivity only: the invocation log is non-empty, the output carries a `CI:` verdict, and the blocking regression exits non-zero. Behavioural attribution assertions arrive with the Logic and Migration deliverables.
+- Insight: GNU Make returns exit code 2 for any failed recipe. A blocking verdict therefore surfaces as a non-zero status rather than `1`, so the tracer-bullet assertion checks `returncode != 0`.
 
 ## Verification
 - [ ] **Improvement attribution:**
