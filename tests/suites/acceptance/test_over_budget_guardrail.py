@@ -8,17 +8,7 @@ a visible error and a non-zero exit code.
 
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
-
-
-def _setup_minimal_project(tmp_path) -> None:
-    """Create the minimal project files the start path requires."""
-    prompt_dir = tmp_path / ".teddy" / "prompts"
-    prompt_dir.mkdir(parents=True)
-    (prompt_dir / "pathfinder.xml").write_text(
-        "<prompt>Pathfinder Instructions</prompt>", encoding="utf-8"
-    )
-    (tmp_path / ".teddy" / "init.context").write_text("README.md", encoding="utf-8")
-    (tmp_path / "README.md").write_text("Context file content", encoding="utf-8")
+from tests.suites.acceptance.helpers import setup_project
 
 
 def test_over_budget_request_surfaces_visible_error(tmp_path, monkeypatch):
@@ -27,7 +17,7 @@ def test_over_budget_request_surfaces_visible_error(tmp_path, monkeypatch):
 
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
-    _setup_minimal_project(tmp_path)
+    setup_project(tmp_path)
 
     mock_llm_client = env.get_service(ILlmClient)
     mock_llm_client.get_token_count.return_value = 200_000

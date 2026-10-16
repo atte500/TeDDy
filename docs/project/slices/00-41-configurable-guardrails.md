@@ -62,7 +62,7 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 - [x] **Migration** - Rename `yolo_guardrails` to `guardrails` in the bundled config, the guard, the guard tests, and the `session_loop_guard.md` component doc. Correct the component doc's stale config-missing defaults.
 - [x] **Refactor** - Extract the limit resolution into a single helper.
 - [x] **Cleanup** - Remove the stale `--yolo`-only wording. Keep the legacy `yolo_guardrails` fallback read for existing user configs.
-- [ ] **Refactor** - Consolidate the duplicated acceptance-test project-setup helper into the shared `helpers.setup_project`.
+- [x] **Refactor** - Consolidate the duplicated acceptance-test project-setup helper into the shared `helpers.setup_project`.
 
 ## Implementation Notes
 
@@ -120,6 +120,15 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 - Kept the load-bearing legacy `yolo_guardrails` fallback read in `_read_config`, so existing user configs keep working.
 - Left the legitimate `--yolo`-flag prose, the `yolo_default` tests, and the immutable `v0.1.14.md` release notes untouched.
 - Cleanup proof: the Red step failed with `3 failed, 9 passed` on the three stale messages; the Green step passed with `23 passed`.
+- Integration proof: `make test` reports `1838 passed, 5 skipped`.
+
+### Refactor (acceptance-helper consolidation, delivered)
+
+- Removed the local `_setup_minimal_project` helper from `test_configurable_guardrails.py` and `test_over_budget_guardrail.py`, and routed both modules to the shared `helpers.setup_project` helper.
+- The two locals differed from the shared helper only in seed content (the `README.md` text and the `pathfinder.xml` prompt text), and both consumers assert only on guard behavior and mocked token counts, so the content delta never reached an assertion.
+- The shared `setup_project` stayed untouched as the single source of truth that other acceptance modules already import.
+- No component-design doc changed, because the refactor is test-only and no `docs/architecture/` doc describes the acceptance helpers. The slice's component-doc as-built work was already completed in the Cleanup deliverable.
+- Refactor proof: the targeted run of both acceptance files reported `2 passed`, and a residual grep for `_setup_minimal_project` returned no hits.
 - Integration proof: `make test` reports `1838 passed, 5 skipped`.
 
 ### Harness constraint

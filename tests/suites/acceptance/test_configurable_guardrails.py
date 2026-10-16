@@ -6,18 +6,7 @@ threaded CLI limit is the only thing that can stop the session.
 
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.setup.test_environment import TestEnvironment
-
-
-def _setup_minimal_project(tmp_path) -> None:
-    """Create the minimal project files the start path requires."""
-    (tmp_path / ".git").mkdir(exist_ok=True)
-    prompt_dir = tmp_path / ".teddy" / "prompts"
-    prompt_dir.mkdir(parents=True, exist_ok=True)
-    (prompt_dir / "pathfinder.xml").write_text(
-        "<prompt>Pathfinder Instructions</prompt>", encoding="utf-8"
-    )
-    (tmp_path / ".teddy" / "init.context").write_text("README.md", encoding="utf-8")
-    (tmp_path / "README.md").write_text("Context file content", encoding="utf-8")
+from tests.suites.acceptance.helpers import setup_project
 
 
 def _register_production_guard(env: TestEnvironment) -> None:
@@ -51,7 +40,7 @@ def test_max_turns_flag_stops_a_non_interactive_run(tmp_path, monkeypatch):
     """
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
-    _setup_minimal_project(tmp_path)
+    setup_project(tmp_path)
     _register_production_guard(env)
 
     result = adapter.run_start(["-y", "--max-turns", "1", "-m", "list the files"])
