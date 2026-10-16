@@ -7,7 +7,7 @@ This section defines foundational engineering practices. Each entry MUST be a sp
 **Template format:** `- **Rule Name:** Description and enforcement mechanism.`
 
 ### Recommended: customize per project
-- **Version Control:** Branch strategy and commit conventions. Every commit MUST leave the suite in a **Continuous Green State** — the full test suite passes before and after each change. Commit locally per deliverable; defer the push to the session Conclusion and report CI results back (blocking only on failures the push introduced).
+- **Version Control:** Branch strategy and commit conventions. Every commit MUST pass the full test suite before and after each change (`make test`). Commit locally per deliverable; defer the push to the session Conclusion and report CI results back (blocking only on failures the push introduced).
 - **Run Environment:** Designated runner (e.g., `uv run`, `poetry run`).
 - **Failure Transparency:** Error handling policy — specific exceptions only, no silent suppression.
 - **Testing Strategy:** Define test types (Unit, Integration, Acceptance), boundaries, and filesystem hygiene. Mandate **Test Double Integrity**. Ban global patching. Use in-memory fakes for state-managing outbound ports. Use strictly autospec-bound mocks only for external side-effects.
