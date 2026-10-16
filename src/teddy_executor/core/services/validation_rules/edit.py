@@ -22,7 +22,7 @@ from teddy_executor.core.services.validation_rules.helpers import (
     resolve_similarity_threshold,
     validate_path_is_safe,
 )
-from teddy_executor.core.utils.markdown import get_fence_for_content
+from teddy_executor.core.utils.markdown import embed_in_fence
 
 
 class EditActionValidator(BaseActionValidator):
@@ -137,7 +137,7 @@ def _validate_single_edit(
         effective_threshold = (
             threshold if threshold is not None else DEFAULT_SIMILARITY_THRESHOLD
         )
-        fence = get_fence_for_content(find_block)
+        find_embed = embed_in_fence(find_block, "")
 
         if is_ambiguous and not match_all and score >= effective_threshold:
             errors.append(
@@ -146,7 +146,7 @@ def _validate_single_edit(
                         f"The `FIND` block is ambiguous in: {file_path}\n"
                         f"**Similarity Score:** {score:.2f}\n"
                         f"**FIND Block:**\n"
-                        f"{fence}\n{find_block}\n{fence}\n"
+                        f"{find_embed}\n"
                         "**Hint:** Please provide a larger FIND block to uniquely identify the section, refactor the code to avoid duplication. Alternatively you can use `Match All: true` to change all occurrences in the file at once."
                     ),
                     file_path=str(file_path),
@@ -159,16 +159,15 @@ def _validate_single_edit(
                 f"**Similarity Score:** {score:.2f}\n"
                 f"**Similarity Threshold:** {effective_threshold:.2f}\n"
                 f"**FIND Block:**\n"
-                f"{fence}\n{find_block}\n{fence}\n"
+                f"{find_embed}\n"
             )
             if diff_text:
                 # Prepend standard diff headers for high-clarity diagnostics
                 # ndiff(find, actual) means '-' is Provided and '+' is Actual
                 formatted_diff = f"--- Provided\n+++ Actual\n{diff_text}"
-                diff_fence = get_fence_for_content(formatted_diff)
                 error_msg += (
-                    f"**Closest Match Diff:**\n{diff_fence}diff\n"
-                    f"{formatted_diff}\n{diff_fence}\n"
+                    f"**Closest Match Diff:**\n"
+                    f"{embed_in_fence(formatted_diff, 'diff')}\n"
                 )
 
             hint = _get_already_applied_hint(

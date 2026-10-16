@@ -43,7 +43,7 @@ Then the block is bounded and no fence amplification occurs
 ## Deliverables
 
 - [x] **Migration** — Route `SessionLifecycleManager._append_user_request` through `embed_in_fence`. Add a unit test to `tests/suites/unit/core/services/test_session_lifecycle_user_request_spacing.py` proving the normal output is byte-identical and a degenerate message is bounded.
-- [ ] **Migration** — Route `validation_rules/edit.py` (the FIND-block and diff embeds) through `embed_in_fence`. Add unit tests to `tests/suites/unit/core/services/test_validator_edit.py` proving normal diagnostics are unchanged and a degenerate FIND block is bounded.
+- [x] **Migration** — Route `validation_rules/edit.py` (the FIND-block and diff embeds) through `embed_in_fence`. Add unit tests to `tests/suites/unit/core/services/test_validator_edit.py` proving normal diagnostics are unchanged and a degenerate FIND block is bounded.
 - [ ] **Migration** — Route `parser_reporting.py` (the expected-structure, AST-view, and structural-mismatch embeds) through `embed_in_fence`. Add unit tests to `tests/suites/unit/core/services/test_parser_reporting.py` proving normal diagnostics are unchanged and a degenerate AST is bounded.
 - [ ] **Migration** — Replace the `fence` Jinja filter in `MarkdownReportFormatter` with an `embed_in_fence`-backed `embed_fence` filter and update `execution_report.md.j2` to call it once per block. Add a test to `tests/suites/unit/core/services/test_report_message_fencing.py` proving a degenerate message action yields a bounded report block.
 - [ ] **Cleanup** — Update the component docs (`markdown_report_formatter.md`, `context_service.md`) to record the single seam. Run `git grep -n "get_fence_for_content" -- src` and confirm only `core/utils/markdown.py` matches.
@@ -62,6 +62,16 @@ Then the block is bounded and no fence amplification occurs
 - **Green step:** `uv run pytest tests/suites/unit/core/services/test_session_lifecycle_user_request_spacing.py -q` reported `4 passed`.
 - **Integration gate:** `make test` reported the full suite green (1795 passed, 5 skipped), confirming the migration is regression-free.
 - **No local refactor required:** the change is a minimal substitution with no duplicated literal, magic number, or shadow logic.
+
+### Deliverable 2 — As-Built (validation_rules/edit.py diagnostic migration)
+- **Implementation:** routed both `_validate_single_edit` diagnostic embeds through the shared `embed_in_fence` seam. The bare-fence derivation (`fence = get_fence_for_content(find_block)`) was replaced by `find_embed = embed_in_fence(find_block, "")`, interpolated in both the ambiguous and not-located diagnostic branches. The diff embed was replaced by `embed_in_fence(formatted_diff, 'diff')`, and the module import swapped from `get_fence_for_content` to `embed_in_fence`.
+- **Byte-preservation:** for well-formed content the FIND block is `embed_in_fence(find_block, "")` plus a trailing newline, and the diff is `embed_in_fence(formatted_diff, "diff")` plus a trailing newline, matching the pre-migration byte shape.
+- **Test coverage:** added `TestEditDiagnosticFenceBounding` to `tests/suites/unit/core/services/test_validator_edit.py`, with a byte-identity test pinning both diagnostic sections and a degenerate-FIND-block test driving an unclosed 10,000-backtick run against an empty file (isolating the FIND-block section).
+- **Red step:** the degenerate test failed with the predicted `AssertionError` (`1 failed, 11 passed`); the traceback showed the unbounded path emitting a 10,001-backtick wrapper around the FIND block.
+- **Green step:** `uv run pytest tests/suites/unit/core/services/test_validator_edit.py -q` reported `12 passed`.
+- **Integration gate:** `make test` reported the full suite green (1797 passed, 5 skipped), confirming the migration is regression-free.
+- **Recovery note:** the first Green attempt failed the pre-execution validation gate because the EDIT matcher is whitespace-indifferent and matched both diagnostic branches; enlarging the FIND block to include the unique ambiguous-branch line resolved it atomically.
+- **Harness limitation:** `MarkdownPlanBuilder._render_content_blocks` uses a fixed five-backtick fence for EDIT content, so the degenerate test calls `_validate_single_edit` directly.
 
 ## Verification
 - [ ] **CLI:** Run `make test` and verify the full suite passes (green-to-green).

@@ -5,7 +5,10 @@ from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from teddy_executor.core.ports.outbound import IConfigService
 from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 from teddy_executor.core.services.plan_validator import PlanValidator
-from teddy_executor.core.services.validation_rules.edit import EditActionValidator
+from teddy_executor.core.services.validation_rules.edit import (
+    EditActionValidator,
+    _validate_single_edit,
+)
 from teddy_executor.core.services.validation_rules.execute import ExecuteActionValidator
 from teddy_executor.core.services.validation_rules.filesystem import (
     CreateActionValidator,
@@ -231,3 +234,45 @@ def test_validate_edit_diff_includes_standard_headers(
     # Check for the headers we want to add
     assert "--- Provided" in msg
     assert "+++ Actual" in msg
+
+
+class TestEditDiagnosticFenceBounding:
+    """FIND-block and diff diagnostics are bounded and byte-stable.
+
+    `_validate_single_edit` routes both embeds through the shared
+    `embed_in_fence` seam, so an unclosed giant backtick run in a FIND block
+    cannot amplify the diagnostic, while well-formed content keeps its exact
+    bytes.
+    """
+
+    def test_well_formed_diagnostic_is_byte_identical(self):
+        # Arrange: a near-match produces both a FIND-block and a diff section.
+        errors = _validate_single_edit(
+            {"find": "This is the orignal content", "replace": "New"},
+            "This is the original content",
+            "t.txt",
+            threshold=0.99,
+        )
+
+        # Assert: both sections reproduce the exact pre-migration bytes.
+        assert len(errors) == 1
+        message = errors[0].message
+        assert "**FIND Block:**\n```\nThis is the orignal content\n```\n" in message
+        assert "**Closest Match Diff:**\n```diff\n--- Provided\n+++ Actual\n" in message
+
+    def test_degenerate_find_block_does_not_amplify_diagnostic(self):
+        # Arrange: an unclosed 10,000-backtick run (the observed defect shape).
+        degenerate = "hello\n" + "`" * 10_000
+
+        # Act: an empty file keeps the diff section out of the message.
+        errors = _validate_single_edit(
+            {"find": degenerate, "replace": "New"},
+            "",
+            "t.txt",
+            threshold=0.99,
+        )
+
+        # Assert: the dangling fence is stripped, so the diagnostic is bounded.
+        assert len(errors) == 1
+        assert "`" * 10_001 not in errors[0].message
+        assert "**FIND Block:**\n```\nhello\n```\n" in errors[0].message
