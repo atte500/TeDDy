@@ -113,6 +113,10 @@ ci-watch:
 	    STATUS=1; continue; \
 	  fi; \
 	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
+	  if [ -z "$$OLD" ]; then \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — pinned base has no run (unknown base) — YOUR regression"; \
+	    STATUS=1; continue; \
+	  fi; \
 	  OLDJOBS=$$(gh run view "$$OLD" --json jobs --jq '.jobs | length'); \
 	  if [ "$$OLDJOBS" = "0" ]; then \
 	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — base run is job-less (invalid workflow, not green) — YOUR regression"; \

@@ -326,3 +326,54 @@ def test_explicit_base_override_pins_the_baseline(ci_repo: Path) -> None:
 
     assert result.returncode == 0, result.stdout
     assert "pre-existing" in result.stdout, result.stdout
+
+
+@_posix_only
+def test_bad_base_override_fails_safe(ci_repo: Path) -> None:
+    """A pinned ``BASE=<sha>`` with no run must fail safe as an unknown base.
+
+    The override skips ancestor resolution, but a wrong SHA cannot silently
+    unblock a real regression. Here the auto-resolved base (``HEAD~1``) carries
+    a run, so default resolution would attribute the failure pre-existing and
+    exit 0; the pinned runless ``HEAD~2`` must instead report an unknown base
+    and exit non-zero.
+    """
+    tip_sha = _git(ci_repo, "rev-parse", "HEAD")
+    auto_base_sha = _git(ci_repo, "rev-parse", "HEAD~1")
+    runless_sha = _git(ci_repo, "rev-parse", "HEAD~2")
+    scenario_dir = ci_repo / "scenario"
+    invocation_log = ci_repo / "gh-invocations.log"
+
+    CiWatchScenario(
+        runs=(
+            RunResult(
+                database_id=333,
+                workflow="CI",
+                head_sha=tip_sha,
+                conclusion="failure",
+                jobs=(
+                    JobResult(
+                        "Test Suite",
+                        "failure",
+                        steps=(("Run tests", "failure"),),
+                    ),
+                ),
+            ),
+            RunResult(
+                database_id=222,
+                workflow="CI",
+                head_sha=auto_base_sha,
+                conclusion="failure",
+                jobs=(
+                    JobResult("Test Suite", "failure"),
+                    JobResult("Quality Checks", "failure"),
+                ),
+            ),
+            # No run is registered for runless_sha, so the override is unknown.
+        )
+    ).write(scenario_dir)
+
+    result = _run_ci_watch(ci_repo, scenario_dir, invocation_log, base=runless_sha)
+
+    assert result.returncode != 0, result.stdout
+    assert "unknown base" in result.stdout, result.stdout

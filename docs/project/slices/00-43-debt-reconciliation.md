@@ -66,7 +66,7 @@ And no unhandled thread exception escapes
 
 ## Deliverables
 - [x] **Wiring** - Add a fake-`gh` acceptance scenario that pins `BASE=<sha>`, and wire the minimal `BASE ?=` override into the shipped `Makefile` so the shipped target honors it end to end.
-- [ ] **Logic** - Complete the `ci-watch` override semantics in the shipped `Makefile`: use `BASE=<sha>` verbatim and keep the unknown-base fail-safe when the override carries no run. Add the bad-override acceptance scenario.
+- [x] **Logic** - Complete the `ci-watch` override semantics in the shipped `Makefile`: use `BASE=<sha>` verbatim and keep the unknown-base fail-safe when the override carries no run. Add the bad-override acceptance scenario.
 - [ ] **Logic** - Harden the update checker: guard `background_check` to swallow every error and move the cache-directory creation inside the guarded block in `write_update_cache`. Add the fail-silent unit coverage.
 - [ ] **Migration** - Mirror the corrected `ci-watch` recipe and the override documentation into both template copies, byte-identical.
 - [ ] **Cleanup** - Remove the two resolved debt entries from the Milestone 5 roadmap section in `docs/project/PROJECT.md`.
@@ -81,6 +81,13 @@ And no unhandled thread exception escapes
 - An unset `$(BASE)` expands to an empty string, so the shell base starts empty, the walk condition stays true, and the default path is byte-for-byte unchanged. The four existing scenarios therefore stay green.
 - Insight: GNU Make returns exit code 2 for any failed recipe, so a blocking verdict surfaces as a non-zero status rather than `1`.
 - Deferred to the Logic deliverable: the bad-override fail-safe when the pinned SHA carries no run for the workflow. The empty-override path already preserves the existing unknown-base fail-safe.
+
+### Logic (ci-watch override fail-safe)
+- The deliverable added `test_bad_base_override_fails_safe` to `tests/suites/acceptance/test_ci_watch_attribution.py`. The scenario isolates the override as the only cause of the verdict: the auto-resolved base (`HEAD~1`) carries a run, so default resolution would attribute the failure pre-existing and exit 0, while the pinned runless `HEAD~2` must fail safe.
+- The Red step failed exactly as predicted. The first assertion (`returncode != 0`) passed, and the second failed on `assert "unknown base" in result.stdout`. The captured stderr carried `ValueError: invalid literal for int() with base 10: ''`, which proved the mechanism: with the override set the recipe skips the walk, `OLD` resolves to the empty string, and the next line calls `gh run view ""` with an empty positional.
+- The Green step added one guard immediately after the `OLD` resolution in the shipped `ci-watch` recipe. When `OLD` is empty, the recipe prints `BLOCKING failure (...) — pinned base has no run (unknown base) — YOUR regression` and sets `STATUS=1`.
+- In the walk path `BASE` is set only when a run exists, so `OLD` is always non-empty there and the new guard never fires. The guard therefore fires only on the pinned-runless path, which leaves the default, improvement, regression, multi-commit, and override-pins paths unchanged.
+- The acceptance file passed in full with `6 passed`, and the Integration gate reported `1846 passed, 5 skipped`.
 
 ## Verification
 - [ ] **Base override pins the baseline:**
