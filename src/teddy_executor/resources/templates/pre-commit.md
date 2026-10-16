@@ -77,6 +77,8 @@ repos:
 
 **Tip:** Pin exact `rev` tags so every teammate runs identical checks.
 
+**Line endings:** The whitespace hooks (`trailing-whitespace`, `end-of-file-fixer`) fix trailing spaces and the missing final newline. They do NOT normalize LF versus CRLF. Add a committed `.gitattributes` with the rule `* text=auto eol=lf`. Git then stores and checks out text as LF on every platform. This rule applies to every clone and to unstaged files, so it is more robust than a hook. TeDDy does NOT create this file. Create it yourself in the project root.
+
 ## 3. Install the hooks
 
 ```shell

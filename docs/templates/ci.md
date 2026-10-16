@@ -12,6 +12,7 @@ The CI pipeline consists of two parallel jobs:
 - Runs on each push and pull request.
 - Executes across multiple OS targets (e.g., ubuntu-latest, windows-latest, macos-latest).
 - Runs the full test suite: `{runner} pytest`.
+- Discovers tests via `testpaths` in `pyproject.toml`; the CI step passes no path so the config stays the single source of truth.
 - **Blocking:** If this job fails, the CI pipeline is marked as failed.
 
 ### Job 2: Non-Blocking Quality Checks

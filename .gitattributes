@@ -1,0 +1,4 @@
+# Normalize line endings for every text file in the repository.
+# Git stores text as LF and checks it out as LF on every platform,
+# which keeps diffs clean across the Windows, macOS, and Linux CI matrix.
+* text=auto eol=lf

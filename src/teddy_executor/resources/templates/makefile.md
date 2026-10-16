@@ -99,6 +99,8 @@ test:
 
 **Usage:** `make test`
 
+**Test scope:** declare the tests directory once via `testpaths` in `pyproject.toml`. The `test` target passes no path to `pytest`, so the config stays the single source of truth.
+
 ## Commit Workflow
 
 `make commit` is **local-only**: it stages all local changes, runs the pre-commit hooks once (an advisory auto-fix pass that re-stages any auto-formatted files), and commits. It does **not** pull or push — the push is deferred to the session Conclusion via `make push` (see [Push (Deferred to Conclusion)](#push-deferred-to-conclusion)).
