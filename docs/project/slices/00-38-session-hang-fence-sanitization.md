@@ -1,5 +1,5 @@
 # Slice: Session-Hang Fence Sanitization
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Ad-hoc (not tracked in the Roadmap per PROJECT.md)
 - **Depends On:** None
 - **Specs:** N/A (defect remediation; no permanent system invariant changes)
