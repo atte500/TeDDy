@@ -57,7 +57,7 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 
 ## Deliverables
 - [x] **Wiring** - Add `--max-turns` and `--max-cost` to `start` and `resume`, thread them to the loop guard, and honor them in the limit checks through a skeleton precedence read.
-- [ ] **Contract** - Extend `ISessionLoopGuard` with the additive `reset_baseline(turn_count, cumulative_cost)` operation.
+- [x] **Contract** - Extend `ISessionLoopGuard` with the additive `reset_baseline(turn_count, cumulative_cost)` operation.
 - [ ] **Logic** - Implement the precedence chain (CLI flag > env var > config value > default), the `TEDDY_MAX_TURNS` and `TEDDY_MAX_SESSION_COST` overrides, the legacy `yolo_guardrails` fallback read, the 150-turn default, and the message-turn reset gated by `guardrails.message_reset`.
 - [ ] **Migration** - Rename `yolo_guardrails` to `guardrails` in the bundled config, the guard, the guard tests, and the `session_loop_guard.md` component doc. Correct the component doc's stale config-missing defaults.
 - [ ] **Refactor** - Extract the limit resolution into a single helper.
@@ -73,6 +73,13 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 - The guard constructor gained additive optional keywords `max_turns` and `max_cost`, both defaulting to `None`, so every existing caller stays valid.
 - The limit read is a temporary skeleton precedence: an explicit CLI value wins, otherwise the guard falls back to the `yolo_guardrails` config value. The full chain (environment variable, legacy fallback, and the 150-turn default) arrives in the Logic deliverable.
 - Acceptance proof: `tests/suites/acceptance/test_configurable_guardrails.py` drives `start -y --max-turns 1` and asserts the run stops at `1/1`.
+
+### Contract (delivered)
+
+- Added the additive `reset_baseline(self, turn_count, cumulative_cost) -> None` declaration to the `ISessionLoopGuard` Protocol.
+- The port is a plain `Protocol` without `@runtime_checkable`, so both explicit subclasses (`ProductionSessionLoopGuard` and the harness's `TestSessionLoopGuard`) inherit the new method as an inert no-op stub. The extension therefore has zero blast radius.
+- The concrete re-anchoring behavior, gated by `guardrails.message_reset`, arrives in the Logic deliverable. This deliverable only pins the port surface, so implementing behavior now would overbuild.
+- Contract proof: `tests/suites/unit/core/ports/outbound/test_session_loop_guard_contract.py` pins the operation's presence and its exact `(self, turn_count, cumulative_cost)` signature.
 
 ### Harness constraint
 

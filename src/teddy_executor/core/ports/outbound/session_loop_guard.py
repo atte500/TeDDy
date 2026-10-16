@@ -17,3 +17,13 @@ class ISessionLoopGuard(Protocol):
         how to adjust the configuration.
         """
         ...
+
+    def reset_baseline(self, turn_count: int, cumulative_cost: float) -> None:
+        """
+        Re-anchors the turn-count and cost baselines to the given values.
+
+        A human-approved message turn re-anchors the baselines so the next
+        segment gets a fresh budget. Implementations measure every later
+        ``should_continue`` call as a delta from the new baselines.
+        """
+        ...
