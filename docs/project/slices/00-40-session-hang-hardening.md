@@ -48,13 +48,22 @@ Surface of affected components using the Parallel Change model. The two changes 
 3. `[CONTRACT]` None — no shared contract is removed or changed.
 
 ## Deliverables
-- [ ] **Wiring** — Connect the over-budget guardrail end-to-end: add a minimal guardrail in `PlanningService.generate_plan` that raises when `token_count` exceeds `get_context_window(model)`, and an acceptance test that drives the session boundary with an over-budget double and asserts a user-visible error.
+- [x] **Wiring** — Connect the over-budget guardrail end-to-end: add a minimal guardrail in `PlanningService.generate_plan` that raises when `token_count` exceeds `get_context_window(model)`, and an acceptance test that drives the session boundary with an over-budget double and asserts a user-visible error.
 - [ ] **Logic** — Harden the context-budget guardrail: unit tests for the non-positive window, exact-boundary, and over-budget cases, plus a clear error message. Reuse the existing `ConfigurationError` type.
 - [ ] **Logic** — Re-enable `ISIG` in `TerminalQuitKeyListener._enter_noncanonical_mode`: unit tests assert `ISIG` is set regardless of inherited state and that `ICANON` and `ECHO` stay cleared.
 - [ ] **Cleanup** — Update the `planning_service` component doc, record the delivered measures in the case file, and resolve the stale case-file header link.
 
 ## Implementation Notes
-Filled during implementation. Decisions and discoveries are recorded here.
+
+### Wiring (deliverable 1) — over-budget guardrail end-to-end
+
+- **Guardrail location:** `PlanningService.generate_plan`, inserted immediately after the telemetry display and before the `_perform_generation_with_retry` call. It computes `context_window = int(self._safe_float(self._llm_client.get_context_window(model=model)))` and raises when `context_window > 0 and token_count > context_window`. The strict `>` and the `> 0` guard already satisfy the exact-boundary and unknown-window edge cases; the Logic deliverable pins them with unit tests.
+- **Error type:** reused `ConfigurationError`, imported function-locally. `_run_preflight_check` already raises the same type from the same function, so the established user-visible path needs no new wiring: the CLI boundary `_handle_startup_error` prints `Error: {error}` plus the config-path hint, then raises `typer.Exit(code=1)`.
+- **Message:** `Context Window Exceeded: the request is {token_count} tokens, which exceeds the {context_window}-token context window of model '{model}'.` It names both numbers and the model.
+- **Surfacing path:** `SessionPlanner.trigger_new_plan` calls `generate_plan`; `_orchestrate_session_loop` guards the turn body with `except KeyboardInterrupt` only, so the raised `ConfigurationError` propagates to the outer `except Exception as e: _handle_startup_error(container, e)` block.
+- **Red evidence (turn 103):** `tests/suites/acceptance/test_over_budget_guardrail.py` drove `CliTestAdapter.run_start` with `get_token_count` 200_000 and `get_context_window` 128_000. It failed with `assert 0 != 0` because no guardrail existed and the session stalling path exited code 0.
+- **Green evidence (turn 104):** the same test reported `1 passed`. It asserts `result.exit_code != 0`, `Context Window Exceeded`, `200000`, `128000`, and `mock_llm_client.get_completion.assert_not_called()`.
+- **Integration evidence (turn 105):** `make test` reported `1808 passed, 5 skipped`, proving the additive guardrail caused no regression.
 
 ## Verification
 - [ ] **Over-budget guardrail surfaces a visible error:**

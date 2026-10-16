@@ -93,10 +93,6 @@ class PlanningService(IPlanningUseCase):
             (turn_path / "input.md").as_posix(), full_context
         )
 
-        model = str(
-            meta.get("model") or self._config_service.get_setting("llm.model") or ""
-        )
-
         # Pre-emptive Hydration: Trigger hydration via get_context_window BEFORE counting tokens.
         # This ensures the model is known to the registry so token counting and telemetry work.
         if self._user_interactor:
@@ -109,6 +105,8 @@ class PlanningService(IPlanningUseCase):
 
         if self._user_interactor:
             self._display_telemetry(meta, token_count)
+
+        self._check_context_budget(token_count, model)
 
         response, plan_content, turn_cost = self._perform_generation_with_retry(
             messages,
@@ -230,6 +228,27 @@ class PlanningService(IPlanningUseCase):
         self._user_interactor.display_message(
             f"[blue]• Session Cost:[/blue] [magenta]{cost_str}[/magenta]\n"
         )
+
+    def _check_context_budget(self, token_count: int, model: str) -> None:
+        """Raise a user-visible error when the request exceeds the model window.
+
+        Case file 07 Measure 2 (Jidoka): the request token count and the model
+        context window were computed only for display. This turns an oversized
+        request into a loud failure instead of a silent stall inside the LLM
+        call. A non-positive window means the window is unknown, so no error is
+        raised and only a strict excess is over budget.
+        """
+        from teddy_executor.core.domain.models.exceptions import ConfigurationError
+
+        context_window = int(
+            self._safe_float(self._llm_client.get_context_window(model=model))
+        )
+        if context_window > 0 and token_count > context_window:
+            raise ConfigurationError(
+                f"Context Window Exceeded: the request is {token_count} tokens, "
+                f"which exceeds the {context_window}-token context window of "
+                f"model '{model}'."
+            )
 
     def _safe_float(self, v: Any, default: float = 0.0) -> float:
         """Robust conversion to float, handling mocks and strings."""
