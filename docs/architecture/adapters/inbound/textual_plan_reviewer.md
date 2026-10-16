@@ -1,54 +1,43 @@
-**Status:** Implemented
+# Component Design: TextualPlanReviewer
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/adapters/inbound/textual_plan_reviewer.py`](/src/teddy_executor/adapters/inbound/textual_plan_reviewer.py)
 
-## 1. Purpose / Responsibility
-Implements the `IPlanReviewer` port using the `Textual` TUI framework. It provides a rich, interactive terminal experience for reviewing and modifying plans.
+## Purpose
+Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It provides an interactive terminal experience for reviewing, modifying, and selectively executing a plan before it runs. Supporting logic lives in the sibling `textual_plan_reviewer_*.py` modules.
 
-## 2. Ports
-- **Implements Inbound Port:** `IPlanReviewer`
-- **Uses Outbound Ports:**
-  - `ISystemEnvironment`: For launching external editors for "Context-Aware Editing".
+## Consumers
+- [`ExecutionOrchestrator`](../../core/services/execution_orchestrator.md): Invokes review through the `IPlanReviewer` port for interactive plans.
 
-## 3. Implementation Details / Logic
-1. **App Structure:** A `textual.app.App` using a **dual-pane layout** for optimal information density:
-   - **Left Pane (ActionTree):** A 65% width tree displaying a flat list of actions (leaf nodes) organized under virtual roots (Rationale, Action Plan).
-   - **Right Pane (ParameterDetail):** A 35% width list view that dynamically displays all parameters (including system defaults) for the highlighted action.
-2. **Rationale Parsing Protocol:** The `ActionTree` parses the `Plan.rationale` into sections. It MUST support both legacy Markdown headings (`### Section`) and numeric list markers (`1. Section`) at the start of a line.
-   - **Split Regex:** `\n(?=### |\d+\.\s+)`
-   - **Title Extraction:** Markers (`### ` or `1. `) MUST be stripped from the title displayed in the tree leaf.
-3. **Initialization Behavior:** To ensure a useful initial state, the TUI MUST:
-   - Highlight the "Rationale" virtual root in the `ActionTree` using `tree.move_cursor()`.
-   - Populate the `ParameterDetail` pane with the plan's metadata (Agent, Plan Type, Status) immediately upon mount. This update SHOULD be scheduled after the initial refresh to avoid race conditions with tree events.
-4. **Action Log Formatting Contract:** When viewing execution logs (hotkey `d`), the TUI MUST format the `ActionLog` as a structured Markdown document:
-   - **Header:** `### {ACTION_TYPE}: {SUMMARY}`
-   - **Status:** `- **Status:** {STATUS}`
-   - **Fenced Blocks:** `stdout`, `stderr`, and `diff` MUST be wrapped in quadruple-backtick fences (````) to allow embedded triple-backtick blocks within the content.
-   - **UX:** Viewing the log is a read-only operation and MUST bypass the "apply changes" confirmation prompt.
-5. **Tiered Interaction:**
-   - **Tier 1:** Summary view (Header/Footer).
-   - **Tier 2:** Detail view/Checklist (Tree) with side-by-side parameter inspection.
-3. **Context Detail Pane (Token Breakdown):** When the Context Root is selected in the left pane, the right pane shows an aggregate token breakdown. The `• System` line displays the merged sum of `system_prompt_tokens` and `system_info_tokens` (where `system_info_tokens = content_tokens - sum(selected_file_tokens)`). The `Total Context` line displays `content_tokens + system_prompt_tokens` divided by the model's context window. This ensures the breakdown accurately reflects all content sent to the LLM, including overhead tokens from headers, formatting, file tree, and git status.
-3. **Focus Management:** Navigation between panes is handled via `Tab`. Tabbing into the right pane automatically highlights the first parameter.
-3. **Modification Logic:**
-   - When a user selects "Modify/Preview" (key `p`), the adapter uses the `ISystemEnvironment` to open a temporary file in the user's editor.
-   - Upon editor close, the adapter parses the temporary file (or uses the returned path) to update the `ActionData` in-memory.
-4. **Return Path:** The `app.run()` call returns the final `Plan` object.
-5. **Stdin Ownership (Bug 58):** While the TUI runs, the reviewer claims `stdin_owned()` for the duration of `app.run()`, so the persistent session-level quit-key reader (`IQuitKeyListener`) backs off and the TUI's own `q`-to-cancel binding keeps working.
+## Dependencies
+- [`ISystemEnvironment`](../../core/ports/outbound/system_environment.md): Launches the external editor for context-aware editing.
 
-## 4. Data Contracts / Methods
-Refer to the [IPlanReviewer](/docs/architecture/core/ports/inbound/plan_reviewer.md) port for method signatures.
+## Class Invariants
+- `stdin_ownership`: While the app runs, the reviewer claims `stdin_owned()` so the session quit-key listener backs off and the TUI's own `q` binding stays authoritative.
+- `rationale_dual_format`: The rationale parser accepts both Markdown headings (`### Section`) and numeric markers (`1. Section`), splitting on `\n(?=### |\d+\.\s+)` and stripping the marker from the displayed title.
+- `log_is_read_only`: Viewing an action log bypasses the apply-changes confirmation prompt.
+- `mutable_plan_models`: The `Plan` and `ActionData` models are unfrozen so the reviewer can update them in memory.
 
-### Implementation Notes:
-- **Refactoring Requirement:** The `Plan` and `ActionData` models must be unfrozen to support direct in-memory updates by the TUI.
-- **Keyboard Bindings:**
-  - `s`: Submit the plan and return the results.
-  - `a`: Toggle selection for all actions.
-  - `e`: Edit (Context-Aware Editing).
-    - **CREATE:** Launches the external editor for content, followed by a `PathInputScreen` modal for path adjustment and a `ConfirmScreen`.
-    - **EDIT:** Launches the external editor showing the proposed final state (simulated), followed by a `ConfirmScreen`.
-    - **EXECUTE/RESEARCH:** Uses a `ParameterEditModal` for simple value changes.
-  - `d`: View Details (Action Log). Launches the external editor with a read-only Markdown summary of the action's execution log. Bypasses confirmation.
-  - `r`: Revert manual modifications (conditionally enabled).
-  - `v`: View the original plan file (read-only).
-  - `x`: Execute Step (marks the action as executed/successful).
-  - `m`: Add/Edit User Message (Instruction Bridge). When the MESSAGE action executes, the user's typed reply is echoed to the terminal via the shared `core/utils/terminal.py::emit_user_message` helper (label `User Message:`), so the echo format stays single-sourced with the core service paths.
-  - `q`: Cancel and exit.
+## Inbound Ports
+- **`IPlanReviewer`**: Exposes `review(plan, project_context=None)` and `review_action(action, total_actions, agent_name=None)`.
+
+## Outbound Ports
+- **`ISystemEnvironment`**: Consumed to open the editor for parameter edits.
+
+## Data Contracts
+- **`Plan`** and **`ActionData`** (`teddy_executor.core.domain.models.plan`): The reviewed objects, updated in memory.
+- **`ProjectContext`** (`teddy_executor.core.domain.models.project_context`): Optional context metadata shown in the context pane.
+
+## Operations
+
+### `review(plan, project_context=None) -> Optional[Plan]`
+- **Preconditions:** `plan` is a valid `Plan`.
+- **Postconditions:** Returns the plan carrying the user's selections and edits, or `None` when the user cancels. The dual-pane layout shows a 65% action tree and a 35% parameter detail pane. Selecting the Context root shows an aggregate token breakdown: the `System` line sums the system-prompt and system-info tokens, and the `Total Context` line divides content plus system-prompt tokens by the model window.
+
+### `review_action(action, total_actions, agent_name=None) -> tuple[bool, str]`
+- **Postconditions:** Returns `(should_execute, captured_message)` for sequential review.
+
+### Keyboard bindings
+`s` submits the plan; `a` toggles all actions; `e` edits the highlighted action (external editor for CREATE and EDIT, modal for EXECUTE and RESEARCH); `d` opens the read-only action log; `r` reverts manual modifications; `v` views the original plan file; `x` marks a step executed; `m` adds or edits a user message; `q` cancels and exits.
+
+### Action log format
+The reviewer renders an action log as a structured Markdown document: an `### {ACTION_TYPE}: {SUMMARY}` header, a `- **Status:** {STATUS}` line, and quadruple-backtick fences around `stdout`, `stderr`, and `diff`.

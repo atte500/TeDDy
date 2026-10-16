@@ -1,278 +1,73 @@
-# Inbound Adapter: CLI
-
-**Status:** Implemented
-**Language:** Python 3.9+
-
-## 1. Dependency Injection & Composition Root
-
-**Status:** Planned
-
-To address the complexity in the composition root and decouple the CLI commands from concrete service implementations, we will use a Dependency Injection (DI) container. This is a central part of the Comprehensive Refactoring workstream.
-
--   **Library:** `punq`
--   **Strategy:** A single DI container will be initialized at application startup in `src/teddy_executor/main.py`. It will be responsible for instantiating and wiring all services, adapters, and their dependencies. CLI command functions will then resolve the top-level use case (`ExecutionOrchestrator`) from this container.
-
-### Example Composition Root (`main.py`)
-
-```python
-import punq
-import typer
-
-# Import services, ports, and adapters
-from teddy_executor.core.services import (
-    ExecutionOrchestrator,
-    PlanParser,
-    ActionDispatcher,
-    ActionFactory
-)
-from teddy_executor.core.ports.outbound import (
-    IFileSystemManager,
-    IUserInteractor
-)
-from teddy_executor.adapters.outbound import (
-    LocalFileSystemAdapter,
-    ConsoleInteractorAdapter
-)
-
-def create_container() -> punq.Container:
-    """Initializes and configures the DI container."""
-    container = punq.Container()
-
-    # Register outbound adapters (implementations)
-    container.register(IFileSystemManager, LocalFileSystemAdapter)
-    container.register(IUserInteractor, ConsoleInteractorAdapter)
-
-    # Register application services
-    container.register(ActionFactory)
-    container.register(PlanParser)
-    container.register(ActionDispatcher)
-    container.register(ExecutionOrchestrator)
-
-    return container
-
-# Create the application instance and container
-app = typer.Typer()
-container = create_container()
-
-@app.command()
-def execute(
-    # ... typer options ...
-):
-    """Executes a plan."""
-    # Resolve the main service from the container
-    orchestrator = container.resolve(ExecutionOrchestrator)
-
-    # Call the service
-    report = orchestrator.execute(plan_path=..., interactive=...)
-    # ... format and print report ...
-```
-
-## 2. Purpose
-
-The CLI adapter is the primary entry point for the `teddy` application. It is responsible for:
-1.  Parsing user commands and arguments (`teddy execute`, `teddy context`).
-2.  Reading plan content for the execution command from a positional file argument or the clipboard.
-3.  Invoking the correct application service via the appropriate inbound port (resolved from the DI container).
-4.  Formatting the resulting domain object (`ExecutionReport` or `ProjectContext`) into a user-facing string.
-5.  Printing the final output to standard output.
-
-## 3. Used Inbound Ports
-
-This adapter is a "driving" adapter that uses inbound ports to interact with the application core.
-
-*   For plan execution: [`RunPlanUseCase`](../../core/ports/inbound/run_plan_use_case.md), implemented by the `ExecutionOrchestrator` service.
-*   For context gathering: [`IGetContextUseCase`](../../core/ports/inbound/get_context_use_case.md) )
-
-## 4. Command-Line Interface
-
-*   **Technology:** `Typer`
-*   **Composition Root:** The application's dependency injection and wiring are handled in `src/teddy_executor/main.py` as described in the Dependency Injection section above.
-
-### Session Command: `start`
-**Status:** Implemented
-
-Initializes a new session.
-
-*   **Signature:** `teddy start [NAME] [--agent AGENT] [--context PATH]... [--model MODEL] [--provider PROVIDER] [--api-key KEY]`
-*   **Behavior:**
-    1.  Creates a new session directory in `.teddy/sessions/`.
-    2.  If `NAME` is omitted, it uses a temporary ISO-timestamped name.
-    3.  Automatically Renames: If created with a timestamped name, the session is renamed to a slugified version of the first generated plan's H1 title.
-    4.  Triggers immediate planning and enters the interactive execution loop.
-    5.  `--context` / `-c` is repeatable: each occurrence adds one path (e.g., `-c a.py -c b.md`). Comma-separated values within a single occurrence are also split for backward compatibility (`-c "a.py,b.md"`). Limitation: paths containing a literal comma cannot be expressed. Each entry is normalized by `SessionService._prepare_session_context`: a `[label](target)` Markdown-link entry seeds the TARGET, and backslashes / a leading `./` / a leading `/` are normalized.
-
-### Agent Resolution (`--agent` / `-a`) (As-Built, 2026-10-13)
-
-`start` declares `--agent` / `-a` as a **deferred** option — `agent: Optional[str] = typer.Option(None, "--agent", "-a", ...)` — so Typer can distinguish "the user passed `-a`" from "the user omitted `-a`" (a plain string default cannot). Resolution is single-sourced through the `_resolve_agent(agent, pipeline)` helper in `src/teddy_executor/__main__.py` (Poka-Yoke: the effective value cannot drift from the documented default):
-
-1. An explicit `--agent` / `-a` always wins; the passed value is used verbatim with or without `--pipeline`.
-2. When the flag is unset, a pipeline run (`--pipeline` / `-p`) resolves to the action-first `assistant` agent, so automated / CI invocations begin executing actions immediately instead of opening with Pathfinder's discovery loop.
-3. When the flag is unset and `--pipeline` is not set, the run resolves to `pathfinder`.
-
-The `start` `--agent` help text states the default explicitly: `Agent prompt to use. Defaults to 'pathfinder' ('assistant' in pipeline mode).`
-
-**`resume` is deliberately NOT affected.** `resume`'s `--agent` / `-a` already defaults to `None` and means "switch persona for the existing session". It is intentionally excluded from the pipeline default so `teddy resume -p` never silently switches an already-established session's agent.
-
-### YOLO Mode Resolution (Tri-State `--yolo/--no-yolo`)
-
-`start`, `resume`, and `execute` all expose a **tri-state** `yolo` flag declared with the combined Typer form `typer.Option(None, "--yolo/--no-yolo", "-y/-n")`, yielding `None` (unset) / `True` (`--yolo` / `-y`) / `False` (`--no-yolo` / `-n`). Resolution is single-sourced through the `_resolve_yolo(yolo, config_service)` helper in `src/teddy_executor/__main__.py` (Poka-Yoke: the three commands cannot drift):
-
-1. An explicit flag always wins: `--yolo` / `-y` → non-interactive; `--no-yolo` / `-n` → interactive.
-2. When the flag is unset, the mode falls back to the top-level `yolo_default` config setting (`IConfigService.get_setting("yolo_default", False)`; code default `False`), so pre-existing configs behave unchanged.
-3. The resolved value participates in the command's interactivity expression `interactive = not (_resolve_yolo(...) or [pipeline])`, so `--pipeline` (where defined) still forces non-interactive. The redundant hidden aliases (`--yes`, `--no-interactive`, `--non-interactive`) were retired; `interactive` is now approval-only, and the headless/automated path is `-y` (or non-TTY stdin).
-
-On `execute`, the config service is resolved from the container AFTER `get_container()` / `_ensure_project_initialized()`, so the `interactive_mode` computation happens after the config service is available.
-
-### Editor Validation Preflight
-
-The CLI adapter performs editor validation during session startup (`handle_new_session`, `handle_resume_session`) via `_run_cli_preflight_check()`. When the session will read the terminal (the `setup_editor` signal is truthy), the preflight check calls `_validate_editor_config()` which:
-
-1. Checks if the editor is set to `"disabled"` — if so, skips all validation.
-2. Checks if the configured editor exists in `PATH` via `ConsoleToolingHelper.find_editor()`. If found, validation passes.
-3. If the editor is missing or unconfigured, displays a warning and discovers available editors via `ConsoleToolingHelper.discover_editors()`.
-4. Renders the discovery block: an always-present `Editor Setup` header, then a **bracket**-numbered list (`[1] nvim`, resolved paths hidden), then a single prompt `Select an editor [1-{n}] (number, custom command, or empty to disable): `. A valid number persists the editor's basename. A custom command is validated with `which()` and re-prompted if unavailable — it is never accepted without passing validation. Empty input persists `"disabled"`. Invalid/out-of-range input re-prompts.
-5. Persists the selection to `.teddy/config.yaml` via `IConfigService.set_setting()` and prints the green confirmation `Editor preference saved to .teddy/config.yaml.`. The full render specification (colours, the fallback branch, and the exact message strings) lives in spec §4.
-
-Editor validation is skipped entirely for runs that will not read the terminal: fully-specified batch runs (`-y` with `-m`), `--pipeline` runs, and any non-TTY stdin (CI/piped). A `-y` run without `-m` on a TTY still blocks on the opening-message prompt, so the one-time editor setup runs.
-
-### Preflight Notifications (Drift & Update)
-
-`_run_cli_preflight_check()` also emits two advisory notifications on its healthy path — the shared slot reached by `start` and `resume` after `ensure_initialized()`:
-
-- **Drift notification** (`_display_drift_notification`): resolves `IInitUseCase`, calls `check_drift()`, and — for each channel that is BOTH enabled AND drifted — emits exactly ONE count-aware yellow line advising the actionable command (`teddy init prompts` for the prompts channel; `teddy init templates` for the templates channel). The line distinguishes CHANGED from MISSING files and is singular/plural on the total count. The prompts channel is emitted BEFORE the templates channel. Each channel is gated by its OWN toggle — `checks.prompts` for prompts and `checks.templates` for templates (both default enabled).
-- **Shared disable-footer** (`_display_checks_footer`): after ALL notifications, the preflight prints exactly ONE plain (uncolored) line naming every check that actually fired, giving the user a discoverable way to silence them: `You can disable this check in .teddy/config.yaml: <key>.` (singular) or `You can disable these checks in .teddy/config.yaml: <k1>, <k2>.` (plural). The keys are deduped and ordered by the canonical sequence (`checks.prompts`, `checks.templates`, `checks.update`); a disabled channel never fires and is therefore omitted.
-- **Update notification** (`_display_update_notification`): reads the update cache and, when a newer version is cached, emits the upgrade advice. Gated by the `checks.update` toggle (default enabled); the toggle suppresses only the user-facing NOTIFICATION — the background version fetch/caching still runs.
-
-All three toggles are read additively via `IConfigService.get_setting`, so a config that lacks the `checks` block behaves as enabled (backwards compatible).
-
-**Output layout.** On the healthy path the preflight prints, in order: `Checking configurations...`, a blank line, the drift block (each channel's yellow advice line immediately followed by the shared disable-footer, so the footer abuts the final drift line), a blank line, and the `Agent:`/`Model:` identity block. The advice wording is `... To update them, run: teddy init <prompts|templates>`. When no notification fires, the blank line before the identity block is the only separator after `Checking configurations...`.
-
-### Startup Health Checks (`_run_health_checks`)
-
-`_run_health_checks()` runs two advisory checks on session start/resume (`handle_new_session`, `handle_resume_session`): `_ensure_commit_hooks()` and `_check_git_initialized()`.
-
-**`_ensure_commit_hooks` compare-and-skip (Slice 00-20):** before spawning `pre-commit install -f -t pre-commit -t post-commit`, the guard verifies each requested shim PER HOOK TYPE (pre-commit installs ONE shim per hook type; each declares only its OWN `--hook-type=<type>`): the shim exists in the resolved hooks directory (`.git/hooks` or `core.hooksPath`), contains `hook-impl`, declares `--config=.pre-commit-config.yaml`, declares its own `--hook-type=`, and embeds an existing `INSTALL_PYTHON` path. All shims valid → the subprocess is skipped and the green notification still shows. Any failure (missing shim, dead interpreter, foreign content) → the real install runs exactly as before (safety never reduced). Byte-comparison is explicitly rejected: shims are deterministic functions of (template, INSTALL_PYTHON, args), but install methods (pipx/uv/pip) produce distinct valid hashes, so byte-comparison would trigger a wasteful reinstall on every interpreter change.
-
-### Shared Startup Helpers (`_start_background_update_check`, `_run_startup_preamble`, `_handle_startup_error`)
-**Status:** Implemented (As-Built, Slice 00-38)
-
-Slice 00-38 consolidated the duplicated session-startup preamble so `handle_new_session` and `handle_resume_session` cannot drift apart. Both entry points now drive startup through three shared module-level helpers:
-
-- **`_start_background_update_check(container)`** spawns the daemon version-fetch thread and returns the update-check keys reported by `_display_update_notification`.
-- **`_run_startup_preamble(container, fired, agent, setup_editor, setup_api_key)`** runs the fixed-order preamble: `_run_health_checks()`, the `Checking configurations...` line, `_run_cli_preflight_check(...)` whose returned keys extend `fired`, then `_display_checks_footer(fired)`.
-- **`_handle_startup_error(container, error)`** prints the error and exits with code 1, adding the configuration-path hint for a `ConfigurationError`.
-
-The intended difference is preserved: `start` forwards its `agent` to the preflight, calls `ensure_initialized()`, and resolves the message and session, while `resume` passes no agent, resolves the session name, and syncs meta. Both entry points emit their session-path line with NO leading blank line, so the identity block is followed immediately by the path.
-
-### Session Command: `resume`
-**Status:** Implemented
-
-Resumes an existing session. The optional positional `[PATH|SLUG]` accepts either a filesystem path (session root, turn dir, or file) OR a bare timestamp-stripped slug.
-
-*   **Signature:** `teddy resume [PATH|SLUG] [--agent AGENT] [--provider PROVIDER] [--api-key KEY] [--message MESSAGE] [--pipeline]`
-*   **Resolution (`_resolve_session_name`):** path-first, slug-fallback:
-    1. When `[PATH|SLUG]` is supplied, `ISessionManager.resolve_session_from_path(path)` is tried FIRST, preserving ALL existing path-based behavior (CWD-climb, explicit `sessions/` path, exact folder name).
-    2. ONLY on `ValueError`, resolution falls back to `ISessionManager.resolve_session_from_slug(path)`, which matches the argument's timestamp-stripped slug EXACTLY and case-insensitively (`teddy resume add-user-auth` → `.teddy/sessions/20260124_153000-add-user-auth`) and resolves LATEST-WINS when several sessions share a slug.
-    3. When no argument is supplied, the branch is unchanged: climb from the CWD, then `get_latest_session_name()`.
-    Resolution follows the Hexagonal convention (port → service → repository); no filesystem I/O is performed in the CLI adapter.
-*   **Output:** `handle_resume_session` prints the `Agent:`/`Model:` identity block first (a leading blank line, then `Agent: <name>` and `Model: <model>` on separate lines), followed immediately by `Resuming session: .teddy/sessions/<resolved-name>` with no blank line between them (unified with `start` by Slice 00-38), surfacing the chosen folder.
-
-### Utility Command: `init`
-
-**Status:** Implemented (As-Built, Slice 00-39)
-
-Creates the `.teddy/` directory with default files (config, gitignore, init.context, .env), pre-warms heavy imports, and runs the same one-time interactive setup gates as `teddy start` (LLM API key + editor) when a terminal is attached.
-
-- **Signature:** `teddy init`
-- **No options** (kept simple).
-- **Behavior:**
-  1. Calls the existing `InitService.ensure_initialized()` to create `.teddy/` and seed default files.
-  2. Pre-warms heavy imports (`litellm`, `trafilatura`, `pyperclip`, `bs4`, `ddgs`, `tiktoken`) by importing them. The tiktoken prewarm eliminates the cold encoding load from the first session turn (2.03s on Windows CI).
-  3. Echoes a success message: `"TeDDy initialized in .teddy folder."`
-  4. Prints the same drift advice as `teddy start` (Slice 00-39): after the summary echo and before the setup gates, the bare-init branch reuses `_display_drift_notification` and `_display_checks_footer` from `session_cli_handlers`, so a drifted prompt or a missing template names the actionable `teddy init prompts` / `teddy init templates` command and the shared disable-footer names the fired checks. The advice is NOT TTY-gated, so it prints on a non-interactive run too. The destructive subcommands (`init prompts`, `init templates`) skip it, because their early return fires first.
-  5. Runs the interactive setup gates (Slice 00-37): when a terminal is attached (`ISystemEnvironment.isatty()`), it prompts for the required LLM API key (only when the key is missing and the configured model requires one) and then for the editor (only when no editor is configured), reusing the same preflight helpers as `teddy start` so no prompt logic is duplicated. A non-interactive run (stdin is not a TTY) prompts for neither. The `teddy init config` subcommand runs the same gates after overwriting `config.yaml`, so the reset editor re-prompts.
-  6. **Idempotent:** Safe to run multiple times.
-
-### Main Command: `execute`
-**Status:** Implemented
-
-This is the primary command for executing a plan.
-
-*   **Signature:** `teddy execute [PLAN_FILE] [-y] [--no-copy]`
-*   **Input:**
-    *   `PLAN_FILE` (Positional Argument, Optional): A path to a Markdown plan file (`.md`).
-    *   If `PLAN_FILE` is omitted, the command reads the plan from the system clipboard. This introduces a dependency on the `pyperclip` library.
-        *   **Dependency Vetting:** The `pyperclip` library was vetted via a technical spike (`spikes/technical/spike_clipboard_access.py`, now deleted) to confirm its cross-platform reliability, in accordance with the project's third-party dependency standards.
-    *   `-y` / `--yolo` (Optional Flag): If provided, the plan is executed in non-interactive mode, automatically approving all actions. `-n` / `--no-yolo` forces interactive mode for a single run.
-*   **Behavior (Post-Refactoring):**
-    1.  The `typer` command function resolves the `PlanValidator` and `ExecutionOrchestrator` services from the DI container.
-    2.  It first invokes the `validator.validate()` method.
-    3.  **Validation Failure:** If validation returns errors, execution stops immediately. An `ExecutionReport` is generated with a `VALIDATION_FAILED` status and the list of validation errors.
-    4.  **Validation Success:** If validation passes, the command then invokes the `orchestrator.execute()` method, passing the `plan` object and a boolean `interactive` flag (which is `False` when `-y` / `--yolo` auto-approval is active).
-    5.  It receives the `ExecutionReport` domain model in return from either the validation step or the execution step.
-    6.  It passes the report to a formatter (`MarkdownReportFormatter`) and prints the final Markdown report to standard output and the clipboard.
-
-### Utility Command: `context`
-**Status:** Implemented
-
-This command provides a comprehensive snapshot of the project for an AI agent.
-
-*   **Input:**
-    *   `--no-copy` (Optional Flag): If provided, suppresses the default behavior of copying the output to the system clipboard.
-*   **Behavior:** It invokes the `ContextService` via the `IGetContextUseCase` port. It receives a `ProjectContext` domain object in return, formats its content, and prints it to standard output while also copying it to the clipboard, as per the standard output handling rules.
-
-### Utility Command: `get-prompt`
-**Status:** Implemented
-
-This command emits the FULL composed system prompt for an agent — the agent-specific content, a `---` separator, and the shared MRP base prompt (`<response_format>` … `State Transition Protocol`) — so a CHOP user can paste it straight into a web chat's system-prompt field and get executable Markdown plans.
-
-*   **Signature:** `teddy get-prompt <PROMPT_NAME> [--no-copy]`
-*   **Input:**
-    *   `PROMPT_NAME` (Positional Argument, Required): The name of the prompt to retrieve (e.g., `architect`, `developer`).
-    *   `--no-copy` (Optional Flag): If provided, suppresses the default behavior of copying the output to the system clipboard.
-*   **Behavior (As-Built, 2026-10-13):**
-    1.  The command resolves `IPromptManager` from the base container (`get_container().resolve(IPromptManager)`) — no `_ensure_project_initialized` is required, because the port's dependencies (`IFileSystemManager`, `IUserInteractor`) are base-registered.
-    2.  It echoes `prompt_manager.compose_system_prompt(prompt_name)`, the composed prompt assembled by the SAME `_assemble_composed_prompt` helper that `fetch_system_prompt` uses. The agent-specific content is resolved from `.teddy/prompts/` (searching upward from the CWD), with the MRP base prompt appended after it (separated by a `---` horizontal rule).
-    3.  If the prompt is not found, an error is printed to `stderr` (listing the available prompts, e.g. `Prompt 'unknown' not found. Available prompts: architect, developer`) and the command exits with status code 1.
-
-### Auto-Initialization Callback
-**)**
-
-The CLI includes a global `bootstrap` callback registered using `app.callback()`. This function is executed by `Typer` before any specific command. Its responsibility is to resolve the `IInitUseCase` from the DI container and invoke `ensure_initialized()`, ensuring that the TeDDy environment is ready for use even on the first run.
-
-### Standard Output Handling
-
-To streamline the interactive user workflow, commands that produce substantial text output (like `context` and `execute`) follow a standard behavior, encapsulated in a private helper function within `main.py`:
-
-1.  The primary output (e.g., project context or execution report) is always printed to `stdout`.
-2.  By default, the same output is also copied to the system clipboard using the `pyperclip` library. A confirmation message is printed to `stderr`.
-3.  This clipboard behavior is suppressed if the `--no-copy` flag is provided.
-4.  If the clipboard is unavailable (e.g., in a headless CI environment), the copy action is silently skipped.
-
-The application exits with a non-zero status code if any action in the `execute` plan fails.
-
-#### Project Context Snapshot
-**)**
-
-The `cli_formatter.py` module contains a `format_project_context` function. This function takes the `ProjectContext` DTO and renders its `header` and `content` attributes into a single string. The logic for constructing the detailed content of these strings now resides within the `ContextService`, simplifying the adapter's responsibility to pure presentation.
-
-## 4a. Session Loop Wiring: Interrupt Guard, Quit-Key Listener & Message Injection (As-Built, 2026-10-01; extended 2026-10-02)
-
-### Session-Loop Interrupt Wiring
-The shared session loop (`_orchestrate_session_loop`) resolves the container-composed `InterruptGuard` at the boundary, installs its SIGINT handler around the turn loop, and restores the previous disposition once the loop exits (the boundary owns the handler lifecycle). A `KeyboardInterrupt` escaping the turn loop (the WAITING-phase immediate-exit path: prompts and the planning LLM call) is caught at the boundary and surfaced as a one-line yellow interrupt notice — nothing is mutated, no report is generated, the process exits cleanly. The notice is composed by `format_interrupt_notice` in `core/utils/session_notices.py`: it derives its prefix from the `INTERRUPT_REASON` constant in `core/utils/interrupt_guard.py` and appends the key the user actually pressed (`q` for the bare-`q` quit key, recorded on the shared guard by the container's listener callback; `Ctrl+C` when no source was recorded) plus the shared `RESUME_HINT`, rendered as one yellow line (Slice 00-37). The guard is a singleton-scope registration so the boundary's guard and the `OrchestratorPorts` factory's guard are the same instance, sharing the WAITING/EXECUTING phase state and the drain flag.
-
-### Session-Loop Quit-Key Listener Wiring (As-Built, 2026-10-02)
-Alongside the guard, the boundary resolves the container-composed `IQuitKeyListener` singleton (Bug 56 bare-`q`) and pairs its `start()`/`stop()` lifecycle with the guard's handler install/restore around the whole turn loop: `start()` runs immediately after `install()`, and `stop()` runs FIRST in the `finally` — before the SIGINT disposition is restored — so no keystrokes are read during restoration. A single bare `q` (no Enter) self-delivers SIGINT so the SAME two-phase WAITING/EXECUTING branch fires: WAITING exits immediately, EXECUTING drains the in-flight action gracefully. The listener is an off-TTY no-op and backs off while another console reader owns stdin.
-
-### `teddy resume -m` Message Injection
-The `resume` command accepts `--message/-m` (injected user request/reply without interactive prompting). The flag threads append-only through `handle_resume_session` → `_orchestrate_session_loop` → `orchestrator.resume(..., message=...)` into the lifecycle state machine. The loop clears the injected message to `None` after the first report-bearing iteration so a stale reply cannot re-plan later turns. Consumption semantics: an awaiting-reply turn consumes the message as the user's reply (no plan re-execution, flag cleared, next turn planned with the message); a completed turn gets a smart-fenced `## User Request` appended to the latest report before transitioning.
-
-### Pipeline `start` Message Requirement
-`teddy start --pipeline/-p` requires an initial message via `-m/--message`; invoking pipeline mode without one exits with code 1 and the `Pipeline mode requires an initial message via -m/--message.` error. A pipeline turn ending with a MESSAGE action suppresses turn finalization (see `session_orchestrator.md`) and breaks the loop after the report is returned.
-
-### `teddy resume --pipeline/-p` (As-Built, 2026-10-02)
-The `resume` command also accepts `--pipeline/-p`, threaded append-only through `handle_resume_session` → `_orchestrate_session_loop` into the orchestrator resume chain (mirroring the `--message/-m` precedent). On an interrupted pipeline MESSAGE turn (awaiting_reply): `resume -p -m "reply"` finalizes turn 01's report (standard message-turn shape, no `## User Request` section), clears the flag, and continues in pipeline mode; `resume -p` without `-m` re-prints the agent MESSAGE (`--- MESSAGE from TeDDy ---`), creates no next turn, and exits again with the flag preserved.
-
-## 5. Plan Parser Factory
-
-The `execute` command is designed to parse plan files written in Markdown. The logic for this resides in the `create_parser_for_plan` factory function within `main.py`, which instantiates the `MarkdownPlanParser`. Legacy support for YAML-based plans has been deprecated and removed.
+# Component Design: CLI Adapter
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/__main__.py`](/src/teddy_executor/__main__.py)
+
+## Purpose
+The primary inbound (driving) adapter. It parses user commands with `Typer`, resolves use cases and services from the composition root, invokes them through inbound ports, and renders the resulting domain objects to standard output and the clipboard. It owns the process entry point, the shared session startup preamble, and the session execution loop. Helper logic lives in the sibling modules `cli_helpers.py`, `cli_formatter.py`, and `session_cli_handlers.py`.
+
+## Consumers
+- The end user, through the `teddy` command-line interface.
+
+## Dependencies
+- [`IRunPlanUseCase`](../../core/ports/inbound/run_plan_use_case.md): Drives the `execute` and session `resume` flows.
+- [`IGetContextUseCase`](../../core/ports/inbound/get_context_use_case.md): Drives the `context` command.
+- [`IInitUseCase`](../../core/ports/inbound/init.md): Runs auto-initialization and the `init` subcommands.
+- [`IPlanValidator`](../../core/ports/inbound/plan_validator.md): Drives validation in the manual `execute` flow.
+- [`ISessionManager`](../../core/ports/outbound/session_manager.md): Resolves and renames sessions.
+- [`ISessionLoopGuard`](../../core/ports/outbound/session_loop_guard.md): Gates the session loop.
+- [`IConfigService`](../../core/ports/outbound/config_service.md): Reads and persists settings during `init`, `start`, and `resume`.
+- [`IMarkdownReportFormatter`](../../core/ports/outbound/markdown_report_formatter.md): Renders the execution report.
+- [`ISystemEnvironment`](../../core/ports/outbound/system_environment.md): Reports TTY status for the setup gates.
+- `IPromptManager`: Serves the `get-prompt` command. It has no standalone port document.
+- `InterruptGuard` and `IQuitKeyListener`: Manage session-loop interrupt handling.
+
+## Class Invariants
+- `single_source_agent_resolution`: The effective agent is resolved only through `_resolve_agent(agent, pipeline)`; the flag is declared deferred so "passed" and "omitted" are distinguishable.
+- `single_source_yolo_resolution`: The tri-state `--yolo/--no-yolo` flag resolves only through `_resolve_yolo(yolo, config_service)`, which falls back to `yolo_default` when unset.
+- `pipeline_is_non_interactive`: A `--pipeline` run forces non-interactive mode and defaults to the `assistant` agent.
+- `resume_agent_is_explicit`: `resume` is excluded from the pipeline agent default so it never silently switches an existing session's agent.
+- `shared_startup_preamble`: `start` and `resume` run one shared preamble helper so their startup sequence cannot drift.
+- `boundary_owns_interrupt_lifecycle`: The session loop boundary installs and restores the SIGINT handler and pairs the quit-key listener lifecycle with it.
+- `setup_gates_are_tty_gated`: The API-key and editor prompts run only when a terminal is attached.
+
+## Inbound Ports
+None — this is a driving adapter; it consumes inbound ports but exposes none.
+
+## Outbound Ports
+None declared directly — the adapter resolves use cases and services from the composition root and consumes them through their ports.
+
+## Data Contracts
+- **Commands:** `start`, `resume`, `init`, `execute`, `context`, `get-prompt`, `update`.
+- **Flags:** `--agent`/`-a`, `--context`/`-c`, `--model`, `--yolo`/`-y`, `--no-yolo`/`-n`, `--message`/`-m`, `--pipeline`/`-p`, `--no-copy`.
+- **Exit codes:** `0` on success; `1` on a startup error or a pipeline run missing `-m`; non-zero when any executed action fails.
+
+## Operations
+
+### `start(NAME, --agent, --context, --model, --yolo/--no-yolo, --message, --pipeline)`
+- **Preconditions:** In pipeline mode, `--message` is required.
+- **Postconditions:** Creates a session, runs the shared startup preamble, triggers planning, and enters the session loop. An auto-named session is renamed to a slug of the first plan's H1 title.
+- **Exceptions:** Exits with code 1 and the `Pipeline mode requires an initial message via -m/--message.` error when pipeline mode is invoked without `-m`.
+
+### `resume([PATH|SLUG], --agent, --message, --pipeline)`
+- **Preconditions:** The target session exists.
+- **Postconditions:** Resolves the session path-first then by slug, runs the shared preamble, and resumes the turn loop. `--message` injects the user's reply or next request without interactive prompting.
+- **Exceptions:** `ValueError` when neither path nor slug resolution finds a session.
+
+### `init()`
+- **Postconditions:** Ensures the `.teddy/` directory, pre-warms heavy imports, prints drift advice, and runs the interactive setup gates when a terminal is attached. Idempotent.
+
+### `execute([PLAN_FILE], --yolo/--no-yolo, --no-copy)`
+- **Preconditions:** A plan is supplied by a file argument or the clipboard.
+- **Postconditions:** Validates the plan, then executes it, and prints the rendered report to stdout and the clipboard.
+- **Exceptions:** Returns a `VALIDATION_FAILED` report when validation fails; exits non-zero when any action fails.
+
+### `context(--no-copy)`
+- **Postconditions:** Gathers and prints the project context, copying it to the clipboard unless `--no-copy` is set.
+
+### `get-prompt(PROMPT_NAME, --no-copy)`
+- **Preconditions:** `PROMPT_NAME` names an available agent prompt.
+- **Postconditions:** Prints the composed system prompt (agent content, separator, MRP base prompt).
+- **Exceptions:** Prints an error to `stderr` and exits with code 1 when the prompt is unknown.
+
+### Startup preamble helpers
+`_run_health_checks`, `_run_cli_preflight_check`, `_start_background_update_check`, `_run_startup_preamble`, and `_handle_startup_error` implement the fixed startup sequence: advisory health checks, the `Checking configurations...` line, drift and update notifications, the shared disable-footer, and the `Agent:`/`Model:` identity block. The editor validation preflight discovers and persists an editor when the session will read the terminal.
