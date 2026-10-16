@@ -29,7 +29,7 @@ Given the base run fails jobs {TS}
 And my pushed run fails jobs {TS, QC}
 When make ci-watch attributes the pushed run
 Then it reports a regression and names the failing step
-And it exits 1
+And it exits non-zero
 ```
 
 > As a Developer, on a multi-commit push whose tip run fails, I want ci-watch to compare against the last run-bearing ancestor, so I am not blocked by the tip-only run rule.
@@ -67,7 +67,7 @@ And it attributes the failure against that base
 - [x] **Wiring** - Add a fake `gh` test double and a tracer-bullet acceptance test that runs the real `make ci-watch` target on a synthetic tip failure and asserts it reaches the shipped target and emits a verdict, proving end-to-end connectivity.
 - [x] **Logic** - Create a POSIX shell helper with the corrected attribution decision and cover the edge cases with unit tests: the subset verdict, the blocking-conclusion set, and the ancestor base resolution.
 - [x] **Migration** - Bake the validated helper logic into the `ci-watch` target inline, keeping the Makefile self-contained; extend the fake-`gh` acceptance test to assert the corrected verdicts; mirror the logic and the push-triggered scope note into both template copies.
-- [▶] **Cleanup** - Remove the throwaway helper once its logic is baked into the Makefile.
+- [x] **Cleanup** - Remove the throwaway helper once its logic is baked into the Makefile.
 
 ## Implementation Notes
 
@@ -77,13 +77,13 @@ And it attributes the failure against that base
 - The tracer bullet asserts end-to-end connectivity only: the invocation log is non-empty, the output carries a `CI:` verdict, and the blocking regression exits non-zero. Behavioural attribution assertions arrive with the Logic and Migration deliverables.
 - Insight: GNU Make returns exit code 2 for any failed recipe. A blocking verdict therefore surfaces as a non-zero status rather than `1`, so the tracer-bullet assertion checks `returncode != 0`.
 
-### Logic (POSIX attribution helper)
-- `spikes/ci-watch-attribution/attribution.sh` is a throwaway POSIX `sh` helper carrying the corrected attribution decision. It exposes three subcommands: `subset-verdict <new> <old>`, `classify-conclusion <conc>`, and `resolve-base <tip> <workflow>`.
-- `tests/suites/unit/test_ci_watch_attribution_helper.py` covers the three edge-case groups: seven `subset-verdict` permutations, six `classify-conclusion` values, and three `resolve-base` ancestor scenarios.
+### Logic (throwaway attribution helper, since removed)
+- A throwaway POSIX `sh` helper carried the corrected attribution decision during development. It exposed three subcommands: `subset-verdict <new> <old>`, `classify-conclusion <conc>`, and `resolve-base <tip> <workflow>`.
+- The helper's unit test covered the three edge-case groups: seven `subset-verdict` permutations, six `classify-conclusion` values, and three `resolve-base` ancestor scenarios.
 - `subset-verdict` splits both comma-separated sets in memory with `awk` and prints `pre-existing` when every new element also appears in the old set (an empty new set is a subset), else `regression`. The `awk` split reads stdin from `/dev/null` so it cannot block, and it uses no temporary files.
 - `classify-conclusion` maps `success` to `pass`, `failure` to `attribute`, and every other value to `block` (fail-safe).
 - `resolve-base` walks ancestors from `tip~1` and prints the first SHA carrying a run for the workflow, or nothing when none does.
-- The helper is POSIX-only (no arrays, no `[[ ]]`, no `${var//}`) because the Make recipe runs under `sh` (`dash` on Linux). It remains throwaway: the Migration deliverable bakes the logic inline and the Cleanup deliverable deletes this file.
+- The helper was POSIX-only (no arrays, no `[[ ]]`, no `${var//}`) because the Make recipe runs under `sh` (`dash` on Linux). It was throwaway: the Migration deliverable baked the logic inline and the Cleanup deliverable deleted the helper and its unit test.
 
 ### Migration (inline ci-watch recipe)
 - The corrected logic is baked inline into the `ci-watch` target in the project `Makefile`. Per-workflow ancestor base resolution replaces the hardcoded `HEAD~1`: the recipe walks `SHA~1`, `SHA~2`, and so on, and stops at the first ancestor that carries a run for that workflow, bounded by `BASE_DEPTH` (default 50).
@@ -94,13 +94,17 @@ And it attributes the failure against that base
 - Both template copies (`docs/templates/makefile.md` and `src/teddy_executor/resources/templates/makefile.md`) mirror the corrected recipe and the push-triggered scope note. A mirror script extracts the recipe from the shipped `Makefile` and splices it, so the three files stay consistent by construction; the two template copies are byte-identical (hash `2b9662c03c5e`).
 - The `ci-watch` section documents the push-triggered scope: only push-triggered workflows are attributed; a downstream workflow that registers from a `workflow_run` event is not a regression in this commit.
 
+### Cleanup (throwaway helper removal)
+- The Cleanup deliverable deleted the throwaway helper and its unit test once the Migration deliverable baked the corrected logic inline. The shipped `Makefile` and both template copies carry no runtime reference to the helper, so the removal broke no runtime path.
+- The durable coverage is the fake-`gh` acceptance test, which copies the REAL project `Makefile` into a throwaway repository and asserts the corrected verdicts. Removing the helper unit test dropped sixteen cases (seven `subset-verdict`, six `classify-conclusion`, three `resolve-base`) with no loss of durable coverage; the full suite fell from 1860 to 1844 passing tests.
+
 ## Verification
 - [ ] **Improvement attribution:**
     On a base that already fails a blocking gate, push a change that fixes part of it.
     Run `make ci-watch` and verify it reports a pre-existing failure and exits 0.
 - [ ] **Regression attribution:**
     Push a change that fails a blocking gate.
-    Run `make ci-watch` and verify it reports a regression, names the failing step, and exits 1.
+    Run `make ci-watch` and verify it reports a regression, names the failing step, and exits non-zero.
 - [ ] **Multi-commit push:**
     Push more than one commit where the tip run fails.
     Run `make ci-watch` and verify it resolves the previous run-bearing ancestor instead of `HEAD~1`.

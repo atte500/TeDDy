@@ -157,9 +157,9 @@ push:
 
 The pushed RUN's own conclusion is authoritative: it already folds in `continue-on-error`, so a **non-blocking** job (e.g. the CI `Quality Checks` job) can NEVER block the session — it is reported as a triage item instead. Only when the run-level conclusion is `failure` does attribution run, comparing the pushed run's failing-JOB set against the base run's:
 
-- **base green/absent/job-less → new red** = your regression → **exit 1** (fix before concluding).
+- **base green/absent/job-less → new red** = your regression → **exit non-zero** (fix before concluding).
 - **base red → new red (subset of the base's failing jobs)** = pre-existing → **report and exit 0** (do not wait, do not duplicate the fix).
-- **unknown conclusion** (`timed_out`/`cancelled`/`startup_failure`) = the gate result is unknown → **fail-safe block** → **exit 1**.
+- **unknown conclusion** (`timed_out`/`cancelled`/`startup_failure`) = the gate result is unknown → **fail-safe block** → **exit non-zero**.
 - **all green / non-blocking** → PASSED → **exit 0**.
 - **job-less base** → NOT green: a base run that exists but carries zero jobs (an invalid-workflow failure) is treated as an unknown base and fails safe (block).
 
