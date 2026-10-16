@@ -1,281 +1,83 @@
-# Core Domain Model
-
-**Language:** Python 3.9+ (using dataclasses)
-
-This document defines the core entities for the `teddy` executor application. These objects represent the fundamental concepts and data structures of the system.
-
----
-
-## Ubiquitous Language
-
-*   **Plan:** A sequence of one or more Actions to be performed.
-*   **Action:** A single, discrete step within a Plan.
-*   **Execution Report:** A summary of the results of executing a Plan.
-*   **Action Result:** The outcome (success, failure, output, error) of executing a single Action.
-
----
-
-## 1. ActionType & ExecutionStatus (Enums)
-**Status:** Implemented
-
-### `ActionType`
-Enumerates the supported action types in the system.
-*   `CREATE`, `READ`, `EDIT`, `EXECUTE`, `RESEARCH`, `MESSAGE`
-
-### `ExecutionStatus`
-Enumerates the possible execution states of an individual action.
-*   `PENDING`, `SUCCESS`, `FAILURE`
-
----
-
-## 2. Action & CommandResult
-
-### `CommandResult` (Value Object)
-**Status:** Implemented
-
-Represents the captured result of an external command.
-
-*   **Attributes:**
-    *   `stdout` (str): The standard output from the command.
-    *   `stderr` (str): The standard error from the command.
-    *   `return_code` (int): The exit code of the command.
-*   **Invariants:**
-    *   `return_code` must be an integer.
-
-### `Action` (Abstract Base Class)
-**Status:** Implemented
-
-Represents the contract for a single, executable step in a plan. This is an abstract concept; concrete actions will inherit from this class.
-
-*   **Attributes:**
-    *   `action_type` (str): A read-only property that returns the type of the action (e.g., "execute"). This will be hardcoded in each subclass.
-
----
-
-### `ExecuteAction` (Entity)
-**Status:** Implemented
-**Modified in:** [Structured `execute` Action](../slices/executor/18-structured-execute-action.md)
-
-An action that executes a shell command.
-
-*   **Inherits from:** `Action`
-*   **Attributes:**
-    *   `command` (str): The shell command to execute.
-    *   `cwd` (Optional[str]): An optional relative path specifying the working directory for the command. Defaults to `None`.
-    *   `env` (Optional[Dict[str, str]]): An optional dictionary of environment variables to set for the command's process. Defaults to `None`.
-*   **Invariants:**
-    *   `command` must be a non-empty string.
-    *   The `cwd` path is validated by the `IShellExecutor` adapter, not the domain object itself.
-
----
-
-### `CreateFileAction` (Entity)
-**Status:** Implemented
-
-An action that creates a new file.
-
-*   **Inherits from:** `Action`
-*   **Attributes:**
-    *   `file_path` (str): The path where the new file will be created.
-    *   `content` (str): The content to write into the new file. Defaults to an empty string.
-*   **Invariants:**
-    *   `file_path` must be a non-empty string.
-
----
-
-### `ParsePlanAction` (Entity)
-**Status:** Implemented
-
-A synthetic action used internally to represent the plan parsing step in execution reports. It does not correspond to a user-defined action in a YAML plan.
-
-*   **Inherits from:** `Action`
-*   **Attributes:**
-    *   None.
-
----
-
-### `ReadAction` (Entity)
-**Status:** Implemented
-
-An action that reads the content of a local file or a remote URL.
-
-*   **Inherits from:** `Action`
-*   **Attributes:**
-    *   `source` (str): The path to the local file or the remote URL to be read.
-*   **Invariants:**
-    *   `source` must be a non-empty string.
-*   **Behaviors:**
-    *   `is_remote()`: Returns `True` if the `source` starts with `http://` or `https://`.
-
----
-
-### `EditAction` (Entity)
-**Status:** Implemented
-
-An action that finds and replaces content within an existing file.
-
-*   **Inherits from:** `Action`
-*   **Attributes:**
-    *   `file_path` (str): The path to the file to be modified.
-    *   `find` (str): The exact string of content to search for.
-    *   `replace` (str): The string that will replace the `find` content.
-*   **Invariants:**
-    *   `file_path` must be a non-empty string.
-*   **Behaviors:**
-    *   An empty `find` string is permissible and signals that the entire file content should be replaced with the `replace` content.
-
----
-
-### `ChatWithUserAction` (Entity)
-**Status:** Implemented
-
-An action that prompts the user with a question and captures their free-text response.
-
-*   **Inherits from:** `Action`
-*   **Attributes:**
-    *   `prompt` (str): The question to display to the user.
-*   **Invariants:**
-    *   `prompt` must be a non-empty string.
-
----
-
-### `ResearchAction` (Entity)
-**Status:** Implemented
-
-An action that performs a web search for a list of queries.
-
-*   **Inherits from:** `Action`
-*   **Attributes:**
-    *   `queries` (list[str]): A list of search terms.
-*   **Invariants:**
-    *   `queries` must be a non-empty list of strings.
-
----
-
-## 2. Plan (Aggregate Root)
-**Status:** Implemented
-
-Represents a full plan to be executed. It is the aggregate root for a collection of `ActionData` objects.
-
-**Implementation Logic:**
-- **Mutability:** Unlike the immutable `ExecutionReport`, the `Plan` and its `ActionData` are **mutable** (unfrozen). This allows primary adapters (like the TUI Reviewer) to modify plan parameters and selection state in-memory before execution without the overhead of deep copying and re-validation.
-
-*   **Attributes:**
-    *   `title` (str): The plan's title.
-    *   `rationale` (str): The AI's explanation for the plan.
-    *   `actions` (list[ActionData]): A list of `ActionData` objects.
-*   **Behaviors:**
-    *   `is_communication_turn()`: Returns `True` if the plan consists only of a `MESSAGE` action.
-
-### `ActionData` (Value Object/Entity)
-**Status:** Implemented
-
-Represents a single action within a plan, including its parameters and execution state.
-
-*   **Attributes:**
-    *   `type` (str): The type of action (e.g., `CREATE`, `EXECUTE`).
-    *   `params` (dict): Action-specific parameters.
-    *   `selected` (bool): Whether the action is currently selected for execution.
-    *   `modified` (bool): Whether the action was modified by the user.
-    *   `modified_fields` (list[str]): Names of the specific fields modified by the user.
-    *   `executed` (bool): Whether the action has been executed in the current session.
-    *   `state` (ExecutionStatus): The outcome of the execution (`PENDING`, `SUCCESS`, or `FAILURE`).
-    *   `user_response` (Optional[str]): [Deprecated]
-*   **Behaviors:**
-    *   `is_terminal`: (Property) Returns `True` if the action is a `MESSAGE` action.
-*   **Invariants:**
-    *   `actions` must be a list containing at least one action.
-
----
-
-## 3. ActionResult & ExecutionReport
-
-### `ActionResult` (Value Object)
-**Status:** Implemented
-
-Represents the outcome of a single action's execution.
-
-*   **Attributes:**
-    *   `action` (Action): A copy of the concrete action object (e.g., `ExecuteAction`) that was executed.
-    *   `status` (str): The outcome, one of `SUCCESS`, `FAILURE`, `COMPLETED`, or `SKIPPED`.
-    *   `output` (str | None): The captured stdout from the command.
-    *   `error` (str | None): The captured stderr from the command.
-    *   `reason` (str | None): An optional reason, typically for a `SKIPPED` status.
-*   **Invariants:**
-    *   `status` must be one of `SUCCESS`, `FAILURE`, `COMPLETED`, or `SKIPPED`.
-
-### `ExecutionReport` (Entity)
-**Status:** Implemented
-
-A comprehensive report detailing the execution of an entire `Plan`.
-
-*   **Attributes:**
-    *   `run_summary` (RunSummary): Top-level summary info (e.g., `status`, `start_time`, `duration`).
-    *   `plan_title` (str | None): The title of the plan.
-    *   `rationale` (str | None): The rationale from the plan.
-    *   `original_actions` (list[ActionData]): A copy of the actions as proposed in the plan.
-    *   `action_logs` (list[ActionLog]): A list of results for each action executed.
-    *   `validation_result` (list[str] | None): A list of error messages if validation failed.
-    *   `failed_resources` (dict[str, str] | None): Content of relevant files if execution or validation failed.
-
----
-
-
----
-
-## 5. Domain Exceptions
-
-These are custom exceptions that represent specific business rule violations within the domain. They are used by outbound ports to communicate specific failure reasons to the application services.
-
-### `FileAlreadyExistsError` (Exception)
-**Status:** Implemented
-
-Raised by the `FileSystemManager` port when a `create_file` operation is attempted on a path that already exists.
-
-*   **Purpose:** To allow the `PlanService` to specifically catch this failure and trigger the "read file content" fallback logic.
-*   **Attributes:**
-    *   `file_path` (str): The path of the file that already exists.
-
-### `SearchTextNotFoundError` (Exception)
-**Status:** Implemented
-
-Raised by the `FileSystemManager` port when an `edit_file` operation cannot find the specified `find` string within the target file.
-
-*   **Purpose:** To allow the `PlanService` to specifically catch this failure and return the original file content as part of the failure report.
-*   **Attributes:**
-    *   `content` (str): The original, unmodified content of the file.
-
-### `MultipleMatchesFoundError` (Exception)
-**Status:** Implemented
-
-Raised by the `FileSystemManager` port when an `edit_file` operation finds more than one occurrence of the `find` string.
-
-*   **Purpose:** To prevent ambiguous edits and force the AI agent to provide a more specific `find` string.
-*   **Attributes:**
-    *   `content` (str): The original, unmodified content of the file.
-
-### `WebSearchError` (Exception)
-**Status:** Implemented
-
-Raised by the `IWebSearcher` port when it fails to retrieve search results for any reason (e.g., network error, library failure).
-
-*   **Purpose:** To allow the `PlanService` to catch this specific failure and create a descriptive `FAILED` `ActionResult`.
-*   **Attributes:**
-    *   `original_exception` (Exception | None): The underlying exception that caused the failure, for logging and debugging purposes.
----
-
-## 6. Project Context Aggregate
-
-This section defines the objects related to gathering and representing the project's context for the AI.
-
-### `FileContext` (Value Object)
-**Status:** Implemented
-
-Represents the content and status of a single file requested for context.
-
-*   **Attributes:**
-    *   `file_path` (str): The path to the file.
-    *   `content` (str | None): The content of the file, or `None` if it could not be read.
-    *   `status` (str): The read status, one of "found" or "not_found".
-*   **Invariants:**
-    *   `status` must be either "found" or "not_found".
+# Component Design: Domain Model
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/domain/models/__init__.py`](/src/teddy_executor/core/domain/models/__init__.py)
+
+## Purpose
+Defines the core domain entities, value objects, and ubiquitous language of TeDDy. Every service, port, and adapter exchanges these types, so this package is the shared vocabulary that keeps the core independent of any infrastructure.
+
+## Consumers
+- [`ExecutionOrchestrator`](../services/execution_orchestrator.md): Exchanges `Plan`, `ExecutionReport`, and `ReportAssemblyData`.
+- [`ActionFactory`](../services/action_factory.md): Builds handlers from `ActionData` and reads `ActionPorts`.
+- [`ActionDispatcher`](../services/action_dispatcher.md): Produces `ActionLog` records and reads `ShellOutput`.
+- [`ContextService`](../services/context_service.md): Builds `ProjectContext` and `ContextItem` instances.
+- [`PlanningService`](../services/planning_service.md): Consumes `ProjectContext` and `Plan`.
+- [`PlanValidator`](../services/plan_validator.md): Accumulates `ValidationError` records.
+- [`SessionService`](../services/session_service.md): Persists the `ExecutionReport` and reads `SessionOptions`.
+- [ShellAdapter](../../adapters/outbound/shell_adapter.md): Populates `ShellOutput`.
+- [TextualPlanReviewer](../../adapters/inbound/textual_plan_reviewer.md): Mutates `Plan` and `ActionData` during review.
+- [Composition Root](/src/teddy_executor/container.py): Constructs the port bundles `ActionPorts`, `OrchestratorPorts`, `PlanningPorts`, and `SessionPorts`.
+
+## Dependencies
+None — the package imports only the Python standard library and declares no injected ports.
+
+## Class Invariants
+- `frozen_report_types`: `ActionLog`, `RunSummary`, `ExecutionReport`, `ValidationError`, `ChangeSet`, `DriftReport`, `ReportAssemblyData`, and `SessionOptions` are frozen dataclasses; instances are immutable after construction.
+- `mutable_plan_types`: `Plan` and `ActionData` are standard, non-frozen dataclasses, so the interactive reviewer can edit parameters and selection state in memory before execution.
+- `mutable_context_types`: `ProjectContext` and `ContextItem` are standard dataclasses, and `ContextItem.selected` is mutated by the reviewer.
+- `plan_requires_actions`: `Plan.__post_init__` asserts that `actions` is non-empty.
+- `optional_config_port`: `ActionPorts.config_service` defaults to `None` and is the only optional field in that bundle.
+- `optional_ports_in_other_bundles`: `OrchestratorPorts` marks `plan_reviewer` and `interrupt_guard` optional, and `SessionPorts` marks `plan_parser`, `time_service`, and `report_assembler` optional.
+- `typed_dict_payloads`: `ShellOutput`, `SearchResult`, `QueryResult`, and `WebSearchResults` are `TypedDict`s, so they are structurally typed mappings rather than instantiable classes.
+
+## Inbound Ports
+None — this package defines passive data structures, not use-case interfaces.
+
+## Outbound Ports
+None — this package declares no injected dependencies.
+
+## Data Contracts
+
+### Enumerations
+- **`ActionType`** (`plan.py`, str Enum): `CREATE`, `READ`, `EDIT`, `EXECUTE`, `RESEARCH`, `MESSAGE`.
+- **`ExecutionStatus`** (`plan.py`, str Enum): `PENDING`, `RUNNING`, `SUCCESS`, `FAILURE`, `SKIPPED`.
+- **`RunStatus`** (`execution_report.py`, str Enum): `SUCCESS`, `FAILURE`, `VALIDATION_FAILED`, `SKIPPED`, `ABORTED`, `INTERRUPTED`.
+- **`ActionStatus`** (`execution_report.py`, str Enum): `SUCCESS`, `FAILURE`, `SKIPPED`, `PENDING`, `INTERRUPTED`.
+
+### Plan aggregate (`plan.py`)
+- **`Plan`** (dataclass): `title`, `rationale`, `actions: Sequence[ActionData]`, `metadata: dict[str, str]`, `source_doc`, `is_session`, `plan_path`, `raw_content`. Exposes `is_communication_turn()`.
+- **`ActionData`** (dataclass): `type`, `params`, `description`, `selected`, `modified`, `modified_fields`, `executed`, `state: ExecutionStatus`, `action_log: Optional[ActionLog]`, `user_response`, `pending_temp_file`, `node`, `similarity_score`, `similarity_scores`. Exposes the `is_terminal` property.
+- **`ValidationError`** (frozen dataclass): `message`, `action_index`, `file_path`, `offending_node`.
+- **`DEFAULT_SIMILARITY_THRESHOLD`**: module constant `0.95`.
+
+### Execution report (`execution_report.py`)
+- **`ActionLog`** (frozen dataclass): `status: ActionStatus`, `action_type`, `params`, `details`, `modified`, `modified_fields`, `failed_command`.
+- **`RunSummary`** (frozen dataclass): `status: RunStatus`, `start_time`, `end_time`, `error`.
+- **`ExecutionReport`** (frozen dataclass): `run_summary`, `plan_title`, `rationale`, `user_request`, `is_session`, `metadata`, `original_actions`, `action_logs`, `validation_result`, `validation_ast`, `failed_resources`.
+
+### Project context (`project_context.py`)
+- **`ContextItem`** (dataclass): `path`, `token_count`, `git_status`, `scope`, `selected`, `auto_prune_reason`.
+- **`ProjectContext`** (dataclass): `header`, `content`, `scoped_paths`, `git_status`, `items`, `agent_name`, `system_prompt_tokens`, `content_tokens`, `total_window`.
+
+### Port bundles
+- **`ActionPorts`** (frozen dataclass, `action_ports.py`): `shell_executor`, `file_system_manager`, `user_interactor`, `web_scraper`, `web_searcher`, `config_service`.
+- **`OrchestratorPorts`** (frozen dataclass, `orchestrator_ports.py`): `plan_parser`, `plan_validator`, `action_executor`, `file_system_manager`, `report_assembler`, `user_interactor`, `plan_reviewer`, `interrupt_guard`.
+- **`PlanningPorts`** (frozen dataclass, `planning_ports.py`): `context`, `llm`, `fs`, `config`, `prompts`, `ui`, `session_manager`.
+- **`SessionPorts`** (frozen dataclass, `planning_ports.py`): `session_service`, `file_system_manager`, `report_formatter`, `user_interactor`, `session_planner`, `replanner`, `plan_parser`, `time_service`, `report_assembler`.
+
+### Supporting value objects
+- **`ChangeSet`** (frozen dataclass, `change_set.py`): `path: Path`, `before_content`, `after_content`, `action_type`.
+- **`DriftReport`** (frozen dataclass, `drift_report.py`): `edited_prompts`, `missing_prompts`, `edited_templates`, `missing_templates`. Exposes `prompts_drifted`, `templates_drifted`, and `has_drift`.
+- **`ReportAssemblyData`** (frozen dataclass, `report_assembly_data.py`): `plan`, `action_logs`, `start_time`, `message`, `is_session`.
+- **`SessionOptions`** (frozen dataclass, `session.py`): `name`, `agent_name`, `initial_request`, `additional_context`, `model`, `provider`, `api_key`.
+- **`ShellOutput`** (TypedDict, `shell_output.py`): `stdout`, `stderr`, `return_code`, `failed_command`, `interrupted`.
+- **`SearchResult`**, **`QueryResult`**, **`WebSearchResults`** (TypedDicts, `web_search_results.py`): the nested web-search payload structure.
+
+### Domain exceptions (`exceptions.py`)
+- **`SearchTextNotFoundError`** (`ValueError`): carries `content`.
+- **`FileAlreadyExistsError`** (`FileExistsError`): carries `file_path`.
+- **`MultipleMatchesFoundError`** (`Exception`): carries `content`.
+- **`WebSearchError`** (`Exception`): carries `original_exception`.
+- **`ConfigurationError`** (`Exception`): carries `message`.
+
+## Operations
+None — the package holds data only. The sole behavior is the pure helper `Plan.is_communication_turn()` and the `ActionData.is_terminal` property.
