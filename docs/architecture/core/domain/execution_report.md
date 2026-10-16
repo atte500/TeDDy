@@ -1,113 +1,39 @@
-# Domain Model: ExecutionReport
+# Component Design: ExecutionReport
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/domain/models/execution_report.py`](/src/teddy_executor/core/domain/models/execution_report.py)
 
-This document defines the strongly-typed data structures for reporting the outcome of a plan execution. It replaces previous dictionary-based models to ensure type safety and clarity throughout the application.
+## Purpose
+Defines the strongly-typed, immutable data structures that report the outcome of a plan execution. It replaces legacy dictionary-based reporting and guarantees type safety across the execution and reporting layers.
 
-## 1. Design Principles
+## Consumers
+- [`ExecutionOrchestrator`](../services/execution_orchestrator.md): Produces the `ExecutionReport` after running a plan.
+- [`IExecutionReportAssembler`](../ports/outbound/execution_report_assembler.md): Assembles a report from raw execution outcome data.
+- [`IMarkdownReportFormatter`](../ports/outbound/markdown_report_formatter.md): Renders the report into Markdown.
+- [`ISessionManager`](../ports/outbound/session_manager.md): Persists the report to the turn directory.
+- [`IRunPlanUseCase`](../ports/inbound/run_plan_use_case.md): Returns the report to the CLI boundary.
+- [`SessionOrchestrator`](../services/session_orchestrator.md): Feeds report outcomes into the turn transition algorithm.
+- [CLI Adapter](../../adapters/inbound/cli.md): Formats and prints the report.
 
--   **Immutability:** All report models are implemented as frozen dataclasses to prevent accidental mutation after creation.
--   **Strong Typing:** All fields use concrete types, eliminating ambiguity and enabling static analysis.
--   **Clarity:** Field names are chosen to be explicit and self-documenting.
+## Dependencies
+- **`ActionData`** (`core.domain.models.plan`): Provides the element type for the `original_actions` field.
 
-## 2. Data Contracts
+## Class Invariants
+- `frozen_dataclasses`: `ActionLog`, `RunSummary`, and `ExecutionReport` are frozen; instances are immutable after construction.
+- `status_consistency`: `RunSummary.status` is a `RunStatus`; each `ActionLog.status` is an `ActionStatus`.
+- `default_factory_collections`: `metadata`, `original_actions`, and `action_logs` default to empty collections.
 
-The reporting model is composed of enums for status codes and several dataclasses for structuring the report data.
+## Inbound Ports
+None — this is a passive data structure.
 
-### `RunStatus` (Enum)
-Defines the set of possible outcomes for an entire plan execution.
+## Outbound Ports
+None — this is a passive data structure.
 
-**Status:** Implemented
+## Data Contracts
+- **`RunStatus`** (str Enum): `SUCCESS`, `FAILURE`, `VALIDATION_FAILED`, `SKIPPED`, `ABORTED`, `INTERRUPTED`.
+- **`ActionStatus`** (str Enum): `SUCCESS`, `FAILURE`, `SKIPPED`, `PENDING`, `INTERRUPTED`.
+- **`ActionLog`** (frozen dataclass): `status: ActionStatus`, `action_type: str`, `params: dict[str, Any]`, `details: Any | None`, `modified: bool`, `modified_fields: list[str]`, `failed_command: str | None`.
+- **`RunSummary`** (frozen dataclass): `status: RunStatus`, `start_time: datetime`, `end_time: datetime`, `error: str | None`.
+- **`ExecutionReport`** (frozen dataclass): `run_summary: RunSummary`, `plan_title: str | None`, `rationale: str | None`, `user_request: str | None`, `is_session: bool`, `metadata: dict[str, str]`, `original_actions: Sequence[ActionData]`, `action_logs: Sequence[ActionLog]`, `validation_result: Sequence[str] | None`, `validation_ast: str | None`, `failed_resources: dict[str, str] | None`.
 
-```python
-from enum import Enum
-
-class RunStatus(str, Enum):
-    """Overall status for an entire plan execution."""
-    SUCCESS = "SUCCESS"
-    FAILURE = "FAILURE"
-    VALIDATION_FAILED = "VALIDATION_FAILED"
-    SKIPPED = "SKIPPED"
-```
-
-### `ActionStatus` (Enum)
-Defines the set of possible outcomes for a single action within a plan.
-
-**Status:** Implemented
-
-```python
-from enum import Enum
-
-class ActionStatus(str, Enum):
-    """Status for a single action within a plan."""
-    SUCCESS = "SUCCESS"
-    FAILURE = "FAILURE"
-    SKIPPED = "SKIPPED"
-    PENDING = "PENDING"
-```
-
-### `ActionLog`
-This model captures the specific outcome of a single action within the plan.
-
-**Status:** Implemented
-
-```python
-from dataclasses import dataclass
-from typing import Any
-
-@dataclass(frozen=True)
-class ActionLog:
-    """Logs the result of a single action execution."""
-    status: ActionStatus
-    action_type: str
-    params: dict[str, Any]
-    details: Any | None = None
-    modified: bool = False
-    modified_fields: list[str] = field(default_factory=list)
-```
-
-### `RunSummary`
-This model captures the overall outcome of the entire plan execution.
-
-**Status:** Implemented
-
-```python
-from dataclasses import dataclass
-from datetime import datetime
-
-@dataclass(frozen=True)
-class RunSummary:
-    """Summarizes the overall result of a plan execution."""
-    status: RunStatus
-    start_time: datetime
-    end_time: datetime
-    error: str | None = None
-```
-
-### `ExecutionReport`
-This is the root model that aggregates all information about the plan execution.
-
-**Status:** Implemented
-
-```python
-from dataclasses import dataclass, field
-from typing import Sequence
-
-@dataclass(frozen=True)
-class ExecutionReport:
-    """The comprehensive report of a plan execution."""
-    run_summary: RunSummary
-    plan_title: str | None = None
-    rationale: str | None = None
-    user_request: str | None = None
-    is_session: bool = False
-    original_actions: Sequence[Any] = field(default_factory=list) # Sequence[ActionData]
-    action_logs: Sequence[ActionLog] = field(default_factory=list)
-    validation_result: Sequence[str] | None = None
-    failed_resources: dict[str, str] | None = None
-```
--   `run_summary`: Contains the overall status and timing information.
--   `plan_title`: The title of the plan, extracted from the Markdown.
--   `user_request`: Captured user instructions via CLI flag or TUI bridge.
--   `is_session`: Indicates if the report was generated within a stateful session.
--   `action_logs`: A sequence of logs, one for each action attempted.
--   `validation_result`: A sequence of error messages if pre-flight validation fails.
--   `failed_resources`: A dictionary mapping file paths to their content if a file-based action (like `CREATE` or `EDIT`) fails.
+## Operations
+None — this component holds data only.

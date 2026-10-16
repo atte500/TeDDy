@@ -1,62 +1,32 @@
-# Port: IPlanParser
+# Component Design: IPlanParser
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/inbound/plan_parser.py`](/src/teddy_executor/core/ports/inbound/plan_parser.py)
 
-## 1. Purpose
+## Purpose
+Defines the inbound port for parsing a raw plan string into a structured `Plan` domain object. It decouples the execution orchestrator from any specific plan format so alternative parsers can be swapped in. The port is implemented by the `MarkdownPlanParser`.
 
-The `IPlanParser` port defines the abstract interface for any service capable of parsing a plan from a raw string into a structured `Plan` domain object. This abstraction decouples the core `ExecutionOrchestrator` from the specific format of the plan (e.g., YAML, Markdown), allowing for multiple parser implementations to be used interchangeably.
+## Consumers
+- [`ExecutionOrchestrator`](../../services/execution_orchestrator.md): Parses raw plan content before executing an approved plan.
 
-## 2. Contract
+## Dependencies
+- **`Plan`** (`teddy_executor.core.domain.models`): The return type of the parse operation.
 
-### Method: `parse`
+## Class Invariants
+- `abstract_base_class`: The port is an `ABC`; implementations must override `parse`.
 
-This is the sole method required by the port. It takes a string containing the entire plan content and is responsible for validating and transforming it into a `Plan` object.
+## Inbound Ports
+- **`IPlanParser`**: Exposes the single `parse(...)` operation.
 
--   **Preconditions:**
-    -   `plan_content` must be a non-empty string.
--   **Postconditions:**
-    -   Returns a valid `Plan` domain object.
-    -   If the `plan_content` is malformed or invalid according to the parser's specific format rules, an `InvalidPlanError` must be raised.
+## Outbound Ports
+None — the port declares no injected dependencies.
 
-**Signature:**
+## Data Contracts
+- **`Plan`** (`teddy_executor.core.domain.models`): The parsed domain object.
+- **`InvalidPlanError`** (`Exception`): Carries `offending_nodes` and `validation_errors`, and exposes `offending_node` for backward compatibility.
 
-```python
-from abc import ABC, abstractmethod
-from typing import Any, List, Optional
-from teddy_executor.core.domain.models.plan import Plan
+## Operations
 
-class InvalidPlanError(Exception):
-    """Raised when the plan is malformed."""
-
-    def __init__(
-        self,
-        message: str,
-        offending_node: Optional[Any] = None,
-        offending_nodes: Optional[List[Any]] = None,
-        validation_errors: Optional[List[Any]] = None,
-    ):
-        super().__init__(message)
-        self.offending_nodes = offending_nodes or []
-        self.validation_errors = validation_errors or []
-        if offending_node:
-            self.offending_nodes.append(offending_node)
-
-class IPlanParser(ABC):
-    """
-    Abstract interface for a service that parses a plan from a raw string.
-    """
-
-    @abstractmethod
-    def parse(self, plan_content: str) -> Plan:
-        """
-        Parses a plan string into a Plan domain object.
-
-        Args:
-            plan_content: The raw string content of the plan.
-
-        Returns:
-            A Plan domain object.
-
-        Raises:
-            InvalidPlanError: If the plan content is invalid.
-        """
-        raise NotImplementedError
-```
+### `parse(plan_content, plan_path=None) -> Plan`
+- **Preconditions:** `plan_content` is a non-empty string.
+- **Postconditions:** Returns a valid `Plan`.
+- **Exceptions:** `InvalidPlanError` when the content is malformed for the parser's format.

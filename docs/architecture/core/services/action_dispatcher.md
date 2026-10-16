@@ -1,64 +1,43 @@
-# Application Service: ActionDispatcher
+# Component Design: ActionDispatcher
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/action_dispatcher.py`](/src/teddy_executor/core/services/action_dispatcher.py)
 
-The `ActionDispatcher` is a single-responsibility service within the hexagonal core. Its purpose is to take a validated `ActionData` object, resolve the appropriate action implementation, execute it, and return a log of the result.
+## Purpose
+Resolves one validated `ActionData` object to an executable handler through the `ActionFactory`, runs it, normalizes the raw result, and returns a structured `ActionLog`. It isolates the execution loop from the concrete action implementations.
 
-## 1. Design Principles
+## Consumers
+- [`ActionExecutor`](/src/teddy_executor/core/services/action_executor.py): Dispatches each action while a plan executes.
+- [`TextualPlanReviewer`](../../adapters/inbound/textual_plan_reviewer.md): Executes a single action from the interactive reviewer.
+- [Composition Root](/src/teddy_executor/container.py): Constructs the dispatcher and injects its factory.
 
--   **Single Responsibility:** This service only dispatches and executes a single action. It does not parse plans or orchestrate the overall execution flow.
--   **Execution Progress Logging:** It utilizes the standard Python `logging` module to emit real-time, console-friendly progress updates (`Executing Action: [TYPE] - [Description]` and outcomes `SUCCESS`/`FAILURE`).
--   **Factory-driven:** It relies on the `ActionFactory` to decouple itself from concrete action implementations. This adheres to the Open/Closed Principle, as new action types can be added to the factory without modifying the dispatcher.
--   **Parameter Normalization:** It performs internal normalization of parameter keys (e.g., mapping `file_path` to `path` for `CREATE` and `EDIT` actions) to ensure compatibility between Markdown-friendly labels and the lower-level port contracts.
--   **Result-oriented:** Its output is always an `ActionLog` domain object, providing a consistent result contract for its callers.
+## Dependencies
+- **`IActionFactory`** (`teddy_executor.core.services.action_dispatcher`): The injected collaborator that creates action handlers. It is declared as a `Protocol` in this module.
 
-## 2. Dependencies
+## Class Invariants
+- `factory_driven`: The dispatcher never instantiates action handlers; every handler arrives through `IActionFactory`.
+- `never_raises`: `dispatch_and_execute` catches every execution exception and records it as a `FAILURE` `ActionLog`.
+- `parameter_normalization`: Markdown-friendly keys are remapped before execution (`file_path` to `path` for CREATE and EDIT; `source` and `resource` to `path` for READ), and any key prefixed with `metadata_` is dropped.
+- `message_logging_suppressed`: A `MESSAGE` action skips the informational progress logging.
 
--   **Application Services:**
-    -   `ActionFactory`: To create instances of action handlers based on the action type.
+## Inbound Ports
+None — the dispatcher is a concrete service consumed directly by its callers.
 
-## 3. Public Interface
+## Outbound Ports
+None — its single collaborator is the internal `IActionFactory` protocol, not an outbound port.
 
-The `ActionDispatcher` service exposes a single method.
+## Data Contracts
+- **`ActionData`** (`teddy_executor.core.domain.models.plan`): The action to execute.
+- **`ActionLog`** (`teddy_executor.core.domain.models.execution_report`): The recorded outcome.
+- **`ActionStatus`** (`teddy_executor.core.domain.models.execution_report`): The per-action status enum.
+- **`ShellOutput`** (`teddy_executor.core.domain.models.shell_output`): Read for `return_code` and `interrupted` when an action returns shell output.
 
-### `dispatch_and_execute`
-Resolves and executes a single action, returning its result.
+## Operations
 
-**Status:** Implemented
+### `ActionDispatcher(action_factory)`
+- **Preconditions:** `action_factory` implements `IActionFactory`.
+- **Postconditions:** Stores the factory.
 
-```python
-from teddy_executor.core.domain.models import ActionData, ActionLog
-from teddy_executor.core.services.action_factory import IActionFactory
-
-from typing import Optional
-
-class IActionFactory(Protocol):
-    def create_action(self, action_type: str, params: Optional[dict] = None) -> IAction: ...
-
-class ActionDispatcher:
-    def __init__(self, action_factory: IActionFactory):
-        self._action_factory = action_factory
-
-    def dispatch_and_execute(self, action_data: ActionData) -> ActionLog:
-        """
-        Takes an ActionData object, finds the corresponding action handler
-        via the factory, executes it, and returns the result as an ActionLog.
-
-        This method is responsible for creating the ActionLog and populating
-        it with the outcome of the execution, including the original
-        `description` from the ActionData.
-
-        It will catch any exceptions during action execution and wrap them
-        in a FAILURE ActionLog.
-
-        Args:
-            action_data: The data for the action to be executed.
-
-        Returns:
-            An ActionLog representing the outcome of the execution.
-        """
-        pass
-```
-
-## 4. Domain Models (Input/Output)
-
--   **Input:** `ActionData` (from `plan_parser.md`)
--   **Output:** `ActionLog` (from `execution_report.md`)
+### `dispatch_and_execute(action_data, agent_name=None) -> ActionLog`
+- **Preconditions:** `action_data` is a validated `ActionData`.
+- **Postconditions:** Returns an `ActionLog`. A dataclass result is converted with `asdict`; a string result from READ becomes `{"content": ...}`; a list result from EDIT becomes `{"similarity_scores": ...}`. A `ShellOutput` whose `interrupted` flag is set yields `ActionStatus.INTERRUPTED`; a non-zero `return_code` yields `FAILURE`; otherwise `SUCCESS`.
+- **Exceptions:** None — every failure is captured in the returned `ActionLog`.

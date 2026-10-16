@@ -1,64 +1,52 @@
-**Status:** Implemented
+# Component Design: IConfigService
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/outbound/config_service.py`](/src/teddy_executor/core/ports/outbound/config_service.py)
 
-## 1. Purpose / Responsibility
+## Purpose
+Defines the outbound port for retrieving and persisting application configuration and secrets. It hides the storage layer (a YAML file plus a `.env` file) from the core so services read settings without knowing the backing format.
 
-The `IConfigService` port defines a technology-agnostic interface for retrieving and persisting application configuration, including settings and secrets like API keys. It abstracts the underlying storage mechanism (e.g., YAML file, environment variables) from the core application logic.
+## Consumers
+- [`LiteLLMAdapter`](../../../adapters/outbound/litellm_adapter.md): Reads `llm.*` settings and the API key.
+- [`ActionPorts`](../../domain/action_ports.md): Carries an optional `IConfigService` into the action layer.
+- [`SessionLoopGuard`](../../services/session_loop_guard.md): Reads the turn and cost guardrail limits.
+- [`SessionPruningService`](../../services/session_pruning_service.md): Reads the `auto_pruning.*` settings.
+- [`SessionService`](../../services/session_service.md): Reads session and provider settings.
+- [CLI Adapter](../../../adapters/inbound/cli.md): Reads and persists settings during `init`, `start`, and `resume`.
 
-## 2. Ports
+## Dependencies
+None — this port declares no injected dependencies.
 
--   **Type:** Outbound Port
--   **Used by:** Any core service or adapter that requires access to configuration (e.g., `ILlmClient`).
--   **Implemented by:** Adapters like `YamlConfigAdapter`.
+## Class Invariants
+- `abstract_base_class`: The port is an `ABC`; every implementing adapter overrides all four operations.
+- `non_mutating_reads`: `get_config_path` and `get_setting` never mutate storage.
+- `secret_isolation`: `set_env_variable` writes a secret to `.env` without mutating `os.environ`.
 
-## 3. Implementation Details / Logic
+## Inbound Ports
+None — this is an outbound (driven) port.
 
-This is an interface and contains no implementation logic.
+## Outbound Ports
+- **`IConfigService`**: The driven contract consumed by core services and implemented by outbound adapters.
 
-## 4. Data Contracts / Methods
+## Data Contracts
+- **Configuration keys:** `yolo_default` (bool); `execution.similarity_threshold` (float); `max_execute_lines` (int, default 100); `max_read_lines` (int, default 1000); `auto_pruning.enabled` (bool); `auto_pruning.turn_context_threshold` (int); `auto_pruning.prune_preceding_on_non_green` (bool); `auto_pruning.prune_validation_failures` (bool).
 
-### `get_setting(self, key: str, default: Optional[Any] = None) -> Optional[Any]`
+## Operations
 
--   **Description:** Retrieves a configuration value by its key.
--   **Preconditions:**
-    -   `key` must be a non-empty string.
--   **Postconditions:**
-    -   If the key exists, its corresponding value is returned.
-    -   If the key does not exist and a `default` is provided, the `default` value is returned.
-    -   If the key does not exist and no `default` is provided, `None` is returned.
--   **Exception/Error States:** None. The contract guarantees a return value.
+### `get_config_path() -> str`
+- **Preconditions:** None.
+- **Postconditions:** Returns the path to the configuration file.
 
-### `set_setting(self, key: str, value: Any) -> None`
+### `get_setting(key, default=None) -> Optional[Any]`
+- **Preconditions:** `key` is a non-empty string.
+- **Postconditions:** Returns the stored value, else `default`, else `None`.
+- **Exceptions:** None — the contract guarantees a return value.
 
--   **Description:** Sets a configuration value by its key and persists to the underlying storage (e.g., YAML file). Supports dot-notation for nested keys.
--   **Preconditions:**
-    -   `key` must be a non-empty string.
--   **Postconditions:**
-    -   The value for the given key is updated and persisted.
-    -   The in-memory cache is updated to reflect the change immediately.
--   **Exception/Error States:**
-    -   May raise `OSError` if the config file cannot be written (e.g., insufficient permissions).
-    -   May raise `yaml.YAMLError` if the config file becomes corrupted during write.
+### `set_setting(key, value) -> None`
+- **Preconditions:** `key` is a non-empty string.
+- **Postconditions:** Updates and persists the value and refreshes the in-memory cache; dot-notation addresses nested keys.
+- **Exceptions:** `OSError` when the file is unwritable; `yaml.YAMLError` when the file is corrupt.
 
-### `set_env_variable(self, name: str, value: str) -> None`
-
--   **Description:** Persists a secret to the `.env` file inside the config directory (the storage layer that backs `${VAR}` interpolation). Mirrors the `set_setting` persistence contract, but for secrets.
--   **Preconditions:**
-    -   `name` must be a non-empty environment-variable name.
-    -   `value` may be any string secret.
--   **Postconditions:**
-    -   The value is persisted to the `.env` file inside the config directory (created if missing).
-    -   `os.environ` is NOT mutated.
--   **Exception/Error States:**
-    -   May raise `OSError` if the `.env` file cannot be written (e.g., insufficient permissions).
--   **Invariants:** The secret is written to disk only; the process environment is left untouched, so later child processes never inherit the secret.
-
-## 5. Standard Configuration Keys
-
-- `yolo_default`: Boolean setting the default mode for the `--yolo` / `-y` flag across `start`, `resume`, and `execute` (default `False`). When `true`, sessions run non-interactively unless overridden by `--no-yolo` / `-n`; the code-level default keeps pre-existing configs unchanged.
-- `execution.similarity_threshold`: Float value for fuzzy matching.
-- `max_execute_lines`: Integer limit for `EXECUTE` output truncation (default 100).
-- `max_read_lines`: Integer limit for `READ` output truncation (default 1000).
-- `auto_pruning.enabled`: Boolean toggling the entire auto-pruning heuristic system.
-- `auto_pruning.turn_context_threshold`: Integer token budget for Turn-scope files only (excludes session.context and system prompts).
-- `auto_pruning.prune_preceding_on_non_green`: Boolean toggling the pruning of turns preceding a 🔴/🟡 state.
-- `auto_pruning.prune_validation_failures`: Boolean toggling the pruning of failed validation reports and their plans.
+### `set_env_variable(name, value) -> None`
+- **Preconditions:** `name` is a non-empty environment-variable name.
+- **Postconditions:** Persists the secret to the `.env` file in the config directory and leaves `os.environ` untouched.
+- **Exceptions:** `OSError` when the `.env` file is unwritable.

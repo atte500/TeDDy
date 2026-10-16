@@ -1,16 +1,51 @@
-# Outbound Port: `ISystemEnvironment`
+# Component Design: ISystemEnvironment
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/outbound/system_environment.py`](/src/teddy_executor/core/ports/outbound/system_environment.py)
 
-**Status:** Implemented
+## Purpose
+Defines the outbound port for host operating-system interactions: locating commands, reading environment variables, running external processes, and managing temporary files. It keeps adapters pure and testable.
 
-## 1. Purpose
+## Consumers
+- [`ConsoleTooling`](../../../adapters/outbound/console_tooling.md): Discovers editors and diff viewers on `PATH`.
+- [`ConsoleInteractor`](../../../adapters/outbound/console_interactor.md): Launches the editor and diff tools.
 
-The `ISystemEnvironment` port abstracts all interactions with the host operating system's environment, including file existence checks, temporary file management, environment variable access, and process execution. This ensures that services and adapters (like the `ConsoleInteractorAdapter`) remain pure and testable.
+## Dependencies
+None — this port declares no injected dependencies.
 
-## 2. Port Contract
+## Class Invariants
+- `protocol_contract`: The port is a `Protocol`; implementing adapters satisfy the structural contract.
 
-- `which(command: str) -> str | None`: Locates a command in the system PATH.
-- `get_env(key: str, default: str | None = None) -> str | None`: Retrieves an environment variable.
-- `run_command(args: list[str], check: bool = True, background: bool = False) -> None`: Executes an external command. Supports non-blocking background execution.
-- `create_temp_file(suffix: str | None = None) -> str`: Creates a temporary file and returns its path.
-- `delete_file(path: str) -> None`: Deletes a file from the system.
-- `isatty() -> bool`: Reports whether a terminal is attached to stdin (wraps `sys.stdin.isatty()`). Consumed by the one-time editor-setup gate to decide whether a session will actually read the terminal.
+## Inbound Ports
+None — this is an outbound (driven) port.
+
+## Outbound Ports
+- **`ISystemEnvironment`**: The driven contract consumed by outbound adapters and implemented by the `SystemEnvironmentAdapter`.
+
+## Data Contracts
+- **`create_temp_file` return:** the created file path.
+
+## Operations
+
+### `which(command) -> Optional[str]`
+- **Preconditions:** None.
+- **Postconditions:** Returns the resolved command path, or `None` when not found.
+
+### `get_env(key) -> Optional[str]`
+- **Preconditions:** None.
+- **Postconditions:** Returns the environment-variable value, or `None`.
+
+### `run_command(args, check=True, background=False) -> None`
+- **Preconditions:** `args` is a non-empty argument list.
+- **Postconditions:** Runs the command synchronously, or in the background when `background` is `True`.
+
+### `create_temp_file(suffix="", mode="w") -> str`
+- **Preconditions:** None.
+- **Postconditions:** Creates a temporary file and returns its path.
+
+### `delete_file(path) -> None`
+- **Preconditions:** `path` exists.
+- **Postconditions:** Deletes the file.
+
+### `isatty() -> bool`
+- **Preconditions:** None.
+- **Postconditions:** Returns whether a terminal is attached to stdin.

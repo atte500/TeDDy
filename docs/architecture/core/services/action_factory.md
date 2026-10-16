@@ -1,52 +1,42 @@
-# Application Component: `ActionFactory`
+# Component Design: ActionFactory
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/action_factory.py`](/src/teddy_executor/core/services/action_factory.py)
 
-**Status:** Implemented
+## Purpose
+Translates an action type string from a plan into an executable `IAction` handler. It binds the correct method of an injected outbound port adapter to the uniform `execute(**kwargs)` interface and injects configuration-driven defaults.
 
-## 1. Purpose
-The `ActionFactory` is the central component responsible for translating action data from a plan into executable `IAction` handlers. Instead of maintaining a registry of domain objects, the factory leverages a Dependency Injection (DI) container to resolve the appropriate Outbound Port adapters and dynamically binds their specific methods to a standardized `execute(**kwargs)` interface.
+## Consumers
+- [`ActionDispatcher`](./action_dispatcher.md): Receives the factory through the `IActionFactory` protocol to create action handlers.
+- [Composition Root](/src/teddy_executor/container.py): Constructs the factory from an `ActionPorts` DTO.
 
-## 2. Public Interface
+## Dependencies
+- [`ActionPorts`](../domain/action_ports.md): The DTO that groups the outbound ports.
+- [`IShellExecutor`](../ports/outbound/shell_executor.md): Supplies the EXECUTE handler.
+- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Supplies the CREATE, EDIT, and local READ handlers.
+- [`IUserInteractor`](../ports/outbound/user_interactor.md): Supplies the MESSAGE handler.
+- [`IWebScraper`](../ports/outbound/web_scraper.md): Supplies the remote READ handler.
+- [`IWebSearcher`](../ports/outbound/web_searcher.md): Supplies the RESEARCH handler.
+- [`IConfigService`](../ports/outbound/config_service.md): Supplies the default timeout and similarity threshold.
+- **`DEFAULT_SIMILARITY_THRESHOLD`** (`teddy_executor.core.domain.models.plan`): The fallback similarity threshold.
 
-### `create_action(action_type: str, params: dict) -> IAction`
-*   **Description:** Resolves and prepares an action handler for the specified action type.
-*   **Parameters:**
-    *   `action_type` (str): The verb representing the action (e.g., `CREATE`, `EXECUTE`).
-    *   `params` (dict): The parameters extracted from the plan for this action.
-*   **Returns:** An object implementing the `IAction` protocol (exposing a single `execute` method).
+## Class Invariants
+- `ports_from_dto`: Every outbound port arrives through the `ActionPorts` DTO; the factory holds no container reference.
+- `read_polymorphism`: The READ action is routed by resource type (remote URL, line-range request, or local file) to a distinct handler.
+- `config_default_injection`: When a plan omits `timeout` or `similarity_threshold`, the factory injects the configured default.
 
-## 3. Implementation Strategy
+## Inbound Ports
+None — the factory is a concrete service consumed through the `IActionFactory` protocol.
 
-### 3.1. Dependency Injection & Method Binding
-The factory receives its required Outbound Ports via an `ActionPorts` DTO. It is decoupled from the DI container (`punq`). For adapters that support multiple operations (e.g., `IFileSystemManager` handles both `CREATE` and `EDIT`), the factory performs **Method Binding**:
-1.  It resolves the adapter instance from the container.
-2.  It identifies the specific adapter method required for the action (e.g., `create_file` for a `CREATE` action).
-3.  It wraps this method in a closure that implements the `IAction` protocol's `execute(**kwargs)` method.
-4.  This closure handles parameter normalization (e.g., mapping `resource` or `path` to the adapter's expected argument names) and parameter validation.
-5.  **Automated Timeout Injection:** For the `EXECUTE` action, the factory injects the `IConfigService`. If the action parameters do not specify a `timeout`, the factory automatically injects the global default value from `execution.default_timeout_seconds`.
-6.  **Parameter Propagation:** For `EXECUTE`, the factory explicitly propagates and validates the `command`, `cwd`, `env`, `background`, and `timeout` parameters.
+## Outbound Ports
+- **`IShellExecutor`**, **`IFileSystemManager`**, **`IUserInteractor`**, **`IWebScraper`**, **`IWebSearcher`**, **`IConfigService`**: The port methods bound to action handlers.
 
-### 3.2. Specialized Routing for `READ`
-The factory handles the polymorphic nature of the `READ` action. It inspects the target resource:
-- **Remote Resource (URL):** It resolves and binds the `IWebScraper` adapter.
-- **Local Resource (Path):** It resolves and binds the `IFileSystemManager.read_file` method.
+## Data Contracts
+- **`ActionPorts`** (`teddy_executor.core.domain.models.action_ports`): The injected port bundle.
+- **`IAction`** (`teddy_executor.core.services.action_dispatcher`): The handler protocol exposing `execute(**kwargs)`.
 
-### 3.3. Standalone Actions
-Actions that do not require external I/O or adapter delegation (e.g., `INVOKE`, `PRUNE`, `RETURN`) are handled by simple internal classes within the factory that implement the `IAction` protocol directly.
+## Operations
 
-## 4. Key Mappings
-
-The factory maintains a mapping between the Markdown verbs used in plans and the internal Port protocols:
-
-| Action Verb      | Internal Key     | Port Protocol           | Adapter Method |
-| ---------------- | ---------------- | ----------------------- | -------------- |
-| `CREATE`         | `create_file`    | `IFileSystemManager`    | `create_file`  |
-| `EDIT`           | `edit`           | `IFileSystemManager`    | `edit_file`    |
-| `READ` (local)   | `read_file`      | `IFileSystemManager`    | `read_file`    |
-| `READ` (remote)  | `read_file`      | `IWebScraper`           | `get_content`  |
-| `EXECUTE`        | `execute`        | `IShellExecutor`        | `execute`      |
-| `PROMPT` | `prompt` | `IUserInteractor`       | `ask_question` |
-| `MESSAGE` | `message` | `IUserInteractor`       | `ask_question` |
-| `RESEARCH`       | `research`       | `IWebSearcher`          | `search`       |
-| `INVOKE`         | `invoke`         | Internal `InvokeAction` | `execute`      |
-| `PRUNE`          | `prune`          | Internal `PruneAction`  | `execute`      |
-| `RETURN`         | `return`         | Internal `ReturnAction` | `execute`      |
+### `create_action(action_type, params=None) -> IAction`
+- **Preconditions:** `action_type` is a known verb.
+- **Postconditions:** Returns an `IAction` whose `execute` calls the mapped adapter method. A remote READ binds `IWebScraper.get_content`; a line-range READ binds `IFileSystemManager.read_raw_file`; a local READ binds `IFileSystemManager.read_file`.
+- **Exceptions:** `ValueError` when the action type is unknown.

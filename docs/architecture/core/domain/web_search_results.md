@@ -1,44 +1,30 @@
-**Status:** Implemented
+# Component Design: WebSearchResults
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/domain/models/web_search_results.py`](/src/teddy_executor/core/domain/models/web_search_results.py)
 
-## 1. Purpose / Responsibility
-`WebSearchResults` is a strictly-typed Data Transfer Object (DTO) that defines the data contract for the results of one or more web search queries. It replaced the legacy `SERPReport` dataclass to improve type safety and align with modern Python practices using `TypedDict`.
+## Purpose
+A strictly-typed Data Transfer Object that defines the data contract for the results of one or more web search queries. It replaced the legacy `SERPReport` dataclass to align with modern `TypedDict` practices.
 
-## 2. Ports
-This component is a passive data structure (DTO) and does not implement or use any ports. It is the data payload that is passed across the `IWebSearcher` port boundary.
+## Consumers
+- [`IWebSearcher`](../ports/outbound/web_searcher.md): Declares `WebSearchResults` as its return type.
+- [WebSearcherAdapter](../../adapters/outbound/web_searcher_adapter.md): Populates the nested `TypedDict` structure.
 
-## 3. Implementation Details / Logic
-`WebSearchResults` is implemented as a series of nested `TypedDict`s. This choice provides static type safety and clarity with minimal runtime overhead, aligning with the project's strategy for modernizing legacy data classes.
+## Dependencies
+None — this is a passive data structure.
 
-The final as-built structure is:
-```python
-from typing import List, TypedDict
+## Class Invariants
+- `nested_typed_dicts`: The structure is composed of nested `TypedDict`s with static keys.
 
-class SearchResult(TypedDict, total=False):
-    """Represents a single search result item."""
-    title: str
-    href: str
-    description: str  # The SERP snippet
+## Inbound Ports
+None — this is a passive data structure.
 
-class QueryResult(TypedDict):
-    """Represents the results for a single search query."""
-    query: str
-    results: List[SearchResult]
+## Outbound Ports
+None — this is a passive data structure.
 
-class WebSearchResults(TypedDict):
-    """Represents the aggregated results from one or more web search queries."""
-    query_results: List[QueryResult]
-```
+## Data Contracts
+- **`SearchResult`** (`TypedDict`): `title: str`, `href: str`, `description: str`.
+- **`QueryResult`** (`TypedDict`): `query: str`, `results: List[SearchResult]`.
+- **`WebSearchResults`** (`TypedDict`): `query_results: List[QueryResult]`.
 
-## 4. Data Contracts / Methods
-
-### `SearchResult` TypedDict
--   `title: str`: The title of the search result page.
--   `href: str`: The full URL of the search result.
--   `description: str`: A snippet or body text from the search result page (SERP snippet).
-
-### `QueryResult` TypedDict
--   `query: str`: The original search query string.
--   `results: List[SearchResult]`: A list of `SearchResult` dictionaries for that query.
-
-### `WebSearchResults` TypedDict
--   `query_results: List[QueryResult]`: A list containing the results for all queries.
+## Operations
+None — this component holds data only.

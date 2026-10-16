@@ -1,26 +1,31 @@
-# Inbound Port: `IGetContextUseCase`
+# Component Design: IGetContextUseCase
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/inbound/get_context_use_case.py`](/src/teddy_executor/core/ports/inbound/get_context_use_case.py)
 
-**Status:** Implemented
+## Purpose
+Defines the inbound port for gathering aggregated project context. It is the primary entry point that produces the structured `ProjectContext` payload for planning and display. The port is implemented by the `ContextService`.
 
-## 1. Responsibility
+## Consumers
+- [CLI Adapter](../../../adapters/inbound/cli.md): Invokes context gathering for the `context` command and for session startup.
 
-The `IGetContextUseCase` port defines the primary entry point into the application's core logic for gathering project context. It orchestrates the collection of various pieces of information about the project environment and returns them in a structured format.
+## Dependencies
+- **`ProjectContext`** (`teddy_executor.core.domain.models`): The return type of the use case.
 
-## 2. Methods
+## Class Invariants
+- `stateless_contract`: The port declares behavior only; implementations gather context without mutating the workspace beyond creating a missing `.teddy/init.context`.
 
-### `get_context`
-**Status:** Implemented
+## Inbound Ports
+- **`IGetContextUseCase`**: Exposes the single `get_context(...)` operation.
 
-*   **Description:** Gathers all project context information, including the repository file tree, system environment details, and the content of specified files.
-*   **Signature:** `get_context(context_files: Optional[Dict[str, Sequence[str]]] = None) -> ProjectContext`
-*   **Arguments:**
-    *   `context_files`: (Optional) A mapping of scope names (e.g., 'Turn', 'Session') to lists of paths to `.context` files. If provided, the context is limited to the paths listed in these files, grouped by scope.
-*   **Preconditions:** None.
-*   **Postconditions:**
-    *   Returns a `ProjectContext` data transfer object containing the aggregated project context, structured for standardized output.
-    *   If `.teddy/init.context` does not exist, it will be created with default content before the context is gathered.
+## Outbound Ports
+None — the port declares no injected dependencies; the implementing service owns its own outbound ports.
 
-## 3. Data Structures
+## Data Contracts
+- **`ProjectContext`** (dataclass): The returned aggregate. See the [ProjectContext design](../../domain/project_context.md).
 
-### `ProjectContext`
-This is a data transfer object (DTO) that aggregates all the information gathered by the use case. For its detailed structure, see the [ProjectContext component design](/docs/architecture/core/domain/project_context.md).
+## Operations
+
+### `get_context(context_files=None, include_tokens=True, agent_name="Unknown", total_window=0, cache_dir=None, current_turn=None, system_prompt_tokens=0) -> ProjectContext`
+- **Preconditions:** None.
+- **Postconditions:** Returns a `ProjectContext` carrying the repository tree, system details, and the content of the requested files.
+- **Exceptions:** None declared by the port.

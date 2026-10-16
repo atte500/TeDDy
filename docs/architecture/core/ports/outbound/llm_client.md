@@ -1,40 +1,58 @@
-**Status:** Refactoring
+# Component Design: ILlmClient
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/outbound/llm_client.py`](/src/teddy_executor/core/ports/outbound/llm_client.py)
 
-## 1. Purpose / Responsibility
+## Purpose
+Defines the outbound port for communicating with a Large Language Model. It abstracts the provider and library so core services request completions, token counts, and costs without coupling to LiteLLM.
 
-The `ILlmClient` port defines a generic interface for communicating with a Large Language Model (LLM). It abstracts the specifics of any particular LLM provider (e.g., OpenAI, Anthropic) or library (e.g., `litellm`) from the core application.
+## Consumers
+- [`PlanningService`](../../services/planning_service.md): Requests plan completions and computes context-window and token budgets.
 
-## 2. Ports
+## Dependencies
+None — this port declares no injected dependencies.
 
--   **Type:** Outbound Port
--   **Used by:** Any core service that needs to interact with an LLM.
--   **Implemented by:** Adapters like `LiteLLMAdapter`.
+## Class Invariants
+- `abstract_base_class`: The port is an `ABC`; implementations override every abstract operation.
+- `error_translation`: Every provider failure surfaces as `LlmApiError`, never a provider-specific exception.
 
-## 3. Implementation Details / Logic
+## Inbound Ports
+None — this is an outbound (driven) port.
 
-This is an interface and contains no implementation logic.
+## Outbound Ports
+- **`ILlmClient`**: The driven contract consumed by core services and implemented by the `LiteLLMAdapter`.
 
-## 4. Data Contracts / Methods
+## Data Contracts
+- **`LlmApiError`** (`Exception`): Raised for any failure during an LLM API call.
+- **`messages`**: A list of `{"role": str, "content": str}` dictionaries in chat-completion format.
 
-### `get_completion(self, model: str, messages: List[Dict[str, str]], **kwargs) -> Any`
+## Operations
 
--   **Description:** Sends a request to an LLM and returns the raw response object (e.g., LiteLLM ModelResponse).
--   **Preconditions:**
-    -   `model` must be a non-empty string.
-    -   `messages` must follow the chat completion format.
--   **Postconditions:**
-    -   Returns the provider-specific completion object.
--   **Exception/Error States:**
-    -   `LlmApiError`: Raised for API or communication failures.
+### `get_completion(messages, model=None, **kwargs) -> Any`
+- **Preconditions:** `messages` follows the chat-completion format.
+- **Postconditions:** Returns the provider completion object.
+- **Exceptions:** `LlmApiError` when the API call fails.
 
-### `get_token_count(self, messages: List[Dict[str, str]], model: Optional[str] = None) -> int`
-- **Description:** Calculates the number of tokens in a standard chat message payload.
+### `get_token_count(messages, model=None) -> int`
+- **Preconditions:** `messages` follows the chat-completion format.
+- **Postconditions:** Returns the token count of the payload.
 
-### `get_text_token_count(self, text: str, model: Optional[str] = None) -> int`
-- **Description:** Calculates the number of tokens for a raw string (e.g., a file content).
+### `get_text_token_count(text, model=None) -> int`
+- **Preconditions:** None.
+- **Postconditions:** Returns the token count of a raw string.
 
-### `get_completion_cost(self, completion_response: Any) -> float`
-- **Description:** Calculates the precise USD cost of a completion response (Post-flight).
+### `get_completion_cost(completion_response, model_override=None) -> float`
+- **Preconditions:** `completion_response` is a response from `get_completion`.
+- **Postconditions:** Returns the USD cost of the completion.
 
-### `get_context_window(self, model: Optional[str] = None) -> int`
-- **Description:** Retrieves the total context window (input limit) for the specified model. Returns 0 if unknown.
+### `validate_config(include_remote=False) -> List[str]`
+- **Preconditions:** None.
+- **Postconditions:** Returns configuration error messages; an empty list means valid.
+- **Design Note:** When `include_remote` is `True`, performs a lightweight connectivity check.
+
+### `get_context_window(model=None) -> int`
+- **Preconditions:** None.
+- **Postconditions:** Returns the model context window in tokens, or `0` when unknown.
+
+### `supports_pricing(model=None) -> bool`
+- **Preconditions:** None.
+- **Postconditions:** Returns `True` when pricing metadata exists, even at `$0.00`.

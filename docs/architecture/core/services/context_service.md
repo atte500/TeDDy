@@ -1,94 +1,41 @@
-# Application Service: `ContextService`
+# Component Design: ContextService
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/context_service.py`](/src/teddy_executor/core/services/context_service.py)
 
-**Status:** Implemented
+## Purpose
+Implements the `IGetContextUseCase` inbound port. It orchestrates the outbound ports to gather system information, the repository tree, and file contents, and assembles them into a single `ProjectContext` payload.
 
-## 1. Purpose
+## Consumers
+- [CLI Adapter](../../adapters/inbound/cli.md): Gathers context for the `context` command and for session startup.
+- [Composition Root](/src/teddy_executor/container.py): Constructs the service and injects its ports.
 
-The `ContextService` is the application service responsible for orchestrating the gathering of project context. It implements the `IGetContextUseCase` inbound port and acts as the central coordinator, using various outbound ports to collect information and assemble it into a `ProjectContext` data transfer object.
+## Dependencies
+- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Reads context manifests and file contents.
+- [`IRepoTreeGenerator`](../ports/outbound/repo_tree_generator.md): Produces the project file tree.
+- [`IEnvironmentInspector`](../ports/outbound/environment_inspector.md): Supplies system information and Git status.
+- [`ILlmClient`](../ports/outbound/llm_client.md): Counts tokens for the assembled content.
+- [`IWebScraper`](../ports/outbound/web_scraper.md): Fetches remote URL content.
+- **`core.utils.markdown` helpers**: Provide fence embedding and session-history naming.
 
-It also provides session-aware web content caching to avoid redundant fetches for URLs in repeated context files across turns.
+## Class Invariants
+- `session_scoped_cache`: Web content is cached in `<session_root>/.web_cache.json` for the session only; no TTL is applied.
+- `atomic_cache_write`: The cache is written to a temporary file and renamed with `Path.replace`.
+- `failures_not_cached`: A failed fetch is recorded as `None` for the run but never written to the cache.
+- `scope_dedup_priority`: A path present in several scopes keeps the non-`Turn` scope.
 
-## 2. Used Outbound Ports
+## Inbound Ports
+- **`IGetContextUseCase`**: Exposes the single `get_context(...)` operation.
 
-*   [`IFileSystemManager`](../ports/outbound/file_system_manager.md): To read `.gitignore`, `.teddyignore` and other context files.
-*   [`IRepoTreeGenerator`](../ports/outbound/repo_tree_generator.md): To generate the repository's file tree as a string.
-*   [`IEnvironmentInspector`](../ports/outbound/environment_inspector.md): To gather information about the operating system and environment, including the user's shell.
-*   [`IWebScraper`](../ports/outbound/web_scraper.md): To fetch and include content from remote URLs included in the context.
+## Outbound Ports
+- **`IFileSystemManager`**, **`IRepoTreeGenerator`**, **`IEnvironmentInspector`**, **`ILlmClient`**, **`IWebScraper`**: The ports orchestrated during context assembly.
 
-## 3. Implemented Inbound Ports
+## Data Contracts
+- **`ProjectContext`** (`teddy_executor.core.domain.models.project_context`): The assembled aggregate.
+- **`ContextItem`** (`teddy_executor.core.domain.models.project_context`): Per-file context metadata.
 
-*   [`IGetContextUseCase`](../ports/inbound/get_context_use_case.md)
+## Operations
 
-## 4. Web Content Caching (Session)
-
-The `ContextService` provides intra-session web content caching to avoid redundant HTTP fetches for URLs listed in `session.context` or `turn.context`.
-
-### 4.1 Lifecycle
-- **Cache Location:** `<session_root>/.web_cache.json`
-- **Format:** Standard JSON dictionary mapping URL (string) to content (string). Written with `ensure_ascii=False` for non-ASCII URLs.
-- **Load:** Cache is loaded from disk at the start of each `get_context()` call via `_load_web_cache()`. Missing or corrupt files (invalid JSON, non-dict structure) result in an empty cache (no exception). Handles `OSError` and `json.JSONDecodeError` gracefully.
-- **Write:** After each successful `IWebScraper.get_content()` call, the cache dictionary is updated and persisted atomically via `_save_web_cache()`: write to `.web_cache.json.tmp`, then `Path.replace()` to `.web_cache.json`. Creates the cache directory if it does not exist (using `Path.mkdir(parents=True, exist_ok=True)`).
-- **No TTL:** Caching is intra-session only. A new session always starts with an empty cache.
-- **Failures NOT Cached:** Network errors or exceptions during `get_content()` are never cached, ensuring retries always re-fetch. The error is stored as `None` in `file_contents` but is NOT added to the cache dictionary.
-- **Per-Fetch Persistence:** Cache is persisted after EACH successful fetch, not batched at the end, minimizing data loss if the process crashes mid-loop.
-
-### 4.2 Private Methods
-
-#### `_load_web_cache(cache_dir: Optional[str]) -> dict[str, str]`
-- Reads and parses the `.web_cache.json` file. Returns an empty dict if the file is missing, contains invalid JSON, or has an incorrect structure.
-
-#### `_save_web_cache(cache_dir: str, cache: dict[str, str]) -> None`
-- Writes the cache dictionary to disk atomically. Creates the `cache_dir` if it does not exist. Writes to a `.tmp` file first, then atomically renames to `.web_cache.json` using `Path.replace()`.
-
-### 4.3 Cache Integration in `get_context()`
-The cache is integrated into the existing URL-fetching loop inside `get_context()`:
-1. Load cache into a local dictionary.
-2. For each URL, check the cache dictionary first.
-3. If cache hit -> use cached content.
-4. If cache miss -> call `IWebScraper.get_content()`, store result in cache dict, persist atomically.
-5. If `get_content()` raises -> store `None` in the result dict (failure is NOT cached).
-
-## 5. Failure Modes
-
-- **Missing Directories:** Handled gracefully via `IFileSystemManager` checks.
-- **Permission Errors:** Propagated from the adapter layer.
-- **Cache Corruption:** Invalid `.web_cache.json` is silently treated as an empty cache. No exception is raised.
-- **Backward Compatibility:** When `cache_dir` is `None` (default), no caching occurs, preserving existing behavior for `PlanningService` and `session_cli_handlers` callers.
-
-## 5. Orchestration Logic
-
-When the `get_context` method is called, the `ContextService` performs the following steps in order:
-
-1.  **Recursive Expansion:** It resolves input paths. If a path is a directory, it recursively expands its contents, filtering results through `IRepoTreeGenerator`'s ignore logic to ensure consistency with the visible file tree.
-
-1.  It invokes the `IEnvironmentInspector` to get system information, ensuring the user's `shell` is included.
-2.  It invokes the `IRepoTreeGenerator` to get the repository tree as a single string. The generator is responsible for respecting `.gitignore` and `.teddyignore` rules.
-3.  It uses the `IFileSystemManager` to read the file paths from all `.teddy/*.context` files. These paths form the `context_vault_paths`.
-4.  It uses the `IFileSystemManager` again to read the content of each file in `context_vault_paths`.
-5.  It gathers all paths into `ContextItem` DTOs, performing **deduplication** to ensure each unique path appears only once. If a path exists in multiple scopes (e.g., "Session" and "Turn"), it prioritizes non-"Turn" scopes to prevent double-counting in token budget calculations.
-6.  It formats the system information into a `header` string and the repository tree and file contents into a `content` string using private helper methods.
-7.  It computes `content_tokens` by calling `self._llm_client.get_text_token_count(content)` on the assembled content string. If `include_tokens` is False, `content_tokens` is set to 0.
-8.  It assembles the final `ProjectContext` DTO with the formatted `header`, `content`, deduplicated `items`, and `content_tokens`, then returns it.
-
-## 5. Data Contracts / Methods
-
-### `get_context(context_files: Optional[Sequence[str]] = None, cache_dir: Optional[str] = None) -> ProjectContext`
-
--   **Description:** Gathers project context information. Optionally uses a session-level web content cache to avoid redundant URL fetches.
--   **Arguments:**
-    -   `context_files`: (Optional) A list of specific `.context` files to read paths from. If `None`, the service defaults to reading all `.context` files in the `.teddy/` root (Standard/Manual mode).
-    -   `cache_dir`: (Optional) The path to a session directory where `.web_cache.json` is stored. When provided, web content is cached and reused across turns within the same session.
--   **Returns:** A `ProjectContext` DTO containing the system info, repo tree, and resolved file contents.
-
-## 6. Content Embedding & Fence Sanitization
-
-Both content embed sites in this service route through a single shared seam, `embed_in_fence(content, lang)` from `core/utils/markdown.py`:
-
--   `_format_session_history` embeds each session-history file.
--   `_format_workspace_contents` embeds each workspace file.
-
-`embed_in_fence` first calls `strip_trailing_open_fence` to remove a trailing UNCLOSED opening code fence. It then derives the wrapper fence from the sanitized content via `get_fence_for_content`. This bounds the assembled payload when embedded content contains a degenerate backtick or tilde run. Well-formed Markdown is preserved byte-for-byte. `_format_session_history` strips leading and trailing whitespace before delegating, while `_format_workspace_contents` does not, so each caller keeps its own whitespace behaviour.
-
-## 7. Implementation Notes
-
--   **Context Configuration:** The `context` command's behavior is explicitly driven by the contents of `.teddy/*.context` files, providing a clear, user-configurable contract.
+### `get_context(context_files=None, include_tokens=True, agent_name="Unknown", total_window=0, cache_dir=None, current_turn=None, system_prompt_tokens=0) -> ProjectContext`
+- **Preconditions:** None.
+- **Postconditions:** Returns a `ProjectContext` carrying the header, content, scoped paths, Git status, and per-file items. Remote URLs are fetched in parallel and cached when `cache_dir` is set.
+- **Exceptions:** None declared; per-URL fetch failures are recorded as missing content.

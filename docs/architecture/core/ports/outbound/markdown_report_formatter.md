@@ -1,23 +1,32 @@
-**Status:** Planned
+# Component Design: IMarkdownReportFormatter
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/outbound/markdown_report_formatter.py`](/src/teddy_executor/core/ports/outbound/markdown_report_formatter.py)
 
-## 1. Purpose / Responsibility
-Defines the contract for any service that can format an `ExecutionReport` domain object into a final, user-facing Markdown string.
+## Purpose
+Defines the outbound port for rendering an `ExecutionReport` into a user-facing Markdown string. It isolates presentation formatting from the core so the report layout can change without touching the orchestrator.
 
-## 2. Ports
-This component is an **Outbound Port**. The hexagonal core (specifically the CLI adapter in this case) depends on this interface to delegate the responsibility of presentation formatting.
+## Consumers
+- [`ExecutionOrchestrator`](../../services/execution_orchestrator.md): Renders the report for display and persistence.
+- [CLI Adapter](../../../adapters/inbound/cli.md): Prints the formatted report.
 
-## 3. Implementation Details
-This port is expected to be implemented by a `MarkdownReportFormatter` service.
+## Dependencies
+- **`ExecutionReport`** (`teddy_executor.core.domain.models`): The rendered model.
 
-## 4. Data Contracts / Methods
+## Class Invariants
+- `abstract_base_class`: The port is an `ABC`; implementations override `format`.
+- `side_effect_free`: `format` must not mutate the report or the filesystem.
 
-### `format(self, report: ExecutionReport) -> str`
--   **Description:** The primary method to execute the formatting process.
--   **Parameters:**
-    -   `report`: The `ExecutionReport` object.
-    -   `is_session`: If `True`, omits "Resource Contents" (READ results) from the report, as they are already present in the session's `input.md`.
--   **Preconditions:**
-    -   `report` must be a valid `ExecutionReport` domain object.
--   **Postconditions:**
-    -   Returns a single string containing the report formatted as Markdown.
--   **Invariants:** This method must not cause any side effects.
+## Inbound Ports
+None — this is an outbound (driven) port.
+
+## Outbound Ports
+- **`IMarkdownReportFormatter`**: The driven contract consumed by the orchestrator and implemented by the `MarkdownReportFormatter` service.
+
+## Data Contracts
+- **`ExecutionReport`** (`teddy_executor.core.domain.models.execution_report`): The report to render.
+
+## Operations
+
+### `format(report) -> str`
+- **Preconditions:** `report` is a valid `ExecutionReport`.
+- **Postconditions:** Returns the report as a single Markdown string.

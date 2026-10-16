@@ -1,30 +1,39 @@
 # Component Design: EditSimulator
-**Status:** Implemented
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/edit_simulator.py`](/src/teddy_executor/core/services/edit_simulator.py)
 
-## 1. Purpose / Responsibility
-The `EditSimulator` is a pure domain service responsible for applying a sequence of `FIND`/`REPLACE` operations to a string in memory. It encapsulates the logic for fuzzy matching, resilient replacement, and handling edge cases (like trailing newlines) without any I/O dependencies.
+## Purpose
+Implements the `IEditSimulator` inbound port. It applies a sequence of FIND/REPLACE edits to an in-memory string using resilient fuzzy matching, without any file system access.
 
-## 2. Ports
-- **Type:** Core Service
-- **Implements:** `IEditSimulator` (Inbound Port)
+## Consumers
+- [`TextualPlanReviewer`](../../adapters/inbound/textual_plan_reviewer.md): Renders unified diff previews of pending edits.
+- [`PlanValidator`](./plan_validator.md): Proves each FIND/REPLACE pair matches during pre-flight validation.
+- [Composition Root](/src/teddy_executor/container.py): Constructs the simulator.
 
-## 3. Implementation Details / Logic
-The simulator iterates through the provided list of edits and applies them sequentially. It leverages the `edit_matcher` for resilient target location:
-1.  Identify matching candidate(s) using a unified matching engine (`edit_matcher.py`) with a `similarity_threshold`.
-2.  **Ambiguity Detection:** If `match_all` is `false` and multiple candidates share the same highest score, raise `MultipleMatchesFoundError`.
-3.  **Replacement Logic:**
-    - If `match_all` is `true`, replace *every* occurrence meeting the threshold.
-    - If `match_all` is `false`, replace only the single best match.
-4.  Handle special "empty replace" logic to clean up trailing newlines if the identified match block included them.
-5.  **Line Ending Preservation:** To prevent "Git Noise," the simulator detects the specific line ending (`\n` or `\r\n`) of the `best_match`. If a newline needs to be appended to the replacement (to align with the original block's structure), it uses the detected terminator rather than a hardcoded default.
+## Dependencies
+- **`find_best_match`** (`teddy_executor.core.services.validation_rules.edit_matcher`): Locates the best matching block and returns its score, ambiguity flag, and indentation offset.
+- **`SearchTextNotFoundError`** (`teddy_executor.core.domain.models`): Raised when no block meets the threshold.
+- **`MultipleMatchesFoundError`** (`teddy_executor.core.domain.models`): Raised on an ambiguous tie.
+- **`DEFAULT_SIMILARITY_THRESHOLD`** (`teddy_executor.core.domain.models.plan`): The default fuzzy-match threshold.
 
-## 4. Data Contracts / Methods
+## Class Invariants
+- `stateless_pure`: The service holds no state and performs no I/O; every result depends only on its arguments.
+- `line_ending_preservation`: An appended newline reuses the detected terminator (`\n` or `\r\n`) of the matched block.
+- `ambiguity_guard`: A tie between equally scored candidates raises `MultipleMatchesFoundError` unless `match_all` is set.
 
-### `simulate_edits(content: str, edits: list[dict[str, str]], threshold: float = 0.95, match_all: bool = False) -> tuple[str, list[float]]`
-- **Preconditions:** `content` is a string; `edits` is a list of dictionaries with `find` and `replace` keys.
-- **Postconditions:** Returns a tuple containing the new string and a list of similarity scores for applied edits.
-- **Preconditions:** `content` is a string; `edits` is a list of dictionaries with `find` and `replace` keys.
-- **Postconditions:** Returns the new string after all edits are applied.
-- **Exception/Error States:**
-    - `SearchTextNotFoundError`: Raised if a `find` block is not found within threshold.
-    - `MultipleMatchesFoundError`: Raised if a `find` block is ambiguous or a tie is detected.
+## Inbound Ports
+- **`IEditSimulator`**: Exposes the single `simulate_edits(...)` operation.
+
+## Outbound Ports
+None — the simulator declares no injected dependencies.
+
+## Data Contracts
+- **`EditPair`** (`TypedDict`, `total=False`): `find: str`, `replace: str`, `match_all: bool`.
+- **Return tuple:** `tuple[str, list[float]]` — the transformed string and the per-edit similarity scores.
+
+## Operations
+
+### `simulate_edits(content, edits, threshold=DEFAULT_SIMILARITY_THRESHOLD, match_all=False) -> tuple[str, list[float]]`
+- **Preconditions:** `content` is a string; each `edits` entry carries a `find` block.
+- **Postconditions:** Returns the transformed string and the list of similarity scores, applying every pair in sequence. A per-edit `match_all` overrides the global flag.
+- **Exceptions:** `SearchTextNotFoundError` when no match meets the threshold; `MultipleMatchesFoundError` on an ambiguous tie.

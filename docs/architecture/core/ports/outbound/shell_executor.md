@@ -1,52 +1,32 @@
-# Outbound Port: IShellExecutor
+# Component Design: IShellExecutor
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/outbound/shell_executor.py`](/src/teddy_executor/core/ports/outbound/shell_executor.py)
 
-**Status:** Implemented
-**Language:** Python 3.9+ (using Abstract Base Classes)
-**Modified in:** [Structured `execute` Action](../../slices/executor/18-structured-execute-action.md)
+## Purpose
+Defines the outbound port for executing shell commands. It lets the core run commands and capture structured output without depending on `subprocess` or the operating system.
 
-## 1. Purpose
+## Consumers
+- [`ActionFactory`](../../services/action_factory.md): Builds `EXECUTE` actions that call the port.
 
-This port defines the interface that the application core requires for executing shell commands. By depending on this interface, the core logic remains decoupled from the specific implementation details of running a subprocess. Any adapter that can run a shell command in a specific context (working directory, environment) and capture its output can satisfy this port.
+## Dependencies
+- **`ShellOutput`** (`teddy_executor.core.domain.models.shell_output`): The return type.
 
-## 2. Interface Definition
+## Class Invariants
+- `abstract_base_class`: The port is an `ABC`; implementations override `execute`.
+- `always_returns_output`: `execute` always returns a `ShellOutput`; command failures are carried in `return_code` and `stderr`, not raised.
 
-```python
-from abc import ABC, abstractmethod
-from typing import Dict, Optional
-from teddy_executor.core.domain.models.shell_output import ShellOutput
+## Inbound Ports
+None — this is an outbound (driven) port.
 
-class IShellExecutor(ABC):
-    """
-    Defines the contract for executing a shell command.
-    """
+## Outbound Ports
+- **`IShellExecutor`**: The driven contract consumed by the action layer and implemented by the `ShellAdapter`.
 
-    @abstractmethod
-    def execute(
-        self,
-        command: str,
-        cwd: Optional[str] = None,
-        env: Optional[Dict[str, str]] = None
-    ) -> ShellOutput:
-        """
-        Executes a shell command and returns its result.
-        """
-        pass
-```
+## Data Contracts
+- **`ShellOutput`** (`TypedDict`): `stdout: str`, `stderr: str`, `return_code: int`, `failed_command: NotRequired[str]`, `interrupted: NotRequired[bool]`.
 
-## 3. Method Contracts
+## Operations
 
-### `execute(command: str, cwd: Optional[str], env: Optional[Dict[str, str]]) -> ShellOutput`
-**Status:** Implemented
-
-*   **Modified in:** [Structured `execute` Action](../../slices/executor/18-structured-execute-action.md)
-*   **Description:** This method accepts a command string and optional `cwd` and `env` parameters. It executes the command within the specified context and waits for its completion, returning a structured `ShellOutput` object.
-*   **Preconditions:**
-    *   `command` must be a non-empty string representing a valid shell command.
-    *   If provided, `cwd` must be a string representing a *relative* directory path. The adapter is responsible for validating this path.
-    *   If provided, `env` must be a dictionary of string key-value pairs.
-*   **Raises:**
-    *   `ValueError`: If the `cwd` path is absolute or attempts to traverse outside the project directory.
-*   **Postconditions:**
-    *   A valid `ShellOutput` object is always returned.
-    *   The method will block until the command has finished executing.
-    *   If the command cannot be found, the method captures the shell's error in the `stderr` field of the `ShellOutput` and provides a non-zero `return_code`.
+### `execute(command, cwd=None, env=None, timeout=None, background=False, max_lines=None) -> ShellOutput`
+- **Preconditions:** `command` is a non-empty string; `cwd`, when given, is a project-relative path.
+- **Postconditions:** Returns a `ShellOutput`; blocks until completion unless `background` is `True`, in which case it returns immediately after launching.
+- **Exceptions:** `ValueError` when `cwd` is absolute or escapes the project directory.

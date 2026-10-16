@@ -1,24 +1,42 @@
-**Status:** Implemented
+# Component Design: PlanValidator
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/services/plan_validator.py`](/src/teddy_executor/core/services/plan_validator.py)
 
-## 1. Purpose / Responsibility
-To implement the `IPlanValidator` inbound port. This service orchestrates the pre-flight validation of a plan by delegating to specialized, action-specific validator strategies. It ensures validation errors provide rich context, including code blocks for failed `FIND` patterns, to enable AI self-correction.
+## Purpose
+Implements the `IPlanValidator` inbound port. It performs pre-flight validation of a parsed `Plan` by dispatching every action to an injected, action-specific validator and accumulating a complete list of errors.
 
-## 2. Ports
--   **Implements (Inbound):** `IPlanValidator`
--   **Uses (Outbound):** `IFileSystemManager` (via its validator strategies), `IConfigService` (via `EditActionValidator`).
+## Consumers
+- [`ExecutionOrchestrator`](./execution_orchestrator.md): Validates an approved plan before execution begins.
+- [CLI Adapter](../../adapters/inbound/cli.md): Drives validation in the manual `execute` flow.
 
-## 3. Implementation Details
-This service is implemented using a **Standardized Strategy Pattern** with constructor-based dependency injection.
+## Dependencies
+- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Stored for the validator strategies that inspect paths.
+- [`IActionValidator`](/src/teddy_executor/core/services/validation_rules/helpers.py): The injected strategy protocol exposing `can_validate` and `validate`.
+- [`ValidationError`](/src/teddy_executor/core/services/validation_rules/helpers.py): The error DTO accumulated by `validate`.
 
-1.  **Validator Strategies:** A set of validator classes (e.g., `CreateActionValidator`, `EditActionValidator`) implement a common `IActionValidator` protocol. These classes are encapsulated in the `teddy_executor.core.services.validation_rules` module and receive their required dependencies (like `IFileSystemManager`) via their constructors.
-2.  **Strategy Dispatcher:** The `PlanValidator` service maintains a list of these injected validators. Its `validate` method iterates through the validators to find one that can handle the current action type.
-3.  **Orchestration & Accumulation:** The `validate` method iterates through the actions in the plan. For each action, it delegates to the appropriate validator strategy and accumulates a complete list of `ValidationError` objects.
-4.  **Rich Feedback:** When `FIND` blocks do not match, the validator uses a **Multi-Layered Heuristic** (Exact Anchors -> Incremental Fuzzy Cascade -> Sub-sampling) to identify the closest match. To maintain sub-second performance on large files, the similarity evaluation uses **Line-Based Matching** (passing lists of lines to `SequenceMatcher`) rather than character-based string matching, reducing complexity from O(N*M) to O(N).
-    *   **Resilience:** The validator reports the `Similarity Score` of the best candidate and compares it against the `Similarity Threshold`. It applies a **Line Ending Indifference Bonus**, upgrading any match to `1.0` if the only discrepancy is a trailing `\n` or `\r\n`. This ensures resilience to Markdown parser stripping while maintaining strict matching for the block's core content.
-    *   **Ambiguity Guard:** If multiple candidates share the exact same highest score, the validator rejects the action for ambiguity, even if the score meets the threshold.
-    *   **Actionable Reports:** Failure reports include a unified diff of the discrepancy, providing the precise feedback needed for AI self-correction.5.  **`EXECUTE` Action Safety:** Validation ensures that each `EXECUTE` action contains a non-empty command block. The protocol allows shell chaining and inline directives (like `cd` or `export`), shifting responsibility for command cleanliness to the agent's prompting.
+## Class Invariants
+- `injected_strategies`: The validator list arrives through the constructor; the service never instantiates strategies itself.
+- `accumulate_never_raise`: `validate` collects errors from every action and never raises; an empty list means success.
+- `side_effect_free`: Validation reads state but never mutates the filesystem.
 
-This approach adheres to the Open/Closed Principle, allowing new validation rules to be added by creating new strategy classes without modifying the orchestrator.
+## Inbound Ports
+- **`IPlanValidator`**: Exposes the single `validate(plan, context_paths=None)` operation.
 
-## 4. Data Contracts / Methods
-This service implements the `validate` method as defined by the `IPlanValidator` port.
+## Outbound Ports
+- **`IFileSystemManager`**: Consumed indirectly through the injected validator strategies.
+
+## Data Contracts
+- **`Plan`** (`teddy_executor.core.domain.models.plan`): The validated object.
+- **`IActionValidator`** (`validation_rules.helpers`): Strategy protocol with `can_validate(action_type)` and `validate(action, context_paths)`.
+- **`ValidationError`** (`validation_rules.helpers`): Carries `message` and `file_path`.
+
+## Operations
+
+### `PlanValidator(file_system_manager, validators=None)`
+- **Preconditions:** `file_system_manager` implements `IFileSystemManager`.
+- **Postconditions:** Stores the manager and the validator list, defaulting to an empty list when `validators` is `None`.
+
+### `validate(plan, context_paths=None) -> List[ValidationError]`
+- **Preconditions:** `plan` is a parsed `Plan`.
+- **Postconditions:** Returns the accumulated `ValidationError` list. The method dispatches each action to the first injected validator whose `can_validate` matches; actions of type `research`, `prompt`, `invoke`, or `return` are accepted with no rules; a `message` action under `## Action Plan` yields a mutual-exclusivity error; any other unmatched action yields an unknown-action error.
+- **Exceptions:** None — failures are returned as errors, never raised.

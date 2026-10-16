@@ -1,68 +1,94 @@
-**Status:** Implemented
+# Component Design: ISessionManager
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/outbound/session_manager.py`](/src/teddy_executor/core/ports/outbound/session_manager.py)
 
-## 1. Purpose / Responsibility
+## Purpose
+Defines the outbound port for the stateful lifecycle of a session: creating sessions, reasoning about turn state, persisting metadata, resolving names, and transitioning between turns. It lets `SessionOrchestrator` manage the turn ledger without touching the file system directly.
 
-The `ISessionManager` port defines the interface for managing the stateful lifecycle of TeDDy sessions, including turn transitions, metadata persistence, and context resolution.
+## Consumers
+- [`SessionOrchestrator`](../../services/session_orchestrator.md): Drives the turn transition algorithm.
+- [`SessionPlanner`](../../services/session_planner.md): Reads session state during interactive planning.
+- [CLI Adapter](../../../adapters/inbound/cli.md): Starts, resumes, and renames sessions.
 
-## 2. Ports
+## Dependencies
+- **`SessionOptions`** (`teddy_executor.core.domain.models.session`): The creation DTO passed to `create_session`.
+- **`ExecutionReport`** (`teddy_executor.core.domain.models`): Carried into `transition_to_next_turn`.
 
-- **Type:** Outbound Port
-- **Used by:** `SessionOrchestrator`
-- **Implemented by:** `SessionService`
+## Class Invariants
+- `runtime_checkable`: The protocol supports `isinstance` checks.
+- `single_folder_lifetime`: A session keeps one folder for its lifetime; a turn may rename it once.
 
-## 3. Implementation Details / Logic
+## Inbound Ports
+None — this is an outbound (driven) port.
 
-This port abstracts the logic for creating turn directories, managing the `turn.context` file, and persisting metadata in `meta.yaml`.
+## Outbound Ports
+- **`ISessionManager`**: The driven contract consumed by core services and implemented by `SessionService`.
 
-## 4. Data Contracts / Methods
+## Data Contracts
+- **`SessionState`** (str Enum): `EMPTY`, `PENDING_PLAN`, `COMPLETE_TURN`.
 
-### `create_session(options: SessionOptions) -> str`
-- **Description:** Initializes a new session directory and bootstraps it for Turn 1 using the provided `SessionOptions` DTO.
-- **Arguments:**
-    - `options` (SessionOptions): DTO containing session name, agent name, initial request, additional context, and LLM overrides.
-- **Returns:** The path to the new session directory.
+## Operations
 
-### `get_latest_turn(session_name: str) -> str`
-- **Description:** Identifies the latest turn directory in the specified session.
+### `create_session(options) -> str`
+- **Preconditions:** `options` is a valid `SessionOptions`.
+- **Postconditions:** Creates the session directory, bootstraps Turn 1, and returns its path.
 
-### `get_session_state(session_name: str) -> tuple[SessionState, str]`
-- **Description:** Determines if the latest turn is EMPTY, PENDING_PLAN, or COMPLETE_TURN.
+### `get_latest_turn(session_name) -> str`
+- **Preconditions:** The session exists.
+- **Postconditions:** Returns the latest turn directory path.
 
-### `transition_to_next_turn`
-- **Description:** Creates the next turn directory and propagates context and cost metadata.
-- **Arguments:**
-    - `plan_path` (str)
-    - `execution_report` (Optional[ExecutionReport])
-    - `is_validation_failure` (bool)
-    - `turn_cost` (Optional[float]): The USD cost of the current turn to be recorded in meta.yaml.
-- **Returns:** The path to the next turn directory.
+### `get_session_state(session_name) -> tuple[SessionState, str]`
+- **Preconditions:** The session exists.
+- **Postconditions:** Returns the state derived from the latest turn and its path.
 
-### `rename_session`
-- **Description:** Safely renames a session directory on the filesystem.
-- **Arguments:**
-    - `old_name` (str)
-    - `new_name` (str)
-- **Returns:** The new path to the session directory.
-- **Exceptions:** `ValueError` if the new name already exists.
+### `get_cumulative_cost(session_name) -> float`
+- **Preconditions:** The session exists.
+- **Postconditions:** Returns the cumulative cost recorded in the latest turn metadata.
 
-### `get_latest_session_name`
-- **Description:** Identifies and returns the name of the most recently modified session.
-- **Returns:** The session name as a string.
-- **Exceptions:** `ValueError` if no sessions are found.
+### `load_turn_meta(turn_dir) -> dict[str, Any]`
+- **Preconditions:** None.
+- **Postconditions:** Returns the parsed `meta.yaml`, or an empty dict when absent.
 
-### `resolve_session_from_path`
-- **Description:** Resolves a session name from a given path (session root, turn dir, or file).
-- **Arguments:**
-    - `path` (str)
-- **Returns:** The session name as a string.
-- **Exceptions:** `ValueError` if the path is not inside a session.
+### `save_turn_meta(turn_dir, meta) -> None`
+- **Preconditions:** `turn_dir` exists.
+- **Postconditions:** Persists `meta` to the turn's `meta.yaml`.
 
-### `resolve_session_from_slug`
-- **Description:** Resolves a session name from its timestamp-stripped slug (e.g. `add-user-auth` → `20260124_153000-add-user-auth`). Matching is EXACT and case-insensitive; when several sessions share a slug, the most recently modified one wins (LATEST-WINS).
-- **Arguments:**
-    - `slug` (str)
-- **Returns:** The session name as a string.
-- **Exceptions:** `ValueError` if no session matches the slug (or if no sessions exist).
+### `transition_to_next_turn(plan_path, execution_report=None, turn_cost=0.0, is_validation_failure=False, pruned_paths=None) -> str`
+- **Preconditions:** `plan_path` points to the current turn's plan.
+- **Postconditions:** Creates the next turn directory, propagates context and cost metadata, and returns its path.
 
-### `resolve_context_paths(plan_path: str) -> dict[str, list[str]]`
-- **Description:** Locates context files relative to the plan path and returns their contents.
+### `resolve_context_paths(plan_path) -> dict[str, list[str]]`
+- **Preconditions:** `plan_path` exists.
+- **Postconditions:** Returns context paths and their contents resolved relative to the plan.
+
+### `rename_session(old_name, new_name) -> str`
+- **Preconditions:** `old_name` exists.
+- **Postconditions:** Renames the session directory and returns the new path.
+- **Exceptions:** `ValueError` when `new_name` already exists.
+
+### `get_latest_session_name() -> str`
+- **Preconditions:** None.
+- **Postconditions:** Returns the most recently modified session name.
+- **Exceptions:** `ValueError` when no sessions exist.
+
+### `resolve_session_from_path(path) -> str`
+- **Preconditions:** `path` is within a session.
+- **Postconditions:** Returns the session name for the given session root, turn directory, or file.
+- **Exceptions:** `ValueError` when `path` is not inside a session.
+
+### `resolve_session_from_slug(slug) -> str`
+- **Preconditions:** At least one session exists.
+- **Postconditions:** Returns the session matching the timestamp-stripped slug (exact, case-insensitive; latest wins).
+- **Exceptions:** `ValueError` when no session matches the slug.
+
+### `to_root_relative(turn_dir, filename) -> str`
+- **Preconditions:** None.
+- **Postconditions:** Returns the root-relative path for a file in a turn directory.
+
+### `preserve_turn_in_session_context(turn_dir) -> None`
+- **Preconditions:** `turn_dir` exists.
+- **Postconditions:** Admits the turn's plan and report to `session.context` when the turn qualifies for preservation.
+
+### `set_session_agent(session_name, agent_name) -> None`
+- **Preconditions:** The session exists.
+- **Postconditions:** Updates the session's agent in metadata and replaces its prompt file with the new agent's prompt.

@@ -1,31 +1,30 @@
-# Outbound Port: IExecutionReportAssembler
+# Component Design: IExecutionReportAssembler
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/outbound/execution_report_assembler.py`](/src/teddy_executor/core/ports/outbound/execution_report_assembler.py)
 
-The `IExecutionReportAssembler` defines the contract for constructing a final `ExecutionReport` from the various pieces of data collected during a plan execution.
+## Purpose
+Defines the outbound port for constructing a final `ExecutionReport` and determining the overall run status from the data collected during a plan execution. It removes report-assembly logic from the orchestrator.
 
-## 1. Design Principles
+## Consumers
+- [`ExecutionOrchestrator`](../../services/execution_orchestrator.md): Assembles the report at the end of every run.
 
-- **Separation of Concerns:** Decouples the logic of "how to build a report" (e.g., determining status, timestamps) from the orchestrator.
-- **DTO Driven:** Uses the `ReportAssemblyData` DTO to maintain a clean, low-arity signature and comply with `PLR0913`.
-- **Immutability:** Produces an immutable `ExecutionReport` domain model.
+## Dependencies
+- **`ExecutionReport`** and **`ReportAssemblyData`** (`teddy_executor.core.domain.models`): The output model and the input DTO.
 
-## 2. Port Interface
+## Class Invariants
+- `abstract_base_class`: The port is an `ABC`; implementations override `assemble`.
 
-```python
-from abc import ABC, abstractmethod
-from teddy_executor.core.domain.models import ExecutionReport, ReportAssemblyData
+## Inbound Ports
+None — this is an outbound (driven) port.
 
-class IExecutionReportAssembler(ABC):
-    @abstractmethod
-    def assemble(self, data: ReportAssemblyData) -> ExecutionReport:
-        """
-        Calculates the final run status and constructs a complete ExecutionReport.
-        """
-        pass
-```
+## Outbound Ports
+- **`IExecutionReportAssembler`**: The driven contract consumed by the orchestrator and implemented by the `ExecutionReportAssembler` service.
 
-## 3. Implementation Details
+## Data Contracts
+- **`ReportAssemblyData`** (`teddy_executor.core.domain.models.report_assembly_data`): Input DTO carrying the plan, action logs, timing, and validation outcome.
 
-The implementation is responsible for:
-1. **Status Determination:** Determining the overall `RunStatus` (SUCCESS, FAILURE, SKIPPED) based on the hierarchy of `ActionLog` outcomes.
-2. **Timing:** Calculating execution duration using the `start_time` provided in the DTO and the current system time.
-3. **Data Mapping:** Aggregating data from the `Plan` (title, rationale, metadata) and `ActionLog`s into the final `ExecutionReport` structure.
+## Operations
+
+### `assemble(data) -> ExecutionReport`
+- **Preconditions:** `data` is a valid `ReportAssemblyData`.
+- **Postconditions:** Returns a fully populated `ExecutionReport` with a computed `RunStatus`.

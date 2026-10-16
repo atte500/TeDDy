@@ -1,41 +1,35 @@
-**Status:** Refactoring
+# Component Design: ProjectContext
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/domain/models/project_context.py`](/src/teddy_executor/core/domain/models/project_context.py)
 
-## 1. Purpose / Responsibility
-`ProjectContext` is a strictly-typed, immutable data transfer object (DTO) that represents the complete, aggregated project context gathered by the `ContextService`. It serves as the definitive data structure passed from the core to any adapter responsible for presenting context to the user or an AI agent.
+## Purpose
+Represents the complete, aggregated project context gathered by the `ContextService`. It is the return type of the `IGetContextUseCase` inbound port and the data structure every context-presenting adapter consumes.
 
-## 2. Ports
-This component is a passive Data Transfer Object and does not implement or use any ports directly. It is the return type for the `IGetContextUseCase` inbound port.
+## Consumers
+- [`IGetContextUseCase`](../ports/inbound/get_context_use_case.md): Declares `ProjectContext` as its return type.
+- [`IRunPlanUseCase`](../ports/inbound/run_plan_use_case.md): Carries the context into plan execution.
+- [`IPlanReviewer`](../ports/inbound/plan_reviewer.md): Displays context metadata during review.
+- [`ContextService`](../services/context_service.md): Builds the `ProjectContext` instance.
+- [`PlanningService`](../services/planning_service.md): Consumes the context to assemble the LLM prompt.
+- [`SessionPruningService`](../services/session_pruning_service.md): Reads `ContextItem` metadata to prune context.
+- [TextualPlanReviewer](../../adapters/inbound/textual_plan_reviewer.md): Renders context items in the TUI.
 
-## 3. Implementation Details / Logic
-The `ProjectContext` and `ContextItem` models are implemented as Python `@dataclass`es. While `ProjectContext` is immutable (`frozen=True`), `ContextItem` is **mutable** (not frozen) to allow the TUI to manage the `selected` state during the review phase.
+## Dependencies
+None — this is a passive data structure.
 
-## 4. Data Contracts / Methods
+## Class Invariants
+- `mutable_dataclasses`: `ProjectContext` and `ContextItem` are standard (non-frozen) dataclasses; `ContextItem.selected` is mutated by the reviewer to reflect per-turn selection.
+- `field_defaults`: `selected` defaults to `True`; `agent_name` defaults to `"Unknown"`; the integer token counters default to `0`.
 
-### `ContextItem` Dataclass Attributes
-- **`path` (`str`):** The relative file path.
-- **`token_count` (`int`):** The estimated token size of the file.
-- **`git_status` (`str`):** The 2-character git status code (e.g., `M`, `U`, `A`, `D`).
-- **`scope` (`str`):** The scope of the file (`Session`, `Turn`, or `System`).
-- **`selected` (`bool`):** User-controlled selection state for the NEXT turn. Defaults to `True`.
-- **`auto_prune_reason` (`Optional[str]`):** Human-readable reason for pre-deselection (e.g., "Pruned to fit context budget").
+## Inbound Ports
+None — this is a passive data structure.
 
-### `ProjectContext` Dataclass Attributes (Frozen)
--   **`header` (`str`):** A pre-formatted string containing high-level system information (CWD, OS, etc.).
--   **`content` (`str`):** A pre-formatted string containing the repository file tree and the contents of all requested files.
--   **`items` (`List[ContextItem]`):** A structured list of all context files and their metadata for UI presentation.
--   **`agent_name` (`str`):** The name of the active agent persona (e.g., "Developer").
--   **`system_prompt_tokens` (`int`):** The estimated token size of the agent's system prompt.
--   **`content_tokens` (`int`):** The estimated token size of the full `content` string, including all overhead (headers, formatting, file tree, git status). Defaults to 0.
--   **`total_window` (`int`):** The total context window (input limit) for the model in use.
+## Outbound Ports
+None — this is a passive data structure.
 
-### Preconditions
-- All attributes (`header`, `content`) must be non-empty strings.
+## Data Contracts
+- **`ContextItem`** (dataclass): `path: str`, `token_count: int`, `git_status: str`, `scope: str`, `selected: bool = True`, `auto_prune_reason: Optional[str] = None`.
+- **`ProjectContext`** (dataclass): `header: str`, `content: str`, `scoped_paths: Dict[str, List[str]] = {}`, `git_status: Optional[str] = None`, `items: List[ContextItem] = []`, `agent_name: str = "Unknown"`, `system_prompt_tokens: int = 0`, `content_tokens: int = 0`, `total_window: int = 0`.
 
-### Postconditions
-- An instance of `ProjectContext` is successfully created with the provided data.
-
-### Invariants
-- Once instantiated, the `ProjectContext` object is immutable. Its attributes cannot be changed.
-
-### Exception/Error States
-- Does not raise exceptions on its own. Type errors will be caught statically by `mypy`.
+## Operations
+None — this component holds data only.

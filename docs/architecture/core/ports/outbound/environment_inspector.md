@@ -1,23 +1,38 @@
-# Outbound Port: `IEnvironmentInspector`
+# Component Design: IEnvironmentInspector
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/outbound/environment_inspector.py`](/src/teddy_executor/core/ports/outbound/environment_inspector.py)
 
-**Status:** Implemented
+## Purpose
+Defines the outbound port for gathering information about the host environment, such as the operating system, Python version, shell, and Git status. It decouples context gathering from the concrete platform APIs.
 
-## 1. Responsibility
+## Consumers
+- [`ContextService`](../../services/context_service.md): Gathers environment details and Git status during context assembly.
 
-The `IEnvironmentInspector` port defines a technology-agnostic interface for gathering information about the user's operating environment, such as the operating system, Python version, and current working directory.
+## Dependencies
+None — this port declares no injected dependencies.
 
-## 2. Methods
+## Class Invariants
+- `protocol_contract`: The port is a `Protocol`; implementing adapters satisfy the structural contract without inheriting from it.
 
-### `get_environment_info`
-**Status:** Implemented
+## Inbound Ports
+None — this is an outbound (driven) port.
 
-*   **Description:** Gathers key information about the system environment.
-*   **Signature:** `get_environment_info() -> dict[str, str]`
-*   **Preconditions:** None.
-*   **Postconditions:**
-    *   Returns a dictionary where keys are property names (e.g., "os_name") and values are the corresponding system details.
-    *   Keys include: `os_name`, `os_version`, `python_version`, `cwd`, `shell`, `current_date` (YYYY-MM-DD), and `current_time` (HH:MM:SS).
+## Outbound Ports
+- **`IEnvironmentInspector`**: The driven contract consumed by core services and implemented by the `SystemEnvironmentInspector` adapter.
 
-## 3. Related Spikes
+## Data Contracts
+- **`get_environment_info` mapping:** `os_name`, `os_version`, `python_version`, `cwd`, `shell`, `current_date` (YYYY-MM-DD), `current_time` (HH:MM:SS).
 
-*   N/A
+## Operations
+
+### `get_environment_info() -> dict[str, str]`
+- **Preconditions:** None.
+- **Postconditions:** Returns a mapping of environment property names to their string values.
+
+### `get_git_status() -> Optional[str]`
+- **Preconditions:** None.
+- **Postconditions:** Returns the short-format `git status -s` output, or `None` when the directory is not a Git repository.
+
+### `get_full_git_status() -> Optional[str]`
+- **Preconditions:** None.
+- **Postconditions:** Returns the full `git status` output including branch information, or `None` when the directory is not a Git repository.

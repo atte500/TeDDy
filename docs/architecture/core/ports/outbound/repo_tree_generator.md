@@ -1,23 +1,30 @@
-# Outbound Port: `IRepoTreeGenerator`
+# Component Design: IRepoTreeGenerator
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/outbound/repo_tree_generator.py`](/src/teddy_executor/core/ports/outbound/repo_tree_generator.py)
 
-**Status:** Implemented
+## Purpose
+Defines the outbound port for producing a textual file tree of the repository. It must honour `.gitignore` and `.teddyignore` rules so the context payload omits irrelevant paths.
 
-## 1. Responsibility
+## Consumers
+- [`ContextService`](../../services/context_service.md): Generates the project-structure section of the context payload.
 
-The `IRepoTreeGenerator` port defines a technology-agnostic interface for generating a string representation of a repository's file and directory tree. A key responsibility is that the generated tree must respect the ignore patterns found in a `.gitignore` file.
+## Dependencies
+None — this port declares no injected dependencies.
 
-## 2. Methods
+## Class Invariants
+- `protocol_contract`: The port is a `Protocol`; implementing adapters satisfy the structural contract.
 
-### `generate_tree`
-**Status:** Implemented
+## Inbound Ports
+None — this is an outbound (driven) port.
 
-*   **Description:** Generates a multi-line string representing the file tree of the project.
-*   **Signature:** `generate_tree() -> str`
-*   **Preconditions:** None.
-*   **Postconditions:**
-    *   Returns a string formatted as a hierarchical tree.
-    *   The returned tree must not include files or directories that match patterns in the project's `.gitignore` file.
+## Outbound Ports
+- **`IRepoTreeGenerator`**: The driven contract consumed by `ContextService` and implemented by `LocalRepoTreeGenerator`.
 
-## 3. Related Spikes
+## Data Contracts
+- **`generate_tree` return:** A multi-line `str` rendering the file tree.
 
-*   N/A - However, the implementation is based on the findings from the RCA documented in [`docs/architecture/rca/unreliable-third-party-library-gitwalk.md`](../../../rca/unreliable-third-party-library-gitwalk.md).
+## Operations
+
+### `generate_tree() -> str`
+- **Preconditions:** None.
+- **Postconditions:** Returns a multi-line string of the file tree, excluding paths matched by ignore rules.

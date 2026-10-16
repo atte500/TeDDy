@@ -1,31 +1,32 @@
-# Outbound Port: Web Scraper
+# Component Design: WebScraper
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/outbound/web_scraper.py`](/src/teddy_executor/core/ports/outbound/web_scraper.py)
 
-**Status:** Implemented
+## Purpose
+Defines the outbound port for fetching and converting remote web content to Markdown. It abstracts the HTTP client and extraction library from the core.
 
-## 1. Purpose
+## Consumers
+- [`ActionFactory`](../../services/action_factory.md): Builds `WEB_READ` actions that call the port.
 
-This port defines the contract for fetching the content of a remote URL. It abstracts the underlying HTTP client and content parsing logic, allowing the core application to request web content without knowledge of the implementation details.
+## Dependencies
+None — this port declares no injected dependencies.
 
-## 2. Interface Definition
+## Class Invariants
+- `runtime_checkable`: The protocol supports `isinstance` checks.
+- `fail_loud_on_error`: Network, timeout, and non-2xx failures must raise a catchable exception, never return empty content silently.
 
-An adapter implementing this port **must** provide the following method:
+## Inbound Ports
+None — this is an outbound (driven) port.
 
-### `get_content(url: str, **_kwargs) -> str`
-**Status:** Implemented
+## Outbound Ports
+- **`WebScraper`**: The driven contract consumed by the action layer and implemented by the `WebScraperAdapter`.
 
-*   **Description:**
-    Retrieves the primary textual content from the given URL. If the content is HTML, it should be converted to a clean, readable Markdown format.
+## Data Contracts
+- **`truncate` flag:** when `True` (default) the adapter applies the `read.max_lines` cap; context assembly passes `False` for verbatim content.
 
-*   **Parameters:**
-    *   `url` (str): The URL to fetch content from.
-    *   `**_kwargs`: Optional extraction hints (e.g., `include_comments=True`).
+## Operations
 
-*   **Preconditions:**
-    *   `url` must be a well-formed, absolute URL string (e.g., "https://example.com").
-
-*   **Postconditions:**
-    *   On success, returns a string containing the textual content of the page.
-    *   On failure (e.g., network error, HTTP status code >= 400), it **must** raise an exception (e.g., `WebContentError`) that the application service can catch and handle.
-
-*   **Error Handling:**
-    The implementing adapter is responsible for handling various failure modes, such as connection timeouts, DNS resolution errors, and non-2xx HTTP status codes. All such failures should be translated into a consistent, catchable exception for the service layer.
+### `get_content(url, truncate=True, **_kwargs) -> str`
+- **Preconditions:** `url` is a well-formed absolute URL.
+- **Postconditions:** Returns the page content as Markdown text.
+- **Exceptions:** Raises a web-content error for network failures and non-2xx responses.

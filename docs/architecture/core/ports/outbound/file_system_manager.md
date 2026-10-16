@@ -1,146 +1,118 @@
-# Outbound Port: `FileSystemManager`
+# Component Design: IFileSystemManager
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/outbound/file_system_manager.py`](/src/teddy_executor/core/ports/outbound/file_system_manager.py)
 
-**Status:** Implemented
+## Purpose
+Defines the outbound port for every file system operation the core needs: create, read, edit, move, list, and inspect paths. It isolates the core from `pathlib` and the operating system, so file behavior can be faked in tests.
 
-## 1. Responsibility
+## Consumers
+- [`ContextService`](../../services/context_service.md): Reads context files and lists the repository tree.
+- [`InitService`](../../services/init_service.md): Writes config, prompt, and template files.
+- [`PlanValidator`](../../services/plan_validator.md): Checks path existence during pre-flight validation.
+- [`PromptManager`](../../services/prompt_manager.md): Reads and writes session prompt files.
+- [`SessionService`](../../services/session_service.md): Creates turn directories and persists metadata.
+- [`SessionOrchestrator`](../../services/session_orchestrator.md): Manages turn directories during transitions.
+- [`SessionPruningService`](../../services/session_pruning_service.md): Rewrites context manifests.
+- [`ActionPorts`](../../domain/action_ports.md): Carries the port into the action layer.
+- [TextualPlanReviewer](../../../adapters/inbound/textual_plan_reviewer.md): Opens files during review.
+- [CLI Adapter](../../../adapters/inbound/cli.md): Resolves context paths for commands.
 
-The `FileSystemManager` port defines a technology-agnostic interface for interacting with a file system. It provides methods for common file operations like creating, reading, and updating files, abstracting the details away from the application's core logic.
+## Dependencies
+None — this port declares no injected dependencies.
 
-## 2. Methods
+## Class Invariants
+- `protocol_contract`: The port is a `Protocol`; implementing adapters satisfy the structural contract.
+- `utf8_encoding`: All text reads and writes use UTF-8.
+- `atomic_create_directory`: `create_directory_exclusive` performs one atomic OS operation, so exactly one concurrent caller wins.
 
-### `create_file`
-**Status:** Implemented
+## Inbound Ports
+None — this is an outbound (driven) port.
 
-*   **Description:** Creates a new file at a specified path with the given content. The operation must be atomic. The parent directory is assumed to exist.
-*   **Signature:** `create_file(path: str, content: str) -> None`
-*   **Preconditions:**
-    *   `path` must be a valid, non-empty string representing a file path.
-    *   No file must exist at the specified `path`.
-*   **Postconditions:**
-    *   On success, a new file is created at `path` containing the exact `content`.
-    *   If a file already exists at `path`, a `FileAlreadyExistsError` must be raised.
+## Outbound Ports
+- **`IFileSystemManager`**: The driven contract consumed by core services and implemented by the `LocalFileSystemAdapter`.
 
----
+## Data Contracts
+- **`edits` parameter** (`edit_file`): a list of `{"find": str, "replace": str}` blocks.
+- **`edit_file` return:** a list of per-edit similarity scores.
+- **`read_files_in_vault` return:** a mapping of path to content, with `None` for missing files.
 
-### `read_file`
-**Status:** Implemented
+## Operations
 
-*   **Description:** Reads the entire content of a file at a specified path.
-*   **Signature:** `read_file(path: str) -> str`
-*   **Preconditions:**
-    *   `path` must be a valid, non-empty string representing a file path.
-    *   A file must exist at the specified `path`.
-*   **Postconditions:**
-    *   On success, returns the full string content of the file.
-    *   If no file exists at `path`, a `FileNotFoundError` (or a custom domain equivalent) must be raised.
+### `path_exists(path) -> bool`
+- **Preconditions:** None.
+- **Postconditions:** Returns `True` when a file or directory exists at `path`.
 
----
+### `is_dir(path) -> bool`
+- **Preconditions:** None.
+- **Postconditions:** Returns `True` when `path` exists and is a directory.
 
-### `write_file`
-**Status:** Implemented
+### `list_directory(path) -> list[str]`
+- **Preconditions:** `path` exists and is a directory.
+- **Postconditions:** Returns the names of files and directories directly under `path`.
 
-*   **Description:** Writes content to a file at a specified path. If the file exists, it is overwritten. If it does not exist, it is created. This is an "upsert" operation.
-*   **Signature:** `write_file(path: str, content: str) -> None`
-*   **Preconditions:**
-    *   `path` must be a valid, non-empty string representing a file path.
-*   **Postconditions:**
-    *   A file exists at `path` with the specified `content`.
+### `list_directory_recursive(path) -> list[str]`
+- **Preconditions:** `path` exists and is a directory.
+- **Postconditions:** Returns root-relative file paths, respecting ignore rules.
 
----
+### `create_directory(path) -> None`
+- **Preconditions:** None.
+- **Postconditions:** Creates `path` and any missing parents; idempotent.
 
-### `edit_file`
-**Status:** Implemented
+### `create_directory_exclusive(path) -> bool`
+- **Preconditions:** None.
+- **Postconditions:** Atomically creates `path`; returns `True` when this call created it and `False` when it already existed.
+- **Exceptions:** Re-raises any error other than `FileExistsError` (Failure Transparency).
 
-*   **Description:** Modifies an existing file by applying a list of find-and-replace blocks.
-*   **Signature:** `edit_file(path: str, edits: list[dict[str, str]], similarity_threshold: float = 0.8) -> None`
-*   **Preconditions:**
-    *   `path` must be a valid, non-empty string representing a file path.
-    *   A file must exist at the specified `path`.
-    *   `similarity_threshold` must be a float between 0.0 and 1.0.
-*   **Postconditions:**
-    *   On success, the file at `path` is updated with the `replace` string substituted for the best-matching occurrence of each `find` string.
-    *   If no file exists at `path`, a `FileNotFoundError` must be raised.
-    *   If no match for a `find` string meets the `similarity_threshold`, a `SearchTextNotFoundError` must be raised.
-    *   If multiple matches for a `find` string share the same highest similarity score (ambiguity), a `MultipleMatchesFoundError` must be raised.
----
+### `write_file(path, content) -> None`
+- **Preconditions:** None.
+- **Postconditions:** Writes `content` to `path`, creating or overwriting the file.
 
-### `path_exists`
-**Status:** Implemented
+### `create_file(path, content, overwrite=False) -> None`
+- **Preconditions:** None.
+- **Postconditions:** Creates `path` with `content`; overwrites when `overwrite` is `True`.
+- **Exceptions:** `FileExistsError` when the file exists and `overwrite` is `False`.
 
-*   **Description:** Checks for the existence of a file or directory at the given path.
-*   **Signature:** `path_exists(path: str) -> bool`
-*   **Postconditions:**
-    *   Returns `True` if a file or directory exists at `path`, otherwise `False`.
+### `read_file(path) -> str`
+- **Preconditions:** `path` exists.
+- **Postconditions:** Returns the file content, subject to the `read.max_lines` cap.
+- **Exceptions:** `FileNotFoundError` when no file exists at `path`.
 
----
+### `read_raw_file(path) -> str`
+- **Preconditions:** `path` exists.
+- **Postconditions:** Returns the full, uncapped file content.
+- **Exceptions:** `FileNotFoundError` when no file exists at `path`.
 
-### `is_dir`
-**Status:** Implemented
+### `remove_file(path) -> None`
+- **Preconditions:** `path` exists.
+- **Postconditions:** Deletes the file.
+- **Exceptions:** `FileNotFoundError` when no file exists at `path`.
 
-*   **Description:** Checks if the specified path is a directory.
-*   **Signature:** `is_dir(path: str) -> bool`
-*   **Postconditions:**
-    *   Returns `True` if the path exists and is a directory.
+### `edit_file(path, edits, similarity_threshold=0.95, match_all=False) -> list[float]`
+- **Preconditions:** `path` exists; `similarity_threshold` is between 0.0 and 1.0.
+- **Postconditions:** Applies each FIND/REPLACE block and returns the per-edit similarity scores.
+- **Exceptions:** `FileNotFoundError` when `path` is missing; `SearchTextNotFoundError` when no match meets the threshold; `MultipleMatchesFoundError` on an ambiguous tie.
 
----
+### `get_context_paths() -> list[str]`
+- **Preconditions:** None.
+- **Postconditions:** Returns a deduplicated list of paths found in `.teddy/*.context` files.
 
-### `list_directory_recursive`
-**Status:** Implemented
+### `resolve_paths_from_files(file_paths) -> list[str]`
+- **Preconditions:** Each entry in `file_paths` exists.
+- **Postconditions:** Returns a sorted, unique list of non-commented paths found in the given context files.
 
-*   **Description:** Lists all files within a directory recursively, respecting ignore rules.
-*   **Signature:** `list_directory_recursive(path: str) -> list[str]`
-*   **Preconditions:**
-    *   `path` must exist and be a directory.
-*   **Postconditions:**
-    *   Returns a list of root-relative file paths.
+### `read_files_in_vault(paths) -> dict[str, str | None]`
+- **Preconditions:** None.
+- **Postconditions:** Returns full, uncapped content for found files and `None` for missing files.
 
----
+### `get_mtime(path) -> float`
+- **Preconditions:** `path` exists.
+- **Postconditions:** Returns the modification timestamp.
 
-### `create_directory`
-**Status:** Implemented
+### `move_directory(old_path, new_path) -> None`
+- **Preconditions:** `old_path` exists.
+- **Postconditions:** Moves or renames the directory to `new_path`.
 
-*   **Description:** Creates a new directory. This operation should be idempotent (i.e., not fail if the directory already exists).
-*   **Signature:** `create_directory(path: str) -> None`
-*   **Preconditions:**
-    *   `path` must be a valid path for a directory.
-*   **Postconditions:**
-    *   A directory exists at the specified `path`.
-
----
-
-### `create_directory_exclusive`
-**Status:** Implemented
-
-*   **Description:** Atomically creates a directory (including any necessary parent directories) and fails if it already exists. The existence check and creation are a single atomic OS operation (no check-then-act window), making this safe for concurrent processes racing to claim the same path on both POSIX and Windows — exactly one caller wins.
-*   **Signature:** `create_directory_exclusive(path: str) -> bool`
-*   **Preconditions:**
-    *   `path` must be a valid path for a directory.
-*   **Postconditions:**
-    *   Returns `True` if the directory was created by this call.
-    *   Returns `False` if the directory already existed (`FileExistsError` caught).
-    *   Any error other than `FileExistsError` (e.g., permission denied) is re-raised (Failure Transparency).
-*   **Intended Use:** Claiming session roots (`.teddy/sessions/{timestamp}-{name}`) so concurrent same-name session creation can never silently overwrite an existing session's audit ledger.
-
----
-
-### `get_mtime`
-**Status:** Implemented
-
-*   **Description:** Returns the modification time of a file or directory as a timestamp.
-*   **Signature:** `get_mtime(path: str) -> float`
-*   **Preconditions:**
-    *   `path` must exist.
-*   **Postconditions:**
-    *   Returns the `st_mtime` from the file system.
-
----
-
-### `resolve_paths_from_files`
-**Status:** Planned
-
-*   **Description:** Reads a list of `.context` files and returns a deduplicated list of the paths they contain.
-*   **Signature:** `resolve_paths_from_files(file_paths: Sequence[str]) -> List[str]`
-*   **Preconditions:**
-    -   Each path in `file_paths` must exist.
-*   **Postconditions:**
-    -   Returns a sorted, unique list of all non-commented file paths found within the specified context files.
+### `open_file_for_append(path) -> TextIO`
+- **Preconditions:** None.
+- **Postconditions:** Returns a writable handle opened in append mode, creating parent directories as needed.
+- **Exceptions:** `IOError` when the file cannot be opened.

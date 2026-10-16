@@ -1,31 +1,32 @@
-**Status:** Implemented
+# Component Design: IPlanValidator
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/inbound/plan_validator.py`](/src/teddy_executor/core/ports/inbound/plan_validator.py)
 
-## 1. Purpose / Responsibility
-Defines the contract for performing pre-flight validation of a `Plan` domain object before execution. In session-aware mode, it validates action targets against the current working context.
+## Purpose
+Defines the inbound port for pre-flight validation of a `Plan` before execution. In session-aware mode it validates action targets against the current working context. The port is implemented by the `PlanValidator` service.
 
-## 2. Ports
-This component is an **Inbound Port**. It defines a use case that is driven by primary adapters like the CLI.
+## Consumers
+- [`ExecutionOrchestrator`](../../services/execution_orchestrator.md): Runs validation before executing an approved plan.
+- [CLI Adapter](../../../adapters/inbound/cli.md): Drives validation in the manual `execute` flow.
 
-## 3. Implementation Details
-This port is expected to be implemented by a `PlanValidator` service. The implementation should process all actions within the `Plan` and aggregate any validation failures.
+## Dependencies
+- **`Plan`** (`teddy_executor.core.domain.models.plan`): The validated object.
 
-## 4. Data Contracts / Methods
+## Class Invariants
+- `side_effect_free`: Validation must not modify the filesystem.
 
-### `validate(self, plan: Plan, context_paths: Dict[str, Sequence[str]] = None) -> list[ValidationError]`
--   **Description:** The primary method to execute the validation process.
--   **Preconditions:**
-    -   `plan` must be a valid `Plan` domain object.
--   **Postconditions:**
-    -   Returns a list of `ValidationError` objects.
-    -   An empty list signifies that the plan has passed all validation checks.
--   **Context Handling:**
-    -   If `context_paths` is provided, it should contain keys `Session` and `Turn`.
-    -   **EDIT Rule:** File must be in `Session` OR `Turn` context.
-    -   **PRUNE Rule:** File must be in `Turn` context ONLY.
-    -   **READ Rule:** File must NOT be in `Session` OR `Turn` context.
--   **Invariants:** This method must not cause any side effects or modify the state of the filesystem.
+## Inbound Ports
+- **`IPlanValidator`**: Exposes the single `validate(...)` operation.
 
-### `ValidationError` (Data Transfer Object)
-A simple, immutable data structure representing a single validation failure.
--   **`action_index: int`**: The zero-based index of the action in the plan that failed.
--   **`message: str`**: A human-readable message explaining the validation error.
+## Outbound Ports
+None — the port declares no injected dependencies.
+
+## Data Contracts
+- **`ValidationError`** (DTO): `action_index: int` and `message: str`.
+
+## Operations
+
+### `validate(plan, context_paths=None) -> list[ValidationError]`
+- **Preconditions:** `plan` is a valid `Plan`.
+- **Postconditions:** Returns the accumulated `ValidationError` list; an empty list means the plan passed.
+- **Exceptions:** None — failures are returned, not raised.

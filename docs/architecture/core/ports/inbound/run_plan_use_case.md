@@ -1,76 +1,35 @@
-# Inbound Port: Run Plan Use Case
+# Component Design: IRunPlanUseCase
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/inbound/run_plan_use_case.py`](/src/teddy_executor/core/ports/inbound/run_plan_use_case.py)
 
-**Status:** Implemented
-**Language:** Python 3.9+ (using Abstract Base Classes)
+## Purpose
+Defines the primary inbound port that all driving adapters use to execute a plan and to resume a session. It orchestrates parsing, execution, and report generation. The port is implemented by the `ExecutionOrchestrator`.
 
-## 1. Purpose
+## Consumers
+- [CLI Adapter](../../../adapters/inbound/cli.md): Drives the `execute` and session `resume` flows.
 
-This port defines the primary entry point for executing a plan. It represents the interface that all driving adapters (e.g., CLI, web server) will use to interact with the application core. It is responsible for orchestrating the parsing of a plan, its execution, and the generation of a final report.
+## Dependencies
+- **`Plan`** and **`ExecutionReport`** (`teddy_executor.core.domain.models`): The executed object and its result.
+- **`ProjectContext`** (`teddy_executor.core.domain.models.project_context`): Optional execution context.
 
-## 2. Interface Definition
+## Class Invariants
+- `abstract_base_class`: The port is an `ABC`; implementations must override every abstract operation.
 
-```python
-from abc import ABC, abstractmethod
-from typing import Optional
-from teddy_executor.core.domain.models import ExecutionReport, Plan
+## Inbound Ports
+- **`IRunPlanUseCase`**: Exposes `execute(...)` and `resume(...)`.
 
-class IRunPlanUseCase(ABC):
-    """
-    Defines the contract for running a teddy execution plan.
-    """
+## Outbound Ports
+None — the port declares no injected dependencies.
 
-    @abstractmethod
-    def execute(
-        self,
-        plan: Optional[Plan] = None,
-        plan_content: Optional[str] = None,
-        plan_path: Optional[str] = None,
-        interactive: bool = True,
-        message: Optional[str] = None,
-    ) -> ExecutionReport:
-        """
-        Executes a plan and returns a report.
+## Data Contracts
+- **`Plan`**, **`ExecutionReport`**, and **`ProjectContext`**: Domain models exchanged by the execution flow.
 
-        Args:
-            plan: An already parsed Plan object.
-            plan_content: Raw Markdown content of a plan.
-            plan_path: Path to a plan file on disk.
-            interactive: A flag to enable/disable step-by-step user approval.
-            message: Optional user instruction to include in the report.
-        """
-        pass
+## Operations
 
-    @abstractmethod
-    def resume(
-        self,
-        session_name: str,
-        interactive: bool = True,
-        message: Optional[str] = None,
-    ) -> Optional[ExecutionReport]:
-        """
-        Intelligently resumes the session based on its state.
+### `execute(plan=None, plan_content=None, plan_path=None, interactive=True, message=None, project_context=None, pipeline=False) -> ExecutionReport`
+- **Preconditions:** Exactly one of `plan`, `plan_content`, or `plan_path` supplies the plan.
+- **Postconditions:** Returns the `ExecutionReport` for the run.
 
-        Args:
-            session_name: The name of the session to resume.
-            interactive: Whether to run in interactive mode.
-            message: Optional user instruction to bridge to the next turn.
-        """
-        pass
-```
-
-## 3. Method Contracts
-
-### `execute(...) -> ExecutionReport`
-**Status:** Implemented
-
-*   **Description:** Orchestrates the step-by-step execution of a plan and returns a structured `ExecutionReport` domain object.
-
-### `resume(...) -> ExecutionReport`
-**Status:** Implemented
-
-*   **Description:** Intelligently resumes the session based on its state, triggering planning or execution as needed.
-*   **Preconditions:**
-    *   `plan` must be a fully parsed and valid `Plan` domain object.
-*   **Postconditions:**
-    *   A valid `ExecutionReport` object is returned.
-    *   All actions within the plan will be evaluated and either executed, skipped, or failed, with corresponding logs in the report.
+### `resume(session_name, interactive=True, project_context=None) -> tuple[str, Optional[ExecutionReport]]`
+- **Preconditions:** `session_name` identifies an existing session.
+- **Postconditions:** Returns `(actual_session_name, report)`. The turn may execute under a renamed session, though a session keeps one folder for its lifetime.

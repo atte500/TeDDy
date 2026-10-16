@@ -1,31 +1,30 @@
-# Component: ShellOutput
+# Component Design: ShellOutput
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/domain/models/shell_output.py`](/src/teddy_executor/core/domain/models/shell_output.py)
 
-- **Type:** Domain Model (DTO)
-- **Context:** [Core Domain Model & Ubiquitous Language](/docs/architecture/core/domain_model.md)
+## Purpose
+A strictly-typed `TypedDict` that standardizes the result of any shell command executed through the `IShellExecutor` port. It replaced the legacy `CommandResult` dataclass to improve type safety.
 
-## 1. Description
+## Consumers
+- [`IShellExecutor`](../ports/outbound/shell_executor.md): Declares `ShellOutput` as its return type.
+- [ShellAdapter](../../adapters/outbound/shell_adapter.md): Populates the DTO from subprocess results.
+- [`ActionDispatcher`](../services/action_dispatcher.md): Reads `interrupted` to mark an action `INTERRUPTED`.
 
-`ShellOutput` is a strictly-typed `TypedDict` that serves as the standardized data transfer object (DTO) for the results of any shell command executed via the `IShellExecutor` port. It replaced the legacy `CommandResult` dataclass to improve type safety and align with modern Python practices.
+## Dependencies
+None — this is a passive data structure.
 
-## 2. Public Contract (DTO)
+## Class Invariants
+- `required_keys`: `stdout`, `stderr`, and `return_code` are required keys.
+- `optional_keys`: `failed_command` and `interrupted` are `NotRequired`.
 
-The `ShellOutput` is a dictionary with the following structure:
+## Inbound Ports
+None — this is a passive data structure.
 
-```python
-from typing import TypedDict, NotRequired
+## Outbound Ports
+None — this is a passive data structure.
 
-class ShellOutput(TypedDict):
-    """
-    A strictly-typed dictionary representing the result of a shell command execution.
-    """
-    stdout: str
-    stderr: str
-    return_code: int
-    failed_command: NotRequired[str]
-```
+## Data Contracts
+- **`ShellOutput`** (`TypedDict`): `stdout: str`, `stderr: str`, `return_code: int`, `failed_command: NotRequired[str]`, `interrupted: NotRequired[bool]`.
 
-### Fields
-- **`stdout` (str):** The standard output captured from the command.
-- **`stderr` (str):** The standard error captured from the command.
-- **`return_code` (int):** The integer exit code of the command. A value of `0` typically indicates success. In the event of an execution timeout, the system consistently returns a code of `124`.
-- **`failed_command` (NotRequired[str]):** In multi-line `EXECUTE` blocks, this field contains the specific command line that triggered a non-zero exit code.
+## Operations
+None — this component holds data only.

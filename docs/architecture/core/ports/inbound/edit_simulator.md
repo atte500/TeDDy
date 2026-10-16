@@ -1,21 +1,33 @@
-# Inbound Port: `IEditSimulator`
+# Component Design: IEditSimulator
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/core/ports/inbound/edit_simulator.py`](/src/teddy_executor/core/ports/inbound/edit_simulator.py)
 
-**Status:** Implemented
+## Purpose
+Defines the inbound port for applying a sequence of FIND/REPLACE edits to an in-memory string. It powers pre-execution validation and unified diff previews without modifying any file. The port is implemented by the `EditSimulator` service.
 
-## 1. Purpose
+## Consumers
+- [`PlanValidator`](../../services/plan_validator.md): Uses the port to prove each FIND/REPLACE pair matches during pre-flight validation.
+- [`TextualPlanReviewer`](../../../adapters/inbound/textual_plan_reviewer.md): Uses the port to render unified diff previews of pending edits.
 
-The `IEditSimulator` defines the port for a service that can simulate the result of applying one or more `EDIT` operations (FIND/REPLACE pairs) to a string in memory without modifying any files. This is used for both pre-execution validation and generating unified diff previews for the user.
+## Dependencies
+- **`DEFAULT_SIMILARITY_THRESHOLD`** (`teddy_executor.core.domain.models.plan`): Supplies the default fuzzy-match threshold.
 
-## 2. Port Contract
+## Class Invariants
+- `read_only`: Implementations must never mutate a file on disk; all work happens on in-memory strings.
 
-### `simulate_edits(content: str, edits: list[dict[str, str]], match_all: bool = False) -> str`
-Applies a sequence of edits to the provided content and returns the modified string.
+## Inbound Ports
+- **`IEditSimulator`**: Exposes the single `simulate_edits(...)` operation to consumers.
 
-- **Args:**
-    - `content`: The original source string.
-    - `edits`: A list of dictionaries, each containing `find` and `replace` keys.
-    - `match_all`: If True, replaces all occurrences of each `find` block.
-- **Returns:** The string after all edits have been applied in sequence.
-- **Raises:**
-    - `SearchTextNotFoundError`: If a `find` block is not found in the content.
-    - `MultipleMatchesFoundError`: If a `find` block is ambiguous.
+## Outbound Ports
+None — the port requires no injected dependencies.
+
+## Data Contracts
+- **`EditPair`** (`TypedDict`, `total=False`): `find: str`, `replace: str`, `match_all: bool`.
+- **Return tuple:** `tuple[str, list[float]]` — the transformed string and the per-edit similarity scores.
+
+## Operations
+
+### `simulate_edits(content, edits, threshold=DEFAULT_SIMILARITY_THRESHOLD, match_all=False) -> tuple[str, list[float]]`
+- **Preconditions:** `content` is a string and each `edits` entry carries a `find` block.
+- **Postconditions:** Returns the transformed string and the list of similarity scores, applying every pair in sequence.
+- **Exceptions:** `ValueError` when a `find` block is not found or matches ambiguously.
