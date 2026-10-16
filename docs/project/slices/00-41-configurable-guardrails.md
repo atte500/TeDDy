@@ -59,7 +59,7 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 - [x] **Wiring** - Add `--max-turns` and `--max-cost` to `start` and `resume`, thread them to the loop guard, and honor them in the limit checks through a skeleton precedence read.
 - [x] **Contract** - Extend `ISessionLoopGuard` with the additive `reset_baseline(turn_count, cumulative_cost)` operation.
 - [x] **Logic** - Implement the precedence chain (CLI flag > env var > config value > default), the `TEDDY_MAX_TURNS` and `TEDDY_MAX_SESSION_COST` overrides, the legacy `yolo_guardrails` fallback read, the 150-turn default, and the message-turn reset gated by `guardrails.message_reset`.
-- [ ] **Migration** - Rename `yolo_guardrails` to `guardrails` in the bundled config, the guard, the guard tests, and the `session_loop_guard.md` component doc. Correct the component doc's stale config-missing defaults.
+- [x] **Migration** - Rename `yolo_guardrails` to `guardrails` in the bundled config, the guard, the guard tests, and the `session_loop_guard.md` component doc. Correct the component doc's stale config-missing defaults.
 - [ ] **Refactor** - Extract the limit resolution into a single helper.
 - [ ] **Cleanup** - Remove the stale `--yolo`-only wording. Keep the legacy `yolo_guardrails` fallback read for existing user configs.
 
@@ -90,6 +90,18 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 - Logic proof: `tests/suites/unit/core/services/test_session_loop_guard_configuration.py` covers precedence, the environment overrides, the legacy fallback, the 150 default, the 5.0 default, the reset, and the disabled-reset case. `tests/suites/unit/adapters/inbound/test_session_loop_baseline_reset.py` covers the call site and its ordering before the limit check.
 - Collateral repair: `_is_communication_turn` iterates `report.action_logs`, but `Mock(spec=ExecutionReport)` omits that `default_factory` field from the class namespace. Four `test_session_replan_loop.py` report doubles gained `action_logs = []`.
 - Integration proof: `make test` reports `1833 passed, 5 skipped`.
+
+### Migration (delivered)
+
+- Renamed the shipped `config.yaml` block from `yolo_guardrails` to `guardrails` and raised its `max_turns` from `99` to `150`, so the shipped default matches the code default.
+- Renamed the config-key portion of both guard limit messages to `'guardrails.max_turns'` and `'guardrails.max_session_cost'`.
+- The load-bearing legacy `yolo_guardrails` fallback read in `_read_config` survived untouched, so existing user configs keep working.
+- Renamed the guard-test config keys, the reason-key docstring, and the quote-delimited reason assertion. The bare string `guardrails.max_turns` is a substring of the legacy `yolo_guardrails.max_turns`, so the assertion stays quote-delimited.
+- Renamed the session-replan test's mock reason strings so the double and its assertion stay consistent.
+- Renamed the `session_loop_guard.md` dependency line and config-keys line, and corrected the stale turn default to 150 while adding the `guardrails.message_reset` key.
+- Renamed the stale `yolo_guardrails.*` reference in `yaml_config_adapter.md`.
+- Migration proof: `tests/suites/integration/core/services/test_guardrails_namespace_migration.py` pins the shipped namespace and the guard message. The Red step failed with `2 failed`; the Green step passed.
+- Integration proof: `make test` reports `1835 passed, 5 skipped`.
 
 ### Harness constraint
 

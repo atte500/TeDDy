@@ -10,7 +10,7 @@ Implements the `ISessionLoopGuard` outbound port. It stops runaway non-interacti
 - [Composition Root](/src/teddy_executor/container.py): Registers `ProductionSessionLoopGuard` against `ISessionLoopGuard`.
 
 ## Dependencies
-- [`IConfigService`](../ports/outbound/config_service.md): Reads the `yolo_guardrails.*` limits and the config path.
+- [`IConfigService`](../ports/outbound/config_service.md): Reads the `guardrails.*` limits and the config path.
 
 ## Class Invariants
 - `injected_baseline`: The turn-count and cost baselines are injected at construction; every later call is measured as a delta from them.
@@ -25,7 +25,7 @@ None — this is a concrete implementation of an outbound port.
 
 ## Data Contracts
 - **`should_continue` return:** `(True, None)` to continue, or `(False, reason)` to halt with a human-readable limit message.
-- **Configuration keys:** `yolo_guardrails.enabled` (bool, default `True`), `yolo_guardrails.max_turns` (int, default `99`), `yolo_guardrails.max_session_cost` (float, default `5.0`).
+- **Configuration keys:** `guardrails.enabled` (bool, default `True`), `guardrails.max_turns` (int, default `150`), `guardrails.max_session_cost` (float, default `5.0`), `guardrails.message_reset` (bool, default `True`).
 
 ## Operations
 

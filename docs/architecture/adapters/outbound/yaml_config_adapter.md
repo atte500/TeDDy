@@ -8,7 +8,7 @@ Implements the `IConfigService` outbound port. It reads a layered configuration 
 ## Consumers
 - [`LiteLLMAdapter`](./litellm_adapter.md): Reads the `llm.*` settings and the API key.
 - [`ActionPorts`](../../core/domain/action_ports.md): Carries an optional `IConfigService` into the action layer.
-- [`SessionLoopGuard`](../../core/services/session_loop_guard.md): Reads the `yolo_guardrails.*` limits.
+- [`SessionLoopGuard`](../../core/services/session_loop_guard.md): Reads the `guardrails.*` limits (with a legacy `yolo_guardrails.*` fallback).
 - [`SessionPruningService`](../../core/services/session_pruning_service.md): Reads the `auto_pruning.*` settings.
 - [`SessionService`](../../core/services/session_service.md): Reads session and provider settings.
 - [CLI Adapter](../inbound/cli.md): Reads and persists settings during `init`, `start`, and `resume`.

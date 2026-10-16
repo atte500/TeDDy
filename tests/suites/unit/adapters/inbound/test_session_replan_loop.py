@@ -308,7 +308,7 @@ def test_guard_reason_split_with_leading_newline(capsys):
     mock_loop_guard.should_continue.return_value = (
         False,
         "YOLO turn limit reached: 2/1 turns in this run.\n"
-        "To change this limit, set 'yolo_guardrails.max_turns' in .teddy/config.yaml.",
+        "To change this limit, set 'guardrails.max_turns' in .teddy/config.yaml.",
     )
 
     fake_report = Mock(spec=ExecutionReport)
@@ -338,5 +338,5 @@ def test_guard_reason_split_with_leading_newline(capsys):
     assert captured.out == (
         "\n"
         "YOLO turn limit reached: 2/1 turns in this run.\n"
-        "To change this limit, set 'yolo_guardrails.max_turns' in .teddy/config.yaml.\n"
+        "To change this limit, set 'guardrails.max_turns' in .teddy/config.yaml.\n"
     ), f"Expected both sentences in stdout (split correctly), got: {captured.out!r}"

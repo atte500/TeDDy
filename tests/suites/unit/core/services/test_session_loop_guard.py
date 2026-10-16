@@ -51,7 +51,7 @@ def test_production_guard_stops_on_max_turns_non_interactive():
     # Arrange
     mock_config = create_autospec(IConfigService)
     mock_config.get_setting.side_effect = lambda key, default=None: (
-        5 if key == "yolo_guardrails.max_turns" else default
+        5 if key == "guardrails.max_turns" else default
     )
     mock_config.get_config_path.return_value = ".teddy/config.yaml"
 
@@ -85,7 +85,7 @@ def test_production_guard_stops_on_max_cost_non_interactive():
     # Arrange
     mock_config = create_autospec(IConfigService)
     mock_config.get_setting.side_effect = lambda key, default=None: (
-        1.50 if key == "yolo_guardrails.max_session_cost" else default
+        1.50 if key == "guardrails.max_session_cost" else default
     )
     mock_config.get_config_path.return_value = ".teddy/config.yaml"
 
@@ -118,12 +118,12 @@ def test_production_guard_stops_on_max_cost_non_interactive():
 def test_production_guard_reason_includes_config_key_and_path():
     """
     Verify that when a turn‑limit stop occurs the reason mentions
-    the config key yolo_guardrails.max_turns and includes the config file path.
+    the config key guardrails.max_turns and includes the config file path.
     """
     # Arrange
     mock_config = create_autospec(IConfigService)
     mock_config.get_setting.side_effect = lambda key, default=None: (
-        1 if key == "yolo_guardrails.max_turns" else default
+        1 if key == "guardrails.max_turns" else default
     )
     mock_config.get_config_path.return_value = ".teddy/config.yaml"
 
@@ -141,7 +141,7 @@ def test_production_guard_reason_includes_config_key_and_path():
 
     # Assert – currently fails because reason is "YOLO guardrail limit reached."
     assert should_continue is False
-    assert "yolo_guardrails.max_turns" in reason, (
+    assert "'guardrails.max_turns'" in reason, (
         f"Reason should mention the config key, got: {reason!r}"
     )
     # Use os.path.normpath for cross-platform path comparison (Windows uses \)
@@ -155,7 +155,7 @@ def test_production_guard_ignores_limits_in_interactive_mode():
     # Arrange
     mock_config = create_autospec(IConfigService)
     mock_config.get_setting.side_effect = lambda key, default=None: (
-        1 if key == "yolo_guardrails.max_turns" else default
+        1 if key == "guardrails.max_turns" else default
     )
 
     guard = ProductionSessionLoopGuard(
