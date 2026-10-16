@@ -69,7 +69,7 @@ And no unhandled thread exception escapes
 - [x] **Logic** - Complete the `ci-watch` override semantics in the shipped `Makefile`: use `BASE=<sha>` verbatim and keep the unknown-base fail-safe when the override carries no run. Add the bad-override acceptance scenario.
 - [x] **Logic** - Harden the update checker: guard `background_check` to swallow every error and move the cache-directory creation inside the guarded block in `write_update_cache`. Add the fail-silent unit coverage, and bound the background thread lifetime at every test boundary.
 - [x] **Migration** - Mirror the corrected `ci-watch` recipe and the override documentation into both template copies, byte-identical.
-- [ ] **Cleanup** - Remove the two resolved debt entries from the Milestone 5 roadmap section in `docs/project/PROJECT.md`.
+- [x] **Cleanup** - Remove the two resolved debt entries from the Milestone 5 roadmap section in `docs/project/PROJECT.md`, and reconcile the matching re-homed item in the Milestone 5 document.
 
 ## Implementation Notes
 
@@ -103,6 +103,12 @@ And no unhandled thread exception escapes
 - The Red step added `tests/suites/unit/test_makefile_template_mirror.py` with two guards and confirmed `1 failed, 1 passed`. The byte-identity guard passed because the two copies matched, and the recipe-containment guard failed because both copies omitted the four corrected markers (`BASE ?=`, the `BASE="$(BASE)"` seed, the walk-skip guard, and the pinned-no-run guard).
 - The guard extracts the shipped block from the real `Makefile`, so it tracks the source of truth instead of a hardcoded copy. It follows the existing content-guard precedent (`test_readme_guardrail_flags.py`, `test_prompt_resource_relocation.py`) and gives the mirror durable coverage.
 - The Green step made the two documentation edits and ran the splice. The mirror guard passed with `2 passed`, and the Integration gate reported `1851 passed, 5 skipped`, which is the prior baseline of 1849 plus the two new mirror-guard tests.
+
+### Cleanup (roadmap debt removal)
+- The deliverable removed the two resolved debt entries from the Milestone 5 requirements in `docs/project/PROJECT.md`: `Stabilize the Post-Commit Test Gate` and `ci-watch Explicit Base Override`. Both are fixed by the committed `ci-watch` override Logic and the update-checker fail-silent Logic.
+- It also reconciled the matching re-homed item 21 in `docs/project/milestones/05-quality-gate-debt-reconciliation.md`, which asked to guard `write_update_cache` against `FileExistsError` and `NotADirectoryError`. The fail-silent hardening now moves the `mkdir` inside the `OSError` guard, so the item was removed and the remaining items were renumbered. The recursion-flake item stays open as the current item 20, because it is a separate rare pyfakefs isolation issue.
+- The Turn 87 Consistency Check reported `(none)` for both removed `PROJECT.md` entry names, `(none)` for the update-checker milestone item, and `(none)` for any remaining tracked reference, so no stale reference survives.
+- The Cleanup deliverable only edits documentation, so the Integration gate stayed at `1851 passed, 5 skipped`, equal to the prior baseline.
 
 ## Verification
 - [ ] **Base override pins the baseline:**

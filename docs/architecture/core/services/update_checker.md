@@ -49,7 +49,7 @@ None — the module calls the standard library directly and declares no injected
 - **Postconditions:** Returns the cached mapping when it is present, well-formed, and within the TTL. Returns `None` when the file is missing, corrupt, malformed, or expired.
 
 ### `write_update_cache(cache_path, latest_version) -> None`
-- **Postconditions:** Atomically writes the cache file, creating the parent directory when needed.
+- **Postconditions:** Atomically writes the cache file, creating the parent directory when needed. The write is best-effort: a directory-creation or write `OSError` is logged at debug level and swallowed.
 
 ### `background_check(cache_path, index_url=PYPI_URL) -> None`
 - **Postconditions:** Fetches the latest version and writes it to cache. Intended to run in a daemon thread and swallows every error.
