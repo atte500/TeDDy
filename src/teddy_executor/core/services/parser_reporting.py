@@ -10,7 +10,7 @@ from teddy_executor.core.services.parser_infrastructure import (
 
 if TYPE_CHECKING:
     from mistletoe.block_token import Document
-from teddy_executor.core.utils.markdown import get_fence_for_content
+from teddy_executor.core.utils.markdown import embed_in_fence
 
 # Maximum length for AST node previews in error reports
 MAX_PREVIEW_LENGTH = 60
@@ -48,9 +48,10 @@ def _format_expected_structure() -> str:
         "[004] Heading (Level 2: Action Plan) —or— Heading (Level 2: Message)",
         "[005...] (If Action Plan) Heading (Level 3: Action Type) and (Action-specific AST nodes)",
     ]
-    content = "\n".join(lines) + "\n"
-    fence = get_fence_for_content(content)
-    return f"### Expected Response Structure (MRP) \n{fence}text\n{content}{fence}\n"
+    content = "\n".join(lines)
+    return (
+        f"### Expected Response Structure (MRP) \n{embed_in_fence(content, 'text')}\n"
+    )
 
 
 def format_node_name(node: Any) -> str:
@@ -137,9 +138,9 @@ def format_hybrid_ast_view(
     error_ids = {id(e.offending_node) for e in errors if e.offending_node}
     error_map = {id(e.offending_node): e.message for e in errors if e.offending_node}
     ast_text = _render_ast_view(doc, error_ids, error_map)
+    body = ast_text.rstrip("\n")
 
-    fence = get_fence_for_content(ast_text)
-    return f"### Plan AST with Highlighted Failures\n{fence}text\n{ast_text}{fence}\n"
+    return f"### Plan AST with Highlighted Failures\n{embed_in_fence(body, 'text')}\n"
 
 
 def get_action_type_from_node(plan: Plan, offending_node: Any) -> str:
@@ -270,8 +271,8 @@ def format_structural_mismatch_msg(
 
     cutoff = _get_failure_cutoff_idx(children, mismatch_idx, offending_ids)
     ast_text = _render_ast_view(doc, error_ids_set, error_map, cutoff)
-    fence = get_fence_for_content(ast_text)
-    msg += f"{fence}text\n{ast_text}{fence}\n"
+    body = ast_text.rstrip("\n")
+    msg += f"{embed_in_fence(body, 'text')}\n"
 
     msg += "\n**Hint:** Parsing often fails due to improper Code Block Formatting.\n"
     return msg

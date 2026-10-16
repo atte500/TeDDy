@@ -44,7 +44,7 @@ Then the block is bounded and no fence amplification occurs
 
 - [x] **Migration** — Route `SessionLifecycleManager._append_user_request` through `embed_in_fence`. Add a unit test to `tests/suites/unit/core/services/test_session_lifecycle_user_request_spacing.py` proving the normal output is byte-identical and a degenerate message is bounded.
 - [x] **Migration** — Route `validation_rules/edit.py` (the FIND-block and diff embeds) through `embed_in_fence`. Add unit tests to `tests/suites/unit/core/services/test_validator_edit.py` proving normal diagnostics are unchanged and a degenerate FIND block is bounded.
-- [ ] **Migration** — Route `parser_reporting.py` (the expected-structure, AST-view, and structural-mismatch embeds) through `embed_in_fence`. Add unit tests to `tests/suites/unit/core/services/test_parser_reporting.py` proving normal diagnostics are unchanged and a degenerate AST is bounded.
+- [x] **Migration** — Route `parser_reporting.py` (the expected-structure, AST-view, and structural-mismatch embeds) through `embed_in_fence`. Add unit tests to `tests/suites/unit/core/services/test_parser_reporting.py` proving normal diagnostics are unchanged and a degenerate AST is bounded.
 - [ ] **Migration** — Replace the `fence` Jinja filter in `MarkdownReportFormatter` with an `embed_in_fence`-backed `embed_fence` filter and update `execution_report.md.j2` to call it once per block. Add a test to `tests/suites/unit/core/services/test_report_message_fencing.py` proving a degenerate message action yields a bounded report block.
 - [ ] **Cleanup** — Update the component docs (`markdown_report_formatter.md`, `context_service.md`) to record the single seam. Run `git grep -n "get_fence_for_content" -- src` and confirm only `core/utils/markdown.py` matches.
 
@@ -72,6 +72,17 @@ Then the block is bounded and no fence amplification occurs
 - **Integration gate:** `make test` reported the full suite green (1797 passed, 5 skipped), confirming the migration is regression-free.
 - **Recovery note:** the first Green attempt failed the pre-execution validation gate because the EDIT matcher is whitespace-indifferent and matched both diagnostic branches; enlarging the FIND block to include the unique ambiguous-branch line resolved it atomically.
 - **Harness limitation:** `MarkdownPlanBuilder._render_content_blocks` uses a fixed five-backtick fence for EDIT content, so the degenerate test calls `_validate_single_edit` directly.
+
+### Deliverable 3 — As-Built (parser_reporting.py migration)
+- **Implementation:** routed all three `parser_reporting.py` embeds through the shared `embed_in_fence` seam. `_format_expected_structure` now builds `content = "\n".join(lines)` without a trailing newline and returns `embed_in_fence(content, 'text')`. `format_hybrid_ast_view` and `format_structural_mismatch_msg` each bind `body = ast_text.rstrip("\n")` and delegate to `embed_in_fence(body, 'text')`. The module import swapped from `get_fence_for_content` to `embed_in_fence`.
+- **Byte-preservation:** each site previously composed `f"{fence}text\n{content}{fence}\n"` with the content already ending in a newline, so `f"{embed_in_fence(body, 'text')}\n"` reproduces the exact pre-migration bytes.
+- **Test coverage:** added `TestParserReportingFenceBounding` to `tests/suites/unit/core/services/test_parser_reporting.py`, with two byte-identity tests pinning the exact output of `_format_expected_structure` and `format_hybrid_ast_view`, plus a boundedness test driving a degenerate 10,000-backtick heading.
+- **Red preparation (turn 60):** the probe proved the AST view is inherently bounded (every `maxrun` ≤ 61, because `_get_node_preview` caps previews at 60 characters), so the migration is byte-preserving and no failing Red test is possible.
+- **Red baseline and correction (turns 61-62):** the initial boundedness assertion expected a 3-backtick fence, but a 10,000-backtick heading legitimately caps its preview at 60 characters, so the wrapper fence is 61 backticks. The test now asserts the output is bounded (`len < 1000`, no 10,001-run) and the target file reported `7 passed`.
+- **Green step:** `uv run pytest tests/suites/unit/core/services/test_parser_reporting.py -q` reported `7 passed`.
+- **Integration gate:** `make test` reported the full suite green (1800 passed, 5 skipped), confirming the migration is regression-free.
+- **Recovery note:** the two AST sites shared the identical `fence = get_fence_for_content(ast_text)` text, so each FIND block carried its unique surrounding `_render_ast_view` call line.
+- **Python 3.11 compatibility:** a backslash is illegal inside an f-string expression, so each AST site binds `body = ast_text.rstrip("\n")` outside the f-string.
 
 ## Verification
 - [ ] **CLI:** Run `make test` and verify the full suite passes (green-to-green).
