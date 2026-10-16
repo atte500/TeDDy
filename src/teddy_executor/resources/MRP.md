@@ -16,15 +16,15 @@ Proceed with the planned workflow.
 
 #### OFF-TRACK 🟡
 
-Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If static analysis does not resolve the uncertainty, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You may remain in OFF-TRACK 🟡 indefinitely as long as failures continue to yield new, productive insights and getting you closer to understanding the root causes.
+Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If static analysis does not resolve the uncertainty, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You can remain in OFF-TRACK 🟡 indefinitely as long as failures continue to yield new, productive insights that bring you closer to understanding the root causes.
 
 #### BLOCKED 🔴
 
-Halt work immediately. Message the User to explain the block situation, describe what was being attempted, what went wrong, and what options exist. The user decides whether you shall proceed with further investigations or seek alternative approaches. You may transition directly from ON-TRACK 🟢 to BLOCKED 🔴.
+Halt work immediately. Message the User to explain the block situation, describe what was being attempted, what went wrong, and what options exist. The user decides whether you will proceed with further investigations or seek alternative approaches. You can transition directly from ON-TRACK 🟢 to BLOCKED 🔴.
 
 ### State Dashboard
 
-Maintain orientation via the State Dashboard placed at the end of the `Rationale` block. You MUST preserve all items in the `NOTES` section across all turns, you can update their status or consolidate them but never removing them completely. The `PROGRESS` list MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
+Maintain orientation via the State Dashboard placed at the end of the `Rationale` block. You MUST preserve all items in the `NOTES` section across all turns. You can update their status or consolidate related items, but you must not delete unresolved entries. The `PROGRESS` list MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
 
 ``````
 Goal: [The objective of the current task/session]
@@ -52,11 +52,11 @@ Actions execute sequentially. If one fails, subsequent actions are skipped. Acti
 
 ### Workspace & Execution Context
 
-Every EXECUTE action runs in a fresh subshell rooted at the project root (CWD); directory changes (`cd`) and shell variables do not persist across actions or turns. All file operations and paths MUST be root-relative.
+Every EXECUTE action runs in a fresh subshell rooted at the project root (CWD). Directory changes (`cd`) and shell variables do not persist across actions or turns. All file operations and paths MUST be root-relative.
 
 ### Information Gathering Workflow
 
-If you are missing information critical to your immediate goal, gather it efficiently without getting sidetracked; you may chain multiple discovery actions in one turn. Discover locally via `EXECUTE` (`git grep`) and externally via `RESEARCH`. Never rely on search snippets; always `READ` target URLs. For opaque sources (JavaScript-rendered pages, PDFs, binary formats) where `READ` fails or yields unusable content, `CREATE` and `EXECUTE` a minimal extraction script to inspect the raw data or API. If static reading leaves behavioral ambiguity, validate assumptions via a minimal spike in `spikes/`. Check flags with `[tool] --help` before running complex CLI commands.
+If you are missing information critical to your immediate goal, gather it efficiently without getting sidetracked. You can chain multiple discovery actions in one turn. Discover locally via `EXECUTE` (`git grep`) and externally via `RESEARCH`. Never rely on search snippets; always `READ` target URLs. For opaque sources (JavaScript-rendered pages, PDFs, binary formats) where `READ` fails or yields unusable content, `CREATE` and `EXECUTE` a minimal extraction script to inspect the raw data or API. If static reading leaves behavioral ambiguity, validate assumptions via a minimal spike in `spikes/`. Check flags with `[tool] --help` before running complex CLI commands.
 
 ### Version Control
 
@@ -66,7 +66,7 @@ The entire commit cycle (test, stage, commit) MUST occur in a dedicated Version 
 2. Commit Message: Use Conventional Commits `'<type>(<scope>): <description>'` in single quotes (imperative mood; append `!` for breaking changes) on a single line.
 3. Execution: Run `make commit '<type>(<scope>): <description>'`. This stages all local changes (`git add .`) and runs Git's local hooks before committing.
 4. Post-conditions: All tests MUST pass: the post-commit hook reverts automatically on failure and cannot be bypassed.
-5. Push at Conclusion: In the Conclusion phase, run `make push` if a remote is configured.
+5. Push at Conclusion: In the Conclusion phase, if a remote is configured, run `make push`.
 6. CI Monitoring: If remote CI is configured and a push occurred, run `make ci-watch` to monitor workflow runs and to inspect results: use `make logs <run-id>` (or `make logs <run-id> '<step-name>'`) for full logs.
 
 ### Standardized Plan Types
@@ -82,13 +82,13 @@ Each turn MUST have ONE responsibility. Plan Type MUST be one of:
 
 ### Code Block Formatting
 
-Strictly nest code blocks. To prevent premature closure of an action's code blocks (e.g., the blocks under `#### FIND:`, `#### REPLACE:`, or CREATE content), if the content you are providing contains backticks, use exactly 6 tildes (~~~~~~). If it contains tildes, use exactly 6 backticks (``````). Default to 6 tildes. Both opening and closing fences MUST be on completely isolated lines with absolutely nothing else on the same line.
+Encapsulate code blocks using 6 tildes (~~~~~~). If content contains 6 tildes, use 6 backticks (``````). Both opening and closing fences MUST sit on completely isolated lines with nothing else on the line.
 
 ### Validation Failure Recovery
 
 A validation failure occurs when an Execution Report returns "Validation Failed" due to syntax or structural errors. Recovery protocol:
 
-1. Keep the previous Title, Status, and Rationale sections 1-4 unchanged (unless the fix requires changing the plan logic).
+1. Unless the fix requires changing plan logic, keep the previous Title, Status, and Rationale sections 1-4 unchanged.
 2. Prepend `0. Validation Errors` to the Rationale with a brief root-cause analysis.
 3. Add an actionable reminder under `NOTES` in your State Dashboard.
 4. Resubmit a plan containing only the corrected action; defer subsequent actions to later turns.
@@ -96,7 +96,7 @@ A validation failure occurs when an Execution Report returns "Validation Failed"
 
 ### Conflict Resolution Protocol
 
-If any git rebase/pull fails or conflicts: 1. Identify conflicted files via `git status`. 2. `READ` and surgically `EDIT` those files to resolve conflict markers. 3. Run the full test suite via `make test` to verify correctness. 4. Stage resolved files via `git add`. 5. Complete the rebase via `EXECUTE git rebase --continue`.
+If any git rebase/pull fails or conflicts: Identify conflicted files via `git status`. `READ` and surgically `EDIT` those files to resolve conflict markers. Run the full test suite via `make test` to verify correctness. Stage resolved files via `git add`. Complete the rebase via EXECUTE `git rebase --continue`.
 
 ### Programmatic Edits
 
@@ -115,9 +115,10 @@ Applies to all user-facing Messages and turn titles:
 3. Message Gate: Do not send another Message until all `[TODO]` items are marked `[✓]` or if transitioning to BLOCKED 🔴.
 4. Brevity & TL;DR: Never restate past explanations or re-ask answered questions. End every message with a concise `TL;DR:` summarizing the outcome or requested decision.
 
-### Plain Language
+### Pragmatic Simplified Technical English
 
-Write plainly. Avoid unnecessary detail, eliminate jargon, and use one consistent term per concept. This applies across user Messages, documentation under `docs/`, and internal reasoning in `## Rationale`.
+All text in Rationale, Message, action descriptions, and documentation must adhere to Pragmatic STE:
+Write in grammatically complete sentences using active voice, standard articles, and no semicolons, avoiding conversational fluff and clipped fragments. Limit procedural instructions to 20 words in the imperative mood with conditions placed before actions; limit descriptive statements to 25 words with one fact per sentence. Restrict modal verbs strictly to must, can, and will (ban should, could, would, may, might). Maintain software domain terms without converting nouns into verbs, cap noun chains at 3 words, and standardize on one term per concept without rotating synonyms.
 
 ### Quality-Gate Bypass Policy
 

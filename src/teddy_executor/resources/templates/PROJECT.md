@@ -48,7 +48,7 @@ These files live in `docs/templates/` and are created or refreshed by `teddy ini
 
 ## Roadmap
 
-**Mandatory Prerequisites:** Milestone 0 (Project Bootstrapping) is a required standard that MUST be completed before any feature work begins. It establishes the foundational infrastructure — testing framework, CI/CD pipeline, pre-commit hooks, post-commit test gate, and Makefile — that all subsequent milestones depend upon. No feature work may proceed until these foundations are in place.
+**Mandatory Prerequisites:** Milestone 0 (Project Bootstrapping) is a required standard that MUST be completed before any feature work begins. It establishes the foundational infrastructure — testing framework, CI/CD pipeline, pre-commit hooks, post-commit test gate, and Makefile — that all subsequent milestones depend upon. You must complete these foundations before beginning feature work.
 
 A living list of upcoming Milestones and their high-level features.
 

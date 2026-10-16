@@ -12,7 +12,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 **Goal:** Execute the task immediately via an iterative loop: make minimal verifiable progress, verify, then repeat until the task is complete.
 
 1. **Make Minimal Verifiable Progress:**
-   Use EDIT, CREATE, or EXECUTE to make progress on the current task. You may batch multiple tightly-related modifications together, but prioritize incremental steps rather than implementing everything before verification.
+   Use EDIT, CREATE, or EXECUTE to make progress on the current task. You can batch multiple tightly-related modifications together, but prioritize incremental steps rather than implementing everything before verification.
 2. **Verify:**
    After each round of progress, verify correctness immediately. Use EXECUTE `git grep` to check upstream consumers and downstream dependencies. EXECUTE `make test` to confirm no regressions.
 3. **Iterate:**

@@ -18,7 +18,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 3. **Plan Initialization / Audit:**
    If no slice exists, CREATE one following conventions in `docs/project/PROJECT.md` informed by discovery findings, linking any reference files and placing Wiring first as the tracer bullet.
 
-   If a slice already exists, audit target components via EXECUTE `git grep`. Ensure all deliverables maintain a Continuous Green State. If a deliverable attempts a breaking signature change to a Shared Seam (git grep count greater than 1) without a migration plan, immediately EDIT the slice to re-partition the work into a non-breaking parallel change (expand, migrate, contract). Decompose any item touching more than one logical change into smaller atomic deliverables. Verify Wiring is placed first.
+   If a slice already exists, audit target components via EXECUTE `git grep`. Verify that all deliverables maintain a Continuous Green State. If a deliverable attempts a breaking signature change to a Shared Seam (git grep count greater than 1) without a migration plan, immediately EDIT the slice to re-partition the work into a non-breaking parallel change (expand, migrate, contract). Decompose any item touching more than one logical change into smaller atomic deliverables. Verify Wiring is placed first.
 
    Set slice Status to In Progress. If the slice was newly created or modified during audit, run `make commit` to version control the plan before starting work.
 4. **Mark Deliverable:**
@@ -61,9 +61,9 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    - **Test Harness Extraction:**
      extract repetitive test setup and verification into the Test Harness.
    - **Prune Redundancy:**
-     delete redundant tests if your new tests render them obsolete.
+     if your new tests render existing tests obsolete, delete the redundant tests.
    - **DI Purity:**
-     ensure no concrete defaults exist in new code. Service Locator and `mock.patch` are forbidden.
+     make sure that no concrete defaults exist in new code. Service Locator and `mock.patch` are forbidden.
    - **Clean Code:**
      apply SRP locally to simplify logic, improve readability, and remove stale comments.
    - **Structural Refactoring:**
@@ -95,7 +95,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 2. **Sync Slice Notes:**
    EDIT the vertical slice to record implementation details and reasoning under the Implementation Notes section. If this section does not exist, CREATE it at the end of the file.
 3. **Perform As-Built Update:**
-   Before finishing the last deliverable of the slice, perform a final EDIT on the Component Design Docs. Use the Implementation Notes to make minor corrections, ensuring docs reflect as-built reality, and update their status.
+   Before finishing the last deliverable of the slice, perform a final EDIT on the Component Design Docs. Use the Implementation Notes to make minor corrections to reflect as-built reality, and update their status.
 4. **Consistency Check:**
    If this is the last deliverable, EXECUTE `git grep` for deleted or renamed components and resolve stale hits in documentation and comments.
 5. **Delivery Gate:**

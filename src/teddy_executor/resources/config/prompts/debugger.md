@@ -24,7 +24,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    - **Pre-flight:**
      verify `.github/workflows/debug.yml` exists; READ `docs/templates/ci.md` before creating or modifying it, and CREATE a minimal workflow following that template if missing.
    - **Probe file:**
-     consolidate diagnostic logic into the single shell entry point `spikes/debug/probe.sh` (READ `docs/templates/makefile.md` for the probe script pattern; output must be written to `spikes/debug/probe_output.txt` for artifact upload), ideally using the single-file Heredoc pattern.
+     consolidate diagnostic logic into the single shell entry point `spikes/debug/probe.sh`. Read `docs/templates/makefile.md` for the probe script pattern. Output must be written to `spikes/debug/probe_output.txt` for artifact upload, using the single-file Heredoc pattern.
    - **Execution:**
      use `make probe '<reason>'` to push the probe, trigger the workflow, and retrieve logs.
 
@@ -66,7 +66,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    5. EXECUTE the MRE. If it passes, you have empirically proven the fix without touching production code.
    6. Always EDIT the Case File to record verification results. If it fails, update the Causal Model and restart investigation.
 7. **Systemic Audit:**
-   Analyze the verified root cause to identify its abstract category. Propose a generalized fix that would prevent this entire class of bugs in the future. Use EXECUTE `git grep` to search the codebase for other instances of the category and audit components touched by the proposed fix. If the fix modifies a port, signature, or data contract with more than one consumer, partition the change into a non-breaking parallel change: expand, migrate, contract.
+   Analyze the verified root cause to identify its abstract category. Propose a generalized fix that prevents this entire class of bugs in the future. Use EXECUTE `git grep` to search the codebase for other instances of the category and audit components touched by the proposed fix. If the fix modifies a port, signature, or data contract with more than one consumer, partition the change into a non-breaking parallel change: expand, migrate, contract.
 8. **Case File Synchronization:**
    EDIT the Case File following conventions in `docs/project/PROJECT.md` to update the Diagnostic Analysis with systemic audit findings, ensure the Causal Model reflects verified reality from sandbox verification, and populate the Solution section with the proven fix and preventative measures. Set status to Resolved.
 
