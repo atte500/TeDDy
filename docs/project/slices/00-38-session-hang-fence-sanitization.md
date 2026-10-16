@@ -51,7 +51,7 @@ Then the embedded workspace section is bounded and no fence amplification occurs
 
 ## Deliverables
 
-- [▶] **Logic** — Add `strip_trailing_open_fence(content)` to `core/utils/markdown.py`, porting the `_FENCE_RE` walk from `spikes/debug/session-hang/replica_embed_sanitizer.py`. Add unit tests to `tests/suites/unit/core/utils/test_markdown_utils.py` covering the preserve/collapse matrix from `spikes/debug/session-hang/06-fence-detector-matrix.py`.
+- [x] **Logic** — Add `strip_trailing_open_fence(content)` to `core/utils/markdown.py`, porting the `_FENCE_RE` walk from `spikes/debug/session-hang/replica_embed_sanitizer.py`. Add unit tests to `tests/suites/unit/core/utils/test_markdown_utils.py` covering the preserve/collapse matrix from `spikes/debug/session-hang/06-fence-detector-matrix.py`.
 - [ ] **Logic** — Add `embed_in_fence(content, lang)` to `core/utils/markdown.py` that sanitizes via `strip_trailing_open_fence`, then fences via `get_fence_for_content`, returning `f"{fence}{lang}\n{content}\n{fence}"`. Add unit tests covering sanitized and balanced content.
 - [ ] **Migration** — Route `ContextService._format_session_history` through `embed_in_fence`. Add an end-to-end test in `tests/suites/unit/core/services/test_context_service.py` driving `get_context` with a degenerate session-history file, proving the section is bounded.
 - [ ] **Migration** — Route `ContextService._format_workspace_contents` through `embed_in_fence`. Add an end-to-end test driving `get_context` with a degenerate workspace file, proving the section is bounded.
@@ -63,6 +63,14 @@ Then the embedded workspace section is bounded and no fence amplification occurs
 - **`get_fence_for_content` is unchanged.** The fix sanitizes the content BEFORE the fence is derived, so no fence-clamping logic is needed and no magic number is introduced.
 - **Reference implementation.** The detector is proven in `spikes/debug/session-hang/replica_embed_sanitizer.py`; port the `_FENCE_RE` walk into `core/utils/markdown.py`.
 - **Two strip behaviours.** `_format_session_history` strips leading/trailing whitespace before fencing; `_format_workspace_contents` does not. `embed_in_fence` sanitizes only (it does not strip), so each caller keeps its existing whitespace behaviour.
+
+### Deliverable 1 — As-Built (strip_trailing_open_fence)
+- **Implementation:** added the `_FENCE_RE` module constant and `strip_trailing_open_fence(content)` to `core/utils/markdown.py`, immediately after `get_fence_for_content`, porting the fence-walk verbatim from `spikes/debug/session-hang/replica_embed_sanitizer.py`. `get_fence_for_content` is unchanged.
+- **Test coverage:** added the parameterized preserve/collapse matrix (10 preserve cases, 4 collapse cases) to `tests/suites/unit/core/utils/test_markdown_utils.py`, ported from `spikes/debug/session-hang/06-fence-detector-matrix.py`. The file imports `strip_trailing_open_fence` from the production module, so no shadow logic exists.
+- **Red step:** the new tests failed at collection with `ImportError: cannot import name 'strip_trailing_open_fence' from 'teddy_executor.core.utils.markdown'`, proving the test-first state.
+- **Green step:** `uv run pytest tests/suites/unit/core/utils/test_markdown_utils.py -q` reported `19 passed`.
+- **Integration gate:** `make test` reported the full suite green (1788 passed, 5 skipped), confirming the additive helper is regression-free.
+- **No deviation from the replica:** the port is byte-for-byte; no signature or semantic change was required.
 
 ## Verification
 - [ ] **CLI:** Run `make test` and verify the full suite passes (green-to-green).
