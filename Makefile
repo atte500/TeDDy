@@ -46,6 +46,7 @@ push:
 # Usage:
 #   make ci-watch                # watches CI for current HEAD
 #   make ci-watch COMMIT=<sha>   # watches CI for a specific commit
+#   make ci-watch BASE=<sha>     # pins the comparison baseline to a commit
 #
 # Attribution answers ONE question: did this push turn a BLOCKING gate red?
 # Only push-triggered workflows are attributed. A downstream workflow that
@@ -54,6 +55,7 @@ RETRY_POLLS ?= 10
 RETRY_SLEEP ?= 2
 DETAIL_LINES ?= 50
 BASE_DEPTH ?= 50
+BASE ?=
 
 ci-watch:
 	@SHA=$$(git rev-parse $${COMMIT:-HEAD}); \
@@ -97,8 +99,8 @@ ci-watch:
 	    echo "$$WF: BLOCKING (run=$$NEWCONC) — unknown conclusion — fail-safe block"; \
 	    STATUS=1; continue; \
 	  fi; \
-	  BASE=""; CUR="$$SHA"; DEPTH=0; \
-	  while [ $$DEPTH -lt $(BASE_DEPTH) ]; do \
+	  BASE="$(BASE)"; CUR="$$SHA"; DEPTH=0; \
+	  while [ -z "$$BASE" ] && [ $$DEPTH -lt $(BASE_DEPTH) ]; do \
 	    CUR=$$(git rev-parse "$$CUR~1" 2>/dev/null) || break; \
 	    [ -n "$$CUR" ] || break; \
 	    if [ -n "$$(gh run list --commit "$$CUR" --workflow "$$WF" --json databaseId --jq '.[0].databaseId')" ]; then \

@@ -59,14 +59,20 @@ def _git(repo: Path, *args: str) -> str:
 
 
 def _run_ci_watch(
-    repo: Path, scenario_dir: Path, invocation_log: Path
+    repo: Path,
+    scenario_dir: Path,
+    invocation_log: Path,
+    base: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     env = dict(os.environ)
     env["PATH"] = os.pathsep.join([str(scenario_dir / "bin"), env.get("PATH", "")])
     env["FAKE_GH_SCENARIO"] = str(scenario_dir)
     env["FAKE_GH_LOG"] = str(invocation_log)
+    args = ["make", "ci-watch", "RETRY_POLLS=1", "RETRY_SLEEP=0"]
+    if base is not None:
+        args.append(f"BASE={base}")
     return subprocess.run(
-        ["make", "ci-watch", "RETRY_POLLS=1", "RETRY_SLEEP=0"],
+        args,
         cwd=repo,
         env=env,
         capture_output=True,
@@ -262,6 +268,61 @@ def test_multi_commit_push_resolves_the_run_bearing_ancestor(ci_repo: Path) -> N
     ).write(scenario_dir)
 
     result = _run_ci_watch(ci_repo, scenario_dir, invocation_log)
+
+    assert result.returncode == 0, result.stdout
+    assert "pre-existing" in result.stdout, result.stdout
+
+
+@_posix_only
+def test_explicit_base_override_pins_the_baseline(ci_repo: Path) -> None:
+    """An explicit ``BASE=<sha>`` pins the comparison baseline.
+
+    The tip repeats a failure the pinned base already carries, but the
+    auto-resolved base (``HEAD~1``) is green. Auto-resolution would report a
+    regression and block; the override must attribute the failure pre-existing.
+    """
+    tip_sha = _git(ci_repo, "rev-parse", "HEAD")
+    auto_base_sha = _git(ci_repo, "rev-parse", "HEAD~1")
+    pinned_base_sha = _git(ci_repo, "rev-parse", "HEAD~2")
+    scenario_dir = ci_repo / "scenario"
+    invocation_log = ci_repo / "gh-invocations.log"
+
+    CiWatchScenario(
+        runs=(
+            RunResult(
+                database_id=333,
+                workflow="CI",
+                head_sha=tip_sha,
+                conclusion="failure",
+                jobs=(
+                    JobResult(
+                        "Test Suite",
+                        "failure",
+                        steps=(("Run tests", "failure"),),
+                    ),
+                ),
+            ),
+            RunResult(
+                database_id=222,
+                workflow="CI",
+                head_sha=auto_base_sha,
+                conclusion="success",
+                jobs=(JobResult("Test Suite", "success"),),
+            ),
+            RunResult(
+                database_id=111,
+                workflow="CI",
+                head_sha=pinned_base_sha,
+                conclusion="failure",
+                jobs=(
+                    JobResult("Test Suite", "failure"),
+                    JobResult("Quality Checks", "failure"),
+                ),
+            ),
+        )
+    ).write(scenario_dir)
+
+    result = _run_ci_watch(ci_repo, scenario_dir, invocation_log, base=pinned_base_sha)
 
     assert result.returncode == 0, result.stdout
     assert "pre-existing" in result.stdout, result.stdout

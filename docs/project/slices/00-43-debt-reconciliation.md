@@ -65,13 +65,22 @@ And no unhandled thread exception escapes
 7. `[MIGRATE]` `docs/project/PROJECT.md` — remove the two resolved Milestone 5 debt entries.
 
 ## Deliverables
-- [▶] **Wiring** - Add a fake-`gh` acceptance scenario that pins `BASE=<sha>`, and wire the minimal `BASE ?=` override into the shipped `Makefile` so the shipped target honors it end to end.
+- [x] **Wiring** - Add a fake-`gh` acceptance scenario that pins `BASE=<sha>`, and wire the minimal `BASE ?=` override into the shipped `Makefile` so the shipped target honors it end to end.
 - [ ] **Logic** - Complete the `ci-watch` override semantics in the shipped `Makefile`: use `BASE=<sha>` verbatim and keep the unknown-base fail-safe when the override carries no run. Add the bad-override acceptance scenario.
 - [ ] **Logic** - Harden the update checker: guard `background_check` to swallow every error and move the cache-directory creation inside the guarded block in `write_update_cache`. Add the fail-silent unit coverage.
 - [ ] **Migration** - Mirror the corrected `ci-watch` recipe and the override documentation into both template copies, byte-identical.
 - [ ] **Cleanup** - Remove the two resolved debt entries from the Milestone 5 roadmap section in `docs/project/PROJECT.md`.
 
 ## Implementation Notes
+
+### Wiring (BASE override acceptance scenario and minimal Makefile override)
+- The deliverable extended the `_run_ci_watch` driver in `tests/suites/acceptance/test_ci_watch_attribution.py` with an optional `base` argument. When set, the driver appends `BASE=<sha>` to the `make ci-watch` invocation, so a scenario can pin the comparison baseline through the CLI-variable boundary and share the existing harness rather than duplicating it.
+- The `test_explicit_base_override_pins_the_baseline` scenario isolates the override as the only cause of the verdict. The tip repeats a failure the pinned base already carries, while the auto-resolved base (`HEAD~1`) is green. Without the override the recipe auto-resolves the green base and reports a regression; with the override it attributes the failure pre-existing and exits 0.
+- The Red step failed exactly as predicted: the output read `CI: BLOCKING failure (Test Suite) — YOUR regression` with `assert 2 == 0`. That proves the shipped target ignored `BASE=<sha>` and that the scenario reaches the shipped `Makefile` bytes.
+- The Green step added three edits to the shipped `Makefile`: a `BASE ?=` declaration alongside the other tunables, a usage line documenting the override, and a walk-skip guard. The shell base now seeds from `$(BASE)`, and the ancestor walk runs only while the base is still empty (`[ -z "$$BASE" ]`).
+- An unset `$(BASE)` expands to an empty string, so the shell base starts empty, the walk condition stays true, and the default path is byte-for-byte unchanged. The four existing scenarios therefore stay green.
+- Insight: GNU Make returns exit code 2 for any failed recipe, so a blocking verdict surfaces as a non-zero status rather than `1`.
+- Deferred to the Logic deliverable: the bad-override fail-safe when the pinned SHA carries no run for the workflow. The empty-override path already preserves the existing unknown-base fail-safe.
 
 ## Verification
 - [ ] **Base override pins the baseline:**
