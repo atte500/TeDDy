@@ -82,6 +82,7 @@ def test_handle_new_session_loops_multiple_turns_when_non_interactive():
         start_time=datetime.now(timezone.utc),
         end_time=datetime.now(timezone.utc),
     )
+    fake_report.action_logs = []
     fake_report.metadata = {}
     mock_orchestrator.resume.return_value = ("session_name", fake_report)
 
@@ -161,6 +162,7 @@ def test_handle_resume_session_loops_multiple_turns_when_non_interactive():
         start_time=datetime.now(timezone.utc),
         end_time=datetime.now(timezone.utc),
     )
+    fake_report.action_logs = []
     fake_report.metadata = {}
     mock_orchestrator.resume.return_value = ("session_name", fake_report)
 
@@ -248,6 +250,7 @@ def test_termination_message_printed_when_guard_stops(capsys):
         start_time=datetime.now(timezone.utc),
         end_time=datetime.now(timezone.utc),
     )
+    fake_report.action_logs = []
     fake_report.metadata = {}
     # Resume returns one report then None to ensure loop termination
     mock_orchestrator.resume.side_effect = [("session", fake_report)]
@@ -314,6 +317,7 @@ def test_guard_reason_split_with_leading_newline(capsys):
         start_time=datetime.now(timezone.utc),
         end_time=datetime.now(timezone.utc),
     )
+    fake_report.action_logs = []
     fake_report.metadata = {}
     mock_orchestrator.resume.side_effect = [("session", fake_report)]
 

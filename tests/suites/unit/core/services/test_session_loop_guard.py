@@ -1,14 +1,25 @@
 import os
 from unittest.mock import create_autospec
 from teddy_executor.core.ports.outbound import IConfigService
+from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.services.session_loop_guard import ProductionSessionLoopGuard
+
+
+def _env():
+    """System-environment double that reports no process environment overrides."""
+    env = create_autospec(ISystemEnvironment)
+    env.get_env.return_value = None
+    return env
 
 
 def test_production_guard_always_continues():
     # Arrange
     mock_config = create_autospec(IConfigService)
     guard = ProductionSessionLoopGuard(
-        config_service=mock_config, initial_turn=1, initial_cost=0.0
+        config_service=mock_config,
+        system_environment=_env(),
+        initial_turn=1,
+        initial_cost=0.0,
     )
 
     # Act / Assert
@@ -25,7 +36,10 @@ def test_production_guard_stores_initial_state():
 
     # Act
     guard = ProductionSessionLoopGuard(
-        config_service=mock_config, initial_turn=initial_turn, initial_cost=initial_cost
+        config_service=mock_config,
+        system_environment=_env(),
+        initial_turn=initial_turn,
+        initial_cost=initial_cost,
     )
 
     # Assert
@@ -42,7 +56,10 @@ def test_production_guard_stops_on_max_turns_non_interactive():
     mock_config.get_config_path.return_value = ".teddy/config.yaml"
 
     guard = ProductionSessionLoopGuard(
-        config_service=mock_config, initial_turn=1, initial_cost=0.0
+        config_service=mock_config,
+        system_environment=_env(),
+        initial_turn=1,
+        initial_cost=0.0,
     )
 
     # Act / Assert
@@ -73,7 +90,10 @@ def test_production_guard_stops_on_max_cost_non_interactive():
     mock_config.get_config_path.return_value = ".teddy/config.yaml"
 
     guard = ProductionSessionLoopGuard(
-        config_service=mock_config, initial_turn=1, initial_cost=1.00
+        config_service=mock_config,
+        system_environment=_env(),
+        initial_turn=1,
+        initial_cost=1.00,
     )
 
     # Act / Assert
@@ -108,7 +128,10 @@ def test_production_guard_reason_includes_config_key_and_path():
     mock_config.get_config_path.return_value = ".teddy/config.yaml"
 
     guard = ProductionSessionLoopGuard(
-        config_service=mock_config, initial_turn=1, initial_cost=0.0
+        config_service=mock_config,
+        system_environment=_env(),
+        initial_turn=1,
+        initial_cost=0.0,
     )
 
     # Act – delta = 1 (>= limit 1) -> STOP
@@ -136,7 +159,10 @@ def test_production_guard_ignores_limits_in_interactive_mode():
     )
 
     guard = ProductionSessionLoopGuard(
-        config_service=mock_config, initial_turn=1, initial_cost=0.0
+        config_service=mock_config,
+        system_environment=_env(),
+        initial_turn=1,
+        initial_cost=0.0,
     )
 
     # Act / Assert

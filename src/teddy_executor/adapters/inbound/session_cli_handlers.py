@@ -356,6 +356,23 @@ def _should_exit_pipeline(pipeline: bool, report: Any) -> bool:
     )
 
 
+def _is_communication_turn(report: Any) -> bool:
+    """True when the report carries a non-empty MESSAGE action.
+
+    A communication turn means the human is present and approves the
+    continuation, so the loop re-anchors the guard baseline before the limit
+    check. Mirrors the orchestrator's canonical predicate: a MESSAGE action
+    with non-empty details.
+    """
+    if not report.action_logs:
+        return False
+    return any(
+        (getattr(log_entry, "action_type", None) or "").upper() == "MESSAGE"
+        and (getattr(log_entry, "details", "") or "").strip()
+        for log_entry in report.action_logs
+    )
+
+
 def _orchestrate_session_loop(  # noqa: PLR0913
     container: Container,
     session_name: str,
@@ -437,6 +454,15 @@ def _orchestrate_session_loop(  # noqa: PLR0913
                 break
 
             cumulative_cost = float(report.metadata.get("cumulative_cost", 0.0))
+
+            # A communication turn means the human is present and approves the
+            # continuation, so re-anchor the budget BEFORE the limit check. The
+            # message turn therefore never trips the limit, and the next segment
+            # starts fresh. The guard itself gates the reset on
+            # guardrails.message_reset.
+            if _is_communication_turn(report):
+                loop_guard.reset_baseline(turn_count, cumulative_cost)
+
             should_continue, guard_reason = loop_guard.should_continue(
                 turn_count, cumulative_cost, interactive
             )

@@ -1,28 +1,67 @@
-from typing import Optional
+from typing import Any, Optional
 
 from teddy_executor.core.ports.outbound import IConfigService
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
+from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
+
+
+# Sentinel distinguishing "key absent" from a present falsy value, so the
+# legacy `yolo_guardrails` namespace is consulted only when the renamed
+# `guardrails` key is missing.
+_UNSET = object()
 
 
 class ProductionSessionLoopGuard(ISessionLoopGuard):
     """
-    Production implementation: enforces YOLO guardrails in non-interactive mode.
+    Production implementation: bounds a non-interactive run by turns and cost.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913  # Explicit DI: config, environment, baselines, and CLI overrides.
         self,
         config_service: IConfigService,
+        system_environment: ISystemEnvironment,
         initial_turn: int,
         initial_cost: float,
         max_turns: Optional[int] = None,
         max_cost: Optional[float] = None,
     ) -> None:
         self._config_service = config_service
+        self._system_environment = system_environment
         self._initial_turn = initial_turn
         self._initial_cost = initial_cost
-        # Skeleton precedence: an explicit CLI limit wins over the config value.
+        # A CLI-supplied limit is the most specific source and wins outright.
         self._max_turns_override = max_turns
         self._max_cost_override = max_cost
+
+    def _read_config(self, key: str, default: Any) -> Any:
+        """Reads ``guardrails.<key>`` with a legacy ``yolo_guardrails`` fallback.
+
+        Existing user configs still use the ``yolo_guardrails`` namespace, so
+        when the renamed ``guardrails`` key is absent the legacy key is read
+        before the default applies.
+        """
+        value = self._config_service.get_setting(f"guardrails.{key}", _UNSET)
+        if value is _UNSET:
+            value = self._config_service.get_setting(f"yolo_guardrails.{key}", _UNSET)
+        return default if value is _UNSET else value
+
+    def _resolve_max_turns(self) -> int:
+        """Resolves the turn limit: CLI flag, then env var, then config, then 150."""
+        if self._max_turns_override is not None:
+            return int(self._max_turns_override)
+        env_value = self._system_environment.get_env("TEDDY_MAX_TURNS")
+        if env_value:
+            return int(env_value)
+        return int(self._read_config("max_turns", 150) or 150)
+
+    def _resolve_max_cost(self) -> float:
+        """Resolves the cost limit: CLI flag, then env var, then config, then 5.0."""
+        if self._max_cost_override is not None:
+            return float(self._max_cost_override)
+        env_value = self._system_environment.get_env("TEDDY_MAX_SESSION_COST")
+        if env_value:
+            return float(env_value)
+        return float(self._read_config("max_session_cost", 5.0) or 5.0)
 
     def should_continue(
         self, turn_count: int, cumulative_cost: float, interactive: bool
@@ -30,22 +69,11 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
         if interactive:
             return True, None
 
-        if not self._config_service.get_setting("yolo_guardrails.enabled", True):
+        if not bool(self._read_config("enabled", True)):
             return True, None
 
-        max_turns = self._max_turns_override
-        if max_turns is None:
-            max_turns = int(
-                self._config_service.get_setting("yolo_guardrails.max_turns", 99) or 99
-            )
-        max_cost = self._max_cost_override
-        if max_cost is None:
-            max_cost = float(
-                self._config_service.get_setting(
-                    "yolo_guardrails.max_session_cost", 5.0
-                )
-                or 5.0
-            )
+        max_turns = self._resolve_max_turns()
+        max_cost = self._resolve_max_cost()
 
         turn_delta = turn_count - self._initial_turn
         cost_delta = cumulative_cost - self._initial_cost
@@ -71,3 +99,14 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
             )
 
         return True, None
+
+    def reset_baseline(self, turn_count: int, cumulative_cost: float) -> None:
+        """Re-anchors both baselines after a message turn, when enabled.
+
+        The reset is gated by ``guardrails.message_reset`` (default true), so an
+        operator can keep the baselines fixed for the whole run.
+        """
+        if not bool(self._read_config("message_reset", True)):
+            return
+        self._initial_turn = turn_count
+        self._initial_cost = cumulative_cost

@@ -58,7 +58,7 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 ## Deliverables
 - [x] **Wiring** - Add `--max-turns` and `--max-cost` to `start` and `resume`, thread them to the loop guard, and honor them in the limit checks through a skeleton precedence read.
 - [x] **Contract** - Extend `ISessionLoopGuard` with the additive `reset_baseline(turn_count, cumulative_cost)` operation.
-- [ ] **Logic** - Implement the precedence chain (CLI flag > env var > config value > default), the `TEDDY_MAX_TURNS` and `TEDDY_MAX_SESSION_COST` overrides, the legacy `yolo_guardrails` fallback read, the 150-turn default, and the message-turn reset gated by `guardrails.message_reset`.
+- [x] **Logic** - Implement the precedence chain (CLI flag > env var > config value > default), the `TEDDY_MAX_TURNS` and `TEDDY_MAX_SESSION_COST` overrides, the legacy `yolo_guardrails` fallback read, the 150-turn default, and the message-turn reset gated by `guardrails.message_reset`.
 - [ ] **Migration** - Rename `yolo_guardrails` to `guardrails` in the bundled config, the guard, the guard tests, and the `session_loop_guard.md` component doc. Correct the component doc's stale config-missing defaults.
 - [ ] **Refactor** - Extract the limit resolution into a single helper.
 - [ ] **Cleanup** - Remove the stale `--yolo`-only wording. Keep the legacy `yolo_guardrails` fallback read for existing user configs.
@@ -80,6 +80,16 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 - The port is a plain `Protocol` without `@runtime_checkable`, so both explicit subclasses (`ProductionSessionLoopGuard` and the harness's `TestSessionLoopGuard`) inherit the new method as an inert no-op stub. The extension therefore has zero blast radius.
 - The concrete re-anchoring behavior, gated by `guardrails.message_reset`, arrives in the Logic deliverable. This deliverable only pins the port surface, so implementing behavior now would overbuild.
 - Contract proof: `tests/suites/unit/core/ports/outbound/test_session_loop_guard_contract.py` pins the operation's presence and its exact `(self, turn_count, cumulative_cost)` signature.
+
+### Logic (delivered)
+
+- Added an `ISystemEnvironment` dependency and a `_read_config` helper to `ProductionSessionLoopGuard`. The helper reads `guardrails.<key>` and consults the legacy `yolo_guardrails.<key>` only when the renamed key is absent. A module-level `_UNSET` sentinel distinguishes "key absent" from a present falsy value.
+- Added `_resolve_max_turns` and `_resolve_max_cost`. Each resolves through the precedence chain: the CLI flag first, then `TEDDY_MAX_TURNS`/`TEDDY_MAX_SESSION_COST`, then the config value, then the default. The turn default rose from 99 to 150; the cost default stays 5.0.
+- Implemented `reset_baseline`, gated by `guardrails.message_reset` (default true), which re-anchors `_initial_turn` and `_initial_cost`.
+- Wired the call site in `_orchestrate_session_loop`. After the cost is computed and BEFORE `should_continue`, a new `_is_communication_turn(report)` predicate detects a non-empty MESSAGE action and calls `loop_guard.reset_baseline(turn_count, cumulative_cost)`. The message turn therefore never trips the limit. The guard gates the actual re-anchor, so the call site stays unconditional after a communication turn.
+- Logic proof: `tests/suites/unit/core/services/test_session_loop_guard_configuration.py` covers precedence, the environment overrides, the legacy fallback, the 150 default, the 5.0 default, the reset, and the disabled-reset case. `tests/suites/unit/adapters/inbound/test_session_loop_baseline_reset.py` covers the call site and its ordering before the limit check.
+- Collateral repair: `_is_communication_turn` iterates `report.action_logs`, but `Mock(spec=ExecutionReport)` omits that `default_factory` field from the class namespace. Four `test_session_replan_loop.py` report doubles gained `action_logs = []`.
+- Integration proof: `make test` reports `1833 passed, 5 skipped`.
 
 ### Harness constraint
 
