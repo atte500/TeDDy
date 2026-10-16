@@ -65,7 +65,7 @@ And it attributes the failure against that base
 
 ## Deliverables
 - [x] **Wiring** - Add a fake `gh` test double and a tracer-bullet acceptance test that runs the real `make ci-watch` target on a synthetic tip failure and asserts it reaches the shipped target and emits a verdict, proving end-to-end connectivity.
-- [▶] **Logic** - Create a POSIX shell helper with the corrected attribution decision and cover the edge cases with unit tests: the subset verdict, the blocking-conclusion set, and the ancestor base resolution.
+- [x] **Logic** - Create a POSIX shell helper with the corrected attribution decision and cover the edge cases with unit tests: the subset verdict, the blocking-conclusion set, and the ancestor base resolution.
 - [ ] **Migration** - Bake the validated helper logic into the `ci-watch` target inline, keeping the Makefile self-contained; extend the fake-`gh` acceptance test to assert the corrected verdicts; mirror the logic and the push-triggered scope note into both template copies.
 - [ ] **Cleanup** - Remove the throwaway helper once its logic is baked into the Makefile.
 
@@ -76,6 +76,14 @@ And it attributes the failure against that base
 - `tests/suites/acceptance/test_ci_watch_attribution.py` runs the REAL shipped `Makefile` inside a throwaway `tempfile.mkdtemp()` git repository. The shim is prepended to `PATH`. This proves the shipped bytes are the tested bytes.
 - The tracer bullet asserts end-to-end connectivity only: the invocation log is non-empty, the output carries a `CI:` verdict, and the blocking regression exits non-zero. Behavioural attribution assertions arrive with the Logic and Migration deliverables.
 - Insight: GNU Make returns exit code 2 for any failed recipe. A blocking verdict therefore surfaces as a non-zero status rather than `1`, so the tracer-bullet assertion checks `returncode != 0`.
+
+### Logic (POSIX attribution helper)
+- `spikes/ci-watch-attribution/attribution.sh` is a throwaway POSIX `sh` helper carrying the corrected attribution decision. It exposes three subcommands: `subset-verdict <new> <old>`, `classify-conclusion <conc>`, and `resolve-base <tip> <workflow>`.
+- `tests/suites/unit/test_ci_watch_attribution_helper.py` covers the three edge-case groups: seven `subset-verdict` permutations, six `classify-conclusion` values, and three `resolve-base` ancestor scenarios.
+- `subset-verdict` splits both comma-separated sets in memory with `awk` and prints `pre-existing` when every new element also appears in the old set (an empty new set is a subset), else `regression`. The `awk` split reads stdin from `/dev/null` so it cannot block, and it uses no temporary files.
+- `classify-conclusion` maps `success` to `pass`, `failure` to `attribute`, and every other value to `block` (fail-safe).
+- `resolve-base` walks ancestors from `tip~1` and prints the first SHA carrying a run for the workflow, or nothing when none does.
+- The helper is POSIX-only (no arrays, no `[[ ]]`, no `${var//}`) because the Make recipe runs under `sh` (`dash` on Linux). It remains throwaway: the Migration deliverable bakes the logic inline and the Cleanup deliverable deletes this file.
 
 ## Verification
 - [ ] **Improvement attribution:**
