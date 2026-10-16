@@ -34,6 +34,7 @@ The `PlanningService` is responsible for generating an AI plan based on a user m
     - **Model & Provider:** `• Model: {model} | {provider}` — where `provider` is the resolved downstream provider extracted from `response._hidden_params["provider"]` by `PromptManager.update_meta()`. Falls back to model-only display (no `| unknown`) when provider is `"unknown"`.
     - **Context Usage:** `• Context: {used}k / {total}k tokens` — derived from the response's usage data and the model's context window.
     - **Session Cost:** `• Session Cost: ${cost}` — cumulative cost from `meta["cumulative_cost"]`, formatted to 4 decimal places. Displays `$???` if pricing is not supported for the model.
+9.  **Over-Budget Guardrail (Jidoka):** Immediately after the telemetry display and before the LLM generation call, `generate_plan` invokes `_check_context_budget(token_count, model)`. It computes the model's context window and raises `ConfigurationError` when the window is positive and `token_count` strictly exceeds it. This converts a silent stall on an oversized request into a loud, user-visible error. A non-positive window (unknown) disables the guardrail, and a request that exactly fills the window is allowed, because the comparison is a strict excess.
 
 ## 4. Data Contracts / Methods
 
@@ -47,6 +48,13 @@ The `PlanningService` is responsible for generating an AI plan based on a user m
     -   A valid `plan.md` is written to `turn_dir`.
     -   Returns `(plan_path, turn_cost, project_context)` — the gathered `ProjectContext` (identity of the context produced by `IGetContextUseCase.get_context`) is threaded to the caller.
 -   **Exceptions:**
-    -   `ConfigurationError`: Raised if API keys or environment variables are missing or invalid.
+    -   `ConfigurationError`: Raised if API keys or environment variables are missing or invalid, or if the request token count strictly exceeds the model's context window (see `_check_context_budget`).
     -   `LlmCommunicationError`: Raised if the LLM client fails.
     -   `FileNotFoundError`: Raised if the system prompt is missing.
+
+### `_check_context_budget(token_count: int, model: str) -> None`
+
+-   **Description:** Turns an over-budget request into a loud, user-visible failure (Jidoka). It computes the model's context window via `int(self._safe_float(self._llm_client.get_context_window(model=model)))` and raises when the request strictly exceeds it.
+-   **Preconditions:** `token_count` is the assembled request token count. `model` is the resolved planning model.
+-   **Postconditions:** Returns normally when the context window is non-positive (unknown) or when `token_count` is less than or equal to the window. The guardrail never invokes the LLM.
+-   **Exceptions:** `ConfigurationError`: Raised when the context window is positive and `token_count` strictly exceeds it. The message names the request token count, the window, and the model.

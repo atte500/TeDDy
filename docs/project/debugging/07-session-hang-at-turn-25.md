@@ -1,7 +1,7 @@
 # Bug: Session hangs at turn 25 and cannot be interrupted (q / Ctrl+C)
 - **Status:** Resolved
 - **Milestone:** N/A
-- **Vertical Slice:** [docs/project/slices/00-37-prompt-xml-to-md-migration.md](/docs/project/slices/00-37-prompt-xml-to-md-migration.md)
+- **Vertical Slice:** [00-38-session-hang-fence-sanitization.md](/docs/project/slices/00-38-session-hang-fence-sanitization.md), [00-39-embed-seam-consolidation.md](/docs/project/slices/00-39-embed-seam-consolidation.md), [00-40-session-hang-hardening.md](/docs/project/slices/00-40-session-hang-hardening.md)
 - **Specs:** N/A
 
 ## Symptoms
@@ -105,6 +105,8 @@ Add a single shared helper `embed_in_fence(content, lang)` in `core/utils/markdo
 2. **Fail gracefully on an over-budget request (Jidoka):** `PlanningService.generate_plan` already computes `token_count` and `get_context_window(model)`, but only to DISPLAY them — it never compares the two. Add a pre-call check that raises a clear, user-visible error when `token_count` exceeds the window (or a safety margin), turning a silent stall into a visible failure. This is a guardrail, NOT the hang's confirmed cause: the observed stall was a stalled oversized request (~1.1 MB, plausibly within the ~1M-token window), not a returned "context length exceeded" error.
 3. **Surface a degeneration via the sanitizer, not a new rule (per user: "just sanitize"):** instead of a plan-rejection validation rule, have `strip_trailing_open_fence` log when it strips a fence, so an LLM degeneration still leaves a visible Jidoka trace without blocking the turn.
 4. **Close the Ctrl+C delivery gap:** ensure any component that clears ISIG (prompt_toolkit raw mode, the TUI reviewer) restores it on exit, and/or have the quit-key listener re-enable ISIG in `_enter_noncanonical_mode` rather than preserving an inherited cleared state.
+
+**Delivery status:** Measures 2 and 4 are DELIVERED by ad-hoc slice [00-40-session-hang-hardening.md](/docs/project/slices/00-40-session-hang-hardening.md). An over-budget guardrail in `PlanningService._check_context_budget` raises `ConfigurationError`, and `TerminalQuitKeyListener._enter_noncanonical_mode` now re-enables `ISIG` explicitly. Measures 1 and 3 remain unimplemented by user direction. The primary hang fix and the shared embed seam shipped in ad-hoc slices [00-38-session-hang-fence-sanitization.md](/docs/project/slices/00-38-session-hang-fence-sanitization.md) and [00-39-embed-seam-consolidation.md](/docs/project/slices/00-39-embed-seam-consolidation.md).
 
 ### Residual: the `q` path
 `q` self-delivers SIGINT via the listener and is independent of terminal ISIG; static analysis says it should work, and turn 6 observed the listener thread alive and polling. The live processes were killed in turn 9 (as a diagnostic), so this could not be re-probed end-to-end. Best hypothesis: the user's Ctrl+C was dead (`-isig`) and the `q` impression may have been a re-hang on the immediately following `resume`, or a transient stdin-ownership window. Not blocking; the primary hang fix removes the stall that made the exit path matter.

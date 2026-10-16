@@ -51,7 +51,7 @@ Surface of affected components using the Parallel Change model. The two changes 
 - [x] **Wiring** — Connect the over-budget guardrail end-to-end: add a minimal guardrail in `PlanningService.generate_plan` that raises when `token_count` exceeds `get_context_window(model)`, and an acceptance test that drives the session boundary with an over-budget double and asserts a user-visible error.
 - [x] **Logic** — Harden the context-budget guardrail: unit tests for the non-positive window, exact-boundary, and over-budget cases, plus a clear error message. Reuse the existing `ConfigurationError` type.
 - [x] **Logic** — Re-enable `ISIG` in `TerminalQuitKeyListener._enter_noncanonical_mode`: unit tests assert `ISIG` is set regardless of inherited state and that `ICANON` and `ECHO` stay cleared.
-- [ ] **Cleanup** — Update the `planning_service` component doc, record the delivered measures in the case file, and resolve the stale case-file header link.
+- [x] **Cleanup** — Update the `planning_service` component doc, record the delivered measures in the case file, and resolve the stale case-file header link.
 
 ## Implementation Notes
 
@@ -82,6 +82,14 @@ Surface of affected components using the Parallel Change model. The two changes 
 - **Gap proven (turn 118):** the source line `attrs[3] &= ~(termios.ICANON | termios.ECHO)` only PRESERVES the inherited ISIG bit. The pre-existing test exercised the default fake whose lflags already had ISIG set, so it never covered the inherited-clear branch. The new test builds a fake with ISIG deliberately cleared and failed with `AssertionError: ISIG must be re-enabled regardless of the inherited state` (`1 failed, 12 passed`).
 - **Green fix (turn 119):** replaced the clearing assignment with `attrs[3] = (attrs[3] & ~(termios.ICANON | termios.ECHO)) | termios.ISIG`, so ISIG is set explicitly while ICANON and ECHO stay cleared. Updated the docstring to state that the method re-enables ISIG rather than preserves it. The focused run reported `13 passed`.
 - **Integration evidence (turn 120):** `make test` reported `1813 passed, 5 skipped`, proving the terminal-mode change caused no regression.
+
+### Cleanup (deliverable 4) — documentation reconciliation
+
+- **Component doc:** `docs/architecture/core/services/planning_service.md` now records the over-budget guardrail (step 9), the `_check_context_budget()` method contract, and the amended `generate_plan` exception line. Its status stays `Implemented`, so it matches as-built reality.
+- **Case-file header:** replaced the stale `00-37-prompt-xml-to-md-migration.md` Vertical Slice link with the three slices that actually addressed the bug: `00-38-session-hang-fence-sanitization.md`, `00-39-embed-seam-consolidation.md`, and `00-40-session-hang-hardening.md`.
+- **Case-file measures:** added a `Delivery status:` block recording Measure 2 and Measure 4 as DELIVERED and Measures 1 and 3 as unimplemented by user direction.
+- **Consistency evidence (turn 126):** the `git grep` sweep reports no residual `00-37-prompt-xml-to-md-migration` reference in the case-file header.
+- **Integration evidence (turn 125):** `make test` reported `1813 passed, 5 skipped`, proving the documentation-only change caused no regression.
 
 ## Verification
 - [ ] **Over-budget guardrail surfaces a visible error:**
