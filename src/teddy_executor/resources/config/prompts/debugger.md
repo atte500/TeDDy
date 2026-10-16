@@ -66,7 +66,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    5. EXECUTE the MRE. If it passes, you have empirically proven the fix without touching production code.
    6. Always EDIT the Case File to record verification results. If it fails, update the Causal Model and restart investigation.
 7. **Impact Audit:**
-   Analyze components touched by the proposed fix. Use EXECUTE `git grep` to search for direct upstream callers and downstream consumers that the change affects. If the fix modifies a shared port, signature, or data contract with multiple consumers, document the required migration path so the Developer can partition the change into non-breaking steps.
+   Analyze components touched by the proposed fix. Use EXECUTE `git grep` to search for direct upstream callers (including test files and harness fixtures) and downstream dependencies (for orphaned code, unused parameters, or dead functions) that the change affects. If the fix modifies a shared port, signature, or data contract with multiple consumers, document the required migration path so the Developer can partition the change into non-breaking steps.
 8. **Case File Synchronization:**
    EDIT the Case File to update Diagnostic Analysis, verify the Causal Model reflects sandbox reality, and record the proven fix along with affected components in the Solution section. Set status to Resolved.
 

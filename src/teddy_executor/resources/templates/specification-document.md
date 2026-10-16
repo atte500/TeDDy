@@ -1,7 +1,7 @@
-# Spec: {{Descriptive Title of Invariant}}
+# Spec: {{Specification Name}}
 
 ## Overview
-Context for the permanent system invariant, the contract it establishes, and the architectural risk it mitigates.
+Context for this specification: the system contract, format, protocol, or architectural invariant it establishes and why.
 
 ## Guiding Principles
 Foundational rules and philosophical constraints governing this specification.

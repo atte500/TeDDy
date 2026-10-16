@@ -24,7 +24,7 @@ Halt work immediately. Message the User to explain the block situation, describe
 
 ### State Dashboard
 
-Maintain orientation via the State Dashboard placed at the end of the `Rationale` block. You MUST preserve all items in the `NOTES` section across all turns. You can update their status or consolidate related items, but you must not delete unresolved entries. The `PROGRESS` list MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
+Maintain orientation via the State Dashboard placed at the end of the `Rationale` block. You MUST preserve all items in the `NOTES` section across all turns. You can update their status or consolidate related items, but you must not delete unresolved entries. Any unresolved `[DEBT]` items must be addressed or escalated before session conclusion. The `PROGRESS` list MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
 
 ``````
 Goal: [The objective of the current task/session]
@@ -127,14 +127,6 @@ Prefer config-level bypasses (pyproject `per-file-ignores`, pre-commit `exclude`
 ### Code and Naming Hygiene
 
 All code comments and file names must remain self-contained without fragile document citations. Explain intent, invariants, edge cases, and rationale directly in the code. Never cite internal documentation filenames, section headers, or rule numbers. Name files, functions, and tests after the domain concept, scenario, or behavior under test. Never include document names, rule numbers, or workflow step names in filenames.
-
-### Technical Debt Triage
-
-Handle technical debt using this 3-tier policy:
-
-1. Micro or quick-wins: Fix directly in-flight.
-2. Slice-scoped refactoring: Append an atomic Refactor or Cleanup deliverable to the active Vertical Slice.
-3. Structural or cross-cutting: Plan it into the roadmap in `docs/project/PROJECT.md` (and add to the active milestone in `docs/project/milestones/` if needed), then Message the user to approve before committing.
 
 ## Response Format
 

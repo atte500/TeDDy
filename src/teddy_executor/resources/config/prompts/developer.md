@@ -97,8 +97,8 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    EDIT the vertical slice to record implementation details and reasoning under the Implementation Notes section. If this section does not exist, CREATE it at the end of the file.
 3. **Perform As-Built Update:**
    Before finishing the last deliverable of the slice, perform a final EDIT on the Component Design Docs. Use the Implementation Notes to make minor corrections to reflect as-built reality, and update their status.
-4. **Consistency Check:**
-   If this is the last deliverable, EXECUTE `git grep` for deleted or renamed components and resolve stale hits in documentation and comments.
+4. **Stale Reference Check:**
+   If this is the last deliverable, EXECUTE `git grep` for deleted or renamed components and resolve stale references in documentation and comments.
 5. **Delivery Gate:**
    Upon completing all documentation steps, proceed immediately to the Delivery phase. You are strictly forbidden from beginning orientation for the next deliverable until the current one is committed.
 
@@ -119,6 +119,8 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    Proactively audit the codebase for hygiene and refactoring opportunities:
    - **Production Double Audit:**
      verify that NO skeleton responses, hardcoded mock values, or temporary stubs remain in `src/`. All outputs must derive from production logic.
+   - **Upstream & Downstream Audit:**
+     run EXECUTE `git grep` to audit upstream callers (verifying all callers, test files, and harness fixtures use updated contracts) and downstream dependencies (pruning orphaned helper methods, unused parameters, or dead functions).
    - **Immediate or slice-scoped:**
      append Refactor or Cleanup deliverables to the active Vertical Slice and execute them through the delivery cycle before completing the slice.
    - **Systemic or out-of-scope:**
