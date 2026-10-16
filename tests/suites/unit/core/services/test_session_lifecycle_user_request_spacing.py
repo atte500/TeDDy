@@ -118,3 +118,64 @@ class TestUserRequestAppendSpacing:
         written = manager._file_system_manager.write_file.call_args.args[1]
         assert "Prior report body\n\n## User Request\n" in written
         assert "Prior report body\n\n\n## User Request\n" not in written
+
+
+class TestUserRequestFenceBounding:
+    """The appended `## User Request` block is bounded and byte-stable.
+
+    `_append_user_request` routes the message through the shared
+    `embed_in_fence` seam, so an unclosed giant backtick run cannot amplify
+    the wrapper fence, while well-formed messages keep their exact bytes.
+    """
+
+    def test_well_formed_message_yields_exact_pre_migration_bytes(
+        self, manager
+    ) -> None:
+        # Arrange
+        _arrange_empty_turn(manager, TURN02)
+        manager._file_system_manager.path_exists.return_value = True
+        manager._file_system_manager.read_file.return_value = (
+            "# Report\n\n- **Overall Status:** SUCCESS"
+        )
+        orchestrator = _orchestrator_with_report()
+
+        # Act
+        manager.resume(
+            session_name="feature",
+            orchestrator=orchestrator,
+            interactive=True,
+            message=MESSAGE,
+        )
+
+        # Assert: the exact pre-migration byte sequence is reproduced.
+        written = manager._file_system_manager.write_file.call_args.args[1]
+        assert written == (
+            "# Report\n\n- **Overall Status:** SUCCESS"
+            "\n\n## User Request\n```text\nTell me a joke\n```\n"
+        )
+
+    def test_degenerate_message_does_not_amplify_wrapper_fence(self, manager) -> None:
+        # Arrange: an unclosed 10,000-backtick run (the observed defect shape).
+        _arrange_empty_turn(manager, TURN02)
+        manager._file_system_manager.path_exists.return_value = True
+        manager._file_system_manager.read_file.return_value = (
+            "# Report\n\n- **Overall Status:** SUCCESS"
+        )
+        orchestrator = _orchestrator_with_report()
+        degenerate_message = "hello\n" + "`" * 10_000
+
+        # Act
+        manager.resume(
+            session_name="feature",
+            orchestrator=orchestrator,
+            interactive=True,
+            message=degenerate_message,
+        )
+
+        # Assert: the dangling fence is stripped, so the wrapper stays bounded.
+        written = manager._file_system_manager.write_file.call_args.args[1]
+        assert "`" * 10_001 not in written
+        assert written == (
+            "# Report\n\n- **Overall Status:** SUCCESS"
+            "\n\n## User Request\n```text\nhello\n```\n"
+        )

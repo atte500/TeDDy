@@ -42,7 +42,7 @@ Then the block is bounded and no fence amplification occurs
 
 ## Deliverables
 
-- [ ] **Migration** — Route `SessionLifecycleManager._append_user_request` through `embed_in_fence`. Add a unit test to `tests/suites/unit/core/services/test_session_lifecycle_user_request_spacing.py` proving the normal output is byte-identical and a degenerate message is bounded.
+- [x] **Migration** — Route `SessionLifecycleManager._append_user_request` through `embed_in_fence`. Add a unit test to `tests/suites/unit/core/services/test_session_lifecycle_user_request_spacing.py` proving the normal output is byte-identical and a degenerate message is bounded.
 - [ ] **Migration** — Route `validation_rules/edit.py` (the FIND-block and diff embeds) through `embed_in_fence`. Add unit tests to `tests/suites/unit/core/services/test_validator_edit.py` proving normal diagnostics are unchanged and a degenerate FIND block is bounded.
 - [ ] **Migration** — Route `parser_reporting.py` (the expected-structure, AST-view, and structural-mismatch embeds) through `embed_in_fence`. Add unit tests to `tests/suites/unit/core/services/test_parser_reporting.py` proving normal diagnostics are unchanged and a degenerate AST is bounded.
 - [ ] **Migration** — Replace the `fence` Jinja filter in `MarkdownReportFormatter` with an `embed_in_fence`-backed `embed_fence` filter and update `execution_report.md.j2` to call it once per block. Add a test to `tests/suites/unit/core/services/test_report_message_fencing.py` proving a degenerate message action yields a bounded report block.
@@ -53,6 +53,15 @@ Then the block is bounded and no fence amplification occurs
 - **Byte-preservation contract.** Each migrated site already composes its block as `fence + lang + "\n" + content + "\n" + fence` (or the bare-fence variant), so the migration is byte-preserving for well-formed content. A site whose content ends in a newline must strip that newline before delegating.
 - **Jinja filter.** The `fence` filter is replaced by a two-argument `embed_fence` filter; the template calls it once per block instead of twice.
 - **Deferred residual.** A BALANCED giant run (a well-formed block whose delimiter is a giant run) evades unclosed-fence detection and is NOT collapsed by this slice. Case file 07 Preventative Measure 1 defers it ("address it only if such a case ever appears"), and the user rejected a threshold guard in favor of the semantic detector. The migration is therefore byte-preserving for all well-formed content, including a balanced giant run.
+
+### Deliverable 1 — As-Built (SessionLifecycleManager._append_user_request migration)
+- **Implementation:** routed `SessionLifecycleManager._append_user_request` through the shared `embed_in_fence` seam. The two-line composition (`fence = get_fence_for_content(message)` plus the f-string assembly) was replaced by `content += f"\n\n## User Request\n{embed_in_fence(message, 'text')}\n"`, and the module import swapped from `get_fence_for_content` to `embed_in_fence`.
+- **Whitespace behaviour preserved:** the body is still `rstrip("\n")`-ed before the section is appended, so the exact one-blank-line separator contract of Bug 55 is retained.
+- **Test coverage:** added `TestUserRequestFenceBounding` to `tests/suites/unit/core/services/test_session_lifecycle_user_request_spacing.py`, with a byte-identity test pinning the exact pre-migration output and a degenerate-message test driving an unclosed 10,000-backtick run.
+- **Red step:** the degenerate test failed with the predicted `AssertionError` (`1 failed, 3 passed`); the traceback showed the unbounded path emitting a 10,001-backtick wrapper around the degenerate message.
+- **Green step:** `uv run pytest tests/suites/unit/core/services/test_session_lifecycle_user_request_spacing.py -q` reported `4 passed`.
+- **Integration gate:** `make test` reported the full suite green (1795 passed, 5 skipped), confirming the migration is regression-free.
+- **No local refactor required:** the change is a minimal substitution with no duplicated literal, magic number, or shadow logic.
 
 ## Verification
 - [ ] **CLI:** Run `make test` and verify the full suite passes (green-to-green).

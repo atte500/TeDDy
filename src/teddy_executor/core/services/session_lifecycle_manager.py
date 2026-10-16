@@ -17,7 +17,7 @@ from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import SessionState
 from teddy_executor.core.utils.io import Tee as _Tee
-from teddy_executor.core.utils.markdown import get_fence_for_content
+from teddy_executor.core.utils.markdown import embed_in_fence
 
 logger = logging.getLogger(__name__)
 
@@ -241,8 +241,7 @@ class SessionLifecycleManager:
             f"Cannot append user request: report not found at {report_path}"
         )
         content = str(self._file_system_manager.read_file(report_path)).rstrip("\n")
-        fence = get_fence_for_content(message)
-        content += f"\n\n## User Request\n{fence}text\n{message}\n{fence}\n"
+        content += f"\n\n## User Request\n{embed_in_fence(message, 'text')}\n"
         self._file_system_manager.write_file(report_path, content)
 
     def _consume_awaiting_reply(  # noqa: PLR0913
