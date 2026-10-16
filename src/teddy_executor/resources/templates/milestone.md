@@ -3,15 +3,15 @@
 - **Specs:** [links]
 
 ## Goal
-Problem definition and core objectives.
+The Why: Problem definition, customer motivation, and measurable value delivered by this milestone.
 
-## Proposed Solution
-Technical architecture, selected patterns, and trade-offs.
+## Solution
+The What: Strategic architecture, chosen design patterns, system boundaries, and key trade-offs.
 
 ## Guidelines
-Actionable strategy, architectural boundaries, and test harness considerations.
+The How: Actionable strategy, engineering invariants, architectural rules, and test harness considerations.
 
-## Vertical Slices
-<!-- Decompose into end-to-end vertical slices cutting across all layers; do not slice horizontally by technical layer. -->
-- [ ] {{MM-NN}}: [Slice Title] — [Tackles Req X: brief scope statement]
-- [ ] {{MM-NN}}: [Slice Title] — [Tackles Req Y: brief scope statement]
+## Slices
+<!-- Decompose into end-to-end vertical slices cutting across all layers. -->
+- [ ] [MM-01-slice-slug](../slices/MM-01-slice-slug.md): Tackles Req X. Brief scope statements.
+- [ ] [MM-02-slice-slug](../slices/MM-02-slice-slug.md): Tackles Req Y and Z. Brief scope statements.

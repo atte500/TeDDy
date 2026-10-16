@@ -1,6 +1,7 @@
 # Slice: {{feature_name}}
 - **Status:** [Planned | In Progress | Completed]
-- **Milestone:** [link]
+- **Milestone:** [MM-name](../milestones/MM-name.md)
+- **Depends On:** [MM-01-slice-slug.md](./MM-01-slice-slug.md) <!-- Link prerequisite slice or 'None' -->
 - **Specs:** [links]
 - **Prototype:** [link]
 - **Component Docs:** [links]
@@ -10,6 +11,7 @@
 1-2 sentences describing the user need and measurable value delivered by this slice.
 
 ## Scenarios
+<!-- Primary user journeys and happy paths. These drive End-to-End Acceptance Tests in the Wiring deliverable. -->
 > As a [user type], I want to [action] so that [benefit].
 
 ```gherkin
@@ -19,6 +21,7 @@ Then [expected outcome]
 ```
 
 ## Edge Cases
+<!-- Boundary conditions, errors, and validation edge cases. These drive granular Unit Tests in Logic deliverables. -->
 - **Title**: If [condition], then [behavior], because [reason/invariant].
 
 ## Key Unknowns
@@ -38,12 +41,15 @@ Then [expected outcome]
 **Format:**
 - [ ] [Tag] Title: Description of the unknown. Design Sensitivity.
 
-## Scope & Impact
-Surface of affected components classified by the Parallel Change model:
-- `[NEW]` `ComponentOrModule` — role and responsibility
-- `[EXPAND]` `ComponentOrModule.method` — additive/non-breaking extension
-- `[MIGRATE]` `ConsumerComponent` — updating callers to new contract
-- `[CONTRACT]` `ObsoleteComponentOrMethod` — removal of retired code/shims
+## Impact
+Surface of affected components using the Parallel Change (Expand-Migrate-Contract) model.
+Execute deliverables strictly in this order to maintain a Continuous Green State (`make test` passes at every commit). Never mutate shared contracts in place when existing consumers exist.
+
+**Format:**
+1. `[NEW]` `ComponentOrModule` — Create new boundary or component.
+2. `[EXPAND]` `ComponentOrModule.method` — Additive, non-breaking contract extension alongside existing code.
+3. `[MIGRATE]` `ConsumerComponent` — Transition consumers one by one to use the expanded contract.
+4. `[CONTRACT]` `ObsoleteComponentOrMethod` — Safely remove deprecated methods, shims, or dead code once all callers have migrated.
 
 ## Deliverables
 
@@ -69,8 +75,9 @@ Surface of affected components classified by the Parallel Change model:
 Free-form notes recording decisions, deviations, or discoveries during implementation.
 
 ## Verification
-Action-oriented black-box checks executed strictly from the outside as an end user would (e.g. CLI commands, flags, observable output, exit codes). All must pass before slice completion.
+<!-- Manual User Acceptance Testing (UAT) steps for the user to execute at slice conclusion. -->
+<!-- Provide clear, step-by-step instructions. Use copy-pasteable commands for CLI/APIs, or exact interactive steps for UI/visual flows. -->
 
 **Format:**
-- [ ] Run `command <args>` and verify output contains `expected output` and exits with code 0.
-- [ ] Run `command <invalid-args>` and verify error message and non-zero exit.
+- [ ] **CLI / API:** Run `command <args>` and verify output contains `expected output`.
+- [ ] **UI / Interactive:** Navigate to `[View/Screen]`, trigger `[Action]`, and confirm `[Observed State/Element]`.

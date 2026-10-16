@@ -34,7 +34,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 2. **Non-Behavioral Direct Execution:**
    If the deliverable is purely non-behavioral (documentation, configs, static type annotations, renames, dead code deletion, or simple non-behavioral code changes), execute it directly in this phase yourself.
 3. **Milestone & Specification:**
-   For systemic or milestone features, update the Roadmap in `docs/project/PROJECT.md` and active milestone in `docs/project/milestones/` for the Architect. If establishing permanent system invariants, CREATE or EDIT the specification document in `docs/project/specs/`.
+   For systemic or milestone features, update the Roadmap in `docs/project/PROJECT.md` and route to the Architect. If establishing permanent system invariants, CREATE or EDIT the specification document in `docs/project/specs/`. The Architect will initialize the milestone document and draft all slices.
 4. **Ad-hoc Slice Generation:**
    For standalone behavioral work, CREATE an ad-hoc slice following conventions in `docs/project/PROJECT.md`, placing Wiring first as the tracer bullet deliverable. If it contains unresolved technical or functional unknowns, target the Prototyper; if patterns and behavior are established, target the Developer.
 5. **Case File Generation:**

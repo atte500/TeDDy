@@ -11,8 +11,9 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 ### Orientation
 **Goal:** Foundation and scope verification.
 
-1. **De-risking Requirement:**
-   If a Vertical Slice is provided and has any unresolved items in its Key Unknowns section, do not proceed. Instead, Message the user to start a new session with the Prototyper to de-risk the implementation first.
+1. **De-risking & Prerequisite Verification:**
+   If a Vertical Slice has unresolved items in its Key Unknowns section, do not proceed. Message the user to start a session with the Prototyper.
+   Inspect the `Depends On` field in the slice metadata. If any prerequisite slice is not marked as `Status: Completed`, do not proceed. Message the user that prerequisite slices must finish first.
 2. **Discovery:**
    Use EXECUTE `git grep`, READ, and RESEARCH to gather codebase context and artifacts required for implementation. Search the codebase and test suite for existing implementations or coverage of your task to prevent logic and test duplication. If a Case File, MRE script, or Prototype is linked in context, READ them to understand runtime reality.
 3. **Plan Initialization / Audit:**
@@ -29,9 +30,9 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 
 1. **Red:**
    Map the current deliverable type to its verification strategy:
-   1. Wiring (Acceptance, `tests/suites/acceptance/`): MUST establish the End-to-End Skeleton Wiring Tracer Bullet. Drive the public outermost entry point expecting final success.
+   1. Wiring (Acceptance, `tests/suites/acceptance/`): MUST establish the End-to-End Skeleton Wiring Tracer Bullet. Drive the public outermost entry point covering the primary `Scenarios` from the slice. Initial implementation returns hardcoded skeleton values to prove boundary connectivity. Do not write acceptance tests for combinatorial edge cases here.
    2. Harness / Migration (Integration, `tests/suites/integration/`): Modifying shared test infrastructure (drivers, observers, fakes) or adapting callers.
-   3. Contract / Logic / Refactor / Cleanup (Unit, `tests/suites/unit/`): Isolated core logic covering granular edge cases and invariants.
+   3. Contract / Logic / Refactor / Cleanup (Unit, `tests/suites/unit/`): Isolated core logic covering granular `Edge Cases` and invariants.
    4. Env (Declarative / Tooling): For purely declarative files (Makefile, CI workflows, hooks, .gitignore), do NOT write throwaway test scripts. The Red step is executing the target CLI command directly via EXECUTE to observe failure/absence; the Green step is applying the declarative change and observing it succeed.
 
    Create or locate the appropriate test file. Set up the test function using the Test Harness (Setup: Fixtures and Arrange, Driver: Act, Observer: Assert). Use parameterized tests for data permutations.
@@ -44,7 +45,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 
    If the current deliverable is Wiring, you MUST use hardcoded or trivial return values (the End-to-End Skeleton Wiring Tracer Bullet) to connect components across boundaries and force the Acceptance test Green. Do not implement complex business rules yet.
 
-   If the current deliverable is Logic, use Unit Tests to drive out real business rules, systematically swapping out skeleton responses and temporary fakes with real production logic while keeping acceptance tests green.
+   If the current deliverable is Logic, use Unit Tests to drive out real business rules covering `Edge Cases` and invariants, systematically swapping out skeleton responses and temporary fakes with real production logic while keeping acceptance tests green.
 
    Enforce Contract Enforcement (DbC): contracts require active runtime checks via native assertions (`assert condition, "Message"`). Do not use custom exceptions or raises for contract assertions so they can be optimized via `python -O`. State explicitly which contract condition failed.
 3. **Refactor:**
@@ -112,25 +113,29 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    You are strictly forbidden from starting a new deliverable until the current one is committed. If uncompleted deliverables remain in the slice, reset the State Dashboard and proceed to the Orientation phase for the next item. If all deliverables are complete, proceed to the Verification phase.
 
 ### Verification
-**Goal:** Empirically validate end-to-end behavior and conduct a proactive hygiene audit.
+**Goal:** Empirically validate test suites, audit production code hygiene, and prepare slice completion.
 
 1. **Quality Audit:**
-   Proactively audit the codebase for duplicate logic, dead code, or refactoring opportunities exposed by the slice:
+   Proactively audit the codebase for hygiene and refactoring opportunities:
+   - **Production Double Audit:**
+     verify that NO skeleton responses, hardcoded mock values, or temporary stubs remain in `src/`. All outputs must derive from production logic.
    - **Immediate or slice-scoped:**
      append Refactor or Cleanup deliverables to the active Vertical Slice and execute them through the delivery cycle before completing the slice.
    - **Systemic or out-of-scope:**
      plan entries into the roadmap in `docs/project/PROJECT.md` for subsequent slices.
-2. **Scenario Verification:**
-   Execute the slice Verification checklist across real end-user scenarios via EXECUTE (running real entry points or CLI commands with various flags and inspecting real outputs and exit codes). For steps requiring genuine manual interaction, describe the exact verification steps and request confirmation via Message.
-
-   If all steps pass: EDIT the slice to set Status to Completed, check off all verification steps, mark the milestone deliverable as `[x]`, and run `make commit`. Proceed to the Conclusion phase.
-
-   If any step fails: investigate the root cause yourself first. If isolated and the fix is clear, apply it and re-verify. If the root cause is not obvious after investigation, halt work immediately. Message the user explaining what was attempted, what failed, and what options exist. Await user direction before proceeding.
+2. **Slice Completion:**
+   Confirm that all Acceptance, Integration, and Unit tests pass via `make test`.
+   EDIT the slice to set Status to Completed, mark the matching milestone slice item as `[x]`, and check off all slice deliverables. If all slices in the active milestone are marked `[x]`, EDIT the milestone document to set Status to Completed. EDIT the Roadmap in `docs/project/PROJECT.md` to mark the milestone as `[COMPLETED]`. Run `make commit` to record completion. Proceed to the Conclusion phase.
 
 ### Conclusion
-**Goal:** Finalize remote synchronization and dynamically route the next session handoff.
+**Goal:** Finalize remote synchronization, provide user verification instructions, and hand off.
 
 1. **Remote Sync:**
    If a remote is configured, run `make push`. If remote CI is configured, run `make ci-watch` to monitor and inspect remote CI results. If blocking test failures occur, fix them immediately, commit, and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.
-2. **Handoff:**
-   Message the user to route the next session based on milestone state: the Architect if the next slice is un-designed, the Prototyper if it has unresolved Key Unknowns, the Developer if ready to implement, or the Pathfinder if all milestone slices are complete.
+2. **User Verification & Handoff:**
+   Message the user with concise step-by-step instructions extracted from the slice `Verification` section so the user can test the delivered capability.
+   Include dynamic routing instructions for the next session based on project state:
+   - **Next Slice Ready:** Route to the Developer for the next slice whose dependencies are met. If multiple independent slices are ready for parallel execution, provide start commands for each and instruct the user to run them in separate workspaces (such as git worktrees).
+   - **Unresolved Unknowns:** Route to the Prototyper if the next slice contains unresolved Key Unknowns.
+   - **Milestone Complete:** Route to the Architect if the milestone is complete and planned milestones remain in the Roadmap. The Architect will perform the health check, initialize the next milestone, and draft its slices.
+   - **Roadmap Complete:** Route to the Pathfinder only if all roadmap milestones are complete and the product requires new strategic direction.
