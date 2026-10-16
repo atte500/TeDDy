@@ -1,7 +1,17 @@
 [project]
 name = "teddy-cli"
 version = "0.1.16"
-description = "A local-first, file-based AI coding workflow that applies the UNIX philosophy to AI collaboration."
+description = "The local-first, test-driven agentic engineering harness. Because you should own the means of development."
+readme = "README.md"
+keywords = [
+    "agentic-workflows",
+    "ai-agents",
+    "cli",
+    "developer-tools",
+    "local-first",
+    "python",
+    "tdd",
+]
 authors = [{ name = "Raphael Atteritano" }]
 license = { text = "AGPL-3.0-only" }
 requires-python = ">=3.11, <3.15"
