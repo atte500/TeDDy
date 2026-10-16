@@ -65,16 +65,16 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    4. EDIT your MRE script to import the replica instead of the production module.
    5. EXECUTE the MRE. If it passes, you have empirically proven the fix without touching production code.
    6. Always EDIT the Case File to record verification results. If it fails, update the Causal Model and restart investigation.
-7. **Systemic Audit:**
-   Analyze the verified root cause to identify its abstract category. Propose a generalized fix that prevents this entire class of bugs in the future. Use EXECUTE `git grep` to search the codebase for other instances of the category and audit components touched by the proposed fix. If the fix modifies a port, signature, or data contract with more than one consumer, partition the change into non-breaking steps: expand the interface, migrate consumers, then contract obsolete code.
+7. **Impact Audit:**
+   Analyze components touched by the proposed fix. Use EXECUTE `git grep` to search for direct upstream callers and downstream consumers that the change affects. If the fix modifies a shared port, signature, or data contract with multiple consumers, document the required migration path so the Developer can partition the change into non-breaking steps.
 8. **Case File Synchronization:**
-   EDIT the Case File following conventions in `docs/project/PROJECT.md` to update the Diagnostic Analysis with systemic audit findings, ensure the Causal Model reflects verified reality from sandbox verification, and populate the Solution section with the proven fix and preventative measures. Set status to Resolved.
+   EDIT the Case File to update Diagnostic Analysis, verify the Causal Model reflects sandbox reality, and record the proven fix along with affected components in the Solution section. Set status to Resolved.
 
 ### Alignment
 **Goal:** Present the complete diagnosis and proposed fix for explicit user approval.
 
 1. **Synthesis Presentation:**
-   Message the user explaining the root cause analysis, verified MRE evidence, systemic audit findings, and the proven solution from the Case File in clear prose.
+   Message the user explaining the root cause analysis, verified MRE evidence, affected components, and the proven solution from the Case File in clear prose.
 2. **Approval Gate:**
    Await explicit user approval before proceeding to the Conclusion phase. If changes or refinements are requested, adjust the Case File, then re-align.
 

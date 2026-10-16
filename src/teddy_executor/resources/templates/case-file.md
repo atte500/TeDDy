@@ -31,4 +31,8 @@ Continuously log diagnostic attempts and findings in chronological order:
 2. Investigated whether [hypothesis] by [action/probe]; observed [outcome], which [conclusion].
 
 ## Solution
-Root cause summary, verified sandbox fix, and systemic preventative measures to eliminate this bug class globally.
+### Root Cause Analysis
+Summary of verified root cause and sandbox fix.
+
+### Affected Components
+Direct upstream callers, downstream dependencies, or shared contracts affected by the fix.

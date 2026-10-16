@@ -124,6 +124,12 @@ Write in grammatically complete sentences using active voice, standard articles,
 
 Prefer config-level bypasses (pyproject `per-file-ignores`, pre-commit `exclude`) for anything repeated or file-wide. Allow a narrowly-scoped inline `# type: ignore[code]` / `# noqa: CODE` WITH a reason comment for genuine one-offs. Bare `# noqa` / `# type: ignore` are forbidden. Prompt steps reference this policy by NAME, never by rule number.
 
+### Code and Naming Hygiene
+
+All code comments and file names must remain self-contained without fragile document citations:
+- **Code Comments:** Explain intent, invariants, edge cases, and rationale directly in the code. Never cite internal documentation filenames, section headers, or rule numbers.
+- **File and Test Naming:** Name files, functions, and tests after the domain concept, scenario, or behavior under test. Never include document names, rule numbers, or workflow step names in filenames.
+
 ### Technical Debt Triage
 
 Handle technical debt using this 3-tier policy:

@@ -78,7 +78,7 @@ EOF
 **Requirements:**
 - The output file MUST be written to `spikes/debug/probe_output.txt` — this path is uploaded as an artifact by the CI workflow.
 - The CI workflow running the probe must use a single job with no build matrix. This prevents multiple jobs from overwriting the uploaded artifact (`probe-result`).
-- The script must remain minimal and self-contained, using a single heredoc. See the Debugger's rule 11 (Remote Probing Protocol) for full protocol details.
+- The script must remain minimal and self-contained, using a single heredoc.
 
 ## Cross-Platform Design
 
