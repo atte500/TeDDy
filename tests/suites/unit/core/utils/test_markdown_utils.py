@@ -120,7 +120,6 @@ def test_session_history_helpers(container):
 
 # ---------------------------------------------------------------------------
 # strip_trailing_open_fence: preserve/collapse matrix
-# Ported from spikes/debug/session-hang/06-fence-detector-matrix.py
 # ---------------------------------------------------------------------------
 
 # Well-formed Markdown that MUST be returned byte-for-byte unchanged.

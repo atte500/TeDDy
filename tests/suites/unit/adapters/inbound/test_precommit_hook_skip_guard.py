@@ -2,10 +2,8 @@
 
 The guard in `_ensure_commit_hooks` must skip the `pre-commit install`
 subprocess when every requested hook shim is already current (per-shim
-property check validated by the prototype:
-spikes/prototypes/windows-startup-latency/validate_shim_determinism.py,
-ALL PASS) and fall back to the real install on ANY mismatch — safety is
-never reduced.
+property check validated during prototyping) and fall back to the real
+install on ANY mismatch — safety is never reduced.
 
 The filesystem dimension is driven by HookShimWorkspace (real temp
 files). The install spawn is observed by a def-based recording double

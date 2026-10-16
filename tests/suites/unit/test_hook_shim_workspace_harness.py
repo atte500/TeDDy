@@ -1,8 +1,7 @@
 """Harness self-tests for the HookShimWorkspace test double.
 
-The fake models the .git/hooks filesystem state validated by the
-prototype (spikes/prototypes/windows-startup-latency/
-validate_shim_determinism.py, ALL PASS):
+The fake models the .git/hooks filesystem state validated during
+prototyping:
 
 - ONE shim per hook type under <root>/.git/hooks/, each declaring only
   its OWN --hook-type=<type> (per-shim guard semantics)

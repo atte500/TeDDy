@@ -1,8 +1,7 @@
 """Harness self-tests for the FakeRegistryCache test double.
 
 The fake models the persistent OpenRouter model-registry cache file state
-validated by the prototype (spikes/prototypes/windows-startup-latency/
-registry_cache_prototype.py, 7/7 PASS):
+validated during prototyping:
 
 - JSON file at <root>/.teddy/.model_registry_cache.json
 - Payload keys: version (int, 1), fetched_at_epoch (int epoch seconds),

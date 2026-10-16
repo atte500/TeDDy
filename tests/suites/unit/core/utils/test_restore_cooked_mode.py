@@ -57,8 +57,8 @@ def _force_restore_preconditions(monkeypatch, *, isatty: bool) -> None:
     fixture. pytest re-sets ``PYTEST_CURRENT_TEST`` immediately before invoking
     the test function -- AFTER fixtures have run -- so a fixture-level
     ``monkeypatch.delenv`` is silently undone and the helper's
-    ``"PYTEST_CURRENT_TEST" in os.environ`` guard short-circuits (confirmed by
-    ``spikes/debug/test_56_restore_flag_diag.py``: the fixture variant saw
+    ``"PYTEST_CURRENT_TEST" in os.environ`` guard short-circuits (confirmed
+    during prototyping: the fixture variant saw
     ``PYTEST_CURRENT_TEST in os.environ == True`` and never called ``tcsetattr``,
     while the inline variant saw ``False`` and recorded the full cooked-mode
     mask ``[256, 0, 0, 1035, 0, 0, 0]``).
