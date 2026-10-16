@@ -1,5 +1,5 @@
 # Slice: Configurable Guardrails
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc slice)
 - **Depends On:** N/A
 - **Specs:** N/A
