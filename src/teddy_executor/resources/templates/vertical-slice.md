@@ -80,5 +80,10 @@ Free-form notes recording decisions, deviations, or discoveries during implement
 <!-- Do NOT include running automated tests here; those are covered by the automated test suite. -->
 
 **Format:**
-- [ ] **[Title]:** Run `command <args>` and verify output contains `expected output`.
-- [ ] **[Title]:** Navigate to `[View/Screen]`, trigger `[Action]`, and confirm `[Observed State/Element]`.
+- [ ] **Title:**
+    Run `command <args>`.
+    Verify output contains `expected output`.
+- [ ] **Title:**
+    Navigate to `[View/Screen]`.
+    Trigger `[Action]`.
+    Confirm `[Observed State/Element]`.
