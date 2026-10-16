@@ -1,74 +1,42 @@
-# Outbound Adapter: Web Scraper Adapter
+# Component Design: WebScraperAdapter
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/adapters/outbound/web_scraper_adapter.py`](/src/teddy_executor/adapters/outbound/web_scraper_adapter.py)
 
-**Status:** Implemented
+## Purpose
+Implements the `WebScraper` outbound port. It fetches a URL and converts the response to Markdown, with a dedicated path for GitHub raw content and issue or pull-request conversations.
 
-## 1. Purpose
+## Consumers
+- [`ActionFactory`](../../core/services/action_factory.md): Builds remote `READ` actions that call the port.
+- [`ContextService`](../../core/services/context_service.md): Fetches context URLs concurrently through a thread pool.
 
-The `WebScraperAdapter` is the concrete implementation of the `WebScraper` outbound port. Its responsibility is to handle the technical details of fetching content from a URL and converting it from HTML to a clean Markdown format for use by the core application.
+## Dependencies
+- [`IConfigService`](../../core/ports/outbound/config_service.md): Optional; reads `research.max_scraper_retries` and `read.max_lines`.
+- **`requests`** (external): Performs the HTTP fetch; imported lazily inside each fetch helper.
+- **`trafilatura`** (external): Extracts main content to Markdown and supplies a fallback fetcher; imported lazily.
+- **`BeautifulSoup`** (external): Parses GitHub HTML for the conversation fallback; imported lazily.
+- **`suppressed_logging`** (`teddy_executor.adapters.outbound.suppressed_logging`): Silences third-party logs during a fetch through a counted, thread-safe scope.
 
-## 2. Implemented Ports
+## Class Invariants
+- `lazy_heavy_imports`: `requests`, `trafilatura`, and `BeautifulSoup` load inside the helper that uses them, keeping CLI startup fast.
+- `github_raw_bypass`: A raw or blob GitHub URL is returned verbatim and never passes through `trafilatura.extract`.
+- `concurrency_safe_logging`: Log suppression uses a counted scope because `get_content` runs concurrently during context assembly.
+- `trafilatura_fallback_after_rotation`: The adapter calls `trafilatura.fetch_url` only after the User-Agent rotation returns no content, so a failed URL is not re-fetched and re-logged.
 
-*   [`WebScraper`](../../core/ports/outbound/web_scraper.md)
+## Inbound Ports
+None — this is an outbound (driven) adapter.
 
-## 3. Implementation Details / Logic
-The adapter employs a "smart router" pattern to choose the best scraping strategy based on the URL. This hybrid approach ensures both high-quality content extraction from general web pages and perfect fidelity for source code files from GitHub.
+## Outbound Ports
+- **`WebScraper`**: The driven contract implemented by this adapter. See the [WebScraper design](../../core/ports/outbound/web_scraper.md).
 
-1.  **GitHub URL Detection:** The adapter first inspects the URL. It identifies three specific patterns:
-    -   **Raw Content URLs:** Domain `raw.githubusercontent.com`. Bypasses extraction and returns content immediately.
-    -   **Blob URLs:** Pattern `github.com/.../blob/...`. Transformed to raw and returned immediately.
-    -   **Conversation URLs:** Pattern `github.com/.../issues/...` or `github.com/.../pull/...`. Routed to the specialized `_extract_github_conversation` logic.
-2.  **Raw Content Fetching:** URLs identified as raw are fetched directly using `requests`. The response text is returned as-is, bypassing `trafilatura` to prevent accidental stripping of source code or markdown.
-3.  **GitHub Conversation Extraction (Issues/PRs):** Uses a **Hybrid JSON/HTML strategy** to maximize fidelity:
-    -   **JSON Pass:** Scans `<script>` tags for React hydration payloads (`data-target="react-app.embeddedData"` or `id="client-env"`). Recursively searches for the `issue` or `pullRequest` container and timeline `edges`. This provides structured Markdown and metadata (authors, timestamps).
-    -   **HTML Fallback:** Scrapes `.markdown-title` for the header and `.markdown-body` / `.comment-body` blocks if JSON data is missing or fragmented.
-    -   **Merging:** Returns a unified Markdown string starting with the title, followed by the description and conversation items.
-4.  **General Content Extraction (for all other URLs):** For all other URLs, the adapter uses a two-stage process. It first attempts a direct fetch using the `requests` library.
-4.  **403 Fallback:** If the initial `requests` fetch is blocked with a `403 Forbidden` error, the adapter automatically falls back to using `trafilatura.fetch_url`. This second method is more robust and can bypass some simple anti-scraping measures.
-5.  **Content Conversion:** Once the HTML content is successfully fetched (either directly or via the fallback), `trafilatura.extract` is used to strip away boilerplate and convert the main content to Markdown.
-6.  **UA & Header Rotation:** To bypass Cloudflare and other anti-scraping measures (e.g., 403 Forbidden), the adapter implements a rotation strategy:
-    - **User-Agent Pool:** Rotates between Chrome, Safari, and Edge on macOS/Windows.
-    - **Header Hardening:** Adds `Accept-Language`, `Referer`, and `Upgrade-Insecure-Requests` to the rotation.
-    - **Fingerprint Reduction:** Minimizes custom library headers that identify `requests`.
-7.  **Transient Failure Resilience:** Implements exponential backoff (2^n) for 5xx, 429, and connection/timeout errors.
-8.  **Configurable Retries:** The maximum number of retry attempts is configurable via `research.max_scraper_retries` in `config.yaml` (default: 3).
+## Data Contracts
+- **Configuration keys:** `research.max_scraper_retries` (int, default 3) bounds the retry loop; `read.max_lines` (int) caps truncated output.
+- **`get_content` return:** The page content as Markdown text.
 
-## 4. Data Contracts / Methods
-The adapter implements the `get_content` method as defined by the `IWebScraper` port.
+## Operations
 
-The following snippet demonstrates the core fallback logic.
+### `get_content(url, truncate=True, **_kwargs) -> str`
+- **Preconditions:** `url` is a well-formed absolute URL.
+- **Postconditions:** Returns the page content as Markdown. A raw or blob GitHub URL returns verbatim text. A GitHub issue or pull-request URL uses the hybrid JSON-then-HTML extractor. Every other URL uses a rotating User-Agent fetch, then falls back to `trafilatura.fetch_url` when the rotation yields no content, and converts the result through `trafilatura.extract`. When `truncate` is `True`, the output is capped at `read.max_lines`.
 
-```python
-import requests
-import trafilatura
-
-class WebScraperAdapter(WebScraper):
-    def get_content(self, url: str) -> str:
-        # ... GitHub handling logic ...
-
-        html_content = None
-        try:
-            response = requests.get(url, headers=headers)
-            response.raise_for_status()
-            html_content = response.text
-        except requests.exceptions.HTTPError as e:
-            if e.response is not None and e.response.status_code == 403:
-                # Fallback for 403 Forbidden errors
-                html_content = trafilatura.fetch_url(url)
-            else:
-                raise
-
-        if not html_content:
-            return ""
-
-        markdown_content = trafilatura.extract(
-            html_content,
-            output_format="markdown",
-            # ... other trafilatura options ...
-        )
-        return markdown_content if markdown_content else ""
-```
-
-## 5. External Documentation
-
-*   [`requests` Official Documentation](https://requests.readthedocs.io/en/latest/)
-*   [`trafilatura` Official Documentation](https://trafilatura.readthedocs.io/en/latest/)
+### Internal helpers
+`_handle_github_raw` rewrites blob URLs and fetches raw content. `_fetch_with_rotation` rotates User-Agents with exponential backoff. `_fetch_with_ua` retries transient errors on one User-Agent. `_extract_github_conversation` merges JSON hydration data with CSS-scraped comments. `_parse_github_json` and `_scrape_github_html` implement the two GitHub extraction passes. `_truncate_content` applies the line cap. `_is_retryable_error` classifies 5xx and 429 as transient.

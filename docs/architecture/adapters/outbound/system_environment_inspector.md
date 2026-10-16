@@ -1,20 +1,42 @@
-# Outbound Adapter: `SystemEnvironmentInspector`
+# Component Design: SystemEnvironmentInspector
+- **Status:** Implemented
+- **Source:** [`src/teddy_executor/adapters/outbound/system_environment_inspector.py`](/src/teddy_executor/adapters/outbound/system_environment_inspector.py)
 
-**Status:** Implemented
-**Language:** Python 3.9+
+## Purpose
+Implements the `IEnvironmentInspector` outbound port with the Python standard library. It reports host properties and the Git working-tree status for the context payload.
 
-## 1. Purpose
+## Consumers
+- [`ContextService`](../../core/services/context_service.md): Gathers environment details and Git status during context assembly.
 
-The `SystemEnvironmentInspector` is a simple adapter that implements the `IEnvironmentInspector` port. It uses Python's standard library modules (`os`, `platform`, `sys`) to gather information about the host system.
+## Dependencies
+- **`subprocess.run`** (stdlib): Executes the `git status` commands; the callable is injectable for tests.
+- **`os`, `platform`, `sys`, `datetime`** (stdlib): Read the host properties.
 
-## 2. Implemented Outbound Port
+## Class Invariants
+- `injectable_run_func`: The `run_func` constructor argument defaults to `subprocess.run`, so tests substitute a fake runner.
+- `cross_platform_shell`: Shell detection returns `$SHELL` on Unix, falls back to `$COMSPEC` on Windows, then returns `"unknown"`.
+- `git_status_absent_safe`: `get_git_status` and `get_full_git_status` return `None` when Git is missing or the directory is not a repository.
+- `stdin_detached`: Every Git command passes `stdin=subprocess.DEVNULL`.
 
-*   [`IEnvironmentInspector`](../../core/ports/outbound/environment_inspector.md)
+## Inbound Ports
+None — this is an outbound (driven) adapter.
 
-## 3. Dependencies
+## Outbound Ports
+- **`IEnvironmentInspector`**: The driven contract implemented by this adapter. See the [IEnvironmentInspector design](../../core/ports/outbound/environment_inspector.md).
 
-*   None (uses only Python standard library).
+## Data Contracts
+- **`get_environment_info` mapping:** `os_name`, `os_version`, `python_version`, `cwd`, `shell`, `current_date` (YYYY-MM-DD), `current_time` (HH:MM:SS).
 
-## 4. Implementation Details
+## Operations
 
-The adapter calls functions like `platform.system()`, `platform.release()`, `sys.version`, `os.getcwd()`, `os.getenv("SHELL")`, and `datetime.now()` to populate a dictionary with the required environment information. This adapter directly interacts with the underlying operating system via the Python runtime.
+### `get_environment_info() -> dict[str, str]`
+- **Postconditions:** Returns the host property mapping, including the resolved shell and the current date and time.
+
+### `get_git_status() -> Optional[str]`
+- **Postconditions:** Returns the short-format `git status -s` output, or `None` when the directory is not a Git repository.
+
+### `get_full_git_status() -> Optional[str]`
+- **Postconditions:** Returns the full `git status` output including branch information, or `None` when the directory is not a Git repository.
+
+### Internal helpers
+`_detect_shell` resolves the shell with the cross-platform fallbacks.
