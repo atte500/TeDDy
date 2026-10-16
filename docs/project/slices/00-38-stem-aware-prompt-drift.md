@@ -48,7 +48,7 @@ The fix is slice-scoped: the duplication lives only in `init_service.py`. No por
 Ordering follows `docs/templates/vertical-slice.md`. There is NO `Wiring` deliverable: the slice introduces no new boundary and reuses the existing `InitService` seam.
 
 - [x] **Logic** — stem-aware prompt drift: add `_present_stems(dest_dir)` (guarded by `path_exists`) and `_entry_is_present(fname, present_stems)`; add a defaulted `stem_identity: bool = False` parameter to `_classify_drift` and classify a same-stem entry as EDITED when it is set; pass `stem_identity=True` for the prompts channel in `check_drift` only. Red: invert `test_check_drift_reports_stale_xml_as_missing_md` in `tests/suites/unit/core/services/test_init_service_drift.py` to assert the stale `.xml` reports as EDITED (not missing), and configure `list_directory` in all three drift tests (a bare mock is not iterable once the stem scan runs). Green: implement the minimal classifier change. Refactor: make `_copy_bundled_files` consume the same shared predicate so the stem-membership semantics live in exactly one place.
-- [ ] **Cleanup** — docs: update `docs/architecture/core/services/init_service.md` to document the shared stem predicate and the stem-aware drift classification; correct the stale "Stale `.xml` surfaced as drift" edge case and the "No `_classify_drift` change is required" note in `docs/project/slices/00-37-prompt-xml-to-md-migration.md`; run `git grep` for stale references.
+- [x] **Cleanup** — docs: update `docs/architecture/core/services/init_service.md` to document the shared stem predicate and the stem-aware drift classification; correct the stale "Stale `.xml` surfaced as drift" edge case and the "No `_classify_drift` change is required" note in `docs/project/slices/00-37-prompt-xml-to-md-migration.md`; run `git grep` for stale references.
 
 ## Implementation Notes
 - **Root cause.** Commit `47e3d6d0` taught the prompt copy routine (`_copy_bundled_files` with `stem_identity=True`) that a same-stem file under any extension is the same logical prompt, but left the drift check (`_classify_drift`) matching by exact `.md` name. A user holding only `.xml` prompts has every prompt counted as present for copying, so `ensure_initialized` writes no `.md`, while the drift check counts every prompt as missing.
@@ -67,6 +67,13 @@ Ordering follows `docs/templates/vertical-slice.md`. There is NO `Wiring` delive
 - **Green:** the four surgical edits above; `test_init_service_drift.py` plus `test_init_service.py` reported `24 passed`, confirming the extraction preserved copy behaviour and satisfied the stem-aware drift contract.
 - **Integration gate:** `make test` reported the full suite green (1774 passed, 5 skipped).
 - **Files changed:** `src/teddy_executor/core/services/init_service.py`, `tests/suites/unit/core/services/test_init_service_drift.py`.
+
+### Deliverable 2 — As-Built (docs cleanup)
+- **Component doc updated:** `docs/architecture/core/services/init_service.md` gained a "### Shared Stem Predicate" section describing `_present_stems` / `_entry_is_present` and both consumers. The stale exact-name drift claim was replaced, and the `check_drift` postconditions plus contract dependencies now describe the stem-aware prompts channel (a same-stem `.xml` reports as EDITED).
+- **Stale slice corrected:** `docs/project/slices/00-37-prompt-xml-to-md-migration.md` now describes the original exact-name behaviour (a stale `.xml` classified as a missing `.md`) and points to slice 00-38 for the later stem-aware change, in the edge case, the `[EXPAND]` manifest note, the Implementation Notes bullet, and the Deliverable 2b As-Built line.
+- **As-Built Component Doc:** confirmed the component doc reflects as-built reality and keeps `**Status:** Implemented`; no further edit was required beyond the Turn 13 rewrite.
+- **Consistency check:** `git grep -n -E "_present_stems|_entry_is_present" -- src docs` resolves only to the production source and the updated component doc; no dangling references remain.
+- **Integration gate:** `make test` reported the full suite green (1774 passed, 5 skipped).
 
 ## Verification
 - [ ] **CLI:** Run `make test` and verify the full suite passes (green-to-green).

@@ -42,7 +42,11 @@ When `ensure_initialized` is called, the service performs the following checks a
 
 ### Prompt Initialization Logic
 
-The bundled prompts are Markdown files (`_PROMPT_FILES`) copied into `.teddy/prompts/` by `_init_prompts`. The prompt copy uses **stem identity**: a destination file counts as present when any file in `.teddy/prompts/` shares the manifest entry's stem (case-folded) under ANY extension. When `overwrite=True`, the `.md` is written and any same-stem file with a different name (e.g. a pre-migration `pathfinder.xml`) is removed, so two same-stem files never coexist after a write. Because the manifest lists the `.md` names and the drift check matches by exact name, a stale `.xml` surfaces as a missing `.md` in `check_drift` and the `teddy start` preflight advises `teddy init prompts`. The config and template copies keep exact-name matching (their extensions never change).
+The bundled prompts are Markdown files (`_PROMPT_FILES`) copied into `.teddy/prompts/` by `_init_prompts`. The prompt copy uses **stem identity**: a destination file counts as present when any file in `.teddy/prompts/` shares the manifest entry's stem (case-folded) under ANY extension. When `overwrite=True`, the `.md` is written and any same-stem file with a different name (e.g. a pre-migration `pathfinder.xml`) is removed, so two same-stem files never coexist after a write. The config and template copies keep exact-name matching (their extensions never change).
+
+### Shared Stem Predicate
+
+The prompt copy routine and the drift check share one stem-membership predicate, so the two sibling routines cannot diverge. `_present_stems(dest_dir)` returns the case-folded stems of every directory entry, or an empty set when `dest_dir` is absent (the file-system adapter raises `FileNotFoundError` when asked to list a missing directory, so the scan is guarded by `path_exists`). `_entry_is_present(target_path, filename, present_stems)` returns true when the exact file OR a same-stem sibling exists. `_copy_bundled_files` and `_classify_drift` both consume this predicate, so a manifest `.md` present only as a same-stem sibling (e.g. a pre-migration `.xml`) reports as EDITED in `check_drift` and the `teddy start` preflight advises `teddy init prompts`.
 
 ### Template Initialization Logic (new)
 
@@ -83,9 +87,9 @@ The bundled templates directory contains 11 files:
 
 ### `check_drift() -> DriftReport`
 - **Preconditions:** None.
-- **Postconditions:** Enumerates the canonical default file sets (`_PROMPT_FILES`, `_TEMPLATE_FILES`) and returns an immutable `DriftReport` (from `core/domain/models/drift_report.py`) classifying each user `.teddy/prompts/*.md` and `docs/templates/*.md` file as EDITED (present but differing from a resolvable bundled default), MISSING (absent), or clean. Unresolvable bundled defaults are skipped, never reported as drift. A file is MISSING when the user copy is absent, so an entirely absent user directory simply makes every file in the set report as MISSING (per-file check, no directory special-casing). `DriftReport` exposes `has_drift`, `prompts_drifted` and `templates_drifted` convenience properties consumed by the preflight notification.
+- **Postconditions:** Enumerates the canonical default file sets (`_PROMPT_FILES`, `_TEMPLATE_FILES`) and returns an immutable `DriftReport` (from `core/domain/models/drift_report.py`) classifying each user `.teddy/prompts/*.md` and `docs/templates/*.md` file as EDITED (present but differing from a resolvable bundled default), MISSING (absent), or clean. Unresolvable bundled defaults are skipped, never reported as drift. The prompts channel opts into stem identity, so a manifest `.md` present only as a same-stem sibling (e.g. a pre-migration `.xml`) reports as EDITED rather than MISSING. The templates channel keeps exact-name matching, so an entirely absent user directory simply makes every template report as MISSING (per-file check, no directory special-casing). `DriftReport` exposes `has_drift`, `prompts_drifted` and `templates_drifted` convenience properties consumed by the preflight notification.
 - **Exceptions:** None.
-- **Contract Dependencies:** Reuses the existing `_config_dir` / `_templates_dir` / `_get_default_content` / `_read_bundled_resource` seams via a `_classify_drift` per-file helper. `check_drift` is an ADDITIVE member of `IInitUseCase` (no breaking signature change; every port double is spec-based).
+- **Contract Dependencies:** Reuses the existing `_config_dir` / `_templates_dir` / `_get_default_content` / `_read_bundled_resource` seams via a `_classify_drift` per-file helper that shares the `_present_stems` / `_entry_is_present` stem predicate with the prompt copy routine. `check_drift` is an ADDITIVE member of `IInitUseCase` (no breaking signature change; every port double is spec-based).
 
 ## 8. Non-Destructive Guarantee
 
