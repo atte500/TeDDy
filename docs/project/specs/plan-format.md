@@ -1,16 +1,20 @@
 # Spec: Plan Format
 
-## 1. Core Principles
+## Overview
 
 This format is designed to be a perfectly readable Markdown document first, and a machine-parseable plan second.
+
+## Guiding Principles
 
 1.  **Markdown-First:** The document uses standard Markdown headings (`#`, `##`, `###`) to create a readable structure. The layout should feel natural to anyone familiar with Markdown.
 2.  **Single Source of Truth (SoT):** All data and metadata are written once directly in the visible Markdown content. There is no hidden or duplicated data.
 3.  **Hierarchical Structure:** The plan is a hierarchy of components. The parser should walk the Markdown AST, and the content of any given heading level contains all sub-levels. For example, the `## Action Plan` section contains all the individual action blocks defined by `###` headings.
 
-## 2. Overall Document Structure
+## Technical Specifications
 
-### 2.1. Code Block Nesting
+### Overall Document Structure
+
+#### Code Block Nesting
 
 A core principle of this format is that it must reliably handle nested code blocks, which is a common source of errors in LLM-generated Markdown.
 
@@ -33,7 +37,7 @@ A plan is a single Markdown file with the following top-level structure:
 ... (Contains one or more action blocks)
 ```
 
-## 3. File Linking Conventions
+### File Linking Conventions
 
 To ensure links work correctly in local previews (like VSCode) while referencing the project root, a specific syntax must be used.
 
@@ -43,9 +47,9 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     -   **Example:** `[docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md)`
     -   **Behavior:** This specific structure ensures that the link text is displayed cleanly while the link itself resolves correctly from the project root in the previewer.
 
-## 4. Core Component Blocks
+### Core Component Blocks
 
-### 4.1. Plan Header
+#### Plan Header
 
 -   **Purpose:** Contains the plan's title and high-level metadata. It must be the first and only Level 1 (`#`) heading in the document.
 -   **Format:**
@@ -57,7 +61,7 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     ```
 -   **Parsing Rules:** The plan's title is the content of the `#` heading. The metadata is the bulleted list that immediately follows it. The parser should treat this list as key-value pairs.
 
-### 4.2. Rationale
+#### Rationale
 
 -   **Purpose:** Contains the agent's reasoning, state, and thought process. It acts as a **cognitive forcing function** to ensure every plan is grounded, deliberate, and strategic.
 -   **Format:** The `Rationale` block is a plain text code block that **must** contain four distinct sections, each with a `###` heading, in the following order: `### 1. Synthesis`, `### 2. Justification`, `### 3. Expected Outcome`, and `4. State Dashboard`.
@@ -80,11 +84,11 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     `````
 -   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption and agent self-correction. The outer fence for the `Rationale` block must follow the **Code Block Nesting** rule.
 
-## 5. Action Blocks
+### Action Blocks
 
 All actions are located under the `## Action Plan` heading. Each action is defined by its own `###` heading.
 
-### 5.1. `CREATE`
+#### `CREATE`
 
 -   **Purpose:** Creates a new file.
 -   **Format:**
@@ -106,7 +110,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     1.  Extract `File Path`, `Overwrite`, and `Description` from the metadata list.
     2.  The content for the new file is the entire content of the first fenced code block.
 
-### 5.2. `READ`
+#### `READ`
 
 -   **Purpose:** Reads a local file or remote URL to gather information.
 -   **System Behavior:** A successful `READ` will cause the system to automatically add the target resource to the context for the *next* turn.
@@ -123,11 +127,11 @@ All actions are located under the `## Action Plan` heading. Each action is defin
   3.  `File Path` is an alias for local resources and **strictly forbids URLs**.
   4.  The value for either can be a root-relative Markdown link `[text](/destination)`.
 
-### 5.3. `EDIT`
+#### `EDIT`
 
 -   **Purpose:** Edits an existing file. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action rather than one large replacement.
 
-#### Parser Resilience (Cross-Action)
+##### Parser Resilience (Cross-Action)
 For all actions, the parser must ignore and clean up unforeseen codeblocks or thematic breaks (`---`) following the action block without throwing validation errors. Trailing text validation errors must be preserved.
 -   **Format:**
     ``````markdown
@@ -160,7 +164,7 @@ For all actions, the parser must ignore and clean up unforeseen codeblocks or th
     3.  **Surgical Changes:** An `EDIT` action must contain at least one `FIND`/`REPLACE` pair. Full-file overwrites are strictly forbidden.
     4.  **Multi-Instance Replacement:** If `Match All: true` is specified, the system will replace *all* occurrences of the `FIND` block within the target file that meet the similarity threshold.
 
-### 5.4. `EXECUTE`
+#### `EXECUTE`
 
 -   **Purpose:** Executes a shell command.
 -   **Format:**
@@ -184,7 +188,7 @@ For all actions, the parser must ignore and clean up unforeseen codeblocks or th
     6.  **Timeout Override:** The optional `Timeout` parameter (integer) overrides the global default execution timeout (in seconds) for commands that are intentionally slow but require synchronous output capture.
     7.  **Parameter Extraction:** The parser extracts `Description`, `Expected Outcome`, `Allow Failure` (optional), `Background` (optional), and `Timeout` (optional) from the metadata list.
 
-### 5.5. `RESEARCH`
+#### `RESEARCH`
 
 -   **Purpose:** Performs multiple, distinct web searches. The results contain the URL, Page Title, and description. `READ` must be used on individual URLs to retrieve full content.
 -   **Format:**
@@ -204,7 +208,7 @@ For all actions, the parser must ignore and clean up unforeseen codeblocks or th
     2.  The parser iterates through every fenced code block.
     3.  Each block is split into individual lines. Each non-empty line (stripped of leading/trailing whitespace) is treated as a separate, individual query.
 
-### 5.6. `## Message` (Communicating Turns)
+#### `## Message` (Communicating Turns)
 
 Used when the agent needs to talk to the user, hand off to another agent, or signal completion.
 - Everything following the `## Message` header is treated as raw Markdown content for the recipient (the User).
@@ -212,11 +216,11 @@ Used when the agent needs to talk to the user, hand off to another agent, or sig
 - **Handoffs:** To hand off to another agent, the message should include the specific CLI instruction for the user to start a new session (e.g., `teddy start -a developer ...`).
 - **Mutual Exclusivity:** A plan cannot contain both `## Action Plan` and `## Message`.
 
-### 5.9. [Deprecated] `PRUNE`, `PROMPT`, `INVOKE`, `RETURN`
+#### [Deprecated] `PRUNE`, `PROMPT`, `INVOKE`, `RETURN`
 
 These actions are deprecated. `PRUNE` has been removed to simplify context management. `PROMPT`, `INVOKE`, and `RETURN` are replaced by the structural `## Message` section.
 
-## 6. Comprehensive Example Plan
+### Comprehensive Example Plan
 
 The following is a complete, realistic example of a plan file from start to finish.
 

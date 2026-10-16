@@ -1,10 +1,18 @@
 # Spec: TeDDy Directory Structure
 
-## 1. Overview
+## Overview
 
 This document defines the official directory and file structure for the `.teddy/` directory, which serves as the central repository for all TeDDy-related data, including sessions and configuration.
 
-## 2. Top-Level Structure
+## Guiding Principles
+
+- **Project-Root Anchor:** The `.teddy/` directory lives at the project root and holds all TeDDy data.
+- **Self-Contained Sessions:** Each session is an isolated directory that owns its own context and turn history.
+- **One Directory Per Turn:** Each turn directory holds the complete artifact set for a single plan-execute cycle.
+
+## Technical Specifications
+
+### Top-Level Structure
 
 The `.teddy/` directory is located at the root of the project.
 
@@ -20,7 +28,7 @@ The `.teddy/` directory is located at the root of the project.
 -   **`init.context`**: (Optional) A file containing newline-separated paths to be included in the context of every *new* session.
 -   **`sessions/`**: Contains all individual session directories.
 
-## 3. Session Directory Structure
+### Session Directory Structure
 
 Each session is a self-contained directory within `.teddy/sessions/`. The session name is a descriptive, kebab-case string provided by the user (e.g., "implement-auth-flow").
 
@@ -33,7 +41,7 @@ Each session is a self-contained directory within `.teddy/sessions/`. The sessio
 -   **`session.context`**: (Optional) A file containing newline-separated paths to be included in the context of *every turn* within this specific session.
 -   **`<turn_number>/`**: A directory for each turn in the session, named with a zero-padded integer (e.g., `01`, `02`).
 
-## 4. Turn Directory Structure
+### Turn Directory Structure
 
 Each turn directory contains the artifacts related to a single plan-execute cycle.
 

@@ -1,29 +1,31 @@
 # Spec: Plan Validation
 
-## 1. Overview & Principles
+## Overview
 
 This document specifies the pre-flight validation checks that **must** be run on any `plan.md` file before it is presented to the user for approval. This validation phase is a critical gatekeeper in the TeDDy workflow, designed to catch common, predictable errors early and enable the automated self-correction loop.
 
-### Principles
+## Guiding Principles
 
 -   **Fail Fast:** The system must identify and report errors at the earliest possible opportunity, preventing "approve-then-fail" scenarios that waste time and effort.
 -   **Provide Actionable Feedback:** Validation errors must be specific, clear, and provide enough context for an AI agent to understand the mistake and correct it.
 -   **Enable Self-Correction:** This validation system is the foundation of the **Automated Re-plan Loop**, as defined in the [Interactive Session Workflow Specification](./interactive-session-workflow.md). A failure here triggers the AI's self-correction mechanism.
 -   **Guarantee Graceful Handling:** The validation layer is the primary defense against runtime errors. If a plan passes all validation checks, it should execute without unexpected crashes. Any potential error that can be anticipated (e.g., file not found, command failure) must be caught, handled gracefully, and documented clearly in the final execution report.
 
-## 2. The Validation Process
+## Technical Specifications
+
+### The Validation Process
 
 -   **Trigger:** Validation is automatically performed at the beginning of the `teddy execute` command, regardless of whether it is run in a stateful interactive session or as a stateless manual command.
 -   **Success Outcome:** If all checks pass, the system proceeds to the interactive "Approval & Execution Phase".
 -   **Failure Outcome:** If any check fails, execution is immediately halted. The system triggers the **Automated Re-plan Loop**, generating a validation failure report and initiating a new turn for the AI to correct the plan.
 
-## 3. Validation Checks
+### Validation Checks
 
 The following checks are performed in order. The first failure terminates the validation process.
 
 ---
 
-### 3.1. General Plan Structure
+#### General Plan Structure
 
 These checks ensure the overall document is well-formed.
 
@@ -34,7 +36,7 @@ These checks ensure the overall document is well-formed.
 
 ---
 
-### 3.2. Action Block Checks
+#### Action Block Checks
 
 These checks ensure the `## Action Plan` section and the individual action blocks are correctly structured according to the [Plan Format](./plan-format.md).
 
@@ -42,16 +44,16 @@ These checks ensure the `## Action Plan` section and the individual action block
 
 ---
 
-### 3.3. Action-Specific Logical Checks
+#### Action-Specific Logical Checks
 
 These checks validate the *content* of an action against the current state of the file system and session context.
 
-#### `CREATE`
+##### `CREATE`
 -   **[✓] `File Path` must be specified:** The metadata block must contain a valid `File Path`.
 -   **[✓] Target path must not exist (unless Overwrite is true):** By default, the file path specified must not already exist. If `Overwrite: true` is provided, validation passes even if the file exists.
     -   *Failure Example:* A plan tries to `CREATE` `src/main.py` but that file already exists and `Overwrite` is omitted.
 
-#### `EDIT`
+##### `EDIT`
 -   **[✓] `File Path` must be specified:** The metadata block must contain a valid `File Path`.
 -   **[✓] Target path must exist:** The specified file must already exist on the file system.
 -   **[ ] Target path context check:** (Relaxed) The file does NOT need to be in context; hallucinations or mismatches will be caught by the matching engine.
@@ -70,7 +72,7 @@ These checks validate the *content* of an action against the current state of th
             - If the `REPLACE` block is already present in the file (score >= threshold), provide a hint that the change might have already been applied.
             - Otherwise, provide a hint to review the provided diff and match whitespace/indentation exactly.
 
-#### `EXECUTE`
+##### `EXECUTE`
 -   **[✓] Must contain a core command:** The command code block must not be empty.
 -   **[✓] Multi-line Failure Reporting:** If a multi-line block fails, the system must identify the specific command that failed using shell-side reporting (traps/wrappers). The failure must be documented in the `ActionLog` under `failed_command`.
 -   **[✓] Allow Failure is optional:** Defaults to `false` if omitted. If present, the value MUST be `true` or `false`.
@@ -78,26 +80,26 @@ These checks validate the *content* of an action against the current state of th
 -   **[✓] Timeout is optional:** If present, the value MUST be an integer representing seconds.
 -   **[✓] Supports Chaining & Directives:** Validation no longer blocks shell operators (&&, ||, ;, |) or directives (cd, export) in the command block.
 
-#### `READ`
+##### `READ`
 -   **[✓] `Resource` or `File Path` must be specified:** The metadata block must contain a `Resource` or `File Path`.
 -   **[✓] Strict Local Only:** If `File Path` is used, the value MUST NOT be a URL (starts with `http://` or `https://`).
 -   **[✓] Local file must exist:** If the resource is a local file path (e.g., `[path/to/file.md](/path/to/file.md)`), that file must exist on the file system. (Note: URLs are not validated at this stage).
 -   **[ ] Context Redundancy:** (Relaxed) Validation will NOT fail if the file is already in context; the `READ` will simply be treated as a redundant request (no-op).
 
-#### `PRUNE`
+##### `PRUNE`
 -   **[✓] `Resource` or `File Path` must be specified:** The metadata block must contain a `Resource` or `File Path`.
 -   **[✓] Strict Local Only:** If `File Path` is used, the value MUST NOT be a URL (starts with `http://` or `https://`).
 -   **[✓] Target must be in context:** The specified file must be listed in the current turn's context (`turn.context`).
     -   *Failure Example:* A plan tries to `PRUNE` `docs/OLD_SPEC.md` but that file is not listed in `turn.context`.
 
-#### `PROMPT`
+##### `PROMPT`
 -   **[✓] Message must be specified:** The action must contain free-form markdown content under the heading. Because this action is parsed as a single block of text, the system does not perform automated validation of referenced file paths.
 
-#### `INVOKE`
+##### `INVOKE`
 -   **[✓] `Agent` must be specified:** The metadata block must contain a valid target agent name.
 -   **[✓] `Description` must be specified:** The metadata block must contain a short explanation of the handoff.
 -   **[✓] Reference Files must exist:** If the optional `Reference Files` list is provided, all specified local files must exist on the file system.
 
-#### `RETURN`
+##### `RETURN`
 -   **[✓] `Description` must be specified:** The metadata block must contain a short explanation of the task completion.
 -   **[✓] Reference Files must exist:** If the optional `Reference Files` list is provided, all specified local files must exist on the file system.

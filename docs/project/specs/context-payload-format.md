@@ -15,7 +15,7 @@ The core principle is the **separation of concerns**:
 -   **Explicit Sourcing:** The origin of every resource in the context is explicitly stated to avoid ambiguity.
 -   **Single Source of Truth:** This payload represents the complete "worldview" for the AI for a given turn.
 
-## Payload Structure (`input.md`)
+## Technical Specifications
 
 The payload is a single Markdown document with the following top-level sections.
 

@@ -1,17 +1,19 @@
 # Spec: Manual CLI Workflow
 
-## 1. Overview
+## Overview
 
 This document specifies the user experience and system behavior for a non-interactive, manual workflow using the `teddy` CLI with an external chat interface. The goal is to provide a smooth, copy-paste-driven experience that remains robust and informative, even without the stateful, interactive session manager.
 
-## 2. Guiding Principles
+## Guiding Principles
 
 -   **Clipboard-First:** The primary method for passing multi-line text (plans, reports, context) between the user and the tool is the system clipboard.
 -   **Stateless & Explicit:** Each `teddy execute` command is a self-contained operation. The execution report must contain all necessary information for the user and AI to decide on the next step.
 -   **User-in-the-Loop:** The user is responsible for bridging the gap between the `teddy` tool and the AI. The tool's output must be designed to make this as seamless as possible.
 -   **Robust Markdown Generation (Smart Fencing):** All system-generated Markdown containing file contents (e.g., in reports from `teddy execute` or context payloads from `teddy context`) must use Code Block Nesting. The number of backticks used for a code block's fence must be greater than the longest sequence of backticks found within the content itself, preventing parsing errors.
 
-## 3. The Core Workflow Loop
+## Technical Specifications
+
+### The Core Workflow Loop
 
 The standard "happy path" for the manual workflow is a cycle of context gathering, planning, and execution.
 
@@ -25,7 +27,7 @@ The standard "happy path" for the manual workflow is a cycle of context gatherin
     -   It **copies the final Markdown report to the clipboard** (this can be disabled with a `--no-copy` flag).
 5.  **User Pastes Report to AI:** The user pastes the concise report from their clipboard back to the AI, starting the next cycle.
 
-### 3.1. The Action-by-Action Approval Loop
+#### The Action-by-Action Approval Loop
 A core safety feature of TeDDy is the approval loop. When `teddy execute` is run without the `-y` flag, it iterates through each action and initiates an interactive approval process:
 
 1.  **Display Action Details:** The tool first prints a clear summary of the action to be performed, including its type, description, and parameters.
@@ -38,9 +40,9 @@ A core safety feature of TeDDy is the approval loop. When `teddy execute` is run
     -   If the user enters `y` (or `yes`), the action is executed.
     -   If the user enters `n` (or `no`), the action is skipped, and they are prompted for an optional `Reason for skipping:`.
 
-## 4. `teddy execute` CLI Output
+### `teddy execute` CLI Output
 
-### 4.1. Report Generation: The Concise Report
+#### Report Generation: The Concise Report
 
 The manual workflow uses a **Concise Report** for its CLI output, which is optimized for a chat-based, copy-paste workflow. This report is a compact rendering of the canonical report data model.
 
@@ -51,11 +53,11 @@ The primary characteristics of the Concise Report are:
 -   It includes special, context-aware sections (Failures, `READ` additions, etc.), as needed.
 -   Its Action Log includes all action metadata and status but **omits** the large, verbatim content blocks from the original plan (e.g., the `Rationale` and the full bodies of `CREATE` or `EDIT` actions).
 
-## 5. Special Sections in the Concise Report
+### Special Sections in the Concise Report
 
 The concise report will conditionally include the following sections as needed.
 
-### 5.1. Handling `READ` Action Side-Effects
+#### Handling `READ` Action Side-Effects
 
 When a `READ` action is successfully executed, the system's internal logic would normally add the file to the next turn's context. In the manual workflow, this must be made explicit.
 
@@ -81,7 +83,7 @@ When a `READ` action is successfully executed, the system's internal logic would
     ...
     `````
 
-### 5.2. Handling Failures
+#### Handling Failures
 When an action fails, the report must provide a complete, self-contained "error report" that the user can paste directly to the AI for self-correction.
 
 -   **Requirement:** If any action fails, the report must include a top-level `## Failed Action Details` section.
@@ -121,7 +123,7 @@ When an action fails, the report must provide a complete, self-contained "error 
     ...
     `````
 
-### 5.3. Handling Control-Flow Actions (`PRUNE`, `INVOKE`, `RETURN`)
+#### Handling Control-Flow Actions (`PRUNE`, `INVOKE`, `RETURN`)
 Actions like `PRUNE`, `INVOKE`, and `RETURN` are designed for a stateful session to manage context and agent flow between turns. In the stateless manual CLI workflow, they are handled as follows:
 
 -   **`PRUNE`**: This action is automatically skipped, as there is no persistent context to manage between manual `execute` calls. The report will show the action as `SKIPPED` with a note.
@@ -130,7 +132,7 @@ Actions like `PRUNE`, `INVOKE`, and `RETURN` are designed for a stateful session
     -   **Requirement:** The executor will display a formatted handoff request and prompt the user to approve (Enter) or provide a reason for rejection. This ensures that critical control-flow transitions are never executed silently.
     -   **Report Output:** Upon approval, the action status is marked as `SUCCESS`. If rejected, it is marked as `FAILURE` with the reason provided. To reduce noise, the report will **not** include the message body.
 
-## 6. Pre-flight Validation
+### Pre-flight Validation
 To ensure robustness and provide fast feedback, a comprehensive validation phase must be executed *before* any action is performed, regardless of the workflow mode (interactive or manual).
 
 -   **Requirement:** Before attempting execution, the `teddy execute` command MUST run a series of pre-flight checks against the plan and the current workspace. The complete, canonical list of these checks is defined in the **[Plan Validation Specification](/docs/project/specs/plan-format-validation.md)**.
