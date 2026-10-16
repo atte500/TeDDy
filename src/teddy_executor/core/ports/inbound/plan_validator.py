@@ -2,10 +2,6 @@
 This module defines the inbound port for plan validation.
 """
 
-# Placeholder content
-# The Developer will implement this based on the design document.
-# See: docs/core/ports/inbound/plan_validator.md
-
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Sequence
 

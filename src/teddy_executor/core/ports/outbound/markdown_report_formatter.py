@@ -2,10 +2,6 @@
 This module defines the outbound port for markdown report formatting.
 """
 
-# Placeholder content
-# The Developer will implement this based on the design document.
-# See: docs/core/ports/outbound/markdown_report_formatter.md
-
 from abc import ABC, abstractmethod
 
 
