@@ -127,6 +127,18 @@ def strip_trailing_open_fence(content: str) -> str:
     return "\n".join(lines)
 
 
+def embed_in_fence(content: str, lang: str) -> str:
+    """Sanitize ``content``, then wrap it in a safe, dynamically-sized fence.
+
+    Strips a trailing UNCLOSED fence BEFORE deriving the wrapper fence, so a
+    degenerate run cannot amplify the wrapper. The wrapper fence is sized from
+    the sanitized content, so it can never collide with content fences.
+    """
+    sanitized = strip_trailing_open_fence(content)
+    fence = get_fence_for_content(sanitized)
+    return f"{fence}{lang}\n{sanitized}\n{fence}"
+
+
 def get_session_history_display_name(path: str) -> str | None:
     """
     Returns human-readable display name if it's a recognized session history file.

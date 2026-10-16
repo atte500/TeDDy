@@ -52,7 +52,7 @@ Then the embedded workspace section is bounded and no fence amplification occurs
 ## Deliverables
 
 - [x] **Logic** — Add `strip_trailing_open_fence(content)` to `core/utils/markdown.py`, porting the `_FENCE_RE` walk from `spikes/debug/session-hang/replica_embed_sanitizer.py`. Add unit tests to `tests/suites/unit/core/utils/test_markdown_utils.py` covering the preserve/collapse matrix from `spikes/debug/session-hang/06-fence-detector-matrix.py`.
-- [ ] **Logic** — Add `embed_in_fence(content, lang)` to `core/utils/markdown.py` that sanitizes via `strip_trailing_open_fence`, then fences via `get_fence_for_content`, returning `f"{fence}{lang}\n{content}\n{fence}"`. Add unit tests covering sanitized and balanced content.
+- [x] **Logic** — Add `embed_in_fence(content, lang)` to `core/utils/markdown.py` that sanitizes via `strip_trailing_open_fence`, then fences via `get_fence_for_content`, returning `f"{fence}{lang}\n{content}\n{fence}"`. Add unit tests covering sanitized and balanced content.
 - [ ] **Migration** — Route `ContextService._format_session_history` through `embed_in_fence`. Add an end-to-end test in `tests/suites/unit/core/services/test_context_service.py` driving `get_context` with a degenerate session-history file, proving the section is bounded.
 - [ ] **Migration** — Route `ContextService._format_workspace_contents` through `embed_in_fence`. Add an end-to-end test driving `get_context` with a degenerate workspace file, proving the section is bounded.
 - [ ] **Cleanup** — Update `docs/architecture/core/services/context_service.md` to record the shared sanitize-then-fence seam. Run `git grep -n "get_fence_for_content" -- src/teddy_executor/core/services/context_service.py` and confirm both embed sites route through `embed_in_fence`.
@@ -71,6 +71,15 @@ Then the embedded workspace section is bounded and no fence amplification occurs
 - **Green step:** `uv run pytest tests/suites/unit/core/utils/test_markdown_utils.py -q` reported `19 passed`.
 - **Integration gate:** `make test` reported the full suite green (1788 passed, 5 skipped), confirming the additive helper is regression-free.
 - **No deviation from the replica:** the port is byte-for-byte; no signature or semantic change was required.
+
+### Deliverable 2 — As-Built (embed_in_fence)
+- **Implementation:** added `embed_in_fence(content, lang)` to `core/utils/markdown.py`, immediately after `strip_trailing_open_fence`. It composes the existing helpers: `sanitized = strip_trailing_open_fence(content)`, then `fence = get_fence_for_content(sanitized)`, then returns `f"{fence}{lang}\n{sanitized}\n{fence}"`. `get_fence_for_content` is unchanged.
+- **Sanitize-only contract:** `embed_in_fence` sanitizes only and does NOT strip whitespace, so each caller keeps its own whitespace behaviour (`_format_session_history` strips before calling; `_format_workspace_contents` does not).
+- **Test coverage:** added three tests to `tests/suites/unit/core/utils/test_markdown_utils.py` — a sanitized giant backtick run, balanced content wrapped in a longer fence, and empty content yielding a minimal block. The file imports `embed_in_fence` from the production module, so no shadow logic exists.
+- **Red step:** the new tests failed at collection with `ImportError: cannot import name 'embed_in_fence' from 'teddy_executor.core.utils.markdown'`, proving the test-first state.
+- **Green step:** `uv run pytest tests/suites/unit/core/utils/test_markdown_utils.py -q` reported `22 passed`.
+- **Integration gate:** `make test` reported the full suite green (1791 passed, 5 skipped), confirming the additive seam is regression-free.
+- **No local refactor required:** the function is a three-line pure composition with no duplicated literal, no magic number, and no shadow logic.
 
 ## Verification
 - [ ] **CLI:** Run `make test` and verify the full suite passes (green-to-green).

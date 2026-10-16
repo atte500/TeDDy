@@ -1,6 +1,7 @@
 import pytest
 
 from teddy_executor.core.utils.markdown import (
+    embed_in_fence,
     get_fence_for_content,
     strip_trailing_open_fence,
 )
@@ -166,3 +167,27 @@ def test_strip_trailing_open_fence_preserves_well_formed_markdown(content):
 def test_strip_trailing_open_fence_collapses_unclosed_fence(content, expected):
     """An opened-but-never-closed fence has its dangling opening line removed."""
     assert strip_trailing_open_fence(content) == expected
+
+
+# ---------------------------------------------------------------------------
+# embed_in_fence: sanitize-then-fence shared seam
+# ---------------------------------------------------------------------------
+
+
+def test_embed_in_fence_sanitizes_unclosed_fence_before_fencing():
+    """An unclosed giant backtick run is stripped before the fence is derived."""
+    content = "hello\n" + "`" * 10_000
+    result = embed_in_fence(content, "text")
+    assert result == "```text\nhello\n```"
+
+
+def test_embed_in_fence_preserves_balanced_content_with_safe_fence():
+    """Balanced content is preserved and the wrapper fence stays longer."""
+    content = "```python\nprint('hi')\n```"
+    result = embed_in_fence(content, "markdown")
+    assert result == "````markdown\n```python\nprint('hi')\n```\n````"
+
+
+def test_embed_in_fence_empty_content_yields_minimal_block():
+    """Empty content yields a minimal fenced block."""
+    assert embed_in_fence("", "text") == "```text\n\n```"
