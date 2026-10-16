@@ -1,5 +1,5 @@
 # Slice: CI Watch Attribution Soundness
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc slice)
 - **Depends On:** N/A
 - **Specs:** N/A
@@ -64,7 +64,7 @@ And it attributes the failure against that base
 3. `[MIGRATE]` `src/teddy_executor/resources/templates/makefile.md` — mirror the corrected logic and the scope documentation, byte-identical to the project template.
 
 ## Deliverables
-- [ ] **Wiring** - Add a fake `gh` test double and a tracer-bullet acceptance test that runs the real `make ci-watch` target on a synthetic tip failure and asserts it reaches the shipped target and emits a verdict, proving end-to-end connectivity.
+- [▶] **Wiring** - Add a fake `gh` test double and a tracer-bullet acceptance test that runs the real `make ci-watch` target on a synthetic tip failure and asserts it reaches the shipped target and emits a verdict, proving end-to-end connectivity.
 - [ ] **Logic** - Create a POSIX shell helper with the corrected attribution decision and cover the edge cases with unit tests: the subset verdict, the blocking-conclusion set, and the ancestor base resolution.
 - [ ] **Migration** - Bake the validated helper logic into the `ci-watch` target inline, keeping the Makefile self-contained; extend the fake-`gh` acceptance test to assert the corrected verdicts; mirror the logic and the push-triggered scope note into both template copies.
 - [ ] **Cleanup** - Remove the throwaway helper once its logic is baked into the Makefile.
