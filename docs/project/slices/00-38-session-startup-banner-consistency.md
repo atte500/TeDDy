@@ -44,7 +44,7 @@ The change is module-local to `session_cli_handlers.py`. No port, DTO, or shared
 
 ## Deliverables
 - [x] **Harness** - Add regression tests pinning the banner spacing for both `handle_new_session` and `handle_resume_session`, since no test currently asserts either banner string.
-- [ ] **Logic** - Remove the leading `\n` from `handle_resume_session`'s `Resuming session:` echo so both entry points share identical banner spacing.
+- [▶] **Logic** - Remove the leading `\n` from `handle_resume_session`'s `Resuming session:` echo so both entry points share identical banner spacing.
 - [ ] **Refactor** - Extract the duplicated session-startup preamble (background update thread, update-notification capture, health checks, `Checking configurations...` preflight, disable-footer) and the identical `ConfigurationError` and generic error handler into shared module-level helpers. Preserve the intended differences: `handle_new_session` passes `agent` to the preflight and resolves the message and session, while `handle_resume_session` resolves the session name and syncs meta.
 
 ## Implementation Notes
