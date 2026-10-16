@@ -23,7 +23,7 @@ This approach provides a clean separation of concerns between data preparation (
 -   **Execution Reporting:** Formats the results of successful or failed actions. Includes the `Similarity Score` for all `EDIT` actions to maintain transparency.
 -   **Diff Transparency:** Automatically injects surgical, hunk-based character-level diffs for all successful `EDIT` actions where the `Similarity Score` is less than 1.0, and unified diffs for `CREATE` actions where `Overwrite: true`. Diff injection is suppressed for perfect (1.0) `EDIT` matches.
 -   **Validation Reporting:** Renders `validation_result` errors and `failed_resources` (content of files that failed validation) to aid in debugging.
--   **Smart Fencing:** Uses a custom Jinja2 filter (`| fence`) to ensure that code blocks nested within the report (e.g., file content containing backticks) are wrapped in fences with a sufficient number of backticks to remain valid Markdown.
+-   **Smart Fencing:** Uses a custom Jinja2 filter (`| embed_fence(lang)`) backed by the shared `embed_in_fence` seam in `core/utils/markdown.py`. The filter sanitizes the content by stripping a trailing unclosed code fence, then wraps it in a fence sized from the sanitized content, so a degenerate backtick run cannot amplify the wrapper fence while nested code blocks remain valid Markdown.
 -   **Whitespace Sanitization:** Post-processes the rendered report to remove trailing whitespace and collapse sequences of 3+ newlines into 2. This logic is **code-block aware**, ensuring that whitespace and newlines inside fenced code blocks are preserved verbatim.
 
 ## 4. Data Contracts / Methods

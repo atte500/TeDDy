@@ -46,7 +46,7 @@ Then the block is bounded and no fence amplification occurs
 - [x] **Migration** — Route `validation_rules/edit.py` (the FIND-block and diff embeds) through `embed_in_fence`. Add unit tests to `tests/suites/unit/core/services/test_validator_edit.py` proving normal diagnostics are unchanged and a degenerate FIND block is bounded.
 - [x] **Migration** — Route `parser_reporting.py` (the expected-structure, AST-view, and structural-mismatch embeds) through `embed_in_fence`. Add unit tests to `tests/suites/unit/core/services/test_parser_reporting.py` proving normal diagnostics are unchanged and a degenerate AST is bounded.
 - [x] **Migration** — Replace the `fence` Jinja filter in `MarkdownReportFormatter` with an `embed_in_fence`-backed `embed_fence` filter and update `execution_report.md.j2` to call it once per block. Add a test to `tests/suites/unit/core/services/test_report_message_fencing.py` proving a degenerate message action yields a bounded report block.
-- [ ] **Cleanup** — Update the component docs (`markdown_report_formatter.md`, `context_service.md`) to record the single seam. Run `git grep -n "get_fence_for_content" -- src` and confirm only `core/utils/markdown.py` matches.
+- [x] **Cleanup** — Update the component docs (`markdown_report_formatter.md`, `context_service.md`) to record the single seam. Run `git grep -n "get_fence_for_content" -- src` and confirm only `core/utils/markdown.py` matches.
 
 ## Implementation Notes
 - **No Wiring deliverable.** The consolidation reuses the existing `embed_in_fence` seam and introduces no new boundary, so no hardcoded-skeleton tracer bullet applies. This mirrors slice 00-38's documented precedent.
@@ -94,6 +94,13 @@ Then the block is bounded and no fence amplification occurs
 - **Integration gate:** `make test` reported the full suite green (1801 passed, 5 skipped), confirming the migration is regression-free.
 - **Recovery note:** the `render_resource` block carried an expression language argument (`path | language_from_path`), so it was migrated separately from the eight uniform blocks.
 - **Whitespace sanitizer:** the `format()` post-processor toggles `in_fence` on `line.strip().startswith("```")`, which still matches `embed_in_fence` output of any fence length, so no change was needed there.
+
+### Deliverable 5 — As-Built (component-doc cleanup)
+- **Implementation:** corrected the stale `| fence` Smart Fencing bullet in `markdown_report_formatter.md` to describe the as-built `| embed_fence(lang)` filter backed by the shared `embed_in_fence` seam. `context_service.md` already recorded the single seam accurately in its "Content Embedding & Fence Sanitization" section, so no change was needed there.
+- **Consistency check:** `git grep -n "get_fence_for_content" -- src` reports exactly two matches, both in `core/utils/markdown.py` (the definition at line 64 and the internal call inside `embed_in_fence` at line 138). No migrated service calls the helper directly, so the consolidation is complete.
+- **Stale-reference confirmation:** the old `filters["fence"]` registration and every `| fence` template call site are gone from `src`; `embed_fence` appears in the formatter registration, all nine template blocks, the formatter component doc, and the new test.
+- **Integration gate:** `make test` reported the full suite green (1801 passed, 5 skipped), identical to the Deliverable 4 baseline, because the change is documentation-only.
+- **As-Built Component Design update:** the formatter component doc carries the corrected Smart Fencing bullet; `context_service.md` needed no correction. Both component docs now match the as-built code.
 
 ## Verification
 - [ ] **CLI:** Run `make test` and verify the full suite passes (green-to-green).
