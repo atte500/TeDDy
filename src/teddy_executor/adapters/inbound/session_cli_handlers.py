@@ -1146,7 +1146,7 @@ def handle_resume_session(  # noqa: PLR0913
 
         # 4. Display session path (below the Agent/Model identity block)
         session_relative_path = str(Path(".teddy") / "sessions" / session_name)
-        typer.echo(f"\nResuming session: {session_relative_path}")
+        typer.echo(f"Resuming session: {session_relative_path}")
 
         # 5. Agent switch: if -a/--agent provided, update session agent permanently
         if agent:

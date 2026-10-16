@@ -3,10 +3,8 @@
 Slice 00-38 unifies the spacing of the session-path line printed by
 ``handle_new_session`` and ``handle_resume_session``. These tests capture each
 entry point's banner so the surrounding startup consolidation refactor cannot
-silently change the spacing. They pin the CURRENT output: ``handle_new_session``
-emits its session line with NO leading blank line, while ``handle_resume_session``
-currently emits it WITH a leading blank line. The Logic deliverable of the slice
-removes that leading blank and updates the resume expectation below.
+silently change the spacing. Both entry points emit their session line with NO
+leading blank line, so the identity block is followed immediately by the path.
 """
 
 from pathlib import Path
@@ -72,8 +70,8 @@ def test_start_banner_session_line_has_no_leading_blank(env, monkeypatch, capsys
     )
 
 
-def test_resume_banner_session_line_pins_current_spacing(env, monkeypatch, capsys):
-    """`teddy resume` banner spacing is pinned before the consolidation refactor."""
+def test_resume_banner_session_line_has_no_leading_blank(env, monkeypatch, capsys):
+    """`teddy resume` prints the session path line directly beneath the identity block."""
     mock_session_manager = env.mock_port(ISessionManager)
     mock_repository = env.mock_port(ISessionRepository)
     _model_config(env)
@@ -87,5 +85,5 @@ def test_resume_banner_session_line_pins_current_spacing(env, monkeypatch, capsy
     handlers.handle_resume_session(container=env.container, path=None)
 
     captured = capsys.readouterr()
-    assert captured.out == "\nResuming session: .teddy/sessions/my-session\n"
+    assert captured.out == "Resuming session: .teddy/sessions/my-session\n"
     assert captured.err == "Checking configurations...\n\nModel: gpt-4o\n"
