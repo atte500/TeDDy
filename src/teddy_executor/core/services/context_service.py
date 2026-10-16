@@ -5,7 +5,6 @@ from typing import Dict, List, Optional, Sequence
 from teddy_executor.core.domain.models import ProjectContext, ContextItem
 from teddy_executor.core.utils.markdown import (
     embed_in_fence,
-    get_fence_for_content,
     get_language_from_path,
     is_session_file_path,
     get_session_history_display_name,
@@ -397,8 +396,7 @@ class ContextService(IGetContextUseCase):
             content = file_contents.get(path)
             if content is not None:
                 lang = get_language_from_path(path)
-                fence = get_fence_for_content(content)
-                parts.append(f"{fence}{lang}\n{content}\n{fence}")
+                parts.append(embed_in_fence(content, lang))
             else:
                 parts.append("```\n--- FILE NOT FOUND ---\n```")
         return parts

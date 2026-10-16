@@ -54,7 +54,7 @@ Then the embedded workspace section is bounded and no fence amplification occurs
 - [x] **Logic** — Add `strip_trailing_open_fence(content)` to `core/utils/markdown.py`, porting the `_FENCE_RE` walk from `spikes/debug/session-hang/replica_embed_sanitizer.py`. Add unit tests to `tests/suites/unit/core/utils/test_markdown_utils.py` covering the preserve/collapse matrix from `spikes/debug/session-hang/06-fence-detector-matrix.py`.
 - [x] **Logic** — Add `embed_in_fence(content, lang)` to `core/utils/markdown.py` that sanitizes via `strip_trailing_open_fence`, then fences via `get_fence_for_content`, returning `f"{fence}{lang}\n{content}\n{fence}"`. Add unit tests covering sanitized and balanced content.
 - [x] **Migration** — Route `ContextService._format_session_history` through `embed_in_fence`. Add an end-to-end test in `tests/suites/unit/core/services/test_context_service.py` driving `get_context` with a degenerate session-history file, proving the section is bounded.
-- [ ] **Migration** — Route `ContextService._format_workspace_contents` through `embed_in_fence`. Add an end-to-end test driving `get_context` with a degenerate workspace file, proving the section is bounded.
+- [x] **Migration** — Route `ContextService._format_workspace_contents` through `embed_in_fence`. Add an end-to-end test driving `get_context` with a degenerate workspace file, proving the section is bounded.
 - [ ] **Cleanup** — Update `docs/architecture/core/services/context_service.md` to record the shared sanitize-then-fence seam. Run `git grep -n "get_fence_for_content" -- src/teddy_executor/core/services/context_service.py` and confirm both embed sites route through `embed_in_fence`.
 
 ## Implementation Notes
@@ -90,6 +90,17 @@ Then the embedded workspace section is bounded and no fence amplification occurs
 - **Green step:** `uv run pytest tests/suites/unit/core/services/test_context_service.py -q` reported `16 passed`.
 - **Integration gate:** `make test` reported the full suite green (1792 passed, 5 skipped), confirming the migration is regression-free.
 - **No local refactor required:** the change is a minimal substitution with no duplicated literal, magic number, or shadow logic.
+
+### Deliverable 4 — As-Built (workspace-contents embed migration)
+- **Implementation:** routed `ContextService._format_workspace_contents` through the shared `embed_in_fence` helper. The two-line composition (`fence = get_fence_for_content(content)` plus the f-string assembly) was replaced by a single `parts.append(embed_in_fence(content, lang))`.
+- **Import pruned:** dropped the now-unused `get_fence_for_content` import from the module's `markdown` import block, because line 400 was its only remaining consumer in this file.
+- **Whitespace behaviour preserved:** `_format_workspace_contents` does not strip, so the sanitize-only contract of `embed_in_fence` is respected.
+- **Test coverage:** added `test_get_context_bounds_degenerate_workspace_fence` to `tests/suites/unit/core/services/test_context_service.py`, driving `get_context` with a non-session `degenerate.py` containing an unclosed 10,000-backtick run and asserting the `## Resource Contents` section is bounded.
+- **Local Flaw resolved:** the existing `test_get_context_uses_dynamic_fences_for_safe_encapsulation` used malformed content (a mid-line opener plus a trailing lone fence). The migration strips that dangling fence, so the test's content was changed to a balanced triple-backtick block and its assertion was updated to the balanced-block expectation, preserving its dynamic-fence-sizing intent.
+- **Red step:** the new test failed with the predicted `AssertionError` (`1 failed, 16 passed`); the traceback showed the unbounded path deriving a 10,001-backtick wrapper fence.
+- **Green step:** `uv run pytest tests/suites/unit/core/services/test_context_service.py -q` reported `17 passed`.
+- **Integration gate:** `make test` reported the full suite green (1793 passed, 5 skipped), confirming the migration is regression-free.
+- **No local refactor required:** both embed sites now route through the shared seam, and no duplicated literal, magic number, or shadow logic remains.
 
 ## Verification
 - [ ] **CLI:** Run `make test` and verify the full suite passes (green-to-green).

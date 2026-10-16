@@ -136,7 +136,7 @@ def test_get_context_uses_dynamic_fences_for_safe_encapsulation(
 ):
     """Tests that Resource Contents are wrapped in dynamic fences to prevent collisions."""
     # Arrange
-    content_with_backticks = "Code with fence: ```python\nprint('hi')\n```"
+    content_with_backticks = "```python\nprint('hi')\n```"
     mock_fs.get_context_paths.return_value = ["tricky.md"]
     mock_fs.read_files_in_vault.return_value = {"tricky.md": content_with_backticks}
     mock_inspector.get_environment_info.return_value = {}
@@ -148,11 +148,8 @@ def test_get_context_uses_dynamic_fences_for_safe_encapsulation(
     result = service.get_context()
 
     # Assert
-    # Should use 4 backticks because content has 3
-    assert (
-        "````markdown\nCode with fence: ```python\nprint('hi')\n```\n````"
-        in result.content
-    )
+    # Should use 4 backticks because the balanced content has a 3-backtick fence
+    assert "````markdown\n```python\nprint('hi')\n```\n````" in result.content
 
 
 def test_get_context_always_includes_git_status_even_if_empty(
@@ -648,4 +645,37 @@ def test_get_context_bounds_degenerate_session_history_fence(
     # The dangling opening fence is stripped before the wrapper fence is derived,
     # so the section stays bounded instead of amplifying to a 10k-backtick fence.
     assert "```markdown\nPlan content\n```" in result.content
+    assert "`" * 100 not in result.content
+
+
+def test_get_context_bounds_degenerate_workspace_fence(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+):
+    """
+    Scenario: Bounded Workspace Contents
+
+    A workspace file containing an unclosed giant backtick run must be bounded:
+    the dangling opening fence is stripped before the wrapper fence is derived,
+    so the section cannot amplify.
+    """
+    # Arrange
+    degenerate_content = "Code content\n" + "`" * 10_000
+    mock_fs.get_context_paths.return_value = ["degenerate.py"]
+    mock_fs.read_files_in_vault.return_value = {"degenerate.py": degenerate_content}
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = None
+    mock_inspector.get_full_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = ""
+
+    # Act
+    result = service.get_context()
+
+    # Assert
+    assert "## Resource Contents" in result.content
+    assert "```python\nCode content\n```" in result.content
+    # The dangling opening fence is stripped before the wrapper fence is derived,
+    # so the section stays bounded instead of amplifying to a 10k-backtick fence.
     assert "`" * 100 not in result.content
