@@ -214,6 +214,16 @@ OPT_PIPELINE = typer.Option(
     "-p",
     help="Pipeline mode: auto-approve all actions, requires -m, exits after first ## Message.",
 )
+OPT_MAX_TURNS = typer.Option(
+    None,
+    "--max-turns",
+    help="Maximum turns for a non-interactive run (overrides config).",
+)
+OPT_MAX_COST = typer.Option(
+    None,
+    "--max-cost",
+    help="Maximum session cost in dollars for a non-interactive run.",
+)
 
 
 @app.command()
@@ -255,6 +265,8 @@ def start(  # noqa: PLR0913
     api_key: Optional[str] = typer.Option(
         None, "--api-key", help="LLM API key override."
     ),
+    max_turns: Optional[int] = OPT_MAX_TURNS,
+    max_cost: Optional[float] = OPT_MAX_COST,
 ):
     """
     Initializes a new session directory and bootstraps it for Turn 1.
@@ -293,6 +305,8 @@ def start(  # noqa: PLR0913
         additional_context=additional_context,
         model=model,
         api_key=api_key,
+        max_turns=max_turns,
+        max_cost=max_cost,
     )
 
 
@@ -537,6 +551,8 @@ def resume(  # noqa: PLR0913
         ),
     ),
     pipeline: bool = OPT_PIPELINE,
+    max_turns: Optional[int] = OPT_MAX_TURNS,
+    max_cost: Optional[float] = OPT_MAX_COST,
 ):
     """
     Intelligently resumes the last turn of a session or starts a new one.
@@ -565,6 +581,8 @@ def resume(  # noqa: PLR0913
         agent=agent,
         message=message,
         pipeline=pipeline,
+        max_turns=max_turns,
+        max_cost=max_cost,
     )
 
 

@@ -14,10 +14,15 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
         config_service: IConfigService,
         initial_turn: int,
         initial_cost: float,
+        max_turns: Optional[int] = None,
+        max_cost: Optional[float] = None,
     ) -> None:
         self._config_service = config_service
         self._initial_turn = initial_turn
         self._initial_cost = initial_cost
+        # Skeleton precedence: an explicit CLI limit wins over the config value.
+        self._max_turns_override = max_turns
+        self._max_cost_override = max_cost
 
     def should_continue(
         self, turn_count: int, cumulative_cost: float, interactive: bool
@@ -28,13 +33,19 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
         if not self._config_service.get_setting("yolo_guardrails.enabled", True):
             return True, None
 
-        max_turns = int(
-            self._config_service.get_setting("yolo_guardrails.max_turns", 99) or 99
-        )
-        max_cost = float(
-            self._config_service.get_setting("yolo_guardrails.max_session_cost", 5.0)
-            or 5.0
-        )
+        max_turns = self._max_turns_override
+        if max_turns is None:
+            max_turns = int(
+                self._config_service.get_setting("yolo_guardrails.max_turns", 99) or 99
+            )
+        max_cost = self._max_cost_override
+        if max_cost is None:
+            max_cost = float(
+                self._config_service.get_setting(
+                    "yolo_guardrails.max_session_cost", 5.0
+                )
+                or 5.0
+            )
 
         turn_delta = turn_count - self._initial_turn
         cost_delta = cumulative_cost - self._initial_cost

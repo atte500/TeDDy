@@ -363,6 +363,8 @@ def _orchestrate_session_loop(  # noqa: PLR0913
     no_copy: bool,
     pipeline: bool = False,
     message: Optional[str] = None,
+    max_turns: Optional[int] = None,
+    max_cost: Optional[float] = None,
 ) -> None:
     """Shared turn loop for start and resume commands."""
     from teddy_executor.adapters.inbound.cli_helpers import handle_report_output
@@ -378,7 +380,11 @@ def _orchestrate_session_loop(  # noqa: PLR0913
     initial_cost = session_manager.get_cumulative_cost(session_name)
 
     loop_guard = container.resolve(
-        ISessionLoopGuard, initial_turn=initial_turn, initial_cost=initial_cost
+        ISessionLoopGuard,
+        initial_turn=initial_turn,
+        initial_cost=initial_cost,
+        max_turns=max_turns,
+        max_cost=max_cost,
     )
 
     # Two-phase Ctrl+C interrupt (tracer bullet): the container shares ONE
@@ -628,6 +634,8 @@ def handle_new_session(  # noqa: PLR0913
     api_key: Optional[str] = None,
     setup_editor: Optional[bool] = None,
     setup_api_key: Optional[bool] = None,
+    max_turns: Optional[int] = None,
+    max_cost: Optional[float] = None,
 ):
     """Logic for the 'start' command."""
     fired = _start_background_update_check(container)
@@ -681,6 +689,8 @@ def handle_new_session(  # noqa: PLR0913
             interactive=interactive,
             no_copy=no_copy,
             pipeline=pipeline,
+            max_turns=max_turns,
+            max_cost=max_cost,
         )
 
     except Exception as e:
@@ -1145,6 +1155,8 @@ def handle_resume_session(  # noqa: PLR0913
     pipeline: bool = False,
     setup_editor: Optional[bool] = None,
     setup_api_key: Optional[bool] = None,
+    max_turns: Optional[int] = None,
+    max_cost: Optional[float] = None,
 ):
     """Logic for the 'resume' command."""
     fired = _start_background_update_check(container)
@@ -1185,6 +1197,8 @@ def handle_resume_session(  # noqa: PLR0913
             no_copy=no_copy,
             message=message,
             pipeline=pipeline,
+            max_turns=max_turns,
+            max_cost=max_cost,
         )
 
     except Exception as e:

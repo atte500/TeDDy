@@ -56,7 +56,7 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 5. `[CONTRACT]` The bundled `yolo_guardrails` block — remove after the rename. The code keeps the legacy fallback read for existing user configs.
 
 ## Deliverables
-- [▶] **Wiring** - Add `--max-turns` and `--max-cost` to `start` and `resume`, thread them to the loop guard, and honor them in the limit checks through a skeleton precedence read.
+- [x] **Wiring** - Add `--max-turns` and `--max-cost` to `start` and `resume`, thread them to the loop guard, and honor them in the limit checks through a skeleton precedence read.
 - [ ] **Contract** - Extend `ISessionLoopGuard` with the additive `reset_baseline(turn_count, cumulative_cost)` operation.
 - [ ] **Logic** - Implement the precedence chain (CLI flag > env var > config value > default), the `TEDDY_MAX_TURNS` and `TEDDY_MAX_SESSION_COST` overrides, the legacy `yolo_guardrails` fallback read, the 150-turn default, and the message-turn reset gated by `guardrails.message_reset`.
 - [ ] **Migration** - Rename `yolo_guardrails` to `guardrails` in the bundled config, the guard, the guard tests, and the `session_loop_guard.md` component doc. Correct the component doc's stale config-missing defaults.
@@ -64,6 +64,23 @@ Then the turn and cost baselines re-anchor at the current turn count and cost
 - [ ] **Cleanup** - Remove the stale `--yolo`-only wording. Keep the legacy `yolo_guardrails` fallback read for existing user configs.
 
 ## Implementation Notes
+
+### Wiring (delivered)
+
+- Added shared Typer option constants `OPT_MAX_TURNS` and `OPT_MAX_COST` in `__main__.py`.
+- Added `--max-turns` and `--max-cost` to both `start` and `resume`, and threaded them through `handle_new_session` and `handle_resume_session` into `_orchestrate_session_loop`.
+- The loop passes both values as resolve kwargs to `ISessionLoopGuard`, so punq injects them into `ProductionSessionLoopGuard`.
+- The guard constructor gained additive optional keywords `max_turns` and `max_cost`, both defaulting to `None`, so every existing caller stays valid.
+- The limit read is a temporary skeleton precedence: an explicit CLI value wins, otherwise the guard falls back to the `yolo_guardrails` config value. The full chain (environment variable, legacy fallback, and the 150-turn default) arrives in the Logic deliverable.
+- Acceptance proof: `tests/suites/acceptance/test_configurable_guardrails.py` drives `start -y --max-turns 1` and asserts the run stops at `1/1`.
+
+### Harness constraint
+
+- `TestEnvironment.setup()` registers `ISessionLoopGuard` as an instance mock that ignores resolve kwargs. The acceptance test therefore re-registers `ProductionSessionLoopGuard` as a class after setup, because the later class registration wins and receives the threaded kwargs.
+
+### Debt
+
+- The new acceptance test carries a minimal project-setup helper that mirrors `helpers.setup_project`. Consolidate it in the Refactor deliverable.
 
 ## Verification
 - [ ] **Turn limit:**
