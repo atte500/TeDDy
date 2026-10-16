@@ -26,6 +26,9 @@ Then [expected outcome]
 
 ## Key Unknowns
 
+**Format:**
+- [ ] [Tag] Title: Description of the unknown. Design Sensitivity.
+
 **Taxonomy:**
 - `[Domain]` = Ambiguities in business rules, policy decisions, domain definitions, or scope boundaries. Resolve by asking the user directly.
 - `[Technical]` = External dependencies, third-party libraries, APIs, internal state machines, complex algorithms, concurrency, performance, or data storage. Resolve via works-like prototypes.
@@ -37,9 +40,6 @@ Then [expected outcome]
 3. Log any business rule, policy, or scope ambiguity as `[Domain]`.
 
 **Design Sensitivity:** For every unknown, record a one-line Design Sensitivity stating how the design reacts to each resolution (e.g., "if this resolves as X → contracts hold; if Y → this port/DTO changes").
-
-**Format:**
-- [ ] [Tag] Title: Description of the unknown. Design Sensitivity.
 
 ## Impact
 Surface of affected components using the Parallel Change (Expand-Migrate-Contract) model.
@@ -77,7 +77,13 @@ Free-form notes recording decisions, deviations, or discoveries during implement
 ## Verification
 <!-- Manual User Acceptance Testing (UAT) steps for the user to execute at slice conclusion. -->
 <!-- Provide clear, step-by-step instructions. Use copy-pasteable commands for CLI/APIs, or exact interactive steps for UI/visual flows. -->
+<!-- Do NOT include running automated tests here; those are covered by the automated test suite. -->
 
 **Format:**
-- [ ] **CLI / API:** Run `command <args>` and verify output contains `expected output`.
-- [ ] **UI / Interactive:** Navigate to `[View/Screen]`, trigger `[Action]`, and confirm `[Observed State/Element]`.
+- [ ] **Title:**
+    Run `command <args>`.
+    Verify output contains `expected output`.
+- [ ] **Title:**
+    Navigate to `[View/Screen]`.
+    Trigger `[Action]`.
+    Confirm `[Observed State/Element]`.
