@@ -99,7 +99,7 @@ pre-commit run ruff-lint --all-files   # run a single hook
 
 The post-commit stage is the unskippable safety net. It invokes a project script (e.g. `.githooks/post-commit.py`) that:
 
-1. **Guards against automated git operations.** During `git pull --rebase`, Git fires the `post-commit` hook once per replayed commit; because the hook reverts on failure (`git reset --soft HEAD~1`), a failing replay would silently drop that commit while the rebase still reports success. The hook MUST exit immediately (skipping the suite) when `rebase-merge`, `rebase-apply`, `MERGE_HEAD`, or `CHERRY_PICK_HEAD` exists under the git dir. This is what makes `make push`'s `git pull --rebase` safe.
+1. **Guards against automated git operations.** During `git pull --rebase`, Git fires the `post-commit` hook once per replayed commit. Because the hook reverts on failure (`git reset --soft HEAD~1`), a failing replay silently drops that commit while the rebase still reports success. The hook MUST exit immediately (skipping the suite) when `rebase-merge`, `rebase-apply`, `MERGE_HEAD`, or `CHERRY_PICK_HEAD` exists under the git dir. This makes `make push`'s `git pull --rebase` safe.
 2. Verifies the runner and test framework are available, printing a clear, actionable error if not.
 3. Runs the full test suite via the project's test command (e.g. `make test` / `uv run pytest`).
 4. On failure, reverts the commit with `git reset --soft HEAD~1`, keeping the changes staged for investigation.

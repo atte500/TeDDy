@@ -77,8 +77,8 @@ EOF
 
 **Requirements:**
 - The output file MUST be written to `spikes/debug/probe_output.txt` — this path is uploaded as an artifact by the CI workflow.
-- The CI workflow running the probe SHOULD be configured with a single job (no build matrix) to avoid multiple jobs overwriting each other's uploaded artifact (`probe-result`).
-- The script should be minimal and self-contained (ideally a single heredoc). See the Debugger's rule 11 (Remote Probing Protocol) for full protocol details.
+- The CI workflow running the probe must use a single job with no build matrix. This prevents multiple jobs from overwriting the uploaded artifact (`probe-result`).
+- The script must remain minimal and self-contained, using a single heredoc. See the Debugger's rule 11 (Remote Probing Protocol) for full protocol details.
 
 ## Cross-Platform Design
 
@@ -86,7 +86,7 @@ The Makefile uses Make's built-in `-` prefix for error suppression (`-pre-commit
 
 - **POSIX shells (bash, sh, zsh):** `-` prefix works because Make handles error suppression natively before passing the recipe line to the shell.
 - **Windows (cmd.exe):** `-` prefix works because Make suppresses the exit code check, avoiding shell-specific `||` operators that cmd.exe does not support.
-- **Error transparency:** The pre-commit pass is advisory — if it fails, the commit still succeeds locally; the post-commit test gate is the real safety net. `make push` runs `git pull --rebase` and `git push` WITHOUT suppression, so a rebase conflict or push rejection surfaces as a non-zero exit.
+- **Error transparency:** The pre-commit pass is advisory. If it fails, the commit still succeeds locally. The post-commit test gate acts as the safety net. `make push` runs `git pull --rebase` and `git push` WITHOUT suppression, so a rebase conflict or push rejection surfaces as a non-zero exit.
 
 ## Test Workflow
 
@@ -167,7 +167,7 @@ Attribution is deterministic: SHA → run → run-level + per-job conclusion (ne
 Key behaviors:
 
 1. **Automatic SHA and BASE resolution.** `SHA` defaults to current `HEAD` (or `COMMIT=<sha>`), and `BASE` defaults to `HEAD~1`.
-2. **Registration lag is tolerated by a bounded retry.** CI may not have registered a run for the pushed SHA immediately; the target polls `gh run list --commit <sha>` up to `RETRY_POLLS × RETRY_SLEEP` (default 10 × 2s ≈ 20s) before attributing, then fails safe if the run never registers.
+2. **Registration lag is tolerated by a bounded retry.** CI can fail to register a run for the pushed SHA immediately. The target polls `gh run list --commit <sha>` up to `RETRY_POLLS × RETRY_SLEEP` (default 10 × 2s ≈ 20s) before attributing. It fails safe if the run never registers.
 3. **No CI is non-blocking.** If the repository has no workflow files under `.github/workflows/` (`*.yml`/`*.yaml`), the target logs `No CI configured - skipping attribution` and exits 0.
 
 ### Example
