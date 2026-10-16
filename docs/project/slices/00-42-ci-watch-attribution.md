@@ -1,5 +1,5 @@
 # Slice: CI Watch Attribution Soundness
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc slice)
 - **Depends On:** N/A
 - **Specs:** N/A
@@ -97,6 +97,11 @@ And it attributes the failure against that base
 ### Cleanup (throwaway helper removal)
 - The Cleanup deliverable deleted the throwaway helper and its unit test once the Migration deliverable baked the corrected logic inline. The shipped `Makefile` and both template copies carry no runtime reference to the helper, so the removal broke no runtime path.
 - The durable coverage is the fake-`gh` acceptance test, which copies the REAL project `Makefile` into a throwaway repository and asserts the corrected verdicts. Removing the helper unit test dropped sixteen cases (seven `subset-verdict`, six `classify-conclusion`, three `resolve-base`) with no loss of durable coverage; the full suite fell from 1860 to 1844 passing tests.
+
+### Quality Audit (verification phase)
+- Production double audit: the only `src/` hits for skeleton or hardcoded markers sit inside LLM-facing prompt text (`resources/config/prompts/developer.md`) and the vertical-slice template, so no skeleton response, hardcoded mock value, or temporary stub remains in production logic. Every `ci-watch` output derives from live `gh` data.
+- Deferred item: the `BASE=<sha>` operator override is a documented edge case, but it sits outside the Impact migration scope and carries no test, so it is recorded in the roadmap rather than implemented untested.
+- Systemic item: the post-commit gate flaked once when a leaked `update_checker` background thread wrote the update cache under `pyfakefs` and raised `FileExistsError`. The fix is structural and out of this slice's scope, so it is recorded in the roadmap.
 
 ## Verification
 - [ ] **Improvement attribution:**
