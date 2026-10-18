@@ -20,6 +20,7 @@ Implements the `IPlanParser` inbound port. It transforms a Markdown plan string 
 - `partial_dispatch_map`: `_dispatch_map` routes CREATE, READ, EDIT, EXECUTE, and RESEARCH; MESSAGE is deliberately absent and is special-cased to a mutual-exclusivity error.
 - `strict_top_level_schema`: The document must present an H1 title, a metadata list, an H2 `Rationale`, then an H2 `Action Plan` or `Message`; any deviation raises `InvalidPlanError`.
 - `mutual_exclusivity`: A document cannot carry both `## Action Plan` and `## Message`.
+- `crlf_normalization`: `parse` converts CRLF to LF before the AST is built, so fence content and message sections never carry carriage returns.
 - `constructor_holds_no_plan_state`: `parse` keeps no plan state on the instance; the constructor only builds the pre-processor, the valid-action set, and the dispatch map.
 
 ## Inbound Ports
@@ -42,8 +43,8 @@ None — the parser depends only on internal parser helpers and one lazily impor
 
 ### `parse(plan_content, plan_path=None) -> Plan`
 - **Preconditions:** `plan_content` is a non-empty string.
-- **Postconditions:** Returns a `Plan`. The method trims trailing whitespace, strips any preamble before the first heading marker at line start, normalizes the H1 line, runs the fence pre-processor, builds the AST, validates the top-level schema, enforces mutual exclusivity, then parses the `Message` or `Action Plan` section. A session plan path (`.../.teddy/sessions/...`) sets `is_session` and writes the normalized content back to disk when it differs.
+- **Postconditions:** Returns a `Plan`. The method normalizes CRLF line endings to LF, trims trailing whitespace, strips any preamble before the first heading marker at line start, normalizes the H1 line, runs the fence pre-processor, builds the AST, validates the top-level schema, enforces mutual exclusivity, then parses the `Message` or `Action Plan` section. A session plan path (`.../.teddy/sessions/...`) sets `is_session` and writes the normalized content back to disk when it differs.
 - **Exceptions:** `InvalidPlanError` when the content is empty or violates the schema, mutual exclusivity, or action grammar. The raised error carries a rendered AST diagnostic.
 
 ### Internal helpers
-`_parse_strict_top_level` consumes the title, the metadata list, the rationale, and the section heading. `_validate_mutual_exclusivity` scans the H2 headings. `_parse_section_content` routes to the message or action-plan parser. `_parse_actions` dispatches each action heading and skips inter-action code blocks and thematic breaks. `_raise_structural_error`, `_format_structural_mismatch_msg`, and `_consume_mandatory_node` build the diagnostics.
+`_normalize_plan_content` converts CRLF to LF, trims trailing whitespace, strips the preamble, and normalizes the H1 title. `_is_session_plan` detects a session path, and `_write_back_session_plan` persists normalized session content. `_parse_strict_top_level` consumes the title, the metadata list, the rationale, and the section heading. `_validate_mutual_exclusivity` scans the H2 headings. `_parse_section_content` routes to the message or action-plan parser. `_parse_actions` dispatches each action heading and skips inter-action code blocks and thematic breaks. `_raise_structural_error`, `_format_structural_mismatch_msg`, and `_consume_mandatory_node` build the diagnostics.

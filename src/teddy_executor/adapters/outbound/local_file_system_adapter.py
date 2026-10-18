@@ -260,13 +260,16 @@ class LocalFileSystemAdapter(IFileSystemManager):
     def create_file(self, path: str, content: str, overwrite: bool = False) -> None:
         """
         Creates a new file with the given content.
+
+        Newline-deterministic: ``newline=""`` keeps LF line endings verbatim
+        on every OS, matching the write_file and edit_file contracts.
         """
         try:
             file_path = self._resolve_path(path)
             file_path.parent.mkdir(parents=True, exist_ok=True)
 
             mode = "w" if overwrite else "x"
-            with open(file_path, mode, encoding="utf-8") as f:
+            with open(file_path, mode, encoding="utf-8", newline="") as f:
                 f.write(content)
         except FileExistsError as e:
             # Raise a domain-specific exception to conform to the port's contract.
@@ -327,6 +330,11 @@ class LocalFileSystemAdapter(IFileSystemManager):
     ) -> list[float]:
         """
         Modifies an existing file by applying a list of find-and-replace blocks.
+
+        Newline-deterministic: ``newline=""`` on the write disables platform
+        newline translation, so the simulated content is emitted verbatim on
+        every OS. This prevents Windows from doubling CRLF sequences that a
+        clipboard plan carries into the REPLACE block.
         """
         file_path = self._resolve_path(path)
         content = file_path.read_text(encoding="utf-8")
@@ -344,5 +352,5 @@ class LocalFileSystemAdapter(IFileSystemManager):
             match_all=match_all,
         )
 
-        file_path.write_text(new_content, encoding="utf-8")
+        file_path.write_text(new_content, encoding="utf-8", newline="")
         return scores

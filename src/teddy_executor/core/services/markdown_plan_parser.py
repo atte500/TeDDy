@@ -60,6 +60,56 @@ class MarkdownPlanParser(IPlanParser):
             ),
         }
 
+    def _normalize_plan_content(self, plan_content: str) -> str:
+        """Normalize raw plan text into canonical Markdown before parsing.
+
+        Converts Windows clipboard CRLF endings to LF, trims trailing
+        whitespace, strips any preamble before the first heading, and
+        normalizes the H1 title.
+        """
+        # Normalize Windows clipboard line endings to LF so fence content and
+        # extracted message sections never carry stray carriage returns.
+        normalized_content = plan_content.replace("\r\n", "\n")
+
+        # Trim trailing whitespace to prevent mistletoe from
+        # interpreting trailing indentation as an unexpected code block.
+        # We keep leading whitespace for potential Markdown significance (though rare at top-level).
+        clean_content = normalized_content.rstrip()
+
+        if not clean_content:
+            raise InvalidPlanError("Plan content cannot be empty.")
+
+        # Strip preamble (text before the first # heading at start of a line).
+        # MULTILINE lets ^ match the start of any line, and Markdown permits up
+        # to 3 leading spaces before a heading marker.
+        h1_match = re.search(r"^[ \t]*#", clean_content, re.MULTILINE)
+        if h1_match and h1_match.start() > 0:
+            clean_content = clean_content[h1_match.start() :]
+
+        # Normalize the H1 heading (e.g. #Title -> # Title) after preamble
+        # stripping so it always targets the heading line.
+        return normalize_headings(clean_content)
+
+    @staticmethod
+    def _is_session_plan(plan_path: Optional[str]) -> bool:
+        """Return True when the plan path points inside a session directory."""
+        if not plan_path:
+            return False
+        normalized_path = plan_path.replace("\\", "/").lower()
+        return ".teddy/sessions/" in normalized_path
+
+    def _write_back_session_plan(self, plan_path: str, clean_content: str) -> None:
+        """Persist normalized content to a session plan file when it changed."""
+        from pathlib import Path
+
+        path_obj = Path(plan_path)
+        try:
+            current_disk = path_obj.read_text(encoding="utf-8")
+        except Exception:
+            current_disk = None
+        if current_disk is not None and current_disk.rstrip() != clean_content:
+            path_obj.write_text(clean_content, encoding="utf-8", newline="")
+
     def parse(self, plan_content: str, plan_path: Optional[str] = None) -> Plan:
         """
         Parses the specified Markdown plan string into a structured Plan object.
@@ -68,24 +118,7 @@ class MarkdownPlanParser(IPlanParser):
             Document,
         )
 
-        # Trim trailing whitespace to prevent mistletoe from
-        # interpreting trailing indentation as an unexpected code block.
-        # We keep leading whitespace for potential Markdown significance (though rare at top-level).
-        clean_content = plan_content.rstrip()
-
-        if not clean_content:
-            raise InvalidPlanError("Plan content cannot be empty.")
-
-        # Strip preamble (text before the first # heading at start of a line)
-        # Use MULTILINE so ^ matches start of any line. Allow optional leading whitespace
-        # before # because Markdown permits up to 3 spaces before heading markers.
-        h1_match = re.search(r"^[ \t]*#", clean_content, re.MULTILINE)
-        if h1_match and h1_match.start() > 0:
-            clean_content = clean_content[h1_match.start() :]
-
-        # Normalize H1 heading on the first line (e.g., #Title -> # Title)
-        # This runs after preamble stripping so it always targets the heading line
-        clean_content = normalize_headings(clean_content)
+        clean_content = self._normalize_plan_content(plan_content)
 
         processed_content = self._preprocessor.process(clean_content)
         doc = Document(processed_content)
@@ -106,10 +139,7 @@ class MarkdownPlanParser(IPlanParser):
                 stream, clean_content, section_heading, doc
             )
 
-            is_session = False
-            if plan_path:
-                normalized_path = plan_path.replace("\\", "/").lower()
-                is_session = ".teddy/sessions/" in normalized_path
+            is_session = self._is_session_plan(plan_path)
 
             plan = Plan(
                 title=title,
@@ -122,17 +152,8 @@ class MarkdownPlanParser(IPlanParser):
                 raw_content=clean_content,
             )
 
-            # Write corrected content back to source file if it came from a session file path
-            if plan_path and is_session:
-                from pathlib import Path
-
-                path_obj = Path(plan_path)
-                try:
-                    current_disk = path_obj.read_text(encoding="utf-8")
-                except Exception:
-                    current_disk = None
-                if current_disk is not None and current_disk.rstrip() != clean_content:
-                    path_obj.write_text(clean_content, encoding="utf-8", newline="")
+            if is_session and plan_path:
+                self._write_back_session_plan(plan_path, clean_content)
 
             return plan
         except InvalidPlanError as e:

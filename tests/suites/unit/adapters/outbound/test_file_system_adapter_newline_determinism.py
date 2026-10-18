@@ -51,3 +51,44 @@ def test_open_file_for_append_emits_lf_verbatim_bytes(tmp_path):
         f.write("entry2\n")
 
     assert (tmp_path / "session.log").read_bytes() == b"entry1\nentry2\n"
+
+
+def test_edit_file_emits_lf_verbatim_bytes(tmp_path):
+    """edit_file persists LF content byte-for-byte on every platform."""
+    adapter = _make_adapter(tmp_path)
+    target = tmp_path / "target.txt"
+    target.write_bytes(b"line one\nline two\n")
+
+    adapter.edit_file("target.txt", edits=[{"find": "line two", "replace": "line 2"}])
+
+    assert target.read_bytes() == b"line one\nline 2\n"
+
+
+def test_edit_file_preserves_crlf_replacement_bytes(tmp_path):
+    """edit_file does not double CRLF sequences carried by the replacement."""
+    adapter = _make_adapter(tmp_path)
+    target = tmp_path / "target.txt"
+    target.write_bytes(b"start\nend\n")
+
+    adapter.edit_file("target.txt", edits=[{"find": "end", "replace": "x\r\ny"}])
+
+    assert target.read_bytes() == b"start\nx\r\ny\n"
+
+
+def test_create_file_emits_lf_verbatim_bytes(tmp_path):
+    """create_file persists content with LF line endings on every platform."""
+    adapter = _make_adapter(tmp_path)
+
+    adapter.create_file("created.txt", "line one\nline two\n")
+
+    assert (tmp_path / "created.txt").read_bytes() == b"line one\nline two\n"
+
+
+def test_create_file_overwrite_emits_lf_verbatim_bytes(tmp_path):
+    """Overwrite mode keeps the same verbatim LF contract."""
+    adapter = _make_adapter(tmp_path)
+    (tmp_path / "created.txt").write_bytes(b"old\r\n")
+
+    adapter.create_file("created.txt", "new\n", overwrite=True)
+
+    assert (tmp_path / "created.txt").read_bytes() == b"new\n"

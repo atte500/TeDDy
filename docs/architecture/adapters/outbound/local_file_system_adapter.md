@@ -19,7 +19,7 @@ Implements the `IFileSystemManager` outbound port for the local disk. It resolve
 ## Class Invariants
 - `root_containment`: Every relative path resolves against the project root; leading slashes and Windows drive letters are stripped before joining.
 - `exclusive_create`: `create_file` uses exclusive mode (`x`) unless `overwrite` is set, and re-raises a domain `FileAlreadyExistsError` on collision.
-- `newline_deterministic_writes`: `write_file` and `open_file_for_append` use `newline=""`, so content is emitted verbatim (LF) on every OS.
+- `newline_deterministic_writes`: `write_file`, `create_file`, `edit_file`, and `open_file_for_append` use `newline=""`, so content is emitted verbatim on every OS.
 - `head_truncation`: `read_file` truncates at the head to `max_read_lines` (default `1000`); `read_raw_file` and `read_files_in_vault` bypass the cap.
 - `lazy_ignore_spec`: The ignore specification and the resolved root are computed once and cached on the instance.
 
@@ -39,7 +39,7 @@ None — this is an outbound (driven) adapter.
 
 ### `create_file(path, content, overwrite=False) -> None`
 - **Preconditions:** `path` resolves inside the project root.
-- **Postconditions:** Creates the file and its parent directories.
+- **Postconditions:** Creates the file and its parent directories, writing the content verbatim with LF preserved.
 - **Exceptions:** `FileAlreadyExistsError` when the file exists and `overwrite` is unset; `OSError` on any other I/O failure.
 
 ### `read_file(path) -> str` and `read_raw_file(path) -> str`
@@ -52,7 +52,7 @@ None — this is an outbound (driven) adapter.
 
 ### `edit_file(path, edits, similarity_threshold=DEFAULT_SIMILARITY_THRESHOLD, match_all=False) -> list[float]`
 - **Preconditions:** The file exists and each edit carries a `find` block.
-- **Postconditions:** Rewrites the file through the injected `IEditSimulator` and returns the similarity scores.
+- **Postconditions:** Rewrites the file through the injected `IEditSimulator`, writes the simulated content verbatim, and returns the similarity scores.
 - **Exceptions:** Propagates the simulator's `SearchTextNotFoundError` and `MultipleMatchesFoundError`.
 
 ### `read_files_in_vault(paths) -> dict[str, str | None]`
