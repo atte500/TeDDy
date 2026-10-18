@@ -91,10 +91,10 @@ These files live in `docs/templates/` and are created or refreshed by `teddy ini
         - `action_executor.py:191` — Incompatible return value type.
         - `session_orchestrator.py:251` — Union-attr on DataclassInstance.
         - `openrouter_hydrator.py:17` — Untyped function body.
-    - **Fix Pre-existing C901 Complexity:** Refactor the `parse` method in `markdown_plan_parser.py` (cyclomatic complexity 10, threshold 9) by extracting preamble stripping, normalization, and AST validation steps into smaller helper methods.
+    - **Fix Pre-existing C901 Complexity [COMPLETED]:** Refactored the `parse` method in `markdown_plan_parser.py` into `_normalize_plan_content`, `_is_session_plan`, and `_write_back_session_plan` during the Windows newline fix. `ruff check` and `make test` pass.
     - **Audit Quality Gate Bypasses in Git History:** Check Git history for any `--no-verify` commits and verify the bypasses are still justified or can be resolved.
     - **Re-homed Debt Reconciliation:** The quality-gate, reliability, and specific-defect items formerly parked in the retired `## Technical Debt` section are now scheduled as Vertical Slices in the milestone document (`docs/project/milestones/05-quality-gate-debt-reconciliation.md`). Cross-cutting duplication/consolidation items are scheduled in Milestone 6.
-    - **Reconcile Pre-existing Non-blocking Quality Checks:** The CI `Quality Checks` job (`continue-on-error: true`) fails the same nine steps on `main` independent of any change (detect-secrets, file hygiene, ruff, mypy, bandit/pip-audit, structural, test pyramid, file length, jscpd). Drive the job green by reconciling each check.
+    - **Reconcile Pre-existing Non-blocking Quality Checks:** The CI `Quality Checks` job (`continue-on-error: true`) fails the same nine steps on `main` independent of any change (detect-secrets, file hygiene, ruff, mypy, bandit/pip-audit, structural, test pyramid, file length, jscpd). Drive the job green by reconciling each check. Triage of the Windows newline fix (f0ea0335) confirmed it adds no new findings.
 
 ### Milestone 6: Cross-Cutting Consolidation [PLANNED]
 - **Core Goal:** Eliminate duplicated literals, helpers, and test doubles that must be kept in manual lockstep; consolidate split test organization; and perform a bounded Failure-Transparency sweep. Every item was formerly parked in the retired `## Technical Debt` section and is now scheduled as an explicit requirement in `docs/project/milestones/06-cross-cutting-consolidation.md`.

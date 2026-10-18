@@ -53,6 +53,8 @@ Windows. `Path.write_text` with `newline=None` translates every "\n" to `os.line
 10. Probed a CRLF clipboard plan against a replica that normalizes CRLF to LF at plan entry; observed the production parser returns FIND `'second line\r'` and REPLACE `'replacement one\r\nreplacement two\r'`, while the replica returns clean LF blocks.
 11. Probed `create_file` under an emulated Windows `open` translation; observed the production adapter writes `b'line one\r\nline two\r\n'`, while the replica with `newline=""` writes `b'line one\nline two\n'`.
 12. Applied both proven debt fixes to `src/`, added three regression tests, and observed `make test` pass with 1857 passed and 5 skipped.
+13. Attempted the first commit gate and observed the pre-existing C901 finding in `parse` (complexity 10 > 9) blocking ruff-lint. Extracted `_normalize_plan_content`, `_is_session_plan`, and `_write_back_session_plan`, then observed `ruff check` pass and `make test` pass with 1857 passed and 5 skipped.
+14. Committed the fix as f0ea0335 and pushed to `origin/main`. Observed CI run 39115270282 with the blocking OS matrix green on ubuntu, macos, and windows. The non-blocking Quality Checks job failed the same nine pre-existing steps scheduled in Milestone 5. Triage confirmed the changed files add no new ruff findings. Both production files already exceeded the 300-line gate before the change.
 
 ## Solution
 ### Root Cause Analysis
@@ -65,7 +67,7 @@ The sandbox replicas proved each fix. `newline=""` on the EDIT and CREATE writes
 
 ### Affected Components
 - `src/teddy_executor/adapters/outbound/local_file_system_adapter.py`: `edit_file` and `create_file` now write with `newline=""`.
-- `src/teddy_executor/core/services/markdown_plan_parser.py`: `parse` normalizes CRLF to LF at plan entry.
+- `src/teddy_executor/core/services/markdown_plan_parser.py`: `parse` normalizes CRLF to LF at plan entry and delegates to `_normalize_plan_content`, `_is_session_plan`, and `_write_back_session_plan` to satisfy the complexity gate.
 - `tests/suites/unit/adapters/outbound/test_file_system_adapter_newline_determinism.py`: byte-exact EDIT and CREATE regression tests.
 - `tests/suites/unit/core/services/test_parser_crlf_normalization.py`: CRLF plan normalization regression tests.
 - Direct upstream callers keep the same signatures and return values. No migration is required.
