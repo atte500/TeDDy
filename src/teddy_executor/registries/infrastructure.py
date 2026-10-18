@@ -137,6 +137,7 @@ def register_infrastructure(container: punq.Container) -> None:
         factory=lambda: LiteLLMAdapter(
             config_service=container.resolve(IConfigService),
             hydrator=container.resolve(IOpenRouterHydrator),
+            time_service=container.resolve(ITimeService),
         ),
         scope=punq.Scope.transient,
     )

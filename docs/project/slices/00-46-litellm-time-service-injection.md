@@ -1,5 +1,5 @@
 # Slice: Litellm Retry Time-Service Injection
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc slice)
 - **Depends On:** N/A
 - **Specs:** N/A
@@ -55,10 +55,19 @@ And the test completes without a real sleep
 5. `[MIGRATE]` `tests/suites/unit/adapters/outbound/test_litellm_adapter_robustness.py` — inject a recording `ITimeService` in `test_get_completion_error_handling` and assert the recorded backoff.
 
 ## Deliverables
-- [ ] **Wiring** - Inject `time_service=container.resolve(ITimeService)` into the `ILlmClient` composition factory and drive the composition-root boundary with an integration wiring assertion that the resolved adapter carries an `ITimeService`.
+- [x] **Wiring** - Inject `time_service=container.resolve(ITimeService)` into the `ILlmClient` composition factory and drive the composition-root boundary with an integration wiring assertion that the resolved adapter carries an `ITimeService`.
 - [ ] **Migration** - Inject a recording `ITimeService` into the four named retry tests and assert the recorded `[0.5, 1.0]` schedule so no real backoff sleep remains.
 
 ## Implementation Notes
+
+### Wiring (factory injection and composition-root assertion)
+- The deliverable added `test_litellm_adapter_is_wired_with_time_service` to `tests/suites/integration/adapters/outbound/test_llm_wiring.py`. The test resolves `ILlmClient` from the harness `container` fixture and asserts that `llm_client._time_service` satisfies the `ITimeService` Protocol, mirroring the file's existing `_hydrator` assertion pattern.
+- The Red step failed exactly as predicted: `assert False = isinstance(None, ITimeService)` with `None = ...LiteLLMAdapter object ... ._time_service`. That proved the factory omitted the dependency and left the private attribute unset.
+- The Green step added one keyword argument, `time_service=container.resolve(ITimeService)`, to the single `ILlmClient` factory lambda in `src/teddy_executor/registries/infrastructure.py`. The wiring file then reported `4 passed in 3.90s`, covering the new assertion plus the three pre-existing wiring scenarios.
+- The container fixture registers `ITimeService` as a transient `SystemTimeAdapter`, so `container.resolve(ITimeService)` never raises on the real composition path. No harness change was required.
+- The Refactor sub-step found nothing to change. The production edit is one additive keyword argument, and the new test follows the file's existing assertion idiom.
+- The Integration gate reported `1825 passed, 36 skipped in 29.08s`, which is the prior 1824 baseline plus the new wiring test. No existing consumer regressed.
+- `test_validation_then_retry_wiring` stays unchanged and still pays one real 0.5s sleep. It now sleeps through the injected `SystemTimeAdapter.sleep` instead of the constructor fallback, so its behavior is identical.
 
 ## Verification
 1. **Retry tests run without real backoff:**

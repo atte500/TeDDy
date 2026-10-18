@@ -2,6 +2,7 @@ from typing import Any
 from unittest.mock import Mock
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.config_service import IConfigService
+from teddy_executor.core.ports.outbound.time_service import ITimeService
 from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
 from teddy_executor.adapters.outbound.openrouter_hydrator import (
     OpenRouterMetadataHydrator,
@@ -20,6 +21,20 @@ def test_litellm_adapter_is_wired_with_hydrator(container):
     assert isinstance(llm_client, LiteLLMAdapter)
     # Accessing private attribute for wiring verification
     assert isinstance(llm_client._hydrator, OpenRouterMetadataHydrator)
+
+
+def test_litellm_adapter_is_wired_with_time_service(container):
+    """
+    Ensures that the ILlmClient resolved from the container has an
+    ITimeService injected, so retry backoff sleeps through the shared seam.
+    """
+    # Act
+    llm_client = container.resolve(ILlmClient)
+
+    # Assert
+    assert isinstance(llm_client, LiteLLMAdapter)
+    # Accessing private attribute for wiring verification
+    assert isinstance(llm_client._time_service, ITimeService)
 
 
 def test_hydrator_is_wired_with_persistent_cache_dependencies(container):
