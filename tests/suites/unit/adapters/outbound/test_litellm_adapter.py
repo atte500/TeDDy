@@ -63,7 +63,7 @@ def test_get_completion_calls_litellm_correctly(mock_config):
     )
 
 
-def test_get_completion_wraps_errors_in_llm_api_error(mock_config):
+def test_get_completion_wraps_errors_in_llm_api_error(mock_config, mock_time_service):
     # Arrange
     config = {
         "api_key": "sk-test",  # pragma: allowlist secret
@@ -81,13 +81,14 @@ def test_get_completion_wraps_errors_in_llm_api_error(mock_config):
     mock_config.get_setting.side_effect = _valid_llm
     litellm.completion.side_effect = RuntimeError("API Failure")
 
-    adapter = LiteLLMAdapter(mock_config)
+    adapter = LiteLLMAdapter(mock_config, time_service=mock_time_service)
 
     # Act & Assert
     with pytest.raises(LlmApiError) as excinfo:
         adapter.get_completion(model="any-model", messages=[])
 
     assert "API Failure" in str(excinfo.value)
+    assert mock_time_service.sleep_calls == [0.5, 1.0]
 
 
 def test_get_completion_returns_empty_string_for_empty_choices(mock_config):
@@ -165,17 +166,21 @@ def test_config_api_key_overrides_caller_kwargs(mock_config):
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "llm.api_key": "sk-test-key",  # pragma: allowlist secret
         "llm.model": "gpt-4o",
-        "llm": {"api_key": "sk-config-key"},
+        "llm": {"api_key": "sk-config-key"},  # pragma: allowlist secret
     }.get(key, default)
     adapter = LiteLLMAdapter(mock_config)
 
     # Act
-    adapter.get_completion(model="gpt-4", messages=[], api_key="sk-caller-key")
+    adapter.get_completion(
+        model="gpt-4",
+        messages=[],
+        api_key="sk-caller-key",  # pragma: allowlist secret
+    )
 
     # Assert
     litellm.completion.assert_called_once()
     actual_kwargs = litellm.completion.call_args.kwargs
-    assert actual_kwargs["api_key"] == "sk-config-key"
+    assert actual_kwargs["api_key"] == "sk-config-key"  # pragma: allowlist secret
 
 
 def test_adapter_does_not_import_litellm_on_init(mock_config):
@@ -483,7 +488,7 @@ def test_get_completion_broadcasts_metadata_to_all_candidates(mock_config, conta
 def test_prepare_completion_params_passes_extra_body_unchanged(mock_config):
     """extra_body in llm config passes through unchanged; no top-level provider key."""
     config = {
-        "api_key": "sk-test",
+        "api_key": "sk-test",  # pragma: allowlist secret
         "model": "test-model",
         "max_retries": 3,
         "llm": {
@@ -514,7 +519,7 @@ def test_prepare_completion_params_passes_extra_body_unchanged(mock_config):
 def test_prepare_completion_params_does_not_transform_top_level_provider(mock_config):
     """A top-level provider key under llm is no longer special-cased."""
     config = {
-        "api_key": "sk-test",
+        "api_key": "sk-test",  # pragma: allowlist secret
         "model": "test-model",
         "max_retries": 3,
         "llm": {

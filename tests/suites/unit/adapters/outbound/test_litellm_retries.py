@@ -6,7 +6,7 @@ from teddy_executor.core.ports.outbound.llm_client import LlmApiError
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 
 
-def test_litellm_adapter_retries_on_ssl_error(monkeypatch):
+def test_litellm_adapter_retries_on_ssl_error(monkeypatch, mock_time_service):
     """
     Test that the adapter retries the completion call on specific SSL errors.
     """
@@ -14,7 +14,9 @@ def test_litellm_adapter_retries_on_ssl_error(monkeypatch):
     config_service = POSIXPathMock(spec=IConfigService)
     config_service.get_setting.return_value = {"model": "gpt-4o"}
 
-    adapter = LiteLLMAdapter(config_service=config_service)
+    adapter = LiteLLMAdapter(
+        config_service=config_service, time_service=mock_time_service
+    )
 
     # Setup the success response using POSIXPathMock for external library consistency
     mock_response = POSIXPathMock()
@@ -44,16 +46,19 @@ def test_litellm_adapter_retries_on_ssl_error(monkeypatch):
     assert result == mock_response
     assert result.choices[0].message.content == "Success"
     assert call_count == 3
+    assert mock_time_service.sleep_calls == [0.5, 1.0]
 
 
-def test_litellm_adapter_exhausts_retries(monkeypatch):
+def test_litellm_adapter_exhausts_retries(monkeypatch, mock_time_service):
     """
     Test that the adapter eventually raises LlmApiError if all retries fail.
     """
     # Arrange
     config_service = POSIXPathMock(spec=IConfigService)
     config_service.get_setting.return_value = {"model": "gpt-4o"}
-    adapter = LiteLLMAdapter(config_service=config_service)
+    adapter = LiteLLMAdapter(
+        config_service=config_service, time_service=mock_time_service
+    )
 
     call_count = 0
     error_msg = "SSLV3_ALERT_BAD_RECORD_MAC"
@@ -72,6 +77,5 @@ def test_litellm_adapter_exhausts_retries(monkeypatch):
         )
 
     assert "LLM Completion failed" in str(excinfo.value)
-    # The current implementation will fail on first call, so call_count will be 1.
-    # After implementation, it should be 3.
     assert call_count == 3
+    assert mock_time_service.sleep_calls == [0.5, 1.0]

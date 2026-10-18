@@ -213,11 +213,10 @@ def mock_time_service(container):
 
     mock = register_mock(container, ITimeService)
     mock.sleep_calls = []
-    original_sleep = mock.sleep
 
+    # Recording alone is sufficient; calling the child mock here would re-enter this same side_effect and recurse.
     def _track_sleep(duration: float) -> None:
         mock.sleep_calls.append(duration)
-        original_sleep(duration)
 
     mock.sleep.side_effect = _track_sleep
     return mock

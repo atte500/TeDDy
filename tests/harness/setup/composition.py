@@ -46,6 +46,7 @@ from tests.harness.setup.mocks import (
     mock_session_loop_guard as mock_session_loop_guard,
     mock_session_manager as mock_session_manager,
     mock_shell as mock_shell,
+    mock_time_service as mock_time_service,
     mock_tree_gen as mock_tree_gen,
     mock_user_interactor as mock_user_interactor,
 )

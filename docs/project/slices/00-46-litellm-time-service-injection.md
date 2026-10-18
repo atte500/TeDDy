@@ -56,7 +56,7 @@ And the test completes without a real sleep
 
 ## Deliverables
 - [x] **Wiring** - Inject `time_service=container.resolve(ITimeService)` into the `ILlmClient` composition factory and drive the composition-root boundary with an integration wiring assertion that the resolved adapter carries an `ITimeService`.
-- [ ] **Migration** - Inject a recording `ITimeService` into the four named retry tests and assert the recorded `[0.5, 1.0]` schedule so no real backoff sleep remains.
+- [x] **Migration** - Inject a recording `ITimeService` into the four named retry tests and assert the recorded `[0.5, 1.0]` schedule so no real backoff sleep remains.
 
 ## Implementation Notes
 
@@ -68,6 +68,20 @@ And the test completes without a real sleep
 - The Refactor sub-step found nothing to change. The production edit is one additive keyword argument, and the new test follows the file's existing assertion idiom.
 - The Integration gate reported `1825 passed, 36 skipped in 29.08s`, which is the prior 1824 baseline plus the new wiring test. No existing consumer regressed.
 - `test_validation_then_retry_wiring` stays unchanged and still pays one real 0.5s sleep. It now sleeps through the injected `SystemTimeAdapter.sleep` instead of the constructor fallback, so its behavior is identical.
+
+### Migration (recording time service in the four named tests)
+- The deliverable repaired `mock_time_service` in `tests/harness/setup/mocks.py`. The old body captured `original_sleep = mock.sleep` and then called it inside its own `side_effect`, which re-enters the same side effect without bound. The repaired body only appends the delay, so recording never recurses.
+- The fixture was defined but unreachable. A `git grep` census found exactly one occurrence, its own definition. The deliverable re-exported it through `tests/harness/setup/composition.py` and imported it into the `tests/conftest.py` fixture surface and `__all__`, so tests resolve it like every other harness mock.
+- The three manually constructed adapters in `test_litellm_retries.py` (two tests) and `test_litellm_adapter.py` (one test) now receive `time_service=mock_time_service` directly. The container-resolved `test_get_completion_error_handling` requests the fixture, which registers `ITimeService` in the container before `container.resolve(ILlmClient)` runs, so the factory returns the recording mock.
+- Each of the four tests now asserts `mock_time_service.sleep_calls == [0.5, 1.0]`. The backoff contract therefore stays verified as an explicit assertion rather than being dropped for speed.
+- The stale comment in `test_litellm_adapter_exhausts_retries` that predicted a future retry count was removed, because the retry count is now real.
+- The Red baseline measured each of the four tests at exactly 1.50s, which is the two real backoff sleeps. The Green run reported `4 passed in 0.39s`, and every named test call-phase duration fell under 0.005s.
+- The Integration gate reported `1825 passed, 36 skipped`, equal to the prior baseline because no test was added, only migrated.
+- `test_validation_then_retry_wiring` remains unchanged and still pays one real 0.5s sleep through the injected `SystemTimeAdapter`. It is outside the four named tests.
+- Debt: `test_litellm_adapter_retries.py` carries its own recording helper (`_create_adapter` with `_track_sleep`) that duplicates the shared fixture. Consolidating it would touch a shared harness file outside this slice, so it is recorded for Milestone 6.
+- The delivery commit first failed at the `detect-secrets` hook, which flagged four fake-key fixture lines in the two staged litellm test files. Those strings are test data, not credentials. The remedy added the repo-standard `# pragma: allowlist secret` comment to every un-pragma'd occurrence of each fake value, because the hook deduplicates by file and hash and one pragma can promote the next occurrence.
+- Adding the pragma to the single-line `get_completion` call that carries the fake caller key pushed it past the formatter width, so `ruff-format` reflowed the call and stranded the pragma on the closing bracket line. `detect-secrets` scans line by line, so the stranded pragma no longer covered the secret value. The remedy split the call one argument per line with a trailing comma and moved the pragma onto the `api_key` argument, and every hook then passed cleanly.
+- This note names the fake key generically rather than quoting it. The same secret hook scans Markdown artifacts, so quoting a literal fake value here re-opens the gate it documents.
 
 ## Verification
 1. **Retry tests run without real backoff:**

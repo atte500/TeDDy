@@ -12,7 +12,7 @@ Implements the `ILlmClient` outbound port using the `litellm` library. It provid
 ## Dependencies
 - [`IConfigService`](../../core/ports/outbound/config_service.md): Reads the `llm.*` settings and the API key.
 - **`IOpenRouterHydrator`** (`teddy_executor.adapters.outbound.litellm_adapter`): An internal adapter-layer protocol that fetches live model metadata from OpenRouter.
-- **`ITimeService`** (`teddy_executor.core.ports.outbound.time_service`): Optional; supplies the retry backoff sleep.
+- **`ITimeService`** (`teddy_executor.core.ports.outbound.time_service`): Injectable; supplies the retry backoff sleep. The composition root injects the shared `SystemTimeAdapter`, so a container-resolved client sleeps through the seam. A direct construction without it falls back to the real `time.sleep`.
 - **`litellm`** (external): Imported lazily and silenced before and after import.
 - **`tiktoken`** (external): Imported lazily for the text token count.
 

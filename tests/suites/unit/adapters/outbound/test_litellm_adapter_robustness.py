@@ -8,7 +8,7 @@ from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
 
 def test_get_completion_returns_raw_response(container, mock_config, monkeypatch):
     config = {
-        "api_key": "sk-test",
+        "api_key": "sk-test",  # pragma: allowlist secret
         "model": "test-model",
         "max_retries": 3,
     }  # pragma: allowlist secret
@@ -41,7 +41,7 @@ def test_get_completion_returns_raw_response(container, mock_config, monkeypatch
 
 def test_get_completion_passthrough_empty_choices(container, mock_config, monkeypatch):
     config = {
-        "api_key": "sk-test",
+        "api_key": "sk-test",  # pragma: allowlist secret
         "model": "test-model",
         "max_retries": 3,
     }  # pragma: allowlist secret
@@ -70,7 +70,7 @@ def test_get_completion_passthrough_empty_choices(container, mock_config, monkey
 
 def test_get_completion_passthrough_none_content(container, mock_config, monkeypatch):
     config = {
-        "api_key": "sk-test",
+        "api_key": "sk-test",  # pragma: allowlist secret
         "model": "test-model",
         "max_retries": 3,
     }  # pragma: allowlist secret
@@ -99,9 +99,11 @@ def test_get_completion_passthrough_none_content(container, mock_config, monkeyp
     assert result.choices[0].message.content is None
 
 
-def test_get_completion_error_handling(container, mock_config, monkeypatch):
+def test_get_completion_error_handling(
+    container, mock_config, mock_time_service, monkeypatch
+):
     config = {
-        "api_key": "sk-test",
+        "api_key": "sk-test",  # pragma: allowlist secret
         "model": "test-model",
         "max_retries": 3,
     }  # pragma: allowlist secret
@@ -125,6 +127,7 @@ def test_get_completion_error_handling(container, mock_config, monkeypatch):
     with pytest.raises(LlmApiError) as excinfo:
         adapter.get_completion([{"role": "user", "content": "hi"}], model="test-model")
     assert "LLM Completion failed" in str(excinfo.value)
+    assert mock_time_service.sleep_calls == [0.5, 1.0]
 
 
 def test_litellm_initialization_silences_logging_at_critical_level(
