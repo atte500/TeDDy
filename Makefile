@@ -82,7 +82,10 @@ ci-watch:
 	  echo "CI: no run registered for $$SHA after $$(( $(RETRY_POLLS) * $(RETRY_SLEEP) ))s - fail-safe block"; \
 	  exit 1; \
 	fi; \
-	for WF in $$WFS; do \
+	WFLIST=$${TMPDIR:-/tmp}/ci-watch-workflows.$$$$; \
+	trap 'rm -f "$$WFLIST"' EXIT; \
+	printf '%s\n' "$$WFS" > "$$WFLIST"; \
+	while IFS= read -r WF; do \
 	  NEW=$$(gh run list --commit "$$SHA" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
 	  gh run watch "$$NEW" --exit-status >/dev/null 2>&1 || true; \
 	  NEWCONC=$$(gh run view "$$NEW" --json conclusion --jq '.conclusion'); \
@@ -137,7 +140,7 @@ ci-watch:
 	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — YOUR regression"; \
 	    STATUS=1; \
 	  fi; \
-	done; \
+	done < "$$WFLIST"; \
 	exit $$STATUS
 
 # probe - Remote Probing Protocol: push probe, trigger CI workflow, retrieve logs

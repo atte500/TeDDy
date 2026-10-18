@@ -174,6 +174,7 @@ Key behaviors:
 1. **Automatic SHA and BASE resolution.** `SHA` defaults to current `HEAD` (or `COMMIT=<sha>`), and `BASE` resolves per workflow to the most recent ancestor of `SHA` that carries a run for that workflow (bounded by `BASE_DEPTH`, default 50). An explicit `BASE=<sha>` pins the baseline verbatim and skips resolution; if the pinned commit carries no run for the workflow, the target fails safe as an unknown base.
 2. **Registration lag is tolerated by a bounded retry.** CI can fail to register a run for the pushed SHA immediately. The target polls `gh run list --commit <sha>` up to `RETRY_POLLS × RETRY_SLEEP` (default 10 × 2s ≈ 20s) before attributing. It fails safe if the run never registers.
 3. **No CI is non-blocking.** If the repository has no workflow files under `.github/workflows/` (`*.yml`/`*.yaml`), the target logs `No CI configured - skipping attribution` and exits 0.
+4. **Workflow names with spaces stay whole.** The target reads workflow names one line at a time. A name such as `Publish to PyPI` is attributed as one workflow.
 
 ### Example
 
@@ -202,7 +203,10 @@ ci-watch:
 	  echo "CI: no run registered for $$SHA after $$(( $(RETRY_POLLS) * $(RETRY_SLEEP) ))s - fail-safe block"; \
 	  exit 1; \
 	fi; \
-	for WF in $$WFS; do \
+	WFLIST=$${TMPDIR:-/tmp}/ci-watch-workflows.$$$$; \
+	trap 'rm -f "$$WFLIST"' EXIT; \
+	printf '%s\n' "$$WFS" > "$$WFLIST"; \
+	while IFS= read -r WF; do \
 	  NEW=$$(gh run list --commit "$$SHA" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
 	  gh run watch "$$NEW" --exit-status >/dev/null 2>&1 || true; \
 	  NEWCONC=$$(gh run view "$$NEW" --json conclusion --jq '.conclusion'); \
@@ -257,7 +261,7 @@ ci-watch:
 	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — YOUR regression"; \
 	    STATUS=1; \
 	  fi; \
-	done; \
+	done < "$$WFLIST"; \
 	exit $$STATUS
 ```
 

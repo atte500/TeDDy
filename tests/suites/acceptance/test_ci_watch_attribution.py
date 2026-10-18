@@ -377,3 +377,33 @@ def test_bad_base_override_fails_safe(ci_repo: Path) -> None:
 
     assert result.returncode != 0, result.stdout
     assert "unknown base" in result.stdout, result.stdout
+
+
+@_posix_only
+def test_multi_word_workflow_name_stays_one_workflow(ci_repo: Path) -> None:
+    """A workflow whose name contains spaces must not be split into fragments.
+
+    The target collects workflow names as newline-separated text. Iterating that
+    text with unquoted word splitting turns ``Publish to PyPI`` into three names,
+    each of which matches no run and falsely blocks the session.
+    """
+    tip_sha = _git(ci_repo, "rev-parse", "HEAD")
+    scenario_dir = ci_repo / "scenario"
+    invocation_log = ci_repo / "gh-invocations.log"
+
+    CiWatchScenario(
+        runs=(
+            RunResult(
+                database_id=222,
+                workflow="Publish to PyPI",
+                head_sha=tip_sha,
+                conclusion="success",
+                jobs=(JobResult("Publish Package", "success"),),
+            ),
+        )
+    ).write(scenario_dir)
+
+    result = _run_ci_watch(ci_repo, scenario_dir, invocation_log)
+
+    assert result.returncode == 0, result.stdout
+    assert "Publish to PyPI: PASSED" in result.stdout, result.stdout
