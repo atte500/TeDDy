@@ -31,8 +31,9 @@ Continuously log diagnostic attempts and findings in chronological order:
 2. Investigated whether [hypothesis] by [action/probe]; observed [outcome], which [conclusion].
 
 ## Solution
-### Root Cause Analysis
-Summary of verified root cause and sandbox fix.
+### Root Cause
+Summary of the verified root cause and whether the fix was directly applied to production code or proven in the sandbox replica.
 
 ### Affected Components
-Direct upstream callers, downstream dependencies, or shared contracts affected by the fix.
+Direct upstream callers, downstream dependencies, or shared contracts affected by the fix:
+- `ComponentName`: Description of changes required or completed.

@@ -14,7 +14,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 1. **Case File Check:**
    If a Case File was not provided in the initial context, READ `docs/templates/case-file.md` and CREATE one following that template.
 2. **Context and History Gathering:**
-   Use EXECUTE `git grep`, EXECUTE `git log`, READ, and RESEARCH to understand the codebase, recent changes, and identify the last known green CI run or commit. For historical CI failures, do not try to read the entire log: extract failed step logs by executing `make logs [ID]` (for all failed steps) or `make logs [ID] '[STEP_NAME]'` (for a specific step).
+   Use EXECUTE `git grep`, EXECUTE `git log`, READ, and RESEARCH to understand the codebase, recent changes, and identify the last known green CI run or commit. For historical CI failures, do not try to read the entire log: extract failed step logs by executing `make logs [ID]` (for all failed steps) or `make logs [ID] "[STEP_NAME]"` (for a specific step).
 3. **Diagnostic MRE and Platform Check:**
    Trigger the symptom: if an existing command, test, or CI failure exists, execute it to observe the failure live. If the bug is reported verbally or without an existing test, write a targeted probe script in `spikes/debug/{scope-slug}/` to trigger the symptom.
 
@@ -26,7 +26,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    - **Probe file:**
      consolidate diagnostic logic into the single shell entry point `spikes/debug/probe.sh`. Read `docs/templates/makefile.md` for the probe script pattern. Output must be written to `spikes/debug/probe_output.txt` for artifact upload, using the single-file Heredoc pattern.
    - **Execution:**
-     use `make probe '<reason>'` to push the probe, trigger the workflow, and retrieve logs.
+     use `make probe "<reason>"` to push the probe, trigger the workflow, and retrieve logs.
 
 ### Investigation
 **Goal:** Peel back internal layers to resolve discrepancies and update the Causal Model.
@@ -70,22 +70,22 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 7. **Impact Audit:**
    Analyze components touched by the proposed fix. Use EXECUTE `git grep` to search for direct upstream callers (including test files and harness fixtures) and downstream dependencies (for orphaned code, unused parameters, or dead functions) that the change affects. If the fix modifies a shared port, signature, or data contract with multiple consumers, document the required migration path so the Developer can partition the change into non-breaking steps.
 8. **Case File Synchronization:**
-   EDIT the Case File to update Diagnostic Analysis, verify the Causal Model reflects sandbox reality, and record the proven fix along with affected components in the Solution section. Set status to Resolved.
+   EDIT the Case File to update Diagnostic Analysis. Verify the Causal Model reflects observed reality. Ensure that all items under Discrepancies are explained and marked resolved with `[x]` before advancing to Alignment. Record the verified root cause in the Solution section. Explicitly state whether the fix was directly resolved in `src/` or proven in the sandbox replica. Record affected components in the Solution section. Set status to Resolved in the Case File metadata.
 
 ### Alignment
 **Goal:** Present the complete diagnosis and proposed fix for explicit user approval.
 
 1. **Synthesis Presentation:**
-   Message the user explaining the root cause analysis, verified MRE evidence, affected components, and the proven solution from the Case File in clear prose.
+   Message the user explaining the root cause, verified MRE evidence, affected components, and the proven solution from the Case File in clear prose.
 2. **Approval Gate:**
    Await explicit user approval before proceeding to the Conclusion phase. If changes or refinements are requested, adjust the Case File, then re-align.
 
 ### Conclusion
-**Goal:** Clean up the workspace, commit changes, push, and hand off to the Developer.
+**Goal:** Clean up the workspace, commit changes, push, and conclude or hand off.
 
 1. **Cleanup:**
    Delete incidental temporary logs and throwaway probes. If recurring script, test, or tool detritus appears, do not just delete it manually: update `.gitignore` or configure the script to write outside tracked directories. You must preserve the final MRE script and replica proof in `spikes/debug/{scope-slug}/` and link them from the Case File.
 2. **Commit and Push:**
-   Run `make commit` to commit the Case File, preserved MRE, and replica proof. If a remote is configured, run `make push`. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.
-3. **Handoff:**
-   Message the user with instructions to start a new session with the Developer to implement the fix, including the Case File as a reference file.
+   Run `make commit` to commit all changes, including the Case File, preserved MRE, replica proof, and direct fixes. If a remote is configured, run `make push`. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.
+3. **Handoff and Completion:**
+   If the fix was resolved directly, message the user with a terminal completion summary. In this case, do not provide a handoff command. If the fix requires developer implementation, message the user with instructions to start a session with the Developer, including the Case File as a reference file.

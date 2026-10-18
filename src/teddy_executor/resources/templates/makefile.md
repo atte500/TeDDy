@@ -9,7 +9,7 @@ and the Debugger's Remote Probing Protocol (RPP). Below are concrete examples ad
 
 ### Commit
 ```shell
-make commit 'feat(templates): add PROJECT.md template'
+make commit "feat(templates): add PROJECT.md template"
 ```
 
 **What is `.PHONY`?**
@@ -38,16 +38,16 @@ make test
 
 ### Probe
 ```shell
-make probe 'investigate windows path handling'
+make probe "investigate windows path handling"
 ```
 
 **Why does `probe` need a reason?**
-The Remote Probing Protocol requires a reason string because it is passed as the `reason` input to the GitHub Actions workflow dispatch command (`gh workflow run debug.yml --field reason='...'`). The reason documents what the probe is investigating and appears in the workflow run metadata.
+The Remote Probing Protocol requires a reason string because it is passed as the `reason` input to the GitHub Actions workflow dispatch command (`gh workflow run debug.yml --field reason="..."`). The reason documents what the probe is investigating and appears in the workflow run metadata.
 
 ### Logs
 ```shell
 make logs 12345              # extract logs for ALL failed steps
-make logs 12345 'Run tests'  # extract logs for a specific step (substring match)
+make logs 12345 "Run tests"  # extract logs for a specific step (substring match)
 ```
 
 **How does `make logs` work?**
@@ -82,11 +82,13 @@ EOF
 
 ## Cross-Platform Design
 
-The Makefile uses Make's built-in `-` prefix for error suppression (`-pre-commit run`) instead of shell-level `|| true` or `&&`/`||` chaining. This ensures cross-platform compatibility:
+Always use GNU Make native features for cross-platform compatibility instead of shell-specific constructs:
 
-- **POSIX shells (bash, sh, zsh):** `-` prefix works because Make handles error suppression natively before passing the recipe line to the shell.
-- **Windows (cmd.exe):** `-` prefix works because Make suppresses the exit code check, avoiding shell-specific `||` operators that cmd.exe does not support.
-- **Error transparency:** The pre-commit pass is advisory. If it fails, the commit still succeeds locally. The post-commit test gate acts as the safety net. `make push` runs `git pull --rebase` and `git push` WITHOUT suppression, so a rebase conflict or push rejection surfaces as a non-zero exit.
+- **Native argument validation:** Use `$(if $(strip $(VAR)),,$(error Usage: ...))` instead of POSIX `[ -n "$$VAR" ]`. GNU Make validates parameters before spawning any shell process.
+- **Shell-less empty recipe:** Use `%: ;` to absorb extra command-line arguments. In Windows `cmd.exe`, the Unix built-in `@:` fails because `:` is reserved syntax for labels and drives. The empty recipe `%: ;` tells Make to do nothing without spawning a subshell.
+- **Windows shell selection:** Set `SHELL := bash.exe` when `OS` is `Windows_NT` so multi-line shell pipelines (`ci-watch`, `probe`, `logs`) execute through Git Bash.
+- **Native error suppression:** The Makefile uses Make's built-in `-` prefix (`-pre-commit run`) instead of shell-level `|| true` or `&&`/`||` chaining. Make suppresses non-zero exit codes natively before passing lines to the shell.
+- **Error transparency:** The pre-commit pass is advisory. If it fails, the commit still succeeds locally. The post-commit test gate acts as the safety net. `make push` runs `git pull --rebase` and `git push` without suppression, so a rebase conflict or push rejection surfaces as a non-zero exit.
 
 ## Test Workflow
 
@@ -115,27 +117,27 @@ test:
 commit: ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
 commit:
-	@[ -n "$(ARGS)" ] || { echo "Usage: make commit '<message>'"; exit 1; }
+	$(if $(strip $(ARGS)),,$(error Usage: make commit '<message>'))
 	git add .
 	-pre-commit run
 	git add .
 	git commit -m "$(ARGS)"
 
-%:
-	@:
+# Empty recipe absorbs extra arguments without invoking a subshell.
+%: ;
 ```
 
 **Usage:**
 - `make commit 'feat(templates): add PROJECT.md template'`
 
-**Message-input contract:** the recipe captures the message from the extra `make` goals via `$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))`. Supported input (verified by the `spikes/debug/make-args/` findings):
+**Message-input contract:** the recipe captures the message from the extra `make` goals via `$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))`. Supported input:
 
-- ✅ **Single-line Conventional Commits survive verbatim** — e.g. `make commit 'feat(scope): add thing'`.
-- ❌ **`$VAR` is swallowed to empty** — `make` expands `$(...)`/`$X` before the recipe runs; avoid `$`.
-- ❌ **Backticks and quotes are stripped** by the shell quoting layer.
-- ❌ **Multiline messages fail hard** (`/bin/sh: unexpected EOF`, exit 2).
+- ✅ **Single-line Conventional Commits in double quotes survive verbatim** — e.g. `make commit "feat(scope): add thing"`. Always use double quotes across all operating systems.
+- ❌ **`$VAR` is swallowed or expanded** — `make` and shells expand `$(...)`/`$X`; avoid `$`.
+- ❌ **Backticks trigger command substitution** in POSIX shells when inside double quotes; avoid backticks.
+- ❌ **Multiline messages fail hard** (`unexpected EOF`).
 
-**Guard:** keep the commit message to a single line and avoid `$` characters.
+**Guard:** keep the commit message to a single line in double quotes, and write plain text without `$`, backticks, or nested quotes.
 
 ## Push (Deferred to Conclusion)
 
@@ -272,7 +274,7 @@ ci-watch:
 probe: REASON := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
 probe:
-	@[ -n "$(REASON)" ] || { echo "Usage: make probe '<reason>'"; exit 1; }
+	$(if $(strip $(REASON)),,$(error Usage: make probe '<reason>'))
 	git add -f spikes/debug/probe.sh
 	git commit -m 'debug: probe' --no-verify --allow-empty
 	git push
@@ -297,15 +299,15 @@ logs: LOGS_RUN := $(word 2,$(MAKECMDGOALS))
 logs: LOGS_STEP := $(wordlist 3,99,$(MAKECMDGOALS))
 
 logs:
-	@[ -n "$(LOGS_RUN)" ] || { echo "Usage: make logs <run-id> ['<step-name>']"; exit 1; }
+	$(if $(strip $(LOGS_RUN)),,$(error Usage: make logs <run-id> ['<step-name>']))
 	@if [ -z "$(LOGS_STEP)" ]; then \
 	  gh run view "$(LOGS_RUN)" --log-failed 2>/dev/null | awk -F'\t' '{ if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
 	else \
 	  gh run view "$(LOGS_RUN)" --log 2>/dev/null | awk -F'\t' -v step="$(LOGS_STEP)" 'index($$2, step) > 0 { if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/, "Error: ", l); print l }'; \
 	fi
 
-%:
-	@:
+# Empty recipe absorbs extra arguments without invoking a subshell.
+%: ;
 ```
 
 **Usage:**

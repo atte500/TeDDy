@@ -1,5 +1,12 @@
 .PHONY: commit push ci-watch probe test logs
 
+# Always use GNU Make native features for cross-platform compatibility.
+# On Windows, ensure a POSIX shell is used for pipeline targets (ci-watch, probe, logs).
+ifeq ($(OS),Windows_NT)
+    SHELL := bash.exe
+    .SHELLFLAGS := -c
+endif
+
 # commit - VCP workflow (LOCAL ONLY): stage, advisory pre-commit auto-fix pass, commit.
 # Usage:
 #   make commit '<type>(<scope>): <description>'
@@ -27,7 +34,7 @@
 commit: ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
 commit:
-	@[ -n "$(ARGS)" ] || { echo "Usage: make commit '<message>'"; exit 1; }
+	$(if $(strip $(ARGS)),,$(error Usage: make commit '<message>'))
 	git add .
 	-pre-commit run
 	git add .
@@ -146,7 +153,7 @@ ci-watch:
 probe: REASON := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
 probe:
-	@[ -n "$(REASON)" ] || { echo "Usage: make probe '<reason>'"; exit 1; }
+	$(if $(strip $(REASON)),,$(error Usage: make probe '<reason>'))
 	git add -f spikes/debug/probe.sh
 	git commit -m 'debug: probe' --no-verify --allow-empty
 	git push
@@ -170,7 +177,7 @@ logs: LOGS_RUN := $(word 2,$(MAKECMDGOALS))
 logs: LOGS_STEP := $(wordlist 3,99,$(MAKECMDGOALS))
 
 logs:
-	@[ -n "$(LOGS_RUN)" ] || { echo "Usage: make logs <run-id> ['<step-name>']"; exit 1; }
+	$(if $(strip $(LOGS_RUN)),,$(error Usage: make logs <run-id> ['<step-name>']))
 	@if [ -z "$(LOGS_STEP)" ]; then \
 	  gh run view "$(LOGS_RUN)" --log-failed 2>/dev/null | awk -F'\t' '{ if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
 	else \
@@ -188,5 +195,6 @@ logs:
 test:
 	uv run pytest
 
-%:
-	@:
+# Empty recipe absorbs extra arguments without invoking a subshell.
+# Always use GNU Make native features for cross-platform compatibility.
+%: ;
