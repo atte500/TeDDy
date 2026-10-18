@@ -176,7 +176,7 @@ header while skipping only the MRP append. Followed the slice/user mandate; docu
 missing-MRP failure, empty-MRP, and missing-agent-XML — plus two repaired pre-existing tests whose
 assertions encoded the pre-injection return value
 (`test_prompt_manager.py::test_fetch_system_prompt_resolves_from_teddy_prompts`,
-`test_bug_03_prompt_resolution.py::test_fetch_system_prompt_ignores_case`). A shared
+`test_prompt_resolution.py::test_fetch_system_prompt_ignores_case`). A shared
 `mrp_prompt_manager` fixture was extracted to remove construction duplication within the file.
 
 **As-Built update (completed with the Wiring deliverable).** `docs/architecture/core/services/prompt_manager.md`
@@ -185,7 +185,7 @@ format (`Agent Name: {Name}`, no leading `#`), the injectable `mrp_resource_root
 
 **Delivery recovery — pre-commit bypass (Logic VCP).** The first Logic VCP attempt aborted at the
 staged-file Ruff hook on a pre-existing `TID251` mock-ban (`unittest.mock.MagicMock`/`patch`) at
-`tests/suites/unit/core/services/test_bug_03_prompt_resolution.py:4`, which serves the out-of-scope
+`tests/suites/unit/core/services/test_prompt_resolution.py:4`, which serves the out-of-scope
 `TestLifecyclePrintsInitialRequest` class. `git show HEAD:…` confirmed the imports predate this
 slice. Per the Delivery recovery protocol (refactor-or-log-and-bypass), the occurrence was folded
 into the consolidated PROJECT.md debt entry and the VCP is committed with `--no-verify` for the

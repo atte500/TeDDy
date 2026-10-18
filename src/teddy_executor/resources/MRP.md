@@ -126,7 +126,7 @@ Prefer config-level bypasses (pyproject `per-file-ignores`, pre-commit `exclude`
 
 ### Code and Naming Hygiene
 
-Write semantic, self-documenting code where naming and structure make what the code does immediately obvious. Reserve comments exclusively for why (business rationale, non-obvious invariants, constraints, or algorithmic trade-offs); never repeat what code already states. Write comments as full, natural sentences without artificial line-breaking or column wrapping. When editing existing code, update or improve confusing comments rather than leaving stale text. Never cite internal documentation filenames, section headers, rule numbers, or workflow steps in code comments, action descriptions, or turn titles. Name files, functions, and tests after the domain concept, scenario, or behavior under test.
+Write semantic, self-documenting code where naming and structure make what the code does immediately obvious. Reserve comments exclusively for why (business rationale, non-obvious invariants, constraints, or algorithmic trade-offs); never repeat what code already states. Write comments as full, natural sentences without artificial line-breaking or column wrapping. When editing existing code, update or improve confusing comments rather than leaving stale text. Never cite internal documentation filenames, section headers, rule numbers, or workflow steps in code comments, action descriptions, or turn titles. Name files, functions, and tests after the domain concept, scenario, or behavior under test. Never embed incident, ticket, or bug numbers in file, function, class, or test names.
 
 ## Response Format
 
