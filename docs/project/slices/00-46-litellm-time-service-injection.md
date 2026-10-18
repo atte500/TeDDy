@@ -1,5 +1,5 @@
 # Slice: Litellm Retry Time-Service Injection
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc slice)
 - **Depends On:** N/A
 - **Specs:** N/A
@@ -82,6 +82,11 @@ And the test completes without a real sleep
 - The delivery commit first failed at the `detect-secrets` hook, which flagged four fake-key fixture lines in the two staged litellm test files. Those strings are test data, not credentials. The remedy added the repo-standard `# pragma: allowlist secret` comment to every un-pragma'd occurrence of each fake value, because the hook deduplicates by file and hash and one pragma can promote the next occurrence.
 - Adding the pragma to the single-line `get_completion` call that carries the fake caller key pushed it past the formatter width, so `ruff-format` reflowed the call and stranded the pragma on the closing bracket line. `detect-secrets` scans line by line, so the stranded pragma no longer covered the secret value. The remedy split the call one argument per line with a trailing comma and moved the pragma onto the `api_key` argument, and every hook then passed cleanly.
 - This note names the fake key generically rather than quoting it. The same secret hook scans Markdown artifacts, so quoting a literal fake value here re-opens the gate it documents.
+
+### Verification (quality audit and full-suite gate)
+- The production double audit found no skeleton response, hardcoded delay, or temporary stub in the retry path. Every recorded delay derives from the shipped `0.5 * 2**attempt` formula, and the real `time.sleep` runs only on the documented no-time-service fallback.
+- The upstream census confirmed the composition factory is the single production construction site that injects `time_service`. The four named tests plus the wiring assertion are the only slice consumers, and no orphaned helper remains.
+- The full-suite gate reported `1825 passed, 36 skipped`, equal to the committed baseline, so the slice introduces no regression.
 
 ## Verification
 1. **Retry tests run without real backoff:**
