@@ -17,13 +17,11 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 2. **Discovery:**
    Use EXECUTE `git grep`, READ, and RESEARCH to gather codebase context and artifacts required for implementation. Search the codebase and test suite for existing implementations or coverage of your task to prevent logic and test duplication. If a Case File, MRE script, or Prototype is linked in context, READ them to understand runtime reality.
 3. **Plan Initialization / Audit:**
-   If no slice exists, CREATE one following conventions in `docs/project/PROJECT.md` informed by discovery findings, linking any reference files and placing Wiring first as the tracer bullet.
+   If no slice exists, CREATE one following conventions in `docs/project/PROJECT.md` informed by discovery findings, linking any reference files, placing Wiring first as the tracer bullet, and run `make commit` to version control the new plan.
 
-   If a slice already exists, audit target components via EXECUTE `git grep`. Verify that all deliverables keep all tests passing at every commit. If a deliverable attempts a breaking signature change to a Shared Seam (git grep count greater than 1) without a migration plan, immediately EDIT the slice to re-partition the work into non-breaking steps (expand -> migrate -> contract). Decompose any item touching more than one logical change into smaller atomic deliverables. Verify Wiring is placed first.
-
-   Set slice Status to In Progress. If the slice was newly created or modified during audit, run `make commit` to version control the plan before starting work.
-4. **Mark Deliverable:**
-   Identify the next uncompleted deliverable in the vertical slice. Immediately EDIT the vertical slice to mark this single focused deliverable as in progress using `[▶]`. Batching deliverables into one cycle execution is strictly forbidden.
+   If a slice already exists, audit target components via EXECUTE `git grep`. Verify that all deliverables keep all tests passing at every commit. If a deliverable attempts a breaking signature change to a Shared Seam (git grep count greater than 1) without a migration plan, immediately EDIT the slice to re-partition the work into non-breaking steps (expand -> migrate -> contract). Decompose any item touching more than one logical change into smaller atomic deliverables. Verify Wiring is placed first. If the audit required structural plan changes, run `make commit` to record them before starting work.
+4. **Activate Slice & Mark Deliverable:**
+   Set slice Status to In Progress. Identify the next uncompleted deliverable in the vertical slice and mark it in progress using `[▶]`. Do not commit this status change separately; commit it alongside the deliverable in the Delivery phase. Batching deliverables into one cycle execution is strictly forbidden.
 
 ### Implementation
 **Goal:** Satisfy the current deliverable requirements via Just-In-Time implementation without overbuilding.
@@ -65,8 +63,12 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
      if your new tests render existing tests obsolete, delete the redundant tests.
    - **DI Purity:**
      make sure that no concrete defaults exist in new code. Service Locator and `mock.patch` are forbidden.
+   - **Apply KISS:**
+     simplify logic by removing redundant steps, intermediate variables, or consolidating convoluted branches without altering behavior.
+   - **Apply SRP:**
+     ensure each class, function, and module has exactly one reason to change. Extract distinct responsibilities into cohesive helpers.
    - **Clean Code:**
-     apply SRP locally to simplify logic, improve readability, and remove stale comments.
+     simplify logic, improve readability, and update or improve confusing comments rather than leaving stale text.
    - **Structural Refactoring:**
      if refactoring requires cross-cutting or structural changes outside the slice scope, record it in the roadmap in `docs/project/PROJECT.md` rather than attempting out-of-scope rewrites.
 4. **Loop Exit:**
@@ -121,6 +123,8 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
      verify that NO skeleton responses, hardcoded mock values, or temporary stubs remain in `src/`. All outputs must derive from production logic.
    - **Upstream & Downstream Audit:**
      run EXECUTE `git grep` to audit upstream callers (verifying all callers, test files, and harness fixtures use updated contracts) and downstream dependencies (pruning orphaned helper methods, unused parameters, or dead functions).
+   - **Test Suite Hygiene & Shared Harness Audit:**
+     audit test suites for redundant test coverage. Consolidate tests that assert identical execution paths with no variation in invariant coverage. Delete obsolete unit tests superseded by broader regression suites. Verify tests consistently use shared test harness fixtures (drivers, observers, fakes) instead of ad-hoc mocks or duplicated setup logic; extract repeated test infrastructure into the shared harness.
    - **Immediate or slice-scoped:**
      append Refactor or Cleanup deliverables to the active Vertical Slice and execute them through the delivery cycle before completing the slice.
    - **Systemic or out-of-scope:**
@@ -136,8 +140,9 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    If a remote is configured, run `make push`. If remote CI is configured, run `make ci-watch` to monitor and inspect remote CI results. If blocking test failures occur, fix them immediately, commit, and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.
 2. **User Verification & Handoff:**
    Message the user with concise step-by-step instructions extracted from the slice `Verification` section so the user can test the delivered capability.
+   State the current branch, commit hash, and remote CI outcome, noting when a pull request must be opened.
    Include dynamic routing instructions for the next session based on project state:
-   - **Next Slice Ready:** Route to the Developer for the next slice whose dependencies are met. If multiple independent slices are ready for parallel execution, provide start commands for each and instruct the user to run them in separate workspaces (such as git worktrees).
+   - **Next Slice Ready:** Route to the Developer for the next slice whose dependencies are met. If multiple independent slices are ready for parallel execution, provide start commands for each and instruct the user to run them in separate workspaces.
    - **Unresolved Unknowns:** Route to the Prototyper if the next slice contains unresolved Key Unknowns.
    - **Milestone Complete:** Route to the Architect if the milestone is complete and planned milestones remain in the Roadmap. The Architect will perform the health check, initialize the next milestone, and draft its slices.
    - **Roadmap Complete:** Route to the Pathfinder only if all roadmap milestones are complete and the product requires new strategic direction.

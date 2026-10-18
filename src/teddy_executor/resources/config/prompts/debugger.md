@@ -58,13 +58,15 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 
    Repeat until all discrepancies are resolved.
 6. **Isolated Sandbox Verification:**
-   You are strictly forbidden from modifying `src/` or `tests/` to test your fix. Once you have a high-confidence hypothesis, prove it using a Sandbox Replica:
+   You are strictly forbidden from modifying `src/` or `tests/` to test hypotheses. Once you have a high-confidence hypothesis, prove it using a Sandbox Replica:
    1. CREATE a replica of the faulty source file at `spikes/debug/{scope-slug}/replica_{filename}.ext`.
    2. Adjust relative imports inside the replica to resolve unaltered dependencies from `src/`.
    3. Apply your proposed fix to the replica.
    4. EDIT your MRE script to import the replica instead of the production module.
    5. EXECUTE the MRE. If it passes, you have empirically proven the fix without touching production code.
    6. Always EDIT the Case File to record verification results. If it fails, update the Causal Model and restart investigation.
+
+   Direct Resolution vs. Handoff: If the proven fix is a small self-contained change, apply the fix to `src/`, add or update a permanent regression test in `tests/`, and verify via `make test`. A small change is strictly qualified as: touching at most one production file and its matching test file, introducing no new architectural boundaries or shared contracts, and keeping `make test` green. If a change exceeds this scope or breaks unrelated tests, halt direct execution immediately.
 7. **Impact Audit:**
    Analyze components touched by the proposed fix. Use EXECUTE `git grep` to search for direct upstream callers (including test files and harness fixtures) and downstream dependencies (for orphaned code, unused parameters, or dead functions) that the change affects. If the fix modifies a shared port, signature, or data contract with multiple consumers, document the required migration path so the Developer can partition the change into non-breaking steps.
 8. **Case File Synchronization:**

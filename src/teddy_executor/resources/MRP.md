@@ -118,7 +118,7 @@ Applies to all user-facing Messages and turn titles:
 ### Pragmatic Simplified Technical English
 
 All text in Rationale, Message, action descriptions, and documentation must adhere to Pragmatic STE:
-Write in grammatically complete sentences using active voice, standard articles, and no semicolons, avoiding conversational fluff and clipped fragments. Limit procedural instructions to 20 words in the imperative mood with conditions placed before actions. Limit descriptive statements to 25 words with one fact per sentence. Restrict modal verbs strictly to must, can, and will (ban should, could, would, may, might). Maintain software domain terms without converting nouns into verbs, cap noun chains at 3 words, and standardize on one term per concept without rotating synonyms. Use only standard industry terms instead of invented jargon and metaphors.
+Write in grammatically complete sentences using active voice, standard articles, and no semicolons, avoiding conversational fluff and clipped fragments. Limit procedural instructions to 20 words in the imperative mood with conditions placed before actions. Limit descriptive statements to 25 words with one fact per sentence. Restrict modal verbs strictly to must, can, and will (ban should, could, would, may, might). Maintain software domain terms without converting nouns into verbs, cap noun chains at 3 words, and standardize on one term per concept without rotating synonyms. Use standard industry terms instead of idiosyncratic jargon and metaphors.
 
 ### Quality-Gate Bypass Policy
 
@@ -126,7 +126,7 @@ Prefer config-level bypasses (pyproject `per-file-ignores`, pre-commit `exclude`
 
 ### Code and Naming Hygiene
 
-All code comments and file names must remain self-contained without fragile document citations. Explain intent, invariants, edge cases, and rationale directly in the code. Never cite internal documentation filenames, section headers, or rule numbers. Name files, functions, and tests after the domain concept, scenario, or behavior under test. Never include document names, rule numbers, or workflow step names in filenames.
+Write semantic, self-documenting code where naming and structure make what the code does immediately obvious. Reserve comments exclusively for why (business rationale, non-obvious invariants, constraints, or algorithmic trade-offs); never repeat what code already states. Write comments as full, natural sentences without artificial line-breaking or column wrapping. When editing existing code, update or improve confusing comments rather than leaving stale text. Never cite internal documentation filenames, section headers, rule numbers, or workflow steps in code comments, action descriptions, or turn titles. Name files, functions, and tests after the domain concept, scenario, or behavior under test.
 
 ## Response Format
 

@@ -31,8 +31,8 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 
 1. **Routing Decision:**
    Analyze discovery findings to classify the request into one execution track: Non-Behavioral, Milestone Feature, Standalone Behavioral, or Bug Report.
-2. **Non-Behavioral Direct Execution:**
-   If the deliverable is purely non-behavioral (documentation, configs, static type annotations, renames, dead code deletion, or simple non-behavioral code changes), execute it directly in this phase yourself.
+2. **Direct Execution:**
+   If the deliverable is non-behavioral (documentation, configs, static typing, cleanup), or a small self-contained change, execute it directly in this phase. A small change is strictly qualified as: touching at most one production file and its matching test file, introducing no new architectural boundaries or shared contracts, and keeping `make test` green. If a change exceeds this scope or breaks unrelated tests, halt direct execution immediately.
 3. **Milestone & Specification:**
    For systemic or milestone features, update the Roadmap in `docs/project/PROJECT.md` and route to the Architect. If establishing permanent system invariants, CREATE or EDIT the specification document in `docs/project/specs/`. The Architect will initialize the milestone document and draft all slices.
 4. **Ad-hoc Slice Generation:**

@@ -7,8 +7,13 @@
 - **Component Docs:** [links]
 - **Scope Slug:** `feature-slug`  <!-- 1-2 kebab-case words only. -->
 
-## Business Goal
+## Goal
 1-2 sentences describing the user need and measurable value delivered by this slice.
+
+## Context
+Key findings, existing contracts, and technical constraints discovered through static code reading or library documentation.
+- `ComponentName`: Description of existing contracts, internal interfaces, or invariants.
+- `LibraryName`: Description of external dependency behavior, configuration, or API signatures.
 
 ## Scenarios
 Primary user journeys and happy paths. These drive End-to-End Acceptance Tests in the Wiring deliverable.
@@ -32,7 +37,7 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 
 **Taxonomy:**
 - `[Domain]` = Ambiguities in business rules, policy decisions, domain definitions, or scope boundaries. Resolve by asking the user directly.
-- `[Technical]` = External dependencies, third-party libraries, APIs, internal state machines, complex algorithms, concurrency, performance, or data storage. Resolve via works-like prototypes.
+- `[Technical]` = External dependencies, third-party libraries, APIs, internal state machines, complex algorithms, concurrency, performance, or data storage. Resolve via works-like prototypes. Do not log items that can be verified through static code reading or library documentation; resolve and record those under Context instead.
 - `[Functional]` = User-facing ergonomics, CLI flags, terminal rendering, interactive flows, or layout aesthetics. Resolve via looks-like prototypes.
 
 **Mandatory De-risking Triggers (must include, but are not limited to):**
@@ -80,10 +85,10 @@ Free-form notes recording decisions, deviations, or discoveries during implement
 Manual verification steps for user execution at slice conclusion. Provide clear instructions with copy-pasteable commands or interactive UI steps. Do not include automated test commands.
 
 **Format:**
-- [ ] **Title:**
-    Run `command <args>`.
-    Verify output contains `expected output`.
-- [ ] **Title:**
-    Navigate to `[View/Screen]`.
-    Trigger `[Action]`.
-    Confirm `[Observed State/Element]`.
+1. **Title:**
+   Run `command <args>`.
+   Verify output contains `expected output`.
+2. **Title:**
+   Navigate to `[View/Screen]`.
+   Trigger `[Action]`.
+   Confirm `[Observed State/Element]`.
