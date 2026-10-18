@@ -47,6 +47,12 @@ from tests.harness.setup.composition import (
     temp_cache_dir,
 )
 
+# Pin the mock HTTP server to the IPv4 loopback literal. On Windows, 'localhost'
+# resolves to ::1 first; the IPv4-only test server never answers there, and every
+# request stalls about two seconds before the IPv4 fallback. Pinning the host
+# removes the dual-stack fallback on every platform.
+os.environ.setdefault("PYTEST_HTTPSERVER_HOST", "127.0.0.1")
+
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_configure(config):

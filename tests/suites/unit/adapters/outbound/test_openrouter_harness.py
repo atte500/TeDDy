@@ -3,6 +3,10 @@ import json
 
 
 def test_openrouter_mock_fixture(openrouter_mock):
+    # The mock server must be addressed by IPv4 literal: a 'localhost' URL
+    # resolves to ::1 first on Windows and stalls about 2s per request.
+    assert openrouter_mock.startswith("http://127.0.0.1:")
+
     # Act: openrouter_mock is a fixture that returns the base URL
     url = f"{openrouter_mock}/api/v1/models"
     with urllib.request.urlopen(url) as response:
