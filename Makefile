@@ -17,8 +17,10 @@ endif
 # The '-' prefix on pre-commit tells Make to ignore a non-zero exit code. This is
 # cross-platform (works on both POSIX shells and Windows cmd.exe) and avoids
 # shell-specific error-suppression operators (||, &&) that behave differently per OS.
-# Pre-commit failure does NOT block the commit (it is an advisory auto-fix pass); the
-# post-commit test gate (.githooks/post-commit.py) is the real safety net.
+# This first pre-commit pass is advisory: a non-zero exit is ignored and auto-fixed
+# files are re-staged. Git then runs the same hooks again during `git commit` below,
+# and that second run is the blocking local gate. The unskippable post-commit test
+# gate (.githooks/post-commit.py) remains the final safety net.
 
 # Target-specific variables capture positional arguments before recipe execution.
 # These are Make variables, not shell variables, so they persist across all recipe lines.

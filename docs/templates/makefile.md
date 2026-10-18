@@ -88,7 +88,7 @@ Always use GNU Make native features for cross-platform compatibility instead of 
 - **Shell-less empty recipe:** Use `%: ;` to absorb extra command-line arguments. In Windows `cmd.exe`, the Unix built-in `@:` fails because `:` is reserved syntax for labels and drives. The empty recipe `%: ;` tells Make to do nothing without spawning a subshell.
 - **Windows shell selection:** Set `SHELL := bash.exe` when `OS` is `Windows_NT` so multi-line shell pipelines (`ci-watch`, `probe`, `logs`) execute through Git Bash.
 - **Native error suppression:** The Makefile uses Make's built-in `-` prefix (`-pre-commit run`) instead of shell-level `|| true` or `&&`/`||` chaining. Make suppresses non-zero exit codes natively before passing lines to the shell.
-- **Error transparency:** The pre-commit pass is advisory. If it fails, the commit still succeeds locally. The post-commit test gate acts as the safety net. `make push` runs `git pull --rebase` and `git push` without suppression, so a rebase conflict or push rejection surfaces as a non-zero exit.
+- **Error transparency:** The first pre-commit pass is advisory, so its non-zero exit is ignored and auto-fixed files are re-staged. Git then runs the same hooks again during `git commit`, and that second run is the blocking local gate. A hook failure there aborts the commit. The post-commit test gate is the final safety net. `make push` runs `git pull --rebase` and `git push` without suppression, so a rebase conflict or push rejection surfaces as a non-zero exit.
 
 ## Test Workflow
 
