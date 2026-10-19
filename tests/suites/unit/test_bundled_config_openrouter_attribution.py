@@ -32,3 +32,18 @@ def test_bundled_config_keeps_the_app_publicly_listed():
     headers = _bundled_llm_settings()["extra_headers"]
 
     assert "X-OpenRouter-App-Visibility" not in headers
+
+
+def test_user_null_override_suppresses_bundled_headers(tmp_path):
+    """A user config setting ``llm.extra_headers: null`` opts out of attribution."""
+    teddy_dir = tmp_path / ".teddy"
+    teddy_dir.mkdir()
+    (teddy_dir / "config.yaml").write_text(
+        "llm:\n  extra_headers: null\n", encoding="utf-8"
+    )
+
+    adapter = YamlConfigAdapter(
+        config_path=".teddy/config.yaml", root_dir=str(tmp_path)
+    )
+
+    assert "extra_headers" not in adapter.get_setting("llm")
