@@ -66,7 +66,8 @@ llm:
   # OpenRouter app attribution (https://openrouter.ai/docs/app-attribution).
   # Usage from this app appears at https://openrouter.ai/apps?url=https://github.com/atte500/teddy.
   # LiteLLM also sends a legacy X-Title default, so both title headers are pinned here.
-  # Remove this block to opt out. Non-OpenRouter providers ignore these headers.
+  # This block ships in the baseline. Set `llm.extra_headers: null` in .teddy/config.yaml to opt out.
+  # Non-OpenRouter providers ignore these headers.
   extra_headers:
     HTTP-Referer: "https://github.com/atte500/teddy"
     X-Title: "TeDDy"
