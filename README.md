@@ -1,7 +1,7 @@
 <div align="center">
 
 <p align="center">
-  <img src="./assets/banner.jpg" alt="TeDDy: The opinionated software engineering harness - Because you should own the means of development" width="70%" style="max-width: 650px;" />
+  <img src="./assets/banner.png" alt="TeDDy: The opinionated software engineering harness - Because you should own the means of development" width="70%" style="max-width: 650px;" />
 </p>
 
 <p align="center">
