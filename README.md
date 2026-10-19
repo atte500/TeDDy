@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./assets/banner.jpg" alt="TeDDy: The opinionated software engineering harness - Because you should own the means of development" width="100%">
+<img src="./assets/banner.jpg" alt="TeDDy: The opinionated software engineering harness - Because you should own the means of development" width="70%">
 
 <br>
 
