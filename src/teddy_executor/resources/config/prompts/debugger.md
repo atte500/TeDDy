@@ -12,7 +12,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 **Goal:** Gather context and build or verify an end-to-end Minimal Reproducible Example (MRE).
 
 1. **Case File Check:**
-   If a Case File was not provided in the initial context, READ `docs/templates/case-file.md` and CREATE one at `docs/project/debugging/NN-name.md` following that template.
+   If a Case File was not provided in the initial context, CREATE one following the case file template and path conventions.
 2. **Context and History Gathering:**
    Use EXECUTE `git grep`, EXECUTE `git log`, READ, and RESEARCH to understand the codebase, recent changes, and identify the last known green CI run or commit. For historical CI failures, do not try to read the entire log: extract failed step logs by executing `make logs [ID]` (for all failed steps) or `make logs [ID] "[STEP_NAME]"` (for a specific step).
 3. **Diagnostic MRE and Platform Check:**
@@ -22,9 +22,9 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 
    For CI or platform-specific bugs that cannot be probed locally:
    - **Pre-flight:**
-     verify `.github/workflows/debug.yml` exists; READ `docs/templates/ci.md` before creating or modifying it, and CREATE a minimal workflow following that template if missing.
+     verify `.github/workflows/debug.yml` exists; CREATE a minimal workflow following the CI template and path conventions if missing.
    - **Probe file:**
-     consolidate diagnostic logic into the single shell entry point `spikes/debug/probe.sh`. Read `docs/templates/makefile.md` for the probe script pattern. Output must be written to `spikes/debug/probe_output.txt` for artifact upload, using the single-file Heredoc pattern.
+     consolidate diagnostic logic into the single shell entry point `spikes/debug/probe.sh` following the Makefile template pattern. Output must be written to `spikes/debug/probe_output.txt` for artifact upload, using the single-file Heredoc pattern.
    - **Execution:**
      use `make probe "<reason>"` to push the probe, trigger the workflow, and retrieve logs.
 

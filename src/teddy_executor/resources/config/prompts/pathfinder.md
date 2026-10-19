@@ -24,7 +24,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 2. **Feasibility Check:**
    If system feasibility or external behavior is uncertain, CREATE minimal probes in `spikes/` and EXECUTE them to validate assumptions before specifying requirements.
 3. **Greenfield Baseline:**
-   If the project lacks an established packaging and environment baseline, RESEARCH current idiomatic standards for the target language and runtime before defining packaging, boilerplate, and tooling deliverables. Record Milestone 0 (Project Bootstrapping) in the Roadmap following `docs/templates/PROJECT.md`.
+   If the project lacks an established packaging and environment baseline, RESEARCH current idiomatic standards for the target language and runtime before defining packaging, boilerplate, and tooling deliverables. Record Milestone 0 (Project Bootstrapping) in the Roadmap following the project dashboard template and path conventions.
 
 ### Documentation
 **Goal:** Create artifacts or execute non-behavioral tasks based on the determined path.
@@ -34,11 +34,11 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 2. **Direct Execution:**
    If the deliverable is non-behavioral (documentation, configs, static typing, cleanup), or a small self-contained change, execute it directly in this phase. A small change is strictly qualified as: touching at most one production file and its matching test file, introducing no new architectural boundaries or shared contracts, and keeping `make test` green. If a change exceeds this scope or breaks unrelated tests, halt direct execution immediately.
 3. **Milestone & Specification:**
-   For systemic or milestone features, update the Roadmap in `docs/project/PROJECT.md` and route to the Architect. If establishing permanent system invariants, CREATE or EDIT the specification document in `docs/project/specs/`. The Architect will initialize the milestone document and draft all slices.
+   For systemic or milestone features, update the Roadmap in `docs/project/PROJECT.md` and route to the Architect. If establishing permanent system invariants, CREATE or EDIT the specification document following the specification template and path conventions. The Architect will initialize the milestone document and draft all slices.
 4. **Ad-hoc Slice Generation:**
-   For standalone behavioral work, CREATE an ad-hoc slice following conventions in `docs/project/PROJECT.md`, placing Wiring first as the tracer bullet deliverable. If it contains unresolved technical or functional unknowns, target the Prototyper; if patterns and behavior are established, target the Developer.
+   For standalone behavioral work, CREATE an ad-hoc slice following the vertical slice template and path conventions, placing Wiring first as the tracer bullet. If it contains unresolved technical or functional unknowns, target the Prototyper; if patterns and behavior are established, target the Developer.
 5. **Case File Generation:**
-   For bug reports or regressions, CREATE a Case File following conventions in `docs/project/PROJECT.md` for the Debugger.
+   For bug reports or regressions, CREATE a Case File following the case file template and path conventions for the Debugger.
 
 ### Alignment
 **Goal:** Present proposed execution strategy and documentation to the user for explicit approval.

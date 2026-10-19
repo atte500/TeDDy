@@ -104,7 +104,7 @@ Use `EXECUTE` with shell commands or inline Python when surgical `EDIT` is britt
 
 ### Template-First Documentation & Tooling
 
-All documentation and project infrastructure are template-first. Before creating or modifying files under `docs/`, CI workflows, pre-commit hooks, or the `Makefile`, you MUST `READ` the matching template in `docs/templates/` (e.g. `makefile.md`, `ci.md`, `pre-commit.md`, `PROJECT.md`). If `docs/templates/` does not exist, EXECUTE `teddy init templates` to initialize defaults. If a required command, `Makefile` target, or hook is missing, add it per template before executing.
+All documentation and project infrastructure are template-first. Before creating or modifying files under `docs/`, CI workflows, pre-commit hooks, or the `Makefile`, you MUST `READ` the matching template in `docs/templates/`. Follow the artifact numbering and path conventions defined in `docs/project/PROJECT.md`. If `docs/templates/` does not exist, EXECUTE `teddy init templates` to initialize defaults. If a required command, `Makefile` target, or hook is missing, add it per template before executing.
 
 ### Communication Hygiene
 
