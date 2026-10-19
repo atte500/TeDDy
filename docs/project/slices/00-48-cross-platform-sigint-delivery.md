@@ -1,5 +1,5 @@
 # Slice: Cross-Platform SIGINT Self-Delivery
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc bug fix)
 - **Depends On:** N/A
 - **Specs:** N/A
