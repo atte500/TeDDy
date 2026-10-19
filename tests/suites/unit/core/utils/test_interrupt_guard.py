@@ -11,14 +11,12 @@ constant and the monotonic clock is Constructor-Injected for
 deterministic escalation tests (no sleeps).
 """
 
-import os
 import signal
-import sys
 import threading
 
 import pytest
 
-from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+from teddy_executor.core.utils.interrupt_guard import InterruptGuard, raise_interrupt
 
 
 class _FakeClock:
@@ -159,11 +157,11 @@ class TestPhaseSignalHandling:
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32" or not hasattr(signal, "SIGINT"),
-    reason="Self-signaling SIGINT delivery is unreliable on this platform",
+    not hasattr(signal, "SIGINT"),
+    reason="SIGINT delivery is unavailable on this platform",
 )
 class TestRealSignalDelivery:
-    """End-to-end handler delivery via os.kill self-signaling (spike pattern)."""
+    """End-to-end handler delivery via the shared raise_interrupt helper."""
 
     def test_real_sigint_sets_interrupted_flag_during_executing(self, guard) -> None:
         # Arrange
@@ -171,8 +169,9 @@ class TestRealSignalDelivery:
         try:
             guard.install()
             with guard.enter_executing():
-                # Act: deliver a real SIGINT to this process.
-                os.kill(os.getpid(), signal.SIGINT)
+                # Act: deliver a real SIGINT through the same shared helper the
+                # production quit paths use.
+                raise_interrupt()
 
                 # Assert: the installed handler set the drain flag.
                 assert guard.interrupted.is_set()

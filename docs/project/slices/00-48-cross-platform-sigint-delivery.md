@@ -1,5 +1,5 @@
 # Slice: Cross-Platform SIGINT Self-Delivery
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc bug fix)
 - **Depends On:** N/A
 - **Specs:** N/A
@@ -62,11 +62,15 @@ None. The root cause is resolved and empirically verified by the Remote Windows 
 4. `[CONTRACT]` `os.kill` self-delivery sites — remove the obsolete delivery calls once both consumers migrate.
 
 ## Deliverables
-- [ ] **Logic** — Add the module-level `raise_interrupt()` helper beside `InterruptGuard` and drive real SIGINT delivery through the guard handler in the guard Unit suite. Remove the Windows skip where real delivery is now safe.
+- [x] **Logic** — Add the module-level `raise_interrupt()` helper beside `InterruptGuard` and drive real SIGINT delivery through the guard handler in the guard Unit suite. Remove the Windows skip where real delivery is now safe.
 - [ ] **Migration** — Route the composition-root quit recorder through `raise_interrupt()` and align its integration seam so the shared guard observes the recorded key without terminating the test process.
 - [ ] **Migration** — Route the listener's default self-delivery branch through `raise_interrupt()` and align the reader Unit seam.
 
 ## Implementation Notes
+- **Logic deliverable:** Added a module-level `raise_interrupt()` in `interrupt_guard.py` that calls `signal.raise_signal(signal.SIGINT)`. A why-comment records the Windows `TerminateProcess` hazard so a future edit cannot revert to `os.kill`.
+- **Guard suite:** The real-delivery class now imports `raise_interrupt` and drives delivery through it. The `win32` platform skip is removed and only the `SIGINT`-availability guard remains, so real delivery runs on every supported platform.
+- **Gate evidence:** The guard unit suite passes 10/10, and the full `make test` run passes 1857 tests with 5 skips.
+- **Remaining work:** `container._record_quit_source` and `TerminalQuitKeyListener._trigger` still call `os.kill`; both migrations are the next two deliverables.
 
 ## Verification
 1. **Windows quit notice:**

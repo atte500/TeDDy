@@ -121,3 +121,15 @@ class InterruptGuard:
         finally:
             self._executing = False
             self._first_signal_at = None
+
+
+def raise_interrupt() -> None:
+    """Deliver SIGINT in-process so the installed handler runs on every platform.
+
+    ``os.kill(os.getpid(), signal.SIGINT)`` terminates the process on Windows
+    through ``TerminateProcess`` instead of invoking the Python SIGINT handler,
+    which suppresses the interrupt notice. ``signal.raise_signal`` uses the
+    process-level CRT raise path and reaches the handler from the main thread
+    and from a reader thread on every platform.
+    """
+    signal.raise_signal(signal.SIGINT)
