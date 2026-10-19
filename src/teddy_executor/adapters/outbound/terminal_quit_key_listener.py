@@ -16,12 +16,12 @@ from __future__ import annotations
 import importlib
 import os
 import select
-import signal
 import sys
 import threading
 from typing import Any, Optional, cast
 
 from teddy_executor.core.ports.outbound.quit_key_listener import QuitCallback
+from teddy_executor.core.utils.interrupt_guard import raise_interrupt
 from teddy_executor.core.utils.stdin_ownership import is_stdin_owned
 from teddy_executor.core.utils.terminal import restore_cooked_mode
 
@@ -150,8 +150,13 @@ class TerminalQuitKeyListener:
             self._trigger()
 
     def _trigger(self) -> None:
-        """Invoke the injected hook, or self-deliver SIGINT by default."""
+        """Invoke the injected hook, or self-deliver SIGINT by default.
+
+        The default branch uses the shared ``raise_interrupt`` primitive so
+        the installed guard handler runs on every platform. ``os.kill`` would
+        terminate the process on Windows before the handler runs.
+        """
         if self._on_quit is not None:
             self._on_quit()
             return
-        os.kill(os.getpid(), signal.SIGINT)
+        raise_interrupt()

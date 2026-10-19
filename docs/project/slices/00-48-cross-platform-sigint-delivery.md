@@ -64,7 +64,7 @@ None. The root cause is resolved and empirically verified by the Remote Windows 
 ## Deliverables
 - [x] **Logic** — Add the module-level `raise_interrupt()` helper beside `InterruptGuard` and drive real SIGINT delivery through the guard handler in the guard Unit suite. Remove the Windows skip where real delivery is now safe.
 - [x] **Migration** — Route the composition-root quit recorder through `raise_interrupt()` and align its integration seam so the shared guard observes the recorded key without terminating the test process.
-- [ ] **Migration** — Route the listener's default self-delivery branch through `raise_interrupt()` and align the reader Unit seam.
+- [x] **Migration** — Route the listener's default self-delivery branch through `raise_interrupt()` and align the reader Unit seam.
 
 ## Implementation Notes
 - **Logic deliverable:** Added a module-level `raise_interrupt()` in `interrupt_guard.py` that calls `signal.raise_signal(signal.SIGINT)`. A why-comment records the Windows `TerminateProcess` hazard so a future edit cannot revert to `os.kill`.
@@ -73,7 +73,10 @@ None. The root cause is resolved and empirically verified by the Remote Windows 
 - **Composition-root Migration:** `container._record_quit_source` now records `"q"` on the shared guard and delivers through the shared `raise_interrupt()` helper. The `os` and `signal` module imports left `container.py` because nothing else referenced them.
 - **Integration seam:** `test_quit_source_wiring.py` now stubs only `signal.raise_signal` and asserts `delivered == [signal.SIGINT]`, so the test observes the delivery primitive without terminating the test process.
 - **Gate evidence:** The integration seam passes 1/1, and the full `make test` run passes 1857 tests with 5 skips.
-- **Remaining work:** `TerminalQuitKeyListener._trigger` still calls `os.kill`; that listener migration is the next deliverable.
+- **Listener Migration:** `TerminalQuitKeyListener._trigger` now delivers through the shared `raise_interrupt()` helper. The `signal` import left the module, and `os` stayed because `_read_one_byte_posix` still calls `os.read`.
+- **Reader seams:** Both reader tests stub only `signal.raise_signal`. The self-delivery test asserts `delivered == [signal.SIGINT]` and ends its fake read loop after one press, so termination never depends on delivery.
+- **Gate evidence:** The reader suite passes 13/13, and the full `make test` run passes 1857 tests with 5 skips.
+- **Result:** No production module calls `os.kill(os.getpid(), signal.SIGINT)` anymore; the shared helper is the single delivery primitive.
 
 ## Verification
 1. **Windows quit notice:**

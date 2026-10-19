@@ -12,7 +12,6 @@ in-memory doubles (no dynamic mocks, no global module patching beyond swapping
 the platform ``termios``/``msvcrt`` modules).
 """
 
-import os
 import signal
 import sys
 import threading
@@ -238,25 +237,32 @@ def test_process_byte_ignores_non_quit_bytes():
 def test_read_loop_self_delivers_sigint_on_quit_key(monkeypatch):
     """With no injected hook the reader self-delivers SIGINT to the process.
 
-    The read loop is PERSISTENT, so the fake byte source requests ``stop()``
-    after the quit has been delivered — proving the loop keeps polling until
-    stopped rather than exiting on the first byte (Bug 58).
+    Delivery must route through the shared ``raise_interrupt`` primitive so the
+    installed handler runs on every platform. The read loop is PERSISTENT, so
+    the fake byte source requests ``stop()`` after one press has been read,
+    proving the loop keeps polling until stopped rather than exiting on the
+    first byte (Bug 58). Termination stays independent of the delivery
+    primitive so a failed delivery assertion reports a clean AssertionError
+    instead of hanging the loop.
     """
     listener = TerminalQuitKeyListener()  # on_quit defaults to None -> self-deliver
     delivered = []
-    monkeypatch.setattr(os, "kill", lambda pid, sig: delivered.append((pid, sig)))
+    # Stub the shared delivery primitive so the seam is observable without
+    # raising KeyboardInterrupt in the test process.
+    monkeypatch.setattr(signal, "raise_signal", lambda sig: delivered.append(sig))
+    remaining_presses = [QUIT_KEY]
 
     def fake_read():
-        if delivered:
+        if not remaining_presses:
             listener._stop_event.set()
             return None
-        return QUIT_KEY
+        return remaining_presses.pop(0)
 
     monkeypatch.setattr(listener, "_read_one_byte", fake_read, raising=False)
 
     listener._read_loop()
 
-    assert delivered == [(os.getpid(), signal.SIGINT)]
+    assert delivered == [signal.SIGINT]
 
 
 def test_trigger_invokes_injected_on_quit_instead_of_self_delivering(monkeypatch):
@@ -264,7 +270,7 @@ def test_trigger_invokes_injected_on_quit_instead_of_self_delivering(monkeypatch
     recorder = _Recorder()
     listener = TerminalQuitKeyListener(on_quit=recorder)
     delivered = []
-    monkeypatch.setattr(os, "kill", lambda pid, sig: delivered.append((pid, sig)))
+    monkeypatch.setattr(signal, "raise_signal", lambda sig: delivered.append(sig))
 
     listener._trigger()
 
