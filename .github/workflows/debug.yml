@@ -96,5 +96,5 @@ jobs:
     - name: Upload probe result
       uses: actions/upload-artifact@v4
       with:
-        name: probe-result-windows
+        name: probe-result
         path: spikes/debug/probe_output.txt
