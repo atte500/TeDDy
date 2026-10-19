@@ -727,7 +727,6 @@ def _echo_config_success(
     container: Container,
     agent: Optional[str] = None,
     model: Optional[str] = None,
-    actual_model: Optional[str] = None,
 ) -> None:
     """Retrieves and echoes the active model and agent configuration on success.
 
@@ -736,13 +735,9 @@ def _echo_config_success(
         agent: Optional agent name to display.
         model: Optional model override from CLI. If provided, this takes
                precedence over the config file value.
-        actual_model: Optional actual serving model from meta.yaml. If provided,
-                      this takes precedence over the model parameter.
     """
     config_service = container.resolve(IConfigService)
-    if actual_model:
-        resolved_model = actual_model
-    elif model:
+    if model:
         resolved_model = model
     else:
         resolved_model = config_service.get_setting("llm.model", "unknown")
@@ -1149,13 +1144,18 @@ def _sync_and_display_session_meta(
 
     latest_turn_path = session_manager.get_latest_turn(session_name)
     meta = repository.load_meta(latest_turn_path)
-    # Clear actual_model so display falls through to current model (override or config)
-    meta.pop("actual_model", None)
+
+    changed = False
+    # Clear actual_model so display falls through to current model (override or config).
+    # A removed key must count as a change so the clear reaches disk without an override.
+    if "actual_model" in meta:
+        meta.pop("actual_model", None)
+        changed = True
+
     _echo_config_success(container, agent=agent or meta.get("agent_name"), model=model)
 
     # Sync latest turn's meta.yaml with current config model/overrides
     config_model = config_service.get_setting("llm.model", "unknown")
-    changed = False
     if model:
         meta["model"] = model
         changed = True

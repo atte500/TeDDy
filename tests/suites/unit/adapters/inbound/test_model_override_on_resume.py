@@ -181,13 +181,16 @@ class TestResumeClearsActualModel:
                 api_key=None,
             )
 
-            # save_meta should be called (auto-sync to config model)
-            if repo.save_meta.called:
-                call_args = repo.save_meta.call_args
-                saved_data = call_args[0][1] if len(call_args[0]) > 1 else call_args[1]
-                # actual_model should be absent
-                assert "actual_model" not in saved_data, (
-                    f"actual_model should be cleared on resume, but found: {saved_data.get('actual_model')}"
-                )
+            # The clear itself must force a save, even without an override.
+            repo.save_meta.assert_called_once()
+            call_args = repo.save_meta.call_args
+            saved_data = call_args[0][1] if len(call_args[0]) > 1 else call_args[1]
+            assert "actual_model" not in saved_data, (
+                f"actual_model should be cleared on resume, but found: {saved_data.get('actual_model')}"
+            )
+            assert saved_data.get("model") == "old-model", (
+                f"Expected the persisted model to stay 'old-model', got {saved_data.get('model')}"
+            )
+            assert saved_data.get("cumulative_cost") == 0.05
         finally:
             handlers._orchestrate_session_loop = original_loop

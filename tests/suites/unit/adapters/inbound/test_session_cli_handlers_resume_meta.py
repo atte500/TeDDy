@@ -168,16 +168,8 @@ class TestResumeMetadataUpdate:
                 api_key=None,
             )
 
-            # save_meta should be called with model auto-synced to config model
-            if repo.save_meta.called:
-                call_args = repo.save_meta.call_args
-                saved_data = call_args[0][1] if len(call_args[0]) > 1 else call_args[1]
-                # Model should be auto-synced to the config default
-                assert saved_data.get("model") == "unknown", (
-                    f"Expected model 'unknown' (from config) but got {saved_data.get('model')}"
-                )
-                # Other metadata should be preserved
-                assert saved_data.get("agent_name") == "developer"
-                assert saved_data.get("cumulative_cost") == 0.1
+            # The config model is "unknown" and no actual_model is present, so
+            # no field changes and meta.yaml must stay untouched.
+            repo.save_meta.assert_not_called()
         finally:
             handlers._orchestrate_session_loop = original_loop
