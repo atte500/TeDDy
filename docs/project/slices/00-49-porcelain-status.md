@@ -1,5 +1,5 @@
 # Slice: Porcelain Git Status in Context Payload
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc slice)
 - **Depends On:** N/A
 - **Specs:** [Context Payload Format](/docs/project/specs/context-payload-format.md)
