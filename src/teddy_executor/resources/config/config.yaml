@@ -1,96 +1,56 @@
 # TeDDy Configuration
 
-# The preferred external editor for reviewing and modifying plans/messages.
-# Supports arbitrary command strings (e.g., "code --wait", "nvim -R", "zed").
-# Fallback chain: Config -> VISUAL/EDITOR env vars -> discovery prompt.
 editor: ""
 
-# Optional diff viewer flags override. If set, these flags are used instead
-# of the built-in translation table for this editor.
-# Example: ["--diff", "--wait"]
-# diff_flags: []
-
-# Execution Settings
 execution:
-  default_timeout_seconds: 60
-  similarity_threshold: 0.95 # 1.00 means exact match required (ignoring relative indentation).
-  max_output_lines: 100 # Caps EXECUTE output to the last X lines.
+  default_timeout_seconds: 60       # EXECUTE timeout.
+  similarity_threshold: 0.95        # EDIT match threshold (1.0 = exact match; ignores relative indentation).
+  max_output_lines: 100             # Caps EXECUTE stdout/stderr output lines.
 
-# File Read Settings
 read:
-  max_lines: 1000 # Caps READ action output to the first X lines.
+  max_lines: 1000                   # Caps READ action output lines.
 
-# Research Settings
 research:
-  max_results: 5 # Number of SERP results to retrieve and automatically scrape.
+  max_results: 5                    # Number of search results to fetch and scrape.
 
-# Notification Checks
-# Independent toggles for user-facing notifications. All three default to
-# enabled (true) when absent, so existing user configs keep working.
 checks:
-  prompts: true    # Notify when .teddy/prompts/ files differ from the bundled defaults.
-  templates: true  # Notify when docs/templates/ files differ from the bundled defaults.
-  update: true     # Notify when a newer TeDDy version is available (background fetch still runs).
+  prompts: true                     # Warn when local .teddy/prompts/ differ from bundled defaults.
+  templates: true                   # Warn when local docs/templates/ differ from bundled defaults.
+  update: true                      # Warn when a newer TeDDy release is available on PyPI.
 
-# Default for the --yolo / -y flag. When true, sessions auto-approve all
-# actions (non-interactive) without needing to pass --yolo. The explicit
-# --no-yolo / -n flag always overrides this setting for a single invocation.
-yolo_default: false
+yolo_default: false                 # When true, runs non-interactively by default; overridden per-command by -n / --no-yolo.
 
-# Safety limits enforced in non-interactive runs (--yolo and --pipeline).
-# Limits are per-run: `teddy resume` starts counting from 0 again.
-guardrails:
+guardrails:                         # Non-interactive limits (--yolo / --pipeline). Counters reset on 'teddy resume' and on message turns if message_reset: true.
   enabled: true
   max_turns: 150
   max_session_cost: 5.00
   message_reset: true
 
-# Auto-Pruning Settings
-# Intelligently pre-deselects context files to save tokens and manage complexity.
 auto_pruning:
   enabled: true
-  turn_context_threshold: 50000 # Token budget for Turn-scope files only (excludes session.context and system prompts). Triggers pruning of largest Turn-scope files if exceeded.
-  prune_failure_history: true # Prune non-green turns once recovery is achieved.
-  prune_validation_failures: true # Prune plans and reports that failed validation.
-  preserve_message_turns: true # Ensure successful communicating turns are not pruned.
-  max_turns_retention: 10 # Max number of turns persisted in session history (excl. initial request & preserved message turns).
+  turn_context_threshold: 50000     # Token budget for turn-scoped files only (excludes session.context & system prompts).
+  prune_failure_history: true      # Prunes non-green turns once recovery succeeds.
+  prune_validation_failures: true   # Prunes malformed turns that failed validation.
+  preserve_message_turns: true      # Preserves user-communicating turns from pruning.
+  max_turns_retention: 10           # Max historical turns retained in turn context.
 
-# LLM Settings
-# LiteLLM Configuration Reference: https://docs.litellm.ai/docs/completion/input
-# All keys under 'llm' are passed directly to litellm.completion().
+# LiteLLM reference: https://docs.litellm.ai/docs/completion/input (all keys under llm pass directly to litellm).
 llm:
-  model: "openrouter/~deepseek/deepseek-flash-latest:nitro"  # Syntax: "openrouter/<model-path>" (model paths: https://openrouter.ai/models); ":nitro"=fastest, ":floor"=cheapest.
-  api_key: "${TEDDY_LLM_API_KEY}"  # Paste your key into .teddy/.env, or replace this with a literal value to override.
+  model: "openrouter/~deepseek/deepseek-flash-latest:nitro"  # OpenRouter syntax: "openrouter/<slug>" (:nitro=fast, :floor=cheap).
+  api_key: "${TEDDY_LLM_API_KEY}"                           # Resolves from .teddy/.env or shell environment.
   max_retries: 3
   timeout: 300
-  # OpenRouter app attribution (https://openrouter.ai/docs/app-attribution).
-  # Usage from this app appears at https://openrouter.ai/apps?url=https://github.com/atte500/teddy.
-  # LiteLLM also sends a legacy X-Title default, so both title headers are pinned here.
-  # This block ships in the baseline. Set `llm.extra_headers: null` in .teddy/config.yaml to opt out.
-  # Non-OpenRouter providers ignore these headers.
   extra_headers:
     HTTP-Referer: "https://github.com/atte500/teddy"
     X-Title: "TeDDy"
     X-OpenRouter-Title: "TeDDy"
     X-OpenRouter-Categories: "cli-agent"
 
-# Local models (no API key needed — LiteLLM supplies a keyless default):
-#   model: "ollama/llama3.2"      # Ollama (default endpoint http://localhost:11434)
-#   model: "lm_studio/qwen2.5"    # LM Studio
-#   model: "hosted_vllm/mistral"  # vLLM (set api_base to your server, e.g. http://localhost:8000/v1)
+# Local models (Ollama, LM Studio):
+#   model: "ollama/qwen3-coder:30b"
+#   model: "lm_studio/qwen3-coder-30b"
 
-# Any OpenAI-compatible server (e.g. llama.cpp's llama-server) works via the
-# openai/ prefix with an explicit endpoint and a non-empty api_key (a dummy
-# value is fine). A provider prefix is required — an endpoint alone is rejected.
-#   model: "openai/<model-name>"
+# OpenAI-compatible server (vLLM, llama.cpp):
+#   model: "openai/qwen3-coder-30b"
 #   api_base: "http://localhost:8080/v1"
-#   api_key: "sk-noop"
-
-# Any other LiteLLM/OpenAI-compatible parameters are forwarded unchanged
-# (e.g. temperature, top_p, max_tokens). Omit them to keep provider defaults.
-
-# OpenRouter provider routing (optional): prefer specific upstream providers,
-# in order.
-#   extra_body:
-#     provider:
-#       order: ["<provider-slug>"]  # Preference-ordered list of OpenRouter provider slugs.
+#   api_key: "dummy-key-custom-endpoints"

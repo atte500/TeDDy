@@ -174,10 +174,6 @@ Use subcommands to overwrite specific defaults:
 
 The first execution of `teddy start` runs an interactive setup to configure your API key and preferred editor. For deeper customization, edit `.teddy/config.yaml`. All `llm.*` settings pass directly through to [LiteLLM](https://docs.litellm.ai/docs/completion/input), allowing you to route to cloud providers or local endpoints (Ollama, llama.cpp, or any OpenAI-compatible server via `api_base`). The config file also lets you adjust your external editor, command execution timeouts, diff similarity thresholds, and automated context pruning budgets.
 
-#### OpenRouter App Attribution
-
-The bundled config attributes OpenRouter usage to TeDDy through the documented `HTTP-Referer` and `X-OpenRouter-Title` headers, so the usage appears on [TeDDy's app page](https://openrouter.ai/apps?url=https://github.com/atte500/teddy). Attribution is provider-side visibility only: the headers travel to the endpoint you already configured and the TeDDy project receives nothing. The block ships in the bundled baseline, so set `llm.extra_headers: null` in your own `.teddy/config.yaml` to opt out. LiteLLM then falls back to its own defaults, which credit `liteLLM` instead. Other providers ignore these headers.
-
 ### Environment Variables
 
 TeDDy checks the following process environment variables at startup and during a session.
@@ -290,7 +286,9 @@ TeDDy packages your workspace context into a single clipboard payload, and the a
 
 <br />
 
-No. TeDDy collects zero telemetry, zero analytics, and runs no background tracking. All requests go directly to whichever LLM provider or local endpoint you configure in your local config file. The bundled config sends OpenRouter's published app-attribution headers, so OpenRouter credits your usage to TeDDy on its public leaderboard, and that visibility reaches only the provider you chose. Set `llm.extra_headers: null` in `.teddy/config.yaml` to opt out, which makes LiteLLM fall back to its own defaults.
+No. TeDDy collects zero telemetry, zero analytics, and runs no background tracking. All requests go directly to whichever LLM provider or local endpoint you configure in your local config file.
+
+By default, OpenRouter requests include attribution headers (`HTTP-Referer` and `X-OpenRouter-Title`) to credit usage to TeDDy on OpenRouter rankings. Set `llm.extra_headers: null` in `.teddy/config.yaml` to opt out. Other providers ignore these headers.
 
 </details>
 
@@ -338,9 +336,9 @@ The tool itself is not monetized. If your team needs custom agent architectures,
 
 ## Learn More
 
-- [Project Roadmap & Vision](/docs/project/PROJECT.md)
-- [System Architecture](/docs/architecture/ARCHITECTURE.md)
-- [Agent Prompt Templates](/src/teddy_executor/resources/config/prompts/)
+- [Project Roadmap & Vision](./docs/project/PROJECT.md)
+- [System Architecture](./docs/architecture/ARCHITECTURE.md)
+- [Agent Prompt Templates](./src/teddy_executor/resources/config/prompts/)
 
 ---
 
