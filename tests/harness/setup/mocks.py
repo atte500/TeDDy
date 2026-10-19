@@ -196,7 +196,6 @@ def mock_inspector(container):
 
     mock = register_mock(container, IEnvironmentInspector)
     mock.get_git_status.return_value = None
-    mock.get_full_git_status.return_value = None
     return mock
 
 

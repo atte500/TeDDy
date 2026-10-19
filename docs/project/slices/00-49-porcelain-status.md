@@ -75,7 +75,7 @@ Then the Git Status section names the branch without an upstream suffix
 ## Deliverables
 - [x] **Wiring** - Run `git status --porcelain -b` in `SystemEnvironmentInspector.get_git_status`, render the single result inside a fenced block in `ContextService._format_content`, feed the same result to the badge parser, skip the `##` header in `_parse_git_status`, and update the shared mock plus the directly affected tests so the suite stays green. Drive an acceptance test that asserts the fenced branch header in the generated payload.
 - [x] **Logic** - Cover the inspector and parser with unit tests for clean, dirty, upstream-less, detached, renamed, and non-git states.
-- [ ] **Migration** - Update the remaining consumer tests that still reference `get_full_git_status`, including the caching and performance suites.
+- [x] **Migration** - Update the remaining consumer tests that still reference `get_full_git_status`, including the caching and performance suites.
 - [ ] **Cleanup** - Remove `get_full_git_status` from the port and adapter. Align the `ProjectContext` docstring and the four component docs with the porcelain contract.
 
 ## Implementation Notes
@@ -92,6 +92,13 @@ Then the Git Status section names the branch without an upstream suffix
 - A separate case feeds `None` as the status and asserts the Git Status section stays unfenced with empty item badges, because the inspector returns `None` outside a repository.
 - No inspector unit test was added. The porcelain command, the returned output, the non-git failure, and stdin isolation already carry integration coverage in `tests/suites/integration/adapters/outbound/test_system_environment_inspector.py`, so an inspector unit test would duplicate existing assertions.
 - The parser rules already existed before the matrix, because the Wiring tracer bullet had to keep the acceptance test green. The matrix therefore locks the behavior instead of driving it, and the missing Red failure is explained rather than papered over.
+
+### Migration
+- `tests/suites/unit/core/services/test_context_service.py` no longer references `get_full_git_status`. Every fixture setup drops the stale default, and the session-history test now feeds a clean porcelain value to `get_git_status` alone.
+- The truncated `test_get_context_populates_context_items_with_metadata` now ends with a porcelain status, an Act step that calls `get_context`, and assertions for the `M` and `U` badges plus the token counts.
+- `tests/harness/setup/mocks.py` drops the obsolete `get_full_git_status` default from the shared `IEnvironmentInspector` mock, so a stray call would fail loudly instead of returning `None`.
+- A `git grep "get_full_git_status" -- tests` returned no matches after the edits. The caching and performance suites never referenced the method, so they needed no change.
+- `IEnvironmentInspector.get_full_git_status` and its adapter implementation stay in place. The Cleanup deliverable removes both after the last caller migration, as the user constrained.
 
 ## Verification
 1. **Clean repository header:**
