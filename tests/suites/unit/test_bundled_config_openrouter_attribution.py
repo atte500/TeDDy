@@ -25,7 +25,7 @@ def test_bundled_config_attributes_requests_to_teddy():
     assert headers["HTTP-Referer"] == _SITE_URL
     assert headers["X-Title"] == "TeDDy"
     assert headers["X-OpenRouter-Title"] == "TeDDy"
-    assert "cli-agent" in headers["X-OpenRouter-Categories"].split(",")
+    assert headers["X-OpenRouter-Categories"].split(",") == ["cli-agent"]
 
 
 def test_bundled_config_keeps_the_app_publicly_listed():

@@ -72,7 +72,7 @@ llm:
     HTTP-Referer: "https://github.com/atte500/teddy"
     X-Title: "TeDDy"
     X-OpenRouter-Title: "TeDDy"
-    X-OpenRouter-Categories: "cli-agent,programming-app"
+    X-OpenRouter-Categories: "cli-agent"
 
 # Local models (no API key needed — LiteLLM supplies a keyless default):
 #   model: "ollama/llama3.2"      # Ollama (default endpoint http://localhost:11434)
