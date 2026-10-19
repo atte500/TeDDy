@@ -22,6 +22,14 @@ This section defines foundational engineering practices. Each entry MUST be a sp
   `docs/architecture/BOUNDARY/LAYER/TYPE/name.md` -> Source path: `src/{pkg}/BOUNDARY/LAYER/TYPE/name.ext` -> Test path: `tests/suites/TEST_TYPE/BOUNDARY/LAYER/TYPE/test_name.ext`
 - **Makefile Commands:** The `Makefile` is the canonical entry point for the version control workflow and on-demand test runs: `make test` (full suite), `make commit '<msg>'` (local commit with advisory auto-fix and unskippable post-commit test gate), `make push` (rebase and push), `make ci-watch` (CI monitoring), and `make probe '<reason>'` (Remote Probing Protocol). See [docs/templates/makefile.md](docs/templates/makefile.md).
 
+## Ubiquitous Language
+
+The canonical domain vocabulary. All documentation, component names, tests, and agent prompts must use these terms consistently.
+
+**Template format:** `- **Term:** Concise definition and operational boundary.`
+
+- **TermName:** Definition of the core domain concept and its operational boundaries.
+
 ## Component & Boundary Map
 
 Single source of truth for system structure, organized by architectural layer.
@@ -55,27 +63,6 @@ Test drivers, observers, shared fakes, and test setup fixtures.
 | **ComponentName** | One-line responsibility summary | [Link to design doc](./path/to/component.md) |
 
 Each Contract column links to the Component Design Document or Interface definition.
-
-## Domain Model & Ubiquitous Language
-
-The shared vocabulary exchanged by every service, port, and adapter. Record the core entities, enumerations, value objects, domain exceptions, and port bundles that do not warrant a dedicated component design document.
-
-**Template format:** Group the types by concept. List each type with its module, kind, fields, and any invariant.
-
-### Enumerations
-- **`TypeName`** (`module.py`, Enum): `VALUE_A`, `VALUE_B`.
-
-### Aggregates
-- **`AggregateName`** (`module.py`, dataclass): `field_a`, `field_b`. Exposes `helper_method()`.
-
-### Port Bundles
-- **`PortBundleName`** (`module.py`, frozen dataclass): `dependency_a`, `dependency_b`.
-
-### Supporting Value Objects
-- **`ValueObjectName`** (`module.py`, frozen dataclass): `field_a`, `field_b`.
-
-### Domain Exceptions
-- **`ExceptionName`** (`BaseException`): carries `field`.
 
 ## Key Architectural Decisions
 

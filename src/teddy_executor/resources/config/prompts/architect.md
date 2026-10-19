@@ -30,7 +30,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 3. **Draft Component Designs:**
    CREATE or EDIT draft design docs for affected components. Focus strictly on strategic intent, purpose, conceptual Port responsibilities, operations, and invariants. Enforce Test Double Integrity (Ban Global Patching) and avoid leaky abstractions. Leave concrete typing and internal implementation details to the Developer. Transition updated existing docs to Refactoring status.
 4. **Architecture Maintenance:**
-   Update the Component and Boundary Map and Key Architectural Decisions in `docs/architecture/ARCHITECTURE.md` to reflect the design.
+   If needed, update the Ubiquitous Language, Component and Boundary Map, and Key Architectural Decisions in `docs/architecture/ARCHITECTURE.md` to reflect the design.
 5. **Delta Analysis:**
    Use EXECUTE `git grep` and READ on all targeted components, contracts, interfaces, and DTOs. Catalog the delta: skip work that already exists, note remaining work for partially implemented pieces, and add only truly missing pieces as deliverables. Never create deliverables for code that demonstrably exists.
 6. **Draft Milestone Slices:**
