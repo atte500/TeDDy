@@ -1,12 +1,14 @@
 <div align="center">
 
-<img src="./assets/banner.jpg" alt="TeDDy: The opinionated software engineering harness - Because you should own the means of development" width="70%">
+<p align="center">
+  <img src="./assets/banner.jpg" alt="TeDDy: The opinionated software engineering harness - Because you should own the means of development" width="70%" style="max-width: 650px;" />
+</p>
 
-<br>
-
-[![PyPI version](https://img.shields.io/pypi/v/teddy-cli?color=blue&style=flat-square)](https://pypi.org/project/teddy-cli/)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg?style=flat-square)](https://www.python.org/)
-[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-purple.svg?style=flat-square)](LICENSE)
+<p align="center">
+  <a href="https://pypi.org/project/teddy-cli/"><img src="https://img.shields.io/pypi/v/teddy-cli?color=blue&style=flat-square" alt="PyPI version" /></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.11+-blue.svg?style=flat-square" alt="Python 3.11+" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-purple.svg?style=flat-square" alt="License: AGPL-3.0" /></a>
+</p>
 
 ```bash
 uv tool install teddy-cli
