@@ -79,13 +79,12 @@ def test_context_includes_git_status_when_present(tmp_path, monkeypatch):
     env.setup()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
-    # Mock the inspector to return a specific git status
+    # Mock the inspector to return a porcelain git status
     mock_inspector = env.get_service(IEnvironmentInspector)
-    mock_git_status = " M modified_file.py\n?? untracked_file.txt"
-    mock_inspector.get_git_status.return_value = mock_git_status
-    mock_inspector.get_full_git_status.return_value = (
-        "On branch main\n M modified_file.py\n?? untracked_file.txt"
+    mock_git_status = (
+        "## main...origin/main\n M modified_file.py\n?? untracked_file.txt"
     )
+    mock_inspector.get_git_status.return_value = mock_git_status
 
     (tmp_path / ".teddy").mkdir()
     (tmp_path / ".teddy/init.context").write_text("README.md\n", encoding="utf-8")
@@ -95,5 +94,6 @@ def test_context_includes_git_status_when_present(tmp_path, monkeypatch):
 
     assert result.exit_code == 0
     assert "## Git Status" in result.stdout
+    assert f"```\n{mock_git_status}\n```" in result.stdout
     assert " M modified_file.py" in result.stdout
     assert "?? untracked_file.txt" in result.stdout

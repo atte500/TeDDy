@@ -58,11 +58,11 @@ class SystemEnvironmentInspector(IEnvironmentInspector):
 
     def get_git_status(self) -> Optional[str]:
         """
-        Gathers the current Git status of the working directory (short format).
+        Gathers the current Git status of the working directory in porcelain format.
         """
         try:
             result = self._run_func(  # nosec B603 B607
-                ["git", "status", "-s"],
+                ["git", "status", "--porcelain", "-b"],
                 capture_output=True,
                 text=True,
                 check=True,

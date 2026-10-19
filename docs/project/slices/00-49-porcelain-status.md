@@ -1,5 +1,5 @@
 # Slice: Porcelain Git Status in Context Payload
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc slice)
 - **Depends On:** N/A
 - **Specs:** [Context Payload Format](/docs/project/specs/context-payload-format.md)
@@ -73,13 +73,19 @@ Then the Git Status section names the branch without an upstream suffix
 5. `[MIGRATE]` Component docs and the `ProjectContext` docstring — Describe the single porcelain contract.
 
 ## Deliverables
-- [ ] **Wiring** - Run `git status --porcelain -b` in `SystemEnvironmentInspector.get_git_status`, render the single result inside a fenced block in `ContextService._format_content`, feed the same result to the badge parser, skip the `##` header in `_parse_git_status`, and update the shared mock plus the directly affected tests so the suite stays green. Drive an acceptance test that asserts the fenced branch header in the generated payload.
+- [x] **Wiring** - Run `git status --porcelain -b` in `SystemEnvironmentInspector.get_git_status`, render the single result inside a fenced block in `ContextService._format_content`, feed the same result to the badge parser, skip the `##` header in `_parse_git_status`, and update the shared mock plus the directly affected tests so the suite stays green. Drive an acceptance test that asserts the fenced branch header in the generated payload.
 - [ ] **Logic** - Cover the inspector and parser with unit tests for clean, dirty, upstream-less, detached, renamed, and non-git states.
 - [ ] **Migration** - Update the remaining consumer tests that still reference `get_full_git_status`, including the caching and performance suites.
 - [ ] **Cleanup** - Remove `get_full_git_status` from the port and adapter. Align the `ProjectContext` docstring and the four component docs with the porcelain contract.
 
 ## Implementation Notes
-To be completed during implementation.
+
+### Wiring
+- `SystemEnvironmentInspector.get_git_status` now runs `git status --porcelain -b` and returns its standard output. `get_full_git_status` stays on the port and adapter until the later Migration and Cleanup deliverables remove the remaining test references.
+- `ContextService.get_context` calls `get_git_status` once. That single value feeds the Markdown body, the `ProjectContext.git_status` field, and the badge parser. Production no longer calls `get_full_git_status`.
+- `ContextService._format_content` wraps the status body with `embed_in_fence(git_status, "")`. The empty language tag yields a plain triple-backtick fence, so the porcelain `##` header stays inside a code block and does not become a sibling heading.
+- `ContextService._parse_git_status` skips every line that starts with `##` and keys a rename line by the new path after `" -> "`. The `??` to `U` mapping is unchanged.
+- The new acceptance test `tests/suites/acceptance/test_context_git_status_header.py` drives `teddy context` and asserts the fenced branch header. The affected unit, acceptance, and integration tests now feed porcelain values and assert the single inspector call.
 
 ## Verification
 1. **Clean repository header:**

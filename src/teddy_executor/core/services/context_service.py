@@ -53,8 +53,7 @@ class ContextService(IGetContextUseCase):
         Gathers all project context information by orchestrating its dependencies.
         """
         system_info = self._environment_inspector.get_environment_info()
-        short_git_status = self._environment_inspector.get_git_status()
-        full_git_status = self._environment_inspector.get_full_git_status()
+        git_status = self._environment_inspector.get_git_status()
         repo_tree = self._repo_tree_generator.generate_tree()
 
         scoped_paths, all_resolved_paths = self._resolve_scoped_paths(context_files)
@@ -101,7 +100,7 @@ class ContextService(IGetContextUseCase):
             web_cache = {}
 
         content = self._format_content(
-            repo_tree, scoped_paths, file_contents, full_git_status
+            repo_tree, scoped_paths, file_contents, git_status
         )
         content_tokens = (
             self._llm_client.get_text_token_count(content) if include_tokens else 0
@@ -111,9 +110,9 @@ class ContextService(IGetContextUseCase):
             header=self._format_header(system_info, current_turn),
             content=content,
             scoped_paths=scoped_paths,
-            git_status=full_git_status,
+            git_status=git_status,
             items=self._collect_items(
-                scoped_paths, file_contents, short_git_status, include_tokens
+                scoped_paths, file_contents, git_status, include_tokens
             ),
             agent_name=agent_name,
             total_window=total_window,
@@ -301,7 +300,7 @@ class ContextService(IGetContextUseCase):
         return token_counts
 
     def _parse_git_status(self, git_status: Optional[str]) -> Dict[str, str]:
-        """Parses git status -s output into a map of path -> status code."""
+        """Parses porcelain git status output into a map of path -> status code."""
         if not git_status:
             return {}
 
@@ -309,9 +308,16 @@ class ContextService(IGetContextUseCase):
         min_line_length = 4
         status_map = {}
         for line in git_status.splitlines():
+            # The porcelain branch header carries no file status.
+            if line.startswith("##"):
+                continue
             if len(line) >= min_line_length:
                 code = line[:2].strip()
                 path = line[3:].strip()
+
+                # A rename line reads "old -> new"; key the badge by the new path.
+                if " -> " in path:
+                    path = path.split(" -> ", 1)[1]
 
                 # Guideline: Map ?? to U (Untracked)
                 if code == "??":
@@ -356,9 +362,14 @@ class ContextService(IGetContextUseCase):
         workspace_paths = [p for p in all_paths if not is_session_file_path(p)]
         session_paths = [p for p in all_paths if is_session_file_path(p)]
 
+        git_status_body = (
+            embed_in_fence(git_status, "")
+            if isinstance(git_status, str) and git_status
+            else ""
+        )
         content_parts = [
             "\n## Git Status",
-            git_status if isinstance(git_status, str) else "",
+            git_status_body,
             "\n## Project Structure",
             f"```\n{repo_tree}\n```",
         ]

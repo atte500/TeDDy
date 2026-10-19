@@ -40,18 +40,18 @@ def test_get_git_status_returns_none_when_not_in_git_repo(monkeypatch):
 
     # Mock subprocess.run to simulate 'not a git repository' error
     def mock_run(*_args, **_kwargs):
-        raise subprocess.CalledProcessError(128, ["git", "status", "-s"])
+        raise subprocess.CalledProcessError(128, ["git", "status", "--porcelain", "-b"])
 
     inspector = SystemEnvironmentInspector(run_func=mock_run)
 
     assert inspector.get_git_status() is None
 
 
-def test_get_git_status_returns_concise_output_in_git_repo(monkeypatch):
+def test_get_git_status_returns_porcelain_output_in_git_repo(monkeypatch):
     """
-    Verify get_git_status returns the output of git status -s when in a repo.
+    Verify get_git_status runs porcelain with branch and returns its output.
     """
-    expected_output = " M src/main.py\n?? new_file.txt"
+    expected_output = "## main...origin/main\n M src/main.py\n?? new_file.txt"
     mock_result = POSIXPathMock()
     mock_result.stdout = expected_output
     mock_result.returncode = 0
@@ -60,6 +60,9 @@ def test_get_git_status_returns_concise_output_in_git_repo(monkeypatch):
     inspector = SystemEnvironmentInspector(run_func=mock_run)
 
     assert inspector.get_git_status() == expected_output
+    mock_run.assert_called_once()
+    args, _ = mock_run.call_args
+    assert args[0] == ["git", "status", "--porcelain", "-b"]
 
 
 def test_get_git_status_isolates_stdin(monkeypatch):
