@@ -38,7 +38,8 @@ repos:
     -   id: check-json
     -   id: check-added-large-files
         args: ['--maxkb=500']
-        exclude: ^spikes/
+        # Media assets such as the README banner and demo GIF are intentionally large binaries.
+        exclude: ^(spikes|assets)/
     -   id: check-case-conflict
         exclude: ^spikes/
     -   id: check-merge-conflict

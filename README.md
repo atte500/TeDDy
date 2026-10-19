@@ -1,12 +1,8 @@
 <div align="center">
 
-# TeDDy
+<img src="./assets/banner.jpg" alt="TeDDy: The opinionated software engineering harness - Because you should own the means of development" width="100%">
 
-### The opinionated software engineering harness
-
-<p align="center">
-  <em>Because <b>you</b> should own the means of development</em>
-</p>
+<br>
 
 [![PyPI version](https://img.shields.io/pypi/v/teddy-cli?color=blue&style=flat-square)](https://pypi.org/project/teddy-cli/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg?style=flat-square)](https://www.python.org/)
@@ -184,13 +180,13 @@ The bundled config attributes OpenRouter usage to TeDDy through the documented `
 
 TeDDy checks the following process environment variables at startup and during a session.
 
-| Variable            | Purpose                                                                                                                                                     |
-| :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TEDDY_LLM_API_KEY` | The LLM API key. The bundled `config.yaml` default references it as `llm.api_key: "${TEDDY_LLM_API_KEY}"`. A shell value wins over the `.teddy/.env` value. |
-| `EDITOR`            | Fallback editor command when `editor` is unset in `.teddy/config.yaml`.                                                                                     |
-| `TEDDY_DIFF_TOOL`   | Overrides the auto-detected diff viewer.                                                                                                                    |
-| `TEDDY_MAX_TURNS`   | Overrides the maximum number of turns for a non-interactive run.                                                                                            |
-| `TEDDY_MAX_SESSION_COST` | Overrides the maximum session cost in dollars for a non-interactive run.                                                                               |
+| Variable                 | Purpose                                                                                                                                                     |
+| :----------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TEDDY_LLM_API_KEY`      | The LLM API key. The bundled `config.yaml` default references it as `llm.api_key: "${TEDDY_LLM_API_KEY}"`. A shell value wins over the `.teddy/.env` value. |
+| `EDITOR`                 | Fallback editor command when `editor` is unset in `.teddy/config.yaml`.                                                                                     |
+| `TEDDY_DIFF_TOOL`        | Overrides the auto-detected diff viewer.                                                                                                                    |
+| `TEDDY_MAX_TURNS`        | Overrides the maximum number of turns for a non-interactive run.                                                                                            |
+| `TEDDY_MAX_SESSION_COST` | Overrides the maximum session cost in dollars for a non-interactive run.                                                                                    |
 
 TeDDy also interpolates any `${VAR}` or `${VAR:-default}` token in `.teddy/config.yaml` against `.teddy/.env` layered under the process environment, so you can reference your own secrets from config values.
 
