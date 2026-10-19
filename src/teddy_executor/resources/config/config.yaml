@@ -63,6 +63,15 @@ llm:
   api_key: "${TEDDY_LLM_API_KEY}"  # Paste your key into .teddy/.env, or replace this with a literal value to override.
   max_retries: 3
   timeout: 300
+  # OpenRouter app attribution (https://openrouter.ai/docs/app-attribution).
+  # Usage from this app appears at https://openrouter.ai/apps?url=https://github.com/atte500/teddy.
+  # LiteLLM also sends a legacy X-Title default, so both title headers are pinned here.
+  # Remove this block to opt out. Non-OpenRouter providers ignore these headers.
+  extra_headers:
+    HTTP-Referer: "https://github.com/atte500/teddy"
+    X-Title: "TeDDy"
+    X-OpenRouter-Title: "TeDDy"
+    X-OpenRouter-Categories: "cli-agent,programming-app"
 
 # Local models (no API key needed — LiteLLM supplies a keyless default):
 #   model: "ollama/llama3.2"      # Ollama (default endpoint http://localhost:11434)

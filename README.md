@@ -176,6 +176,10 @@ Use subcommands to overwrite specific defaults:
 
 The first execution of `teddy start` runs an interactive setup to configure your API key and preferred editor. For deeper customization, edit `.teddy/config.yaml`. All `llm.*` settings pass directly through to [LiteLLM](https://docs.litellm.ai/docs/completion/input), allowing you to route to cloud providers or local endpoints (Ollama, llama.cpp, or any OpenAI-compatible server via `api_base`). The config file also lets you adjust your external editor, command execution timeouts, diff similarity thresholds, and automated context pruning budgets.
 
+#### OpenRouter App Attribution
+
+The bundled config attributes OpenRouter usage to TeDDy through the documented `HTTP-Referer` and `X-OpenRouter-Title` headers, so the usage appears on [TeDDy's app page](https://openrouter.ai/apps?url=https://github.com/atte500/teddy). Attribution is provider-side visibility only: the headers travel to the endpoint you already configured and the TeDDy project receives nothing. Delete the `llm.extra_headers` block from `.teddy/config.yaml` to opt out, and note that other providers ignore these headers.
+
 ### Environment Variables
 
 TeDDy checks the following process environment variables at startup and during a session.
@@ -288,7 +292,7 @@ TeDDy packages your workspace context into a single clipboard payload, and the a
 
 <br />
 
-No. TeDDy collects zero telemetry, zero analytics, and runs no background tracking. All requests go directly to whichever LLM provider or local endpoint you configure in your local config file.
+No. TeDDy collects zero telemetry, zero analytics, and runs no background tracking. All requests go directly to whichever LLM provider or local endpoint you configure in your local config file. The bundled config sends OpenRouter's published app-attribution headers, so OpenRouter credits your usage to TeDDy on its public leaderboard, and that visibility reaches only the provider you chose. Remove the `llm.extra_headers` block from `.teddy/config.yaml` to opt out.
 
 </details>
 
