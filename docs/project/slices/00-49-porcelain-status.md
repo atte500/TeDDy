@@ -1,0 +1,91 @@
+# Slice: Porcelain Git Status in Context Payload
+- **Status:** Planned
+- **Milestone:** N/A (ad-hoc slice)
+- **Depends On:** N/A
+- **Specs:** [Context Payload Format](/docs/project/specs/context-payload-format.md)
+- **Prototype:** N/A
+- **Component Docs:** [IEnvironmentInspector](/docs/architecture/core/ports/outbound/environment_inspector.md), [SystemEnvironmentInspector](/docs/architecture/adapters/outbound/system_environment_inspector.md), [ContextService](/docs/architecture/core/services/context_service.md), [ProjectContext](/docs/architecture/core/domain/project_context.md)
+- **Scope Slug:** `porcelain-status`
+
+## Goal
+Deliver branch, upstream, and ahead/behind state in the context payload. Remove Git instructional text and the redundant Git subprocess from every turn.
+
+## Context
+- `IEnvironmentInspector` declares `get_git_status` and `get_full_git_status`.
+- `SystemEnvironmentInspector.get_git_status` runs `git status -s`. The badge parser consumes its output.
+- `SystemEnvironmentInspector.get_full_git_status` runs `git status`. The Markdown section and the `ProjectContext.git_status` field consume its output.
+- `ContextService.get_context` calls both methods on every turn and passes each result to a separate consumer.
+- `git status --porcelain -b` emits a `## <branch>...<upstream> [ahead N, behind M]` header followed by two-column file lines. The command ignores user color and prefix configuration.
+- The verified clean output is `## main...origin/main`.
+- `_parse_git_status` assumes that every line describes a file and reads the code from the first two columns.
+- A porcelain rename line reads `R  old -> new`, so the parser must key the badge by the new path.
+- The `ProjectContext.git_status` docstring claims that the field holds `git status -s` output.
+
+## Scenarios
+> As a developer, I want the context payload to show my branch and upstream tracking so that the agent knows when a push is pending.
+
+```gherkin
+Given a clean repository on a branch with an upstream
+When the context payload is generated
+Then the Git Status section starts with the branch and upstream header
+And the section contains no file lines
+```
+
+> As a developer, I want one deterministic Git call per turn so that the payload carries no tutorial noise and the turn stays fast.
+
+```gherkin
+Given a working tree with staged, unstaged, and untracked changes
+When the context payload is generated
+Then the Git Status section lists one two-column line per changed file
+And the context item badges match the same status codes
+```
+
+```gherkin
+Given a repository on a branch without an upstream
+When the context payload is generated
+Then the Git Status section names the branch without an upstream suffix
+```
+
+## Edge Cases
+- **Branch header line**: If a status line starts with `##`, then the badge parser skips it, because the line carries branch metadata instead of a file status.
+- **Untracked files**: If porcelain reports `??`, then the badge code becomes `U`, because the existing untracked convention stays in place.
+- **Renames**: If porcelain reports `R  old -> new`, then the parser keys the badge by `new`, because the context item path reflects the new name.
+- **Detached HEAD**: If the repository is in detached HEAD, then the header reads `## HEAD (no branch)`, because porcelain reports that literal.
+- **Unborn branch**: If the repository has no commits, then the header reads `## No commits yet on <branch>`, and the parser skips it.
+- **Non-git directory**: If Git is missing or the directory is not a repository, then the inspector returns `None`, and the Git Status section renders empty as today.
+- **Clean tree**: If the working tree is clean, then the section holds only the header line, because porcelain omits unchanged files.
+- **User Git config**: If the user sets color or short-status prefixes, then the output stays stable, because `--porcelain` ignores that configuration.
+
+## Key Unknowns
+
+**Format:**
+- [x] [Technical] Clean-repo output: RESOLVED — the command prints `## main...origin/main`. Design Sensitivity: a different header would change the parser skip and the spec example.
+- [x] [Technical] Config independence: RESOLVED — `--porcelain` guarantees stable uncolored output. Design Sensitivity: without the flag, terminal color and localization could leak into the payload.
+- [x] [Domain] Scope: RESOLVED — the request covers branch and upstream context plus the verbose-output removal. Design Sensitivity: live CI status would need a network adapter and a different policy, so it stays out of scope.
+
+## Impact
+1. `[MIGRATE]` `SystemEnvironmentInspector.get_git_status` — Run `git status --porcelain -b` and return its output. Keep `get_full_git_status` until every caller migrates.
+2. `[MIGRATE]` `ContextService` — Consume one status value for the Markdown section and the badge parser. Skip the branch header and key renames by the new path.
+3. `[MIGRATE]` `tests/harness/setup/mocks.py` and the consumer tests — Remove `get_full_git_status` expectations and assert the unified status.
+4. `[CONTRACT]` `IEnvironmentInspector.get_full_git_status` — Delete the method from the port and the adapter after the last caller migrates.
+5. `[MIGRATE]` Component docs and the `ProjectContext` docstring — Describe the single porcelain contract.
+
+## Deliverables
+- [ ] **Wiring** - Run `git status --porcelain -b` in `SystemEnvironmentInspector.get_git_status`, use the single result in `ContextService` for the payload and the badges, skip the `##` header in `_parse_git_status`, and update the shared mock plus the directly affected tests so the suite stays green. Drive an acceptance test that asserts the branch header in the generated payload.
+- [ ] **Logic** - Cover the inspector and parser with unit tests for clean, dirty, upstream-less, detached, renamed, and non-git states.
+- [ ] **Migration** - Update the remaining consumer tests that still reference `get_full_git_status`, including the caching and performance suites.
+- [ ] **Cleanup** - Remove `get_full_git_status` from the port and adapter. Align the `ProjectContext` docstring and the four component docs with the porcelain contract.
+
+## Implementation Notes
+To be completed during implementation.
+
+## Verification
+1. **Clean repository header:**
+   Run `teddy context` in the TeDDy repository.
+   Verify the Git Status section starts with `## main...origin/main` and contains no `On branch` or `(use "git ...")` text.
+2. **Dirty working tree badges:**
+   Stage one file and create one untracked file, then run `teddy context`.
+   Verify the section lists `M  <file>` and `?? <file>` and the context item badges show the matching codes.
+3. **Missing upstream:**
+   Run `teddy context` in a temporary repository that has commits but no upstream.
+   Verify the header shows the branch name without an `...origin/...` suffix.

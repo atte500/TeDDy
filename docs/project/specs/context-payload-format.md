@@ -80,12 +80,23 @@ Instead, they are appended in chronological order under a dedicated `## Session 
 
 ### Git Status
 
-A concise view of the current working tree status (`git status -s`). This gives the AI immediate visibility into which files are staged, modified, or untracked. If the repository is clean, it displays a descriptive message.
+A concise, deterministic view of the working tree (`git status --porcelain -b`). The first line carries the branch name, its upstream, and ahead/behind counts. Each following line uses the two-column porcelain format, where the first column reports the index state and the second column reports the worktree state.
+
+The porcelain form ignores user color and prefix configuration, so the payload stays stable across developer environments. A clean repository yields only the branch header. When the directory is not a Git repository, the section stays empty.
 
 -   **Example:**
     ```markdown
     ## Git Status
-    nothing to commit, working tree clean
+    ## feature/auth...origin/feature/auth [ahead 1]
+    M  docs/project/PROJECT.md
+     M src/teddy_executor/core/services/context_service.py
+    ?? tests/test_new_feature.py
+    ```
+
+-   **Clean example:**
+    ```markdown
+    ## Git Status
+    ## main...origin/main
     ```
 
 ### Project Structure
