@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-import signal
 import time
 
 import punq
@@ -41,10 +39,13 @@ def _record_quit_source(container: punq.Container) -> None:
     default `Ctrl+C`; the self-delivered SIGINT then drives the shared guard's
     already-tested WAITING/EXECUTING branch unchanged.
     """
-    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+    from teddy_executor.core.utils.interrupt_guard import (
+        InterruptGuard,
+        raise_interrupt,
+    )
 
     container.resolve(InterruptGuard).record_source("q")
-    os.kill(os.getpid(), signal.SIGINT)
+    raise_interrupt()
 
 
 def _register_services(container: punq.Container) -> None:
