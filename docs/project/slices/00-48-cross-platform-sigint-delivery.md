@@ -65,6 +65,7 @@ None. The root cause is resolved and empirically verified by the Remote Windows 
 - [x] **Logic** — Add the module-level `raise_interrupt()` helper beside `InterruptGuard` and drive real SIGINT delivery through the guard handler in the guard Unit suite. Remove the Windows skip where real delivery is now safe.
 - [x] **Migration** — Route the composition-root quit recorder through `raise_interrupt()` and align its integration seam so the shared guard observes the recorded key without terminating the test process.
 - [x] **Migration** — Route the listener's default self-delivery branch through `raise_interrupt()` and align the reader Unit seam.
+- [x] **Cleanup** — Extract the shared `_fake_read_then_stop` helper in the reader Unit suite to remove the slice-attributable jscpd clone, leaving the pre-existing `_force_posix_tty` duplication to Milestone 5.
 
 ## Implementation Notes
 - **Logic deliverable:** Added a module-level `raise_interrupt()` in `interrupt_guard.py` that calls `signal.raise_signal(signal.SIGINT)`. A why-comment records the Windows `TerminateProcess` hazard so a future edit cannot revert to `os.kill`.
@@ -77,6 +78,8 @@ None. The root cause is resolved and empirically verified by the Remote Windows 
 - **Reader seams:** Both reader tests stub only `signal.raise_signal`. The self-delivery test asserts `delivered == [signal.SIGINT]` and ends its fake read loop after one press, so termination never depends on delivery.
 - **Gate evidence:** The reader suite passes 13/13, and the full `make test` run passes 1857 tests with 5 skips.
 - **Result:** No production module calls `os.kill(os.getpid(), signal.SIGINT)` anymore; the shared helper is the single delivery primitive.
+- **Duplication cleanup (Verification follow-up):** The CI Quality Checks job reported a jscpd clone between the self-delivery and multi-press `fake_read` closures in the reader suite. Extracted the shared `_fake_read_then_stop(keys, listener)` helper so both tests build their byte source through one closure. The reader suite passes 13/13 and the scoped jscpd probe reports zero clones for the newly written regions.
+- **Non-attributable residual clone:** The reader suite still reports one clone between `_force_posix_tty` (`[104:49 - 109:4]`) and `tests/suites/unit/core/utils/test_restore_cooked_mode.py` (`[67:60 - 72:4]`). The committed HEAD already carried `_force_posix_tty` at line 102 with the same three `monkeypatch.setattr` lines, so this clone predates the slice. It belongs to the Milestone 5 jscpd reconciliation, not this fix.
 
 ## Verification
 1. **Windows quit notice:**

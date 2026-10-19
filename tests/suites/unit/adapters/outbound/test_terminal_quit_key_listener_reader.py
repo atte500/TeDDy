@@ -106,6 +106,23 @@ def _force_posix_tty(monkeypatch, *, isatty=True):
     monkeypatch.setattr(sys.stdin, "fileno", lambda: 0)
 
 
+def _fake_read_then_stop(keys, listener):
+    """Build a fake byte source that yields ``keys`` then stops the loop.
+
+    The reader is PERSISTENT (Bug 58), so the source must request ``stop()``
+    once the queued presses are exhausted; otherwise the loop polls forever.
+    """
+    remaining = list(keys)
+
+    def read():
+        if not remaining:
+            listener._stop_event.set()
+            return None
+        return remaining.pop(0)
+
+    return read
+
+
 # --- TTY gate ---
 
 
@@ -250,15 +267,13 @@ def test_read_loop_self_delivers_sigint_on_quit_key(monkeypatch):
     # Stub the shared delivery primitive so the seam is observable without
     # raising KeyboardInterrupt in the test process.
     monkeypatch.setattr(signal, "raise_signal", lambda sig: delivered.append(sig))
-    remaining_presses = [QUIT_KEY]
 
-    def fake_read():
-        if not remaining_presses:
-            listener._stop_event.set()
-            return None
-        return remaining_presses.pop(0)
-
-    monkeypatch.setattr(listener, "_read_one_byte", fake_read, raising=False)
+    monkeypatch.setattr(
+        listener,
+        "_read_one_byte",
+        _fake_read_then_stop([QUIT_KEY], listener),
+        raising=False,
+    )
 
     listener._read_loop()
 
@@ -338,15 +353,13 @@ def test_read_loop_honors_multiple_quit_presses(monkeypatch):
     A one-shot loop silently disabled quitting for the rest of the session."""
     recorder = _Recorder()
     listener = TerminalQuitKeyListener(on_quit=recorder)
-    presses = [QUIT_KEY, QUIT_KEY, QUIT_KEY]
 
-    def fake_read():
-        if not presses:
-            listener._stop_event.set()
-            return None
-        return presses.pop(0)
-
-    monkeypatch.setattr(listener, "_read_one_byte", fake_read, raising=False)
+    monkeypatch.setattr(
+        listener,
+        "_read_one_byte",
+        _fake_read_then_stop([QUIT_KEY, QUIT_KEY, QUIT_KEY], listener),
+        raising=False,
+    )
 
     listener._read_loop()
 
