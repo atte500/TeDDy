@@ -20,8 +20,8 @@ Defines the high-level artifact lifecycle and conventions for project management
 - **Numbering:** Artifacts are numbered sequentially using a per-type filename convention so agents can infer the correct filename:
     - **Vertical Slices:** `MM-NN-name.md` (in `docs/project/slices/`) — `MM` is the target Milestone number and `NN` is the sequence number within that milestone.
     - **Milestones:** `MM-name.md` (in `docs/project/milestones/`).
-    - **Case Files (Debugger):** `NN-name.md` — numbered sequentially.
-    - **Milestone 0 (bootstrapping) & Ad-hoc work (not tied to a milestone):** `00-NN-name.md` — `00` is used as the Milestone prefix for Milestone 0 bootstrapping slices and for ad-hoc slices. Ad-hoc slices are NOT tracked in Milestone documents or the Roadmap.
+    - **Case Files (Debugger):** `NN-name.md` (in `docs/project/debugging/`) — numbered sequentially.
+    - **Milestone 0 (bootstrapping) & Ad-hoc work (not tied to a milestone):** `00-NN-name.md` (in `docs/project/slices/`) — `00` is used as the Milestone prefix for Milestone 0 bootstrapping slices and for ad-hoc slices. Ad-hoc slices are NOT tracked in Milestone documents or the Roadmap.
 - **Archiving Policy:** When and how completed artifacts are archived or deleted.
 - **Spec Organization:** Specification documents live in a single flat directory `docs/project/specs/` and are reserved strictly for **permanent system invariants** — formats, contracts, protocols (e.g. the MRP), core data models, and non-negotiable architectural rules. Feature goals, requirements, and acceptance criteria belong in Milestone documents (`docs/project/milestones/`), not in specs.
 - **Build & Run Commands:** Document the standard commands in the project `Makefile` (see [docs/templates/makefile.md](docs/templates/makefile.md)). At minimum: `make test` (full suite), `make commit '<msg>'`, `make push`, `make ci-watch` (CI monitoring), and `make probe '<reason>'` (Remote Probing Protocol).

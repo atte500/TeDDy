@@ -20,7 +20,11 @@ TeDDy's mission is to apply the **UNIX philosophy** to AI development and create
 This section defines the conventions for our project management artifacts.
 
 - **Artifact Lifecycle:** Work flows from `Spec` -> `Milestone` -> `Slice`.
-- **Numbering:** Artifacts are numbered sequentially using an `MM-NN-name.md` format, where `MM` represents the target Milestone number and `NN` represents the specific Slice or Case File number. For ad-hoc tasks not tied to an active milestone, `00` is used as the Milestone prefix (e.g., `00-01-ad-hoc-feature.md`). Ad-hoc slices are NOT tracked in Milestone documents or the Roadmap.
+- **Numbering:** Artifacts are numbered sequentially using a per-type filename convention so agents can infer the correct filename:
+    - **Vertical Slices:** `MM-NN-name.md` (in `docs/project/slices/`) — `MM` is the target Milestone number and `NN` is the sequence number within that milestone.
+    - **Milestones:** `MM-name.md` (in `docs/project/milestones/`).
+    - **Case Files (Debugger):** `NN-name.md` (in `docs/project/debugging/`) — numbered sequentially.
+    - **Milestone 0 (bootstrapping) & Ad-hoc work (not tied to a milestone):** `00-NN-name.md` (in `docs/project/slices/`) — `00` is used as the Milestone prefix for Milestone 0 bootstrapping slices and for ad-hoc slices. Ad-hoc slices are NOT tracked in Milestone documents or the Roadmap.
 - **Archiving Policy:** Once a feature slice or milestone is fully implemented and merged, its active planning artifacts can be deleted. The Git history serves as the official, permanent archive.
 - **Spec Organization:** Specification documents live in a single flat directory `docs/project/specs/` and are reserved strictly for **permanent system invariants** — formats, contracts, protocols (e.g. the MRP), core data models, and non-negotiable architectural rules. Feature goals, requirements, and acceptance criteria belong in Milestone documents (`docs/project/milestones/`), not in specs. There is no ephemeral `specs/features/` lifecycle.
 - **Build & Run Commands:** The `Makefile` is the canonical entry point for common operations: `make test` (full suite), `make commit '<msg>'` (stage and commit locally), `make push` (rebase and push), `make ci-watch` (monitor CI results), and `make probe '<reason>'` (Remote Probing Protocol).

@@ -56,6 +56,27 @@ Test drivers, observers, shared fakes, and test setup fixtures.
 
 Each Contract column links to the Component Design Document or Interface definition.
 
+## Domain Model & Ubiquitous Language
+
+The shared vocabulary exchanged by every service, port, and adapter. Record the core entities, enumerations, value objects, domain exceptions, and port bundles that do not warrant a dedicated component design document.
+
+**Template format:** Group the types by concept. List each type with its module, kind, fields, and any invariant.
+
+### Enumerations
+- **`TypeName`** (`module.py`, Enum): `VALUE_A`, `VALUE_B`.
+
+### Aggregates
+- **`AggregateName`** (`module.py`, dataclass): `field_a`, `field_b`. Exposes `helper_method()`.
+
+### Port Bundles
+- **`PortBundleName`** (`module.py`, frozen dataclass): `dependency_a`, `dependency_b`.
+
+### Supporting Value Objects
+- **`ValueObjectName`** (`module.py`, frozen dataclass): `field_a`, `field_b`.
+
+### Domain Exceptions
+- **`ExceptionName`** (`BaseException`): carries `field`.
+
 ## Key Architectural Decisions
 
 A living "System Law" document capturing explicit, prescriptive design decisions.

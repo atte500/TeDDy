@@ -12,7 +12,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 **Goal:** Gather context and build or verify an end-to-end Minimal Reproducible Example (MRE).
 
 1. **Case File Check:**
-   If a Case File was not provided in the initial context, READ `docs/templates/case-file.md` and CREATE one following that template.
+   If a Case File was not provided in the initial context, READ `docs/templates/case-file.md` and CREATE one at `docs/project/debugging/NN-name.md` following that template.
 2. **Context and History Gathering:**
    Use EXECUTE `git grep`, EXECUTE `git log`, READ, and RESEARCH to understand the codebase, recent changes, and identify the last known green CI run or commit. For historical CI failures, do not try to read the entire log: extract failed step logs by executing `make logs [ID]` (for all failed steps) or `make logs [ID] "[STEP_NAME]"` (for a specific step).
 3. **Diagnostic MRE and Platform Check:**

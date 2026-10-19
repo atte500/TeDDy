@@ -28,7 +28,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 | Component                     | Description                                                                                                                                         | Contract                                                                         |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| **Domain Model**              | Defines the core entities, value objects, and ubiquitous language of the application.                                                               | [Domain Model & Ubiquitous Language](./core/domain_model.md)                       |
+| **Domain Model**              | Defines the core entities, value objects, and ubiquitous language of the application.                                                               | [Domain Model & Ubiquitous Language](#domain-model--ubiquitous-language)                       |
 | **ExecutionReport**           | A strongly-typed, immutable data structure representing the outcome of a plan execution.                                                            | [ExecutionReport](./core/domain/execution_report.md)                             |
 | **ShellOutput**               | A strictly-typed DTO representing the result of a shell command execution.                                                                          | [ShellOutput](./core/domain/shell_output.md)                                     |
 | **WebSearchResults**          | A strictly-typed DTO representing the aggregated results from a web search.                                                                         | [WebSearchResults](./core/domain/web_search_results.md)                          |
@@ -102,6 +102,43 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **CliTestAdapter** (Driver)      | A specialized adapter that drives the CLI in-process and orchestrates builders and parsers.                                                | [CliTestAdapter](./tests/drivers/cli_adapter.md)       |
 | **TestEnvironment** (Setup)      | A harness that encapsulates DI isolation, environment patching, and workspace management.                                                  | [TestEnvironment](./tests/setup/test_environment.md)   |
 | **TestComposition (Fixtures)**   | A set of reusable pytest fixtures and globally mocked heavy dependencies (e.g., LiteLLM).                                                  | [TestComposition](./tests/setup/composition.md)        |
+
+---
+
+## Domain Model & Ubiquitous Language
+
+The `src/teddy_executor/core/domain/models/` package defines the shared vocabulary exchanged by every service, port, and adapter. Types with dedicated component docs appear in the Component & Boundary Map above. The inventory below records the remaining aggregate, enumeration, value object, exception, and port-bundle contracts.
+
+### Enumerations
+- **`ActionType`** (`plan.py`, str Enum): `CREATE`, `READ`, `EDIT`, `EXECUTE`, `RESEARCH`, `MESSAGE`.
+- **`ExecutionStatus`** (`plan.py`, str Enum): `PENDING`, `RUNNING`, `SUCCESS`, `FAILURE`, `SKIPPED`.
+- **`RunStatus`** (`execution_report.py`, str Enum): `SUCCESS`, `FAILURE`, `VALIDATION_FAILED`, `SKIPPED`, `ABORTED`, `INTERRUPTED`.
+- **`ActionStatus`** (`execution_report.py`, str Enum): `SUCCESS`, `FAILURE`, `SKIPPED`, `PENDING`, `INTERRUPTED`.
+
+### Plan Aggregate (`plan.py`)
+- **`Plan`** (mutable dataclass): `title`, `rationale`, `actions`, `metadata`, `source_doc`, `is_session`, `plan_path`, `raw_content`. Exposes `is_communication_turn()`.
+- **`ActionData`** (mutable dataclass): `type`, `params`, `description`, `selected`, `modified`, `modified_fields`, `executed`, `state`, `action_log`, `user_response`, `pending_temp_file`, `node`, `similarity_score`, `similarity_scores`. Exposes the `is_terminal` property.
+- **`ValidationError`** (frozen dataclass): `message`, `action_index`, `file_path`, `offending_node`.
+- **`DEFAULT_SIMILARITY_THRESHOLD`**: module constant `0.95`.
+- **Invariant:** `Plan.__post_init__` asserts that `actions` is non-empty.
+
+### Port Bundles
+- **`OrchestratorPorts`** (frozen dataclass, `orchestrator_ports.py`): `plan_parser`, `plan_validator`, `action_executor`, `file_system_manager`, `report_assembler`, `user_interactor`, `plan_reviewer`, `interrupt_guard`. `plan_reviewer` and `interrupt_guard` are optional.
+- **`PlanningPorts`** (frozen dataclass, `planning_ports.py`): `context`, `llm`, `fs`, `config`, `prompts`, `ui`, `session_manager`.
+- **`SessionPorts`** (frozen dataclass, `planning_ports.py`): `session_service`, `file_system_manager`, `report_formatter`, `user_interactor`, `session_planner`, `replanner`, `plan_parser`, `time_service`, `report_assembler`. `plan_parser`, `time_service`, and `report_assembler` are optional.
+
+### Supporting Value Objects
+- **`ChangeSet`** (frozen dataclass, `change_set.py`): `path`, `before_content`, `after_content`, `action_type`.
+- **`DriftReport`** (frozen dataclass, `drift_report.py`): `edited_prompts`, `missing_prompts`, `edited_templates`, `missing_templates`. Exposes `prompts_drifted`, `templates_drifted`, and `has_drift`.
+- **`ReportAssemblyData`** (frozen dataclass, `report_assembly_data.py`): `plan`, `action_logs`, `start_time`, `message`, `is_session`.
+- **`SessionOptions`** (frozen dataclass, `session.py`): `name`, `agent_name`, `initial_request`, `additional_context`, `model`, `provider`, `api_key`.
+
+### Domain Exceptions (`exceptions.py`)
+- **`SearchTextNotFoundError`** (`ValueError`): carries `content`.
+- **`FileAlreadyExistsError`** (`FileExistsError`): carries `file_path`.
+- **`MultipleMatchesFoundError`** (`Exception`): carries `content`.
+- **`WebSearchError`** (`Exception`): carries `original_exception`.
+- **`ConfigurationError`** (`Exception`): carries `message`.
 
 ---
 
