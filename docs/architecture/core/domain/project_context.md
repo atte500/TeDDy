@@ -30,6 +30,7 @@ None — this is a passive data structure.
 ## Data Contracts
 - **`ContextItem`** (dataclass): `path: str`, `token_count: int`, `git_status: str`, `scope: str`, `selected: bool = True`, `auto_prune_reason: Optional[str] = None`.
 - **`ProjectContext`** (dataclass): `header: str`, `content: str`, `scoped_paths: Dict[str, List[str]] = {}`, `git_status: Optional[str] = None`, `items: List[ContextItem] = []`, `agent_name: str = "Unknown"`, `system_prompt_tokens: int = 0`, `content_tokens: int = 0`, `total_window: int = 0`.
+- **`git_status` field:** Holds the `git status --porcelain -b` output. It drives the fenced Markdown body and the item badge parser.
 
 ## Operations
 None — this component holds data only.

@@ -76,7 +76,7 @@ Then the Git Status section names the branch without an upstream suffix
 - [x] **Wiring** - Run `git status --porcelain -b` in `SystemEnvironmentInspector.get_git_status`, render the single result inside a fenced block in `ContextService._format_content`, feed the same result to the badge parser, skip the `##` header in `_parse_git_status`, and update the shared mock plus the directly affected tests so the suite stays green. Drive an acceptance test that asserts the fenced branch header in the generated payload.
 - [x] **Logic** - Cover the inspector and parser with unit tests for clean, dirty, upstream-less, detached, renamed, and non-git states.
 - [x] **Migration** - Update the remaining consumer tests that still reference `get_full_git_status`, including the caching and performance suites.
-- [ ] **Cleanup** - Remove `get_full_git_status` from the port and adapter. Align the `ProjectContext` docstring and the four component docs with the porcelain contract.
+- [x] **Cleanup** - Remove `get_full_git_status` from the port and adapter. Align the `ProjectContext` docstring and the four component docs with the porcelain contract.
 
 ## Implementation Notes
 
@@ -99,6 +99,13 @@ Then the Git Status section names the branch without an upstream suffix
 - `tests/harness/setup/mocks.py` drops the obsolete `get_full_git_status` default from the shared `IEnvironmentInspector` mock, so a stray call would fail loudly instead of returning `None`.
 - A `git grep "get_full_git_status" -- tests` returned no matches after the edits. The caching and performance suites never referenced the method, so they needed no change.
 - `IEnvironmentInspector.get_full_git_status` and its adapter implementation stay in place. The Cleanup deliverable removes both after the last caller migration, as the user constrained.
+
+### Cleanup
+- The contract test now carries `test_environment_inspector_contract_excludes_full_git_status`. It asserts the method is absent from both `IEnvironmentInspector` and `SystemEnvironmentInspector.__dict__`. The Red run failed on the port assertion while the method survived.
+- `IEnvironmentInspector.get_full_git_status` and `SystemEnvironmentInspector.get_full_git_status` are deleted. The adapter keeps only `get_git_status`, which runs `git status --porcelain -b`.
+- The `ProjectContext.git_status` docstring now names the `git status --porcelain -b` output. The four component docs describe the single-call, single-method porcelain contract.
+- A focused run over the contract, context service, and parser suites reported 26 passed. A scoped `git grep "get_full_git_status" -- src tests docs/architecture` returned only the two intentional absence assertions in the contract test.
+- The full suite passed with 1866 passed and 5 skipped, so the removal is contained.
 
 ## Verification
 1. **Clean repository header:**

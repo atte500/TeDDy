@@ -22,6 +22,7 @@ Implements the `IGetContextUseCase` inbound port. It orchestrates the outbound p
 - `atomic_cache_write`: The cache is written to a temporary file and renamed with `Path.replace`.
 - `failures_not_cached`: A failed fetch is recorded as `None` for the run but never written to the cache.
 - `scope_dedup_priority`: A path present in several scopes keeps the non-`Turn` scope.
+- `single_git_status_call`: `get_git_status` runs once per turn. Its value feeds the fenced Git Status body, the `ProjectContext.git_status` field, and the badge parser.
 
 ## Inbound Ports
 - **`IGetContextUseCase`**: Exposes the single `get_context(...)` operation.

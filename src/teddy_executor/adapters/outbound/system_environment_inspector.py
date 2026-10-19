@@ -71,19 +71,3 @@ class SystemEnvironmentInspector(IEnvironmentInspector):
             return result.stdout.rstrip() if result.stdout else ""
         except (subprocess.CalledProcessError, FileNotFoundError):
             return None
-
-    def get_full_git_status(self) -> Optional[str]:
-        """
-        Gathers the full Git status of the working directory (including branch info).
-        """
-        try:
-            result = self._run_func(  # nosec B603 B607
-                ["git", "status"],
-                capture_output=True,
-                text=True,
-                check=True,
-                stdin=subprocess.DEVNULL,
-            )
-            return result.stdout.rstrip() if result.stdout else ""
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            return None

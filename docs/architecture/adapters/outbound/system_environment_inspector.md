@@ -15,7 +15,7 @@ Implements the `IEnvironmentInspector` outbound port with the Python standard li
 ## Class Invariants
 - `injectable_run_func`: The `run_func` constructor argument defaults to `subprocess.run`, so tests substitute a fake runner.
 - `cross_platform_shell`: Shell detection returns `$SHELL` on Unix, falls back to `$COMSPEC` on Windows, then returns `"unknown"`.
-- `git_status_absent_safe`: `get_git_status` and `get_full_git_status` return `None` when Git is missing or the directory is not a repository.
+- `git_status_absent_safe`: `get_git_status` returns `None` when Git is missing or the directory is not a repository.
 - `stdin_detached`: Every Git command passes `stdin=subprocess.DEVNULL`.
 
 ## Inbound Ports
@@ -33,10 +33,7 @@ None — this is an outbound (driven) adapter.
 - **Postconditions:** Returns the host property mapping, including the resolved shell and the current date and time.
 
 ### `get_git_status() -> Optional[str]`
-- **Postconditions:** Returns the short-format `git status -s` output, or `None` when the directory is not a Git repository.
-
-### `get_full_git_status() -> Optional[str]`
-- **Postconditions:** Returns the full `git status` output including branch information, or `None` when the directory is not a Git repository.
+- **Postconditions:** Returns the `git status --porcelain -b` output, or `None` when the directory is not a Git repository.
 
 ### Internal helpers
 `_detect_shell` resolves the shell with the cross-platform fallbacks.

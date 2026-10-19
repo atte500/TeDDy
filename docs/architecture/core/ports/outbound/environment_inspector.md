@@ -31,8 +31,4 @@ None — this is an outbound (driven) port.
 
 ### `get_git_status() -> Optional[str]`
 - **Preconditions:** None.
-- **Postconditions:** Returns the short-format `git status -s` output, or `None` when the directory is not a Git repository.
-
-### `get_full_git_status() -> Optional[str]`
-- **Preconditions:** None.
-- **Postconditions:** Returns the full `git status` output including branch information, or `None` when the directory is not a Git repository.
+- **Postconditions:** Returns the `git status --porcelain -b` output, or `None` when the directory is not a Git repository.

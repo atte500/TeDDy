@@ -38,7 +38,7 @@ class ProjectContext:
         header: A string containing metadata about the context (e.g., CWD, OS).
         content: The main body of the context (e.g., file tree and contents).
         scoped_paths: A mapping of scope names (e.g., 'Turn', 'Session') to lists of file paths.
-        git_status: An optional string containing the output of 'git status -s'.
+        git_status: An optional string containing the output of 'git status --porcelain -b'.
         items: Structured list of context files and metadata.
         agent_name: Name of the active agent.
         system_prompt_tokens: Token count of the system prompt.
