@@ -74,7 +74,7 @@ Then the Git Status section names the branch without an upstream suffix
 
 ## Deliverables
 - [x] **Wiring** - Run `git status --porcelain -b` in `SystemEnvironmentInspector.get_git_status`, render the single result inside a fenced block in `ContextService._format_content`, feed the same result to the badge parser, skip the `##` header in `_parse_git_status`, and update the shared mock plus the directly affected tests so the suite stays green. Drive an acceptance test that asserts the fenced branch header in the generated payload.
-- [ ] **Logic** - Cover the inspector and parser with unit tests for clean, dirty, upstream-less, detached, renamed, and non-git states.
+- [x] **Logic** - Cover the inspector and parser with unit tests for clean, dirty, upstream-less, detached, renamed, and non-git states.
 - [ ] **Migration** - Update the remaining consumer tests that still reference `get_full_git_status`, including the caching and performance suites.
 - [ ] **Cleanup** - Remove `get_full_git_status` from the port and adapter. Align the `ProjectContext` docstring and the four component docs with the porcelain contract.
 
@@ -86,6 +86,12 @@ Then the Git Status section names the branch without an upstream suffix
 - `ContextService._format_content` wraps the status body with `embed_in_fence(git_status, "")`. The empty language tag yields a plain triple-backtick fence, so the porcelain `##` header stays inside a code block and does not become a sibling heading.
 - `ContextService._parse_git_status` skips every line that starts with `##` and keys a rename line by the new path after `" -> "`. The `??` to `U` mapping is unchanged.
 - The new acceptance test `tests/suites/acceptance/test_context_git_status_header.py` drives `teddy context` and asserts the fenced branch header. The affected unit, acceptance, and integration tests now feed porcelain values and assert the single inspector call.
+
+### Logic
+- `tests/suites/unit/core/services/test_context_git_status_parsing.py` drives the public `get_context` path with a parametrized matrix. The cases cover a clean repository with an upstream, a branch without an upstream, `## HEAD (no branch)`, `## No commits yet on main`, a dirty tree with an untracked file, and a rename keyed by the new path.
+- A separate case feeds `None` as the status and asserts the Git Status section stays unfenced with empty item badges, because the inspector returns `None` outside a repository.
+- No inspector unit test was added. The porcelain command, the returned output, the non-git failure, and stdin isolation already carry integration coverage in `tests/suites/integration/adapters/outbound/test_system_environment_inspector.py`, so an inspector unit test would duplicate existing assertions.
+- The parser rules already existed before the matrix, because the Wiring tracer bullet had to keep the acceptance test green. The matrix therefore locks the behavior instead of driving it, and the missing Red failure is explained rather than papered over.
 
 ## Verification
 1. **Clean repository header:**
