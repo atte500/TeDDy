@@ -17,6 +17,7 @@ Deliver branch, upstream, and ahead/behind state in the context payload. Remove 
 - `ContextService.get_context` calls both methods on every turn and passes each result to a separate consumer.
 - `git status --porcelain -b` emits a `## <branch>...<upstream> [ahead N, behind M]` header followed by two-column file lines. The command ignores user color and prefix configuration.
 - The verified clean output is `## main...origin/main`.
+- `ContextService._format_content` injects the status body as raw Markdown, so a porcelain `##` header would become a sibling H2 heading to `## Git Status`.
 - `_parse_git_status` assumes that every line describes a file and reads the code from the first two columns.
 - A porcelain rename line reads `R  old -> new`, so the parser must key the badge by the new path.
 - The `ProjectContext.git_status` docstring claims that the field holds `git status -s` output.
@@ -48,12 +49,13 @@ Then the Git Status section names the branch without an upstream suffix
 
 ## Edge Cases
 - **Branch header line**: If a status line starts with `##`, then the badge parser skips it, because the line carries branch metadata instead of a file status.
+- **Heading collision**: If the status body renders without a fence, then the porcelain `##` header becomes a sibling heading, because Markdown reads a leading `##` as a heading. The body must stay fenced.
 - **Untracked files**: If porcelain reports `??`, then the badge code becomes `U`, because the existing untracked convention stays in place.
 - **Renames**: If porcelain reports `R  old -> new`, then the parser keys the badge by `new`, because the context item path reflects the new name.
 - **Detached HEAD**: If the repository is in detached HEAD, then the header reads `## HEAD (no branch)`, because porcelain reports that literal.
 - **Unborn branch**: If the repository has no commits, then the header reads `## No commits yet on <branch>`, and the parser skips it.
-- **Non-git directory**: If Git is missing or the directory is not a repository, then the inspector returns `None`, and the Git Status section renders empty as today.
-- **Clean tree**: If the working tree is clean, then the section holds only the header line, because porcelain omits unchanged files.
+- **Non-git directory**: If Git is missing or the directory is not a repository, then the inspector returns `None`, and the section renders no fence, as today.
+- **Clean tree**: If the working tree is clean, then the fenced block holds only the header line, because porcelain omits unchanged files.
 - **User Git config**: If the user sets color or short-status prefixes, then the output stays stable, because `--porcelain` ignores that configuration.
 
 ## Key Unknowns
@@ -71,7 +73,7 @@ Then the Git Status section names the branch without an upstream suffix
 5. `[MIGRATE]` Component docs and the `ProjectContext` docstring — Describe the single porcelain contract.
 
 ## Deliverables
-- [ ] **Wiring** - Run `git status --porcelain -b` in `SystemEnvironmentInspector.get_git_status`, use the single result in `ContextService` for the payload and the badges, skip the `##` header in `_parse_git_status`, and update the shared mock plus the directly affected tests so the suite stays green. Drive an acceptance test that asserts the branch header in the generated payload.
+- [ ] **Wiring** - Run `git status --porcelain -b` in `SystemEnvironmentInspector.get_git_status`, render the single result inside a fenced block in `ContextService._format_content`, feed the same result to the badge parser, skip the `##` header in `_parse_git_status`, and update the shared mock plus the directly affected tests so the suite stays green. Drive an acceptance test that asserts the fenced branch header in the generated payload.
 - [ ] **Logic** - Cover the inspector and parser with unit tests for clean, dirty, upstream-less, detached, renamed, and non-git states.
 - [ ] **Migration** - Update the remaining consumer tests that still reference `get_full_git_status`, including the caching and performance suites.
 - [ ] **Cleanup** - Remove `get_full_git_status` from the port and adapter. Align the `ProjectContext` docstring and the four component docs with the porcelain contract.
@@ -82,10 +84,13 @@ To be completed during implementation.
 ## Verification
 1. **Clean repository header:**
    Run `teddy context` in the TeDDy repository.
-   Verify the Git Status section starts with `## main...origin/main` and contains no `On branch` or `(use "git ...")` text.
+   Verify the fenced body starts with `## main...origin/main` and contains no `On branch` or `(use "git ...")` text.
 2. **Dirty working tree badges:**
    Stage one file and create one untracked file, then run `teddy context`.
    Verify the section lists `M  <file>` and `?? <file>` and the context item badges show the matching codes.
 3. **Missing upstream:**
    Run `teddy context` in a temporary repository that has commits but no upstream.
    Verify the header shows the branch name without an `...origin/...` suffix.
+4. **Fenced payload:**
+   Run `teddy context` in the TeDDy repository.
+   Verify the Git Status body sits inside a fenced block and the branch header does not render as a heading.

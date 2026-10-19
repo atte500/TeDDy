@@ -82,22 +82,28 @@ Instead, they are appended in chronological order under a dedicated `## Session 
 
 A concise, deterministic view of the working tree (`git status --porcelain -b`). The first line carries the branch name, its upstream, and ahead/behind counts. Each following line uses the two-column porcelain format, where the first column reports the index state and the second column reports the worktree state.
 
+The body sits inside a fenced block. The porcelain header starts with `##`, so without the fence it would render as a sibling heading to the Git Status section. The fence also preserves the significant leading column of worktree-only changes.
+
 The porcelain form ignores user color and prefix configuration, so the payload stays stable across developer environments. A clean repository yields only the branch header. When the directory is not a Git repository, the section stays empty.
 
 -   **Example:**
-    ```markdown
+    ````markdown
     ## Git Status
+    ```
     ## feature/auth...origin/feature/auth [ahead 1]
     M  docs/project/PROJECT.md
      M src/teddy_executor/core/services/context_service.py
     ?? tests/test_new_feature.py
     ```
+    ````
 
 -   **Clean example:**
-    ```markdown
+    ````markdown
     ## Git Status
+    ```
     ## main...origin/main
     ```
+    ````
 
 ### Project Structure
 
