@@ -38,6 +38,34 @@ def test_repo_tree_generator_produces_correct_format(env, tmp_path):
     assert tree_output.strip() == expected_tree
 
 
+def test_repo_tree_generator_orders_sections_by_relative_path(env, tmp_path):
+    """Verify section order follows the relative path sort around the root."""
+    (tmp_path / "!important").mkdir()
+    (tmp_path / "!important" / "top.txt").touch()
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "main.py").touch()
+    (tmp_path / "README.md").touch()
+
+    generator = env.get_service(IRepoTreeGenerator)
+
+    expected_tree = dedent(
+        """
+        ./!important:
+        top.txt
+
+        !important
+        README.md
+        src
+
+        ./src:
+        main.py
+        """
+    ).strip()
+
+    tree_output = generator.generate_tree()
+    assert tree_output.strip() == expected_tree
+
+
 def test_repo_tree_generator_respects_gitignore(env, tmp_path):
     """Verify that .gitignore patterns are respected."""
     (tmp_path / ".gitignore").write_text(".venv/\ndist/\nlog.txt", encoding="utf-8")

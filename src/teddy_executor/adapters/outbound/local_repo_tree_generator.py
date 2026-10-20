@@ -1,55 +1,9 @@
+import logging
 import os
 from pathlib import Path
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 
-
-class _RecursiveListFormatter:
-    """
-    A helper class to format a set of paths into a recursive "ls -R" style list.
-    """
-
-    def __init__(self, root_dir: Path, included_paths: set[Path]):
-        self.root_dir = root_dir
-        self.included_paths = included_paths
-
-    def format(self) -> str:
-        """Generates the recursive list string."""
-        sections: list[str] = []
-        # Gather all directories that are included (including root)
-        directories = sorted(
-            [p for p in self.included_paths if p.is_dir() and not p.is_symlink()]
-            + [self.root_dir],
-            key=lambda p: str(p.relative_to(self.root_dir)).lower(),
-        )
-
-        for directory in directories:
-            section_content = self._format_section(directory)
-            if section_content:
-                sections.append(section_content)
-
-        return "\n\n".join(sections)
-
-    def _format_section(self, directory: Path) -> str:
-        """Formats a single directory section."""
-        children = sorted(
-            [p for p in directory.iterdir() if p in self.included_paths],
-            key=lambda p: p.name.lower(),
-        )
-
-        if not children:
-            return ""
-
-        lines = []
-        if directory != self.root_dir:
-            rel_path = directory.relative_to(self.root_dir)
-            # Poka-Yoke: Always use forward slashes for the tree protocol
-            posix_rel_path = str(rel_path).replace(os.sep, "/")
-            lines.append(f"./{posix_rel_path}:")
-
-        for child in children:
-            lines.append(child.name)
-
-        return "\n".join(lines)
+logger = logging.getLogger(__name__)
 
 
 class LocalRepoTreeGenerator(IRepoTreeGenerator):
@@ -66,31 +20,62 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         self.root_dir = Path(root_dir).resolve()
         self.ignore_spec = load_ignore_spec(self.root_dir)
 
-    def _get_included_paths(self) -> set[Path]:
-        """
-        Walks the directory and returns a set of all files and parent directories
-        that are not excluded by the ignore spec.
-        """
-        from teddy_executor.adapters.outbound.filesystem_helpers import walk_recursive
-
-        included_paths: set[Path] = set()
-        for entry, _ in walk_recursive(self.root_dir, self.root_dir, self.ignore_spec):
-            # If not ignored, add to set
-            included_paths.add(entry)
-
-            # Ensure parent connectivity
-            for parent in entry.parents:
-                if parent == self.root_dir:
-                    break
-                included_paths.add(parent)
-
-        return included_paths
-
     def generate_tree(self) -> str:
         """
-        Generates a string representation of the file tree by gathering paths
-        and then delegating to a formatter.
+        Generates a string representation of the file tree in a single pass.
         """
-        included_paths = self._get_included_paths()
-        formatter = _RecursiveListFormatter(self.root_dir, included_paths)
-        return formatter.format()
+        sections: list[tuple[str, str, list[str]]] = []
+        root_names = self._collect_directory(self.root_dir, "", sections)
+        # Sections sort by their relative path, and the root resolves to ".",
+        # so a top-level name below "." (for example "!important") renders
+        # before the root block. The "." key preserves that exact order.
+        sections.append((".", "", root_names))
+        sections.sort(key=lambda item: item[0])
+
+        rendered: list[str] = []
+        for _sort_key, relative_path, names in sections:
+            if not names:
+                continue
+            if relative_path:
+                rendered.append("\n".join([f"./{relative_path}:"] + names))
+            else:
+                rendered.append("\n".join(names))
+        return "\n\n".join(rendered)
+
+    def _collect_directory(
+        self,
+        directory: str | Path,
+        relative_path: str,
+        sections: list[tuple[str, str, list[str]]],
+    ) -> list[str]:
+        """
+        Collects one directory's visible names and recurses into its children.
+
+        Directory and symlink flags come from the scan cache, so each entry
+        costs no additional stat call. Symlinks are listed as files and are
+        never followed, which keeps circular links from recursing.
+        """
+        names: list[str] = []
+        try:
+            with os.scandir(directory) as iterator:
+                entries = list(iterator)
+        except PermissionError:
+            logger.debug("Skipping unreadable directory %s", directory, exc_info=True)
+            return names
+
+        for entry in entries:
+            is_directory = entry.is_dir(follow_symlinks=False)
+            child_path = (
+                f"{relative_path}/{entry.name}" if relative_path else entry.name
+            )
+            match_path = (child_path + "/") if is_directory else child_path
+            if self.ignore_spec.match_file(match_path):
+                continue
+            names.append(entry.name)
+            if is_directory:
+                child_names = self._collect_directory(entry.path, child_path, sections)
+                sort_key = child_path.replace("/", os.sep).lower()
+                sections.append((sort_key, child_path, child_names))
+
+        names.sort(key=str.lower)
+        return names

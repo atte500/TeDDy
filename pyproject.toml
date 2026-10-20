@@ -115,6 +115,8 @@ norecursedirs = "spikes"
 addopts = [
     "-n",
     "auto",
+    "--dist",
+    "worksteal",
     "--import-mode=importlib",
     "--timeout=5",
 ]
