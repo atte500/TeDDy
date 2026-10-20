@@ -1,5 +1,5 @@
 # Slice: Normalize Editor Basenames for Windows Launcher Suffixes
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** None
@@ -65,7 +65,7 @@ None. The case file resolved the root cause and proved the fix in a sandbox repl
 4. `[CONTRACT]` `console_interactor_ask_loop` — Remove the duplicated `_CLI_EDITORS` set and the static `_is_cli_editor`, then call the shared classifier from `_launch_editor_background`.
 
 ## Deliverables
-- [ ] **Contract** - Create `core/utils/editor_names.py` with `normalize_editor_basename` and unit tests covering launcher-suffix stripping, case folding, full paths, and absent commands.
+- [x] **Contract** - Create `core/utils/editor_names.py` with `normalize_editor_basename` and unit tests covering launcher-suffix stripping, case folding, full paths, and absent commands.
 - [ ] **Logic** - Add the single-source `CLI_EDITORS` set and the `is_cli_editor` predicate to `core/utils/editor_names.py` with unit tests covering terminal names, GUI names, and launcher wrappers.
 - [ ] **Migration** - Delegate `_is_cli_editor`, `_uses_annotated_diff_path`, and `_is_vim_editor` in the inbound reviewer to the shared helper, remove the local editor set, and extend their unit tests with launcher-suffix variants.
 - [ ] **Migration** - Normalize the basename before the `_DIFF_FLAGS` lookup in `console_tooling.get_diff_viewer_command` and extend its unit tests with launcher-suffix variants.
@@ -73,7 +73,12 @@ None. The case file resolved the root cause and proved the fix in a sandbox repl
 - [ ] **Cleanup** - Remove dead imports and constants left by the migration, refresh stale comments that name the removed symbols, and confirm no stale `_CLI_EDITORS` references remain.
 
 ## Implementation Notes
-(Pending implementation.)
+
+### Contract
+- Added `src/teddy_executor/core/utils/editor_names.py` with a pure `normalize_editor_basename` function and a module-level `_LAUNCHER_SUFFIXES` constant holding `.cmd`, `.bat`, and `.exe`.
+- The function guards empty and `None` input, reduces the path to its basename, lowercases it, then strips exactly one launcher suffix. Lowercasing first makes the suffix match case-insensitive and leaves non-launcher suffixes intact (for example `vim.sh`).
+- `tests/suites/unit/core/utils/test_editor_names.py` pins thirteen parametrized cases: uppercase, lowercase, and mixed suffixes, bare and hyphenated names, a non-launcher suffix, full paths with and without a suffix, empty input, and `None`.
+- The deliverable stays normalization-only. The `CLI_EDITORS` set and the `is_cli_editor` predicate are deferred to the Logic deliverable.
 
 ## Verification
 1. **Unit classification checks:**
