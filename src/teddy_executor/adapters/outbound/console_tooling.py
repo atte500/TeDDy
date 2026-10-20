@@ -3,6 +3,7 @@ import shlex
 from typing import Optional, List
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.ports.outbound.config_service import IConfigService
+from teddy_executor.core.utils.editor_names import normalize_editor_basename
 
 
 class ConsoleToolingHelper:
@@ -137,12 +138,14 @@ class ConsoleToolingHelper:
 
         # Resolve the editor via the canonical resolver (honours the config
         # value, the "disabled" sentinel, and the VISUAL/EDITOR env fallback),
-        # then map its basename to the translation table.
+        # then map its normalized basename to the translation table. Windows
+        # resolves an editor to a launcher wrapper such as `codium.CMD`, so the
+        # table is keyed on the suffix-stripped name rather than the raw path.
         editor_cmd = self.find_editor()
         if not editor_cmd:
             return None
 
-        basename = os.path.basename(editor_cmd[0]).lower()
+        basename = normalize_editor_basename(editor_cmd[0])
         if flags := self._DIFF_FLAGS.get(basename):
             return editor_cmd[:1] + flags
 

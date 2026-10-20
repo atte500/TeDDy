@@ -186,6 +186,32 @@ class TestGetDiffViewerCommand:
 
         assert result == ["/usr/bin/zed", "--diff"]
 
+    @pytest.mark.parametrize(
+        ("editor", "resolved"),
+        [
+            pytest.param("codium", "/usr/bin/codium.CMD", id="codium-cmd"),
+            pytest.param("code", "/usr/bin/code.EXE", id="code-exe"),
+            pytest.param("cursor", "/usr/bin/cursor.BAT", id="cursor-bat"),
+            pytest.param("nvim", "/usr/bin/Nvim.Cmd", id="mixed-case-wrapper"),
+            pytest.param("nano", "/usr/bin/nano.CMD", id="unregistered-wrapper"),
+        ],
+    )
+    def test_diff_viewer_strips_launcher_suffix_before_table_lookup(
+        self, helper, mock_env, mock_config, editor, resolved
+    ):
+        """Windows resolves editors to launcher wrappers such as codium.CMD.
+        The translation-table lookup must strip the wrapper, otherwise a
+        registered GUI editor falls back to the flagless path and blocks the
+        TUI on the annotated diff route."""
+        mock_config.get_setting.return_value = editor
+        mock_env.get_env.side_effect = lambda x: None
+        mock_env.which.side_effect = lambda name: resolved if name == editor else None
+
+        result = helper.get_diff_viewer_command()
+
+        expected_flags = ConsoleToolingHelper._DIFF_FLAGS.get(editor, [])
+        assert result == [resolved, *expected_flags]
+
     def test_diff_viewer_returns_intellij_diff_flags(
         self, helper, mock_env, mock_config
     ):

@@ -68,7 +68,7 @@ None. The case file resolved the root cause and proved the fix in a sandbox repl
 - [x] **Contract** - Create `core/utils/editor_names.py` with `normalize_editor_basename` and unit tests covering launcher-suffix stripping, case folding, full paths, and absent commands.
 - [x] **Logic** - Add the single-source `CLI_EDITORS` set and the `is_cli_editor` predicate to `core/utils/editor_names.py` with unit tests covering terminal names, GUI names, and launcher wrappers.
 - [x] **Migration** - Delegate `_is_cli_editor`, `_uses_annotated_diff_path`, and `_is_vim_editor` in the inbound reviewer to the shared helper, remove the local editor set, and extend their unit tests with launcher-suffix variants.
-- [ ] **Migration** - Normalize the basename before the `_DIFF_FLAGS` lookup in `console_tooling.get_diff_viewer_command` and extend its unit tests with launcher-suffix variants.
+- [x] **Migration** - Normalize the basename before the `_DIFF_FLAGS` lookup in `console_tooling.get_diff_viewer_command` and extend its unit tests with launcher-suffix variants.
 - [ ] **Migration** - Remove the ask-loop duplicated editor set and static classifier, call the shared classifier from `_launch_editor_background`, repoint the classification test at the shared classifier, and extend it with launcher-suffix variants.
 - [ ] **Cleanup** - Remove dead imports and constants left by the migration, refresh stale comments that name the removed symbols, and confirm no stale `_CLI_EDITORS` references remain.
 
@@ -99,6 +99,14 @@ None. The case file resolved the root cause and proved the fix in a sandbox repl
 - These findings predate this slice and appear only because the pre-commit linter runs against staged files, so the first staged commit of these two modules reports them.
 - The project quality-gate policy prefers config-level per-file-ignores for file-wide, repeated findings. `pyproject.toml` therefore scopes `C901`, `PLR0912`, and `PLR0915` off for the inbound editor module, and `TID251`, `F841`, and `PLR0915` off for its test module. The underlying code is unchanged.
 - The underlying debt remains scheduled for remediation, and these ignores must be removed once the complexity and mock-hygiene work lands.
+
+### Migration - Console Tooling
+- Imported `normalize_editor_basename` from `core/utils/editor_names.py` into `console_tooling.py`. The import direction stays adapter to core utils, so the module never depends on the inbound adapter and no cycle exists.
+- Replaced the inline `os.path.basename(editor_cmd[0]).lower()` in `get_diff_viewer_command` with the shared normalizer before the `_DIFF_FLAGS` lookup. A resolved `codium.CMD`, `code.EXE`, or `cursor.BAT` now maps to its registered entry and returns the `--diff` flag instead of the flagless fallback.
+- Refreshed the adjacent comment so it states that the basename is normalized and why, rather than describing the previous lowercasing only.
+- Left the `diff_flags` config override and the `TEDDY_DIFF_TOOL` path unchanged, because both bypass the translation table entirely.
+- Extended `tests/suites/unit/adapters/outbound/test_console_tooling_editor.py` with a five-case parametrized table: `codium.CMD`, `code.EXE`, `cursor.BAT`, a mixed-case `Nvim.Cmd`, and an unregistered `nano.CMD` guard.
+- The targeted module went from four launcher-suffix failures (36 passed) to 40 passed, and the full suite reports 1918 passed and 29 skipped. The `os` import stays because `_resolve_editor_cmd` still calls `os.path.expanduser`. The ask-loop migration remains.
 
 ## Verification
 1. **Unit classification checks:**
