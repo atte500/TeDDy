@@ -23,3 +23,34 @@ def normalize_editor_basename(editor_path: str | None) -> str:
         if basename.endswith(suffix):
             return basename[: -len(suffix)]
     return basename
+
+
+# Terminal editors that require a suspend/resume handover instead of the
+# non-blocking GUI launch. The set is the single source of truth, so the TUI
+# reviewer and the console ask loop classify editors identically.
+CLI_EDITORS: frozenset[str] = frozenset(
+    {
+        "vim",
+        "nvim",
+        "vi",
+        "nano",
+        "micro",
+        "emacs",
+        "pico",
+        "helix",
+        "hx",
+        "kak",
+    }
+)
+
+
+def is_cli_editor(editor_cmd: list[str] | None) -> bool:
+    """Return True when the resolved editor command is a terminal (CLI) editor.
+
+    The command list carries the resolved launcher path as its first element, so
+    the basename is normalized first. Unknown editors, empty commands, and
+    ``None`` classify as False and default to the non-blocking GUI launch.
+    """
+    if not editor_cmd:
+        return False
+    return normalize_editor_basename(editor_cmd[0]) in CLI_EDITORS

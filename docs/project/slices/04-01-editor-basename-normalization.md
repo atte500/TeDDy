@@ -66,7 +66,7 @@ None. The case file resolved the root cause and proved the fix in a sandbox repl
 
 ## Deliverables
 - [x] **Contract** - Create `core/utils/editor_names.py` with `normalize_editor_basename` and unit tests covering launcher-suffix stripping, case folding, full paths, and absent commands.
-- [ ] **Logic** - Add the single-source `CLI_EDITORS` set and the `is_cli_editor` predicate to `core/utils/editor_names.py` with unit tests covering terminal names, GUI names, and launcher wrappers.
+- [x] **Logic** - Add the single-source `CLI_EDITORS` set and the `is_cli_editor` predicate to `core/utils/editor_names.py` with unit tests covering terminal names, GUI names, and launcher wrappers.
 - [ ] **Migration** - Delegate `_is_cli_editor`, `_uses_annotated_diff_path`, and `_is_vim_editor` in the inbound reviewer to the shared helper, remove the local editor set, and extend their unit tests with launcher-suffix variants.
 - [ ] **Migration** - Normalize the basename before the `_DIFF_FLAGS` lookup in `console_tooling.get_diff_viewer_command` and extend its unit tests with launcher-suffix variants.
 - [ ] **Migration** - Remove the ask-loop duplicated editor set and static classifier, call the shared classifier from `_launch_editor_background`, repoint the classification test at the shared classifier, and extend it with launcher-suffix variants.
@@ -79,6 +79,13 @@ None. The case file resolved the root cause and proved the fix in a sandbox repl
 - The function guards empty and `None` input, reduces the path to its basename, lowercases it, then strips exactly one launcher suffix. Lowercasing first makes the suffix match case-insensitive and leaves non-launcher suffixes intact (for example `vim.sh`).
 - `tests/suites/unit/core/utils/test_editor_names.py` pins thirteen parametrized cases: uppercase, lowercase, and mixed suffixes, bare and hyphenated names, a non-launcher suffix, full paths with and without a suffix, empty input, and `None`.
 - The deliverable stays normalization-only. The `CLI_EDITORS` set and the `is_cli_editor` predicate are deferred to the Logic deliverable.
+
+### Logic
+- Added `CLI_EDITORS` as a `frozenset` of the ten terminal-editor names and an `is_cli_editor` predicate that composes on `normalize_editor_basename`.
+- A frozenset keeps the constant immutable at runtime, so no caller can mutate the shared source of truth.
+- The predicate guards `None` and empty commands first, then normalizes the first command element and tests membership. This reuses the tested suffix stripping and case folding instead of duplicating them.
+- `tests/suites/unit/core/utils/test_editor_names.py` gained fifteen true classifier cases, nine false cases, and one shared-set case, which makes thirty-eight editor-name tests in total.
+- No production consumer was touched. The inbound reviewer, `console_tooling`, and the ask loop keep their own copies until the three Migration deliverables.
 
 ## Verification
 1. **Unit classification checks:**
