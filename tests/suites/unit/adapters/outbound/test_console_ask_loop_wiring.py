@@ -37,8 +37,8 @@ class TestWiringEndToEndEditorFlow:
     """End-to-end wiring tests for the editor loop.
 
     These tests exercise the full run() loop with the real
-    _launch_editor_background, _flush_stdin, _is_cli_editor,
-    and _handle_empty_input implementations. Only the subprocess
+    _launch_editor_background, _flush_stdin, and _handle_empty_input
+    implementations plus the shared editor classifier. Only the subprocess
     calls and prompt_toolkit input are mocked.
     """
 
@@ -135,3 +135,50 @@ class TestWiringEndToEndEditorFlow:
         assert ask_loop._active_editor_path is None, (
             f"Expected None, got {ask_loop._active_editor_path}"
         )
+
+
+class TestWiringLauncherSuffixClassification:
+    """A terminal editor resolved to a Windows launcher wrapper must take the
+    synchronous CLI path, not the fire-and-forget GUI path. Otherwise the ask
+    loop returns control to the prompt while the editor still owns the terminal.
+    """
+
+    PROD_PREFIX = "teddy_executor.adapters.outbound.console_interactor_ask_loop"
+
+    @pytest.fixture
+    def ask_loop(self, mock_system_env, mock_tooling):
+        return ConsoleAskLoop(mock_system_env, mock_tooling)
+
+    @pytest.mark.parametrize(
+        "wrapped_editor",
+        [
+            pytest.param("/usr/bin/nvim.CMD", id="upper-cmd"),
+            pytest.param("/usr/bin/vim.BAT", id="upper-bat"),
+            pytest.param("/usr/bin/nano.EXE", id="upper-exe"),
+        ],
+    )
+    def test_launcher_wrapper_takes_synchronous_path(
+        self, ask_loop, mock_tooling, tmp_path, wrapped_editor
+    ):
+        temp_file = str(tmp_path / "wrapper.md")
+        ask_loop._system_env.create_temp_file.return_value = temp_file
+        mock_tooling.find_editor.return_value = [wrapped_editor]
+
+        expected_content = "Wrapper content from the terminal editor"
+
+        def write_content(*args, **kwargs):
+            with open(temp_file, "w", encoding="utf-8") as f:
+                f.write(expected_content)
+
+        with (
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch("subprocess.run", side_effect=write_content) as mock_run,
+            patch("subprocess.Popen") as mock_popen,
+        ):
+            result = ask_loop._launch_editor_background("wiring prompt")
+
+        assert result == expected_content, (
+            f"Expected '{expected_content}', got {repr(result)}"
+        )
+        mock_run.assert_called_once()
+        mock_popen.assert_not_called()

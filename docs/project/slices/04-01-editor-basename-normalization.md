@@ -69,7 +69,7 @@ None. The case file resolved the root cause and proved the fix in a sandbox repl
 - [x] **Logic** - Add the single-source `CLI_EDITORS` set and the `is_cli_editor` predicate to `core/utils/editor_names.py` with unit tests covering terminal names, GUI names, and launcher wrappers.
 - [x] **Migration** - Delegate `_is_cli_editor`, `_uses_annotated_diff_path`, and `_is_vim_editor` in the inbound reviewer to the shared helper, remove the local editor set, and extend their unit tests with launcher-suffix variants.
 - [x] **Migration** - Normalize the basename before the `_DIFF_FLAGS` lookup in `console_tooling.get_diff_viewer_command` and extend its unit tests with launcher-suffix variants.
-- [ ] **Migration** - Remove the ask-loop duplicated editor set and static classifier, call the shared classifier from `_launch_editor_background`, repoint the classification test at the shared classifier, and extend it with launcher-suffix variants.
+- [x] **Migration** - Remove the ask-loop duplicated editor set and static classifier, call the shared classifier from `_launch_editor_background`, repoint the classification test at the shared classifier, and extend it with launcher-suffix variants.
 - [ ] **Cleanup** - Remove dead imports and constants left by the migration, refresh stale comments that name the removed symbols, and confirm no stale `_CLI_EDITORS` references remain.
 
 ## Implementation Notes
@@ -107,6 +107,15 @@ None. The case file resolved the root cause and proved the fix in a sandbox repl
 - Left the `diff_flags` config override and the `TEDDY_DIFF_TOOL` path unchanged, because both bypass the translation table entirely.
 - Extended `tests/suites/unit/adapters/outbound/test_console_tooling_editor.py` with a five-case parametrized table: `codium.CMD`, `code.EXE`, `cursor.BAT`, a mixed-case `Nvim.Cmd`, and an unregistered `nano.CMD` guard.
 - The targeted module went from four launcher-suffix failures (36 passed) to 40 passed, and the full suite reports 1918 passed and 29 skipped. The `os` import stays because `_resolve_editor_cmd` still calls `os.path.expanduser`. The ask-loop migration remains.
+
+### Migration - Ask-Loop
+- Removed the duplicated `_CLI_EDITORS` set and the static `ConsoleAskLoop._is_cli_editor` from `console_interactor_ask_loop.py`.
+- Imported `is_cli_editor` from `core/utils/editor_names.py`. The import direction stays adapter to core utils, so the ask loop never depends on the inbound adapter and no cycle exists.
+- `_launch_editor_background` now calls the shared predicate, so a resolved `nvim.CMD`, `vim.BAT`, or `nano.EXE` wrapper takes the synchronous suspend path instead of the fire-and-forget GUI launch. The `os` import stays because the log line still calls `os.path.basename`, and the `Optional` import stays because `_active_editor_path` is typed `Optional[str]`.
+- Repointed `test_cli_editor_classification.py` as a de-duplication guard rather than a second copy of the shared-classifier cases. The shared helper already covers the terminal names, the GUI names, the wrappers, full paths, empty input, and `None` across thirty-eight cases, so a verbatim repoint would duplicate them and shadow the source of truth. The module now asserts that the local set and the private predicate are absent.
+- Extended `test_console_ask_loop_wiring.py` with a three-case parametrized routing test: `nvim.CMD`, `vim.BAT`, and `nano.EXE` each take the synchronous `subprocess.run` path and never call `Popen`. Refreshed the module docstring that named the removed `_is_cli_editor`.
+- Added narrow per-file-ignores in `pyproject.toml` for the pre-existing first-touch findings: `C901` and `PLR0915` on the ask loop, and `TID251` on the wiring test. The underlying code is unchanged and the debt stays scheduled for remediation.
+- The Red gate reported three wrapper failures and two passing cases. The Green gate reported 55 passed across the four affected modules. The full suite reports 1919 passed and 29 skipped. The Cleanup deliverable remains.
 
 ## Verification
 1. **Unit classification checks:**
