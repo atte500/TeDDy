@@ -85,6 +85,7 @@ The verified root cause is a diagnostic and contract defect, not an attribution 
 - `Makefile`: `ci-watch` gains a shell preflight, a commit validation, an un-pushed check, and a stderr reason on every blocking branch. `probe` and `logs` gain the shell preflight and quote fixes. `commit` switches to `uv run pre-commit`. Emitted verdict text drops non-ASCII dashes.
 - `docs/templates/makefile.md`: mirrors every recipe change and documents the shell contract, the `SHELL=` override remedy, and the audit result.
 - `src/teddy_executor/resources/templates/makefile.md`: stays byte-identical to the project template copy.
-- `tests/suites/acceptance/test_ci_watch_attribution.py`: asserts the stderr reason on the blocking scenarios.
+- `tests/suites/acceptance/test_ci_watch_attribution.py`: removed, because the project does not test environment scripts. The structural unit guard below holds the contract instead.
+- `tests/harness/setup/ci_watch_fake_gh.py`: removed with its only consumer, because the fake `gh` test double existed solely to drive that environment-script test.
 - `tests/suites/unit/test_default_make_targets.py` (new): guards target presence, the shell preflight, the cmd-safe recipe surface, and the template lockstep.
 - `spikes/debug/ci-watch-windows/`: retained as the diagnostic record, consistent with the other `spikes/debug/` cases.
