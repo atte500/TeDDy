@@ -1,3 +1,4 @@
+import locale
 import os
 import subprocess  # nosec
 import sys
@@ -46,6 +47,27 @@ class ShellAdapter(IShellExecutor):
         # Remove all CSI escape sequences (including colors, cursor moves, alt-screens)
         text = re.sub(r"\x1b\[[0-9;?><\$]*[a-zA-Z]", "", text)
         return text
+
+    def _decode_stream(self, data: bytes | str | None) -> str:
+        """Decode one captured child stream to text without raising.
+
+        Text payloads from test doubles pass through untouched. Raw bytes
+        decode as UTF-8 first, so identical UTF-8 streams yield identical
+        text on every platform. A stream that is not valid UTF-8 falls back
+        to the locale codec with replacement, which keeps native Windows
+        child output readable and never kills a reader thread.
+        Universal-newline normalisation preserves the previous text-mode
+        contract.
+        """
+        if data is None:
+            return ""
+        if isinstance(data, str):
+            return data
+        try:
+            decoded = data.decode("utf-8")
+        except UnicodeDecodeError:
+            decoded = data.decode(locale.getpreferredencoding(False), errors="replace")
+        return decoded.replace("\r\n", "\n").replace("\r", "\n")
 
     def _validate_cwd(self, cwd: Optional[str]) -> str:
         """Validates and resolves the working directory."""
@@ -125,7 +147,9 @@ class ShellAdapter(IShellExecutor):
             # Python 3.14.2's C-level initialization. The pipe is closed
             # immediately after Popen so children see EOF on reads.
             "stdin": subprocess.PIPE,
-            "text": True,
+            # Bytes mode: the pipes are drained undecoded, so no reader
+            # thread can die on a codec mismatch. Each stream is decoded
+            # explicitly by _decode_stream after the wait.
             "cwd": cwd,
             "env": env,
         }
@@ -171,9 +195,11 @@ class ShellAdapter(IShellExecutor):
 
         try:
             # Give the OS a moment to close pipes naturally after SIGKILL.
-            stdout, stderr = process.communicate(timeout=0.5)
+            raw_stdout, raw_stderr = process.communicate(timeout=0.5)
         except subprocess.TimeoutExpired:
-            stdout, stderr = "", ""
+            raw_stdout, raw_stderr = "", ""
+        stdout = self._decode_stream(raw_stdout)
+        stderr = self._decode_stream(raw_stderr)
 
         sanitized_stderr = self._sanitize_output(stderr) or ""
         if self._detect_interactive_prompt(sanitized_stderr, stdout):
@@ -228,8 +254,12 @@ class ShellAdapter(IShellExecutor):
         guard = self._interrupt_guard
         if guard is None:
             comm_res = process.communicate(timeout=timeout)
-            stdout, stderr = cast(tuple[str, str], comm_res)
-            return stdout, stderr, False
+            raw_stdout, raw_stderr = cast(tuple[bytes | str, bytes | str], comm_res)
+            return (
+                self._decode_stream(raw_stdout),
+                self._decode_stream(raw_stderr),
+                False,
+            )
 
         poll_interval = self._poll_interval_seconds
         deadline = None if timeout is None else time.monotonic() + timeout
@@ -238,10 +268,16 @@ class ShellAdapter(IShellExecutor):
                 self._terminate_process_group(process)
                 try:
                     comm_res = process.communicate(timeout=1.0)
-                    stdout, stderr = cast(tuple[str, str], comm_res)
+                    raw_stdout, raw_stderr = cast(
+                        tuple[bytes | str, bytes | str], comm_res
+                    )
                 except subprocess.TimeoutExpired:
-                    stdout, stderr = "", ""
-                return stdout, stderr, True
+                    raw_stdout, raw_stderr = "", ""
+                return (
+                    self._decode_stream(raw_stdout),
+                    self._decode_stream(raw_stderr),
+                    True,
+                )
             slice_timeout: float = poll_interval
             if deadline is not None:
                 remaining = deadline - time.monotonic()
@@ -250,8 +286,12 @@ class ShellAdapter(IShellExecutor):
                 slice_timeout = min(poll_interval, remaining)
             try:
                 comm_res = process.communicate(timeout=slice_timeout)
-                stdout, stderr = cast(tuple[str, str], comm_res)
-                return stdout, stderr, False
+                raw_stdout, raw_stderr = cast(tuple[bytes | str, bytes | str], comm_res)
+                return (
+                    self._decode_stream(raw_stdout),
+                    self._decode_stream(raw_stderr),
+                    False,
+                )
             except subprocess.TimeoutExpired:
                 continue
 
@@ -407,7 +447,7 @@ class ShellAdapter(IShellExecutor):
             }
 
     # jscpd:ignore-start
-    def execute(
+    def execute(  # noqa: PLR0913  # Signature fixed by the IShellExecutor port.
         self,
         command: str,
         cwd: Optional[str] = None,

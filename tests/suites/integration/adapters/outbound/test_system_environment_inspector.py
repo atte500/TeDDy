@@ -81,3 +81,21 @@ def test_get_git_status_isolates_stdin(monkeypatch):
     _, kwargs = mock_run.call_args
     assert "stdin" in kwargs, "stdin missing from subprocess.run call"
     assert kwargs["stdin"] == subprocess.DEVNULL, "stdin must be DEVNULL"
+
+
+def test_get_git_status_requests_explicit_utf8_decoding():
+    """
+    Verify get_git_status decodes through UTF-8 with replacement, so a
+    non-UTF-8 path byte cannot raise mid-read on a cp1252 host.
+    """
+    mock_run = POSIXPathMock()
+    mock_run.return_value = POSIXPathMock(stdout="")
+
+    inspector = SystemEnvironmentInspector(run_func=mock_run)
+
+    inspector.get_git_status()
+
+    _, kwargs = mock_run.call_args
+    assert kwargs["encoding"] == "utf-8"
+    assert kwargs["errors"] == "replace"
+    assert "text" not in kwargs

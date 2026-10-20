@@ -22,6 +22,7 @@ Implements the `IShellExecutor` outbound port. It runs commands through the oper
 - `tail_truncation`: `stdout` is truncated at the tail to the effective line cap; `stderr` is never truncated.
 - `process_group_isolation`: On POSIX the child runs in its own session (`setsid`), so a terminal SIGINT cannot reach it and a kill reaches the whole command tree.
 - `guard_optional`: When no interrupt guard is injected, `execute` keeps the legacy single blocking `communicate` path.
+- `stream_decoding`: Child pipes are drained as raw bytes and decoded as UTF-8 first with a locale replacement fallback, so no reader thread can die on a codec mismatch.
 
 ## Inbound Ports
 None — this is an outbound (driven) adapter.
@@ -41,4 +42,4 @@ None — this is an outbound (driven) adapter.
 - **Exceptions:** `ValueError` when a relative `cwd` escapes the project root.
 
 ### Internal helpers
-`_validate_cwd` resolves and containment-checks the working directory. `_await_process` polls the guard between slices or blocks once. `_handle_timeout` kills the process group and returns exit code `124`. `_process_execution_results` sanitizes, truncates, and maps the raw output. `_detect_interactive_prompt` scans both streams for interactive-input patterns.
+`_validate_cwd` resolves and containment-checks the working directory. `_await_process` polls the guard between slices or blocks once. `_handle_timeout` kills the process group and returns exit code `124`. `_decode_stream` converts each captured stream to text without raising. `_process_execution_results` sanitizes, truncates, and maps the raw output. `_detect_interactive_prompt` scans both streams for interactive-input patterns.

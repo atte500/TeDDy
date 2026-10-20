@@ -3,7 +3,7 @@ import shutil
 import signal
 import subprocess  # nosec B404
 from pathlib import Path
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Callable, Dict, Optional, Sequence
 
 import typer
 from punq import Container
@@ -43,7 +43,9 @@ _HOOK_IMPL_FLAG = "hook-impl"
 _HOOK_CONFIG_FLAG = "--config=.pre-commit-config.yaml"
 
 
-def _resolve_hooks_dir() -> Optional[Path]:
+def _resolve_hooks_dir(
+    run_func: Optional[Callable[..., Any]] = None,
+) -> Optional[Path]:
     """Resolve the git hooks directory using git's own answer.
 
     Returns None when unresolvable (not a repository, git CLI failure,
@@ -52,12 +54,18 @@ def _resolve_hooks_dir() -> Optional[Path]:
     the same directory `pre-commit install` writes to. Relative output
     is anchored against the current working directory (git semantics).
     """
+    # Explicit decoding keeps a non-UTF-8 path byte from raising mid-read,
+    # which the guard would swallow as an unresolvable hooks directory.
+    # The runner defaults to subprocess.run at call time, so tests inject
+    # a replacement instead of patching the module global.
+    runner = run_func or subprocess.run
     try:
-        result = subprocess.run(  # nosec B603 B607
+        result = runner(  # nosec B603 B607
             ["git", "rev-parse", "--git-path", "hooks"],
             check=True,
             capture_output=True,
-            text=True,
+            encoding="utf-8",
+            errors="replace",
         )
     except (subprocess.CalledProcessError, OSError, ValueError):
         logger.debug("hooks directory resolution failed", exc_info=True)

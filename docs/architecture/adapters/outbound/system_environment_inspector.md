@@ -17,6 +17,7 @@ Implements the `IEnvironmentInspector` outbound port with the Python standard li
 - `cross_platform_shell`: Shell detection returns `$SHELL` on Unix, falls back to `$COMSPEC` on Windows, then returns `"unknown"`.
 - `git_status_absent_safe`: `get_git_status` returns `None` when Git is missing or the directory is not a repository.
 - `stdin_detached`: Every Git command passes `stdin=subprocess.DEVNULL`.
+- `explicit_stream_decoding`: The Git command requests `encoding="utf-8"` with `errors="replace"`, so a non-UTF-8 path byte cannot raise during the read.
 
 ## Inbound Ports
 None — this is an outbound (driven) adapter.

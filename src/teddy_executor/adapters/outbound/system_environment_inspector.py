@@ -60,11 +60,14 @@ class SystemEnvironmentInspector(IEnvironmentInspector):
         """
         Gathers the current Git status of the working directory in porcelain format.
         """
+        # Explicit decoding keeps a non-UTF-8 path byte from raising mid-read
+        # or emptying the status, which would hide pending changes.
         try:
             result = self._run_func(  # nosec B603 B607
                 ["git", "status", "--porcelain", "-b"],
                 capture_output=True,
-                text=True,
+                encoding="utf-8",
+                errors="replace",
                 check=True,
                 stdin=subprocess.DEVNULL,
             )

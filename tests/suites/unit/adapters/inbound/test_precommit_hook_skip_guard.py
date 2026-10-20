@@ -19,6 +19,7 @@ import pytest
 
 from teddy_executor.adapters.inbound.session_cli_handlers import (
     _ensure_commit_hooks,
+    _resolve_hooks_dir,
 )
 from tests.harness.setup.hook_shims import HookShimWorkspace
 
@@ -178,3 +179,23 @@ class TestFallbackTriggers:
         _ensure_commit_hooks()
 
         assert recorder.install_calls == [INSTALL_ARGV]
+
+
+def test_resolve_hooks_dir_decodes_git_output_explicitly(workspace):
+    """The resolver must request explicit UTF-8 decoding with replacement.
+
+    A locale decode of the git path output can raise, and the guard
+    swallows that as an unresolvable directory, which forces a needless
+    `pre-commit install`. Explicit decoding keeps the resolution
+    deterministic across platforms.
+    """
+    hooks_dir = workspace.root / ".git" / "hooks"
+
+    def fake_run(cmd, **kwargs):
+        assert cmd == ["git", "rev-parse", "--git-path", "hooks"]
+        assert kwargs["encoding"] == "utf-8"
+        assert kwargs["errors"] == "replace"
+        assert "text" not in kwargs
+        return subprocess.CompletedProcess(cmd, 0, stdout=f"{hooks_dir}\n")
+
+    assert _resolve_hooks_dir(run_func=fake_run) == hooks_dir
