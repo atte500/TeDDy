@@ -62,7 +62,8 @@ On Windows, Make runs each recipe through Git Bash. `ci-watch` resolves the targ
 - [x] Expected every default target to run from `cmd.exe` on Windows. Observed three targets that require Git Bash plus `awk`, `sed`, and `sleep`. (Resolved: the recipes embed POSIX programs, and the shell contract stays implicit.)
 - [x] Expected run commands to use the designated runner. Observed `commit` calling bare `pre-commit`. (Resolved: the recipe predates the `uv run` convention.)
 - [x] Expected `probe` quoting to hold on every shell. Observed a single-quoted `--field reason='...'` value that cmd.exe passes literally. (Resolved: the quoting was copied from a POSIX example.)
-- [x] Expected a runless commit to produce an actionable message. Observed a generic Make error. (Resolved: every fail-safe branch prints to stdout only.)
+- [x] Expected a runless commit to produce an actionable message. Observed a generic Make error. (Resolved: every fail-safe branch prints to stdout only, and every blocking verdict now repeats its reason on stderr.)
+- [x] Expected a captured watch run to retain its output. Observed empty captures on Windows. (Resolved: an ad-hoc Python capture decoded UTF-8 CI log content as cp1252 and lost the stream, while the command itself exited 0. The direct `gh` query is the authoritative verdict, and the stderr duplication keeps blocking reasons readable under a stderr-only capture.)
 
 ### Investigation History
 1. Inventoried the toolchain with `make --version` and `where` in `cmd.exe`. Observed GNU Make 4.4.1 for Windows32 and the WSL launcher ahead of Git Bash on `PATH`. This fixed the shell candidates that the guard can select.
@@ -74,6 +75,7 @@ On Windows, Make runs each recipe through Git Bash. `ci-watch` resolves the targ
 7. Reproduced the target with `make ci-watch`. Observed exit code 0 and no captured stdout in the report. The same command therefore succeeds for a pushed, green commit, so the reported exit 1 came from a different precondition.
 8. Read every blocking branch of the recipe. Observed five branches that write the reason to stdout, set `STATUS=1`, and exit. Make prints its own generic line to stderr, so a caller that captures stderr alone loses the reason.
 9. Compared the two template copies with `git diff --no-index`. Observed no difference. Both copies carry the same POSIX recipes, so every project that bootstraps from the template inherits the surface.
+10. Verified the fix on the pushed commit `dd2ecdfd` by querying `gh run list --commit <sha>`. Observed the `CI` run 39433037406 and the `Publish to PyPI` run 39433206187 conclude `success`, and the re-run `make ci-watch` exit 0, which confirms the target reports a green verdict on a pushed commit. An ad-hoc Python capture decoded UTF-8 CI log content as cp1252 and lost the stream, so the direct `gh` query is the authoritative verdict.
 
 ## Solution
 ### Root Cause
