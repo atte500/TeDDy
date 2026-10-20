@@ -87,6 +87,7 @@ Always use GNU Make native features for cross-platform compatibility instead of 
 - **Native argument validation:** Use `$(if $(strip $(VAR)),,$(error Usage: ...))` instead of POSIX `[ -n "$$VAR" ]`. GNU Make validates parameters before spawning any shell process.
 - **Shell-less empty recipe:** Use `%: ;` to absorb extra command-line arguments. In Windows `cmd.exe`, the Unix built-in `@:` fails because `:` is reserved syntax for labels and drives. The empty recipe `%: ;` tells Make to do nothing without spawning a subshell.
 - **POSIX shell preflight:** Every POSIX recipe target (`ci-watch`, `probe`, `logs`) depends on the internal `_preflight` target, which verifies `git`, `gh`, `awk`, and `sed` before any network call. It aborts with one actionable message instead of a generic `make: *** Error 1`.
+- **Shell routing for Bash-only commands:** Make spawns a recipe line directly when the line carries no shell metacharacter. That direct spawn bypasses `SHELL`. On Windows it fails for Git Bash-only programs such as `sleep` and for shell builtins such as `echo`. Keep these commands inside a shell block that carries `;`, `&&`, or a variable expansion.
 - **Windows shell selection:** Set `SHELL := bash.exe` when `OS` is `Windows_NT` so multi-line shell pipelines (`ci-watch`, `probe`, `logs`) execute through Git Bash. `_preflight` also confirms that the shell is Git Bash rather than the WSL `bash.exe` shim, and it names the `SHELL=` override when it is not.
 - **Portable quoting:** Pass values with double quotes, as in `--field reason="..."`, because Windows `cmd.exe` keeps single quotes literally.
 - **ASCII-only output:** Recipe output stays ASCII, because a Windows console turns a non-ASCII dash into mojibake in captured logs.
@@ -294,21 +295,35 @@ ci-watch: _preflight
 
 ```makefile
 probe: REASON := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+probe: _preflight
 
 probe:
 	$(if $(strip $(REASON)),,$(error Usage: make probe '<reason>'))
 	git add -f spikes/debug/probe.sh
-	git commit -m 'debug: probe' --no-verify --allow-empty
+	git commit -m "debug: probe" --no-verify --allow-empty
 	git push
-	@gh workflow run debug.yml --field reason="$(REASON)"
-	@sleep 5
-	@RUN_ID=$$(gh run list --workflow debug.yml -L 1 --json databaseId --jq '.[0].databaseId') && \
-	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 && \
-	gh run download "$$RUN_ID" --name probe-result --dir spikes/debug >/dev/null 2>&1 && \
+	@SHA=$$(git rev-parse HEAD); \
+	gh workflow run debug.yml --field reason="$(REASON)" || { echo "Probe: workflow dispatch failed." >&2; exit 1; }; \
+	RUN_ID=""; ATTEMPTS=0; \
+	while [ -z "$$RUN_ID" ] && [ $$ATTEMPTS -lt $(RETRY_POLLS) ]; do \
+	  RUN_ID=$$(gh run list --workflow debug.yml -L 10 --json databaseId,headSha --jq "[.[] | select(.headSha == \"$$SHA\")][0].databaseId"); \
+	  [ -n "$$RUN_ID" ] && break; \
+	  ATTEMPTS=$$((ATTEMPTS + 1)); \
+	  sleep $(RETRY_SLEEP); \
+	done; \
+	if [ -z "$$RUN_ID" ]; then \
+	  echo "Probe: no run registered for $$SHA after $$(( $(RETRY_POLLS) * $(RETRY_SLEEP) ))s." >&2; \
+	  exit 1; \
+	fi; \
+	echo "Probe: watching run $$RUN_ID for $$SHA"; \
+	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 || true; \
+	gh run download "$$RUN_ID" --name probe-result --dir spikes/debug >/dev/null 2>&1 || true; \
 	cat spikes/debug/probe_output.txt 2>/dev/null || echo "(no output file)"
 ```
 
 **Usage:** `make probe 'investigate windows path handling'`
+
+`make probe` resolves the dispatched run by the pushed SHA inside a bounded retry loop. It reuses `RETRY_POLLS` and `RETRY_SLEEP` from the CI watch section. The dispatch, the run resolution, the watch, and the download stay in one shell block, because a metacharacter-free line would bypass the recipe shell on Windows. The target rejects the probe with a stderr reason when no run registers for that SHA, so a stale run can never be mistaken for the new probe.
 
 ## CI Log Extraction
 

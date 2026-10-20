@@ -24,6 +24,36 @@ _POSIX_TARGETS = ("ci-watch", "probe", "logs")
 _CMD_SAFE_TARGETS = ("commit", "push", "test")
 _POSIX_ONLY_PROGRAMS = ("awk", "sed", "grep", "command -v", "sleep")
 
+_BASH_ONLY_PROGRAMS = (
+    "sleep",
+    "echo",
+    "awk",
+    "sed",
+    "grep",
+    "cat",
+    "printf",
+    "sort",
+    "tail",
+    "head",
+)
+
+_SHELL_METACHARACTERS = (
+    "$",
+    ";",
+    "&",
+    "|",
+    "<",
+    ">",
+    "(",
+    ")",
+    "{",
+    "}",
+    '"',
+    "'",
+    "`",
+    "\\",
+)
+
 _BLOCKING_VERDICTS = (
     "is not a known commit",
     "is not on any remote branch",
@@ -143,8 +173,62 @@ def test_templates_document_the_portability_contract() -> None:
         "uv run pre-commit run",
         '--field reason="$(REASON)"',
         ">&2",
+        "spawns a recipe line directly",
     )
     for template in (_PROJECT_TEMPLATE, _BUNDLED_TEMPLATE):
         text = template.read_text(encoding="utf-8")
         for marker in markers:
             assert marker in text, (template.name, marker)
+
+
+def _logical_recipe_lines(recipe: list[str]) -> list[str]:
+    """Joins physical recipe lines that continue with a trailing backslash.
+
+    Make routes a logical line through the recipe shell when it carries a
+    metacharacter, so the routing decision must be checked after folding.
+    """
+    logical: list[str] = []
+    buffer = ""
+    for line in recipe:
+        body = line[1:] if line.startswith("\t") else line
+        if body.endswith("\\"):
+            buffer += body[:-1]
+            continue
+        buffer += body
+        logical.append(buffer)
+        buffer = ""
+    if buffer:
+        logical.append(buffer)
+    return logical
+
+
+def test_bash_only_programs_are_routed_through_the_recipe_shell() -> None:
+    """A metacharacter-free line is spawned directly and bypasses SHELL.
+
+    On Windows that direct spawn fails for Git Bash-only programs such as
+    sleep and for shell builtins such as echo.
+    """
+    for target in _POSIX_TARGETS:
+        _, recipe = _rule(target)
+        for line in _logical_recipe_lines(recipe):
+            words = line.lstrip("@-+").split()
+            if not words or words[0] not in _BASH_ONLY_PROGRAMS:
+                continue
+            assert any(marker in line for marker in _SHELL_METACHARACTERS), (
+                f"{target} spawns {words[0]!r} directly, which bypasses SHELL"
+            )
+
+
+def test_probe_resolves_its_run_by_the_pushed_sha() -> None:
+    _, recipe = _rule("probe")
+    body = "\n".join(recipe)
+    assert "gh run list --workflow debug.yml" in body
+    assert "headSha" in body
+    assert "select(.headSha" in body
+    assert "$$SHA" in body
+
+
+def test_probe_reports_an_unregistered_run_on_stderr() -> None:
+    _, recipe = _rule("probe")
+    stderr_lines = [line for line in recipe if ">&2" in line]
+    assert any("no run registered" in line for line in stderr_lines)

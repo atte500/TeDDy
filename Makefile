@@ -189,10 +189,15 @@ ci-watch: _preflight
 #   make probe '<reason>'  # reason is required, appears in workflow dispatch metadata
 #
 # Target-specific variable captures the reason string.
-# The first three lines (add, commit, push) are on separate recipe lines because
-# error suppression is not needed here: we want failures to be visible.
-# The dispatch/watch section uses a combined shell block because $RUN_ID is a
-# shell variable that must persist across multiple commands.
+# The first three lines (add, commit, push) call git.exe, which exists on every
+# platform, and their failures must stay visible.
+# The dispatch/watch section is ONE shell block. A recipe line without a shell
+# metacharacter can be spawned directly by Make and bypass SHELL, which fails on
+# Windows for Git Bash-only programs such as sleep. Every line in the block
+# therefore carries a variable expansion, a ';', or a '&&', so all of it runs
+# through the recipe shell.
+# The run is resolved by the pushed SHA inside a bounded retry loop, because
+# workflow registration lags and a bare 'gh run list -L 1' can match a stale run.
 # The reason travels in double quotes so a cmd.exe caller and a Git Bash caller
 # pass the same value. Keep the reason free of $, backticks, and nested quotes.
 
@@ -204,11 +209,22 @@ probe:
 	git add -f spikes/debug/probe.sh
 	git commit -m "debug: probe" --no-verify --allow-empty
 	git push
-	@gh workflow run debug.yml --field reason="$(REASON)"
-	@sleep 5
-	@RUN_ID=$$(gh run list --workflow debug.yml -L 1 --json databaseId --jq '.[0].databaseId') && \
-	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 && \
-	gh run download "$$RUN_ID" --name probe-result --dir spikes/debug >/dev/null 2>&1 && \
+	@SHA=$$(git rev-parse HEAD); \
+	gh workflow run debug.yml --field reason="$(REASON)" || { echo "Probe: workflow dispatch failed." >&2; exit 1; }; \
+	RUN_ID=""; ATTEMPTS=0; \
+	while [ -z "$$RUN_ID" ] && [ $$ATTEMPTS -lt $(RETRY_POLLS) ]; do \
+	  RUN_ID=$$(gh run list --workflow debug.yml -L 10 --json databaseId,headSha --jq "[.[] | select(.headSha == \"$$SHA\")][0].databaseId"); \
+	  [ -n "$$RUN_ID" ] && break; \
+	  ATTEMPTS=$$((ATTEMPTS + 1)); \
+	  sleep $(RETRY_SLEEP); \
+	done; \
+	if [ -z "$$RUN_ID" ]; then \
+	  echo "Probe: no run registered for $$SHA after $$(( $(RETRY_POLLS) * $(RETRY_SLEEP) ))s." >&2; \
+	  exit 1; \
+	fi; \
+	echo "Probe: watching run $$RUN_ID for $$SHA"; \
+	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 || true; \
+	gh run download "$$RUN_ID" --name probe-result --dir spikes/debug >/dev/null 2>&1 || true; \
 	cat spikes/debug/probe_output.txt 2>/dev/null || echo "(no output file)"
 
 # logs - CI Log Extraction: extract logs for all failed steps or a specific step.
