@@ -13,7 +13,7 @@ make commit "feat(templates): add PROJECT.md template"
 ```
 
 **What is `.PHONY`?**
-`.PHONY` is a Makefile directive that declares `commit`, `push`, `ci-watch`, `probe`, `test`, and `logs` as phony targets — they do not correspond to actual files. Without `.PHONY`, if a file named `commit` or `probe` existed in the directory (e.g., a script called `commit`), Make would see it as up-to-date and skip the target entirely. By declaring them phony, Make always runs the recipe when you call `make commit`, `make push`, `make ci-watch`, `make probe`, or `make test`.
+`.PHONY` is a Makefile directive that declares `commit`, `push`, `ci-watch`, `probe`, `test`, `logs`, and the internal `_preflight` gate as phony targets — they do not correspond to actual files. Without `.PHONY`, if a file named `commit` or `probe` existed in the directory (e.g., a script called `commit`), Make would see it as up-to-date and skip the target entirely. By declaring them phony, Make always runs the recipe when you call `make commit`, `make push`, `make ci-watch`, `make probe`, or `make test`.
 
 ### Push
 ```shell
@@ -86,7 +86,10 @@ Always use GNU Make native features for cross-platform compatibility instead of 
 
 - **Native argument validation:** Use `$(if $(strip $(VAR)),,$(error Usage: ...))` instead of POSIX `[ -n "$$VAR" ]`. GNU Make validates parameters before spawning any shell process.
 - **Shell-less empty recipe:** Use `%: ;` to absorb extra command-line arguments. In Windows `cmd.exe`, the Unix built-in `@:` fails because `:` is reserved syntax for labels and drives. The empty recipe `%: ;` tells Make to do nothing without spawning a subshell.
-- **Windows shell selection:** Set `SHELL := bash.exe` when `OS` is `Windows_NT` so multi-line shell pipelines (`ci-watch`, `probe`, `logs`) execute through Git Bash.
+- **POSIX shell preflight:** Every POSIX recipe target (`ci-watch`, `probe`, `logs`) depends on the internal `_preflight` target, which verifies `git`, `gh`, `awk`, and `sed` before any network call. It aborts with one actionable message instead of a generic `make: *** Error 1`.
+- **Windows shell selection:** Set `SHELL := bash.exe` when `OS` is `Windows_NT` so multi-line shell pipelines (`ci-watch`, `probe`, `logs`) execute through Git Bash. `_preflight` also confirms that the shell is Git Bash rather than the WSL `bash.exe` shim, and it names the `SHELL=` override when it is not.
+- **Portable quoting:** Pass values with double quotes, as in `--field reason="..."`, because Windows `cmd.exe` keeps single quotes literally.
+- **ASCII-only output:** Recipe output stays ASCII, because a Windows console turns a non-ASCII dash into mojibake in captured logs.
 - **Native error suppression:** The Makefile uses Make's built-in `-` prefix (`-pre-commit run`) instead of shell-level `|| true` or `&&`/`||` chaining. Make suppresses non-zero exit codes natively before passing lines to the shell.
 - **Error transparency:** The first pre-commit pass is advisory, so its non-zero exit is ignored and auto-fixed files are re-staged. Git then runs the same hooks again during `git commit`, and that second run is the blocking local gate. A hook failure there aborts the commit. The post-commit test gate is the final safety net. `make push` runs `git pull --rebase` and `git push` without suppression, so a rebase conflict or push rejection surfaces as a non-zero exit.
 
@@ -119,7 +122,7 @@ commit: ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 commit:
 	$(if $(strip $(ARGS)),,$(error Usage: make commit '<message>'))
 	git add .
-	-pre-commit run
+	-uv run pre-commit run
 	git add .
 	git commit -m "$(ARGS)"
 
@@ -155,7 +158,7 @@ push:
 
 ## CI Watch & Attribution
 
-`make ci-watch` discovers **every** CI run for the target commit (`HEAD` by default, or `COMMIT=<sha>`), waits for and reports each workflow with its jobs. It answers ONE question: **did this commit turn a BLOCKING gate red?** Only push-triggered workflows are attributed; a downstream workflow that registers from a `workflow_run` event is not a regression in this commit. Only include and configure this target if a remote CI pipeline is configured or planned for the project.
+`make ci-watch` discovers **every** CI run for the target commit (`HEAD` by default, or `COMMIT=<sha>`), waits for and reports each workflow with its jobs. The target depends on `_preflight`, so a missing `gh`, `awk`, or Git Bash shell fails once with an actionable message. Before polling, it rejects an unknown `COMMIT` and a commit that no remote branch contains, because no run can exist for an un-pushed commit. Every blocking verdict prints to stdout for the log and repeats its reason on stderr. It answers ONE question: **did this commit turn a BLOCKING gate red?** Only push-triggered workflows are attributed; a downstream workflow that registers from a `workflow_run` event is not a regression in this commit. Only include and configure this target if a remote CI pipeline is configured or planned for the project.
 
 The pushed RUN's own conclusion is authoritative: it already folds in `continue-on-error`, so a **non-blocking** job (e.g. the CI `Quality Checks` job) can NEVER block the session — it is reported as a triage item instead. Only when the run-level conclusion is `failure` does attribution run, comparing the pushed run's failing-JOB set against the base run's:
 
@@ -165,7 +168,7 @@ The pushed RUN's own conclusion is authoritative: it already folds in `continue-
 - **all green / non-blocking** → PASSED → **exit 0**.
 - **job-less base** → NOT green: a base run that exists but carries zero jobs (an invalid-workflow failure) is treated as an unknown base and fails safe (block).
 
-When any step fails — blocking or not — the target prints the failing step's name and its run id, then that step's log details (ANSI/timestamp-stripped and indented), bounded to `DETAIL_LINES` lines (default 50), and points to `make logs <run-id> '<step-name>'` for the full step log when needed.
+When any step fails — blocking or not — the target prints the failing step's name and its run id, then that step's log details (ANSI/timestamp-stripped and indented), bounded to `DETAIL_LINES` lines (default 50), and points to `make logs <run-id> "<step-name>"` for the full step log when needed.
 
 Attribution is deterministic: SHA → run → run-level + per-job conclusion (never "the latest run").
 
@@ -185,11 +188,19 @@ DETAIL_LINES ?= 50
 BASE_DEPTH ?= 50
 BASE ?=
 
-ci-watch:
-	@SHA=$$(git rev-parse $${COMMIT:-HEAD}); \
+ci-watch: _preflight
+	@SHA=$$(git rev-parse --verify --quiet "$(or $(COMMIT),HEAD)^{commit}") || { \
+	  echo "ERROR: '$(or $(COMMIT),HEAD)' is not a known commit. Pass COMMIT=<sha> for a commit that exists locally." >&2; \
+	  exit 1; \
+	}; \
 	if [ -z "$$(ls .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null)" ]; then \
 	  echo "No CI configured - skipping attribution"; \
 	  exit 0; \
+	fi; \
+	if [ -n "$$(git remote)" ] && ! git branch -r --contains "$$SHA" 2>/dev/null | grep -q .; then \
+	  echo "CI: commit $$SHA is not on any remote branch, so no run can exist." >&2; \
+	  echo "CI: push the commit first, then retry." >&2; \
+	  exit 1; \
 	fi; \
 	STATUS=0; ATTEMPTS=0; WFS=""; \
 	while [ -z "$$WFS" ] && [ $$ATTEMPTS -lt $(RETRY_POLLS) ]; do \
@@ -200,7 +211,9 @@ ci-watch:
 	done; \
 	echo "Watching CI for $$SHA after $$ATTEMPTS poll(s)"; \
 	if [ -z "$$WFS" ]; then \
-	  echo "CI: no run registered for $$SHA after $$(( $(RETRY_POLLS) * $(RETRY_SLEEP) ))s - fail-safe block"; \
+	  ELAPSED=$$(( $(RETRY_POLLS) * $(RETRY_SLEEP) )); \
+	  echo "CI: no run registered for $$SHA after $${ELAPSED}s - fail-safe block"; \
+	  echo "CI: no run registered for $$SHA after $${ELAPSED}s. Wait for CI to start, then retry." >&2; \
 	  exit 1; \
 	fi; \
 	WFLIST=$${TMPDIR:-/tmp}/ci-watch-workflows.$$$$; \
@@ -216,18 +229,19 @@ ci-watch:
 	    echo "$$WF: failing step(s): $$NEWSTEPS (run $$NEW)"; \
 	    gh run view "$$NEW" --log-failed 2>/dev/null | awk -F'\t' '{ l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/) next; gsub(/^##\[error\]/,"Error: ",l); print l }' | tail -n $(DETAIL_LINES) | sed 's/^/    /'; \
 	    echo "  view all failed logs: make logs $$NEW"; \
-	    echo "  view specific step:   make logs $$NEW '<step-name>'"; \
+	    echo "  view specific step:   make logs $$NEW \"<step-name>\""; \
 	  fi; \
 	  if [ "$$NEWCONC" = "success" ]; then \
 	    if [ -n "$$NEWFAIL" ]; then \
-	      echo "$$WF: PASSED (run=$$NEWCONC) — non-blocking failure(s) [$$NEWFAIL] — triage, does not block"; \
+	      echo "$$WF: PASSED (run=$$NEWCONC) - non-blocking failure(s) [$$NEWFAIL] - triage, does not block"; \
 	    else \
 	      echo "$$WF: PASSED"; \
 	    fi; \
 	    continue; \
 	  fi; \
 	  if [ "$$NEWCONC" != "failure" ]; then \
-	    echo "$$WF: BLOCKING (run=$$NEWCONC) — unknown conclusion — fail-safe block"; \
+	    echo "$$WF: BLOCKING (run=$$NEWCONC) - unknown conclusion - fail-safe block"; \
+	    echo "$$WF: unknown conclusion '$$NEWCONC' on run $$NEW blocks the session." >&2; \
 	    STATUS=1; continue; \
 	  fi; \
 	  BASE="$(BASE)"; CUR="$$SHA"; DEPTH=0; \
@@ -240,25 +254,29 @@ ci-watch:
 	    DEPTH=$$((DEPTH + 1)); \
 	  done; \
 	  if [ -z "$$BASE" ]; then \
-	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — no run-bearing ancestor (unknown base) — YOUR regression"; \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) - no run-bearing ancestor (unknown base) - YOUR regression"; \
+	    echo "$$WF: no run-bearing ancestor within $(BASE_DEPTH) commits, so the baseline is unknown." >&2; \
 	    STATUS=1; continue; \
 	  fi; \
 	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
 	  if [ -z "$$OLD" ]; then \
-	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — pinned base has no run (unknown base) — YOUR regression"; \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) - pinned base has no run (unknown base) - YOUR regression"; \
+	    echo "$$WF: pinned base $$BASE carries no run for this workflow." >&2; \
 	    STATUS=1; continue; \
 	  fi; \
 	  OLDJOBS=$$(gh run view "$$OLD" --json jobs --jq '.jobs | length'); \
 	  if [ "$$OLDJOBS" = "0" ]; then \
-	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — base run is job-less (invalid workflow, not green) — YOUR regression"; \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) - base run is job-less (invalid workflow, not green) - YOUR regression"; \
+	    echo "$$WF: base run $$OLD carries zero jobs, so it cannot prove a green baseline." >&2; \
 	    STATUS=1; continue; \
 	  fi; \
 	  OLDFAIL=$$(gh run view "$$OLD" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")'); \
 	  SUBSET=$$(awk -v new="$$NEWFAIL" -v old="$$OLDFAIL" 'BEGIN { n=split(new,na,","); m=split(old,oa,","); for (i=1;i<=n;i++) { if (na[i]=="") continue; f=0; for (j=1;j<=m;j++) { if (oa[j]==na[i]) { f=1; break } } if (!f) { print "regression"; exit } } print "pre-existing" }' </dev/null); \
 	  if [ "$$SUBSET" = "pre-existing" ]; then \
-	    echo "$$WF: pre-existing BLOCKING failure ($$NEWFAIL) — not yours"; \
+	    echo "$$WF: pre-existing BLOCKING failure ($$NEWFAIL) - not yours"; \
 	  else \
-	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — YOUR regression"; \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) - YOUR regression"; \
+	    echo "$$WF: YOUR regression - run $$NEW turned these jobs red and base $$BASE did not: $$NEWFAIL" >&2; \
 	    STATUS=1; \
 	  fi; \
 	done < "$$WFLIST"; \
@@ -282,7 +300,7 @@ probe:
 	git add -f spikes/debug/probe.sh
 	git commit -m 'debug: probe' --no-verify --allow-empty
 	git push
-	@gh workflow run debug.yml --field reason='$(REASON)'
+	@gh workflow run debug.yml --field reason="$(REASON)"
 	@sleep 5
 	@RUN_ID=$$(gh run list --workflow debug.yml -L 1 --json databaseId --jq '.[0].databaseId') && \
 	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 && \
@@ -303,7 +321,7 @@ logs: LOGS_RUN := $(word 2,$(MAKECMDGOALS))
 logs: LOGS_STEP := $(wordlist 3,99,$(MAKECMDGOALS))
 
 logs:
-	$(if $(strip $(LOGS_RUN)),,$(error Usage: make logs <run-id> ['<step-name>']))
+	$(if $(strip $(LOGS_RUN)),,$(error Usage: make logs <run-id> ["<step-name>"]))
 	@if [ -z "$(LOGS_STEP)" ]; then \
 	  gh run view "$(LOGS_RUN)" --log-failed 2>/dev/null | awk -F'\t' '{ if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
 	else \
@@ -316,7 +334,7 @@ logs:
 
 **Usage:**
 - `make logs 12345` — extract logs for ALL failed steps from run `12345`.
-- `make logs 12345 'Run tests'` — extract logs for a specific step (substring match) from run `12345`.
+- `make logs 12345 "Run tests"` — extract logs for a specific step (substring match) from run `12345`.
 
 **How it works:**
 - `$(word 2,$(MAKECMDGOALS))` takes the run ID and `$(wordlist 3,99,$(MAKECMDGOALS))` captures any optional step name.

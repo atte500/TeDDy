@@ -1,11 +1,28 @@
-.PHONY: commit push ci-watch probe test logs
+.PHONY: commit push ci-watch probe test logs _preflight
 
 # Always use GNU Make native features for cross-platform compatibility.
 # On Windows, ensure a POSIX shell is used for pipeline targets (ci-watch, probe, logs).
 ifeq ($(OS),Windows_NT)
     SHELL := bash.exe
     .SHELLFLAGS := -c
+    # Git Bash reports a MINGW/MSYS kernel; the WSL bash shim reports Linux.
+    SHELL_CHECK = uname -s 2>/dev/null | grep -Eq 'MINGW|MSYS'
+else
+    SHELL_CHECK = true
 endif
+
+# _preflight - Verify the tool contract that the POSIX recipes depend on.
+#
+# ci-watch, probe, and logs are shell pipelines that need a POSIX shell plus
+# git, gh, awk, and sed. Running this gate first turns an unmet contract into
+# one actionable message instead of a generic 'make: *** Error 1'.
+# The commit, push, and test targets stay cmd.exe-safe and do not use this gate.
+_preflight:
+	@command -v git >/dev/null 2>&1 || { echo "ERROR: git is not on PATH inside the recipe shell." >&2; exit 1; }
+	@command -v gh >/dev/null 2>&1 || { echo "ERROR: gh is not on PATH. Install the GitHub CLI, then run gh auth login." >&2; exit 1; }
+	@command -v awk >/dev/null 2>&1 || { echo "ERROR: awk is not on PATH inside the recipe shell. Git Bash ships gawk." >&2; exit 1; }
+	@command -v sed >/dev/null 2>&1 || { echo "ERROR: sed is not on PATH inside the recipe shell. Git Bash ships sed." >&2; exit 1; }
+	@$(SHELL_CHECK) || { echo "ERROR: the recipe shell is not Git Bash. Install Git for Windows, or pass SHELL=\"C:/Program Files/Git/bin/bash.exe\"." >&2; exit 1; }
 
 # commit - VCP workflow (LOCAL ONLY): stage, advisory pre-commit auto-fix pass, commit.
 # Usage:
@@ -17,6 +34,8 @@ endif
 # The '-' prefix on pre-commit tells Make to ignore a non-zero exit code. This is
 # cross-platform (works on both POSIX shells and Windows cmd.exe) and avoids
 # shell-specific error-suppression operators (||, &&) that behave differently per OS.
+# The hooks run through the project runner (`uv run pre-commit run`), so the pinned
+# pre-commit version and its hook environments are the ones that execute.
 # This first pre-commit pass is advisory: a non-zero exit is ignored and auto-fixed
 # files are re-staged. Git then runs the same hooks again during `git commit` below,
 # and that second run is the blocking local gate. The unskippable post-commit test
@@ -38,7 +57,7 @@ commit: ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 commit:
 	$(if $(strip $(ARGS)),,$(error Usage: make commit '<message>'))
 	git add .
-	-pre-commit run
+	-uv run pre-commit run
 	git add .
 	git commit -m "$(ARGS)"
 
@@ -60,17 +79,30 @@ push:
 # Attribution answers ONE question: did this push turn a BLOCKING gate red?
 # Only push-triggered workflows are attributed. A downstream workflow that
 # registers from a workflow_run event is not a regression in this commit.
+#
+# Every blocking verdict prints to stdout for the log and repeats the reason on
+# stderr, so a caller that captures stderr alone still reads the diagnosis.
+# Before polling, the target rejects a commit that is not resolvable locally and
+# a commit that no remote branch contains, because no run can exist for it.
 RETRY_POLLS ?= 10
 RETRY_SLEEP ?= 2
 DETAIL_LINES ?= 50
 BASE_DEPTH ?= 50
 BASE ?=
 
-ci-watch:
-	@SHA=$$(git rev-parse $${COMMIT:-HEAD}); \
+ci-watch: _preflight
+	@SHA=$$(git rev-parse --verify --quiet "$(or $(COMMIT),HEAD)^{commit}") || { \
+	  echo "ERROR: '$(or $(COMMIT),HEAD)' is not a known commit. Pass COMMIT=<sha> for a commit that exists locally." >&2; \
+	  exit 1; \
+	}; \
 	if [ -z "$$(ls .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null)" ]; then \
 	  echo "No CI configured - skipping attribution"; \
 	  exit 0; \
+	fi; \
+	if [ -n "$$(git remote)" ] && ! git branch -r --contains "$$SHA" 2>/dev/null | grep -q .; then \
+	  echo "CI: commit $$SHA is not on any remote branch, so no run can exist." >&2; \
+	  echo "CI: push the commit first, then retry." >&2; \
+	  exit 1; \
 	fi; \
 	STATUS=0; ATTEMPTS=0; WFS=""; \
 	while [ -z "$$WFS" ] && [ $$ATTEMPTS -lt $(RETRY_POLLS) ]; do \
@@ -81,7 +113,9 @@ ci-watch:
 	done; \
 	echo "Watching CI for $$SHA after $$ATTEMPTS poll(s)"; \
 	if [ -z "$$WFS" ]; then \
-	  echo "CI: no run registered for $$SHA after $$(( $(RETRY_POLLS) * $(RETRY_SLEEP) ))s - fail-safe block"; \
+	  ELAPSED=$$(( $(RETRY_POLLS) * $(RETRY_SLEEP) )); \
+	  echo "CI: no run registered for $$SHA after $${ELAPSED}s - fail-safe block"; \
+	  echo "CI: no run registered for $$SHA after $${ELAPSED}s. Wait for CI to start, then retry." >&2; \
 	  exit 1; \
 	fi; \
 	WFLIST=$${TMPDIR:-/tmp}/ci-watch-workflows.$$$$; \
@@ -97,18 +131,19 @@ ci-watch:
 	    echo "$$WF: failing step(s): $$NEWSTEPS (run $$NEW)"; \
 	    gh run view "$$NEW" --log-failed 2>/dev/null | awk -F'\t' '{ l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/) next; gsub(/^##\[error\]/,"Error: ",l); print l }' | tail -n $(DETAIL_LINES) | sed 's/^/    /'; \
 	    echo "  view all failed logs: make logs $$NEW"; \
-	    echo "  view specific step:   make logs $$NEW '<step-name>'"; \
+	    echo "  view specific step:   make logs $$NEW \"<step-name>\""; \
 	  fi; \
 	  if [ "$$NEWCONC" = "success" ]; then \
 	    if [ -n "$$NEWFAIL" ]; then \
-	      echo "$$WF: PASSED (run=$$NEWCONC) — non-blocking failure(s) [$$NEWFAIL] — triage, does not block"; \
+	      echo "$$WF: PASSED (run=$$NEWCONC) - non-blocking failure(s) [$$NEWFAIL] - triage, does not block"; \
 	    else \
 	      echo "$$WF: PASSED"; \
 	    fi; \
 	    continue; \
 	  fi; \
 	  if [ "$$NEWCONC" != "failure" ]; then \
-	    echo "$$WF: BLOCKING (run=$$NEWCONC) — unknown conclusion — fail-safe block"; \
+	    echo "$$WF: BLOCKING (run=$$NEWCONC) - unknown conclusion - fail-safe block"; \
+	    echo "$$WF: unknown conclusion '$$NEWCONC' on run $$NEW blocks the session." >&2; \
 	    STATUS=1; continue; \
 	  fi; \
 	  BASE="$(BASE)"; CUR="$$SHA"; DEPTH=0; \
@@ -121,25 +156,29 @@ ci-watch:
 	    DEPTH=$$((DEPTH + 1)); \
 	  done; \
 	  if [ -z "$$BASE" ]; then \
-	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — no run-bearing ancestor (unknown base) — YOUR regression"; \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) - no run-bearing ancestor (unknown base) - YOUR regression"; \
+	    echo "$$WF: no run-bearing ancestor within $(BASE_DEPTH) commits, so the baseline is unknown." >&2; \
 	    STATUS=1; continue; \
 	  fi; \
 	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
 	  if [ -z "$$OLD" ]; then \
-	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — pinned base has no run (unknown base) — YOUR regression"; \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) - pinned base has no run (unknown base) - YOUR regression"; \
+	    echo "$$WF: pinned base $$BASE carries no run for this workflow." >&2; \
 	    STATUS=1; continue; \
 	  fi; \
 	  OLDJOBS=$$(gh run view "$$OLD" --json jobs --jq '.jobs | length'); \
 	  if [ "$$OLDJOBS" = "0" ]; then \
-	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — base run is job-less (invalid workflow, not green) — YOUR regression"; \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) - base run is job-less (invalid workflow, not green) - YOUR regression"; \
+	    echo "$$WF: base run $$OLD carries zero jobs, so it cannot prove a green baseline." >&2; \
 	    STATUS=1; continue; \
 	  fi; \
 	  OLDFAIL=$$(gh run view "$$OLD" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")'); \
 	  SUBSET=$$(awk -v new="$$NEWFAIL" -v old="$$OLDFAIL" 'BEGIN { n=split(new,na,","); m=split(old,oa,","); for (i=1;i<=n;i++) { if (na[i]=="") continue; f=0; for (j=1;j<=m;j++) { if (oa[j]==na[i]) { f=1; break } } if (!f) { print "regression"; exit } } print "pre-existing" }' </dev/null); \
 	  if [ "$$SUBSET" = "pre-existing" ]; then \
-	    echo "$$WF: pre-existing BLOCKING failure ($$NEWFAIL) — not yours"; \
+	    echo "$$WF: pre-existing BLOCKING failure ($$NEWFAIL) - not yours"; \
 	  else \
-	    echo "$$WF: BLOCKING failure ($$NEWFAIL) — YOUR regression"; \
+	    echo "$$WF: BLOCKING failure ($$NEWFAIL) - YOUR regression"; \
+	    echo "$$WF: YOUR regression - run $$NEW turned these jobs red and base $$BASE did not: $$NEWFAIL" >&2; \
 	    STATUS=1; \
 	  fi; \
 	done < "$$WFLIST"; \
@@ -151,18 +190,21 @@ ci-watch:
 #
 # Target-specific variable captures the reason string.
 # The first three lines (add, commit, push) are on separate recipe lines because
-# error suppression is not needed here — we want failures to be visible.
+# error suppression is not needed here: we want failures to be visible.
 # The dispatch/watch section uses a combined shell block because $RUN_ID is a
 # shell variable that must persist across multiple commands.
+# The reason travels in double quotes so a cmd.exe caller and a Git Bash caller
+# pass the same value. Keep the reason free of $, backticks, and nested quotes.
 
 probe: REASON := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+probe: _preflight
 
 probe:
 	$(if $(strip $(REASON)),,$(error Usage: make probe '<reason>'))
 	git add -f spikes/debug/probe.sh
-	git commit -m 'debug: probe' --no-verify --allow-empty
+	git commit -m "debug: probe" --no-verify --allow-empty
 	git push
-	@gh workflow run debug.yml --field reason='$(REASON)'
+	@gh workflow run debug.yml --field reason="$(REASON)"
 	@sleep 5
 	@RUN_ID=$$(gh run list --workflow debug.yml -L 1 --json databaseId --jq '.[0].databaseId') && \
 	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 && \
@@ -172,7 +214,7 @@ probe:
 # logs - CI Log Extraction: extract logs for all failed steps or a specific step.
 # Usage:
 #   make logs <run-id>                # extracts logs for ALL failed steps
-#   make logs <run-id> '<step-name>'  # extracts logs for a specific step (substring match)
+#   make logs <run-id> "<step-name>"  # extracts logs for a specific step (substring match)
 #
 # If no step name is provided, extracts all failed steps using `gh run view --log-failed`.
 # If a step name is given, matches against the step name using substring matching.
@@ -180,13 +222,14 @@ probe:
 
 logs: LOGS_RUN := $(word 2,$(MAKECMDGOALS))
 logs: LOGS_STEP := $(wordlist 3,99,$(MAKECMDGOALS))
+logs: _preflight
 
 logs:
-	$(if $(strip $(LOGS_RUN)),,$(error Usage: make logs <run-id> ['<step-name>']))
+	$(if $(strip $(LOGS_RUN)),,$(error Usage: make logs <run-id> ["<step-name>"]))
 	@if [ -z "$(LOGS_STEP)" ]; then \
 	  gh run view "$(LOGS_RUN)" --log-failed 2>/dev/null | awk -F'\t' '{ if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
 	else \
-	  gh run view "$(LOGS_RUN)" --log 2>/dev/null | awk -F'\t' -v step="$(LOGS_STEP)" 'index($$2, step) > 0 { if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
+	  gh run view "$(LOGS_RUN)" --log 2>/dev/null | awk -F'\t' -v step="$(LOGS_STEP)" 'index($$2, step) > 0 { if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/, "Error: ", l); print l }'; \
 	fi
 
 # test - Run the full test suite via the project's designated runner (uv).

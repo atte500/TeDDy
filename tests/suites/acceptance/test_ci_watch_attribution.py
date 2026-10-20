@@ -1,11 +1,11 @@
 """Acceptance: the shipped ``make ci-watch`` target drives ``gh`` end to end.
 
-This is the wiring tracer bullet for the CI-watch attribution slice. It runs the
-REAL ``make ci-watch`` recipe (the shipped bytes) inside a throwaway git
-repository with a fake ``gh`` prepended to ``PATH``. The fake ``gh`` serves a
-synthetic scenario, so the target must reach the fake binary, resolve the run,
-and emit a per-workflow verdict. A passing test proves end-to-end connectivity;
-behavioural attribution assertions are added by the slice's migration step.
+This module runs the REAL ``make ci-watch`` recipe (the shipped bytes) inside a
+throwaway git repository with a fake ``gh`` prepended to ``PATH``. The fake
+``gh`` serves a synthetic scenario, so the target must reach the fake binary,
+resolve the run, and emit a per-workflow verdict. Every blocking verdict must
+also repeat its reason on stderr, so a caller that captures stderr alone still
+reads the diagnosis.
 """
 
 from __future__ import annotations
@@ -63,6 +63,7 @@ def _run_ci_watch(
     scenario_dir: Path,
     invocation_log: Path,
     base: str | None = None,
+    commit: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     env = dict(os.environ)
     env["PATH"] = os.pathsep.join([str(scenario_dir / "bin"), env.get("PATH", "")])
@@ -71,6 +72,8 @@ def _run_ci_watch(
     args = ["make", "ci-watch", "RETRY_POLLS=1", "RETRY_SLEEP=0"]
     if base is not None:
         args.append(f"BASE={base}")
+    if commit is not None:
+        args.append(f"COMMIT={commit}")
     return subprocess.run(
         args,
         cwd=repo,
@@ -144,6 +147,7 @@ def test_shipped_target_reaches_gh_and_emits_a_verdict(ci_repo: Path) -> None:
     # synthetic regression. GNU Make reports any failed recipe as exit code 2,
     # so a blocking verdict surfaces here as a non-zero status.
     assert "CI:" in result.stdout, result.stdout
+    assert "YOUR regression" in result.stderr, result.stderr
     assert result.returncode != 0, result.stdout
 
 
@@ -230,6 +234,7 @@ def test_regression_superset_blocks_the_session(ci_repo: Path) -> None:
 
     assert result.returncode != 0, result.stdout
     assert "regression" in result.stdout, result.stdout
+    assert "YOUR regression" in result.stderr, result.stderr
 
 
 @_posix_only
@@ -377,6 +382,7 @@ def test_bad_base_override_fails_safe(ci_repo: Path) -> None:
 
     assert result.returncode != 0, result.stdout
     assert "unknown base" in result.stdout, result.stdout
+    assert "pinned base" in result.stderr, result.stderr
 
 
 @_posix_only
@@ -407,3 +413,68 @@ def test_multi_word_workflow_name_stays_one_workflow(ci_repo: Path) -> None:
 
     assert result.returncode == 0, result.stdout
     assert "Publish to PyPI: PASSED" in result.stdout, result.stdout
+
+
+@_posix_only
+def test_unknown_commit_is_rejected_before_any_gh_call(ci_repo: Path) -> None:
+    """An unresolvable COMMIT fails with a stderr reason and no polling."""
+    scenario_dir = ci_repo / "scenario"
+    invocation_log = ci_repo / "gh-invocations.log"
+    CiWatchScenario(runs=()).write(scenario_dir)
+
+    result = _run_ci_watch(
+        ci_repo,
+        scenario_dir,
+        invocation_log,
+        commit="0" * 40,
+    )
+
+    assert result.returncode != 0, result.stdout
+    assert "is not a known commit" in result.stderr, result.stderr
+    assert not invocation_log.exists()
+
+
+@_posix_only
+def test_unpushed_commit_is_rejected_with_a_stderr_reason(ci_repo: Path) -> None:
+    """No run can exist for a commit that no remote branch carries."""
+    remote = Path(tempfile.mkdtemp(prefix="teddy-ci-watch-remote-"))
+    try:
+        _git(ci_repo, "init", "--bare", "-q", str(remote))
+        _git(ci_repo, "remote", "add", "origin", str(remote))
+        _git(ci_repo, "push", "-q", "-u", "origin", "HEAD")
+        _git(ci_repo, "commit", "--allow-empty", "-q", "-m", "unpushed")
+        scenario_dir = ci_repo / "scenario"
+        invocation_log = ci_repo / "gh-invocations.log"
+        CiWatchScenario(runs=()).write(scenario_dir)
+
+        result = _run_ci_watch(ci_repo, scenario_dir, invocation_log)
+
+        assert result.returncode != 0, result.stdout
+        assert "is not on any remote branch" in result.stderr, result.stderr
+        assert not invocation_log.exists()
+    finally:
+        shutil.rmtree(remote, ignore_errors=True)
+
+
+@_posix_only
+def test_unknown_conclusion_is_a_fail_safe_block(ci_repo: Path) -> None:
+    """A timed-out run cannot prove a green gate, so the session blocks."""
+    tip_sha = _git(ci_repo, "rev-parse", "HEAD")
+    scenario_dir = ci_repo / "scenario"
+    invocation_log = ci_repo / "gh-invocations.log"
+
+    CiWatchScenario(
+        runs=(
+            RunResult(
+                database_id=222,
+                workflow="CI",
+                head_sha=tip_sha,
+                conclusion="timed_out",
+            ),
+        )
+    ).write(scenario_dir)
+
+    result = _run_ci_watch(ci_repo, scenario_dir, invocation_log)
+
+    assert result.returncode != 0, result.stdout
+    assert "unknown conclusion" in result.stderr, result.stderr
