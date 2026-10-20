@@ -1,6 +1,6 @@
 # Milestone: TUI & UX Enhancements
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 
 ## Goal
@@ -46,3 +46,6 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
 > 11. `--console` deprecation marking
 > 12. Ad-hoc: CLI arg normalization (00-03)
 > 13. Ad-hoc: Remove bare except in InitService (00-04)
+
+**Delivered Slices:**
+- [x] [04-01: Normalize Editor Basenames for Windows Launcher Suffixes](/docs/project/slices/04-01-editor-basename-normalization.md)

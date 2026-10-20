@@ -1,5 +1,5 @@
 # Slice: Normalize Editor Basenames for Windows Launcher Suffixes
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** None
