@@ -1,5 +1,5 @@
 # Bug: Windows Default Make Targets Fail without a Diagnosis
-- **Status:** Unresolved
+- **Status:** Resolved
 - **Milestone:** N/A (build tooling)
 - **Vertical Slice:** N/A
 - **Specs:** [Makefile Template](/docs/templates/makefile.md)
@@ -91,12 +91,16 @@ On Windows, Make runs each recipe through Git Bash. `ci-watch` resolves the targ
 13. Queried `where sleep` and Git Bash. Observed no `sleep.exe` on the Windows PATH and `/usr/bin/sleep` inside Git Bash. Concluded that the recipe shell resolves `sleep` while the direct spawn cannot.
 14. Queried the dispatched run with `gh run list --workflow debug.yml -L 2`. Observed run 39435251383 on head `946893d3` conclude `success` and upload the `probe-result` artifact. Concluded that the remote probe is healthy and only the local watch block is defective.
 15. Queried `gh run list --commit 946893d3`. Observed an empty array, while the full-SHA query in the prior turn listed the CI run. Concluded that `--commit` needs the full SHA.
+16. Ran the repaired recipe with `make probe "verify the repaired probe recipe on windows"`. Observed it push one empty `debug: probe` commit, dispatch run 39436455796, resolve that run by the pushed SHA `735fb7d1`, watch it to completion, download the `probe-result` artifact, and print the probe metadata block. Concluded that the single shell block completes every step on Windows.
+17. Queried the pushed SHA with `gh run list --commit`. Observed the `Remote Debug Probe` run 39436455796, the `CI` run 39436453649, and both `Publish to PyPI` runs conclude `success`, with a clean `## main...origin/main` status and a freshly downloaded 646-byte `spikes/debug/probe_output.txt`. Concluded that the repair is verified end to end.
 
 ## Solution
 ### Root Cause
 The verified root cause is a diagnostic and contract defect, not an attribution defect. `ci-watch` writes every blocking reason to stdout, and Make reports the failure on stderr as one generic line. A consumer that captures stderr alone cannot separate an un-pushed commit from an unknown baseline or a real regression. The recipe also requires Git Bash without verifying that shell, and it accepts an unknown `COMMIT` value. The reported exit 1 matches the no-run fail-safe branch, which an un-pushed commit triggers. That trigger stays unconfirmed because the diagnostic gap is the only reproducible defect. The fix is applied to the project Makefile and both template copies, and a structural unit test now guards the cross-platform contract so the defect cannot return silently.
 
 The live probe verification exposed a second root cause on the same surface. GNU Make spawns a recipe line directly when the line carries no shell metacharacter, so `@sleep 5` never reached Git Bash and failed with Make's own `process_begin` error. The spike also proves the hazard for shell builtins, because a bare `@echo` failed when no `echo.exe` exists on the Windows PATH. The probe recipe now keeps the dispatch, the run resolution, the watch, and the download in one shell block, and it resolves the dispatched run by the pushed SHA inside a bounded retry loop. Both templates document the direct-execution hazard, and the structural unit guard rejects a bare Bash-only command in every POSIX recipe.
+
+A live post-repair run verified the recipe end to end on Windows. `make probe` pushed one empty `debug: probe` commit, dispatched the workflow, resolved the run by the pushed SHA, watched it to success, downloaded the artifact, and printed the probe metadata. The `Remote Debug Probe`, `CI`, and `Publish to PyPI` runs all concluded `success`, and the working tree stayed clean.
 
 ### Affected Components
 - `Makefile`: `ci-watch` gains a shell preflight, a commit validation, an un-pushed check, and a stderr reason on every blocking branch. `probe` and `logs` gain the shell preflight and quote fixes. `commit` switches to `uv run pre-commit`. Emitted verdict text drops non-ASCII dashes.
