@@ -48,6 +48,8 @@ A POSIX host with the real `termios` module, plus one worker process that runs `
 
 9. Ran the hook's linter on the rewritten file and observed "All checks passed!"; ran the six terminal modules in one process, then the full suite, and observed 26 passed and 5 skipped, then 1,839 passed and 36 skipped in 23.07s.
 
+10. Pushed the fix as commit 671255b6 and read CI run 39430234269. All three `Test Suite` matrix jobs reported `success`, including `Test Suite (macos-latest)`, so the platform that reproduced the failure now passes. Only the non-blocking `Quality Checks` job reported `failure`, and that job carries `continue-on-error: true` with the same pre-existing step failures it shows on `main`.
+
 ### Reproduction Artifacts
 - [Minimal reproducible example](/spikes/debug/worksteal-macos-leak/01-sys-modules-wipe-mre.py)
 
