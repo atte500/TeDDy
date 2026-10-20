@@ -107,6 +107,7 @@ These files live in `docs/templates/` and are created or refreshed by `teddy ini
 - **Specs:** TBD
 - **Requirements:**
     - **Single-source production literals & helpers:** Extract duplicated constants (the `cl100k_base` encoding name, the `TEDDY_LLM_API_KEY` env-var name, the `"disabled"` editor sentinel, the "Editor is disabled in config" message, the `## User Request` section format, the `awaiting_reply` flag key) and duplicated helpers (the API-key check, the MESSAGE-action detection iteration, the preservation-arm decision, the function-local `session_orchestrator` imports) into their canonical modules.
+    - **Provider resolution behind `ILlmClient`:** Move litellm provider resolution behind one `ILlmClient` method. The session handlers and `LiteLLMAdapter.validate_config` then share a single source instead of calling litellm directly.
     - **Shared test-fake extraction:** Consolidate bespoke in-memory filesystem, `termios`, and ask-loop fakes into `tests/harness/setup/`, plus a shared `ports_fixture` of pre-configured port mocks and a shared temp-root helper.
     - **Litellm retry time-service consolidation:** Replace the private `_create_adapter` recording helper in `tests/suites/unit/adapters/outbound/test_litellm_adapter_retries.py` with the shared `mock_time_service` harness fixture, so the recording time-service double has a single source of truth.
     - **Directory consolidation:** Merge the split inbound-port contract-test directory (`tests/suites/unit/ports/inbound/`) into the canonical `tests/suites/unit/core/ports/inbound/`.
