@@ -997,7 +997,7 @@ class TestWindowsPlatformHandling:
 
         app = MagicMock()
         app._system_env.create_temp_file.return_value = temp_path
-        # Use a GUI editor: codium.CMD is NOT in _CLI_EDITORS set
+        # Use a GUI editor: codium.CMD classifies as GUI, not CLI
         app._console_tooling.find_editor.return_value = ["codium.CMD"]
         app.is_headless = False
         app.INSTRUCTION_MARKER = "### INSTRUCTIONS"

@@ -1,7 +1,7 @@
 # Bug: Windows Editor-Open Stutter
 - **Status:** Resolved
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
-- **Vertical Slice:** None yet
+- **Vertical Slice:** [Normalize Editor Basenames for Windows Launcher Suffixes](/docs/project/slices/04-01-editor-basename-normalization.md)
 - **Specs:** None
 
 ## Symptoms

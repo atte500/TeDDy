@@ -13,6 +13,7 @@ A utility that centralizes editor and diff-viewer discovery. It locates editor e
 ## Dependencies
 - [`ISystemEnvironment`](../../core/ports/outbound/system_environment.md): Provides `which()` and `get_env()`.
 - [`IConfigService`](../../core/ports/outbound/config_service.md): Provides `get_setting()` for the `editor` and `diff_flags` keys.
+- **`normalize_editor_basename`** (`teddy_executor.core.utils.editor_names`): Strips Windows launcher suffixes and lowercases the editor basename before the `_DIFF_FLAGS` lookup.
 
 ## Class Invariants
 - `constant_editor_list`: `KNOWN_EDITORS` is a class-level constant list and is never modified at runtime.
@@ -40,7 +41,7 @@ None — this is a utility service injected into adapters through constructor in
 - **Postconditions:** Returns the resolved editor command. Priority: the `disabled` sentinel returns `None` immediately without consulting the environment; the config `editor` value; then the `VISUAL` or `EDITOR` environment variable; then `None`.
 
 ### `get_diff_viewer_command() -> Optional[list[str]]`
-- **Postconditions:** Returns a diff-viewer command. Priority: a valid `diff_flags` config list prepended with the editor path; the `TEDDY_DIFF_TOOL` environment variable; the `_DIFF_FLAGS` translation table; then the editor path with no flags for an unknown editor. Returns `None` when no editor or tool is found. A `diff_flags` value that is not a list is skipped, and a configured `TEDDY_DIFF_TOOL` that is not found returns `None` with no fallback.
+- **Postconditions:** Returns a diff-viewer command. Priority: a valid `diff_flags` config list prepended with the editor path; the `TEDDY_DIFF_TOOL` environment variable; the `_DIFF_FLAGS` translation table; then the editor path with no flags for an unknown editor. Returns `None` when no editor or tool is found. A `diff_flags` value that is not a list is skipped, and a configured `TEDDY_DIFF_TOOL` that is not found returns `None` with no fallback. The editor basename is normalized through the shared helper before the `_DIFF_FLAGS` lookup, so a resolved `codium.CMD` still maps to the `--diff` entry instead of the flagless fallback.
 
 ### `_resolve_editor_cmd(editor_str) -> Optional[list[str]]`
 - **Preconditions:** `editor_str` is `None` or a non-empty string.

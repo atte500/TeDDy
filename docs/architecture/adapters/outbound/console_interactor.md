@@ -15,7 +15,7 @@ Implements the `IUserInteractor` outbound port for the terminal. It renders prom
 - [`ISystemEnvironment`](../../core/ports/outbound/system_environment.md): Resolves commands, reads environment variables, launches editors, and manages preview temp files.
 - [`IConfigService`](../../core/ports/outbound/config_service.md): Reads the `editor` and `diff_flags` settings.
 - **`ConsoleToolingHelper`** (`teddy_executor.adapters.outbound.console_tooling`): Discovers the editor and the diff-viewer command.
-- **`ConsoleAskLoop`** (`teddy_executor.adapters.outbound.console_interactor_ask_loop`): Runs the interactive ask loop with the editor fallback.
+- **`ConsoleAskLoop`** (`teddy_executor.adapters.outbound.console_interactor_ask_loop`): Runs the interactive ask loop with the editor fallback. It classifies editors through the shared `core.utils.editor_names` helper, so a launcher wrapper such as `nvim.CMD` takes the synchronous suspend path.
 - **`console_interactor_helpers`** (`teddy_executor.adapters.outbound.console_interactor_helpers`): Provides the handoff prompt, the preview-file setup, and the terminal-restore helper.
 
 ## Class Invariants

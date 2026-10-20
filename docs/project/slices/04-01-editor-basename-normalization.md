@@ -70,7 +70,7 @@ None. The case file resolved the root cause and proved the fix in a sandbox repl
 - [x] **Migration** - Delegate `_is_cli_editor`, `_uses_annotated_diff_path`, and `_is_vim_editor` in the inbound reviewer to the shared helper, remove the local editor set, and extend their unit tests with launcher-suffix variants.
 - [x] **Migration** - Normalize the basename before the `_DIFF_FLAGS` lookup in `console_tooling.get_diff_viewer_command` and extend its unit tests with launcher-suffix variants.
 - [x] **Migration** - Remove the ask-loop duplicated editor set and static classifier, call the shared classifier from `_launch_editor_background`, repoint the classification test at the shared classifier, and extend it with launcher-suffix variants.
-- [ ] **Cleanup** - Remove dead imports and constants left by the migration, refresh stale comments that name the removed symbols, and confirm no stale `_CLI_EDITORS` references remain.
+- [x] **Cleanup** - Remove dead imports and constants left by the migration, refresh stale comments that name the removed symbols, and confirm no stale `_CLI_EDITORS` references remain.
 
 ## Implementation Notes
 
@@ -115,7 +115,15 @@ None. The case file resolved the root cause and proved the fix in a sandbox repl
 - Repointed `test_cli_editor_classification.py` as a de-duplication guard rather than a second copy of the shared-classifier cases. The shared helper already covers the terminal names, the GUI names, the wrappers, full paths, empty input, and `None` across thirty-eight cases, so a verbatim repoint would duplicate them and shadow the source of truth. The module now asserts that the local set and the private predicate are absent.
 - Extended `test_console_ask_loop_wiring.py` with a three-case parametrized routing test: `nvim.CMD`, `vim.BAT`, and `nano.EXE` each take the synchronous `subprocess.run` path and never call `Popen`. Refreshed the module docstring that named the removed `_is_cli_editor`.
 - Added narrow per-file-ignores in `pyproject.toml` for the pre-existing first-touch findings: `C901` and `PLR0915` on the ask loop, and `TID251` on the wiring test. The underlying code is unchanged and the debt stays scheduled for remediation.
-- The Red gate reported three wrapper failures and two passing cases. The Green gate reported 55 passed across the four affected modules. The full suite reports 1919 passed and 29 skipped. The Cleanup deliverable remains.
+- The Red gate reported three wrapper failures and two passing cases. The Green gate reported 55 passed across the four affected modules. The full suite reports 1919 passed and 29 skipped.
+
+### Cleanup
+- Confirmed no dead imports or constants remain in the three migrated production modules. The inbound editor read showed every header import still consumed, and the migration commits passed the Ruff Linter hook, so no unused import survives.
+- Refreshed the stale `_CLI_EDITORS` comment in `test_tui_editor_suspend_resume.py` so it states that `codium.CMD` classifies as a GUI editor rather than a CLI editor.
+- Kept the intentional absence guards in `test_cli_editor_classification.py`, which prove the ask loop no longer owns the set or the private predicate.
+- The only remaining `_CLI_EDITORS` mentions in `src/` and `tests/` are the intentional absence guard plus the historical Context and Implementation Notes in this slice. The case file keeps its pre-fix description as a historical record.
+- The component docs and the case file were updated to as-built reality: the shared normalizer dependency, the pre-lookup normalization, the delegator rationale, and the slice link.
+- The full suite reports 1919 passed and 29 skipped.
 
 ## Verification
 1. **Unit classification checks:**
