@@ -102,6 +102,8 @@ The live probe verification exposed a second root cause on the same surface. GNU
 
 A live post-repair run verified the recipe end to end on Windows. `make probe` pushed one empty `debug: probe` commit, dispatched the workflow, resolved the run by the pushed SHA, watched it to success, downloaded the artifact, and printed the probe metadata. The `Remote Debug Probe`, `CI`, and `Publish to PyPI` runs all concluded `success`, and the working tree stayed clean.
 
+The fix is also verified non-regressive on macOS and Linux. The `ifeq ($(OS),Windows_NT)` block is inert on those platforms, because the else branch assigns `SHELL_CHECK = true`, so the Git Bash check short-circuits and Make keeps its default `/bin/sh`. All three POSIX recipes parse cleanly under `bash --posix -n` and under a real `dash -n` through WSL. A bashism scan reported three `[[` hits, but each one sits inside a single-quoted awk program as the ANSI-escape pattern, so no hit is a shell construct. The three-OS CI matrix for commit `8303cdeb` reports the `Test Suite (ubuntu-latest)` and `Test Suite (macos-latest)` jobs as `success`, and the `Quality Checks` failure is the pre-existing non-blocking item.
+
 ### Affected Components
 - `Makefile`: `ci-watch` gains a shell preflight, a commit validation, an un-pushed check, and a stderr reason on every blocking branch. `probe` and `logs` gain the shell preflight and quote fixes. `commit` switches to `uv run pre-commit`. Emitted verdict text drops non-ASCII dashes.
 - `Makefile` `probe` recipe: folds the dispatch, the SHA-based run resolution, the watch, and the download into one shell block, because a metacharacter-free line bypasses the recipe shell on Windows. The run resolves by the pushed SHA inside a bounded retry loop.
