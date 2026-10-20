@@ -1,0 +1,87 @@
+# Slice: Normalize Editor Basenames for Windows Launcher Suffixes
+- **Status:** Planned
+- **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
+- **Depends On:** None
+- **Specs:** None
+- **Prototype:** [Case 54 sandbox replica](/spikes/debug/windows-editor-open-stutter/build_replica.py)
+- **Component Docs:** [ConsoleTooling](/docs/architecture/adapters/outbound/console_tooling.md), [TextualPlanReviewer](/docs/architecture/adapters/inbound/textual_plan_reviewer.md), [ConsoleInteractor](/docs/architecture/adapters/outbound/console_interactor.md)
+- **Scope Slug:** `editor-normalization`
+
+## Goal
+Remove the Windows launcher suffix from every editor basename before classification so pressing the editor key in the TUI no longer stutters. Terminal-editor detection must also work for `.cmd`, `.bat`, and `.exe` wrappers.
+
+## Context
+- `Case 54`: Windows resolves `codium` to `codium.CMD`. The classification tables are keyed on extension-less, lowercased names, so every lookup misses.
+- `ConsoleToolingHelper._DIFF_FLAGS`: Keyed on lowercased bare editor names (for example `codium` and `vim`). `get_diff_viewer_command` lowercases the basename but does not strip launcher suffixes.
+- `textual_plan_reviewer_editor`: Owns `_CLI_EDITORS`, `_is_cli_editor`, `_uses_annotated_diff_path`, and `_is_vim_editor`. `_is_cli_editor` does not lowercase. The other two lowercase but do not strip suffixes.
+- `textual_plan_reviewer_previews`: Imports `_is_cli_editor` from the inbound editor module and calls it for the message preview flow. The inbound module must keep that name as a thin delegator.
+- `console_interactor_ask_loop`: Owns a duplicated `_CLI_EDITORS` set and a static `_is_cli_editor` that does not lowercase.
+- `core/utils`: Both adapter layers can import it without a cycle. `console_tooling` must not import the inbound adapter.
+- `Acceptance seam`: Editor classification is TUI-internal and has no stable public CLI entry point. The slice therefore starts at the Contract deliverable instead of a Wiring tracer bullet.
+- `Proof`: The sandbox replica in `spikes/debug/windows-editor-open-stutter/` returns `_uses_annotated_diff_path([codium.CMD]) = False`, `_is_cli_editor([nvim.CMD]) = True`, and `_is_vim_editor([nvim.CMD]) = True`.
+
+## Scenarios
+> As a Windows user reviewing a plan, I want the editor key to open my editor without a stutter so that reviewing changes stays responsive.
+
+```gherkin
+Given a GUI editor resolved to a Windows launcher wrapper such as codium.CMD
+When the reviewer classifies the diff viewer
+Then the launcher suffix is stripped for table lookups and the editor opens through the non-blocking GUI path
+```
+
+> As a Windows user who configured a terminal editor wrapper, I want it classified as a CLI editor so the TUI suspends the terminal correctly.
+
+```gherkin
+Given a terminal editor resolved to a Windows launcher wrapper such as nvim.CMD
+When the reviewer classifies the editor
+Then it is treated as a CLI editor and as a vim-variant editor
+```
+
+> As a console-mode user, I want the ask loop to classify editors with the same rules as the TUI.
+
+```gherkin
+Given an editor command whose basename carries a .cmd, .bat, or .exe suffix
+When the ask loop classifies the editor
+Then it delegates to the shared classifier and returns the same result
+```
+
+## Edge Cases
+- **Uppercase suffix**: If the basename ends in `.CMD`, `.BAT`, or `.EXE`, then strip it case-insensitively, because Windows filesystems are case-insensitive.
+- **Mixed-case name**: If the basename is `Nvim.CMD`, then normalize to `nvim`, because the lookup tables are lowercase.
+- **Non-launcher suffix**: If the basename ends in another suffix or none, then lowercase it unchanged, because only Windows launcher suffixes defeat the tables.
+- **Full path**: If the command is a full path, then normalize only the basename, because directory components must not influence classification.
+- **Empty or None command**: If the command is absent or empty, then classify as False, because there is no editor to classify.
+- **Vim wrapper**: If the basename is `vim.CMD`, `nvim.EXE`, or `vi.BAT`, then `_is_vim_editor` returns True, because the syntax flags must be appended.
+- **CLI wrapper**: If the basename is `nvim.CMD`, `nano.BAT`, or `hx.EXE`, then `_is_cli_editor` returns True, because the suspend path must run.
+- **Diff table wrapper**: If the basename is `codium.CMD`, `code.EXE`, or `cursor.BAT`, then `get_diff_viewer_command` appends `--diff`, because the GUI diff path must run.
+
+## Key Unknowns
+None. The case file resolved the root cause and proved the fix in a sandbox replica.
+
+## Impact
+1. `[NEW]` `core/utils/editor_names.py` — Add `normalize_editor_basename`, the single-source `CLI_EDITORS` set, and `is_cli_editor`.
+2. `[EXPAND]` `textual_plan_reviewer_editor` — Delegate the three classification functions to the shared helper and remove the local `_CLI_EDITORS` set. The module-level names stay so `textual_plan_reviewer_previews` and the existing tests keep their import surface.
+3. `[EXPAND]` `console_tooling.get_diff_viewer_command` — Normalize the basename before the `_DIFF_FLAGS` lookup.
+4. `[CONTRACT]` `console_interactor_ask_loop` — Remove the duplicated `_CLI_EDITORS` set and the static `_is_cli_editor`, then call the shared classifier from `_launch_editor_background`.
+
+## Deliverables
+- [ ] **Contract** - Create `core/utils/editor_names.py` with `normalize_editor_basename` and unit tests covering launcher-suffix stripping, case folding, full paths, and absent commands.
+- [ ] **Logic** - Add the single-source `CLI_EDITORS` set and the `is_cli_editor` predicate to `core/utils/editor_names.py` with unit tests covering terminal names, GUI names, and launcher wrappers.
+- [ ] **Migration** - Delegate `_is_cli_editor`, `_uses_annotated_diff_path`, and `_is_vim_editor` in the inbound reviewer to the shared helper, remove the local editor set, and extend their unit tests with launcher-suffix variants.
+- [ ] **Migration** - Normalize the basename before the `_DIFF_FLAGS` lookup in `console_tooling.get_diff_viewer_command` and extend its unit tests with launcher-suffix variants.
+- [ ] **Migration** - Remove the ask-loop duplicated editor set and static classifier, call the shared classifier from `_launch_editor_background`, repoint the classification test at the shared classifier, and extend it with launcher-suffix variants.
+- [ ] **Cleanup** - Remove dead imports and constants left by the migration, refresh stale comments that name the removed symbols, and confirm no stale `_CLI_EDITORS` references remain.
+
+## Implementation Notes
+(Pending implementation.)
+
+## Verification
+1. **Unit classification checks:**
+   Run `make test`.
+   Verify the suite passes, including the new launcher-suffix cases.
+2. **Windows editor open:**
+   On a Windows machine with `codium` configured, start a session and open the TUI.
+   Press the editor key on an EDIT action and confirm the editor opens without the previous pause.
+3. **Vim wrapper classification:**
+   Configure `editor: nvim` on a Windows machine where `which nvim` resolves `nvim.CMD`.
+   Press the editor key and confirm the terminal suspends and vim opens with syntax highlighting.
