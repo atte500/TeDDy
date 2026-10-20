@@ -17,6 +17,10 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ConfirmScreen,
 )
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
+from teddy_executor.core.utils.editor_names import (
+    is_cli_editor,
+    normalize_editor_basename,
+)
 from teddy_executor.core.utils.terminal import restore_cooked_mode
 
 logger = logging.getLogger(__name__)
@@ -27,20 +31,6 @@ _ESCAPE_SEQUENCE_RE = re.compile(
     r"|\x1b\][^\x1b]*(?:\x1b\\|\x07)"
     r"|(?![\d;,])]10;(?:\d+;)?rgb:[\da-fA-F/]+(?::$|[a-zA-Z])?(?:\x1b\\|\x07)?"
 )
-
-# Set of known CLI (terminal-based) editors that need suspend/resume handover
-_CLI_EDITORS: set[str] = {
-    "vim",
-    "nvim",
-    "vi",
-    "nano",
-    "micro",
-    "emacs",
-    "pico",
-    "helix",
-    "hx",
-    "kak",
-}
 
 
 def _run_editor_process(cmd: list[str], **kwargs: Any) -> None:
@@ -149,11 +139,10 @@ def _is_cli_editor(editor_cmd: Optional[list[str]]) -> bool:
 
     CLI editors require suspend/resume + subprocess.run() for proper terminal
     handover. GUI editors (code, cursor) use the existing Popen + ConfirmScreen path.
+    This thin delegator keeps the module-level name that
+    ``textual_plan_reviewer_previews`` imports while sharing one classifier.
     """
-    if not editor_cmd:
-        return False
-    basename = os.path.basename(editor_cmd[0])
-    return basename in _CLI_EDITORS
+    return is_cli_editor(editor_cmd)
 
 
 def _uses_annotated_diff_path(diff_viewer: Optional[list[str]]) -> bool:
@@ -169,7 +158,7 @@ def _uses_annotated_diff_path(diff_viewer: Optional[list[str]]) -> bool:
         return True
     if not diff_viewer:
         return False
-    basename = os.path.basename(diff_viewer[0]).lower()
+    basename = normalize_editor_basename(diff_viewer[0])
     return basename not in ConsoleToolingHelper._DIFF_FLAGS
 
 
@@ -182,8 +171,7 @@ def _is_vim_editor(editor_cmd: Optional[list[str]]) -> bool:
     """
     if not editor_cmd:
         return False
-    basename = os.path.basename(editor_cmd[0])
-    return basename.lower() in {"vim", "nvim", "vi"}
+    return normalize_editor_basename(editor_cmd[0]) in {"vim", "nvim", "vi"}
 
 
 def _flush_stdin() -> None:

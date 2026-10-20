@@ -11,6 +11,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
     _is_cli_editor,
+    _uses_annotated_diff_path,
 )
 
 import os
@@ -54,6 +55,20 @@ class TestIsCliEditor:
         """If editor_cmd is None or empty, return False."""
         assert _is_cli_editor(None) is False
         assert _is_cli_editor([]) is False
+
+    def test_windows_launcher_wrappers_classified_as_cli(self):
+        """Windows resolves terminal editors to .CMD/.BAT/.EXE wrappers, and
+        those must classify as CLI so the terminal handover runs."""
+        wrappers = [["nvim.CMD"], ["nano.BAT"], ["hx.EXE"], ["Nvim.Cmd"]]
+        for cmd in wrappers:
+            assert _is_cli_editor(cmd), f"{cmd} should be classified as CLI"
+
+    def test_windows_launcher_wrappers_for_gui_classified_as_gui(self):
+        """GUI editor wrappers must still classify as GUI so the background
+        launch path runs instead of a blocking terminal handover."""
+        wrappers = [["codium.CMD"], ["code.EXE"], ["cursor.BAT"]]
+        for cmd in wrappers:
+            assert not _is_cli_editor(cmd), f"{cmd} should NOT be classified as CLI"
 
 
 class TestAddMessageHandler:
@@ -121,6 +136,9 @@ class TestIsVimEditor:
             (["nvim", "--clean"], True),
             (["vi"], True),
             (["Vim"], True),  # case-insensitive basename
+            (["nvim.CMD"], True),
+            (["vim.EXE"], True),
+            (["Vi.BAT"], True),
             (["nano"], False),
             (["micro"], False),
             (["code"], False),
@@ -136,6 +154,27 @@ class TestIsVimEditor:
         )
 
         assert _is_vim_editor(cmd) is expected, f"{cmd} -> expected {expected}"
+
+
+class TestUsesAnnotatedDiffPath:
+    """Unit tests for _uses_annotated_diff_path routing."""
+
+    @pytest.mark.parametrize(
+        ("cmd", "expected"),
+        [
+            pytest.param(["vim"], True, id="vim-cli"),
+            pytest.param(["nvim.CMD"], True, id="nvim-cmd-cli-wrapper"),
+            pytest.param(["codium.CMD"], False, id="codium-cmd-gui-wrapper"),
+            pytest.param(["code.EXE"], False, id="code-exe-gui-wrapper"),
+            pytest.param(["cursor.BAT"], False, id="cursor-bat-gui-wrapper"),
+            pytest.param(None, False, id="absent-viewer"),
+            pytest.param([], False, id="empty-viewer"),
+        ],
+    )
+    def test_uses_annotated_diff_path(self, cmd, expected):
+        assert _uses_annotated_diff_path(cmd) is expected, (
+            f"{cmd} -> expected {expected}"
+        )
 
 
 class TestLaunchEditor:
