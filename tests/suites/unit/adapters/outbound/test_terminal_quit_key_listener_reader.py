@@ -25,6 +25,8 @@ from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
     TerminalQuitKeyListener,
 )
 
+from tests.harness.setup.sigint_delivery import stub_sigint_delivery
+
 
 class _FakeTermios:
     """In-memory stand-in for the POSIX ``termios`` module.
@@ -263,10 +265,10 @@ def test_read_loop_self_delivers_sigint_on_quit_key(monkeypatch):
     instead of hanging the loop.
     """
     listener = TerminalQuitKeyListener()  # on_quit defaults to None -> self-deliver
-    delivered = []
-    # Stub the shared delivery primitive so the seam is observable without
+    # The shared seam stub observes whichever delivery primitive production
+    # uses, so the assertion survives the POSIX main-thread switch without
     # raising KeyboardInterrupt in the test process.
-    monkeypatch.setattr(signal, "raise_signal", lambda sig: delivered.append(sig))
+    delivered = stub_sigint_delivery(monkeypatch)
 
     monkeypatch.setattr(
         listener,
@@ -284,8 +286,7 @@ def test_trigger_invokes_injected_on_quit_instead_of_self_delivering(monkeypatch
     """An injected on_quit hook is used; SIGINT is NOT self-delivered."""
     recorder = _Recorder()
     listener = TerminalQuitKeyListener(on_quit=recorder)
-    delivered = []
-    monkeypatch.setattr(signal, "raise_signal", lambda sig: delivered.append(sig))
+    delivered = stub_sigint_delivery(monkeypatch)
 
     listener._trigger()
 

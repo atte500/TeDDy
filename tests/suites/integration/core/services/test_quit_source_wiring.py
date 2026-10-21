@@ -8,9 +8,9 @@ the key the user actually pressed instead of defaulting to ``Ctrl+C``.
 
 This suite pins that seam against the REAL container: driving the wired
 listener's quit hook must record ``q`` on the SAME guard the boundary resolves,
-and the notice composed from that guard must name ``q``. The SIGINT delivery
-primitive is stubbed so the test observes the recording half of the seam
-without raising KeyboardInterrupt.
+and the notice composed from that guard must name ``q``. The shared seam stub
+observes whichever delivery primitive production uses, so the test records the
+recording half without raising KeyboardInterrupt.
 """
 
 import signal
@@ -19,14 +19,16 @@ from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListene
 from teddy_executor.core.utils.interrupt_guard import InterruptGuard
 from teddy_executor.core.utils.session_notices import format_interrupt_notice
 
+from tests.harness.setup.sigint_delivery import stub_sigint_delivery
+
 
 def test_pressing_the_quit_key_records_q_on_the_shared_guard(container, monkeypatch):
     """Pressing `q` through the wired listener names `q` on the shared guard."""
-    # Arrange: the recorder self-delivers SIGINT AFTER recording. Stub the
-    # shared primitive so the seam is observable without interrupting the test
-    # process.
-    delivered = []
-    monkeypatch.setattr(signal, "raise_signal", lambda sig: delivered.append(sig))
+    # Arrange: the recorder self-delivers SIGINT AFTER recording. The shared
+    # seam stub observes whichever delivery primitive production uses, so the
+    # assertion survives the POSIX main-thread switch without interrupting the
+    # test process.
+    delivered = stub_sigint_delivery(monkeypatch)
     guard = container.resolve(InterruptGuard)
     listener = container.resolve(IQuitKeyListener)
 
