@@ -105,7 +105,7 @@ And teddy resume never runs a pull
 ### Section A: Configurable Tree Depth with Explained Omission Marker
 
 - [x] **Env** — Add `context.max_tree_depth: 4` to `src/teddy_executor/resources/config/config.yaml` beneath the `read:` block with comment `# Max project tree depth (0 = unlimited).`
-- [ ] **Contract** — Add `max_depth: int = 0` to `LocalRepoTreeGenerator.__init__` and store it as `self._max_depth`. Document the marker format and 0-means-unlimited semantics in `docs/architecture/core/ports/outbound/repo_tree_generator.md` postconditions.
+- [x] **Contract** — Add `max_depth: int = 0` to `LocalRepoTreeGenerator.__init__` and store it as `self._max_depth`. Document the marker format and 0-means-unlimited semantics in `docs/architecture/core/ports/outbound/repo_tree_generator.md` postconditions.
 - [ ] **Wiring** — Inject `container.resolve(IConfigService).get_setting("context.max_tree_depth", 0)` at `infrastructure.py:146`.
 - [ ] **Logic** — Thread a `depth` counter through `_collect_directory`. When `max_depth > 0` and `depth >= max_depth`, emit a section whose names list contains one marker line `[... directory not expanded (depth limit N): X folders, Y files]` and do not recurse. Count only visible immediate children after ignore rules.
 - [ ] **Logic** — Emit `[... directory not expanded (unreadable): 0 folders, 0 files]` for `PermissionError` instead of the empty-section skip, so truncation is never ambiguous with an empty directory.
@@ -167,6 +167,7 @@ And teddy resume never runs a pull
 - `subprocess.run` returns `CompletedProcess`. Check `returncode != 0` and route to the warning path. Route to the success path when `returncode == 0`, and parse `stdout` for the fast-forwarded commit count if the source output is unambiguous. Fallback: print a generic short success line.
 - Section A Env deliverable landed as a declarative change: `context.max_tree_depth: 4` sits beneath the `read:` block of the bundled `config.yaml` with the stated comment. A Red probe confirmed the key was absent, and a Green probe read the value `4`. The full suite stayed green, so no consumer regressed from the new top-level group.
 - Section D was verified rather than rewritten. The `## Data Contracts` bullet in `config_service.md` already lists `execute.max_output_lines`, `read.max_lines`, `auto_pruning.prune_failure_history`, `execute.default_timeout_seconds`, `edit.similarity_threshold`, `context.max_tree_depth`, `workspace.init`, `workspace.pre-commit`, and `workspace.pull`. Documentation commit 5f107678 applied the correction, so the deliverable is marked complete without further edits.
+- Section A Contract deliverable landed in two parts. The constructor now accepts `max_depth: int = 0` and stores `self._max_depth` after a native assertion rejects a negative value. The port document now states the exact omission-marker format, the unreadable-directory marker, and the zero-means-unlimited rule in both the data contracts and the `generate_tree` postconditions. A Red step reproduced `AttributeError` for the missing attribute and `TypeError` for the unexpected keyword. A focused unit module then passed four assertions, and the unfiltered suite passed 1988 tests with 5 skipped, so no caller regressed from the new keyword parameter.
 
 ## Verification
 

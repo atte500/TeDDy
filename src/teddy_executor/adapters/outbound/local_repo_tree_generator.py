@@ -12,13 +12,15 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
     respecting .gitignore and .teddyignore rules.
     """
 
-    def __init__(self, root_dir: str = "."):
+    def __init__(self, root_dir: str = ".", max_depth: int = 0):
         from teddy_executor.adapters.outbound.filesystem_helpers import (
             load_ignore_spec,
         )
 
+        assert max_depth >= 0, f"max_depth must be non-negative, got {max_depth}"
         self.root_dir = Path(root_dir).resolve()
         self.ignore_spec = load_ignore_spec(self.root_dir)
+        self._max_depth = max_depth
 
     def generate_tree(self) -> str:
         """
