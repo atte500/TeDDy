@@ -1,5 +1,5 @@
 # Slice: Quit-Key Interrupt Latency
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc regression)
 - **Depends On:** N/A
 - **Specs:** N/A
