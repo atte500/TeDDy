@@ -896,29 +896,49 @@ def _prompt_for_api_key(config_service: IConfigService) -> None:
     The key is written to ``.teddy/.env`` (never ``os.environ``) and the config
     is migrated to the ``${TEDDY_LLM_API_KEY}`` interpolation form so the
     transient ``IConfigService`` instance held by ``ILlmClient`` resolves it on
-    the same run. A truly empty entry re-prompts (Click's native loop, now that
-    no default is supplied); a whitespace-only entry is ignored, and an aborted
+    the same run. The warning names the resolved provider and the stripped model
+    so the user knows which credential to paste. An empty line skips the prompt
+    with a notice, a whitespace-only entry persists nothing, and an aborted
     prompt (Ctrl-C / Ctrl-D) returns WITHOUT raising so the downstream
     validation error can surface the missing key with its own hint.
     """
+    provider, model = _resolve_model_identity(config_service)
+    api_base = config_service.get_setting("llm.api_base")
+    remote_api_base = (
+        api_base if isinstance(api_base, str) and api_base.strip() else None
+    )
+
     typer.echo("", err=True)
     typer.secho("LLM API Key", fg=typer.colors.CYAN, bold=True, err=True)
     typer.echo("", err=True)
-    typer.secho(
-        "\u26a0 No LLM API key configured. Paste your key below.\n"
-        "OpenRouter is the default provider. To use a different provider, change llm.model in .teddy/config.yaml.",
-        fg=typer.colors.YELLOW,
-        err=True,
-    )
+    warning_lines = ["\u26a0 No LLM API key configured."]
+    if remote_api_base:
+        warning_lines.append(f"  Endpoint: {remote_api_base}")
+    elif provider:
+        warning_lines.append(f"  Provider: {provider}")
+    if model:
+        warning_lines.append(f"  Model:    {model}")
+    typer.secho("\n".join(warning_lines), fg=typer.colors.YELLOW, err=True)
+    typer.echo("", err=True)
+
+    instructions = ["Paste your key below, or press Enter on an empty line to skip."]
+    if not remote_api_base:
+        instructions.append(
+            "To use a different provider, change llm.model in .teddy/config.yaml."
+        )
+    typer.secho("\n".join(instructions), fg=typer.colors.YELLOW, err=True)
     typer.echo("", err=True)
 
     try:
-        value = typer.prompt("LLM API key", hide_input=True)
+        value = typer.prompt(
+            "LLM API key", hide_input=True, default="", show_default=False
+        )
     except (EOFError, typer.Abort):
         return
 
     value = value.strip()
     if not value:
+        typer.secho("\u2139 No key saved.", fg=typer.colors.YELLOW, err=True)
         return
 
     config_service.set_env_variable("TEDDY_LLM_API_KEY", value)
@@ -929,6 +949,45 @@ def _prompt_for_api_key(config_service: IConfigService) -> None:
         fg=typer.colors.GREEN,
         err=True,
     )
+
+
+def _resolve_model_identity(
+    config_service: IConfigService,
+) -> tuple[Optional[str], str]:
+    """Resolves the provider name and the prefix-stripped model for the prompt.
+
+    litellm is the single source of truth for provider resolution. A failed
+    resolution prints the provider list to stdout, so the call runs inside a
+    stdout redirect. An unresolvable model falls back to the configured string
+    with no provider, so the prompt still shows which model the key belongs to.
+    """
+    import contextlib
+    import io
+    import logging
+
+    model = config_service.get_setting("llm.model")
+    if not (isinstance(model, str) and model.strip()):
+        return None, ""
+    api_base = config_service.get_setting("llm.api_base")
+    resolved_api_base = (
+        api_base if isinstance(api_base, str) and api_base.strip() else None
+    )
+    try:
+        import litellm
+
+        with contextlib.redirect_stdout(io.StringIO()):
+            resolved_model, provider, _dynamic_key, _resolved_base = (
+                litellm.get_llm_provider(model, api_base=resolved_api_base)
+            )
+        return str(provider), str(resolved_model)
+    except Exception:
+        logging.getLogger(__name__).warning(
+            "Could not resolve a provider for model '%s'; showing the configured "
+            "name instead.",
+            model,
+            exc_info=True,
+        )
+        return None, model.strip()
 
 
 _LOCAL_PLACEHOLDER_KEY = "dummy-key-custom-endpoints"

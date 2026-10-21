@@ -132,7 +132,7 @@ None. Provider resolution, key requiredness, host classification, and the prefix
 
 ## Deliverables
 - [x] **Wiring** - Acceptance test: a loopback `api_base` persists the placeholder with no prompt. Implement `_is_local_endpoint` for loopback hosts and names, the local short circuit, and the placeholder write.
-- [ ] **Wiring** - Acceptance test: an OpenRouter configuration prompts with the `Provider:` and stripped `Model:` lines. Implement `_resolve_model_identity` and the new prompt copy with hidden input and Enter-to-skip, and retire the obsolete OpenRouter warning assertion in the same commit.
+- [x] **Wiring** - Acceptance test: an OpenRouter configuration prompts with the `Provider:` and stripped `Model:` lines. Implement `_resolve_model_identity` and the new prompt copy with hidden input and Enter-to-skip, and retire the obsolete OpenRouter warning assertion in the same commit.
 - [ ] **Logic** - Cover the `_is_local_endpoint` host classifier with unit tests for loopback literals, private ranges, container aliases, a scheme-less value, a malformed value, and a public host.
 - [ ] **Logic** - Add the provider-resolution error to `validate_config` with the library stdout captured, and cover the unresolvable-model and stray-output cases with unit tests.
 - [ ] **Migration** - Extend the bundled config comment block with the per-server model prefix rule.
@@ -147,6 +147,13 @@ None. Provider resolution, key requiredness, host classification, and the prefix
 - Red failed exactly on the prompt recorder with `['LLM API key'] == []`, which proved the old gate always prompted. Green turned the targeted test green, and the unfiltered suite reported 1993 passed and 5 skipped.
 - The acceptance test stops at the key-gate outcome and its notice. A full-session exit-code assertion is out of scope, because the default harness mocks cannot complete a planning round. The sibling key-gate acceptance modules treat session completion the same way.
 - The classifier currently covers loopback literals and `localhost`/`*.localhost` names only. The private ranges, link-local addresses, container aliases, and `.local` names belong to the third Logic deliverable, so this commit keeps the smaller, green-preserving surface.
+- Second Wiring deliverable implemented. `_prompt_for_api_key` resolves `provider, model` through `_resolve_model_identity`, reads `llm.api_base`, and builds the warning block as `No LLM API key configured.` plus `Endpoint: {api_base}` for a remote endpoint or `Provider: {provider}` otherwise, then the aligned `Model:    {model}` line. The instruction block always prints the Enter-to-skip line and adds the `llm.model` hint only when no remote endpoint is set.
+- The prompt asks for `LLM API key` with `hide_input=True`, an empty default, and `show_default=False`. An empty entry prints `No key saved.` and returns, an aborted prompt returns silently, and a non-empty entry persists both the env var and the interpolation form exactly as before.
+- `_resolve_model_identity` calls `litellm.get_llm_provider` with `redirect_stdout`, so a failed resolve never leaks the library provider list. On failure it logs a warning and falls back to the configured model with no provider, and the block then omits the `Provider:` line.
+- Red failed exactly on `assert "Provider: openrouter" in combined`, which proved the old hardcoded OpenRouter sentence was the only copy. Green required one harness adjustment: the shared harness replaces `litellm` globally, so the acceptance test arranges `get_llm_provider` with a strictly bound mock returning the measured tuple `('~deepseek/deepseek-flash-latest:nitro', 'openrouter', None, None)`.
+- The obsolete OpenRouter warning assertion in `test_session_cli_handlers_api_key_gate.py` retired in the same commit, and the two sibling key-gate modules stayed green at 24 tests. The unfiltered suite reported 1993 passed and 5 skipped.
+- The `Endpoint:` branch already handles a remote `api_base`, so the remaining Logic deliverables only extend the host classifier and add the preflight provider error. No further prompt copy change is due for them.
+- Direct `litellm.get_llm_provider` use inside the inbound handler is the pre-existing provider-resolution debt already scheduled for Milestone 6, where resolution moves behind `ILlmClient`.
 
 ## Verification
 1. **Provider line:**
