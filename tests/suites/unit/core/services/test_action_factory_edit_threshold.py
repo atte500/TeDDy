@@ -1,5 +1,5 @@
-def test_action_factory_injects_configured_edit_threshold(  # noqa: PLR0913  # six port mocks mirror the factory constructor
-    mock_shell, mock_fs, mock_user_interactor, mock_scraper, mock_searcher, mock_config
+def test_action_factory_injects_configured_edit_threshold(
+    factory, mock_fs, mock_config
 ):
     """The EDIT action resolves its threshold from edit.similarity_threshold.
 
@@ -11,19 +11,6 @@ def test_action_factory_injects_configured_edit_threshold(  # noqa: PLR0913  # s
         0.42 if key == "edit.similarity_threshold" else default
     )
 
-    from teddy_executor.core.services.action_factory import ActionFactory
-    from teddy_executor.core.domain.models.action_ports import ActionPorts
-
-    factory = ActionFactory(
-        ActionPorts(
-            shell_executor=mock_shell,
-            file_system_manager=mock_fs,
-            user_interactor=mock_user_interactor,
-            web_scraper=mock_scraper,
-            web_searcher=mock_searcher,
-            config_service=mock_config,
-        )
-    )
     action = factory.create_action(
         "EDIT",
         params={"path": "test.py", "edits": [{"find": "a", "replace": "b"}]},
