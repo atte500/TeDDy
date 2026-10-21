@@ -1,10 +1,11 @@
 import logging
 import os
-from collections.abc import Iterator
 from pathlib import Path
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 
 logger = logging.getLogger(__name__)
+
+UNREADABLE_MARKER = "[... directory not expanded (unreadable): 0 folders, 0 files]"
 
 
 class LocalRepoTreeGenerator(IRepoTreeGenerator):
@@ -57,6 +58,8 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
 
         A directory at or beyond the configured depth limit renders one
         omission marker instead of expanding, so truncation is never silent.
+        An unreadable directory renders an explicit marker rather than an
+        empty section, so it never looks like a readable empty directory.
         Directory and symlink flags come from the scan cache, so each entry
         costs no additional stat call. Symlinks are listed as files and are
         never followed, which keeps circular links from recursing.
@@ -65,10 +68,12 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
             marker = self._depth_limit_marker(directory, relative_path)
             return [marker] if marker else []
 
+        entries = self._scan_visible_entries(directory, relative_path)
+        if entries is None:
+            return [UNREADABLE_MARKER]
+
         names: list[str] = []
-        for entry, is_directory, child_path in self._iter_visible_entries(
-            directory, relative_path
-        ):
+        for entry, is_directory, child_path in entries:
             names.append(entry.name)
             if is_directory:
                 child_names = self._collect_directory(
@@ -80,22 +85,24 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         names.sort(key=str.lower)
         return names
 
-    def _iter_visible_entries(
+    def _scan_visible_entries(
         self, directory: str | Path, relative_path: str
-    ) -> Iterator[tuple[os.DirEntry, bool, str]]:
+    ) -> list[tuple[os.DirEntry, bool, str]] | None:
         """
-        Yields one visible immediate child per entry after ignore rules.
+        Returns one visible immediate child per entry after ignore rules.
 
-        The directory scan is materialized before its context closes, so each
-        DirEntry still answers its cached directory flag. An unreadable
-        directory yields nothing, which lets callers treat it as empty.
+        The scan is materialized before its context closes, so each DirEntry
+        still answers its cached directory flag. An unreadable directory
+        returns ``None`` so callers can tell it apart from a readable empty
+        one, which returns an empty list.
         """
         try:
             with os.scandir(directory) as iterator:
                 entries = list(iterator)
         except PermissionError:
-            logger.debug("Skipping unreadable directory %s", directory, exc_info=True)
-            return
+            logger.debug("Skipped unreadable directory %s", directory, exc_info=True)
+            return None
+        visible: list[tuple[os.DirEntry, bool, str]] = []
         for entry in entries:
             is_directory = entry.is_dir(follow_symlinks=False)
             child_path = (
@@ -104,25 +111,23 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
             match_path = (child_path + "/") if is_directory else child_path
             if self.ignore_spec.match_file(match_path):
                 continue
-            yield entry, is_directory, child_path
+            visible.append((entry, is_directory, child_path))
+        return visible
 
     def _depth_limit_marker(self, directory: str | Path, relative_path: str) -> str:
         """
         Renders the omission marker for a directory at the depth limit.
 
-        Counts only the visible immediate children after ignore rules. Returns
-        an empty string when no child is visible, so a genuinely empty
-        directory renders no section rather than a misleading marker.
+        Counts only the visible immediate children after ignore rules. An
+        unreadable directory renders the unreadable marker instead. Returns an
+        empty string when no child is visible, so a genuinely empty directory
+        renders no section rather than a misleading marker.
         """
-        folders = 0
-        files = 0
-        for _entry, is_directory, _child_path in self._iter_visible_entries(
-            directory, relative_path
-        ):
-            if is_directory:
-                folders += 1
-            else:
-                files += 1
+        entries = self._scan_visible_entries(directory, relative_path)
+        if entries is None:
+            return UNREADABLE_MARKER
+        folders = sum(1 for _entry, is_directory, _path in entries if is_directory)
+        files = len(entries) - folders
         if not folders and not files:
             return ""
         folder_noun = "folder" if folders == 1 else "folders"
