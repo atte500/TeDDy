@@ -108,7 +108,9 @@ class LiteLLMAdapter(ILlmClient):
             resolved = "gpt-4o"
         return str(resolved)
 
-    def get_completion(
+    # Request, retry, and hydration form one linear flow whose branching is
+    # inherent to the provider protocol. Extracting it is outside this change.
+    def get_completion(  # noqa: C901
         self, messages: List[Dict[str, str]], model: Optional[str] = None, **kwargs: Any
     ) -> Any:
         """
@@ -414,28 +416,81 @@ class LiteLLMAdapter(ILlmClient):
                 "(or your shell environment)."
             )
 
-        # 3. Optional Remote Check: Verify key validity/expiration
-        if not errors and include_remote and is_api_key_provided:
-            from concurrent.futures import TimeoutError
+        # 2. Provider resolution: a bare model name cannot be routed, so the
+        # failure surfaces at preflight with a paste-ready fix instead of at the
+        # first completion. Skipped when an earlier error already explains the
+        # configuration problem.
+        if not errors:
+            errors.extend(self._provider_resolution_errors(model))
 
-            executor = self._get_executor()
-            future = executor.submit(
-                litellm.check_valid_key, model=model, api_key=api_key
-            )
-            try:
-                is_valid = future.result(timeout=10.0)
-                if not is_valid:
-                    errors.append(
-                        "The API key appears to be invalid, expired, or deactivated."
-                    )
-            except TimeoutError:
-                errors.append(
-                    "The remote connectivity check timed out after 10 seconds."
+        # 3. Optional remote check: verify key validity and expiration.
+        if not errors:
+            errors.extend(
+                self._remote_check_errors(
+                    model, api_key, include_remote, is_api_key_provided
                 )
-            except Exception as e:
-                errors.append(f"Remote connectivity check failed: {str(e)}")
+            )
 
         return errors
+
+    def _provider_resolution_errors(self, model: str) -> List[str]:
+        """Returns the paste-ready error when litellm cannot infer a provider.
+
+        A custom ``api_base`` is left to the user's endpoint, so no resolution
+        runs there. The library prints its provider list to stdout on failure,
+        so that output is captured and never reaches the CLI. The list shape lets
+        the caller extend unconditionally and keeps its branching flat.
+        """
+        import contextlib
+        import io
+
+        if self._config_service.get_setting("llm.api_base"):
+            return []
+
+        litellm = self._get_litellm()
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                litellm.get_llm_provider(model=model)
+        except Exception:
+            # A resolution failure is the signal; the library raises several
+            # exception types depending on the model string and provider table.
+            return [
+                f"Cannot infer a provider for model '{model}'. "
+                "Change llm.model in .teddy/config.yaml to prefix it with the "
+                f"provider, e.g. 'openai/{model}'."
+            ]
+        return []
+
+    def _remote_check_errors(
+        self,
+        model: str,
+        api_key: Any,
+        include_remote: bool,
+        is_api_key_provided: bool,
+    ) -> List[str]:
+        """Validates the key against the provider when a remote check is due.
+
+        Returns zero or one error. A missing request, an absent key, or a valid
+        key all yield an empty list, so the caller can extend unconditionally and
+        the request path stays flat.
+        """
+        if not (include_remote and is_api_key_provided):
+            return []
+
+        from concurrent.futures import TimeoutError
+
+        litellm = self._get_litellm()
+        executor = self._get_executor()
+        future = executor.submit(litellm.check_valid_key, model=model, api_key=api_key)
+        try:
+            is_valid = future.result(timeout=10.0)
+            if not is_valid:
+                return ["The API key appears to be invalid, expired, or deactivated."]
+        except TimeoutError:
+            return ["The remote connectivity check timed out after 10 seconds."]
+        except Exception as e:
+            return [f"Remote connectivity check failed: {str(e)}"]
+        return []
 
     def get_context_window(self, model: Optional[str] = None) -> int:
         """

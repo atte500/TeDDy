@@ -134,7 +134,7 @@ None. Provider resolution, key requiredness, host classification, and the prefix
 - [x] **Wiring** - Acceptance test: a loopback `api_base` persists the placeholder with no prompt. Implement `_is_local_endpoint` for loopback hosts and names, the local short circuit, and the placeholder write.
 - [x] **Wiring** - Acceptance test: an OpenRouter configuration prompts with the `Provider:` and stripped `Model:` lines. Implement `_resolve_model_identity` and the new prompt copy with hidden input and Enter-to-skip, and retire the obsolete OpenRouter warning assertion in the same commit.
 - [x] **Logic** - Cover the `_is_local_endpoint` host classifier with unit tests for loopback literals, private ranges, container aliases, a scheme-less value, a malformed value, and a public host.
-- [ ] **Logic** - Add the provider-resolution error to `validate_config` with the library stdout captured, and cover the unresolvable-model and stray-output cases with unit tests.
+- [x] **Logic** - Add the provider-resolution error to `validate_config` with the library stdout captured, and cover the unresolvable-model and stray-output cases with unit tests.
 - [ ] **Migration** - Extend the bundled config comment block with the per-server model prefix rule.
 
 ## Implementation Notes
@@ -159,6 +159,11 @@ None. Provider resolution, key requiredness, host classification, and the prefix
 - The new unit module `test_session_cli_handlers_local_endpoint.py` defines a focused in-memory `IConfigService` fake for `llm.api_base`. It pins 25 cases across the local host matrix, the remote hosts, the absent endpoint, the malformed values, and the host extraction. It uses no bare mocks.
 - Red produced exactly 8 failures, all local hosts the old predicate rejected: 10.0.0.5, 172.16.4.1, 192.168.1.10, 169.254.10.20, fd00::1, fe80::1, host.docker.internal, and mybox.local. The IPv4-mapped loopback `::ffff:127.0.0.1` already passed on Python 3.13.
 - Green turned all 25 targeted tests green. The unfiltered suite reported 2018 passed and 5 skipped. This third Logic deliverable broadens the classifier and supersedes the loopback-only scope recorded above.
+- Fourth Logic deliverable implemented. `_provider_resolution_error` returns `None` when `llm.api_base` is set, so a custom endpoint is left to the user. Otherwise it resolves the provider under `contextlib.redirect_stdout` and returns the paste-ready message when resolution raises. The docstring records why the library output is captured.
+- `validate_config` appends that error only when no earlier error exists, so the empty-key and missing-env paths are unchanged and the remote check still skips on any collected error. This placement is what keeps the mocked `gpt-4o` lazy-guard case green, because its `OPENAI_API_KEY` error is already present.
+- The new unit module `test_litellm_adapter_provider_resolution.py` pins three cases: the bare-model error naming `llm.model` and the `openai/` example, the captured `Provider List:` output, and the custom-`api_base` short circuit. It arranges the library resolution with a strictly bound mock and uses no bare mocks.
+- Red produced exactly two failures, both asserting the provider error the old `validate_config` never appended, and one pass on the `api_base` short circuit because no resolution ran at all. Green turned all three targeted tests green, and the unfiltered suite reported 2021 passed and 5 skipped.
+- The commit gate surfaced a `C901` complexity violation in `litellm_adapter.py`. The new guard pushed `validate_config` over the limit, so the remote connectivity check moved into `_remote_check_errors` and the provider error helper became `_provider_resolution_errors`, which returns a list. `validate_config` now extends two short blocks and stays well under the threshold. The pre-existing `get_completion` complexity is a genuine one-off, so it carries a scoped `# noqa: C901` with a reason instead of a file-wide ignore.
 
 ## Verification
 1. **Provider line:**
