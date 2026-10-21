@@ -28,7 +28,7 @@ None — this is an outbound (driven) port.
 - **`IConfigService`**: The driven contract consumed by core services and implemented by outbound adapters.
 
 ## Data Contracts
-- **Configuration keys:** `yolo_default` (bool); `execution.similarity_threshold` (float); `max_execute_lines` (int, default 100); `max_read_lines` (int, default 1000); `auto_pruning.enabled` (bool); `auto_pruning.turn_context_threshold` (int); `auto_pruning.prune_preceding_on_non_green` (bool); `auto_pruning.prune_validation_failures` (bool).
+- **Configuration keys:** `yolo_default` (bool); `editor` (str); `execute.default_timeout_seconds` (float, default 60.0); `execute.max_output_lines` (int, default 100); `edit.similarity_threshold` (float, default 0.95); `read.max_lines` (int, default 1000); `research.max_results` (int, default 5); `context.max_tree_depth` (int, default 4, 0 = unlimited); `workspace.init` (bool, default true); `workspace.pre-commit` (bool, default true); `workspace.pull` (bool, default true); `checks.prompts` (bool); `checks.templates` (bool); `checks.update` (bool); `auto_pruning.enabled` (bool); `auto_pruning.turn_context_threshold` (int); `auto_pruning.prune_failure_history` (bool); `auto_pruning.prune_validation_failures` (bool); `auto_pruning.preserve_message_turns` (bool); `auto_pruning.max_turns_retention` (int); `llm.*` (passed through to LiteLLM).
 
 ## Operations
 

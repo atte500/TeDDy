@@ -4,10 +4,10 @@
 - **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 
 ## Goal
-To provide a polished, intuitive interactive experience that gives users full visibility into session state and context, while adding foundational quality-of-life features like MOVE/DELETE actions, configurable tree depth, and session interrupt.
+To provide a polished, intuitive interactive experience that gives users full visibility into session state and context, while adding foundational quality-of-life features like MOVE/DELETE actions and session interrupt.
 
 ## Solution
-Expand the TUI with improved navigation, context interactions, and metadata visibility. Add new action types (`MOVE`, `DELETE`) with context manifest awareness. Introduce a configurable tree depth setting. Implement a session interrupt mechanism. Deprecate `--console` mode.
+Expand the TUI with improved navigation, context interactions, and metadata visibility. Add new action types (`MOVE`, `DELETE`) with context manifest awareness. Implement a session interrupt mechanism. Deprecate `--console` mode.
 
 ## Guidelines
 - **Test Harness Strategy:**
@@ -20,8 +20,6 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
 ## Technical Specifications
 - **MOVE Action:** Takes `source` and `destination` paths. Validates source exists and destination does not. Updates context manifest: renames path references in `.context` files to reflect the new location. Supports files and directories (renaming).
 - **DELETE Action:** Takes a `path`. Validates path exists. Updates context manifest: removes path references from `.context` files. Supports files and directories.
-- **Config Changes:**
-    - `context.max_tree_depth: 4` (default, 0 = unlimited)
 - **TUI Changes:**
     - Alt+Up/Down: Section navigation with scroll-at-bottom behavior and sub-section awareness.
     - `e` key: Context-sensitive actions (open context file, open file, agent switch).
@@ -41,11 +39,10 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
 > 6. Layout padding consistency
 > 7. MOVE action implementation
 > 8. DELETE action implementation
-> 9. Configurable tree depth
-> 10. Session interrupt mechanism
-> 11. `--console` deprecation marking
-> 12. Ad-hoc: CLI arg normalization (00-03)
-> 13. Ad-hoc: Remove bare except in InitService (00-04)
+> 9. Session interrupt mechanism
+> 10. `--console` deprecation marking
+> 11. Ad-hoc: CLI arg normalization (00-03)
+> 12. Ad-hoc: Remove bare except in InitService (00-04)
 
 **Delivered Slices:**
 - [x] [04-01: Normalize Editor Basenames for Windows Launcher Suffixes](/docs/project/slices/04-01-editor-basename-normalization.md)

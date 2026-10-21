@@ -83,7 +83,6 @@ These files live in `docs/templates/` and are created or refreshed by `teddy ini
     - **Editor & Diff Mapping:** Strictly respect `editor` config; implement a translation table for diff flags (e.g., `nvim` -> `-d`); remove all implicit VS Code fallbacks.
     - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels. Apply same padding for both panels.
     - **MOVE & DELETE Actions:** Add `MOVE` and `DELETE` action types. Both should update context manifest files as well (renaming path/file name if moved, removing if deleted). `MOVE` can also be used for renaming. Both apply to files and folders.
-    - **Configurable Tree Depth:** Add `max-project-tree-depth` config setting with omission indicators for truncated directories.
 ### Milestone 5: Quality Gate & Debt Reconciliation [PLANNED]
 - **Core Goal:** Remove unnecessary inline quality bypasses, deprecate `--console` mode and related dead code, and eliminate redundant test coverage.
 - **Specs:** TBD
