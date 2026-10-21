@@ -790,8 +790,7 @@ def _run_cli_preflight_check(
 
     # API-key setup runs BEFORE the LLM client is resolved so its transient
     # config-service instance reads the freshly-persisted on-disk state. The
-    # gate itself is single-sourced in ``_ensure_api_key_configured`` so the
-    # ``init`` command shares identical gating.
+    # gate itself is single-sourced in ``_ensure_api_key_configured``.
     config_service = container.resolve(IConfigService)
     _ensure_api_key_configured(config_service, setup_api_key)
 
@@ -836,7 +835,7 @@ def _ensure_api_key_configured(
     requires a provider key (key-requiredness is delegated to litellm). It is
     ADDITIVE and inert by default (``setup_api_key`` of ``None``/``False`` ->
     skip), so callers that never opt in are unaffected. Single-sourced so
-    ``_run_cli_preflight_check`` and the ``init`` command share identical gating.
+    both session entry points share identical gating.
     """
     if (
         setup_api_key

@@ -112,31 +112,6 @@ def _resolve_setup_api_key(
     return system_env.isatty() and not pipeline
 
 
-def _run_init_setup_gates(container) -> None:
-    """Run the interactive setup gates after ``teddy init`` scaffolding.
-
-    Bare ``teddy init`` and ``teddy init config`` scaffold (or reset) the
-    ``.teddy`` configuration, then run the SAME one-time setup as ``teddy
-    start``: the required LLM API-key prompt (when the key is missing and the
-    configured model requires one) and the optional editor selection (when no
-    editor is configured). Both gates reuse the existing preflight helpers, so
-    no prompt logic is duplicated. The gates are TTY-gated: a non-interactive
-    run (stdin is not a TTY) prompts for neither, keeping automated and CI
-    invocations clean.
-    """
-    from teddy_executor.adapters.inbound.session_cli_handlers import (
-        _ensure_api_key_configured,
-        _validate_editor_config,
-    )
-
-    system_env = container.resolve(ISystemEnvironment)
-    if not system_env.isatty():
-        return
-    config_service = container.resolve(IConfigService)
-    _ensure_api_key_configured(config_service, setup_api_key=True)
-    _validate_editor_config(container)
-
-
 def _display_init_drift(container) -> None:
     """Print the prompt/template drift advice after bare ``teddy init``.
 
@@ -144,8 +119,7 @@ def _display_init_drift(container) -> None:
     "unchanged" summary cannot mislead: it flags drifted prompts and missing
     templates and names the actionable ``teddy init prompts`` /
     ``teddy init templates`` commands. The two shared helpers are imported
-    lazily, mirroring ``_run_init_setup_gates``, and they are advisory only --
-    they never block the command.
+    lazily, and they are advisory only -- they never block the command.
     """
     from teddy_executor.adapters.inbound.session_cli_handlers import (
         _display_checks_footer,
@@ -326,7 +300,6 @@ def init_callback(ctx: typer.Context):
     summary = init_use_case.ensure_initialized()
     typer.echo(f"TeDDy initialized in .teddy folder. {summary}")
     _display_init_drift(container)
-    _run_init_setup_gates(container)
 
 
 @init_app.command()
@@ -353,7 +326,6 @@ def config():
     init_use_case = container.resolve(IInitUseCase)
     status = init_use_case.ensure_config_initialized(overwrite=True)
     typer.echo(status)
-    _run_init_setup_gates(container)
 
 
 @init_app.command()
