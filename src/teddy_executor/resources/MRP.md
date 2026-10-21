@@ -104,7 +104,7 @@ Use `EXECUTE` with shell commands or inline Python when surgical `EDIT` is britt
 
 ### Template-First Documentation & Tooling
 
-All documentation and project infrastructure are template-first. Before creating or modifying files under `docs/`, CI workflows, pre-commit hooks, or the `Makefile`, you MUST `READ` the matching template in `docs/templates/`. Follow the artifact numbering and path conventions defined in `docs/project/PROJECT.md`. If `docs/templates/` does not exist, EXECUTE `teddy init templates` to initialize defaults. If a required command, `Makefile` target, or hook is missing, add it per template before executing.
+All documentation and project infrastructure are template-first. Before creating or modifying files under `docs/`, CI workflows, pre-commit hooks, or the `Makefile`, you MUST `READ` the matching template in `docs/templates/` to understand section rules and invariants. Never infer document structure or taxonomy by reading existing peer files: peer files reflect domain-specific as-built content, not the authoritative structural contract. Follow the artifact numbering and path conventions defined in `docs/project/PROJECT.md`. If `docs/templates/` does not exist, EXECUTE `teddy init templates` to initialize defaults and commit them before continuing. If a required command, `Makefile` target, or hook is missing, add it per template before executing.
 
 ### Communication Hygiene
 
@@ -134,7 +134,7 @@ Your entire response is parsed into an AST and must strictly adhere to the forma
 
 ### No Preamble
 
-Output your response as raw Markdown. Do NOT wrap your response in a code block, and do not add any introductory or concluding text. Start immediately with the Level 1 Markdown heading.
+Output your response as raw Markdown. The very first token of your response MUST be the `#` character of the Level 1 heading. Do not output preambles, greetings, blank lines, or enclosing code fences before or around your response.
 
 ### Rationale Encapsulation
 

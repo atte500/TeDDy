@@ -18,7 +18,7 @@ uv tool install teddy-cli
   <img src="./assets/demo.gif" alt="TeDDy TUI Demo" width="100%" style="max-width: 100%; height: auto;" />
 </p>
 
-[Why TeDDy?](#why-not-just-use) &bull; [TeDDy's SDLC](#teddys-software-delivery-lifecycle) &bull; [Owning Your SDLC](#owning-your-sdlc) &bull; [Quickstart](#getting-started) &bull; [Usage](#usage) &bull; [FAQ](#frequently-asked-questions)
+[Why TeDDy?](#why-not-just-use) &bull; [TeDDy's SDLC](#teddys-software-delivery-lifecycle) &bull; [Owning Your SDLC](#owning-your-sdlc) &bull; [Quickstart](#getting-started) &bull; [Usage](#usage) &bull; [FAQ](#frequently-asked-questions) &bull; [Support](#support)
 
 </div>
 
@@ -127,10 +127,11 @@ TeDDy is built on the belief that you should own your software delivery lifecycl
 - **Artifact Templates (`docs/templates/`):** Standardize the artifacts produced during development. Customize the Markdown templates for vertical slices, specifications, case files, and milestones to match your documentation standards.
 - **Agent Prompts (`.teddy/prompts/`):** To change the process itself, customize the agent prompts. Each agent's workflow is broken down into structured phases and individual steps, defined entirely in Markdown. You can tweak instructions, add domain-specific quality gates, or introduce brand-new agent personas to match how your team builds software.
 - **Command Automation (`Makefile`):** Instead of hardcoding shell commands inside agent prompts, common development and verification operations are routed through the Makefile. When you need to change a flag, runner, or environment setup, you change it once in the Makefile instead of updating instructions across multiple agent prompts.
+- **Context Filtering (`.teddyignore`):** Control which files TeDDy scans during context generation and tree traversal. A `.teddyignore` file in the project root follows standard ignore syntax and takes precedence over `.gitignore`, allowing you to ignore extra paths or re-include git-ignored files using negation patterns.
 
 > [!TIP]
 > *Interested in bringing TeDDy into your team or designing custom agent workflows?* <br>
-> **[Professional consulting is available!](mailto:raphael@atteritano.ch)**
+> **[Professional consulting is available!](#support)**
 
 ---
 
@@ -235,15 +236,17 @@ teddy resume -m "your next instruction"
 
 ### Optional Flags
 
-- `--agent` / `-a`: Select agent persona (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`). Default: `pathfinder` (`assistant` in pipeline mode).
-- `--context` / `-c`: Supply additional context files or directories. Repeatable (`-c a.py -c b.md`) or comma-separated (`-c "a.py,b.md"`).
-- `--model`: Override the default configured model.
-- `--yolo` / `-y`: Auto-approve all actions. To make this default, set `yolo_default: true` in `.teddy/config.yaml`.
-- `--no-yolo` / `-n`: Force interactive mode for a single run.
-- `--message` / `-m`: Initial instruction to pass directly to the agent.
-- `--pipeline` / `-p`: Pipeline mode. Auto-approves actions, requires `-m`, exits immediately after the first message turn, and defaults to the `assistant` agent.
-- `--max-turns`: Maximum turns for a non-interactive run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`.
-- `--max-cost`: Maximum session cost in dollars for a non-interactive run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`.
+| Flag               | Description                                                                                                                                   |
+| :----------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--agent`, `-a`    | Select agent persona (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`). Default: `pathfinder` (`assistant` in pipeline mode). |
+| `--context`, `-c`  | Supply additional context files or directories. Repeatable (`-c a.py -c b.md`) or comma-separated (`-c "a.py,b.md"`).                         |
+| `--model`          | Override the default configured model.                                                                                                        |
+| `--yolo`, `-y`     | Auto-approve all actions. To make this default, set `yolo_default: true` in `.teddy/config.yaml`.                                             |
+| `--no-yolo`, `-n`  | Force interactive mode for a single run.                                                                                                      |
+| `--message`, `-m`  | Initial instruction to pass directly to the agent.                                                                                            |
+| `--pipeline`, `-p` | Pipeline mode. Auto-approves actions, requires `-m`, exits immediately after the first message turn, and defaults to the `assistant` agent.   |
+| `--max-turns`      | Maximum turns for a non-interactive run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`.                                            |
+| `--max-cost`       | Maximum session cost in dollars for a non-interactive run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`.                   |
 
 ### Chat-Oriented Workflow (CHOP)
 
@@ -342,14 +345,16 @@ The tool itself is not monetized. If your team needs custom agent architectures,
 
 ---
 
-<div align="center">
+<div align="center" id="support">
 
-### Star TeDDy on GitHub
+### Support
 
-If you find TeDDy useful for your workflow, consider giving it a star. It helps other developers find the project.
+If you find TeDDy useful, consider giving it a star!
 
-[![GitHub stars](https://img.shields.io/github/stars/atte500/teddy?style=social)](https://github.com/atte500/teddy)
-
-Need custom agent architectures or team onboarding? **[Let's get in touch!](mailto:raphael@atteritano.ch)**
+<p align="center">
+  <a href="https://github.com/atte500/teddy"><img src="https://img.shields.io/github/stars/atte500/teddy?style=flat-square&logo=github&label=Star%20TeDDy" alt="GitHub stars" /></a>
+  <a href="https://www.youtube.com/@xCogito-tv"><img src="https://img.shields.io/badge/YouTube-@xCogito--tv-red?style=flat-square&logo=youtube" alt="YouTube" /></a>
+  <a href="mailto:raphael@atteritano.ch"><img src="https://img.shields.io/badge/Email-raphael%40atteritano.ch-blue?style=flat-square&logo=gmail" alt="Email" /></a>
+</p>
 
 </div>
