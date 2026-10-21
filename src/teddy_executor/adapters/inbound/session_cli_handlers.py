@@ -996,14 +996,14 @@ _LOCAL_PLACEHOLDER_KEY = "dummy-key-custom-endpoints"
 def _is_local_endpoint(config_service: IConfigService) -> bool:
     """True when ``llm.api_base`` points at the developer machine.
 
-    A loopback host or a local name means no real credential can be required,
-    so the gate writes a placeholder instead of prompting. Host classification
-    performs no DNS lookup, so an unresolvable name never blocks startup.
+    A local host means no real credential can be required, so the gate writes a
+    placeholder instead of prompting. Host classification performs no DNS
+    lookup, so an unresolvable name never blocks startup.
     """
     api_base = config_service.get_setting("llm.api_base")
     if not (isinstance(api_base, str) and api_base.strip()):
         return False
-    return _host_is_loopback(_api_base_host(api_base))
+    return _host_is_local(_api_base_host(api_base))
 
 
 def _api_base_host(api_base: str) -> Optional[str]:
@@ -1018,8 +1018,14 @@ def _api_base_host(api_base: str) -> Optional[str]:
         return None
 
 
-def _host_is_loopback(host: Optional[str]) -> bool:
-    """True when a host names the loopback interface."""
+def _host_is_local(host: Optional[str]) -> bool:
+    """True when a host names the developer machine or a private network.
+
+    Loopback names, the ``host.docker.internal`` alias, and ``.local`` names all
+    address the developer machine. Loopback, link-local, and private address
+    ranges cannot be a public provider. No DNS lookup runs, so an unresolvable
+    name never blocks startup.
+    """
     import ipaddress
 
     if not host:
@@ -1027,10 +1033,13 @@ def _host_is_loopback(host: Optional[str]) -> bool:
     normalized = host.strip("[]").casefold()
     if normalized == "localhost" or normalized.endswith(".localhost"):
         return True
+    if normalized == "host.docker.internal" or normalized.endswith(".local"):
+        return True
     try:
-        return ipaddress.ip_address(normalized).is_loopback
+        address = ipaddress.ip_address(normalized)
     except ValueError:
         return False
+    return address.is_loopback or address.is_link_local or address.is_private
 
 
 def _persist_local_placeholder_key(config_service: IConfigService) -> None:
