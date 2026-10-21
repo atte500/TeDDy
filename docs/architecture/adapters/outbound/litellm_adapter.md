@@ -52,7 +52,10 @@ None — this is an outbound (driven) adapter.
 - **Postconditions:** Returns the USD cost. On failure it logs with tiered severity (WARNING for a priced-model anomaly, DEBUG for an unpriced-model miss) and returns `0.0`.
 
 ### `validate_config(include_remote=False) -> List[str]`
-- **Postconditions:** Returns configuration error messages; an empty list means valid. Key-requiredness delegates to `litellm.validate_environment`, so keyless local models validate cleanly and a non-key requirement is advisory. When `include_remote` is `True`, a connectivity check runs with a 10-second timeout.
+- **Postconditions:** Returns configuration error messages, where an empty list means valid.
+- **Postconditions:** Key-requiredness delegates to `litellm.validate_environment`, so keyless local models validate cleanly. A non-key requirement stays advisory.
+- **Postconditions:** When no earlier error exists and `llm.api_base` is unset, provider resolution runs under captured stdout. An unresolvable model then returns a paste-ready error naming `llm.model`.
+- **Postconditions:** When `include_remote` is `True`, a connectivity check runs with a 10-second timeout.
 
 ### `get_context_window(model=None) -> int`
 - **Postconditions:** Returns the model context window, or `0` when unknown. It pre-emptively hydrates an unknown model so first-turn telemetry shows real values.

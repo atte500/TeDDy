@@ -135,7 +135,7 @@ None. Provider resolution, key requiredness, host classification, and the prefix
 - [x] **Wiring** - Acceptance test: an OpenRouter configuration prompts with the `Provider:` and stripped `Model:` lines. Implement `_resolve_model_identity` and the new prompt copy with hidden input and Enter-to-skip, and retire the obsolete OpenRouter warning assertion in the same commit.
 - [x] **Logic** - Cover the `_is_local_endpoint` host classifier with unit tests for loopback literals, private ranges, container aliases, a scheme-less value, a malformed value, and a public host.
 - [x] **Logic** - Add the provider-resolution error to `validate_config` with the library stdout captured, and cover the unresolvable-model and stray-output cases with unit tests.
-- [ ] **Migration** - Extend the bundled config comment block with the per-server model prefix rule.
+- [x] **Migration** - Extend the bundled config comment block with the per-server model prefix rule.
 
 ## Implementation Notes
 - Orientation audit re-partitioned the deliverables. The original order could not keep the suite green, because the prompt copy change invalidates the OpenRouter warning assertion in `test_session_cli_handlers_api_key_gate.py` at that commit. The retirement therefore moves into the copy change.
@@ -163,7 +163,11 @@ None. Provider resolution, key requiredness, host classification, and the prefix
 - `validate_config` appends that error only when no earlier error exists, so the empty-key and missing-env paths are unchanged and the remote check still skips on any collected error. This placement is what keeps the mocked `gpt-4o` lazy-guard case green, because its `OPENAI_API_KEY` error is already present.
 - The new unit module `test_litellm_adapter_provider_resolution.py` pins three cases: the bare-model error naming `llm.model` and the `openai/` example, the captured `Provider List:` output, and the custom-`api_base` short circuit. It arranges the library resolution with a strictly bound mock and uses no bare mocks.
 - Red produced exactly two failures, both asserting the provider error the old `validate_config` never appended, and one pass on the `api_base` short circuit because no resolution ran at all. Green turned all three targeted tests green, and the unfiltered suite reported 2021 passed and 5 skipped.
+- Fifth and final Migration deliverable implemented. The bundled `config.yaml` comment block now opens with `llm.model must start with the provider prefix, e.g. "openai/qwen3-coder-30b".` plus `A bare model name fails preflight, because litellm cannot infer the provider.`, then keeps the local-model and OpenAI-compatible examples below it.
+- Red was an EXECUTE observation, because the file is declarative: the dump printed the three-example block and the grep for the prefix-rule wording reported `absent`. Green applied the two comment lines, and the same grep printed both new lines at 49 and 50.
+- The two bundled-config modules stayed green at 5 passed, which confirms the parsed mapping and the OpenRouter attribution are untouched by a comment-only edit. The earlier Orientation grep proved no test or doc asserts on this comment text.
 - The commit gate surfaced a `C901` complexity violation in `litellm_adapter.py`. The new guard pushed `validate_config` over the limit, so the remote connectivity check moved into `_remote_check_errors` and the provider error helper became `_provider_resolution_errors`, which returns a list. `validate_config` now extends two short blocks and stays well under the threshold. The pre-existing `get_completion` complexity is a genuine one-off, so it carries a scoped `# noqa: C901` with a reason instead of a file-wide ignore.
+- As-built component-doc correction. The LiteLLMAdapter `validate_config` postconditions now name the provider-resolution error, the captured library stdout, and the `llm.api_base` short circuit. The doc keeps `Status: Implemented`, because this is a wording correction rather than a new capability. The stale-reference grep returned only slice-history mentions of the old names, so no component doc keeps a stale seam name.
 
 ## Verification
 1. **Provider line:**

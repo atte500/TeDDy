@@ -46,6 +46,9 @@ llm:
     X-OpenRouter-Title: "TeDDy"
     X-OpenRouter-Categories: "cli-agent"
 
+# llm.model must start with the provider prefix, e.g. "openai/qwen3-coder-30b".
+# A bare model name fails preflight, because litellm cannot infer the provider.
+
 # Local models (Ollama, LM Studio):
 #   model: "ollama/qwen3-coder:30b"
 #   model: "lm_studio/qwen3-coder-30b"
