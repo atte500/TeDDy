@@ -115,6 +115,7 @@ These files live in `docs/templates/` and are created or refreshed by `teddy ini
     - **InitService manifest symmetry:** Extract a `_CONFIG_FILES` module constant to match `_TEMPLATE_FILES`/`_PROMPT_FILES`.
     - **TUI diff-routing predicate:** Single-source the "is this a registered diff editor?" decision so the `diff_flags` override is honoured for unknown editors.
     - **Failure-Transparency sweep:** Narrow or add debug-level logging to broad `except` blocks across `cli_helpers.py`, `local_file_system_adapter.py`, `shell_adapter.py`, `web_scraper_adapter.py`, `yaml_config_adapter.py`, `action_executor.py`, `context_service.py`, `session_pruning_service.py`, `session_repository.py`, `update_checker.py`, and `io.py`.
+    - **Remove the unconditional debug print:** `execute_valid_plan` in `cli_helpers.py` writes `DEBUG CLI: Resolved orchestrator: ...` to `stderr` on every `execute` run. Delete the line, because it is unconditional debug output rather than gated diagnostics.
 
 ## Failed Release Recovery
 

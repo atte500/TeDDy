@@ -1,5 +1,5 @@
 # Slice: Ad-Hoc Context Selection for the Context Command
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc slice)
 - **Depends On:** N/A
 - **Specs:** [Manual CLI Workflow](/docs/project/specs/manual-cli-workflow.md), [Teddy Directory Structure](/docs/project/specs/teddy-directory-structure.md)
