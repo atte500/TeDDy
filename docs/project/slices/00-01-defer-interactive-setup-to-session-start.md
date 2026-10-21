@@ -68,14 +68,14 @@ None. The gate call sites, the TTY rules, and the unit-tier test census were res
 5. `[CLEANUP]` `docs/architecture/adapters/inbound/cli.md` — Restate the `init()` postconditions.
 
 ## Deliverables
-- [ ] **Wiring** - Acceptance test: a TTY `teddy init` and a TTY `teddy init config` persist no environment value and prompt for nothing, while a TTY `teddy start` still prompts.
-- [ ] **Cleanup** - Delete `_run_init_setup_gates` and both call sites.
-- [ ] **Migration** - Replace `tests/suites/unit/adapters/inbound/test_init_setup_gates.py` with the negative matrix, and delete `tests/suites/acceptance/test_init_interactive_setup.py`.
-- [ ] **Cleanup** - Grep `tests/` for `_run_init_setup_gates`, `_neutralize_setup_gates`, and init-tier `_ensure_api_key_configured` patches, then prune every dead patch.
+- [ ] **Wiring** - Atomic removal: rewrite the init acceptance coverage to the negative scenario (a TTY `teddy init` and `teddy init config` persist no environment value and prompt for nothing; the existing `test_api_key_setup_wiring.py` already proves a TTY `teddy start` still prompts), delete `_run_init_setup_gates` and both call sites, and replace `test_init_setup_gates.py` with seam-level negative invariants. One commit keeps the suite green.
+- [ ] **Cleanup** - Prune the now-inert `_neutralize_setup_gates` helper and its calls in `test_init_drift_reporting.py`, plus any dead init-tier `_ensure_api_key_configured` patch.
 - [ ] **Cleanup** - Update the `init()` postconditions in `docs/architecture/adapters/inbound/cli.md`.
 
 ## Implementation Notes
-(To be recorded during implementation.)
+- Re-partitioned during Orientation. The original deliverable order was not green-preserving: the negative acceptance test passes only after the call sites are removed, and removing them breaks the old positive acceptance and unit tests. The behavior change and the retirement of its obsolete tests are inseparable, so they form one atomic Wiring deliverable.
+- The drift-reporting module keeps passing after the removal because its `_neutralize_setup_gates` patches target helpers that still exist for `start`; the patch becomes inert and is pruned in a later Cleanup deliverable.
+- `teddy start` prompt coverage already exists in `test_api_key_setup_wiring.py`, so the new acceptance test does not duplicate it.
 
 ## Verification
 1. **Bare init is silent:**
