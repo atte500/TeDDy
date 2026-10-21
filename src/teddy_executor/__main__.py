@@ -277,16 +277,9 @@ def start(  # noqa: PLR0913
     _ensure_project_initialized(container)
     config_service = container.resolve(IConfigService)
 
-    additional_context = (
-        [
-            path.strip()
-            for occurrence in context
-            for path in occurrence.split(",")
-            if path.strip()
-        ]
-        if context
-        else None
-    )
+    from teddy_executor.adapters.inbound.cli_helpers import normalize_context_values
+
+    additional_context = normalize_context_values(context)
 
     interactive = not (_resolve_yolo(yolo, config_service) or pipeline)
     system_env = container.resolve(ISystemEnvironment)
@@ -487,16 +480,9 @@ def context(
 
     container = get_container()
     _ensure_project_initialized(container)
-    additional_context = (
-        [
-            path.strip()
-            for occurrence in context
-            for path in occurrence.split(",")
-            if path.strip()
-        ]
-        if context
-        else None
-    )
+    from teddy_executor.adapters.inbound.cli_helpers import normalize_context_values
+
+    additional_context = normalize_context_values(context)
     handle_context_gathering(container, no_copy, additional_context, only)
 
 

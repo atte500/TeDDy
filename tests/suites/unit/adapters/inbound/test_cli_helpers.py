@@ -1,9 +1,32 @@
+import pytest
 from packaging.version import Version
 
 from teddy_executor.adapters.inbound.cli_helpers import (
     find_project_root,
+    normalize_context_values,
     prewarm_imports,
 )
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (None, None),
+        ([], None),
+        (["a.py"], ["a.py"]),
+        (["a.py", "b.md"], ["a.py", "b.md"]),
+        (["a.py,b.md"], ["a.py", "b.md"]),
+        ([" a.py , b.md "], ["a.py", "b.md"]),
+        (["a.py,,b.md"], ["a.py", "b.md"]),
+        ([" , "], []),
+        (["a.py, b.md", "c.py"], ["a.py", "b.md", "c.py"]),
+    ],
+)
+def test_normalize_context_values_flattens_and_strips(
+    raw: list[str] | None, expected: list[str] | None
+) -> None:
+    """A repeatable and comma-separated option normalizes to one stripped list."""
+    assert normalize_context_values(raw) == expected
 
 
 def test_cli_helpers_is_importable():

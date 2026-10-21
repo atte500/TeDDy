@@ -102,7 +102,7 @@ And the payload does not list docs/ARCHITECTURE.md
 ## Deliverables
 - [x] **Wiring** - Add `-c/--context` and `--only` to the `context` command and pass the normalized list to `handle_context_gathering`. The handler composes an `Explicit` scope beside the detected scopes, or beside the `.teddy/*.context` defaults outside a session. Drive an acceptance test that asserts the requested file and an `init.context` entry appear together.
 - [x] **Logic** - Cover the composition matrix through the public command: additive beside `init.context` outside a session, additive beside the Turn and Session scopes inside a session, `--only` suppression, `--only` without `-c`, manifest expansion, directory expansion, and a missing path.
-- [ ] **Refactor** - Extract the repeatable and comma-separated normalization helper and reuse it in `start`. Keep the existing `start` behavior and tests green.
+- [x] **Refactor** - Extract the repeatable and comma-separated normalization helper and reuse it in `start`. Keep the existing `start` behavior and tests green.
 - [ ] **Cleanup** - Document the usage concisely in the README. Add an `### Exporting Context` subsection under Usage covering the additive default, the `--only` escape hatch, and the `.context` manifest requirement. Update the `context` row in the Command Reference and the `context` description in `docs/project/specs/manual-cli-workflow.md`.
 
 ## Implementation Notes
@@ -126,6 +126,17 @@ And the payload does not list docs/ARCHITECTURE.md
 - Manifest expansion, directory recursion, and the missing-path renderer stay covered at the service layer, so the command-level tests assert only the rendered paths.
 - The repeated arrange block moved into the file-local `_run_context` helper, which drives the real filesystem and the real init service.
 - The global suite passes with 1950 passed and 5 skipped.
+
+**Refactor (deliverable 3):**
+- `normalize_context_values` lives in `src/teddy_executor/adapters/inbound/cli_helpers.py` beside `find_project_root`.
+- The helper splits each occurrence on commas, strips every fragment, drops empty fragments, and concatenates the occurrences in order.
+- A falsy option returns `None`, which preserves the callers' "no value supplied" distinction. A truthy option with only blank fragments returns an empty list.
+- Both `start` and `context` in `src/teddy_executor/__main__.py` now call the helper. The duplicated comprehension exists once in production code.
+- The import stays function-local inside each command body, matching the five existing `cli_helpers` references that keep CLI startup lazy.
+- `cli_helpers.py` imports neither `__main__` nor any module that imports it, so the helper introduces no import cycle.
+- `tests/suites/unit/adapters/inbound/test_cli_helpers.py` pins the grammar with nine parameterized cases, including empty input, blank fragments, mixed occurrences, and surrounding whitespace.
+- Manifest and comma grammar stay shared, because both commands now normalize through the same helper.
+- The global suite passes with 1959 passed and 5 skipped.
 
 ## Verification
 1. **Additive direct files:**

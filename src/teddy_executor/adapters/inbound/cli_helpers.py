@@ -34,6 +34,25 @@ def find_project_root() -> Path:
     return current
 
 
+def normalize_context_values(
+    values: Optional[List[str]],
+) -> Optional[List[str]]:
+    """Normalizes a repeatable and comma-separated context option.
+
+    Each occurrence is split on commas, every fragment is stripped, and empty
+    fragments are dropped. A falsy option returns ``None`` so callers can
+    distinguish "no value supplied" from an explicitly empty list.
+    """
+    if not values:
+        return None
+    return [
+        path.strip()
+        for occurrence in values
+        for path in occurrence.split(",")
+        if path.strip()
+    ]
+
+
 def echo_and_copy(
     content: str,
     no_copy: bool = False,
