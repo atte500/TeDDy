@@ -75,3 +75,20 @@ def test_is_path_in_context_extracts_markdown_link_target(target):
     context_paths = {"Turn": ["src/logic.py"]}
 
     assert is_path_in_context(target, context_paths) is True
+
+
+ZERO_WIDTH_SPACE = "\u200b"
+
+
+def test_is_path_in_context_scrubs_invisible_codepoints_in_context_paths():
+    """A context path pasted with a zero-width space still matches the resource."""
+    context_paths = {"Turn": [f"src/{ZERO_WIDTH_SPACE}logic.py"]}
+
+    assert is_path_in_context("src/logic.py", context_paths) is True
+
+
+def test_is_path_in_context_scrubs_invisible_codepoints_in_target():
+    """A plan resource pasted with a zero-width space still matches the context."""
+    context_paths = {"Turn": ["src/logic.py"]}
+
+    assert is_path_in_context(f"src/{ZERO_WIDTH_SPACE}logic.py", context_paths) is True

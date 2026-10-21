@@ -3,6 +3,8 @@ import re
 from typing import Any, List, Optional, Iterator, TYPE_CHECKING
 from urllib.parse import unquote
 
+from teddy_executor.core.utils.paths import strip_format_characters
+
 
 # Insert a space after `#` on the first line if missing (e.g., `#Title` -> `# Title`)
 # Only normalizes the first line to avoid corrupting code fences or shebangs.
@@ -111,15 +113,18 @@ def _looks_like_url(path: str) -> bool:
 
 
 def normalize_path(path: str) -> str:
-    result = path.replace("\\", "/")
+    result = strip_format_characters(path).replace("\\", "/")
     # Preserve URLs intact — percent-encoded symbols (%20, %23, %3F, etc.)
     # have structural meaning in URLs and must not be decoded.
     if _looks_like_url(result):
         return result
-    return unquote(result)
+    # Percent-encoded invisible characters decode into the same trap, so the
+    # scrubbing runs again on the decoded result.
+    return strip_format_characters(unquote(result))
 
 
 def normalize_link_target(target: str) -> str:
+    target = strip_format_characters(target)
     if target.startswith(("http://", "https://")):
         return target
     is_abs = os.path.isabs(target)
@@ -244,34 +249,36 @@ def translate_setup_commands(
     return cwd, env
 
 
+def _coerce_numeric(value: Any, expected_type: type) -> Any:
+    """Coerce a value to int or float, falling back to a leading-number match."""
+    try:
+        return expected_type(value)
+    except (ValueError, TypeError):
+        pattern = r"^(\d+)" if expected_type is int else r"^(\d+(?:\.\d+)?)"
+        match = re.match(pattern, str(value).strip())
+        return expected_type(match.group(1)) if match else None
+
+
+def _coerce_bool(value: Any) -> bool:
+    """Treat the case-insensitive text ``true`` as the only truthy string."""
+    if isinstance(value, str):
+        return value.strip().lower() == "true"
+    return bool(value)
+
+
 def coerce_param(value: Any, expected_type: type) -> Any:
     """
     Best-effort coercion of a raw parameter value to the expected type.
     If coercion fails entirely, returns None (caller should remove/ignore param).
     """
-    if value is None:
-        return None
-    if isinstance(value, expected_type):
+    if value is None or isinstance(value, expected_type):
         return value
 
-    if expected_type is int:
-        try:
-            return int(value)
-        except (ValueError, TypeError):
-            match = re.match(r"^(\d+)", str(value).strip())
-            return int(match.group(1)) if match else None
-
-    if expected_type is float:
-        try:
-            return float(value)
-        except (ValueError, TypeError):
-            match = re.match(r"^(\d+(?:\.\d+)?)", str(value).strip())
-            return float(match.group(1)) if match else None
+    if expected_type is int or expected_type is float:
+        return _coerce_numeric(value, expected_type)
 
     if expected_type is bool:
-        if isinstance(value, str):
-            return value.strip().lower() == "true"
-        return bool(value)
+        return _coerce_bool(value)
 
     return value
 

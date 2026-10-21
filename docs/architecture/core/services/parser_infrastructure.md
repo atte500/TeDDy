@@ -12,11 +12,13 @@ A stateless module of low-level utilities shared by the plan parser: AST travers
 
 ## Dependencies
 - `mistletoe` (external): Supplies the AST token types checked by the helpers; token imports are guarded so none runs at module load.
+- `core.utils.paths` (internal): Supplies the canonical `strip_format_characters` helper that both path normalizers apply; this module re-exports it for existing callers.
 
 ## Class Invariants
 - `stateless_pure_functions`: Every helper is a pure function of its arguments.
 - `lazy_token_imports`: `mistletoe` token classes are imported inside functions to keep CLI startup fast.
 - `url_safe_path_normalization`: `normalize_path` converts backslashes to forward slashes and percent-decodes, but returns URLs intact.
+- `invisible_character_scrubbing`: Both path normalizers remove every Unicode `Cf` (format) codepoint except the shaping joiners U+200C and U+200D before any other step, so a path that renders like a real file cannot resolve to a different name while joined scripts and emoji sequences stay intact.
 
 ## Inbound Ports
 None — this module is an internal helper surface.
@@ -35,13 +37,18 @@ None — the module declares no injected dependencies.
 - **Preconditions:** None.
 - **Postconditions:** Inserts the missing space after `#` on the first line only (for example `#Title` becomes `# Title`).
 
+### `strip_format_characters(value) -> str`
+- **Preconditions:** None.
+- **Postconditions:** Returns the input without any Unicode `Cf` (format) codepoint except U+200C and U+200D, which shape adjacent glyphs.
+- **Note:** Re-exported from `core.utils.paths`, where the canonical implementation and the shared context-path scrub live.
+
 ### `normalize_path(path) -> str`
 - **Preconditions:** None.
-- **Postconditions:** Returns a POSIX-style, percent-decoded path; returns URLs unchanged.
+- **Postconditions:** Returns a POSIX-style, percent-decoded path with format characters removed; returns URLs unchanged apart from format-character removal.
 
 ### `normalize_link_target(target) -> str`
 - **Preconditions:** None.
-- **Postconditions:** Returns project-relative targets without a leading slash, and preserves true absolute paths and external URLs.
+- **Postconditions:** Returns project-relative targets without a leading slash and without format characters, and preserves true absolute paths and external URLs.
 
 ### `get_child_text(node) -> str`
 - **Preconditions:** `node` is a mistletoe token.
