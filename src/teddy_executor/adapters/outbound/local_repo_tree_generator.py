@@ -1,5 +1,6 @@
 import logging
 import os
+from collections.abc import Iterator
 from pathlib import Path
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 
@@ -49,22 +50,52 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         directory: str | Path,
         relative_path: str,
         sections: list[tuple[str, str, list[str]]],
+        depth: int = 0,
     ) -> list[str]:
         """
         Collects one directory's visible names and recurses into its children.
 
+        A directory at or beyond the configured depth limit renders one
+        omission marker instead of expanding, so truncation is never silent.
         Directory and symlink flags come from the scan cache, so each entry
         costs no additional stat call. Symlinks are listed as files and are
         never followed, which keeps circular links from recursing.
         """
+        if self._max_depth > 0 and depth >= self._max_depth:
+            marker = self._depth_limit_marker(directory, relative_path)
+            return [marker] if marker else []
+
         names: list[str] = []
+        for entry, is_directory, child_path in self._iter_visible_entries(
+            directory, relative_path
+        ):
+            names.append(entry.name)
+            if is_directory:
+                child_names = self._collect_directory(
+                    entry.path, child_path, sections, depth + 1
+                )
+                sort_key = child_path.replace("/", os.sep).lower()
+                sections.append((sort_key, child_path, child_names))
+
+        names.sort(key=str.lower)
+        return names
+
+    def _iter_visible_entries(
+        self, directory: str | Path, relative_path: str
+    ) -> Iterator[tuple[os.DirEntry, bool, str]]:
+        """
+        Yields one visible immediate child per entry after ignore rules.
+
+        The directory scan is materialized before its context closes, so each
+        DirEntry still answers its cached directory flag. An unreadable
+        directory yields nothing, which lets callers treat it as empty.
+        """
         try:
             with os.scandir(directory) as iterator:
                 entries = list(iterator)
         except PermissionError:
             logger.debug("Skipping unreadable directory %s", directory, exc_info=True)
-            return names
-
+            return
         for entry in entries:
             is_directory = entry.is_dir(follow_symlinks=False)
             child_path = (
@@ -73,11 +104,30 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
             match_path = (child_path + "/") if is_directory else child_path
             if self.ignore_spec.match_file(match_path):
                 continue
-            names.append(entry.name)
-            if is_directory:
-                child_names = self._collect_directory(entry.path, child_path, sections)
-                sort_key = child_path.replace("/", os.sep).lower()
-                sections.append((sort_key, child_path, child_names))
+            yield entry, is_directory, child_path
 
-        names.sort(key=str.lower)
-        return names
+    def _depth_limit_marker(self, directory: str | Path, relative_path: str) -> str:
+        """
+        Renders the omission marker for a directory at the depth limit.
+
+        Counts only the visible immediate children after ignore rules. Returns
+        an empty string when no child is visible, so a genuinely empty
+        directory renders no section rather than a misleading marker.
+        """
+        folders = 0
+        files = 0
+        for _entry, is_directory, _child_path in self._iter_visible_entries(
+            directory, relative_path
+        ):
+            if is_directory:
+                folders += 1
+            else:
+                files += 1
+        if not folders and not files:
+            return ""
+        folder_noun = "folder" if folders == 1 else "folders"
+        file_noun = "file" if files == 1 else "files"
+        return (
+            f"[... directory not expanded (depth limit {self._max_depth}): "
+            f"{folders} {folder_noun}, {files} {file_noun}]"
+        )
