@@ -484,7 +484,7 @@ class SessionService(ISessionManager):
         }
 
         # Carry over LLM overrides and actual_model for display continuity
-        for key in ["model", "actual_model", "provider", "api_key"]:
+        for key in ["model", "actual_model", "provider"]:
             if key in current_meta:
                 meta[key] = current_meta[key]
 

@@ -130,7 +130,7 @@ Initializes a new session directory, generates the first plan, and immediately e
     -   `-a, --agent <agent_name>`: (Optional) The name of the agent to use. Defaults to `pathfinder`.
     -   `-m, --message <text>`: (Optional) The initial request or message for the agent.
     -   `-c, --context <paths>`: (Optional) A comma-separated list of additional files or directories to add to the session context (additive to `init.context`).
-    -   `--model`, `--provider`, `--api-key`: (Optional) Overrides for LLM configuration for this session.
+    -   `--model`: (Optional) Overrides the configured model for this session.
 -   **Behavior:**
     1.  Creates the session directory inside `.teddy/sessions/`.
     2.  Ensures `.teddy/init.context` exists. If the file is missing, it is created with a default content (`README.md`, `docs/project/PROJECT.md`, and `docs/architecture/ARCHITECTURE.md`). **An existing `init.context` file will not be overwritten.**

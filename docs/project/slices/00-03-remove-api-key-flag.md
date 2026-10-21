@@ -65,7 +65,7 @@ None. The flag origin, its documentation status, its test coverage, and the prec
 - [x] **Wiring** - Atomic CLI-surface removal: add an acceptance test proving `teddy start --api-key sk-test` is rejected with a non-zero exit code and that a resolved `TEDDY_LLM_API_KEY` value still starts a session without a prompt, drop the `--api-key` argument and persisted `api_key` assertions from the context-flag scenario, then delete the two Typer options and their two `api_key=api_key` forwards. The handler parameters stay optional, so the suite stays green.
 - [x] **Migration** - Remove `api_key` from `handle_new_session`, `handle_resume_session`, and `_sync_and_display_session_meta`, drop the `SessionOptions(api_key=...)` keyword, and remove every `api_key=None` argument and parametrized stub in the inbound handler test modules while `SessionOptions.api_key` still exists.
 - [x] **Contract** - Remove the `SessionOptions.api_key` field, the `SessionService` metadata write, and the `PlanningService` `meta.get("api_key")` read with the `_perform_generation_with_retry` keyword argument.
-- [ ] **Cleanup** - Drop the `api_key` entry from the `SessionService` carry-over list and remove `--api-key` plus the phantom `--provider` from the interactive-session specification.
+- [x] **Cleanup** - Drop the `api_key` entry from the `SessionService` carry-over list and remove `--api-key` plus the phantom `--provider` from the interactive-session specification.
 
 ## Implementation Notes
 - Re-partitioned during Orientation. The original order placed Contract before Migration, which cannot keep the suite green: removing `SessionOptions.api_key` first breaks the `handle_new_session` construction, and dropping the handler parameters before their call sites are adapted breaks three inbound test modules. The recorded order is now Wiring, Migration, Contract, Cleanup.
@@ -84,6 +84,13 @@ None. The flag origin, its documentation status, its test coverage, and the prec
 - Red produced exactly two failures, one per seam assertion. Green turned all 60 targeted tests green, and the production grep printed only the `SessionService` carry-over entry reserved for Cleanup.
 - The stale override docstring in `test_planning_service.py` is corrected, and its assertion now rejects both a `provider` and an `api_key` keyword.
 - Integration confirmed the contract removal is systemically safe: `make test` reported 1991 passed and 5 skipped.
+- Cleanup implemented atomically. The `SessionService` carry-over list now names `model`, `actual_model`, and `provider` only, so a legacy plaintext key cannot propagate into the next turn. The interactive-session specification now advertises `--model` alone, because the CLI declares neither `--provider` nor `--api-key`.
+- The new unit case drives `_persist_next_meta` with a legacy metadata mapping that still carries `api_key` and asserts that the display overrides survive while the key is dropped.
+- The shared turn-meta fixture now pins `now_utc` to a deterministic instant, so the persisted `creation_timestamp` is stable and the case needs no per-test clock mutation and no inline type suppression.
+- Red produced exactly one failure on the carry-over assertion. Green turned all four turn-meta cases green, and the key and phantom-flag grep printed `clean`.
+- Integration confirmed the carry-over contraction and the specification rewrite are systemically safe: `make test` reported 1992 passed and 5 skipped.
+- Component Design audit: no correction is due. The `SessionService` doc describes the turn transition without naming the carry-over keys, the `PlanningService` doc names no override keyword, and the CLI Adapter doc already states the scaffolding-only `init()`. All three documents keep `Status: Implemented`.
+- Stale-reference sweep: the only remaining `--api-key` and `_run_init_setup_gates` hits are the acceptance and seam assertions that deliberately pin the removals. No documentation or comment advertises a removed flag or helper.
 
 ## Verification
 1. **Flag is gone:**

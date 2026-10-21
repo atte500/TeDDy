@@ -9,6 +9,7 @@ take the turn directory); the filename asymmetry of the underlying
 repository contract stays encapsulated behind the seam.
 """
 
+from datetime import datetime, timezone
 from typing import cast
 from unittest.mock import Mock
 
@@ -65,12 +66,15 @@ def service(turn_repository: ISessionRepository) -> SessionService:
 
     The remaining constructor dependencies are inert for the turn-meta
     surface under test and are therefore strictly spec-bound mocks (no
-    bare MagicMock; no behavior is asserted against them).
+    bare MagicMock; no behavior is asserted against them). The time service
+    is pinned to a deterministic instant so the persisted metadata is stable.
     """
+    clock = Mock(spec=ITimeService)
+    clock.now_utc.return_value = datetime(2026, 1, 1, tzinfo=timezone.utc)
     return SessionService(
         file_system_manager=Mock(spec=IFileSystemManager),
         repository=turn_repository,
-        time_service=Mock(spec=ITimeService),
+        time_service=clock,
         prompt_manager=Mock(spec=IPromptManager),
         init_service=Mock(spec=IInitUseCase),
         config_service=Mock(spec=IConfigService),
@@ -115,3 +119,29 @@ def test_awaiting_reply_flag_round_trips_through_service_seam(
 
     # Assert
     assert loaded["awaiting_reply"] is True
+
+
+def test_next_turn_meta_keeps_overrides_and_drops_the_api_key(
+    service: SessionService, turn_repository: ISessionRepository
+) -> None:
+    # Arrange: a legacy turn whose meta still carries a plaintext key
+    current_meta = {
+        "turn_id": "01",
+        "agent_name": "developer",
+        "cumulative_cost": 0.5,
+        "model": "openrouter/~deepseek/deepseek-flash-latest:nitro",
+        "actual_model": "deepseek-flash-serving",
+        "provider": "openrouter",
+        "api_key": "sk-legacy-value",  # pragma: allowlist secret
+    }
+
+    # Act
+    service._persist_next_meta(TURN_DIR, "02", current_meta, 0.25)
+
+    # Assert: display overrides survive, the key never propagates
+    persisted = turn_repository.load_meta(TURN_DIR)
+    assert persisted["model"] == "openrouter/~deepseek/deepseek-flash-latest:nitro"
+    assert persisted["actual_model"] == "deepseek-flash-serving"
+    assert persisted["provider"] == "openrouter"
+    assert persisted["parent_turn_id"] == "01"
+    assert "api_key" not in persisted
