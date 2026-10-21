@@ -7,7 +7,9 @@ for the candidate replacements.
 
 The probe reports the thread that ran the handler, so a thread-directed
 delivery is visible in the output. ``os.kill(getpid, SIGINT)`` is skipped on
-Windows because that call terminates the process there.
+Windows because that call terminates the process there. One extra Windows mode
+cancels the main thread's pending synchronous I/O before raising, which tests
+whether a blocking socket read can be woken at all.
 """
 
 from __future__ import annotations
@@ -38,6 +40,39 @@ def _replica_raise_interrupt() -> None:
     signal.raise_signal(signal.SIGINT)
 
 
+_DELIVERY_NOTES: list[str] = []
+
+
+def _cancel_synchronous_io(thread_ident: int | None) -> None:
+    """Cancel the main thread's pending synchronous I/O (Windows only).
+
+    A blocking ``recv`` is not an alertable wait, so the pending Python signal
+    call cannot run until the read returns. Cancelling the read forces an
+    immediate return and therefore an immediate handler checkpoint.
+    """
+    if thread_ident is None:
+        raise OSError("main thread ident is unavailable")
+    import ctypes  # noqa: PLC0415
+    from ctypes import wintypes  # noqa: PLC0415
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.OpenThread.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel32.OpenThread.restype = wintypes.HANDLE
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+    kernel32.CancelSynchronousIo.argtypes = [wintypes.HANDLE]
+    kernel32.CancelSynchronousIo.restype = wintypes.BOOL
+    thread_terminate = 0x0001
+    handle = kernel32.OpenThread(thread_terminate, False, thread_ident)
+    if not handle:
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        if not kernel32.CancelSynchronousIo(handle):
+            raise ctypes.WinError(ctypes.get_last_error())
+    finally:
+        kernel32.CloseHandle(handle)
+
+
 def _deliver(mode: str) -> None:
     if mode == "raise_signal_current":
         signal.raise_signal(signal.SIGINT)
@@ -49,6 +84,12 @@ def _deliver(mode: str) -> None:
         signal.pthread_kill(threading.main_thread().ident, signal.SIGINT)
     elif mode == "interrupt_main":
         _thread.interrupt_main()
+    elif mode == "cancel_sync_io_then_raise":
+        try:
+            _cancel_synchronous_io(threading.main_thread().ident)
+        except OSError as exc:
+            _DELIVERY_NOTES.append(str(exc))
+        signal.raise_signal(signal.SIGINT)
     else:
         raise SystemExit(f"unknown mode: {mode}")
 
@@ -109,6 +150,7 @@ def _run(mode: str, wait: str) -> None:
         except BaseException as exc:  # diagnostic probe: record, never mask
             delivery_errors.append(type(exc).__name__)
 
+    _DELIVERY_NOTES.clear()
     previous = signal.signal(signal.SIGINT, handler)
     interrupted = False
     worker = threading.Thread(target=deliver, daemon=True)
@@ -135,10 +177,11 @@ def _run(mode: str, wait: str) -> None:
     )
     thread_label = handler_thread[0] if handler_thread else "none"
     print(
-        f"mode={mode:<22} wait={wait:<9} "
+        f"mode={mode:<26} wait={wait:<9} "
         f"handler_thread={thread_label:<12} handler_ms={handler_ms} "
         f"interrupt_ms={interrupt_ms} interrupted={interrupted} "
-        f"delivery_error={delivery_errors or 'none'}"
+        f"delivery_error={delivery_errors or 'none'} "
+        f"delivery_note={_DELIVERY_NOTES or 'none'}"
     )
     sys.stdout.flush()
 
@@ -150,6 +193,8 @@ def main() -> None:
         f"main_ident={threading.main_thread().ident}"
     )
     modes = ["raise_signal_current", "replica", "interrupt_main"]
+    if sys.platform == "win32":
+        modes.append("cancel_sync_io_then_raise")
     if sys.platform != "win32":
         modes.append("process_kill")
     if hasattr(signal, "pthread_kill"):
