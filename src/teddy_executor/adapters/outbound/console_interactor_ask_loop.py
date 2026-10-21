@@ -135,11 +135,26 @@ class ConsoleAskLoop:
                     continue
 
                 if user_input:
+                    self._discard_pending_draft()
                     return user_input
 
                 response = self._handle_empty_input(prompt)
                 if response is not None:
                     return response
+
+    def _discard_pending_draft(self) -> None:
+        """Deletes an abandoned editor draft and clears the pending state.
+
+        A draft is abandoned when the user answers in the terminal instead of
+        harvesting the opened editor. The session shares one loop instance
+        across turns, so a surviving draft pins the next turn to the
+        "Editor opened" prompt and leaves the temp file on disk.
+        """
+        if not self._active_editor_path:
+            return
+        temp_path = self._active_editor_path
+        self._active_editor_path = None
+        self._system_env.delete_file(temp_path)
 
     def _launch_editor_background(self, prompt: str) -> str:
         """Opens an external editor in the background and returns the harvested content.
@@ -248,19 +263,23 @@ class ConsoleAskLoop:
         if self._active_editor_path:
             # Flush main stdin buffer before reading file
             self._flush_stdin()
+            temp_path = self._active_editor_path
+            self._active_editor_path = None
             try:
-                with open(self._active_editor_path, "r", encoding="utf-8") as f:
+                with open(temp_path, "r", encoding="utf-8") as f:
                     content = f.read()
                 content = self._strip_escape_sequences(content)
                 marker = "<!-- Please enter your response above this line. -->"
                 if marker in content:
                     content = content.split(marker)[0].strip()
-                self._system_env.delete_file(self._active_editor_path)
-                self._active_editor_path = None
+                self._system_env.delete_file(temp_path)
                 self._flush_stdin()
                 return content if content else None
-            except Exception:
-                self._active_editor_path = None
+            except Exception as exc:
+                logger.warning(
+                    "Could not harvest the editor draft %s: %s", temp_path, exc
+                )
+                self._system_env.delete_file(temp_path)
                 return None
 
         confirm = self._pt_prompt(

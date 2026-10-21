@@ -182,3 +182,74 @@ class TestWiringLauncherSuffixClassification:
         )
         mock_run.assert_called_once()
         mock_popen.assert_not_called()
+
+
+class TestWiringTerminalReplyDiscardsDraft:
+    """A terminal reply abandons the opened editor draft.
+
+    The session shares one ask-loop instance across turns. A draft that
+    survives the reply pins the next turn to the "Editor opened" prompt and
+    leaves the temp file on disk.
+    """
+
+    PROD_PREFIX = "teddy_executor.adapters.outbound.console_interactor_ask_loop"
+
+    @pytest.fixture
+    def draft_loop(self, mock_system_env, mock_tooling, tmp_path):
+        draft_path = str(tmp_path / "abandoned_draft.md")
+        mock_system_env.create_temp_file.return_value = draft_path
+
+        def _delete(path: str) -> None:
+            if os.path.exists(path):
+                os.remove(path)
+
+        mock_system_env.delete_file.side_effect = _delete
+        mock_tooling.find_editor.return_value = ["code", "--wait"]
+        return ConsoleAskLoop(mock_system_env, mock_tooling), draft_path
+
+    def _editor_side_effect(self, draft_path):
+        def _save(*_args, **_kwargs):
+            with open(draft_path, "w", encoding="utf-8") as handle:
+                handle.write("unsaved draft")
+
+        return _save
+
+    def test_terminal_reply_deletes_the_abandoned_draft(self, draft_loop):
+        ask_loop, draft_path = draft_loop
+        replies = iter(["e", "terminal answer"])
+
+        with (
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch(
+                f"{self.PROD_PREFIX}.ptk_prompt",
+                side_effect=lambda *_a, **_k: next(replies),
+            ),
+            patch("subprocess.Popen", side_effect=self._editor_side_effect(draft_path)),
+            patch.object(ask_loop, "_flush_stdin"),
+        ):
+            result = ask_loop.run("turn one prompt")
+
+        assert result == "terminal answer"
+        assert ask_loop._active_editor_path is None
+        assert not os.path.exists(draft_path)
+
+    def test_next_turn_renders_the_fresh_editor_prompt(self, draft_loop):
+        ask_loop, draft_path = draft_loop
+        rendered: list[str] = []
+        replies = iter(["e", "turn one answer", "turn two answer"])
+
+        def _reply(prompt_text, **_kwargs):
+            rendered.append(prompt_text)
+            return next(replies)
+
+        with (
+            patch(f"{self.PROD_PREFIX}.sys.stdin.isatty", return_value=True),
+            patch(f"{self.PROD_PREFIX}.ptk_prompt", side_effect=_reply),
+            patch("subprocess.Popen", side_effect=self._editor_side_effect(draft_path)),
+            patch.object(ask_loop, "_flush_stdin"),
+        ):
+            assert ask_loop.run("turn one prompt") == "turn one answer"
+            assert ask_loop.run("turn two prompt") == "turn two answer"
+
+        assert rendered[2] == "Response (type 'e' for editor) › "
+        assert ask_loop._active_editor_path is None
