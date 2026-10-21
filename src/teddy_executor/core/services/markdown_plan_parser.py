@@ -110,6 +110,15 @@ class MarkdownPlanParser(IPlanParser):
         if current_disk is not None and current_disk.rstrip() != clean_content:
             path_obj.write_text(clean_content, encoding="utf-8", newline="")
 
+    @staticmethod
+    def _truncate_plan_content(clean_content: str, first_trailing_line: int) -> str:
+        """Drop the trailing paragraph run that starts at the given line."""
+        # Keep the splitlines basis. Mistletoe splits the document with
+        # splitlines(keepends=True), so form feeds and Unicode separators
+        # already advance its line numbers.
+        lines = clean_content.splitlines()
+        return "\n".join(lines[: first_trailing_line - 1]).rstrip()
+
     def parse(self, plan_content: str, plan_path: Optional[str] = None) -> Plan:
         """
         Parses the specified Markdown plan string into a structured Plan object.
@@ -135,9 +144,14 @@ class MarkdownPlanParser(IPlanParser):
 
             self._validate_mutual_exclusivity(doc)
 
-            actions = self._parse_section_content(
+            actions, trailing_line = self._parse_section_content(
                 stream, clean_content, section_heading, doc
             )
+
+            if trailing_line is not None:
+                clean_content = self._truncate_plan_content(
+                    clean_content, trailing_line
+                )
 
             is_session = self._is_session_plan(plan_path)
 
@@ -255,7 +269,7 @@ class MarkdownPlanParser(IPlanParser):
         clean_content: str,
         section_heading: Any,
         doc: Document,
-    ) -> List[ActionData]:
+    ) -> tuple[List[ActionData], Optional[int]]:
         """Parses the content of either a ## Message or ## Action Plan section."""
         section_name = get_child_text(section_heading).strip()
         if "Message" in section_name:
@@ -270,14 +284,18 @@ class MarkdownPlanParser(IPlanParser):
                     stream, node=section_heading, raw_content=raw_content
                 )
             ]
-        else:
-            actions = self._parse_actions(stream, doc)
-        return actions
+            return actions, None
+        return self._parse_actions(stream, doc)
 
     def _parse_actions(
         self, stream: _PeekableStream, doc: Document
-    ) -> List[ActionData]:
-        from mistletoe.block_token import BlockCode, CodeFence, ThematicBreak
+    ) -> tuple[List[ActionData], Optional[int]]:
+        from mistletoe.block_token import (
+            BlockCode,
+            CodeFence,
+            Paragraph,
+            ThematicBreak,
+        )
 
         actions: List[ActionData] = []
         # 'Action Plan' heading is already consumed by _parse_strict_top_level.
@@ -293,6 +311,12 @@ class MarkdownPlanParser(IPlanParser):
                 if isinstance(node, (BlockCode, CodeFence, ThematicBreak)):
                     stream.next()
                     continue
+
+                # A paragraph run that reaches the document end carries no plan
+                # instruction. Report where the real plan ends so the caller can
+                # persist the stripped content.
+                if isinstance(node, Paragraph):
+                    return actions, self._trailing_run_strip_line(stream, actions, doc)
 
                 # Accumulate offending node and raise structural error
                 offending_nodes = consume_content_until_next_action(
@@ -333,6 +357,27 @@ class MarkdownPlanParser(IPlanParser):
             parse_method = self._dispatch_map[cleaned_action_type]
             actions.append(parse_method(stream, node=action_heading))
 
-        return actions
+        return actions, None
+
+    def _trailing_run_strip_line(
+        self, stream: _PeekableStream, actions: List[ActionData], doc: Document
+    ) -> int:
+        """Return the first line of a trailing paragraph run, or raise."""
+        from mistletoe.block_token import Paragraph
+
+        trailing_run: List[Any] = [stream.next()]
+        while stream.has_next() and isinstance(stream.peek(), Paragraph):
+            trailing_run.append(stream.next())
+
+        first_line = getattr(trailing_run[0], "line_number", None)
+        if actions and not stream.has_next() and first_line:
+            return first_line
+
+        raise InvalidPlanError(
+            format_structural_mismatch_msg(
+                doc, "a Level 3 Action Heading", -1, trailing_run
+            ),
+            offending_nodes=trailing_run,
+        )
 
     # Structural formatting logic moved to parser_infrastructure.py

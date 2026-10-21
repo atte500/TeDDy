@@ -34,10 +34,19 @@ def _headline(error: InvalidPlanError) -> str:
     return text.splitlines()[0] if text else ""
 
 
-def test_stray_paragraph_after_last_action_names_found_node():
-    """A stray paragraph (e.g. leaked tool tags) must be named in the headline."""
+def test_stray_paragraph_between_actions_names_found_node():
+    """A stray paragraph between actions must be named in the headline.
+
+    A paragraph that trails the last action is stripped instead of rejected,
+    so this test places the stray content where the action stream cannot
+    absorb it.
+    """
     parser = MarkdownPlanParser()
-    plan = _valid_plan_ending_in_fence() + "\n</parameter></invoke>\n"
+    plan = (
+        _valid_plan_ending_in_fence()
+        + "\n</parameter></invoke>\n\n"
+        + "### `READ`\n- **Resource:** notes.md\n"
+    )
 
     with pytest.raises(InvalidPlanError) as exc_info:
         parser.parse(plan)

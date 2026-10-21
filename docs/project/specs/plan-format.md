@@ -132,7 +132,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 -   **Purpose:** Edits an existing file. It is strongly preferred to make surgical changes by including multiple, small, sequential `FIND`/`REPLACE` pairs in a single action rather than one large replacement.
 
 ##### Parser Resilience (Cross-Action)
-For all actions, the parser must ignore and clean up unforeseen codeblocks or thematic breaks (`---`) following the action block without throwing validation errors. Trailing text validation errors must be preserved.
+For all actions, the parser must ignore and clean up unforeseen codeblocks or thematic breaks (`---`) following the action block without throwing validation errors. When at least one action has been parsed, the parser must strip a trailing run of paragraphs that reaches the document end. The parser must persist the stripped plan to the session plan file. Free text in any other position must still raise a validation error.
 -   **Format:**
     ``````markdown
     ### `EDIT`
