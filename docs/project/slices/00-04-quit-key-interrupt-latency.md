@@ -1,5 +1,5 @@
 # Slice: Quit-Key Interrupt Latency
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc regression)
 - **Depends On:** N/A
 - **Specs:** N/A
@@ -48,18 +48,24 @@ Then the in-flight action drains and the remaining actions are skipped
 2. `[NEW]` `core/utils/interruptible_call.py.run_interruptible` — add the daemon-worker helper.
 3. `[MIGRATE]` `core/services/planning_service.py.generate_plan` — wrap the hydration, token-count, and completion phase.
 4. `[MIGRATE]` `tests/suites/integration/core/services/test_quit_source_wiring.py` and `tests/suites/unit/adapters/outbound/test_terminal_quit_key_listener_reader.py` — observe the active POSIX primitive instead of `signal.raise_signal`.
+5. `[NEW]` `tests/harness/setup/sigint_delivery.py.stub_sigint_delivery` — one shared seam stub that observes whichever delivery primitive is active, with its self-test at `tests/suites/unit/test_sigint_delivery_harness.py`.
 
 No public port, DTO, or signature changes, so no breaking migration path is required.
 
 ## Deliverables
-- [ ] **Contract** - Add the `run_interruptible` signature and the platform branching in `raise_interrupt`.
-- [ ] **Harness** - Add unit coverage for the helper and for delivery while the main thread blocks.
-- [ ] **Logic** - Implement the helper and the POSIX main-thread delivery.
-- [ ] **Migration** - Wrap the planning phase and update the two stubbed test seams.
-- [ ] **Cleanup** - Update the `raise_interrupt` docstring so it no longer claims prompt reader-thread delivery.
+- [x] **Harness** - Add the shared `stub_sigint_delivery` seam to `tests/harness/setup/`, with its own harness unit test.
+- [ ] **Migration** - Move the three test seams onto the shared stub so delivery stays observable across the primitive change.
+- [ ] **Logic** - Deliver SIGINT to the main thread on POSIX in `raise_interrupt`, driven by unit tests.
+- [ ] **Logic** - Add the `run_interruptible` daemon-worker helper, driven by unit tests.
+- [ ] **Migration** - Wrap the planning hydration, telemetry, budget, and completion calls, with a test proving a quit during planning interrupts the wait.
+- [ ] **Cleanup** - Update the `raise_interrupt` docstring to describe POSIX main-thread delivery.
 
 ## Implementation Notes
 The sandbox replicas at `spikes/debug/quit-key-interrupt-latency/replica_interrupt_guard.py` and `spikes/debug/quit-key-interrupt-latency/replica_interruptible_call.py` are the proven implementations. The composed MRE at `03-interruptible-planning-wait-mre.py` proves the topology across platforms.
+
+The original deliverable order added a signature and failing coverage before any implementation, so it could not keep the suite green at every commit. The audit re-partitioned the work into six atomic deliverables. The shared seam stub lands first because it observes both the current `signal.raise_signal` path and the future `signal.pthread_kill` path, so the three test seams can migrate before delivery changes. The harness stub stubs `signal.pthread_kill` with `raising=False` only when the attribute exists, because Windows lacks it and the test process must not raise KeyboardInterrupt. No Wiring deliverable was added because the quit wiring already exists and its acceptance tracer bullet is shipped.
+
+The Harness deliverable ships `stub_sigint_delivery(monkeypatch)` in `tests/harness/setup/sigint_delivery.py`. It patches `signal.raise_signal` unconditionally and patches `signal.pthread_kill` behind `hasattr` with `raising=False`, so the Windows leg never patches a missing attribute. Both primitives record into one shared list, so a test seam observes delivery whichever primitive the production code uses. Its self-test lives in `tests/suites/unit/test_sigint_delivery_harness.py`, following the repository precedent that harness boundary self-tests sit in `tests/suites/unit/`. The self-test passed in isolation and the full suite passed after the addition.
 
 ## Verification
 1. **POSIX quit during planning:**
