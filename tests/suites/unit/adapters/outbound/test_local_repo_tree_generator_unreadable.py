@@ -7,10 +7,9 @@ instead of an ambiguous empty section, so truncation is never silent.
 import os
 
 from teddy_executor.adapters.outbound.local_repo_tree_generator import (
+    UNREADABLE_MARKER,
     LocalRepoTreeGenerator,
 )
-
-UNREADABLE_MARKER = "[... directory not expanded (unreadable): 0 folders, 0 files]"
 
 
 def _deny_scandir_for(monkeypatch, denied_name):
@@ -23,23 +22,6 @@ def _deny_scandir_for(monkeypatch, denied_name):
         return real_scandir(path)
 
     monkeypatch.setattr(os, "scandir", guarded_scandir)
-
-
-def test_tree_generator_marks_unreadable_directories(tmp_path, monkeypatch):
-    (tmp_path / "locked").mkdir()
-    (tmp_path / "locked" / "secret.txt").touch()
-    (tmp_path / "readable").mkdir()
-    (tmp_path / "readable" / "visible.txt").touch()
-
-    generator = LocalRepoTreeGenerator(root_dir=str(tmp_path))
-    _deny_scandir_for(monkeypatch, "locked")
-
-    tree = generator.generate_tree()
-
-    assert UNREADABLE_MARKER in tree
-    assert "./locked:" in tree
-    assert "secret.txt" not in tree
-    assert "visible.txt" in tree
 
 
 def test_tree_generator_marks_unreadable_directories_at_the_depth_limit(

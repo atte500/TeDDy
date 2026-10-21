@@ -22,6 +22,8 @@ Implements the `IRepoTreeGenerator` outbound port. It traverses the repository o
 - `single_pass_traversal`: Each directory is scanned exactly once, and its rendered section is built during that scan, so no second filesystem pass occurs.
 - `scan_cache_flags`: Directory and symlink flags come from the `os.scandir` entry cache, so no entry pays an extra stat call.
 - `section_order`: Sections sort by their relative path with the root keyed as `.`, which renders a top-level name such as `!important` before the root block.
+- `depth_limit_contract`: The constructor stores a non-negative depth limit, and zero means unlimited. A directory at or beyond the limit renders one omission marker instead of expanding, so its children contribute no section.
+- `unreadable_marker`: A directory whose scan raises `PermissionError` renders the module-level `UNREADABLE_MARKER` instead of an ambiguous empty section.
 
 ## Inbound Ports
 None — this is an outbound (driven) adapter.
@@ -36,4 +38,4 @@ None — this is an outbound (driven) adapter.
 
 ### `generate_tree() -> str`
 - **Preconditions:** None.
-- **Postconditions:** Returns the filtered tree as a single string. A file and its parent directories survive only when they are not excluded by the ignore spec. The adapter writes no intermediate files.
+- **Postconditions:** Returns the filtered tree as a single string. A file and its parent directories survive only when they are not excluded by the ignore spec. A directory at or beyond the configured depth limit renders one omission marker carrying its visible folder and file counts, and an unreadable directory renders the explicit unreadable marker. The adapter writes no intermediate files.
