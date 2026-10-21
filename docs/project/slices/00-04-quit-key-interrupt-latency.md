@@ -55,7 +55,7 @@ No public port, DTO, or signature changes, so no breaking migration path is requ
 ## Deliverables
 - [x] **Harness** - Add the shared `stub_sigint_delivery` seam to `tests/harness/setup/`, with its own harness unit test.
 - [x] **Migration** - Move the three test seams onto the shared stub so delivery stays observable across the primitive change.
-- [ ] **Logic** - Deliver SIGINT to the main thread on POSIX in `raise_interrupt`, driven by unit tests.
+- [x] **Logic** - Deliver SIGINT to the main thread on POSIX in `raise_interrupt`, driven by unit tests.
 - [ ] **Logic** - Add the `run_interruptible` daemon-worker helper, driven by unit tests.
 - [ ] **Migration** - Wrap the planning hydration, telemetry, budget, and completion calls, with a test proving a quit during planning interrupts the wait.
 - [ ] **Cleanup** - Update the `raise_interrupt` docstring to describe POSIX main-thread delivery.
@@ -68,6 +68,8 @@ The original deliverable order added a signature and failing coverage before any
 The Harness deliverable ships `stub_sigint_delivery(monkeypatch)` in `tests/harness/setup/sigint_delivery.py`. It patches `signal.raise_signal` unconditionally and patches `signal.pthread_kill` behind `hasattr` with `raising=False`, so the Windows leg never patches a missing attribute. Both primitives record into one shared list, so a test seam observes delivery whichever primitive the production code uses. Its self-test lives in `tests/suites/unit/test_sigint_delivery_harness.py`, following the repository precedent that harness boundary self-tests sit in `tests/suites/unit/`. The self-test passed in isolation and the full suite passed after the addition.
 
 The Migration deliverable moves the three production test seams onto `stub_sigint_delivery`. `test_quit_source_wiring.py` and both the self-delivery and injected-hook seams in `test_terminal_quit_key_listener_reader.py` now call `stub_sigint_delivery(monkeypatch)` instead of patching `signal.raise_signal` directly, so delivery stays observable when `raise_interrupt` switches to `signal.pthread_kill` on POSIX. After the migration the only direct primitive patch in the suite lives inside the harness module itself, which is the source of the seam. The targeted run passed (`14 passed`), lint was clean, and the full suite passed (2025 passed, 5 skipped).
+
+The POSIX delivery Logic deliverable changes `raise_interrupt` so delivery wakes the main thread instead of the calling thread. The helper now delivers with `signal.pthread_kill` to `threading.main_thread().ident` when the platform is not Windows and exposes the attribute, and it returns before the CRT path. Windows and any platform without `pthread_kill` keep `signal.raise_signal`, so the shipped quit notice stays intact there. The zero-argument signature is unchanged, so `container._record_quit_source` and `TerminalQuitKeyListener._trigger` needed no edits. Three new dispatch tests in `tests/suites/unit/core/utils/test_interrupt_guard.py` pin the contract: main-thread delivery on POSIX, main-thread targeting from a worker thread, and the CRT raise under a simulated Windows platform. The Red run reported `2 failed, 11 passed` with an empty recorder, and the Green run reported `13 passed` with clean lint. The full suite passed (2028 passed, 5 skipped). The branch matches the proven replica at `spikes/debug/quit-key-interrupt-latency/replica_interrupt_guard.py`. The stale docstring claim stays in place until the dedicated Cleanup deliverable.
 
 ## Verification
 1. **POSIX quit during planning:**

@@ -18,6 +18,7 @@ import-free of DI frameworks (hexagonal core boundary).
 """
 
 import signal
+import sys
 import threading
 from collections.abc import Callable
 from contextlib import contextmanager
@@ -132,4 +133,9 @@ def raise_interrupt() -> None:
     process-level CRT raise path and reaches the handler from the main thread
     and from a reader thread on every platform.
     """
+    if sys.platform != "win32" and hasattr(signal, "pthread_kill"):
+        main_ident = threading.main_thread().ident
+        if main_ident is not None:
+            signal.pthread_kill(main_ident, signal.SIGINT)
+            return
     signal.raise_signal(signal.SIGINT)

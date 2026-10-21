@@ -12,6 +12,7 @@ deterministic escalation tests (no sleeps).
 """
 
 import signal
+import sys
 import threading
 
 import pytest
@@ -177,3 +178,88 @@ class TestRealSignalDelivery:
                 assert guard.interrupted.is_set()
         finally:
             signal.signal(signal.SIGINT, previous)
+
+
+class TestMainThreadDeliveryPrimitive:
+    """POSIX delivery targets the main thread; Windows keeps the CRT raise.
+
+    On POSIX ``signal.raise_signal`` delivers to the calling thread, so a raise
+    from the quit-key reader leaves a blocked main thread waiting for its
+    current call to return. Delivery must target the main thread instead. On
+    Windows, where ``signal.pthread_kill`` does not exist, the CRT raise path
+    must stay intact so the installed handler still runs.
+    """
+
+    @pytest.mark.skipif(
+        sys.platform == "win32" or not hasattr(signal, "pthread_kill"),
+        reason="pthread_kill is unavailable on this platform",
+    )
+    def test_posix_delivery_targets_the_main_thread(self, monkeypatch) -> None:
+        # Arrange: record both primitives instead of delivering a real signal.
+        killed: list[tuple[int, int]] = []
+        raised: list[int] = []
+        monkeypatch.setattr(signal, "raise_signal", lambda sig: raised.append(sig))
+        monkeypatch.setattr(
+            signal,
+            "pthread_kill",
+            lambda thread_id, sig: killed.append((thread_id, sig)),
+            raising=False,
+        )
+
+        # Act
+        raise_interrupt()
+
+        # Assert: the main thread is the delivery target and the CRT raise is
+        # not used on POSIX.
+        main_ident = threading.main_thread().ident
+        assert main_ident is not None, "the main thread must carry an identifier"
+        assert killed == [(main_ident, signal.SIGINT)]
+        assert raised == []
+
+    @pytest.mark.skipif(
+        sys.platform == "win32" or not hasattr(signal, "pthread_kill"),
+        reason="pthread_kill is unavailable on this platform",
+    )
+    def test_posix_delivery_from_a_worker_targets_the_main_thread(
+        self, monkeypatch
+    ) -> None:
+        # Arrange: a worker delivers, exactly as the quit-key reader does.
+        killed: list[tuple[int, int]] = []
+        monkeypatch.setattr(signal, "raise_signal", lambda sig: None)
+        monkeypatch.setattr(
+            signal,
+            "pthread_kill",
+            lambda thread_id, sig: killed.append((thread_id, sig)),
+            raising=False,
+        )
+
+        # Act
+        worker = threading.Thread(target=raise_interrupt)
+        worker.start()
+        worker.join()
+
+        # Assert: delivery names the main thread, not the calling worker.
+        main_ident = threading.main_thread().ident
+        assert main_ident is not None, "the main thread must carry an identifier"
+        assert killed == [(main_ident, signal.SIGINT)]
+
+    def test_windows_delivery_uses_raise_signal(self, monkeypatch) -> None:
+        # Arrange: simulate the Windows leg, where pthread_kill is unavailable.
+        monkeypatch.setattr(sys, "platform", "win32")
+        raised: list[int] = []
+        killed: list[tuple[int, int]] = []
+        monkeypatch.setattr(signal, "raise_signal", lambda sig: raised.append(sig))
+        if hasattr(signal, "pthread_kill"):
+            monkeypatch.setattr(
+                signal,
+                "pthread_kill",
+                lambda thread_id, sig: killed.append((thread_id, sig)),
+                raising=False,
+            )
+
+        # Act
+        raise_interrupt()
+
+        # Assert: the CRT raise path is kept and no POSIX target is used.
+        assert raised == [signal.SIGINT]
+        assert killed == []
