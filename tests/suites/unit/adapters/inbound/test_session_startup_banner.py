@@ -28,7 +28,7 @@ def _stub_startup_side_effects(monkeypatch) -> None:
     monkeypatch.setattr(
         handlers, "_display_update_notification", lambda container, cache_path: []
     )
-    monkeypatch.setattr(handlers, "_run_health_checks", lambda: None)
+    monkeypatch.setattr(handlers, "_run_health_checks", lambda *args, **kwargs: None)
     monkeypatch.setattr(
         handlers, "_run_cli_preflight_check", lambda container, **kwargs: []
     )

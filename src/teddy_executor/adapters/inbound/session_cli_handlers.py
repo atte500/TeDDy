@@ -244,10 +244,41 @@ def _check_git_initialized() -> None:
     )
 
 
-def _run_health_checks() -> None:
-    """Run all startup health checks and display notifications if needed."""
-    _ensure_commit_hooks()
-    _check_git_initialized()
+def _warn_disabled_workspace_steps(config_service: IConfigService) -> None:
+    """Print one warning per disabled workspace step with a real consequence.
+
+    A disabled hook installer warns because the unskippable post-commit test
+    gate then depends on a hook that never landed. A disabled git init warns
+    only when the workspace is not already a repository, because an existing
+    repository needs no initialization.
+    """
+    if not config_service.get_setting("workspace.pre-commit", True):
+        typer.secho(
+            "⚠ Pre-commit hook installation is disabled. "
+            "The post-commit test gate will not run.",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+    init_disabled = not config_service.get_setting("workspace.init", True)
+    if init_disabled and not (Path.cwd() / ".git").exists():
+        typer.secho(
+            "⚠ Git repository not initialized. Version control actions will fail.",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+
+
+def _run_health_checks(config_service: IConfigService) -> None:
+    """Run each startup health check the workspace toggles allow.
+
+    A disabled step is skipped, and ``_warn_disabled_workspace_steps`` reports
+    the ones that carry a real consequence.
+    """
+    if config_service.get_setting("workspace.pre-commit", True):
+        _ensure_commit_hooks()
+    if config_service.get_setting("workspace.init", True):
+        _check_git_initialized()
+    _warn_disabled_workspace_steps(config_service)
 
 
 def _start_background_update_check(container: Container) -> list[str]:
@@ -285,7 +316,7 @@ def _run_startup_preamble(
     its ``agent`` so the preflight validates the agent prompt; ``resume``
     leaves it ``None`` and validates no agent.
     """
-    _run_health_checks()
+    _run_health_checks(container.resolve(IConfigService))
     typer.echo("Checking configurations...", err=True)
     fired.extend(
         _run_cli_preflight_check(

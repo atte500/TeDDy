@@ -278,7 +278,13 @@ def test_run_health_checks_calls_both(monkeypatch):
         _run_health_checks,
     )
 
-    _run_health_checks()
+    class _WorkspaceEnabledConfig:
+        """In-memory config that leaves every workspace toggle enabled."""
+
+        def get_setting(self, key, default=None):
+            return default
+
+    _run_health_checks(_WorkspaceEnabledConfig())
 
     assert calls == ["commit_hooks", "git"], f"Expected both calls, got {calls}"
 
@@ -380,6 +386,10 @@ def test_handle_new_session_starts_background_check_thread(monkeypatch):
         lambda container, agent=None, setup_editor=None, setup_api_key=None: [],
     )
     monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._run_health_checks",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
         lambda container, session_name, interactive, no_copy, **kwargs: None,
     )
@@ -475,6 +485,10 @@ def test_handle_resume_session_starts_background_check_thread(monkeypatch):
         lambda container, agent=None, setup_editor=None, setup_api_key=None: [],
     )
     monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._run_health_checks",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
         lambda container, session_name, interactive, no_copy, **kwargs: None,
     )
@@ -549,6 +563,10 @@ def test_resume_handler_calls_set_session_agent_when_agent_provided(monkeypatch)
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._run_cli_preflight_check",
         lambda container, agent=None, setup_editor=None, setup_api_key=None: [],
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._run_health_checks",
+        lambda *args, **kwargs: None,
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
