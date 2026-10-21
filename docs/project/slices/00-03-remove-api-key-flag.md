@@ -63,7 +63,7 @@ None. The flag origin, its documentation status, its test coverage, and the prec
 
 ## Deliverables
 - [x] **Wiring** - Atomic CLI-surface removal: add an acceptance test proving `teddy start --api-key sk-test` is rejected with a non-zero exit code and that a resolved `TEDDY_LLM_API_KEY` value still starts a session without a prompt, drop the `--api-key` argument and persisted `api_key` assertions from the context-flag scenario, then delete the two Typer options and their two `api_key=api_key` forwards. The handler parameters stay optional, so the suite stays green.
-- [ ] **Migration** - Remove `api_key` from `handle_new_session`, `handle_resume_session`, and `_sync_and_display_session_meta`, drop the `SessionOptions(api_key=...)` keyword, and remove every `api_key=None` argument and parametrized stub in the inbound handler test modules while `SessionOptions.api_key` still exists.
+- [x] **Migration** - Remove `api_key` from `handle_new_session`, `handle_resume_session`, and `_sync_and_display_session_meta`, drop the `SessionOptions(api_key=...)` keyword, and remove every `api_key=None` argument and parametrized stub in the inbound handler test modules while `SessionOptions.api_key` still exists.
 - [ ] **Contract** - Remove the `SessionOptions.api_key` field, the `SessionService` metadata write, and the `PlanningService` `meta.get("api_key")` read with the `_perform_generation_with_retry` keyword argument.
 - [ ] **Cleanup** - Drop the `api_key` entry from the `SessionService` carry-over list and remove `--api-key` plus the phantom `--provider` from the interactive-session specification.
 
@@ -73,6 +73,12 @@ None. The flag origin, its documentation status, its test coverage, and the prec
 - Red produced exactly two failures: both rejection cases failed on the `No such option` assertion while the flag was still declared. Green deleted the two Typer options and their two `api_key=api_key` forwards, turning all ten targeted tests green.
 - The `_resolve_setup_api_key` prepare-gate helper remains in `__main__.py` by design; it is the required setup-gate flag, not the removed override. The handler parameters stay optional, so the three inbound handler test modules keep passing until Migration adapts them.
 - Integration confirmed the atomic removal is systemically safe: `make test` reported 1986 passed and 5 skipped.
+- Migration implemented atomically. The `api_key` parameter is gone from `handle_new_session`, `handle_resume_session`, and `_sync_and_display_session_meta`, along with the `api_key=api_key` keyword on the `SessionOptions` construction, the `meta["api_key"]` write, and the `api_key=api_key` forward. The four inbound test modules dropped all eight `api_key=None` arguments and both stub parameters.
+- The new seam module `test_session_handler_key_seams.py` pins the three handler signatures through `inspect.signature`, so a future edit cannot quietly reintroduce the parameter chain.
+- Red produced exactly three failures, all on the seam signature assertion. Green turned all 21 targeted tests green, and the `api_key: Optional` grep printed only the five surviving `setup_api_key` gate declarations.
+- `SessionOptions.api_key` stays in place until the Contract deliverable, so the frozen dataclass remains valid throughout the migration. The stale `api_key` wording in the resume-meta module docstring was corrected.
+- The Contract deliverable must adapt the override assertion in `test_planning_service.py`, which documents that only `api_key` may appear in overrides.
+- Integration confirmed the parameter removal is systemically safe: `make test` reported 1989 passed and 5 skipped.
 
 ## Verification
 1. **Flag is gone:**

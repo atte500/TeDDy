@@ -1,5 +1,5 @@
 """
-Regression test: Resume should update meta.yaml with model/provider/api_key overrides.
+Regression test: Resume should update meta.yaml with model overrides.
 """
 
 from unittest.mock import MagicMock  # noqa: TID251
@@ -113,7 +113,6 @@ class TestResumeMetadataUpdate:
                 interactive=False,
                 no_copy=True,
                 model="new-model",
-                api_key=None,
             )
 
             # Assert that save_meta was called with updated model
@@ -165,7 +164,6 @@ class TestResumeMetadataUpdate:
                 interactive=False,
                 no_copy=True,
                 model=None,
-                api_key=None,
             )
 
             # The config model is "unknown" and no actual_model is present, so

@@ -411,7 +411,6 @@ def test_handle_new_session_starts_background_check_thread(monkeypatch):
         message="Test",
         additional_context=None,
         model=None,
-        api_key=None,
     )
 
     assert len(thread_calls) >= 1, (
@@ -481,7 +480,7 @@ def test_handle_resume_session_starts_background_check_thread(monkeypatch):
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._sync_and_display_session_meta",
-        lambda container, session_name, model=None, api_key=None, agent=None: None,
+        lambda container, session_name, model=None, agent=None: None,
     )
     # Mock _resolve_session_name to return a real string so
     # Path(".teddy") / "sessions" / session_name doesn't crash.
@@ -500,7 +499,6 @@ def test_handle_resume_session_starts_background_check_thread(monkeypatch):
         interactive=False,
         no_copy=True,
         model=None,
-        api_key=None,
     )
 
     assert len(thread_calls) >= 1, (
@@ -558,7 +556,7 @@ def test_resume_handler_calls_set_session_agent_when_agent_provided(monkeypatch)
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._sync_and_display_session_meta",
-        lambda container, session_name, model=None, api_key=None, agent=None: None,
+        lambda container, session_name, model=None, agent=None: None,
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._resolve_session_name",

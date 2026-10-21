@@ -118,7 +118,6 @@ class TestResumeClearsActualModel:
                 interactive=False,
                 no_copy=True,
                 model="new-model",
-                api_key=None,
             )
 
             # Assert that save_meta was called and actual_model is NOT in saved data
@@ -178,7 +177,6 @@ class TestResumeClearsActualModel:
                 interactive=False,
                 no_copy=True,
                 model=None,
-                api_key=None,
             )
 
             # The clear itself must force a save, even without an override.
