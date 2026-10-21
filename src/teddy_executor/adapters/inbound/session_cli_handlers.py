@@ -282,40 +282,142 @@ def _run_health_checks(config_service: IConfigService) -> None:
     _warn_disabled_workspace_steps(config_service)
 
 
-def _pull_workspace_on_start(config_service: IConfigService) -> None:
+_GIT_PULL_TIMEOUT_SECONDS = 15
+_PULL_SKIPPED_WARNING = "⚠ Workspace pull skipped; continuing with the current branch."
+_PULL_TIMEOUT_WARNING = "⚠ Workspace pull timed out; continuing without it."
+_IN_PROGRESS_GIT_MARKERS = (
+    "rebase-merge",
+    "rebase-apply",
+    "MERGE_HEAD",
+    "CHERRY_PICK_HEAD",
+)
+
+
+def _pull_workspace_on_start(
+    config_service: IConfigService,
+    run_func: Optional[Callable[..., Any]] = None,
+) -> None:
     """Fast-forward the workspace before starting a new session.
 
     The pull runs only when ``workspace.pull`` is enabled and the workspace is
     a Git repository, so a disabled toggle or a non-repository directory stays
-    silent. Any non-fast-forward outcome is reported as one warning so the
-    session proceeds with the workspace unchanged.
+    silent. A detached HEAD, a missing upstream, or an in-progress operation
+    also stays silent, because there is nothing safe to fast-forward. A dirty
+    worktree or a failed pull reports one warning and leaves the workspace
+    unchanged. A successful fast-forward names the number of commits it moved.
+
+    The Git process is injected through ``run_func`` so every decision is
+    testable without spawning a real repository.
     """
     if not config_service.get_setting("workspace.pull", True):
         return
     if not (Path.cwd() / ".git").exists():
         return
+    git_run = run_func or subprocess.run
     try:
-        result = subprocess.run(  # nosec B603 B607
-            ["git", "pull", "--ff-only"],
-            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
-            capture_output=True,
-            timeout=15,
-        )
+        _fast_forward_workspace(git_run)
     except subprocess.TimeoutExpired:
-        typer.secho(
-            "⚠ Workspace pull timed out; continuing without it.",
-            fg=typer.colors.YELLOW,
-            err=True,
-        )
+        typer.secho(_PULL_TIMEOUT_WARNING, fg=typer.colors.YELLOW, err=True)
+
+
+def _fast_forward_workspace(git_run: Callable[..., Any]) -> None:
+    """Run the pull decision table through the injected Git runner.
+
+    Each precondition is probed before the pull so an unsafe state never
+    reaches ``git pull``. A dirty worktree reports one warning, while every
+    other unsafe state stays silent because it has nothing to report.
+    """
+    skip_reason = _pull_skip_reason(git_run)
+    if skip_reason is not None:
+        if skip_reason:
+            typer.secho(skip_reason, fg=typer.colors.YELLOW, err=True)
         return
-    if result.returncode == 0:
-        typer.secho("Workspace fast-forwarded", fg=typer.colors.GREEN, err=True)
-    else:
-        typer.secho(
-            "⚠ Workspace pull skipped; continuing with the current branch.",
-            fg=typer.colors.YELLOW,
-            err=True,
-        )
+    before = _read_head(git_run)
+    result = git_run(
+        ["git", "pull", "--ff-only"],
+        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        capture_output=True,
+        text=True,
+        timeout=_GIT_PULL_TIMEOUT_SECONDS,
+    )
+    if result.returncode != 0:
+        typer.secho(_PULL_SKIPPED_WARNING, fg=typer.colors.YELLOW, err=True)
+        return
+    _report_fast_forward(git_run, before, _read_head(git_run))
+
+
+def _pull_skip_reason(git_run: Callable[..., Any]) -> Optional[str]:
+    """Return the outcome text to print, or None when the pull may proceed.
+
+    An empty string marks a silent skip, because the workspace holds no safe
+    fast-forward and reporting it would only add noise. A dirty worktree
+    returns the skipped warning, because tracked changes can conflict.
+    """
+    git_dir = Path.cwd() / ".git"
+    if any((git_dir / marker).exists() for marker in _IN_PROGRESS_GIT_MARKERS):
+        return ""
+    detached = git_run(
+        ["git", "symbolic-ref", "-q", "HEAD"],
+        capture_output=True,
+        timeout=_GIT_PULL_TIMEOUT_SECONDS,
+    )
+    if detached.returncode != 0:
+        return ""
+    upstream = git_run(
+        ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
+        capture_output=True,
+        timeout=_GIT_PULL_TIMEOUT_SECONDS,
+    )
+    if upstream.returncode != 0:
+        return ""
+    status = git_run(
+        ["git", "status", "--porcelain"],
+        capture_output=True,
+        text=True,
+        timeout=_GIT_PULL_TIMEOUT_SECONDS,
+    )
+    tracked_changes = [
+        line
+        for line in status.stdout.splitlines()
+        if line and not line.startswith("??")
+    ]
+    if tracked_changes:
+        return _PULL_SKIPPED_WARNING
+    return None
+
+
+def _read_head(git_run: Callable[..., Any]) -> str:
+    """Read the current commit id through the injected Git runner."""
+    return git_run(
+        ["git", "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        timeout=_GIT_PULL_TIMEOUT_SECONDS,
+    ).stdout.strip()
+
+
+def _report_fast_forward(git_run: Callable[..., Any], before: str, after: str) -> None:
+    """Report how many commits the fast-forward moved, or stay silent.
+
+    A pull that moves no commit has nothing to report, so it prints nothing.
+    """
+    if after == before:
+        return
+    count_output = git_run(
+        ["git", "rev-list", "--count", f"{before}..{after}"],
+        capture_output=True,
+        text=True,
+        timeout=_GIT_PULL_TIMEOUT_SECONDS,
+    ).stdout.strip()
+    commits = int(count_output) if count_output else 0
+    if commits <= 0:
+        return
+    noun = "commit" if commits == 1 else "commits"
+    typer.secho(
+        f"Workspace fast-forwarded ({commits} {noun})",
+        fg=typer.colors.GREEN,
+        err=True,
+    )
 
 
 def _start_background_update_check(container: Container) -> list[str]:
