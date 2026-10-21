@@ -14,4 +14,8 @@ mkdir -p spikes/debug
   echo "---"
   uv run python spikes/debug/quit-key-interrupt-latency/02-cross-platform-sigint-delivery-probe.py
   echo "probe_exit=$?"
+  echo "---"
+  echo "=== Interruptible planning wait MRE ==="
+  uv run python spikes/debug/quit-key-interrupt-latency/03-interruptible-planning-wait-mre.py
+  echo "mre_exit=$?"
 } 2>&1 | tee "$OUT"
