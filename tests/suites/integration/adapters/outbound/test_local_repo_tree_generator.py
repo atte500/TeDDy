@@ -1,3 +1,4 @@
+import os
 import sys
 import pytest
 from pathlib import Path
@@ -137,3 +138,89 @@ def test_tree_generator_handles_circular_symlinks_without_hanging(env, tmp_path)
     assert "circular_link" in tree_output
     # The fix treats symlinks as files, so it shouldn't recurse into 'circular_link/'
     assert "./subdir/circular_link:" not in tree_output
+
+
+def test_tree_generator_renders_full_tree_when_depth_is_zero(tmp_path, monkeypatch):
+    """A depth limit of zero renders the whole tree with no omission marker."""
+    (tmp_path / "a" / "b").mkdir(parents=True)
+    (tmp_path / "a" / "b" / "deep.txt").touch()
+
+    env = (
+        TestEnvironment(monkeypatch)
+        .setup()
+        .with_real_tree_generator(str(tmp_path), max_depth=0)
+    )
+    generator = env.get_service(IRepoTreeGenerator)
+
+    tree = generator.generate_tree()
+
+    assert "deep.txt" in tree
+    assert "directory not expanded" not in tree
+
+
+def test_tree_generator_marks_directories_at_the_depth_limit(tmp_path, monkeypatch):
+    """A directory at the limit renders one marker with singular counts."""
+    (tmp_path / "top" / "nested").mkdir(parents=True)
+    (tmp_path / "top" / "one.txt").touch()
+    (tmp_path / "top" / "nested" / "deep.txt").touch()
+
+    env = (
+        TestEnvironment(monkeypatch)
+        .setup()
+        .with_real_tree_generator(str(tmp_path), max_depth=1)
+    )
+    generator = env.get_service(IRepoTreeGenerator)
+
+    tree = generator.generate_tree()
+
+    assert "./top:" in tree
+    assert "[... directory not expanded (depth limit 1): 1 folder, 1 file]" in tree
+    assert "nested" not in tree
+    assert "deep.txt" not in tree
+
+
+def test_tree_generator_marks_plural_counts_at_a_deeper_limit(tmp_path, monkeypatch):
+    """A truncated directory counts visible folders and files with plural nouns."""
+    (tmp_path / "a" / "b" / "c").mkdir(parents=True)
+    (tmp_path / "a" / "b" / "one.txt").touch()
+    (tmp_path / "a" / "b" / "two.txt").touch()
+    (tmp_path / "a" / "b" / "c" / "three.txt").touch()
+
+    env = (
+        TestEnvironment(monkeypatch)
+        .setup()
+        .with_real_tree_generator(str(tmp_path), max_depth=2)
+    )
+    generator = env.get_service(IRepoTreeGenerator)
+
+    tree = generator.generate_tree()
+
+    assert "[... directory not expanded (depth limit 2): 1 folder, 2 files]" in tree
+    assert "three.txt" not in tree
+
+
+def test_tree_generator_marks_unreadable_directories(tmp_path, monkeypatch):
+    """An unreadable directory renders an explicit marker, not an empty section."""
+    (tmp_path / "locked").mkdir()
+    (tmp_path / "locked" / "secret.txt").touch()
+    (tmp_path / "readable").mkdir()
+    (tmp_path / "readable" / "visible.txt").touch()
+
+    real_scandir = os.scandir
+
+    def guarded_scandir(path):
+        if os.path.basename(os.fspath(path)) == "locked":
+            raise PermissionError(13, "Permission denied", os.fspath(path))
+        return real_scandir(path)
+
+    monkeypatch.setattr(os, "scandir", guarded_scandir)
+
+    env = TestEnvironment(monkeypatch).setup().with_real_tree_generator(str(tmp_path))
+    generator = env.get_service(IRepoTreeGenerator)
+
+    tree = generator.generate_tree()
+
+    assert "[... directory not expanded (unreadable): 0 folders, 0 files]" in tree
+    assert "./locked:" in tree
+    assert "secret.txt" not in tree
+    assert "visible.txt" in tree
