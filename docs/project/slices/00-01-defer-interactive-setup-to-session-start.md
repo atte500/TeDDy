@@ -69,7 +69,7 @@ None. The gate call sites, the TTY rules, and the unit-tier test census were res
 
 ## Deliverables
 - [x] **Wiring** - Atomic removal: rewrite the init acceptance coverage to the negative scenario (a TTY `teddy init` and `teddy init config` persist no environment value and prompt for nothing; the existing `test_api_key_setup_wiring.py` already proves a TTY `teddy start` still prompts), delete `_run_init_setup_gates` and both call sites, and replace `test_init_setup_gates.py` with seam-level negative invariants. One commit keeps the suite green.
-- [ ] **Cleanup** - Prune the now-inert `_neutralize_setup_gates` helper and its calls in `test_init_drift_reporting.py`, plus any dead init-tier `_ensure_api_key_configured` patch.
+- [x] **Cleanup** - Prune the now-inert `_neutralize_setup_gates` helper and its calls in `test_init_drift_reporting.py`, plus any dead init-tier `_ensure_api_key_configured` patch.
 - [ ] **Cleanup** - Update the `init()` postconditions in `docs/architecture/adapters/inbound/cli.md`.
 
 ## Implementation Notes
@@ -80,6 +80,7 @@ None. The gate call sites, the TTY rules, and the unit-tier test census were res
 - Red produced exactly five failures: the helper-removal invariant, both acceptance prompt assertions, and both gate spies. Green turned all nine targeted tests green.
 - Three stale references were corrected: the drift-advice docstring in `__main__.py` and two gate comments in `session_cli_handlers.py`.
 - Integration confirmed the atomic removal is systemically safe: `make test` reported 1983 passed and 5 skipped.
+- Pruned the inert `_neutralize_setup_gates` helper, its single call site, and the orphaned `session_cli_handlers` import in `test_init_drift_reporting.py`. The targeted run reported 9 passed across the drift, seam, and negative acceptance modules, and the grep printed `absent-confirmed`. Integration reconfirmed the full suite green at 1983 passed and 5 skipped.
 
 ## Verification
 1. **Bare init is silent:**

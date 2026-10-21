@@ -15,8 +15,6 @@ seam itself, so a refactor cannot silently detach the advice:
 import pytest
 import typer
 
-from teddy_executor.adapters.inbound import session_cli_handlers
-
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.setup.test_environment import TestEnvironment
 
@@ -40,22 +38,11 @@ def _spy_on_drift(monkeypatch) -> list:
     return calls
 
 
-def _neutralize_setup_gates(monkeypatch) -> None:
-    """Make the TTY-gated setup gates inert so they never block on a prompt."""
-    monkeypatch.setattr(
-        session_cli_handlers, "_ensure_api_key_configured", lambda *a, **k: None
-    )
-    monkeypatch.setattr(
-        session_cli_handlers, "_validate_editor_config", lambda *a, **k: None
-    )
-
-
 @pytest.mark.parametrize("tty", [False, True])
 def test_bare_init_invokes_drift_after_summary(tmp_path, monkeypatch, tty):
     """Bare ``teddy init`` calls the drift advice once, after the summary echo."""
     TestEnvironment(monkeypatch, tmp_path).setup().with_tty(tty)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
-    _neutralize_setup_gates(monkeypatch)
     calls = _spy_on_drift(monkeypatch)
 
     result = adapter.run_command(["init"])
