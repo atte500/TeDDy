@@ -1,5 +1,5 @@
 # Slice: Defer Interactive Setup to Session Start
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** None
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
