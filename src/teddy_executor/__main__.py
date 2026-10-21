@@ -461,6 +461,20 @@ def context(
         "--no-copy",
         help="Do not copy the output to the clipboard.",
     ),
+    context: Optional[list[str]] = typer.Option(
+        None,
+        "--context",
+        "-c",
+        help=(
+            "Additional files/dirs for context. Repeatable (-c a.py -c b.md); "
+            'comma-separated values are also accepted (-c "a.py,b.md").'
+        ),
+    ),
+    only: bool = typer.Option(
+        False,
+        "--only",
+        help="Export only the --context values, skipping the default set.",
+    ),
 ):
     """
     Gathers and displays project context (file tree + file contents).
@@ -473,7 +487,17 @@ def context(
 
     container = get_container()
     _ensure_project_initialized(container)
-    handle_context_gathering(container, no_copy)
+    additional_context = (
+        [
+            path.strip()
+            for occurrence in context
+            for path in occurrence.split(",")
+            if path.strip()
+        ]
+        if context
+        else None
+    )
+    handle_context_gathering(container, no_copy, additional_context, only)
 
 
 @app.command(name="get-prompt")

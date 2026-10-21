@@ -1,5 +1,5 @@
 # Slice: Ad-Hoc Context Selection for the Context Command
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc slice)
 - **Depends On:** N/A
 - **Specs:** [Manual CLI Workflow](/docs/project/specs/manual-cli-workflow.md), [Teddy Directory Structure](/docs/project/specs/teddy-directory-structure.md)
@@ -100,13 +100,22 @@ And the payload does not list docs/ARCHITECTURE.md
 5. No contract changes. `IGetContextUseCase`, `ContextService`, and `IFileSystemManager` stay untouched.
 
 ## Deliverables
-- [ ] **Wiring** - Add `-c/--context` and `--only` to the `context` command and pass the normalized list to `handle_context_gathering`. The handler composes an `Explicit` scope beside the detected scopes, or beside the `.teddy/*.context` defaults outside a session. Drive an acceptance test that asserts the requested file and an `init.context` entry appear together.
+- [x] **Wiring** - Add `-c/--context` and `--only` to the `context` command and pass the normalized list to `handle_context_gathering`. The handler composes an `Explicit` scope beside the detected scopes, or beside the `.teddy/*.context` defaults outside a session. Drive an acceptance test that asserts the requested file and an `init.context` entry appear together.
 - [ ] **Logic** - Cover the composition matrix through the public command: additive beside `init.context` outside a session, additive beside the Turn and Session scopes inside a session, `--only` suppression, `--only` without `-c`, manifest expansion, directory expansion, and a missing path.
 - [ ] **Refactor** - Extract the repeatable and comma-separated normalization helper and reuse it in `start`. Keep the existing `start` behavior and tests green.
 - [ ] **Cleanup** - Document the usage concisely in the README. Add an `### Exporting Context` subsection under Usage covering the additive default, the `--only` escape hatch, and the `.context` manifest requirement. Update the `context` row in the Command Reference and the `context` description in `docs/project/specs/manual-cli-workflow.md`.
 
 ## Implementation Notes
-None yet.
+
+**Wiring (deliverable 1):**
+- The `context` command accepts repeatable `-c/--context` and the `--only` flag.
+- Comma splitting stays inline in `__main__.py`, mirroring `start`. Extracting the shared helper remains the Refactor deliverable.
+- `handle_context_gathering` adds an `Explicit` scope beside the detected Turn and Session scopes.
+- Outside a session `detect_session_context()` returns `None`. The handler then resolves the defaults through `IFileSystemManager.get_context_paths()`.
+- The handler resolves the defaults itself because `ContextService._resolve_scoped_paths` globs `.teddy/*.context` only when the whole scope map is falsy.
+- `--only` without a `-c` value raises `typer.BadParameter` before any scope work happens.
+- The acceptance test in `tests/suites/acceptance/test_context_file_selection.py` asserts that the `init.context` entry and the explicit file both appear under `## Resource Contents`.
+- The global suite passes with 1944 passed and 5 skipped.
 
 ## Verification
 1. **Additive direct files:**

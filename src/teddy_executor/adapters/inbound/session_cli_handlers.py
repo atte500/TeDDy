@@ -16,6 +16,7 @@ from teddy_executor.core.domain.models.session import SessionOptions
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 from teddy_executor.core.ports.outbound.config_service import IConfigService
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 from teddy_executor.core.utils.interrupt_guard import InterruptGuard
 from teddy_executor.core.utils.session_notices import format_interrupt_notice
@@ -1103,10 +1104,40 @@ def detect_session_context() -> Optional[Dict[str, Sequence[str]]]:
     return None
 
 
-def handle_context_gathering(container: Container, no_copy: bool):
+def _default_context_paths(container: Container) -> list[str]:
+    """Resolves the default `.teddy/*.context` entries outside a session."""
+    file_system_manager = container.resolve(IFileSystemManager)
+    return file_system_manager.get_context_paths()
+
+
+def handle_context_gathering(
+    container: Container,
+    no_copy: bool,
+    additional_context: Optional[Sequence[str]] = None,
+    only: bool = False,
+):
     """Logic for the 'context' command."""
     context_service: IGetContextUseCase = container.resolve(IGetContextUseCase)
     context_files = detect_session_context()
+
+    if only and not additional_context:
+        raise typer.BadParameter("--only requires at least one --context value.")
+
+    if additional_context:
+        explicit_scope = {"Explicit": list(additional_context)}
+        if only:
+            context_files = explicit_scope
+        else:
+            # Outside a session no scope map exists, so the defaults are
+            # resolved here: the service globs only when the map is falsy.
+            scopes = (
+                dict(context_files)
+                if context_files
+                else {"Default": _default_context_paths(container)}
+            )
+            scopes.update(explicit_scope)
+            context_files = scopes
+
     # Performance: Formatting context for Markdown doesn't use tokens, so we skip them.
     context_result = context_service.get_context(
         context_files=context_files, include_tokens=False
