@@ -22,6 +22,7 @@ Implements the `IGetContextUseCase` inbound port. It orchestrates the outbound p
 - `atomic_cache_write`: The cache is written to a temporary file and renamed with `Path.replace`.
 - `failures_not_cached`: A failed fetch is recorded as `None` for the run but never written to the cache.
 - `scope_dedup_priority`: A path present in several scopes keeps the non-`Turn` scope.
+- `falsy_scope_map_triggers_defaults`: A falsy `context_files` value falls back to the `.teddy/*.context` glob. A supplied scope map resolves exactly the scopes it names, with no glob fallback.
 - `single_git_status_call`: `get_git_status` runs once per turn. Its value feeds the fenced Git Status body, the `ProjectContext.git_status` field, and the badge parser.
 
 ## Inbound Ports
@@ -38,5 +39,5 @@ Implements the `IGetContextUseCase` inbound port. It orchestrates the outbound p
 
 ### `get_context(context_files=None, include_tokens=True, agent_name="Unknown", total_window=0, cache_dir=None, current_turn=None, system_prompt_tokens=0) -> ProjectContext`
 - **Preconditions:** None.
-- **Postconditions:** Returns a `ProjectContext` carrying the header, content, scoped paths, Git status, and per-file items. Remote URLs are fetched in parallel and cached when `cache_dir` is set.
+- **Postconditions:** Returns a `ProjectContext` carrying the header, content, scoped paths, Git status, and per-file items. Each scope expands `.context` manifests, directories, and URLs before deduplication. Remote URLs are fetched in parallel and cached when `cache_dir` is set.
 - **Exceptions:** None declared; per-URL fetch failures are recorded as missing content.

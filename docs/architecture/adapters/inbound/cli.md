@@ -29,6 +29,7 @@ The primary inbound (driving) adapter. It parses user commands with `Typer`, res
 - `shared_startup_preamble`: `start` and `resume` run one shared preamble helper so their startup sequence cannot drift.
 - `boundary_owns_interrupt_lifecycle`: The session loop boundary installs and restores the SIGINT handler and pairs the quit-key listener lifecycle with it.
 - `setup_gates_are_tty_gated`: The API-key and editor prompts run only when a terminal is attached.
+- `shared_context_normalization`: `start` and `context` normalize the repeatable, comma-separated `-c/--context` option through one helper in `cli_helpers.py`.
 
 ## Inbound Ports
 None — this is a driving adapter; it consumes inbound ports but exposes none.
@@ -38,7 +39,7 @@ None declared directly — the adapter resolves use cases and services from the 
 
 ## Data Contracts
 - **Commands:** `start`, `resume`, `init`, `execute`, `context`, `get-prompt`, `update`.
-- **Flags:** `--agent`/`-a`, `--context`/`-c`, `--model`, `--yolo`/`-y`, `--no-yolo`/`-n`, `--message`/`-m`, `--pipeline`/`-p`, `--no-copy`.
+- **Flags:** `--agent`/`-a`, `--context`/`-c`, `--model`, `--yolo`/`-y`, `--no-yolo`/`-n`, `--message`/`-m`, `--pipeline`/`-p`, `--only`, `--no-copy`.
 - **Exit codes:** `0` on success; `1` on a startup error or a pipeline run missing `-m`; non-zero when any executed action fails.
 
 ## Operations
@@ -61,8 +62,10 @@ None declared directly — the adapter resolves use cases and services from the 
 - **Postconditions:** Validates the plan, then executes it, and prints the rendered report to stdout and the clipboard.
 - **Exceptions:** Returns a `VALIDATION_FAILED` report when validation fails; exits non-zero when any action fails.
 
-### `context(--no-copy)`
-- **Postconditions:** Gathers and prints the project context, copying it to the clipboard unless `--no-copy` is set.
+### `context(-c/--context, --only, --no-copy)`
+- **Preconditions:** `--only` requires at least one `-c` value.
+- **Postconditions:** Gathers and prints the project context, copying it to the clipboard unless `--no-copy` is set. Repeatable `-c` values extend the default `init.context` set instead of replacing it. `--only` drops the defaults and exports the explicit values alone.
+- **Exceptions:** Exits with the Click usage code 2 when `--only` is passed without any `-c` value.
 
 ### `get-prompt(PROMPT_NAME, --no-copy)`
 - **Preconditions:** `PROMPT_NAME` names an available agent prompt.

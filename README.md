@@ -248,6 +248,31 @@ teddy resume -m "your next instruction"
 | `--max-turns`      | Maximum turns for a non-interactive run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`.                                            |
 | `--max-cost`       | Maximum session cost in dollars for a non-interactive run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`.                   |
 
+### Exporting Context
+
+`teddy context` bundles system information, git status, project structure, and file contents into a single Markdown payload. It copies the payload to the clipboard unless you pass `--no-copy`.
+
+Pass `-c/--context` to add ad-hoc values for a single run. The flag is repeatable and accepts comma-separated values. Explicit values extend the default set from `.teddy/init.context`. They do not replace it.
+
+```bash
+# Add two files beside the default init.context entries
+teddy context -c README.md -c src/app.py
+
+# Comma-separated values expand to separate entries
+teddy context -c "README.md,pyproject.toml"
+
+# Export only the chosen files and skip the default set
+teddy context --only -c README.md
+```
+
+A `-c` value resolves by kind. A directory expands recursively. A URL is fetched instead of resolved on disk. A file named `<name>.context` is treated as a manifest: the command reads one path per line, skips blank lines and `#` comments, and expands each entry. Any other file is embedded verbatim.
+
+```bash
+teddy context -c review.context
+```
+
+`--only` requires at least one `-c` value. Without one the command exits with a usage error, because an empty explicit set would export no files.
+
 ### Chat-Oriented Workflow (CHOP)
 
 You do not need API keys or per-token billing to use TeDDy. If you already have an active subscription (ChatGPT, Claude, Gemini, etc.), you can also use TeDDy to practice **[Chat-Oriented Programming (CHOP)](https://sourcegraph.com/blog/chat-oriented-programming-in-action)** from your web browser.
@@ -274,7 +299,7 @@ TeDDy packages your workspace context into a single clipboard payload, and the a
 | `resume`                      | Resume an existing session.                                                  |
 | `update`                      | Check for updates and display upgrade instructions.                          |
 | `execute`                     | Execute a Markdown plan (reads from clipboard if no path is provided).       |
-| `context`                     | Export context payload (system info, git status, file tree, `init.context`). |
+| `context`                     | Export context payload (system info, git status, file tree, `init.context`). Add ad-hoc files with `-c` and skip defaults with `--only`. |
 | <nobr>`get-prompt`</nobr>     | Retrieve agent system prompts (respects overrides in `.teddy/prompts/`).     |
 
 > [!NOTE]

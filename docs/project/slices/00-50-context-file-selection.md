@@ -103,7 +103,7 @@ And the payload does not list docs/ARCHITECTURE.md
 - [x] **Wiring** - Add `-c/--context` and `--only` to the `context` command and pass the normalized list to `handle_context_gathering`. The handler composes an `Explicit` scope beside the detected scopes, or beside the `.teddy/*.context` defaults outside a session. Drive an acceptance test that asserts the requested file and an `init.context` entry appear together.
 - [x] **Logic** - Cover the composition matrix through the public command: additive beside `init.context` outside a session, additive beside the Turn and Session scopes inside a session, `--only` suppression, `--only` without `-c`, manifest expansion, directory expansion, and a missing path.
 - [x] **Refactor** - Extract the repeatable and comma-separated normalization helper and reuse it in `start`. Keep the existing `start` behavior and tests green.
-- [ ] **Cleanup** - Document the usage concisely in the README. Add an `### Exporting Context` subsection under Usage covering the additive default, the `--only` escape hatch, and the `.context` manifest requirement. Update the `context` row in the Command Reference and the `context` description in `docs/project/specs/manual-cli-workflow.md`.
+- [x] **Cleanup** - Document the usage concisely in the README. Add an `### Exporting Context` subsection under Usage covering the additive default, the `--only` escape hatch, and the `.context` manifest requirement. Update the `context` row in the Command Reference and the `context` description in `docs/project/specs/manual-cli-workflow.md`.
 
 ## Implementation Notes
 
@@ -136,6 +136,15 @@ And the payload does not list docs/ARCHITECTURE.md
 - `cli_helpers.py` imports neither `__main__` nor any module that imports it, so the helper introduces no import cycle.
 - `tests/suites/unit/adapters/inbound/test_cli_helpers.py` pins the grammar with nine parameterized cases, including empty input, blank fragments, mixed occurrences, and surrounding whitespace.
 - Manifest and comma grammar stay shared, because both commands now normalize through the same helper.
+- The global suite passes with 1959 passed and 5 skipped.
+
+**Cleanup (deliverable 4):**
+- The README gained an `### Exporting Context` subsection under Usage, placed between the Optional Flags table and the CHOP workflow.
+- The subsection documents the additive default, the `--only` escape hatch, the `.context` manifest convention, the directory and URL resolution, and the `--only` usage requirement.
+- The Command Reference `context` row now names `-c` and `--only` beside the existing payload description.
+- `docs/project/specs/manual-cli-workflow.md` gained a `### Context File Selection` section before the `teddy execute` output section, plus a cross-link from the core workflow loop step.
+- The prose stays inside the exposed flag surface: `--no-copy`, `-c/--context`, and `--only`.
+- The README guardrail test reads only the `### Optional Flags` section and pins `--max-turns` and `--max-cost`, so the new prose outside that section cannot trip it.
 - The global suite passes with 1959 passed and 5 skipped.
 
 ## Verification

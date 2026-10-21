@@ -17,7 +17,7 @@ This document specifies the user experience and system behavior for a non-intera
 
 The standard "happy path" for the manual workflow is a cycle of context gathering, planning, and execution.
 
-1.  **`teddy context`:** The user runs `teddy context`. The command gathers all relevant project information and **copies it to the clipboard**.
+1.  **`teddy context`:** The user runs `teddy context`. The command gathers all relevant project information and **copies it to the clipboard**. The `-c/--context` flag adds ad-hoc values, and `--only` suppresses the default set (see [Context File Selection](#context-file-selection)).
 2.  **User Pastes to AI:** The user pastes the context payload from their clipboard into the external chat UI, along with their prompt for the AI.
 3.  **AI Generates Plan:** The AI returns a plan in valid Markdown format. The user **copies the entire Markdown plan to the clipboard**.
 4.  **`teddy execute`:** The user runs `teddy execute`.
@@ -39,6 +39,19 @@ A core safety feature of TeDDy is the approval loop. When `teddy execute` is run
 4.  **Handle User Decision:**
     -   If the user enters `y` (or `yes`), the action is executed.
     -   If the user enters `n` (or `no`), the action is skipped, and they are prompted for an optional `Reason for skipping:`.
+
+### Context File Selection
+
+`teddy context` exports the default context set defined by `.teddy/init.context`. The `-c/--context` flag adds ad-hoc values for a single run. The flag is repeatable, and each occurrence accepts comma-separated values. Explicit values extend the default set. They do not replace it.
+
+A value resolves by kind:
+
+-   **`.context` manifest:** The command reads one path per line, skips blank lines and `#` comments, and expands each entry. Manifests may reference other manifests, and cycle detection prevents infinite recursion.
+-   **Directory:** The command expands the directory recursively and respects `.gitignore` and `.teddyignore`.
+-   **URL:** A value starting with `http://` or `https://` is fetched instead of resolved on disk.
+-   **Any other path:** The command embeds the file verbatim. A missing file renders a `--- FILE NOT FOUND ---` marker.
+
+The `--only` flag drops the default set and exports the explicit values alone. `--only` requires at least one `-c` value. Without one the command exits with a usage error, because an empty explicit set would export no files.
 
 ### `teddy execute` CLI Output
 
