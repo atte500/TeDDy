@@ -236,9 +236,6 @@ def start(  # noqa: PLR0913
         ),
     ),
     model: Optional[str] = typer.Option(None, "--model", help="LLM model override."),
-    api_key: Optional[str] = typer.Option(
-        None, "--api-key", help="LLM API key override."
-    ),
     max_turns: Optional[int] = OPT_MAX_TURNS,
     max_cost: Optional[float] = OPT_MAX_COST,
 ):
@@ -271,7 +268,6 @@ def start(  # noqa: PLR0913
         pipeline=pipeline,
         additional_context=additional_context,
         model=model,
-        api_key=api_key,
         max_turns=max_turns,
         max_cost=max_cost,
     )
@@ -514,9 +510,6 @@ def resume(  # noqa: PLR0913
     ),
     no_copy: bool = OPT_NO_COPY,
     model: Optional[str] = typer.Option(None, "--model", help="LLM model override."),
-    api_key: Optional[str] = typer.Option(
-        None, "--api-key", help="LLM API key override."
-    ),
     agent: Optional[str] = typer.Option(
         None,
         "--agent",
@@ -559,7 +552,6 @@ def resume(  # noqa: PLR0913
         setup_api_key=_resolve_setup_api_key(system_env, pipeline=pipeline),
         no_copy=no_copy,
         model=model,
-        api_key=api_key,
         agent=agent,
         message=message,
         pipeline=pipeline,
