@@ -1,5 +1,5 @@
 # Slice: Provider-Aware API Key Prompt and Local Endpoint Placeholder
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** [00-01](/docs/project/slices/00-01-defer-interactive-setup-to-session-start.md), [00-03](/docs/project/slices/00-03-remove-api-key-flag.md)
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -131,7 +131,7 @@ None. Provider resolution, key requiredness, host classification, and the prefix
 7. `[MIGRATE]` `resources/config/config.yaml` — Extend the local-model comment block with the prefix rule per server.
 
 ## Deliverables
-- [ ] **Wiring** - Acceptance test: a loopback `api_base` persists the placeholder with no prompt. Implement `_is_local_endpoint` for loopback hosts and names, the local short circuit, and the placeholder write.
+- [x] **Wiring** - Acceptance test: a loopback `api_base` persists the placeholder with no prompt. Implement `_is_local_endpoint` for loopback hosts and names, the local short circuit, and the placeholder write.
 - [ ] **Wiring** - Acceptance test: an OpenRouter configuration prompts with the `Provider:` and stripped `Model:` lines. Implement `_resolve_model_identity` and the new prompt copy with hidden input and Enter-to-skip, and retire the obsolete OpenRouter warning assertion in the same commit.
 - [ ] **Logic** - Cover the `_is_local_endpoint` host classifier with unit tests for loopback literals, private ranges, container aliases, a scheme-less value, a malformed value, and a public host.
 - [ ] **Logic** - Add the provider-resolution error to `validate_config` with the library stdout captured, and cover the unresolvable-model and stray-output cases with unit tests.
@@ -143,6 +143,10 @@ None. Provider resolution, key requiredness, host classification, and the prefix
 - The standalone Contract deliverable was dropped. The two helpers are private module functions rather than ports or DTOs, so each arrives with the tracer bullet that needs it.
 - The provider-resolution error is green-preserving because every existing preflight test uses a resolvable model. The bare-model guard appends an error only when litellm raises during resolution, so the mock-provider lazy-guard test stays green.
 - The stdout capture wraps `litellm.get_llm_provider` in `redirect_stdout`, so the library provider list never reaches the CLI output.
+- First Wiring deliverable implemented. The gate now short-circuits when `_is_local_endpoint` reports a local endpoint. That classifier reads `llm.api_base` through `_api_base_host`, which tolerates a missing scheme, and `_host_is_loopback`, which performs no DNS lookup. The short circuit calls `_persist_local_placeholder_key`, which writes `dummy-key-custom-endpoints` to `.teddy/.env`, migrates `llm.api_key` to the `${TEDDY_LLM_API_KEY}` interpolation form, and prints the cyan endpoint line with the yellow placeholder notice.
+- Red failed exactly on the prompt recorder with `['LLM API key'] == []`, which proved the old gate always prompted. Green turned the targeted test green, and the unfiltered suite reported 1993 passed and 5 skipped.
+- The acceptance test stops at the key-gate outcome and its notice. A full-session exit-code assertion is out of scope, because the default harness mocks cannot complete a planning round. The sibling key-gate acceptance modules treat session completion the same way.
+- The classifier currently covers loopback literals and `localhost`/`*.localhost` names only. The private ranges, link-local addresses, container aliases, and `.local` names belong to the third Logic deliverable, so this commit keeps the smaller, green-preserving surface.
 
 ## Verification
 1. **Provider line:**

@@ -826,20 +826,24 @@ def _ensure_api_key_configured(
     config_service: IConfigService,
     setup_api_key: Optional[bool],
 ) -> None:
-    """Runs the interactive API-key gate when the key is missing and required.
+    """Runs the API-key gate when the key is missing and a key may be required.
 
-    The gate fires only when ``setup_api_key`` is truthy, the resolved
-    ``llm.api_key`` is absent or blank, AND the configured model actually
-    requires a provider key (key-requiredness is delegated to litellm). It is
-    ADDITIVE and inert by default (``setup_api_key`` of ``None``/``False`` ->
-    skip), so callers that never opt in are unaffected. Single-sourced so
-    both session entry points share identical gating.
+    The gate fires only when ``setup_api_key`` is truthy and the resolved
+    ``llm.api_key`` is absent or blank. A local endpoint short-circuits the
+    prompt with a persisted placeholder key, because a server on the developer
+    machine never needs a real credential. Otherwise the interactive prompt
+    fires when the configured model actually requires a provider key
+    (key-requiredness is delegated to litellm). It is ADDITIVE and inert by
+    default (``setup_api_key`` of ``None``/``False`` -> skip), so callers that
+    never opt in are unaffected. Single-sourced so both session entry points
+    share identical gating.
     """
-    if (
-        setup_api_key
-        and _is_llm_api_key_missing(config_service)
-        and _llm_model_requires_api_key(config_service)
-    ):
+    if not setup_api_key or not _is_llm_api_key_missing(config_service):
+        return
+    if _is_local_endpoint(config_service):
+        _persist_local_placeholder_key(config_service)
+        return
+    if _llm_model_requires_api_key(config_service):
         _prompt_for_api_key(config_service)
 
 
@@ -923,6 +927,73 @@ def _prompt_for_api_key(config_service: IConfigService) -> None:
     typer.secho(
         "LLM API key saved to .teddy/.env.",
         fg=typer.colors.GREEN,
+        err=True,
+    )
+
+
+_LOCAL_PLACEHOLDER_KEY = "dummy-key-custom-endpoints"
+
+
+def _is_local_endpoint(config_service: IConfigService) -> bool:
+    """True when ``llm.api_base`` points at the developer machine.
+
+    A loopback host or a local name means no real credential can be required,
+    so the gate writes a placeholder instead of prompting. Host classification
+    performs no DNS lookup, so an unresolvable name never blocks startup.
+    """
+    api_base = config_service.get_setting("llm.api_base")
+    if not (isinstance(api_base, str) and api_base.strip()):
+        return False
+    return _host_is_loopback(_api_base_host(api_base))
+
+
+def _api_base_host(api_base: str) -> Optional[str]:
+    """Extracts the host from an ``api_base`` value, tolerating a missing scheme."""
+    from urllib.parse import urlsplit
+
+    value = api_base.strip()
+    candidate = value if "://" in value else f"//{value}"
+    try:
+        return urlsplit(candidate).hostname
+    except ValueError:
+        return None
+
+
+def _host_is_loopback(host: Optional[str]) -> bool:
+    """True when a host names the loopback interface."""
+    import ipaddress
+
+    if not host:
+        return False
+    normalized = host.strip("[]").casefold()
+    if normalized == "localhost" or normalized.endswith(".localhost"):
+        return True
+    try:
+        return ipaddress.ip_address(normalized).is_loopback
+    except ValueError:
+        return False
+
+
+def _persist_local_placeholder_key(config_service: IConfigService) -> None:
+    """Writes the placeholder key for a local endpoint and prints the notice (stderr).
+
+    The placeholder is written to ``.teddy/.env`` and the config migrates to the
+    ``${TEDDY_LLM_API_KEY}`` interpolation form, mirroring the interactive
+    prompt path so a server that checks the Authorization header still starts.
+    """
+    config_service.set_env_variable("TEDDY_LLM_API_KEY", _LOCAL_PLACEHOLDER_KEY)
+    config_service.set_setting("llm.api_key", "${TEDDY_LLM_API_KEY}")
+    api_base = config_service.get_setting("llm.api_base") or ""
+    typer.echo("", err=True)
+    typer.secho(
+        f"\u2139 Local endpoint detected: {api_base}",
+        fg=typer.colors.CYAN,
+        err=True,
+    )
+    typer.secho(
+        f'  Saved placeholder API key "{_LOCAL_PLACEHOLDER_KEY}" to .teddy/.env.\n'
+        "  Replace TEDDY_LLM_API_KEY there if the server checks the Authorization header.",
+        fg=typer.colors.YELLOW,
         err=True,
     )
 
