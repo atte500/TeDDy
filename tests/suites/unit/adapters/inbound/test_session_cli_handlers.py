@@ -390,6 +390,10 @@ def test_handle_new_session_starts_background_check_thread(monkeypatch):
         lambda *args, **kwargs: None,
     )
     monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._pull_workspace_on_start",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
         lambda container, session_name, interactive, no_copy, **kwargs: None,
     )
@@ -489,6 +493,10 @@ def test_handle_resume_session_starts_background_check_thread(monkeypatch):
         lambda *args, **kwargs: None,
     )
     monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._pull_workspace_on_start",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
         lambda container, session_name, interactive, no_copy, **kwargs: None,
     )
@@ -566,6 +574,10 @@ def test_resume_handler_calls_set_session_agent_when_agent_provided(monkeypatch)
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._run_health_checks",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._pull_workspace_on_start",
         lambda *args, **kwargs: None,
     )
     monkeypatch.setattr(

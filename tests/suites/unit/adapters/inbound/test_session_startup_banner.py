@@ -30,6 +30,9 @@ def _stub_startup_side_effects(monkeypatch) -> None:
     )
     monkeypatch.setattr(handlers, "_run_health_checks", lambda *args, **kwargs: None)
     monkeypatch.setattr(
+        handlers, "_pull_workspace_on_start", lambda *args, **kwargs: None
+    )
+    monkeypatch.setattr(
         handlers, "_run_cli_preflight_check", lambda container, **kwargs: []
     )
     monkeypatch.setattr(handlers, "_orchestrate_session_loop", lambda **kwargs: None)

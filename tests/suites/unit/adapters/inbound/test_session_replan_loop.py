@@ -1,5 +1,7 @@
 import time
 
+import pytest
+
 from punq import Container
 from datetime import datetime, timezone
 from teddy_executor.core.domain.models.execution_report import (
@@ -26,6 +28,20 @@ from teddy_executor.adapters.inbound.session_cli_handlers import (
     handle_new_session,
     handle_resume_session,
 )
+
+
+@pytest.fixture(autouse=True)
+def _silence_workspace_pull(monkeypatch):
+    """Keep the startup pull out of these bare-container tests.
+
+    The new-session test drives ``handle_new_session`` with a hand-built
+    container and no working-directory change, so an unpatched pull would run
+    git inside the project checkout.
+    """
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._pull_workspace_on_start",
+        lambda *args, **kwargs: None,
+    )
 
 
 class MockFormatter(IMarkdownReportFormatter):

@@ -38,6 +38,9 @@ def _stub_handler_collaborators(env, monkeypatch, record):
 
     monkeypatch.setattr(handlers, "_start_background_update_check", record_background)
     monkeypatch.setattr(handlers, "_run_startup_preamble", record_preamble)
+    monkeypatch.setattr(
+        handlers, "_pull_workspace_on_start", lambda *args, **kwargs: None
+    )
     monkeypatch.setattr(handlers, "_echo_config_success", lambda *args, **kwargs: None)
     monkeypatch.setattr(handlers, "_orchestrate_session_loop", lambda **kwargs: None)
     monkeypatch.setattr(

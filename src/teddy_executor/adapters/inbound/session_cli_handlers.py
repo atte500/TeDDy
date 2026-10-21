@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 import signal
 import subprocess  # nosec B404
@@ -279,6 +280,42 @@ def _run_health_checks(config_service: IConfigService) -> None:
     if config_service.get_setting("workspace.init", True):
         _check_git_initialized()
     _warn_disabled_workspace_steps(config_service)
+
+
+def _pull_workspace_on_start(config_service: IConfigService) -> None:
+    """Fast-forward the workspace before starting a new session.
+
+    The pull runs only when ``workspace.pull`` is enabled and the workspace is
+    a Git repository, so a disabled toggle or a non-repository directory stays
+    silent. Any non-fast-forward outcome is reported as one warning so the
+    session proceeds with the workspace unchanged.
+    """
+    if not config_service.get_setting("workspace.pull", True):
+        return
+    if not (Path.cwd() / ".git").exists():
+        return
+    try:
+        result = subprocess.run(  # nosec B603 B607
+            ["git", "pull", "--ff-only"],
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+            capture_output=True,
+            timeout=15,
+        )
+    except subprocess.TimeoutExpired:
+        typer.secho(
+            "⚠ Workspace pull timed out; continuing without it.",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+        return
+    if result.returncode == 0:
+        typer.secho("Workspace fast-forwarded", fg=typer.colors.GREEN, err=True)
+    else:
+        typer.secho(
+            "⚠ Workspace pull skipped; continuing with the current branch.",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
 
 
 def _start_background_update_check(container: Container) -> list[str]:
@@ -723,6 +760,7 @@ def handle_new_session(  # noqa: PLR0913
             setup_editor=setup_editor,
             setup_api_key=setup_api_key,
         )
+        _pull_workspace_on_start(container.resolve(IConfigService))
         _echo_config_success(container, agent, model=model)
 
         session_manager: ISessionManager = container.resolve(ISessionManager)

@@ -1,4 +1,5 @@
 import time
+import pytest
 from unittest.mock import Mock, create_autospec
 from punq import Container
 from teddy_executor.adapters.inbound.session_cli_handlers import handle_new_session
@@ -12,6 +13,20 @@ from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+
+
+@pytest.fixture(autouse=True)
+def _silence_workspace_pull(monkeypatch):
+    """Keep the startup pull out of these bare-container tests.
+
+    Each test drives ``handle_new_session`` with a hand-built container and no
+    working-directory change, so an unpatched pull would run git inside the
+    project checkout.
+    """
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._pull_workspace_on_start",
+        lambda *args, **kwargs: None,
+    )
 
 
 def test_handle_new_session_prompts_for_message_before_creating_dir():
