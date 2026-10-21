@@ -1,5 +1,5 @@
 # Slice: Workspace Configuration Improvements
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** None
 - **Specs:** [Context Payload Format](/docs/project/specs/context-payload-format.md)
@@ -104,7 +104,7 @@ And teddy resume never runs a pull
 
 ### Section A: Configurable Tree Depth with Explained Omission Marker
 
-- [ ] **Env** — Add `context.max_tree_depth: 4` to `src/teddy_executor/resources/config/config.yaml` beneath the `read:` block with comment `# Max project tree depth (0 = unlimited).`
+- [x] **Env** — Add `context.max_tree_depth: 4` to `src/teddy_executor/resources/config/config.yaml` beneath the `read:` block with comment `# Max project tree depth (0 = unlimited).`
 - [ ] **Contract** — Add `max_depth: int = 0` to `LocalRepoTreeGenerator.__init__` and store it as `self._max_depth`. Document the marker format and 0-means-unlimited semantics in `docs/architecture/core/ports/outbound/repo_tree_generator.md` postconditions.
 - [ ] **Wiring** — Inject `container.resolve(IConfigService).get_setting("context.max_tree_depth", 0)` at `infrastructure.py:146`.
 - [ ] **Logic** — Thread a `depth` counter through `_collect_directory`. When `max_depth > 0` and `depth >= max_depth`, emit a section whose names list contains one marker line `[... directory not expanded (depth limit N): X folders, Y files]` and do not recurse. Count only visible immediate children after ignore rules.
@@ -154,7 +154,7 @@ And teddy resume never runs a pull
 
 ### Section D: `config_service.md` Corrections and New Keys
 
-- [ ] **Cleanup** — Rewrite the `## Data Contracts` bullet in `docs/architecture/core/ports/outbound/config_service.md` so it lists only the real key names. Replace `max_execute_lines` with `execute.max_output_lines` (int, default 100). Replace `max_read_lines` with `read.max_lines` (int, default 1000). Replace `prune_preceding_on_non_green` with `prune_failure_history` (bool). Add `execute.default_timeout_seconds` (float, default 60.0), `edit.similarity_threshold` (float, default 0.95), `context.max_tree_depth` (int, default 4, 0 = unlimited), `workspace.init` (bool), `workspace.pre-commit` (bool), and `workspace.pull` (bool).
+- [x] **Cleanup** — Rewrite the `## Data Contracts` bullet in `docs/architecture/core/ports/outbound/config_service.md` so it lists only the real key names. Replace `max_execute_lines` with `execute.max_output_lines` (int, default 100). Replace `max_read_lines` with `read.max_lines` (int, default 1000). Replace `prune_preceding_on_non_green` with `prune_failure_history` (bool). Add `execute.default_timeout_seconds` (float, default 60.0), `edit.similarity_threshold` (float, default 0.95), `context.max_tree_depth` (int, default 4, 0 = unlimited), `workspace.init` (bool), `workspace.pre-commit` (bool), and `workspace.pull` (bool). Verified pre-applied by documentation commit 5f107678 at line 31 of the port document.
 
 ## Implementation Notes
 
@@ -165,6 +165,8 @@ And teddy resume never runs a pull
 - The pull helper must inherit a minimal environment. Pass `dict(os.environ, GIT_TERMINAL_PROMPT="0")` so an interactive credential prompt cannot block the session even when the caller is non-interactive.
 - Timeout must call `process.kill()` on the child when exceeded. A hanging credential prompt cannot block startup.
 - `subprocess.run` returns `CompletedProcess`. Check `returncode != 0` and route to the warning path. Route to the success path when `returncode == 0`, and parse `stdout` for the fast-forwarded commit count if the source output is unambiguous. Fallback: print a generic short success line.
+- Section A Env deliverable landed as a declarative change: `context.max_tree_depth: 4` sits beneath the `read:` block of the bundled `config.yaml` with the stated comment. A Red probe confirmed the key was absent, and a Green probe read the value `4`. The full suite stayed green, so no consumer regressed from the new top-level group.
+- Section D was verified rather than rewritten. The `## Data Contracts` bullet in `config_service.md` already lists `execute.max_output_lines`, `read.max_lines`, `auto_pruning.prune_failure_history`, `execute.default_timeout_seconds`, `edit.similarity_threshold`, `context.max_tree_depth`, `workspace.init`, `workspace.pre-commit`, and `workspace.pull`. Documentation commit 5f107678 applied the correction, so the deliverable is marked complete without further edits.
 
 ## Verification
 
