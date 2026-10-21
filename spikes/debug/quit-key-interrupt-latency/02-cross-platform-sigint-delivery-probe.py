@@ -20,10 +20,12 @@ import sys
 import threading
 import time
 
+from concurrent.futures import Future
+
 DELIVERY_DELAY_SECONDS = 0.2
 WORKER_JOIN_TIMEOUT_SECONDS = 5.0
 
-WAITS = ("sleep_1s", "sleep_3s", "socket_1s")
+WAITS = ("sleep_1s", "sleep_3s", "socket_1s", "future_1s", "event_1s")
 
 
 def _replica_raise_interrupt() -> None:
@@ -68,6 +70,16 @@ def _block_main(wait: str) -> None:
         finally:
             reader.close()
             writer.close()
+    elif wait == "future_1s":
+        # Mirrors a sliced ``future.result(timeout=...)`` wait: the main thread
+        # blocks on the future's condition lock, the shape a polled LLM wait uses.
+        pending: Future[str] = Future()
+        try:
+            pending.result(timeout=1.0)
+        except TimeoutError:
+            pass
+    elif wait == "event_1s":
+        threading.Event().wait(1.0)
     else:
         raise SystemExit(f"unknown wait: {wait}")
 
