@@ -78,7 +78,7 @@ The targeted adapter modules passed 41 tests. The full suite finished with 1875 
 - `YamlConfigAdapter._find_key_line`: now normalizes quoted key tokens, so `"llm.model": value` matches the dotted path.
 - `YamlConfigAdapter._surgically_set`: now prefers an exact top-level dotted key line, matching the `get_setting` precedence.
 - `YamlConfigAdapter.set_setting`: now rebuilds the merged cache from disk after a write.
-- `tests/suites/unit/adapters/outbound/test_yaml_config_adapter.py`: six regression tests cover duplicate scalar, nested, and mapping keys, exact-key precedence, a quoted nested key, and the unhashable-key fallback.
+- `tests/suites/unit/adapters/outbound/test_yaml_config_adapter_duplicate_keys.py`: six regression tests cover duplicate scalar, nested, and mapping keys, exact-key precedence, a quoted nested key, and the unhashable-key fallback. The module is split from `test_yaml_config_adapter.py` to keep both files below the 300-line quality limit.
 - `docs/architecture/adapters/outbound/yaml_config_adapter.md`: documents the duplicate-key policy, the exact-key precedence, and the new exception.
 - [Preserved MRE](/spikes/debug/duplicate-config-key-semantics/01-duplicate-config-key-mre.py): asserts the enforced policy and exits 0 on the fixed adapter.
 - [Replica proof](/spikes/debug/duplicate-config-key-semantics/02-verify-replica-fix.py): ten verification checks against the [sandbox replica](/spikes/debug/duplicate-config-key-semantics/replica_yaml_config_adapter.py).
