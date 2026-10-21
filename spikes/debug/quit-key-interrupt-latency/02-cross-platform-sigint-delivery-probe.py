@@ -9,7 +9,8 @@ The probe reports the thread that ran the handler, so a thread-directed
 delivery is visible in the output. ``os.kill(getpid, SIGINT)`` is skipped on
 Windows because that call terminates the process there. One extra Windows mode
 cancels the main thread's pending synchronous I/O before raising, which tests
-whether a blocking socket read can be woken at all.
+whether a blocking socket read can be woken at all. An unbounded future wait is
+measured with a safety release, because a shipped runner would use no timeout.
 """
 
 from __future__ import annotations
@@ -26,8 +27,16 @@ from concurrent.futures import Future
 
 DELIVERY_DELAY_SECONDS = 0.2
 WORKER_JOIN_TIMEOUT_SECONDS = 5.0
+UNBOUNDED_SAFETY_SECONDS = 5.0
 
-WAITS = ("sleep_1s", "sleep_3s", "socket_1s", "future_1s", "event_1s")
+WAITS = (
+    "sleep_1s",
+    "sleep_3s",
+    "socket_1s",
+    "future_1s",
+    "event_1s",
+    "future_unbounded",
+)
 
 
 def _replica_raise_interrupt() -> None:
@@ -121,6 +130,24 @@ def _block_main(wait: str) -> None:
             pass
     elif wait == "event_1s":
         threading.Event().wait(1.0)
+    elif wait == "future_unbounded":
+        # Mirrors an unbounded ``future.result()`` wait: the shape a runner
+        # uses when it waits on a completion worker. The safety timer releases
+        # the wait if the delivery primitive cannot wake it, so the probe
+        # reports a latency instead of hanging.
+        pending: Future[str] = Future()
+
+        def _release() -> None:
+            if not pending.done():
+                pending.set_result("released")
+
+        safety = threading.Timer(UNBOUNDED_SAFETY_SECONDS, _release)
+        safety.daemon = True
+        safety.start()
+        try:
+            pending.result()
+        finally:
+            safety.cancel()
     else:
         raise SystemExit(f"unknown wait: {wait}")
 
@@ -158,10 +185,12 @@ def _run(mode: str, wait: str) -> None:
         worker.start()
         try:
             _block_main(wait)
+            worker.join(timeout=WORKER_JOIN_TIMEOUT_SECONDS)
         except KeyboardInterrupt:
+            # The handler can also fire at the first checkpoint AFTER the
+            # blocking call returns, so the guard spans the join as well.
             interrupted = True
             interrupt_at.append(time.monotonic())
-        worker.join(timeout=WORKER_JOIN_TIMEOUT_SECONDS)
     finally:
         signal.signal(signal.SIGINT, previous)
 
@@ -177,7 +206,7 @@ def _run(mode: str, wait: str) -> None:
     )
     thread_label = handler_thread[0] if handler_thread else "none"
     print(
-        f"mode={mode:<26} wait={wait:<9} "
+        f"mode={mode:<26} wait={wait:<17} "
         f"handler_thread={thread_label:<12} handler_ms={handler_ms} "
         f"interrupt_ms={interrupt_ms} interrupted={interrupted} "
         f"delivery_error={delivery_errors or 'none'} "
