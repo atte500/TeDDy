@@ -14,15 +14,16 @@ def test_planning_service_uses_configured_retries(container: Any) -> None:
     mock_config = register_mock(container, IConfigService)
     mock_llm = register_mock(container, ILlmClient)
 
-    ports = container.resolve(PlanningPorts)
-
-    # Configure 5 retries.
+    # Configure the mock before resolving the graph, because graph
+    # construction builds the tree generator, which reads the config.
     def mock_get_setting(key: str, default: Any = None) -> Any:
         if key == "llm.max_retries":
             return 5
         return default
 
     mock_config.get_setting.side_effect = mock_get_setting
+
+    ports = container.resolve(PlanningPorts)
 
     # Mock LLM to return empty responses
     # Use POSIXPathMock directly for non-port objects to allow arbitrary attributes
@@ -46,11 +47,11 @@ def test_retry_loop_accumulates_cost_across_billed_attempts(container: Any) -> N
     mock_config = register_mock(container, IConfigService)
     mock_llm = register_mock(container, ILlmClient)
 
-    ports = container.resolve(PlanningPorts)
-
     mock_config.get_setting.side_effect = lambda key, default=None: (
         3 if key == "llm.max_retries" else default
     )
+
+    ports = container.resolve(PlanningPorts)
 
     empty_response = POSIXPathMock()
     empty_response.choices = []
@@ -82,11 +83,11 @@ def test_single_successful_attempt_is_billed_exactly_once(container: Any) -> Non
     mock_config = register_mock(container, IConfigService)
     mock_llm = register_mock(container, ILlmClient)
 
-    ports = container.resolve(PlanningPorts)
-
     mock_config.get_setting.side_effect = lambda key, default=None: (
         3 if key == "llm.max_retries" else default
     )
+
+    ports = container.resolve(PlanningPorts)
 
     success_choice = POSIXPathMock()
     success_choice.message.content = "# Plan\nContent"

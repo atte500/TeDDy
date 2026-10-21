@@ -1,5 +1,6 @@
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 
 
 def test_container_resolves_foundational_services(container):
@@ -18,3 +19,13 @@ def test_container_resolves_foundational_services(container):
     # a mock depending on the fixture's configuration.
     assert isinstance(config_service, IConfigService)
     assert isinstance(llm_client, ILlmClient)
+
+
+def test_tree_generator_receives_configured_max_depth(container):
+    """The composition root injects context.max_tree_depth into the factory."""
+    config_service = container.resolve(IConfigService)
+    expected_depth = config_service.get_setting("context.max_tree_depth", 0)
+
+    generator = container.resolve(IRepoTreeGenerator)
+
+    assert generator._max_depth == expected_depth
