@@ -131,15 +131,18 @@ None. Provider resolution, key requiredness, host classification, and the prefix
 7. `[MIGRATE]` `resources/config/config.yaml` — Extend the local-model comment block with the prefix rule per server.
 
 ## Deliverables
-- [ ] **Wiring** - Acceptance test: a loopback `api_base` persists the placeholder with no prompt, and an OpenRouter configuration prompts with the `Provider:` and stripped `Model:` lines.
-- [ ] **Contract** - Add `_resolve_model_identity` and `_is_local_endpoint` with docstrings.
-- [ ] **Logic** - Implement the local short circuit, the new prompt copy, hidden input, and Enter-to-skip.
-- [ ] **Logic** - Add the provider-resolution error to `validate_config` with stdout captured.
-- [ ] **Logic** - Cover the host classifier table with unit tests.
-- [ ] **Migration** - Replace the hardcoded OpenRouter warning test and extend the configuration comment block.
+- [ ] **Wiring** - Acceptance test: a loopback `api_base` persists the placeholder with no prompt. Implement `_is_local_endpoint` for loopback hosts and names, the local short circuit, and the placeholder write.
+- [ ] **Wiring** - Acceptance test: an OpenRouter configuration prompts with the `Provider:` and stripped `Model:` lines. Implement `_resolve_model_identity` and the new prompt copy with hidden input and Enter-to-skip, and retire the obsolete OpenRouter warning assertion in the same commit.
+- [ ] **Logic** - Cover the `_is_local_endpoint` host classifier with unit tests for loopback literals, private ranges, container aliases, a scheme-less value, a malformed value, and a public host.
+- [ ] **Logic** - Add the provider-resolution error to `validate_config` with the library stdout captured, and cover the unresolvable-model and stray-output cases with unit tests.
+- [ ] **Migration** - Extend the bundled config comment block with the per-server model prefix rule.
 
 ## Implementation Notes
-(To be recorded during implementation.)
+- Orientation audit re-partitioned the deliverables. The original order could not keep the suite green, because the prompt copy change invalidates the OpenRouter warning assertion in `test_session_cli_handlers_api_key_gate.py` at that commit. The retirement therefore moves into the copy change.
+- The audit split the single Wiring item into two atomic tracer bullets: the local placeholder path and the provider-aware copy. Each keeps every test green on its own commit.
+- The standalone Contract deliverable was dropped. The two helpers are private module functions rather than ports or DTOs, so each arrives with the tracer bullet that needs it.
+- The provider-resolution error is green-preserving because every existing preflight test uses a resolvable model. The bare-model guard appends an error only when litellm raises during resolution, so the mock-provider lazy-guard test stays green.
+- The stdout capture wraps `litellm.get_llm_provider` in `redirect_stdout`, so the library provider list never reaches the CLI output.
 
 ## Verification
 1. **Provider line:**
