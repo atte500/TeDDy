@@ -1,5 +1,5 @@
 # Slice: Remove the API Key Command-Line Flag
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** [00-01](/docs/project/slices/00-01-defer-interactive-setup-to-session-start.md)
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -91,6 +91,7 @@ None. The flag origin, its documentation status, its test coverage, and the prec
 - Integration confirmed the carry-over contraction and the specification rewrite are systemically safe: `make test` reported 1992 passed and 5 skipped.
 - Component Design audit: no correction is due. The `SessionService` doc describes the turn transition without naming the carry-over keys, the `PlanningService` doc names no override keyword, and the CLI Adapter doc already states the scaffolding-only `init()`. All three documents keep `Status: Implemented`.
 - Stale-reference sweep: the only remaining `--api-key` and `_run_init_setup_gates` hits are the acceptance and seam assertions that deliberately pin the removals. No documentation or comment advertises a removed flag or helper.
+- Verification audit clean. No skeleton response, hardcoded mock value, or temporary stub remains in the touched source. Every `SessionOptions` construction omits the removed field, `_persist_next_meta` keeps one production call site, and no source file declares `--provider`. The suite stands at 1992 passed and 5 skipped.
 
 ## Verification
 1. **Flag is gone:**

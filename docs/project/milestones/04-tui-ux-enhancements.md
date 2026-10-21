@@ -39,10 +39,9 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
 > 6. Layout padding consistency
 > 7. MOVE action implementation
 > 8. DELETE action implementation
-> 9. Session interrupt mechanism
-> 10. `--console` deprecation marking
-> 11. Ad-hoc: CLI arg normalization (00-03)
-> 12. Ad-hoc: Remove bare except in InitService (00-04)
+> 9. Configurable tree depth
+> 10. Session interrupt mechanism
+> 11. `--console` deprecation marking
 
 **Delivered Slices:**
 - [x] [04-01: Normalize Editor Basenames for Windows Launcher Suffixes](/docs/project/slices/04-01-editor-basename-normalization.md)
