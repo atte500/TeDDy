@@ -76,7 +76,7 @@ def register_infrastructure(container: punq.Container) -> None:
         factory=lambda: ShellAdapter(
             command_builder=container.resolve(ShellCommandBuilder),
             max_execute_lines=container.resolve(IConfigService).get_setting(
-                "execution.max_output_lines"
+                "execute.max_output_lines", 100
             ),
             # Shared process-global guard: the SAME instance the session-loop
             # boundary installs and the orchestrator drains, so an in-flight

@@ -135,7 +135,7 @@ class ActionFactory(IActionFactory):
         if "timeout" not in execute_params and self._config_service:
             # Safe-by-Default: Provide hardcoded 60.0 fallback if config is missing
             default_timeout = self._config_service.get_setting(
-                "execution.default_timeout_seconds", 60.0
+                "execute.default_timeout_seconds", 60.0
             )
             if default_timeout is not None:
                 from teddy_executor.core.services.parser_infrastructure import (
@@ -154,7 +154,7 @@ class ActionFactory(IActionFactory):
         if "similarity_threshold" not in kwargs and self._config_service:
             # Safe-by-Default: Provide domain default if config is missing
             global_threshold = self._config_service.get_setting(
-                "execution.similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
+                "edit.similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
             )
             if global_threshold is not None:
                 from teddy_executor.core.services.parser_infrastructure import (

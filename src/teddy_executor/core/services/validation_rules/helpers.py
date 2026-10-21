@@ -131,7 +131,7 @@ def resolve_similarity_threshold(
     Resolves in order: Action Params -> Global Config -> Domain Default.
     """
     global_threshold_raw = config_service.get_setting(
-        "execution.similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
+        "edit.similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
     )
     global_threshold = (
         float(global_threshold_raw)
@@ -139,9 +139,7 @@ def resolve_similarity_threshold(
         else DEFAULT_SIMILARITY_THRESHOLD
     )
 
-    threshold_raw = action_params.get(
-        "execution.similarity_threshold", global_threshold
-    )
+    threshold_raw = action_params.get("edit.similarity_threshold", global_threshold)
     return float(threshold_raw) if threshold_raw is not None else global_threshold
 
 

@@ -8,7 +8,7 @@ def test_action_factory_injects_global_timeout_into_shell_execution(  # noqa: PL
     # Arrange
     # Return 42 only for the timeout key
     mock_config.get_setting.side_effect = lambda key, default=None: (
-        42 if key == "execution.default_timeout_seconds" else default
+        42 if key == "execute.default_timeout_seconds" else default
     )
 
     mock_shell.execute.return_value = {"return_code": 0}

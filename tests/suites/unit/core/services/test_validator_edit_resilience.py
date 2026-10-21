@@ -8,7 +8,7 @@ def test_validator_handles_ambiguity(container, mock_fs, mock_config):
     mock_fs.path_exists.return_value = True
 
     mock_config.get_setting.side_effect = lambda key, default=None: {
-        "execution.similarity_threshold": 0.95,
+        "edit.similarity_threshold": 0.95,
         "llm.api_key": "sk-test-key",  # pragma: allowlist secret
         "llm.model": "gpt-4o",
         "llm": {},
@@ -40,7 +40,7 @@ def test_validator_respects_custom_threshold(container, mock_fs, mock_config):
     mock_fs.path_exists.return_value = True
 
     mock_config.get_setting.side_effect = lambda key, default=None: {
-        "execution.similarity_threshold": 0.99,
+        "edit.similarity_threshold": 0.99,
         "llm.api_key": "sk-test-key",  # pragma: allowlist secret
         "llm.model": "gpt-4o",
         "llm": {},
@@ -70,7 +70,7 @@ def test_validator_passes_on_successful_fuzzy_match(container, mock_fs, mock_con
     mock_fs.path_exists.return_value = True
 
     mock_config.get_setting.side_effect = lambda key, default=None: {
-        "execution.similarity_threshold": 0.8,
+        "edit.similarity_threshold": 0.8,
         "llm.api_key": "sk-test-key",  # pragma: allowlist secret
         "llm.model": "gpt-4o",
         "llm": {},
