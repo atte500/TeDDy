@@ -1,4 +1,8 @@
+import signal
+import sys
+import threading
 from pathlib import Path
+from typing import Any
 
 import pytest
 from teddy_executor.core.domain.models import ProjectContext
@@ -13,6 +17,8 @@ from teddy_executor.core.ports.outbound import (
 )
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 from teddy_executor.core.services.planning_service import PlanningService
+from teddy_executor.core.utils.interrupt_guard import raise_interrupt
+from tests.harness.setup.mocking import POSIXPathMock
 
 
 @pytest.fixture
@@ -518,3 +524,116 @@ def test_generate_plan_does_not_pass_provider_to_llm(env):
     assert "api_key" not in kwargs, (
         f"Unexpected 'api_key' kwarg found in get_completion call: {kwargs}"
     )
+
+
+def test_planning_blocking_calls_run_off_the_calling_thread(env):
+    """A quit must interrupt the planning wait.
+
+    The calling thread must never perform the blocking LLM calls. Otherwise a
+    signal can reach the handler only after the blocking call returns. Every
+    blocking call runs on the daemon worker while the calling thread waits on
+    its future.
+    """
+    mock_prompt = env.mock_port(IPromptManager)
+    mock_llm = env.mock_port(ILlmClient)
+    mock_context = env.mock_port(IGetContextUseCase)
+    env.mock_port(IUserInteractor)
+
+    success_choice = POSIXPathMock()
+    success_choice.message.content = "# Plan\nContent"
+    success_response = POSIXPathMock()
+    success_response.choices = [success_choice]
+
+    mock_prompt.resolve_message.return_value = "test"
+    mock_prompt.resolve_agent_metadata.return_value = ("pathfinder", {}, "meta.yaml")
+    mock_prompt.fetch_system_prompt.return_value = "system-prompt"
+    mock_prompt.log_telemetry.return_value = 0.0
+    mock_context.get_context.return_value = ProjectContext(
+        header="H", content="C", scoped_paths={}, git_status=""
+    )
+
+    mock_llm.validate_config.return_value = []
+    mock_llm.supports_pricing.return_value = True
+    mock_llm.get_completion_cost.return_value = 0.0
+
+    caller_ident = threading.get_ident()
+    observed: dict[str, int | None] = {}
+
+    def _record(name: str, value: Any) -> Any:
+        def _call(*_args: Any, **_kwargs: Any) -> Any:
+            observed[name] = threading.get_ident()
+            return value
+
+        return _call
+
+    mock_llm.get_context_window.side_effect = _record("context_window", 128000)
+    mock_llm.get_token_count.side_effect = _record("token_count", 1000)
+    mock_llm.get_completion.side_effect = _record("completion", success_response)
+
+    service = env.get_service(PlanningService)
+
+    # Act
+    service.generate_plan(user_message="test", turn_dir="01", context_files={})
+
+    # Assert: every blocking seam must run off the calling thread so a signal
+    # can interrupt the future wait instead of the raw blocking call.
+    assert observed.get("completion") is not None, "the completion must run"
+    for name in ("context_window", "token_count", "completion"):
+        assert observed[name] != caller_ident, (
+            f"`{name}` blocked the calling thread, so a quit cannot interrupt it"
+        )
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32" or not hasattr(signal, "pthread_kill"),
+    reason="main-thread signal delivery requires pthread_kill",
+)
+def test_quit_during_planning_interrupts_the_planning_wait(env):
+    """A real quit raises KeyboardInterrupt out of the planning wait."""
+    mock_prompt = env.mock_port(IPromptManager)
+    mock_llm = env.mock_port(ILlmClient)
+    mock_context = env.mock_port(IGetContextUseCase)
+    env.mock_port(IUserInteractor)
+
+    started = threading.Event()
+    release = threading.Event()
+
+    def _blocking_completion(*_args: Any, **_kwargs: Any) -> Any:
+        started.set()
+        release.wait(timeout=3.0)
+        choice = POSIXPathMock()
+        choice.message.content = "# Plan\nContent"
+        response = POSIXPathMock()
+        response.choices = [choice]
+        return response
+
+    mock_prompt.resolve_message.return_value = "test"
+    mock_prompt.resolve_agent_metadata.return_value = ("pathfinder", {}, "meta.yaml")
+    mock_prompt.fetch_system_prompt.return_value = "system-prompt"
+    mock_prompt.log_telemetry.return_value = 0.0
+    mock_context.get_context.return_value = ProjectContext(
+        header="H", content="C", scoped_paths={}, git_status=""
+    )
+
+    mock_llm.validate_config.return_value = []
+    mock_llm.get_context_window.return_value = 128000
+    mock_llm.get_token_count.return_value = 1000
+    mock_llm.supports_pricing.return_value = True
+    mock_llm.get_completion.side_effect = _blocking_completion
+    mock_llm.get_completion_cost.return_value = 0.0
+
+    service = env.get_service(PlanningService)
+
+    def _deliver_quit() -> None:
+        assert started.wait(timeout=2.0), "the planning call must start"
+        raise_interrupt()
+
+    delivery = threading.Thread(target=_deliver_quit, daemon=True)
+    delivery.start()
+
+    try:
+        with pytest.raises(KeyboardInterrupt):
+            service.generate_plan(user_message="test", turn_dir="01", context_files={})
+    finally:
+        release.set()
+        delivery.join(timeout=2.0)

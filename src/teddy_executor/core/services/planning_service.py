@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
+from teddy_executor.core.utils.interruptible_call import run_interruptible
 
 
 class PlanningService(IPlanningUseCase):
@@ -93,6 +94,36 @@ class PlanningService(IPlanningUseCase):
             (turn_path / "input.md").as_posix(), full_context
         )
 
+        response, token_count, plan_content, turn_cost = run_interruptible(
+            lambda: self._run_planning_phase(messages, model, meta)
+        )
+
+        cost_val = self._prompt_manager.log_telemetry(token_count, turn_cost)
+        plan_path = (turn_path / "plan.md").as_posix()
+        self._file_system_manager.write_file(plan_path, plan_content)
+        # Pre-populate meta["model"] before update_meta to ensure the user-configured
+        # model (with routing prefix like openrouter/) is preserved.
+        # This prevents the bug where meta["model"] was missing on first turn (no --model flag)
+        # and update_meta overwrote it with the bare actual model.
+        meta.setdefault("model", model)
+        self._prompt_manager.update_meta(
+            meta, response, token_count, turn_cost, meta_file_path
+        )
+
+        return plan_path, cost_val, context
+
+    def _run_planning_phase(
+        self,
+        messages: list[Dict[str, str]],
+        model: str,
+        meta: Dict[str, Any],
+    ) -> tuple[Any, int, str, float]:
+        """Perform every blocking planning call on the interruptible worker.
+
+        Hydration, the token count, telemetry, the budget check, and the
+        completion all touch the network. The main thread waits on this worker's
+        future, so a quit interrupts the wait instead of the raw socket read.
+        """
         # Pre-emptive Hydration: Trigger hydration via get_context_window BEFORE counting tokens.
         # This ensures the model is known to the registry so token counting and telemetry work.
         if self._user_interactor:
@@ -112,20 +143,7 @@ class PlanningService(IPlanningUseCase):
             messages,
             model=model,
         )
-
-        cost_val = self._prompt_manager.log_telemetry(token_count, turn_cost)
-        plan_path = (turn_path / "plan.md").as_posix()
-        self._file_system_manager.write_file(plan_path, plan_content)
-        # Pre-populate meta["model"] before update_meta to ensure the user-configured
-        # model (with routing prefix like openrouter/) is preserved.
-        # This prevents the bug where meta["model"] was missing on first turn (no --model flag)
-        # and update_meta overwrote it with the bare actual model.
-        meta.setdefault("model", model)
-        self._prompt_manager.update_meta(
-            meta, response, token_count, turn_cost, meta_file_path
-        )
-
-        return plan_path, cost_val, context
+        return response, token_count, plan_content, turn_cost
 
     def _perform_generation_with_retry(
         self,
