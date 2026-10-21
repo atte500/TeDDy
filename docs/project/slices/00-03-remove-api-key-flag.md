@@ -1,5 +1,5 @@
 # Slice: Remove the API Key Command-Line Flag
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** [00-01](/docs/project/slices/00-01-defer-interactive-setup-to-session-start.md)
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -56,19 +56,19 @@ None. The flag origin, its documentation status, its test coverage, and the prec
 1. `[MIGRATE]` `__main__.start` and `__main__.resume` — Remove the option declaration.
 2. `[CONTRACT]` `handle_new_session`, `handle_resume_session`, `_sync_and_display_session_meta` — Remove the parameter.
 3. `[CONTRACT]` `PlanningService.generate_plan` and `_perform_generation_with_retry` — Remove the `api_key` read and keyword argument.
-4. `[CONTRACT]` `SessionMeta` — Remove the `api_key` field.
-5. `[CLEANUP]` `SessionPruningService` — Drop the `api_key` entry from the scrub list.
+4. `[CONTRACT]` `SessionOptions` — Remove the `api_key` field.
+5. `[CLEANUP]` `SessionService` — Drop the `api_key` entry from the metadata carry-over list at line 489.
 6. `[MIGRATE]` `tests/` — Drop the `api_key=None` arguments.
 7. `[CLEANUP]` `docs/project/specs/interactive-session-workflow.md` — Remove `--api-key` and the phantom `--provider`.
 
 ## Deliverables
-- [ ] **Wiring** - Acceptance test: `teddy start --api-key sk-test` is rejected with a non-zero exit code, and a `TEDDY_LLM_API_KEY` shell value still reaches the adapter.
-- [ ] **Contract** - Remove the option and the parameter chain down to `SessionMeta`.
-- [ ] **Migration** - Update the test modules that pass `api_key` through the removed seams.
-- [ ] **Cleanup** - Drop the prune scrub entry and correct the specification line.
+- [▶] **Wiring** - Atomic CLI-surface removal: add an acceptance test proving `teddy start --api-key sk-test` is rejected with a non-zero exit code and that a resolved `TEDDY_LLM_API_KEY` value still starts a session without a prompt, drop the `--api-key` argument and persisted `api_key` assertions from the context-flag scenario, then delete the two Typer options and their two `api_key=api_key` forwards. The handler parameters stay optional, so the suite stays green.
+- [ ] **Migration** - Remove `api_key` from `handle_new_session`, `handle_resume_session`, and `_sync_and_display_session_meta`, drop the `SessionOptions(api_key=...)` keyword, and remove every `api_key=None` argument and parametrized stub in the inbound handler test modules while `SessionOptions.api_key` still exists.
+- [ ] **Contract** - Remove the `SessionOptions.api_key` field, the `SessionService` metadata write, and the `PlanningService` `meta.get("api_key")` read with the `_perform_generation_with_retry` keyword argument.
+- [ ] **Cleanup** - Drop the `api_key` entry from the `SessionService` carry-over list and remove `--api-key` plus the phantom `--provider` from the interactive-session specification.
 
 ## Implementation Notes
-(To be recorded during implementation.)
+- Re-partitioned during Orientation. The original order placed Contract before Migration, which cannot keep the suite green: removing `SessionOptions.api_key` first breaks the `handle_new_session` construction, and dropping the handler parameters before their call sites are adapted breaks three inbound test modules. The recorded order is now Wiring, Migration, Contract, Cleanup.
 
 ## Verification
 1. **Flag is gone:**
