@@ -622,3 +622,81 @@ def test_resume_handler_calls_set_session_agent_when_agent_provided(monkeypatch)
     mock_session_manager.set_session_agent.assert_called_once_with(
         "test-session", "developer"
     )
+
+
+# ---------------------------------------------------------------------------
+# Harness coverage: start-only pull invocation.
+# `handle_new_session` must run the workspace pull, and `handle_resume_session`
+# must never run it, so the fast-forward stays scoped to session start.
+# ---------------------------------------------------------------------------
+
+
+def test_handle_new_session_invokes_pull_workspace_on_start(monkeypatch):
+    """`handle_new_session` invokes the start-only pull helper exactly once."""
+    from unittest.mock import Mock
+
+    from teddy_executor.adapters.inbound import session_cli_handlers as handlers
+
+    invocations: list = []
+    monkeypatch.setattr(
+        handlers, "_pull_workspace_on_start", lambda config: invocations.append(config)
+    )
+    monkeypatch.setattr(handlers, "_start_background_update_check", lambda *a, **k: [])
+    monkeypatch.setattr(handlers, "_run_startup_preamble", lambda *a, **k: None)
+    monkeypatch.setattr(handlers, "_echo_config_success", lambda *a, **k: None)
+    monkeypatch.setattr(handlers, "_orchestrate_session_loop", lambda *a, **k: None)
+
+    mock_session_manager = Mock()
+    mock_session_manager.create_session.return_value = "/fake/sessions/new-session"
+    mock_container = Mock()
+    mock_container.resolve.side_effect = lambda cls: mock_session_manager
+
+    handlers.handle_new_session(
+        container=mock_container,
+        name="pull-session",
+        agent="developer",
+        interactive=False,
+        no_copy=True,
+        message="Test pull",
+    )
+
+    assert len(invocations) == 1, (
+        f"Expected one pull invocation from start, got {len(invocations)}"
+    )
+
+
+def test_handle_resume_session_never_invokes_pull_workspace_on_start(monkeypatch):
+    """`handle_resume_session` never runs the start-only pull helper."""
+    from unittest.mock import Mock
+
+    from teddy_executor.adapters.inbound import session_cli_handlers as handlers
+
+    invocations: list = []
+    monkeypatch.setattr(
+        handlers, "_pull_workspace_on_start", lambda config: invocations.append(config)
+    )
+    monkeypatch.setattr(handlers, "_start_background_update_check", lambda *a, **k: [])
+    monkeypatch.setattr(handlers, "_run_startup_preamble", lambda *a, **k: None)
+    monkeypatch.setattr(
+        handlers,
+        "_resolve_session_name",
+        lambda container, path=None: "resume-session",
+    )
+    monkeypatch.setattr(
+        handlers, "_sync_and_display_session_meta", lambda *a, **k: None
+    )
+    monkeypatch.setattr(handlers, "_orchestrate_session_loop", lambda *a, **k: None)
+
+    mock_container = Mock()
+    mock_container.resolve.side_effect = lambda cls: Mock()
+
+    handlers.handle_resume_session(
+        container=mock_container,
+        path=None,
+        interactive=False,
+        no_copy=True,
+    )
+
+    assert invocations == [], (
+        f"Expected no pull invocation from resume, got {len(invocations)}"
+    )
