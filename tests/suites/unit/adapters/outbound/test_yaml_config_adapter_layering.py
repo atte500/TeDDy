@@ -9,8 +9,8 @@ def test_config_loads_baseline_when_user_config_missing(tmp_path):
     )
 
     # Then: It should return values from the bundled baseline
-    # Note: 'execution.max_output_lines' is a known key in our baseline
-    val = adapter.get_setting("execution.max_output_lines")
+    # Note: 'execute.max_output_lines' is a known key in our baseline
+    val = adapter.get_setting("execute.max_output_lines")
     assert val is not None
     assert isinstance(val, int)
 

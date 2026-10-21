@@ -113,4 +113,4 @@ def test_complex_key_falls_back_to_baseline(fs, container):
     adapter = container.resolve(IConfigService)
 
     # Assert - the user config is ignored and the baseline still resolves
-    assert isinstance(adapter.get_setting("execution.max_output_lines"), int)
+    assert isinstance(adapter.get_setting("execute.max_output_lines"), int)
