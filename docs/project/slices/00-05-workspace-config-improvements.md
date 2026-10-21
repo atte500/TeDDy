@@ -1,5 +1,5 @@
 # Slice: Workspace Configuration Improvements
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** None
 - **Specs:** [Context Payload Format](/docs/project/specs/context-payload-format.md)
