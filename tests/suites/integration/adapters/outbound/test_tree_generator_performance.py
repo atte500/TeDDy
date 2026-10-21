@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import pytest
 from pathlib import Path
@@ -73,3 +74,41 @@ def test_tree_integrity_with_deep_unignored_file(tmp_path: Path, monkeypatch):
     assert "c" in tree_output
     assert "./a/b/c:" in tree_output
     assert "file.txt" in tree_output
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="A 20-level temp path chain can exceed MAX_PATH on Windows",
+)
+def test_depth_limit_bounds_recursion_on_a_deep_tree(tmp_path: Path, monkeypatch):
+    """A depth limit stops descent, so a deep chain never fully materializes.
+
+    The chain is far deeper than the limit. Unbounded traversal would render
+    every level, so a small, fixed section count and the absence of the deepest
+    node prove the limit bounds the recursion. The chain stays at 20 levels
+    because macOS rejects a path above roughly 1024 bytes.
+    """
+    chain = tmp_path
+    for level in range(20):
+        chain = chain / f"d{level:03d}"
+        chain.mkdir()
+        (chain / f"f{level:03d}.txt").touch()
+    (chain / "leaf_sentinel.txt").touch()
+
+    env = (
+        TestEnvironment(monkeypatch)
+        .setup()
+        .with_real_tree_generator(str(tmp_path), max_depth=3)
+    )
+    generator = env.get_service(IRepoTreeGenerator)  # type: ignore[type-abstract]
+
+    tree = generator.generate_tree()
+
+    # The deepest nodes never render, so the traversal stopped at the limit.
+    assert "leaf_sentinel.txt" not in tree
+    assert "d003" not in tree
+    # The boundary directory renders an explicit omission marker.
+    assert "./d000/d001/d002:" in tree
+    assert "[... directory not expanded (depth limit 3): 1 folder, 1 file]" in tree
+    # Only three nested sections render, never the full 20-level chain.
+    assert tree.count("./") == 3
