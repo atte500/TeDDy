@@ -70,3 +70,26 @@ def test_non_dict_legacy_parent_is_left_alone(tmp_path):
     adapter = _load_adapter(tmp_path, {"execution": "not-a-mapping"})
 
     assert adapter.get_setting("execute.max_output_lines") == 100
+
+
+def test_loading_a_legacy_user_file_leaves_it_unchanged(tmp_path):
+    """The migration copies in memory only, so the user file stays untouched."""
+    user_config = {
+        "execution": {
+            "default_timeout_seconds": 42.5,
+            "max_output_lines": 999,
+            "similarity_threshold": 0.8,
+        }
+    }
+    teddy_dir = tmp_path / ".teddy"
+    teddy_dir.mkdir()
+    config_file = teddy_dir / "config.yaml"
+    original_text = yaml.safe_dump(user_config)
+    config_file.write_text(original_text, encoding="utf-8")
+
+    adapter = YamlConfigAdapter(
+        config_path=".teddy/config.yaml", root_dir=str(tmp_path)
+    )
+    assert adapter.get_setting("execute.max_output_lines") == 999
+
+    assert config_file.read_text(encoding="utf-8") == original_text
