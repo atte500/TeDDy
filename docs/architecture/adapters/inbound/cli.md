@@ -55,7 +55,7 @@ None declared directly — the adapter resolves use cases and services from the 
 - **Exceptions:** `ValueError` when neither path nor slug resolution finds a session.
 
 ### `init()`
-- **Postconditions:** Ensures the `.teddy/` directory, pre-warms heavy imports, prints drift advice, and runs the interactive setup gates when a terminal is attached. Idempotent.
+- **Postconditions:** Ensures the `.teddy/` directory, pre-warms heavy imports, and prints drift advice. Scaffolding only: the interactive API-key and editor setup runs at `teddy start` and `teddy resume`. Idempotent.
 
 ### `execute([PLAN_FILE], --yolo/--no-yolo, --no-copy)`
 - **Preconditions:** A plan is supplied by a file argument or the clipboard.
