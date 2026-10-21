@@ -114,7 +114,9 @@ And teddy resume never runs a pull
 
 ### Section B: `execute.*` and `edit.*` Split with Legacy Fallback
 
-- [ ] **Env** — Replace the `execution:` block in `config.yaml`:
+The first audit found that replacing the legacy `execution:` block first is a breaking change. `infrastructure.py` reads `execution.max_output_lines` with no default, so removing the baseline key would feed `None` into the shell output cap. Two config-adapter test modules also read the legacy keys from the bundled baseline. This section is therefore re-partitioned into non-breaking steps (expand -> migrate -> contract) so every commit stays green.
+
+- [ ] **Env** — Add `execute:` and `edit:` blocks to `config.yaml` beneath the existing `execution:` block, so both key groups resolve during the migration:
     ```yaml
     execute:
       default_timeout_seconds: 60       # Default timeout for EXECUTE actions.
@@ -124,9 +126,10 @@ And teddy resume never runs a pull
       similarity_threshold: 0.95        # EDIT match threshold (1.0 = exact match; ignores relative indentation).
     ```
 - [ ] **Contract** — Add `_migrate_legacy_execution_keys(user_config)` as a private method on `YamlConfigAdapter`. For each of `default_timeout_seconds`, `max_output_lines`, and `similarity_threshold`, if `user_config['execution'][key]` is present and the corresponding new key (`execute.<key>` or `edit.<key>`) is absent, copy it into the new location. Skip `None` values. Run this method from `_load_user_config` before the merge.
-- [ ] **Migration** — Update production reads: `action_factory.py` reads `execute.default_timeout_seconds` and `edit.similarity_threshold`; `validation_rules/helpers.py` reads `edit.similarity_threshold`; `infrastructure.py` reads `execute.max_output_lines`.
 - [ ] **Harness** — Extend `tests/suites/unit/adapters/outbound/test_yaml_config_adapter*.py` with a scenario where a user file carries only the legacy keys, and one where a user file carries both. Assert the new key wins.
-- [ ] **Harness** — Extend `tests/suites/unit/core/services/test_action_factory*.py` and `test_validator_edit_resilience.py` with new-key assertions.
+- [ ] **Migration** — Update production reads: `action_factory.py` reads `execute.default_timeout_seconds` and `edit.similarity_threshold`; `validation_rules/helpers.py` reads `edit.similarity_threshold`; `infrastructure.py` reads `execute.max_output_lines`. In the same commit, migrate the unit-test mocks and asserts that reference the legacy keys (`test_action_factory_timeout.py`, `test_validator_edit_resilience.py`, and any `test_action_factory*.py`) so the suite stays green.
+- [ ] **Harness** — Extend `tests/suites/unit/core/services/test_action_factory*.py` and `test_validator_edit_resilience.py` with new-key resolution assertions.
+- [ ] **Cleanup** — Remove the legacy `execution:` block from the bundled `config.yaml` now that production reads the canonical keys. Migrate the two baseline-reading assertions in `test_yaml_config_adapter_layering.py` and `test_yaml_config_adapter_duplicate_keys.py` from `execution.max_output_lines` to `execute.max_output_lines`.
 
 ### Section C: `workspace` Group with Toggles and Guarded Pull
 
