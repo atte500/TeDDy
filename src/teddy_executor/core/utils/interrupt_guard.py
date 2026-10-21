@@ -129,9 +129,12 @@ def raise_interrupt() -> None:
 
     ``os.kill(os.getpid(), signal.SIGINT)`` terminates the process on Windows
     through ``TerminateProcess`` instead of invoking the Python SIGINT handler,
-    which suppresses the interrupt notice. ``signal.raise_signal`` uses the
-    process-level CRT raise path and reaches the handler from the main thread
-    and from a reader thread on every platform.
+    which suppresses the interrupt notice. On POSIX the signal targets the main
+    thread through ``signal.pthread_kill``, so delivery wakes a blocked main
+    thread at its next checkpoint instead of waiting for the calling thread to
+    return. Windows and any platform without ``pthread_kill`` use
+    ``signal.raise_signal``, which keeps the CRT raise path so the installed
+    handler still runs there.
     """
     if sys.platform != "win32" and hasattr(signal, "pthread_kill"):
         main_ident = threading.main_thread().ident

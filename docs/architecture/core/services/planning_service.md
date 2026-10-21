@@ -28,6 +28,7 @@ Implements the `IPlanningUseCase` inbound port. It gathers project context, reso
 - `primitive_serialization`: All metadata is cast to primitive types before serialization.
 - `preflight_once`: The local preflight check runs once per process via a class-level flag.
 - `budget_guard`: A request that strictly exceeds the model context window raises before the LLM call.
+- `interruptible_planning_phase`: The hydration, token-count, telemetry, budget, and completion calls run on a daemon worker, so the calling thread waits on a future that a quit can interrupt.
 
 ## Inbound Ports
 - **`IPlanningUseCase`**: Exposes `generate_plan(...)`.
@@ -44,8 +45,13 @@ None declared directly — the service consumes the ports bundled in `PlanningPo
 
 ### `generate_plan(user_message, turn_dir, context_files=None) -> tuple[str, float, ProjectContext]`
 - **Preconditions:** `turn_dir` exists; the agent prompt file exists in the turn directory.
-- **Postconditions:** Writes `plan.md` and `input.md`, updates `meta.yaml` telemetry, and returns the plan path, the turn cost, and the gathered `ProjectContext`.
-- **Exceptions:** `ConfigurationError` when configuration is invalid or the request exceeds the context window; `FileNotFoundError` when the system prompt is missing.
+- **Postconditions:** Writes `plan.md` and `input.md`, updates `meta.yaml` telemetry, and returns the plan path, the turn cost, and the gathered `ProjectContext`. The blocking network phase runs on the interruptible daemon worker, so the calling thread waits on a future instead of a raw socket read.
+- **Exceptions:** `ConfigurationError` when configuration is invalid or the request exceeds the context window; `FileNotFoundError` when the system prompt is missing; `KeyboardInterrupt` when the user quits while the wait is pending.
+
+### `_run_planning_phase(messages, model, meta) -> tuple[Any, int, str, float]`
+- **Preconditions:** `messages` holds the assembled system and context messages; `model` is the resolved model; `meta` carries the turn telemetry.
+- **Postconditions:** Hydrates through `get_context_window`, counts tokens, displays telemetry, checks the context budget, and performs the generation with retry, all on a daemon worker. Returns the response, the token count, the plan content, and the turn cost.
+- **Exceptions:** `ConfigurationError` when the request exceeds the context window; every worker failure is forwarded to the waiter unchanged.
 
 ### `_check_context_budget(token_count, model) -> None`
 - **Preconditions:** `token_count` is the assembled request token count; `model` is the resolved model.
