@@ -14,4 +14,3 @@ class SessionOptions:
     additional_context: list[str] = field(default_factory=list)
     model: Optional[str] = None
     provider: Optional[str] = None
-    api_key: Optional[str] = None

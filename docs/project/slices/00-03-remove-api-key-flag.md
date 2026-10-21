@@ -64,7 +64,7 @@ None. The flag origin, its documentation status, its test coverage, and the prec
 ## Deliverables
 - [x] **Wiring** - Atomic CLI-surface removal: add an acceptance test proving `teddy start --api-key sk-test` is rejected with a non-zero exit code and that a resolved `TEDDY_LLM_API_KEY` value still starts a session without a prompt, drop the `--api-key` argument and persisted `api_key` assertions from the context-flag scenario, then delete the two Typer options and their two `api_key=api_key` forwards. The handler parameters stay optional, so the suite stays green.
 - [x] **Migration** - Remove `api_key` from `handle_new_session`, `handle_resume_session`, and `_sync_and_display_session_meta`, drop the `SessionOptions(api_key=...)` keyword, and remove every `api_key=None` argument and parametrized stub in the inbound handler test modules while `SessionOptions.api_key` still exists.
-- [ ] **Contract** - Remove the `SessionOptions.api_key` field, the `SessionService` metadata write, and the `PlanningService` `meta.get("api_key")` read with the `_perform_generation_with_retry` keyword argument.
+- [x] **Contract** - Remove the `SessionOptions.api_key` field, the `SessionService` metadata write, and the `PlanningService` `meta.get("api_key")` read with the `_perform_generation_with_retry` keyword argument.
 - [ ] **Cleanup** - Drop the `api_key` entry from the `SessionService` carry-over list and remove `--api-key` plus the phantom `--provider` from the interactive-session specification.
 
 ## Implementation Notes
@@ -79,6 +79,11 @@ None. The flag origin, its documentation status, its test coverage, and the prec
 - `SessionOptions.api_key` stays in place until the Contract deliverable, so the frozen dataclass remains valid throughout the migration. The stale `api_key` wording in the resume-meta module docstring was corrected.
 - The Contract deliverable must adapt the override assertion in `test_planning_service.py`, which documents that only `api_key` may appear in overrides.
 - Integration confirmed the parameter removal is systemically safe: `make test` reported 1989 passed and 5 skipped.
+- Contract implemented atomically. The `SessionOptions.api_key` field is gone from the frozen dataclass, the `SessionService` metadata builder no longer writes the key, and the `PlanningService` read with its `_perform_generation_with_retry` keyword is removed. The now-dead `overrides` dict collapsed into a plain named-argument completion call.
+- The new contract seam module `test_api_key_contract_removal.py` pins the dataclass fields through `fields()` and the retry helper parameters through `inspect.signature`, so a future edit cannot quietly reintroduce the override chain.
+- Red produced exactly two failures, one per seam assertion. Green turned all 60 targeted tests green, and the production grep printed only the `SessionService` carry-over entry reserved for Cleanup.
+- The stale override docstring in `test_planning_service.py` is corrected, and its assertion now rejects both a `provider` and an `api_key` keyword.
+- Integration confirmed the contract removal is systemically safe: `make test` reported 1991 passed and 5 skipped.
 
 ## Verification
 1. **Flag is gone:**

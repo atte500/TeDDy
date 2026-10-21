@@ -480,9 +480,10 @@ def test_generate_plan_displays_no_actual_model_line_after_fix(env):
 
 
 def test_generate_plan_does_not_pass_provider_to_llm(env):
-    """Verify that generate_plan does NOT pass a 'provider' kwarg to the LLM client.
+    """Verify that generate_plan passes no provider or API-key override.
 
-    The 'provider' override path was removed; only 'api_key' may appear in overrides.
+    Both override paths are removed. The resolved configuration key is the only
+    key source, so neither ``provider`` nor ``api_key`` can appear in the kwargs.
     """
     # Arrange
     mock_prompt_manager = env.mock_port(IPromptManager)
@@ -513,4 +514,7 @@ def test_generate_plan_does_not_pass_provider_to_llm(env):
     _, kwargs = mock_llm_client.get_completion.call_args
     assert "provider" not in kwargs, (
         f"Unexpected 'provider' kwarg found in get_completion call: {kwargs}"
+    )
+    assert "api_key" not in kwargs, (
+        f"Unexpected 'api_key' kwarg found in get_completion call: {kwargs}"
     )

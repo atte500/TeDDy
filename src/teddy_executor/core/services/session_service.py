@@ -137,8 +137,6 @@ class SessionService(ISessionManager):
         }
         if options.model:
             meta_data["model"] = options.model
-        if options.api_key:
-            meta_data["api_key"] = options.api_key
         return meta_data
 
     def _resolve_agent_prompt(self, agent_name: str) -> tuple[str, str]:
