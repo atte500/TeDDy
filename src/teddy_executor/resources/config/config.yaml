@@ -7,6 +7,13 @@ execution:
   similarity_threshold: 0.95        # EDIT match threshold (1.0 = exact match; ignores relative indentation).
   max_output_lines: 100             # Caps EXECUTE stdout/stderr output lines.
 
+execute:
+  default_timeout_seconds: 60       # Default timeout for EXECUTE actions.
+  max_output_lines: 100             # Caps EXECUTE stdout/stderr output lines.
+
+edit:
+  similarity_threshold: 0.95        # EDIT match threshold (1.0 = exact match; ignores relative indentation).
+
 read:
   max_lines: 1000                   # Caps READ action output lines.
 
