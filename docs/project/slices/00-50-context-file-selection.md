@@ -101,7 +101,7 @@ And the payload does not list docs/ARCHITECTURE.md
 
 ## Deliverables
 - [x] **Wiring** - Add `-c/--context` and `--only` to the `context` command and pass the normalized list to `handle_context_gathering`. The handler composes an `Explicit` scope beside the detected scopes, or beside the `.teddy/*.context` defaults outside a session. Drive an acceptance test that asserts the requested file and an `init.context` entry appear together.
-- [ ] **Logic** - Cover the composition matrix through the public command: additive beside `init.context` outside a session, additive beside the Turn and Session scopes inside a session, `--only` suppression, `--only` without `-c`, manifest expansion, directory expansion, and a missing path.
+- [x] **Logic** - Cover the composition matrix through the public command: additive beside `init.context` outside a session, additive beside the Turn and Session scopes inside a session, `--only` suppression, `--only` without `-c`, manifest expansion, directory expansion, and a missing path.
 - [ ] **Refactor** - Extract the repeatable and comma-separated normalization helper and reuse it in `start`. Keep the existing `start` behavior and tests green.
 - [ ] **Cleanup** - Document the usage concisely in the README. Add an `### Exporting Context` subsection under Usage covering the additive default, the `--only` escape hatch, and the `.context` manifest requirement. Update the `context` row in the Command Reference and the `context` description in `docs/project/specs/manual-cli-workflow.md`.
 
@@ -116,6 +116,16 @@ And the payload does not list docs/ARCHITECTURE.md
 - `--only` without a `-c` value raises `typer.BadParameter` before any scope work happens.
 - The acceptance test in `tests/suites/acceptance/test_context_file_selection.py` asserts that the `init.context` entry and the explicit file both appear under `## Resource Contents`.
 - The global suite passes with 1944 passed and 5 skipped.
+
+**Logic (deliverable 2):**
+- The composition matrix is covered through the `context` command in `tests/suites/acceptance/test_context_file_selection.py`.
+- The six new tests cover additive export inside a session, `--only` suppression, `--only` without `-c`, manifest expansion, directory expansion, and a missing path.
+- The Wiring deliverable already satisfied that matrix, so all six tests passed on the first run and lock the behavior as regression coverage.
+- `detect_session_context()` returns a Turn and Session map only when `turn.context`, `../session.context`, and `meta.yaml` all exist. Every other location returns `None`.
+- `--only` without a `-c` value exits with the Click usage code 2 before any scope work happens.
+- Manifest expansion, directory recursion, and the missing-path renderer stay covered at the service layer, so the command-level tests assert only the rendered paths.
+- The repeated arrange block moved into the file-local `_run_context` helper, which drives the real filesystem and the real init service.
+- The global suite passes with 1950 passed and 5 skipped.
 
 ## Verification
 1. **Additive direct files:**
