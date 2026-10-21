@@ -3,7 +3,7 @@
 - **Source:** [`src/teddy_executor/adapters/outbound/yaml_config_adapter.py`](/src/teddy_executor/adapters/outbound/yaml_config_adapter.py)
 
 ## Purpose
-Implements the `IConfigService` outbound port. It reads a layered configuration from the bundled baseline plus `.teddy/config.yaml`, resolves `${VAR}` tokens lazily, and persists settings and secrets without mutating the process environment.
+Implements the `IConfigService` outbound port. It reads a layered configuration from the bundled baseline plus `.teddy/config.yaml`, rejects a repeated key in the user config with a `ConfigurationError`, resolves `${VAR}` tokens lazily, and persists settings and secrets without mutating the process environment.
 
 ## Consumers
 - [`LiteLLMAdapter`](./litellm_adapter.md): Reads the `llm.*` settings and the API key.
@@ -20,7 +20,9 @@ Implements the `IConfigService` outbound port. It reads a layered configuration 
 - **`importlib.resources`** (stdlib): Loads the bundled baseline `config.yaml`.
 
 ## Class Invariants
-- `layered_cache`: The merged configuration is cached in `_config` on first load and updated in place after every write.
+- `layered_cache`: The merged configuration is cached in `_config` on first load and rebuilt from disk after every write.
+- `duplicate_key_policy`: The user config fails fast with a `ConfigurationError` on any repeated mapping key at any depth. The bundled baseline stays permissive.
+- `exact_key_precedence`: An exact top-level dotted key wins over the nested key in both `get_setting` and `set_setting`.
 - `lazy_interpolation`: `${VAR}` tokens resolve at `get_setting` time, never at load time.
 - `env_layering`: The interpolation lookup layers `.env` values under `os.environ`, and reads `.env` fresh on every call.
 - `no_os_environ_mutation`: `set_env_variable` writes the secret to `.env` only and never mutates `os.environ`.
@@ -46,8 +48,8 @@ None — this is an outbound (driven) adapter.
 
 ### `set_setting(key, value) -> None`
 - **Preconditions:** `key` is a non-empty string.
-- **Postconditions:** Rewrites only the target value token, preserving comments and ordering, and updates the in-memory cache. Dot-notation creates intermediate mappings.
-- **Exceptions:** `OSError` when the file is unwritable; `yaml.YAMLError` when serialization fails.
+- **Postconditions:** Rewrites only the target value token, preserving comments and ordering, and rebuilds the merged cache from disk. An exact top-level dotted key wins over a nested key. Dot-notation creates intermediate mappings.
+- **Exceptions:** `OSError` when the file is unwritable; `yaml.YAMLError` when serialization fails; `ConfigurationError` when the file gained a duplicate key after the adapter loaded it.
 
 ### `get_config_path() -> str`
 - **Postconditions:** Returns the configured path to the user config file.

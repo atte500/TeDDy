@@ -1,14 +1,66 @@
 import os
 import re
+from collections.abc import Hashable
 from importlib import resources
 from typing import Any, Dict, Optional
 import yaml
 from dotenv import dotenv_values, set_key
+from teddy_executor.core.domain.models.exceptions import ConfigurationError
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 
 _INTERPOLATION_PATTERN = re.compile(
     r"\$\$|\$\{([_A-Za-z][_A-Za-z0-9]*)(?::-([^}]*))?\}"
 )
+
+_MERGE_TAG = "tag:yaml.org,2002:merge"
+
+
+def _strict_load(text: str, source_path: str) -> Any:
+    """Parse ``text`` and reject a repeated mapping key at any depth."""
+
+    class _StrictLoader(yaml.SafeLoader):
+        pass
+
+    def _construct_mapping(
+        loader: yaml.SafeLoader, node: yaml.MappingNode, deep: bool = False
+    ) -> Dict[Any, Any]:
+        if isinstance(node, yaml.MappingNode):
+            seen: set[Any] = set()
+            for key_node, _value_node in node.value:
+                if key_node.tag == _MERGE_TAG:
+                    continue
+                key = loader.construct_object(key_node, deep=True)
+                if not isinstance(key, Hashable):
+                    # An unhashable key is invalid YAML for a mapping. The base
+                    # loader raises its standard error, which the adapter treats
+                    # as an unreadable user config.
+                    continue
+                if key in seen:
+                    line = key_node.start_mark.line + 1
+                    raise ConfigurationError(
+                        f"Duplicate configuration key {key!r} in {source_path} "
+                        f"at line {line}. Remove or rename one occurrence."
+                    )
+                seen.add(key)
+        return yaml.SafeLoader.construct_mapping(loader, node, deep=deep)
+
+    _StrictLoader.add_constructor(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construct_mapping
+    )
+    return yaml.load(text, Loader=_StrictLoader)
+
+
+def _normalize_key_token(token: str) -> str:
+    """Unquote a YAML key token so ``"llm.model"`` matches ``llm.model``."""
+    quote = token[:1]
+    if quote and quote in ("'", '"') and token[-1:] == quote:
+        try:
+            parsed = yaml.safe_load(token)
+        except yaml.YAMLError:
+            return token
+        if isinstance(parsed, str):
+            return parsed
+    return token
 
 
 class YamlConfigAdapter(IConfigService):
@@ -51,13 +103,17 @@ class YamlConfigAdapter(IConfigService):
             return {}
 
     def _load_user_config(self) -> Dict[str, Any]:
-        """Loads the user-specific YAML configuration file if it exists."""
+        """Loads the user config, failing fast on a repeated mapping key.
+
+        Unreadable YAML still falls back to an empty user config, but a
+        ``ConfigurationError`` for a duplicate key propagates to the caller.
+        """
         if not os.path.exists(self._config_path):
             return {}
 
         try:
             with open(self._config_path, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f)
+                data = _strict_load(f.read(), self._config_path)
                 return data if isinstance(data, dict) else {}
         except (yaml.YAMLError, OSError):
             return {}
@@ -189,10 +245,11 @@ class YamlConfigAdapter(IConfigService):
         through a data-only loader (``yaml.safe_load``/``yaml.dump``), which
         would strip all comments and reformat the document.
 
-        Supports dot-notation for nested keys. The user config file and its
-        parent directory are created if they do not exist. After writing, the
-        in-memory merged cache is updated so a subsequent ``get_setting()`` on
-        THIS adapter reflects the change without a reload.
+        Supports dot-notation for nested keys and honours the same precedence
+        as ``get_setting``: an exact top-level dotted key wins over a nested
+        key. The user config file and its parent directory are created if they
+        do not exist. After writing, the merged cache is rebuilt from disk so a
+        subsequent ``get_setting()`` on THIS adapter matches a fresh reload.
         """
         # 1. Ensure the parent directory exists.
         parent_dir = os.path.dirname(self._config_path)
@@ -212,16 +269,11 @@ class YamlConfigAdapter(IConfigService):
         with open(self._config_path, "w", encoding="utf-8") as f:
             f.write(text)
 
-        # 4. Synchronize the in-memory merged cache so a subsequent
-        #    get_setting() on THIS adapter reflects the change.
-        cache = self._config
-        for part in key_path[:-1]:
-            nxt = cache.get(part)
-            if not isinstance(nxt, dict):
-                nxt = {}
-                cache[part] = nxt
-            cache = nxt
-        cache[key_path[-1]] = value
+        # 4. Rebuild the merged cache from disk so a subsequent get_setting()
+        #    on THIS adapter resolves exactly what a fresh adapter resolves.
+        merged = self._load_layered_config()
+        self._config.clear()
+        self._config.update(merged)
 
     def _scalar_repr(self, value: Any) -> str:
         """Render a scalar value as YAML text with no document-end marker."""
@@ -238,7 +290,7 @@ class YamlConfigAdapter(IConfigService):
             if ":" not in stripped:
                 continue
             indent = len(raw) - len(raw.lstrip(" "))
-            key_part = stripped.split(":", 1)[0].strip()
+            key_part = _normalize_key_token(stripped.split(":", 1)[0].strip())
             while stack and stack[-1][0] >= indent:
                 stack.pop()
             current = [k for _, k in stack] + [key_part]
@@ -252,7 +304,11 @@ class YamlConfigAdapter(IConfigService):
         lines = text.split("\n")
         value_str = self._scalar_repr(value)
 
-        idx = self._find_key_line(lines, key_path)
+        idx = None
+        if len(key_path) > 1:
+            idx = self._find_key_line(lines, [".".join(key_path)])
+        if idx is None:
+            idx = self._find_key_line(lines, key_path)
         if idx is not None:
             raw = lines[idx]
             colon = raw.index(":")
