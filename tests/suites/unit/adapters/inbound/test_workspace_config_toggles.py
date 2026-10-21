@@ -13,11 +13,17 @@ import pytest
 
 from teddy_executor.adapters.inbound.session_cli_handlers import (
     _pull_workspace_on_start,
+    _warn_disabled_workspace_steps,
 )
 
 FAST_FORWARD_PREFIX = "Workspace fast-forwarded"
 SKIPPED_WARNING = "⚠ Workspace pull skipped; continuing with the current branch."
 TIMEOUT_WARNING = "⚠ Workspace pull timed out; continuing without it."
+PRE_COMMIT_WARNING = (
+    "⚠ Pre-commit hook installation is disabled. "
+    "The post-commit test gate will not run."
+)
+INIT_WARNING = "⚠ Git repository not initialized. Version control actions will fail."
 
 
 class FakeGitRunner:
@@ -221,3 +227,76 @@ def test_already_current_workspace_stays_silent(git_repository, mock_config, cap
     _pull_workspace_on_start(mock_config, run_func=runner)
 
     assert capsys.readouterr().err == ""
+
+
+def test_warn_disabled_workspace_steps_emits_pre_commit_warning(
+    tmp_path, monkeypatch, mock_config, capsys
+):
+    """A disabled pre-commit gate warns about the missing post-commit test gate."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".git").mkdir()
+    mock_config.get_setting.side_effect = lambda key, default=None: (
+        False if key == "workspace.pre-commit" else default
+    )
+
+    _warn_disabled_workspace_steps(mock_config)
+
+    assert PRE_COMMIT_WARNING in capsys.readouterr().err
+
+
+def test_warn_disabled_workspace_steps_emits_init_warning_when_git_absent(
+    tmp_path, monkeypatch, mock_config, capsys
+):
+    """A disabled init gate warns only when the workspace is not a repository."""
+    monkeypatch.chdir(tmp_path)
+    mock_config.get_setting.side_effect = lambda key, default=None: (
+        False if key == "workspace.init" else default
+    )
+
+    _warn_disabled_workspace_steps(mock_config)
+
+    err = capsys.readouterr().err
+    assert INIT_WARNING in err
+    assert PRE_COMMIT_WARNING not in err
+
+
+def test_warn_disabled_workspace_steps_skips_init_warning_when_git_present(
+    tmp_path, monkeypatch, mock_config, capsys
+):
+    """An existing repository needs no init warning even when the gate is off."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".git").mkdir()
+    mock_config.get_setting.side_effect = lambda key, default=None: (
+        False if key == "workspace.init" else default
+    )
+
+    _warn_disabled_workspace_steps(mock_config)
+
+    assert capsys.readouterr().err == ""
+
+
+def test_warn_disabled_workspace_steps_silent_when_both_enabled(
+    tmp_path, monkeypatch, mock_config, capsys
+):
+    """Both enabled gates emit no warning."""
+    monkeypatch.chdir(tmp_path)
+    mock_config.get_setting.side_effect = lambda key, default=None: default
+
+    _warn_disabled_workspace_steps(mock_config)
+
+    assert capsys.readouterr().err == ""
+
+
+def test_warn_disabled_workspace_steps_emits_both_warnings_in_order(
+    tmp_path, monkeypatch, mock_config, capsys
+):
+    """Both disabled gates warn in the documented order: pre-commit, then init."""
+    monkeypatch.chdir(tmp_path)
+    mock_config.get_setting.side_effect = lambda key, default=None: (
+        False if key in {"workspace.pre-commit", "workspace.init"} else default
+    )
+
+    _warn_disabled_workspace_steps(mock_config)
+
+    err = capsys.readouterr().err
+    assert err.index(PRE_COMMIT_WARNING) < err.index(INIT_WARNING)
