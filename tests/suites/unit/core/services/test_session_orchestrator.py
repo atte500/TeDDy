@@ -761,3 +761,45 @@ class TestConsoleVisibilityWiring:
             assert actual_is_session is True
         else:
             assert len(self.print_user_message_calls) == 0
+
+
+def test_structural_parse_failure_forwards_parsed_h1_title(
+    orchestrator, mock_plan_parser, mock_fs
+):
+    """A structural parse failure must carry the parsed H1 into the report title."""
+    from datetime import datetime, timezone
+
+    from teddy_executor.core.domain.models.execution_report import (
+        ExecutionReport,
+        RunStatus,
+        RunSummary,
+    )
+    from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
+
+    report = ExecutionReport(
+        run_summary=RunSummary(
+            status=RunStatus.VALIDATION_FAILED,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
+        ),
+        plan_title="A Perfectly Valid Title",
+    )
+    orchestrator._lifecycle_manager.trigger_replan.return_value = report
+    mock_plan_parser.parse.side_effect = InvalidPlanError("Plan structure is invalid.")
+    mock_fs.path_exists.return_value = True
+
+    plan_content = """# A Perfectly Valid Title
+- **Agent:** Developer
+- **Plan Type:** Implementation
+
+## Rationale
+"""
+    plan_path = ".teddy/sessions/demo/01/plan.md"
+
+    result = orchestrator.execute(plan_content=plan_content, plan_path=plan_path)
+
+    assert result is report
+    call_kwargs = orchestrator._lifecycle_manager.trigger_replan.call_args.kwargs
+    assert call_kwargs["title"] == "A Perfectly Valid Title"
+    assert call_kwargs["plan_path"] == plan_path
+    assert call_kwargs["original_plan_content"] == plan_content

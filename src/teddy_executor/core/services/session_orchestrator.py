@@ -1,4 +1,5 @@
 import logging
+import re
 from dataclasses import is_dataclass, replace
 from pathlib import Path
 from typing import Any, Optional, cast
@@ -19,6 +20,20 @@ from teddy_executor.core.utils.terminal import emit_user_message
 import typer
 
 logger = logging.getLogger(__name__)
+
+
+_H1_TITLE_PATTERN = re.compile(r"^[ \t]*#(?!#)[ \t]*(\S.*?)[ \t]*$", re.MULTILINE)
+
+
+def _extract_plan_title(content: Optional[str]) -> Optional[str]:
+    """Return the first Level 1 heading text from raw plan content, if any."""
+    if not content:
+        return None
+    match = _H1_TITLE_PATTERN.search(content)
+    if not match:
+        return None
+    title = match.group(1).strip()
+    return title or None
 
 
 def _extract_status_emoji(raw_status: str) -> str:
@@ -541,11 +556,15 @@ class SessionOrchestrator(IRunPlanUseCase):
                 plan = self._plan_parser.parse(content, plan_path=plan_path)
             except Exception as e:
                 if is_session and plan_path:
-                    return self._lifecycle_manager.trigger_replan(
-                        plan_path=plan_path,
-                        errors=[f"Structural error: {str(e)}"],
-                        original_plan_content=content,
-                    )
+                    replan_kwargs: dict[str, Any] = {
+                        "plan_path": plan_path,
+                        "errors": [f"Structural error: {str(e)}"],
+                        "original_plan_content": content,
+                    }
+                    extracted_title = _extract_plan_title(content)
+                    if extracted_title:
+                        replan_kwargs["title"] = extracted_title
+                    return self._lifecycle_manager.trigger_replan(**replan_kwargs)
                 raise
         return plan
 
