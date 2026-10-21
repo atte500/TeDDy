@@ -9,6 +9,11 @@ execute:
 edit:
   similarity_threshold: 0.95        # EDIT match threshold (1.0 = exact match; ignores relative indentation).
 
+workspace:
+  init: true         # Initialize a missing Git repository (start and resume).
+  pre-commit: true   # Install pre-commit and post-commit git hooks (start and resume).
+  pull: true         # Fast-forward pull before starting a new session (start only).
+
 read:
   max_lines: 1000                   # Caps READ action output lines.
 
