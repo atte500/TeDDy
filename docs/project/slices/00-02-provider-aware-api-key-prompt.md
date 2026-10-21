@@ -1,5 +1,5 @@
 # Slice: Provider-Aware API Key Prompt and Local Endpoint Placeholder
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** [00-01](/docs/project/slices/00-01-defer-interactive-setup-to-session-start.md), [00-03](/docs/project/slices/00-03-remove-api-key-flag.md)
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
