@@ -371,6 +371,7 @@ class ContextService(IGetContextUseCase):
             "\n## Git Status",
             git_status_body,
             "\n## Project Structure",
+            self._format_tree_subtitle(),
             f"```\n{repo_tree}\n```",
         ]
 
@@ -387,6 +388,14 @@ class ContextService(IGetContextUseCase):
             content_parts = session_history_parts + content_parts
 
         return "\n".join(content_parts)
+
+    def _format_tree_subtitle(self) -> str:
+        """State both tree limits once, so the compact notices stay meaningful."""
+        return (
+            f"*Tree capped at depth {self._repo_tree_generator.max_depth} "
+            f"and width {self._repo_tree_generator.max_tree_width}: "
+            "truncated directories show counts only.*"
+        )
 
     def _format_workspace_contents(
         self,

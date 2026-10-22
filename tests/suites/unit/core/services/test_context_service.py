@@ -670,3 +670,32 @@ def test_get_context_bounds_degenerate_workspace_fence(
     # The dangling opening fence is stripped before the wrapper fence is derived,
     # so the section stays bounded instead of amplifying to a 10k-backtick fence.
     assert "`" * 100 not in result.content
+
+
+def test_get_context_renders_the_tree_limit_subtitle(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+):
+    """The section states both limits once between the heading and the fence."""
+    # Arrange
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = "docs\nsrc"
+    mock_fs.get_context_paths.return_value = []
+
+    expected_subtitle = (
+        f"*Tree capped at depth {mock_tree_gen.max_depth} "
+        f"and width {mock_tree_gen.max_tree_width}: "
+        "truncated directories show counts only.*"
+    )
+
+    # Act
+    result = service.get_context()
+
+    # Assert
+    heading_index = result.content.index("## Project Structure")
+    subtitle_index = result.content.index(expected_subtitle)
+    fence_index = result.content.index("```")
+    assert heading_index < subtitle_index < fence_index, result.content
