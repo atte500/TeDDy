@@ -84,7 +84,7 @@ None. The renders, the token ladder, and the four wiring sites are measured.
 - [x] **Wiring** — Forward `context.max_tree_width` in `__main__._ensure_project_initialized` and in `registries/infrastructure.py`. Add an integration regression at the composition seam that resolves the generator on a workspace with a configured width and asserts the resolved limit.
 - [x] **Logic** — Compact the depth notice to `[X folders, Y files]`, render `[unreadable]` for a failed scan, and withhold any non-root directory that holds more visible entries than the width cap. Keep the root listing uncapped and omit the sections of a withheld directory. Rewrite the notice assertions across the four affected test modules in the same commit, and add unit coverage for the width cap, the exact-cap boundary, and the root exemption.
 - [x] **Logic** — Render the italic subtitle between the heading and the fence in the form `*Tree capped at depth {depth} and width {width}: truncated directories show counts only.*`, substituting both limits from the port properties.
-- [ ] **Migration** — Lower `max_tree_depth` to 3, align the `__main__` depth fallback literal with 3, and set an explicit `max_depth` in `test_tree_integrity_with_deep_unignored_file` in one commit. Update every remaining literal depth assertion that the new default breaks.
+- [x] **Migration** — Lower `max_tree_depth` to 3, align the `__main__` depth fallback literal with 3, and set an explicit `max_depth` in `test_tree_integrity_with_deep_unignored_file` in one commit. Update every remaining literal depth assertion that the new default breaks.
 - [ ] **Cleanup** — Update the tree-generator port contract, the adapter contract, the context-service contract, and the config-service key table for the compact notices, the default depth, the width cap, and the subtitle.
 
 ## Implementation Notes
@@ -113,6 +113,11 @@ None. The renders, the token ladder, and the four wiring sites are measured.
 - **Logic:** `_format_tree_subtitle` reads `max_depth` and `max_tree_width` from the port, so the Migration commit that lowers the depth default to 3 moves the subtitle with no second edit.
 - **Logic:** The Red run failed only the new subtitle test with `ValueError` while the other 17 tests passed. The Green focused run reported 18 passed.
 - **Logic:** The full suite passes with 2135 tests and 5 skips.
+- **Migration:** The schema default, the bundled `config.yaml` value, and the `__main__` depth fallback all moved from 4 to 3 in one commit, so the shipped default and the fallback literal stay aligned.
+- **Migration:** The `registries/infrastructure.py` factory already binds its depth fallback to `DEFAULT_APP_CONFIG`, so it followed the schema default with no edit.
+- **Migration:** `test_tree_integrity_with_deep_unignored_file` now pins an explicit `max_depth=4`, because its `a/b/c/file.txt` chain needs depth four to expand the deepest directory.
+- **Migration:** The Red run failed only the two new depth-3 assertions with `assert 4 == 3` while 34 tests passed. The Green focused run reported 71 passed.
+- **Migration:** The full suite passes with 2137 tests and 5 skips.
 
 ## Verification
 1. **Compact notices and subtitle:**

@@ -18,7 +18,7 @@ read:
   max_lines: 1000                   # Caps READ action output lines.
 
 context:
-  max_tree_depth: 4                 # Max project tree depth (0 = omit tree; raise the number to show more levels).
+  max_tree_depth: 3                 # Max project tree depth (0 = omit tree; raise the number to show more levels).
   max_tree_width: 20                # Max entries listed per directory (the root lists all).
 
 research:

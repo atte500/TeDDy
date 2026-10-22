@@ -129,6 +129,11 @@ def test_zero_tree_depth_is_accepted():
     assert config.context.max_tree_depth == 0
 
 
+def test_default_tree_depth_is_three():
+    """The shipped depth cap defaults to three levels."""
+    assert DEFAULT_APP_CONFIG.context.max_tree_depth == 3
+
+
 def test_default_tree_width_is_twenty():
     """The shipped width cap defaults to twenty entries per directory."""
     assert DEFAULT_APP_CONFIG.context.max_tree_width == 20

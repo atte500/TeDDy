@@ -60,7 +60,13 @@ def test_tree_integrity_with_deep_unignored_file(tmp_path: Path, monkeypatch):
     deep_dir.mkdir(parents=True)
     (deep_dir / "file.txt").touch()
 
-    env = TestEnvironment(monkeypatch).setup().with_real_tree_generator(str(tmp_path))
+    # The chain is three directories deep, so a depth of four is required to
+    # expand the deepest directory and list its file.
+    env = (
+        TestEnvironment(monkeypatch)
+        .setup()
+        .with_real_tree_generator(str(tmp_path), max_depth=4)
+    )
     generator = env.get_service(IRepoTreeGenerator)  # type: ignore[type-abstract]
 
     # Act

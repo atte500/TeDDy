@@ -44,7 +44,7 @@ class ReadConfig:
 
 @dataclass(frozen=True)
 class ContextConfig:
-    max_tree_depth: int = 4
+    max_tree_depth: int = 3
     max_tree_width: int = 20
 
 
