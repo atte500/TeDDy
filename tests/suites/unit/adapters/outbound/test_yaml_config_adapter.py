@@ -265,3 +265,44 @@ def test_set_setting_rebuilds_the_typed_view(fs, container):
 
     # Assert
     assert adapter.app_config.execute.max_output_lines == 250
+
+
+def test_get_setting_returns_the_typed_value_for_a_declared_key(tmp_path):
+    """A declared key resolves through the typed view, so a string coerces."""
+    # Arrange
+    teddy_dir = tmp_path / ".teddy"
+    teddy_dir.mkdir()
+    (teddy_dir / "config.yaml").write_text(
+        "execute:\n  max_output_lines: '200'\n", encoding="utf-8"
+    )
+    adapter = YamlConfigAdapter(
+        config_path=".teddy/config.yaml", root_dir=str(tmp_path)
+    )
+    typed = adapter.app_config.execute.max_output_lines
+    assert typed == 200
+
+    # Act
+    resolved = adapter.get_setting("execute.max_output_lines")
+
+    # Assert
+    assert resolved == typed
+
+
+def test_get_setting_keeps_llm_api_key_live_on_the_same_adapter(tmp_path, monkeypatch):
+    """`llm.api_key` stays on the live walk, so a mid-run `.env` write shows up."""
+    # Arrange
+    monkeypatch.delenv("TEDDY_LLM_API_KEY", raising=False)
+    teddy_dir = tmp_path / ".teddy"
+    teddy_dir.mkdir()
+    (teddy_dir / "config.yaml").write_text(
+        'llm:\n  api_key: "${TEDDY_LLM_API_KEY}"\n', encoding="utf-8"
+    )
+    adapter = YamlConfigAdapter(
+        config_path=".teddy/config.yaml", root_dir=str(tmp_path)
+    )
+
+    # Act
+    adapter.set_env_variable("TEDDY_LLM_API_KEY", "sk-live-midrun")
+
+    # Assert
+    assert adapter.get_setting("llm.api_key") == "sk-live-midrun"

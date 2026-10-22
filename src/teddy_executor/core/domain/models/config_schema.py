@@ -239,9 +239,29 @@ _SCHEMA_FIELDS: tuple[_FieldSpec, ...] = (
     _FieldSpec("guardrails.message_reset", "guardrails", "message_reset", bool),
 )
 
+_DECLARED_KEY_TARGETS: dict[str, tuple[str, str]] = {
+    spec.key: (spec.group, spec.target) for spec in _SCHEMA_FIELDS
+}
+
 _KNOWN_TOP_LEVEL = frozenset(
     {spec.group for spec in _SCHEMA_FIELDS} | {"llm", "editor", "yolo_default"}
 )
+
+
+def is_declared_key(key: str) -> bool:
+    """Report whether ``key`` is a schema-declared configuration key."""
+    return key in _DECLARED_KEY_TARGETS
+
+
+def read_declared_value(config: AppConfig, key: str) -> Any:
+    """Read the typed value of a declared ``key`` from ``config``.
+
+    A declared value is always present, because construction fills every
+    undeclared or empty value with its schema default.
+    """
+    assert is_declared_key(key), f"key {key!r} is not declared in the schema"
+    group, target = _DECLARED_KEY_TARGETS[key]
+    return getattr(getattr(config, group), target)
 
 
 def _coerce(spec: _FieldSpec, value: Any) -> Any:

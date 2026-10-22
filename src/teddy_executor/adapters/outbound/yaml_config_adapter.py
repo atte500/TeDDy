@@ -5,7 +5,11 @@ from importlib import resources
 from typing import Any, Dict, Optional
 import yaml
 from dotenv import dotenv_values, set_key
-from teddy_executor.core.domain.models.config_schema import construct_app_config
+from teddy_executor.core.domain.models.config_schema import (
+    construct_app_config,
+    is_declared_key,
+    read_declared_value,
+)
 from teddy_executor.core.domain.models.exceptions import ConfigurationError
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 
@@ -21,6 +25,10 @@ _LEGACY_EXECUTION_KEY_GROUPS = {
     "max_output_lines": "execute",
     "similarity_threshold": "edit",
 }
+
+# ``llm.*`` keys pass straight through to LiteLLM and stay on the live walk,
+# because a mid-run ``.env`` write must remain visible on the same adapter.
+_PASSTHROUGH_KEY_PREFIX = "llm."
 
 
 def _strict_load(text: str, source_path: str) -> Any:
@@ -177,15 +185,24 @@ class YamlConfigAdapter(IConfigService):
         """
         Retrieves a configuration value by its key from the loaded YAML.
         Supports nested keys using dot notation (e.g., 'outer.inner').
+
+        A schema-declared key resolves through the typed view, so its value is
+        coerced to the declared type. Every other key resolves through the live
+        dict walk, which covers undeclared keys and the ``llm.*`` passthrough.
         """
         if not key:
             return default
 
-        # 1. Try exact match first (highest priority: top-level user overrides)
+        # 1. Declared keys resolve through the typed view. Passthrough keys are
+        #    excluded because a construction-time snapshot would go stale.
+        if not key.startswith(_PASSTHROUGH_KEY_PREFIX) and is_declared_key(key):
+            return read_declared_value(self.app_config, key)
+
+        # 2. Try exact match first (highest priority: top-level user overrides)
         if key in self._config:
             return self._maybe_interpolate(self._config[key])
 
-        # 2. Try nested resolution (standard hierarchical structure)
+        # 3. Try nested resolution (standard hierarchical structure)
         parts = key.split(".")
         result = self._resolve_nested(parts)
 
