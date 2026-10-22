@@ -1,5 +1,5 @@
 # Slice: Project Tree Depth Anchoring and Zero-Depth Contract
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** [00-05-workspace-config-improvements.md](/docs/project/slices/00-05-workspace-config-improvements.md), [00-06-typed-config-schema.md](/docs/project/slices/00-06-typed-config-schema.md)
 - **Specs:** [context-payload-format.md](/docs/project/specs/context-payload-format.md)
