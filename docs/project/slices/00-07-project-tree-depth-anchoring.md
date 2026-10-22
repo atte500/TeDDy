@@ -72,7 +72,7 @@ None. The case file resolves every unknown and provides a proven replica and ver
 ## Deliverables
 - [x] **Wiring** — In `_ensure_project_initialized`, register `IRepoTreeGenerator` through a lazy factory that forwards `root_dir` and `context.max_tree_depth`. Add an integration regression test that runs anchoring on a workspace with depth 1 and asserts the resolved depth, the omission marker, and the absence of a deeper folder.
 - [x] **Harness** — Raise `with_real_tree_generator` in `tests/harness/setup/real_adapter_mixin.py` to default `max_depth=4`, because an implicit default must keep rendering a real tree under the literal-cap contract.
-- [ ] **Logic** — Remove the `_max_depth > 0` guard and set the constructor default to 4 in `LocalRepoTreeGenerator`. Change the `infrastructure.py` fallback to 4. Update the bundled comment. Assert the new default in the depth unit test, rewrite the zero-depth integration test to expect one notice, and add a zero-depth anchoring regression. Update the container-wiring default literal.
+- [x] **Logic** — Remove the `_max_depth > 0` guard and set the constructor default to 4 in `LocalRepoTreeGenerator`. Change the `infrastructure.py` fallback to 4. Update the bundled comment. Assert the new default in the depth unit test, rewrite the zero-depth integration test to expect one notice, and add a zero-depth anchoring regression. Update the container-wiring default literal.
 - [ ] **Cleanup** — Remove all legacy configuration support: delete the yaml migration symbols and call, remove the guard `_UNSET` sentinel and `yolo_guardrails` fallback, delete the two legacy test modules, rewrite the guard legacy case to assert the key is ignored, migrate `execution.*` assertions to canonical keys, and add a test that a legacy `execution.*` key resolves the bundled default.
 - [ ] **Cleanup** — Align the documentation: describe zero depth in the context payload spec, the tree-generator port and adapter contracts, and the config-service key table, and remove the legacy sentences from the yaml adapter and session-loop-guard designs.
 
@@ -84,6 +84,10 @@ None. The case file resolves every unknown and provides a proven replica and ver
 - **Harness:** `with_real_tree_generator` now binds its default to `DEFAULT_APP_CONFIG.context.max_tree_depth` instead of the old zero sentinel, so the harness and its regression test share one source of truth. The default resolves to 4, which satisfies the deliverable's intent to keep an implicit default rendering a real tree under the literal-cap contract.
 - **Harness:** The three implicit-default callers reach depth 1, 1, and 3, so a limit of 4 cannot truncate them. The explicit `max_depth=0` caller in the zero-depth integration test stays untouched, because the Logic deliverable rewrites its expectation.
 - **Harness:** The full suite passes with 2119 tests and 5 skips.
+- **Logic:** `LocalRepoTreeGenerator` now treats every non-negative depth as a literal cap: the `_max_depth > 0` guard is removed so `depth >= self._max_depth` always applies. The constructor default is `DEFAULT_APP_CONFIG.context.max_tree_depth` (4), and the `infrastructure.py` factory fallback mirrors the same value, so an omitted argument or a resolution miss still renders a real tree.
+- **Logic:** The depth unit test now asserts the schema default, the rendering integration test expects one omission notice at depth 0, and a zero-depth anchoring regression sits beside the depth-1 anchoring regression at the composition seam. The container-wiring test resolves the declared key, so it needed no literal change.
+- **Logic:** The bundled config comment now reads `0 = omit tree; raise the number to show more levels`.
+- **Logic:** The full suite passes with 2120 tests and 5 skips.
 
 ## Verification
 1. **Tree depth cap:**

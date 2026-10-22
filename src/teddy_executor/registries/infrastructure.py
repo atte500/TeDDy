@@ -1,6 +1,8 @@
 from __future__ import annotations
 import punq
 
+from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
+
 
 def register_infrastructure(container: punq.Container) -> None:
     """Registers core OS and infrastructure adapters."""
@@ -145,7 +147,7 @@ def register_infrastructure(container: punq.Container) -> None:
         IRepoTreeGenerator,
         factory=lambda: LocalRepoTreeGenerator(
             max_depth=container.resolve(IConfigService).get_setting(
-                "context.max_tree_depth", 0
+                "context.max_tree_depth", DEFAULT_APP_CONFIG.context.max_tree_depth
             )
         ),
         scope=punq.Scope.transient,

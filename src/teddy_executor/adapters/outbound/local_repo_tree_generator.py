@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,11 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
     respecting .gitignore and .teddyignore rules.
     """
 
-    def __init__(self, root_dir: str = ".", max_depth: int = 0):
+    def __init__(
+        self,
+        root_dir: str = ".",
+        max_depth: int = DEFAULT_APP_CONFIG.context.max_tree_depth,
+    ):
         from teddy_executor.adapters.outbound.filesystem_helpers import (
             load_ignore_spec,
         )
@@ -64,7 +69,7 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         costs no additional stat call. Symlinks are listed as files and are
         never followed, which keeps circular links from recursing.
         """
-        if self._max_depth > 0 and depth >= self._max_depth:
+        if depth >= self._max_depth:
             marker = self._depth_limit_marker(directory, relative_path)
             return [marker] if marker else []
 

@@ -18,7 +18,7 @@ read:
   max_lines: 1000                   # Caps READ action output lines.
 
 context:
-  max_tree_depth: 4                 # Max project tree depth (0 = unlimited).
+  max_tree_depth: 4                 # Max project tree depth (0 = omit tree; raise the number to show more levels).
 
 research:
   max_results: 5                    # Number of search results to fetch and scrape.

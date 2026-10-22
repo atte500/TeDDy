@@ -149,8 +149,8 @@ def test_harness_default_depth_matches_the_schema_default(tmp_path, monkeypatch)
     assert generator._max_depth == DEFAULT_APP_CONFIG.context.max_tree_depth
 
 
-def test_tree_generator_renders_full_tree_when_depth_is_zero(tmp_path, monkeypatch):
-    """A depth limit of zero renders the whole tree with no omission marker."""
+def test_tree_generator_renders_one_notice_when_depth_is_zero(tmp_path, monkeypatch):
+    """A depth limit of zero collapses the tree to one omission notice."""
     (tmp_path / "a" / "b").mkdir(parents=True)
     (tmp_path / "a" / "b" / "deep.txt").touch()
 
@@ -163,8 +163,10 @@ def test_tree_generator_renders_full_tree_when_depth_is_zero(tmp_path, monkeypat
 
     tree = generator.generate_tree()
 
-    assert "deep.txt" in tree
-    assert "directory not expanded" not in tree
+    assert "[... directory not expanded (depth limit 0): 1 folder, 0 files]" in tree
+    assert tree.count("directory not expanded") == 1
+    assert "./a:" not in tree
+    assert "deep.txt" not in tree
 
 
 def test_tree_generator_marks_directories_at_the_depth_limit(tmp_path, monkeypatch):
