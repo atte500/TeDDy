@@ -29,6 +29,8 @@ None — this is an outbound (driven) port.
 
 ## Data Contracts
 - **Configuration keys:** `yolo_default` (bool); `editor` (str, default ""); `execute.default_timeout_seconds` (float, default 60.0); `execute.max_output_lines` (int, default 100); `edit.similarity_threshold` (float, default 0.95); `read.max_lines` (int, default 1000); `research.max_results` (int, default 5); `context.max_tree_depth` (int, default 4, 0 = unlimited); `workspace.init` (bool, default true); `workspace.pre-commit` (bool, default true); `workspace.pull` (bool, default true); `checks.prompts` (bool); `checks.templates` (bool); `checks.update` (bool); `guardrails.enabled` (bool); `guardrails.max_turns` (int); `guardrails.max_session_cost` (float); `guardrails.message_reset` (bool); `auto_pruning.enabled` (bool); `auto_pruning.turn_context_threshold` (int); `auto_pruning.prune_failure_history` (bool); `auto_pruning.prune_validation_failures` (bool); `auto_pruning.preserve_message_turns` (bool); `auto_pruning.max_turns_retention` (int); `llm.*` (passed through to LiteLLM).
+- **Canonical defaults:** [`config_schema.py`](/src/teddy_executor/core/domain/models/config_schema.py) is the single source of truth for every declared key, its type, its range, and its default. The key table above mirrors that schema, and a test asserts the two never drift.
+- **`llm.*` passthrough:** Every `llm.*` key bypasses the typed schema and reads from the live merged mapping on each `get_setting` call. A construction-time snapshot would go stale after a mid-run `.env` write.
 
 ## Operations
 
@@ -38,7 +40,7 @@ None — this is an outbound (driven) port.
 
 ### `get_setting(key, default=None) -> Optional[Any]`
 - **Preconditions:** `key` is a non-empty string.
-- **Postconditions:** Returns the stored value, else `default`, else `None`.
+- **Postconditions:** Returns the stored value, else `default`, else `None`. A declared key resolves through the typed schema, which supplies the canonical default. An undeclared key and every `llm.*` key fall back to the live merged mapping.
 - **Exceptions:** None — the contract guarantees a return value.
 
 ### `set_setting(key, value) -> None`

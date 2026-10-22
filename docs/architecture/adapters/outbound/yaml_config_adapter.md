@@ -3,7 +3,7 @@
 - **Source:** [`src/teddy_executor/adapters/outbound/yaml_config_adapter.py`](/src/teddy_executor/adapters/outbound/yaml_config_adapter.py)
 
 ## Purpose
-Implements the `IConfigService` outbound port. It reads a layered configuration from the bundled baseline plus `.teddy/config.yaml`, rejects a repeated key in the user config with a `ConfigurationError`, resolves `${VAR}` tokens lazily, and persists settings and secrets without mutating the process environment.
+Implements the `IConfigService` outbound port. It reads a layered configuration from the bundled baseline plus `.teddy/config.yaml`, rejects a repeated key in the user config with a `ConfigurationError`, builds a typed schema view at load that fails fast on an uncoercible or out-of-range declared value, resolves `${VAR}` tokens, and persists settings and secrets without mutating the process environment.
 
 ## Consumers
 - [`LiteLLMAdapter`](./litellm_adapter.md): Reads the `llm.*` settings and the API key.
@@ -23,10 +23,12 @@ Implements the `IConfigService` outbound port. It reads a layered configuration 
 - `layered_cache`: The merged configuration is cached in `_config` on first load and rebuilt from disk after every write.
 - `duplicate_key_policy`: The user config fails fast with a `ConfigurationError` on any repeated mapping key at any depth. The bundled baseline stays permissive.
 - `exact_key_precedence`: An exact top-level dotted key wins over the nested key in both `get_setting` and `set_setting`.
-- `lazy_interpolation`: `${VAR}` tokens resolve at `get_setting` time, never at load time.
+- `interpolation_order`: `${VAR}` tokens resolve before schema construction, and the live walk resolves them on each `get_setting` call.
 - `env_layering`: The interpolation lookup layers `.env` values under `os.environ`, and reads `.env` fresh on every call.
 - `no_os_environ_mutation`: `set_env_variable` writes the secret to `.env` only and never mutates `os.environ`.
 - `comment_preserving_write`: `set_setting` rewrites only the target value token as raw text and never round-trips the document through `yaml.dump`.
+- `typed_view_refresh`: The typed view rebuilds at construction and after every write, so a read reflects the persisted value.
+- `declared_key_routing`: A declared key resolves through the typed view, while an undeclared key and every `llm.*` key resolve through the live dict walk.
 
 ## Inbound Ports
 None — this is an outbound (driven) adapter.
@@ -38,17 +40,18 @@ None — this is an outbound (driven) adapter.
 - **`get_setting` return:** `Optional[Any]` — the resolved value, the supplied default, or `None`.
 - **`.env` file:** A sibling of the config file, written with quoted values through `dotenv.set_key`.
 - **Interpolation forms:** `${VAR}` (empty string when unresolved), `${VAR:-default}` (fallback value), and `$$` (literal `$`).
+- **Typed schema:** The adapter builds an `AppConfig` from the interpolated merged mapping at construction, so an uncoercible or out-of-range declared value raises `ConfigurationError` at load. Every `llm.*` key bypasses the typed schema and reads from the live mapping.
 
 ## Operations
 
 ### `get_setting(key, default=None) -> Optional[Any]`
 - **Preconditions:** `key` is a non-empty string.
-- **Postconditions:** Returns the interpolated value. An exact top-level key wins over dot-notation resolution. A missing key returns `default`.
+- **Postconditions:** A declared key resolves through the typed view, so it carries the canonical schema default and declared type. An undeclared key and every `llm.*` key resolve through the live dict walk, where an exact top-level key wins over dot-notation resolution. A missing key returns `default`.
 - **Exceptions:** None — the contract always returns a value.
 
 ### `set_setting(key, value) -> None`
 - **Preconditions:** `key` is a non-empty string.
-- **Postconditions:** Rewrites only the target value token, preserving comments and ordering, and rebuilds the merged cache from disk. An exact top-level dotted key wins over a nested key. Dot-notation creates intermediate mappings.
+- **Postconditions:** Rewrites only the target value token, preserving comments and ordering, rebuilds the merged cache from disk, and refreshes the typed view. An exact top-level dotted key wins over a nested key. Dot-notation creates intermediate mappings.
 - **Exceptions:** `OSError` when the file is unwritable; `yaml.YAMLError` when serialization fails; `ConfigurationError` when the file gained a duplicate key after the adapter loaded it.
 
 ### `get_config_path() -> str`
