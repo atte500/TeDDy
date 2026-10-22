@@ -5,12 +5,6 @@ from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGu
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 
 
-# Sentinel distinguishing "key absent" from a present falsy value, so the
-# legacy `yolo_guardrails` namespace is consulted only when the renamed
-# `guardrails` key is missing.
-_UNSET = object()
-
-
 class ProductionSessionLoopGuard(ISessionLoopGuard):
     """
     Production implementation: bounds a non-interactive run by turns and cost.
@@ -34,16 +28,8 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
         self._max_cost_override = max_cost
 
     def _read_config(self, key: str, default: Any) -> Any:
-        """Reads ``guardrails.<key>`` with a legacy ``yolo_guardrails`` fallback.
-
-        Existing user configs still use the ``yolo_guardrails`` namespace, so
-        when the renamed ``guardrails`` key is absent the legacy key is read
-        before the default applies.
-        """
-        value = self._config_service.get_setting(f"guardrails.{key}", _UNSET)
-        if value is _UNSET:
-            value = self._config_service.get_setting(f"yolo_guardrails.{key}", _UNSET)
-        return default if value is _UNSET else value
+        """Reads ``guardrails.<key>`` and falls back to the supplied default."""
+        return self._config_service.get_setting(f"guardrails.{key}", default)
 
     def _resolve_limit(
         self,

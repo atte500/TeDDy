@@ -38,14 +38,14 @@ def test_get_setting_supports_nested_keys(fs, container):
     # Arrange
     expected_timeout = 30
     config_path = ".teddy/config.yaml"
-    config_data = {"execution": {"default_timeout_seconds": expected_timeout}}
+    config_data = {"custom": {"default_timeout_seconds": expected_timeout}}
     fs.create_dir(".teddy")
     fs.create_file(config_path, contents=yaml.dump(config_data))
 
     adapter = container.resolve(IConfigService)
 
     # Act & Assert
-    assert adapter.get_setting("execution.default_timeout_seconds") == expected_timeout
+    assert adapter.get_setting("custom.default_timeout_seconds") == expected_timeout
 
 
 def test_get_setting_handles_missing_config_file(fs, container):
@@ -110,7 +110,7 @@ def test_get_setting_respects_caller_default_at_call_site(fs, container):
 def test_get_setting_output_capping_keys(fs, container):
     # Arrange
     config_data = {
-        "execution": {"max_output_lines": 50},
+        "execute": {"max_output_lines": 50},
         "read": {"max_lines": 500},
     }
     fs.create_dir(".teddy")
@@ -119,9 +119,22 @@ def test_get_setting_output_capping_keys(fs, container):
     adapter = container.resolve(IConfigService)
 
     # Act & Assert
-    assert adapter.get_setting("execution.max_output_lines", 100) == 50
+    assert adapter.get_setting("execute.max_output_lines", 100) == 50
     assert adapter.get_setting("read.max_lines", 1000) == 500
-    assert adapter.get_setting("execution.missing_key", 100) == 100
+    assert adapter.get_setting("execute.missing_key", 100) == 100
+
+
+def test_legacy_execution_key_resolves_the_bundled_default(fs, container):
+    """A v0.1 execution.* key no longer migrates, so the canonical key keeps its bundled default."""
+    # Arrange
+    config_data = {"execution": {"max_output_lines": 999}}
+    fs.create_dir(".teddy")
+    fs.create_file(".teddy/config.yaml", contents=yaml.dump(config_data))
+
+    adapter = container.resolve(IConfigService)
+
+    # Act & Assert
+    assert adapter.get_setting("execute.max_output_lines") == 100
 
 
 def test_get_config_path_returns_provided_path(container):

@@ -73,7 +73,7 @@ None. The case file resolves every unknown and provides a proven replica and ver
 - [x] **Wiring** — In `_ensure_project_initialized`, register `IRepoTreeGenerator` through a lazy factory that forwards `root_dir` and `context.max_tree_depth`. Add an integration regression test that runs anchoring on a workspace with depth 1 and asserts the resolved depth, the omission marker, and the absence of a deeper folder.
 - [x] **Harness** — Raise `with_real_tree_generator` in `tests/harness/setup/real_adapter_mixin.py` to default `max_depth=4`, because an implicit default must keep rendering a real tree under the literal-cap contract.
 - [x] **Logic** — Remove the `_max_depth > 0` guard and set the constructor default to 4 in `LocalRepoTreeGenerator`. Change the `infrastructure.py` fallback to 4. Update the bundled comment. Assert the new default in the depth unit test, rewrite the zero-depth integration test to expect one notice, and add a zero-depth anchoring regression. Update the container-wiring default literal.
-- [ ] **Cleanup** — Remove all legacy configuration support: delete the yaml migration symbols and call, remove the guard `_UNSET` sentinel and `yolo_guardrails` fallback, delete the two legacy test modules, rewrite the guard legacy case to assert the key is ignored, migrate `execution.*` assertions to canonical keys, and add a test that a legacy `execution.*` key resolves the bundled default.
+- [x] **Cleanup** — Remove all legacy configuration support: delete the yaml migration symbols and call, remove the guard `_UNSET` sentinel and `yolo_guardrails` fallback, delete the two legacy test modules, rewrite the guard legacy case to assert the key is ignored, migrate `execution.*` assertions to canonical keys, and add a test that a legacy `execution.*` key resolves the bundled default.
 - [ ] **Cleanup** — Align the documentation: describe zero depth in the context payload spec, the tree-generator port and adapter contracts, and the config-service key table, and remove the legacy sentences from the yaml adapter and session-loop-guard designs.
 
 ## Implementation Notes
@@ -88,6 +88,10 @@ None. The case file resolves every unknown and provides a proven replica and ver
 - **Logic:** The depth unit test now asserts the schema default, the rendering integration test expects one omission notice at depth 0, and a zero-depth anchoring regression sits beside the depth-1 anchoring regression at the composition seam. The container-wiring test resolves the declared key, so it needed no literal change.
 - **Logic:** The bundled config comment now reads `0 = omit tree; raise the number to show more levels`.
 - **Logic:** The full suite passes with 2120 tests and 5 skips.
+- **Cleanup:** Legacy configuration support is fully removed. `yaml_config_adapter.py` lost `_LEGACY_EXECUTION_KEY_GROUPS`, its loader call, and `_migrate_legacy_execution_keys`, so a legacy `execution.*` key stays ignored and the canonical `execute.*` or `edit.*` reader resolves the shipped default. `session_loop_guard.py` lost the `_UNSET` sentinel and the dead `yolo_guardrails` fallback, so `_read_config` is one direct read of `guardrails.<key>`.
+- **Cleanup:** The two legacy test modules were deleted, and their two non-legacy guard invariants moved into `test_session_loop_guard_configuration.py`, so the deletion dropped no shipped contract. The guard legacy case now asserts the ignored key falls back to the 150 default.
+- **Cleanup:** Eight behavior-relevant `execution.*` fixtures across five test modules migrated to the canonical `edit.similarity_threshold` and `execute.default_timeout_seconds` keys. The two structural `execution:` uses in the duplicate-key and comment-preservation modules stay, because they exercise YAML structure rather than a legacy read.
+- **Cleanup:** The full suite passes with 2115 tests and 5 skips.
 
 ## Verification
 1. **Tree depth cap:**

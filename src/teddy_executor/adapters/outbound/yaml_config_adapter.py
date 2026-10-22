@@ -19,13 +19,6 @@ _INTERPOLATION_PATTERN = re.compile(
 
 _MERGE_TAG = "tag:yaml.org,2002:merge"
 
-# Legacy ``execution.<key>`` names and the canonical group each one now lives in.
-_LEGACY_EXECUTION_KEY_GROUPS = {
-    "default_timeout_seconds": "execute",
-    "max_output_lines": "execute",
-    "similarity_threshold": "edit",
-}
-
 # ``llm.*`` keys pass straight through to LiteLLM and stay on the live walk,
 # because a mid-run ``.env`` write must remain visible on the same adapter.
 _PASSTHROUGH_KEY_PREFIX = "llm."
@@ -143,30 +136,7 @@ class YamlConfigAdapter(IConfigService):
         except (yaml.YAMLError, OSError):
             return {}
 
-        self._migrate_legacy_execution_keys(user_config)
         return user_config
-
-    def _migrate_legacy_execution_keys(self, user_config: Dict[str, Any]) -> None:
-        """Copies tuned legacy ``execution.*`` values to their canonical groups.
-
-        A user file written before the execute/edit split still holds these
-        keys. The copy runs on the in-memory user dict before the baseline
-        merge, so the canonical key resolves while the user file stays
-        untouched. An absent or non-mapping legacy parent is left alone, a
-        ``None`` value is skipped, and an existing canonical key wins.
-        """
-        legacy = user_config.get("execution")
-        if not isinstance(legacy, dict):
-            return
-        for legacy_key, group in _LEGACY_EXECUTION_KEY_GROUPS.items():
-            value = legacy.get(legacy_key)
-            if value is None:
-                continue
-            target = user_config.get(group)
-            if not isinstance(target, dict):
-                target = {}
-                user_config[group] = target
-            target.setdefault(legacy_key, value)
 
     def _merge_dicts(self, base: Dict[str, Any], overrides: Dict[str, Any]) -> None:
         """Recursively merges overrides into base. Prunes keys set to None."""

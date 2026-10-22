@@ -2,12 +2,14 @@
 
 The guard resolves each limit through a precedence chain (CLI flag over
 environment variable over config value over default). It reads the renamed
-``guardrails`` namespace with a legacy ``yolo_guardrails`` fallback, defaults
-the turn limit to 150, and re-anchors its baselines after a message turn when
-``guardrails.message_reset`` is enabled.
+``guardrails`` namespace, defaults the turn limit to 150, and re-anchors its
+baselines after a message turn when ``guardrails.message_reset`` is enabled.
 """
 
+from importlib import resources
 from unittest.mock import create_autospec
+
+import yaml
 
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
@@ -34,6 +36,14 @@ def _guard(config_values=None, env_values=None, **overrides):
         initial_cost=0.0,
         **overrides,
     )
+
+
+def _load_bundled_config() -> dict:
+    """Load the bundled config.yaml as a parsed mapping via the package resource."""
+    resource = resources.files("teddy_executor.resources.config").joinpath(
+        "config.yaml"
+    )
+    return yaml.safe_load(resource.read_text(encoding="utf-8"))
 
 
 def test_cli_flag_wins_over_environment_and_config():
@@ -64,11 +74,12 @@ def test_config_value_used_without_cli_or_environment():
     assert guard.should_continue(4, 0.0, False)[0] is False
 
 
-def test_legacy_key_used_when_renamed_key_absent():
-    """The legacy yolo_guardrails key applies when guardrails is absent."""
+def test_legacy_yolo_guardrails_key_is_ignored():
+    """A legacy yolo_guardrails key no longer applies, so the 150 default governs."""
     guard = _guard(config_values={"yolo_guardrails.max_turns": 6})
-    assert guard.should_continue(5, 0.0, False) == (True, None)
-    assert guard.should_continue(6, 0.0, False)[0] is False
+    assert guard.should_continue(6, 0.0, False) == (True, None)
+    assert guard.should_continue(149, 0.0, False) == (True, None)
+    assert guard.should_continue(150, 0.0, False)[0] is False
 
 
 def test_default_turn_limit_is_150():
@@ -134,3 +145,27 @@ def test_cost_limit_message_uses_neutral_wording():
         f"Cost-limit message must not carry stale --yolo-only wording, got: {reason!r}"
     )
     assert "cost limit reached" in reason.lower()
+
+
+def test_bundled_config_declares_only_the_renamed_guardrails_namespace():
+    """The bundled config declares ``guardrails`` and no legacy ``yolo_guardrails``."""
+    config = _load_bundled_config()
+
+    guardrails = config.get("guardrails")
+    assert isinstance(guardrails, dict), (
+        "Bundled config.yaml must declare the renamed 'guardrails' block, "
+        f"got: {guardrails!r}"
+    )
+    assert guardrails.get("max_turns") == 150
+    assert "yolo_guardrails" not in config
+
+
+def test_turn_limit_message_names_the_renamed_guardrails_key():
+    """The guard names ``guardrails.max_turns`` and never the legacy namespace."""
+    guard = _guard(config_values={"guardrails.max_turns": 1})
+
+    should_continue, reason = guard.should_continue(1, 0.0, False)
+
+    assert should_continue is False
+    assert "'guardrails.max_turns'" in reason, reason
+    assert "yolo_guardrails" not in reason, reason

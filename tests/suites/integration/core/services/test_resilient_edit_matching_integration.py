@@ -13,7 +13,7 @@ def test_fuzzy_edit_success_with_diff_in_report(tmp_path, monkeypatch):
     (tmp_path / ".teddy").mkdir()
     # Override global 1.00 threshold to allow fuzzy verification in this test
     (tmp_path / ".teddy" / "config.yaml").write_text(
-        "execution:\n  similarity_threshold: 0.90", encoding="utf-8"
+        "edit:\n  similarity_threshold: 0.90", encoding="utf-8"
     )
     target_file = tmp_path / "app.py"
     # Use content that differs from the FIND block by one character
@@ -77,7 +77,7 @@ def test_edit_custom_threshold_fail(tmp_path, monkeypatch):
 
     # Set global threshold to 1.0 to force failure on any non-perfect match
     (tmp_path / ".teddy" / "config.yaml").write_text(
-        "execution:\n  similarity_threshold: 1.0\n"
+        "edit:\n  similarity_threshold: 1.0\n"
     )
 
     plan = dedent("""\

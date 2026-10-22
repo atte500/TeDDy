@@ -34,7 +34,7 @@ def test_user_config_overrides_baseline(tmp_path):
     teddy_dir = tmp_path / ".teddy"
     teddy_dir.mkdir()
     user_config = teddy_dir / "config.yaml"
-    user_config.write_text("execution:\n  max_output_lines: 999", encoding="utf-8")
+    user_config.write_text("execute:\n  max_output_lines: 999", encoding="utf-8")
 
     # When: We instantiate the adapter
     adapter = YamlConfigAdapter(
@@ -42,7 +42,7 @@ def test_user_config_overrides_baseline(tmp_path):
     )
 
     # Then: The user value should take precedence
-    assert adapter.get_setting("execution.max_output_lines") == 999
+    assert adapter.get_setting("execute.max_output_lines") == 999
 
 
 def test_baseline_llm_api_key_is_an_env_var_reference(tmp_path, monkeypatch):

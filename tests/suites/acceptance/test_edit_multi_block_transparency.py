@@ -12,7 +12,7 @@ def test_multi_block_edit_shows_all_diffs(monkeypatch, tmp_path):
     # Set global threshold to 0.8 for fuzzy matching in this test
     (tmp_path / ".teddy").mkdir(exist_ok=True)
     (tmp_path / ".teddy" / "config.yaml").write_text(
-        "execution:\n  similarity_threshold: 0.8\n"
+        "edit:\n  similarity_threshold: 0.8\n"
     )
 
     target_file = tmp_path / "multi_site.py"

@@ -14,7 +14,7 @@ def test_global_timeout_enforcement(monkeypatch, tmp_path):
     teddy_dir.mkdir(parents=True)
     config_file = teddy_dir / "config.yaml"
     config_file.write_text(
-        "execution:\n  default_timeout_seconds: 0.1\n", encoding="utf-8"
+        "execute:\n  default_timeout_seconds: 0.1\n", encoding="utf-8"
     )
 
     # 2. Define a plan with a command that takes longer than 0.1 second
@@ -44,7 +44,7 @@ def test_timeout_captures_partial_output(monkeypatch, tmp_path):
     teddy_dir.mkdir(parents=True, exist_ok=True)
     config_file = teddy_dir / "config.yaml"
     config_file.write_text(
-        "execution:\n  default_timeout_seconds: 0.2\n", encoding="utf-8"
+        "execute:\n  default_timeout_seconds: 0.2\n", encoding="utf-8"
     )
 
     # 2. Define a plan with a command that prints then hangs
@@ -104,7 +104,7 @@ def test_explicit_timeout_override(monkeypatch, tmp_path):
     teddy_dir.mkdir(parents=True, exist_ok=True)
     config_file = teddy_dir / "config.yaml"
     config_file.write_text(
-        "execution:\n  default_timeout_seconds: 0.5\n", encoding="utf-8"
+        "execute:\n  default_timeout_seconds: 0.5\n", encoding="utf-8"
     )
 
     # 2. Define a plan with an explicit timeout override (5s)
