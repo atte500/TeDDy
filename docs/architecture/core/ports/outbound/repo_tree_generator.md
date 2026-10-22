@@ -23,10 +23,10 @@ None — this is an outbound (driven) port.
 ## Data Contracts
 - **`generate_tree` return:** A multi-line `str` rendering the file tree.
 - **Omission marker:** A truncated directory renders the single line `[... directory not expanded (depth limit N): X folders, Y files]`. `N` is the configured depth limit. `X` and `Y` count only the visible immediate children after ignore rules, and any count of one uses the lowercase singular noun. An unreadable directory renders `[... directory not expanded (unreadable): 0 folders, 0 files]` so the omission stays explicit.
-- **Depth limit:** The adapter accepts a depth limit at construction. Zero means unlimited, so the whole tree renders and no marker appears. Counting is zero-based from the repository root, so a limit of one renders only the root section.
+- **Depth limit:** The adapter accepts a non-negative depth limit at construction and defaults to the schema default 4. Every non-negative value is a literal cap, so counting is zero-based from the repository root and a limit of one renders only the root section. Zero collapses the tree to one omission notice for the root, because zero is a literal cap.
 
 ## Operations
 
 ### `generate_tree() -> str`
 - **Preconditions:** None.
-- **Postconditions:** Returns a multi-line string of the file tree, excluding paths matched by ignore rules. When the adapter holds a depth limit greater than zero, every directory at or beyond that limit renders an omission marker instead of expanding, so truncation is never silent. A depth limit of zero renders the tree without a limit and emits no marker.
+- **Postconditions:** Returns a multi-line string of the file tree, excluding paths matched by ignore rules. Every directory at or beyond the depth limit renders an omission marker instead of expanding, so truncation is never silent. A depth limit of zero renders one omission notice for the root and lists no child entry.

@@ -7,7 +7,8 @@ Implements the `IRepoTreeGenerator` outbound port. It traverses the repository o
 
 ## Consumers
 - [`ContextService`](../../core/services/context_service.md): Generates the project-structure section of the context payload.
-- [Composition Root](/src/teddy_executor/container.py): Constructs the generator with the project root.
+- [Composition Root](/src/teddy_executor/container.py): Constructs the generator with the project root and the configured `context.max_tree_depth`.
+- [CLI Adapter](../inbound/cli.md): Re-registers the generator during project anchoring, forwarding the detected project root and the configured `context.max_tree_depth`.
 
 ## Dependencies
 - **`filesystem_helpers`** (`teddy_executor.adapters.outbound.filesystem_helpers`): Loads the combined ignore spec. The adapter owns its own traversal, because the shared recursive walk also serves `LocalFileSystemAdapter`.
@@ -22,7 +23,7 @@ Implements the `IRepoTreeGenerator` outbound port. It traverses the repository o
 - `single_pass_traversal`: Each directory is scanned exactly once, and its rendered section is built during that scan, so no second filesystem pass occurs.
 - `scan_cache_flags`: Directory and symlink flags come from the `os.scandir` entry cache, so no entry pays an extra stat call.
 - `section_order`: Sections sort by their relative path with the root keyed as `.`, which renders a top-level name such as `!important` before the root block.
-- `depth_limit_contract`: The constructor stores a non-negative depth limit, and zero means unlimited. A directory at or beyond the limit renders one omission marker instead of expanding, so its children contribute no section.
+- `depth_limit_contract`: The constructor stores a non-negative depth limit and defaults to the schema default 4, so an omitted argument still renders a real tree. Every non-negative value is a literal cap: a directory at or beyond the limit renders one omission marker instead of expanding, so its children contribute no section, and zero collapses the tree to one notice.
 - `unreadable_marker`: A directory whose scan raises `PermissionError` renders the module-level `UNREADABLE_MARKER` instead of an ambiguous empty section.
 
 ## Inbound Ports

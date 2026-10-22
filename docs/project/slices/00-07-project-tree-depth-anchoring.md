@@ -74,7 +74,7 @@ None. The case file resolves every unknown and provides a proven replica and ver
 - [x] **Harness** — Raise `with_real_tree_generator` in `tests/harness/setup/real_adapter_mixin.py` to default `max_depth=4`, because an implicit default must keep rendering a real tree under the literal-cap contract.
 - [x] **Logic** — Remove the `_max_depth > 0` guard and set the constructor default to 4 in `LocalRepoTreeGenerator`. Change the `infrastructure.py` fallback to 4. Update the bundled comment. Assert the new default in the depth unit test, rewrite the zero-depth integration test to expect one notice, and add a zero-depth anchoring regression. Update the container-wiring default literal.
 - [x] **Cleanup** — Remove all legacy configuration support: delete the yaml migration symbols and call, remove the guard `_UNSET` sentinel and `yolo_guardrails` fallback, delete the two legacy test modules, rewrite the guard legacy case to assert the key is ignored, migrate `execution.*` assertions to canonical keys, and add a test that a legacy `execution.*` key resolves the bundled default.
-- [ ] **Cleanup** — Align the documentation: describe zero depth in the context payload spec, the tree-generator port and adapter contracts, and the config-service key table, and remove the legacy sentences from the yaml adapter and session-loop-guard designs.
+- [x] **Cleanup** — Align the documentation: describe zero depth in the context payload spec, the tree-generator port and adapter contracts, and the config-service key table, and remove the legacy sentences from the yaml adapter and session-loop-guard designs.
 
 ## Implementation Notes
 - **Wiring:** The anchored `IRepoTreeGenerator` registration now uses a transient lazy factory that forwards `root_dir` and `context.max_tree_depth` with a fallback of `4`. The factory resolves `IConfigService` at resolve time because the tree registration executes before the config registration in source order.
@@ -92,6 +92,9 @@ None. The case file resolves every unknown and provides a proven replica and ver
 - **Cleanup:** The two legacy test modules were deleted, and their two non-legacy guard invariants moved into `test_session_loop_guard_configuration.py`, so the deletion dropped no shipped contract. The guard legacy case now asserts the ignored key falls back to the 150 default.
 - **Cleanup:** Eight behavior-relevant `execution.*` fixtures across five test modules migrated to the canonical `edit.similarity_threshold` and `execute.default_timeout_seconds` keys. The two structural `execution:` uses in the duplicate-key and comment-preservation modules stay, because they exercise YAML structure rather than a legacy read.
 - **Cleanup:** The full suite passes with 2115 tests and 5 skips.
+- **Cleanup (docs):** The context-payload spec, the tree-generator port and adapter contracts, and the config-service key table now describe every non-negative depth as a literal cap and depth zero as one omission notice for the root. The yaml adapter and session-loop-guard designs no longer advertise the removed legacy namespaces.
+- **Cleanup (docs):** The stale-reference sweep over `docs/architecture`, `docs/project/specs`, `src`, and `README.md` returned no match for the removed migration symbols, the removed fallback, the two deleted test modules, or the old `0 = unlimited` wording. The case file and slice records keep their historical references, because they are immutable audit artifacts.
+- **Cleanup (docs):** The full suite passes with 2115 tests and 5 skips.
 
 ## Verification
 1. **Tree depth cap:**

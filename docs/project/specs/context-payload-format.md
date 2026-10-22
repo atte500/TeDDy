@@ -111,6 +111,8 @@ A textual representation of the repository's file tree, using simple indentation
 -   `.gitignore`: The standard git ignore file.
 -   `.teddyignore`: A TeDDy-specific file that takes priority and can be used to include files that are excluded in `.gitignore`.
 
+The tree also honors `context.max_tree_depth`. Every non-negative depth is a literal cap, so a directory at or beyond the limit renders one omission notice `[... directory not expanded (depth limit N): X folders, Y files]` instead of its children. A depth of zero collapses the section to one notice for the project root and lists no child entry, so the section stays present and auditable.
+
 -   **Example:**
     `````markdown
     ## Project Structure
