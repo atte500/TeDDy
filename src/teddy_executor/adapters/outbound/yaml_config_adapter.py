@@ -84,6 +84,14 @@ class YamlConfigAdapter(IConfigService):
         else:
             self._config_path = config_path
         self._config: Dict[str, Any] = self._load_layered_config()
+        self._refresh_typed_view()
+
+    def _refresh_typed_view(self) -> None:
+        """Rebuild the typed view from the current merged cache.
+
+        The view is a frozen snapshot, so it must be reconstructed whenever
+        the merged cache changes, or a read would return a stale value.
+        """
         self.app_config = construct_app_config(self._config)
 
     def _load_layered_config(self) -> Dict[str, Any]:
@@ -304,10 +312,12 @@ class YamlConfigAdapter(IConfigService):
             f.write(text)
 
         # 4. Rebuild the merged cache from disk so a subsequent get_setting()
-        #    on THIS adapter resolves exactly what a fresh adapter resolves.
+        #    on THIS adapter resolves exactly what a fresh adapter resolves,
+        #    then refresh the typed view so app_config reflects the write.
         merged = self._load_layered_config()
         self._config.clear()
         self._config.update(merged)
+        self._refresh_typed_view()
 
     def _scalar_repr(self, value: Any) -> str:
         """Render a scalar value as YAML text with no document-end marker."""

@@ -250,3 +250,18 @@ def test_set_setting_preserves_other_keys(fs, container):
     fresh = YamlConfigAdapter(config_path=".teddy/config.yaml")
     assert fresh.get_setting("editor") == "nvim"
     assert fresh.get_setting("other") == "keep"
+
+
+def test_set_setting_rebuilds_the_typed_view(fs, container):
+    """A set_setting write is reflected on the adapter's typed app_config."""
+    # Arrange
+    fs.create_dir(".teddy")
+    fs.create_file(".teddy/config.yaml", contents=yaml.dump({"editor": "code"}))
+    adapter = container.resolve(IConfigService)
+    assert adapter.app_config.execute.max_output_lines == 100
+
+    # Act
+    adapter.set_setting("execute.max_output_lines", 250)
+
+    # Assert
+    assert adapter.app_config.execute.max_output_lines == 250
