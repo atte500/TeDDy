@@ -92,3 +92,60 @@ def test_exact_flat_dotted_key_wins_over_nested():
     )
 
     assert config.execute.max_output_lines == 200
+
+
+@pytest.mark.parametrize("value", [-0.01, 1.01])
+def test_similarity_threshold_outside_the_range_raises(value):
+    """A threshold outside the closed interval zero to one is rejected."""
+    with pytest.raises(ConfigurationError, match="edit.similarity_threshold"):
+        construct_app_config({"edit": {"similarity_threshold": value}})
+
+
+@pytest.mark.parametrize("value", [0.0, 1.0])
+def test_similarity_threshold_bounds_are_accepted(value):
+    """Both interval endpoints are valid thresholds."""
+    config = construct_app_config({"edit": {"similarity_threshold": value}})
+
+    assert config.edit.similarity_threshold == pytest.approx(value)
+
+
+def test_negative_tree_depth_raises():
+    """A negative depth is rejected, because zero already means unlimited."""
+    with pytest.raises(ConfigurationError, match="context.max_tree_depth"):
+        construct_app_config({"context": {"max_tree_depth": -1}})
+
+
+def test_zero_tree_depth_is_accepted():
+    """A depth of zero means unlimited, so it stays a valid value."""
+    config = construct_app_config({"context": {"max_tree_depth": 0}})
+
+    assert config.context.max_tree_depth == 0
+
+
+@pytest.mark.parametrize(
+    ("group", "key"),
+    [
+        ("execute", "max_output_lines"),
+        ("read", "max_lines"),
+        ("research", "max_results"),
+    ],
+)
+def test_zero_capacity_raises(group, key):
+    """Every positive-only capacity rejects a zero value."""
+    with pytest.raises(ConfigurationError, match=f"{group}.{key}"):
+        construct_app_config({group: {key: 0}})
+
+
+@pytest.mark.parametrize(
+    ("group", "key"),
+    [
+        ("execute", "max_output_lines"),
+        ("read", "max_lines"),
+        ("research", "max_results"),
+    ],
+)
+def test_single_capacity_is_accepted(group, key):
+    """A capacity of one is the smallest valid value."""
+    config = construct_app_config({group: {key: 1}})
+
+    assert getattr(getattr(config, group), key) == 1

@@ -161,12 +161,18 @@ def _coerce_bool(key: str, value: Any) -> bool:
 
 @dataclass(frozen=True)
 class _FieldSpec:
-    """Declares one configuration key and its typed target field."""
+    """Declares one configuration key, its typed target, and its valid range.
+
+    ``minimum`` and ``maximum`` are inclusive bounds. A ``None`` bound leaves
+    that side unbounded, so a spec without bounds accepts any coercible value.
+    """
 
     key: str
     group: str
     target: str
     kind: type
+    minimum: float | None = None
+    maximum: float | None = None
 
 
 _SCHEMA_FIELDS: tuple[_FieldSpec, ...] = (
@@ -176,14 +182,23 @@ _SCHEMA_FIELDS: tuple[_FieldSpec, ...] = (
         "default_timeout_seconds",
         float,
     ),
-    _FieldSpec("execute.max_output_lines", "execute", "max_output_lines", int),
-    _FieldSpec("edit.similarity_threshold", "edit", "similarity_threshold", float),
+    _FieldSpec(
+        "execute.max_output_lines", "execute", "max_output_lines", int, minimum=1
+    ),
+    _FieldSpec(
+        "edit.similarity_threshold",
+        "edit",
+        "similarity_threshold",
+        float,
+        minimum=0.0,
+        maximum=1.0,
+    ),
     _FieldSpec("workspace.init", "workspace", "init", bool),
     _FieldSpec("workspace.pre-commit", "workspace", "pre_commit", bool),
     _FieldSpec("workspace.pull", "workspace", "pull", bool),
-    _FieldSpec("read.max_lines", "read", "max_lines", int),
-    _FieldSpec("context.max_tree_depth", "context", "max_tree_depth", int),
-    _FieldSpec("research.max_results", "research", "max_results", int),
+    _FieldSpec("read.max_lines", "read", "max_lines", int, minimum=1),
+    _FieldSpec("context.max_tree_depth", "context", "max_tree_depth", int, minimum=0),
+    _FieldSpec("research.max_results", "research", "max_results", int, minimum=1),
     _FieldSpec("checks.prompts", "checks", "prompts", bool),
     _FieldSpec("checks.templates", "checks", "templates", bool),
     _FieldSpec("checks.update", "checks", "update", bool),
@@ -238,6 +253,25 @@ def _coerce(spec: _FieldSpec, value: Any) -> Any:
     return _coerce_float(spec.key, value)
 
 
+def _validate_range(spec: _FieldSpec, value: Any) -> Any:
+    """Reject a value outside the declared inclusive bounds.
+
+    The error names the key, the expected bound, and the offending value, so a
+    user can correct the file from the message alone.
+    """
+    if spec.minimum is not None and value < spec.minimum:
+        raise ConfigurationError(
+            f"Configuration key '{spec.key}' expected a value of at least "
+            f"{spec.minimum}, got {value!r}."
+        )
+    if spec.maximum is not None and value > spec.maximum:
+        raise ConfigurationError(
+            f"Configuration key '{spec.key}' expected a value of at most "
+            f"{spec.maximum}, got {value!r}."
+        )
+    return value
+
+
 def _log_unknown_keys(merged: Mapping[str, Any]) -> None:
     """Record each undeclared top-level group at debug level."""
     for key in merged:
@@ -250,9 +284,10 @@ def construct_app_config(merged: Mapping[str, Any]) -> AppConfig:
 
     Each declared key resolves with exact-flat-first then nested precedence. A
     declared value coerces to its declared type, and an absent or empty value
-    falls back to the schema default. An uncoercible value raises a
-    ``ConfigurationError`` naming the key. Undeclared top-level groups are
-    ignored so future keys stay forward compatible.
+    falls back to the schema default. An uncoercible value or a value outside
+    its declared range raises a ``ConfigurationError`` naming the key.
+    Undeclared top-level groups are ignored so future keys stay forward
+    compatible.
     """
     _log_unknown_keys(merged)
     overrides: dict[str, dict[str, Any]] = {}
@@ -260,7 +295,9 @@ def construct_app_config(merged: Mapping[str, Any]) -> AppConfig:
         raw = _lookup(merged, spec.key)
         if raw is None or raw == "":
             continue
-        overrides.setdefault(spec.group, {})[spec.target] = _coerce(spec, raw)
+        overrides.setdefault(spec.group, {})[spec.target] = _validate_range(
+            spec, _coerce(spec, raw)
+        )
 
     return AppConfig(
         execute=ExecuteConfig(**overrides.get("execute", {})),
