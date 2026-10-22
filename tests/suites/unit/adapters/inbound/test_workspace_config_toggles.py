@@ -19,6 +19,7 @@ from teddy_executor.adapters.inbound.session_cli_handlers import (
 FAST_FORWARD_PREFIX = "Workspace fast-forwarded"
 SKIPPED_WARNING = "⚠ Workspace pull skipped; continuing with the current branch."
 TIMEOUT_WARNING = "⚠ Workspace pull timed out; continuing without it."
+GIT_UNAVAILABLE_WARNING = "⚠ Workspace pull skipped; git is unavailable."
 PRE_COMMIT_WARNING = (
     "⚠ Pre-commit hook installation is disabled. "
     "The post-commit test gate will not run."
@@ -159,13 +160,15 @@ def test_in_progress_operation_skips_silently(
 
 
 def test_tracked_changes_warn_and_skip_the_pull(git_repository, mock_config, capsys):
-    """Tracked worktree changes warn once and skip the pull."""
+    """Tracked worktree changes warn once, skip the pull, and end with a blank line."""
     runner = FakeGitRunner(status_output=" M src/app.py\n")
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
+    err = capsys.readouterr().err
     assert "pull" not in runner.operations()
-    assert SKIPPED_WARNING in capsys.readouterr().err
+    assert SKIPPED_WARNING in err
+    assert err.endswith("\n\n")
 
 
 def test_untracked_files_do_not_block_a_fast_forward(
@@ -200,13 +203,30 @@ def test_timeout_warns_and_continues(git_repository, mock_config, capsys):
     assert TIMEOUT_WARNING in capsys.readouterr().err
 
 
+def test_unavailable_git_binary_warns_and_continues(
+    git_repository, mock_config, capsys
+):
+    """A missing git binary warns once instead of aborting session startup."""
+
+    def missing_git_runner(cmd, **kwargs):
+        raise FileNotFoundError("git")
+
+    _pull_workspace_on_start(mock_config, run_func=missing_git_runner)
+
+    err = capsys.readouterr().err
+    assert GIT_UNAVAILABLE_WARNING in err
+    assert err.endswith("\n\n")
+
+
 def test_fast_forward_reports_the_commit_count(git_repository, mock_config, capsys):
-    """A multi-commit fast-forward names the commit count in one line."""
+    """A multi-commit fast-forward prints a checkmark line plus a blank line."""
     runner = FakeGitRunner(fast_forward_count=3)
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
-    assert f"{FAST_FORWARD_PREFIX} (3 commits)" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert f"✓ {FAST_FORWARD_PREFIX} (3 commits)" in err
+    assert err.endswith("\n\n")
 
 
 def test_single_commit_fast_forward_uses_the_singular_noun(

@@ -27,6 +27,7 @@ The primary inbound (driving) adapter. It parses user commands with `Typer`, res
 - `pipeline_is_non_interactive`: A `--pipeline` run forces non-interactive mode and defaults to the `assistant` agent.
 - `resume_agent_is_explicit`: `resume` is excluded from the pipeline agent default so it never silently switches an existing session's agent.
 - `shared_startup_preamble`: `start` and `resume` run one shared preamble helper so their startup sequence cannot drift.
+- `start_only_workspace_pull`: The shared preamble fast-forwards the workspace only when `start` enables it and never for `resume`.
 - `boundary_owns_interrupt_lifecycle`: The session loop boundary installs and restores the SIGINT handler and pairs the quit-key listener lifecycle with it.
 - `setup_gates_are_tty_gated`: The API-key and editor prompts run only when a terminal is attached.
 - `shared_context_normalization`: `start` and `context` normalize the repeatable, comma-separated `-c/--context` option through one helper in `cli_helpers.py`.
@@ -73,4 +74,4 @@ None declared directly — the adapter resolves use cases and services from the 
 - **Exceptions:** Prints an error to `stderr` and exits with code 1 when the prompt is unknown.
 
 ### Startup preamble helpers
-`_run_health_checks`, `_run_cli_preflight_check`, `_start_background_update_check`, `_run_startup_preamble`, and `_handle_startup_error` implement the fixed startup sequence: advisory health checks, the `Checking configurations...` line, drift and update notifications, the shared disable-footer, and the `Agent:`/`Model:` identity block. The editor validation preflight discovers and persists an editor when the session will read the terminal.
+`_run_health_checks`, `_run_cli_preflight_check`, `_start_background_update_check`, `_run_startup_preamble`, and `_handle_startup_error` implement the fixed startup sequence: advisory health checks, the start-only workspace fast-forward line, the `Checking configurations...` line, drift and update notifications, the shared disable-footer, and the `Agent:`/`Model:` identity block. The `start` entry point enables the fast-forward pull and `resume` keeps it off, so a fast-forward line appears only when a new session begins. The editor validation preflight discovers and persists an editor when the session will read the terminal.

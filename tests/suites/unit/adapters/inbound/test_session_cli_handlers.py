@@ -642,7 +642,9 @@ def test_handle_new_session_invokes_pull_workspace_on_start(monkeypatch):
         handlers, "_pull_workspace_on_start", lambda config: invocations.append(config)
     )
     monkeypatch.setattr(handlers, "_start_background_update_check", lambda *a, **k: [])
-    monkeypatch.setattr(handlers, "_run_startup_preamble", lambda *a, **k: None)
+    monkeypatch.setattr(handlers, "_run_health_checks", lambda *a, **k: None)
+    monkeypatch.setattr(handlers, "_run_cli_preflight_check", lambda *a, **k: [])
+    monkeypatch.setattr(handlers, "_display_checks_footer", lambda *a, **k: None)
     monkeypatch.setattr(handlers, "_echo_config_success", lambda *a, **k: None)
     monkeypatch.setattr(handlers, "_orchestrate_session_loop", lambda *a, **k: None)
 
@@ -676,7 +678,9 @@ def test_handle_resume_session_never_invokes_pull_workspace_on_start(monkeypatch
         handlers, "_pull_workspace_on_start", lambda config: invocations.append(config)
     )
     monkeypatch.setattr(handlers, "_start_background_update_check", lambda *a, **k: [])
-    monkeypatch.setattr(handlers, "_run_startup_preamble", lambda *a, **k: None)
+    monkeypatch.setattr(handlers, "_run_health_checks", lambda *a, **k: None)
+    monkeypatch.setattr(handlers, "_run_cli_preflight_check", lambda *a, **k: [])
+    monkeypatch.setattr(handlers, "_display_checks_footer", lambda *a, **k: None)
     monkeypatch.setattr(
         handlers,
         "_resolve_session_name",

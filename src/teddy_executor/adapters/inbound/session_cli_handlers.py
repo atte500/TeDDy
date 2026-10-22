@@ -285,12 +285,23 @@ def _run_health_checks(config_service: IConfigService) -> None:
 _GIT_PULL_TIMEOUT_SECONDS = 15
 _PULL_SKIPPED_WARNING = "⚠ Workspace pull skipped; continuing with the current branch."
 _PULL_TIMEOUT_WARNING = "⚠ Workspace pull timed out; continuing without it."
+_PULL_GIT_UNAVAILABLE_WARNING = "⚠ Workspace pull skipped; git is unavailable."
 _IN_PROGRESS_GIT_MARKERS = (
     "rebase-merge",
     "rebase-apply",
     "MERGE_HEAD",
     "CHERRY_PICK_HEAD",
 )
+
+
+def _warn_pull(message: str) -> None:
+    """Print one yellow pull warning followed by a blank line.
+
+    The trailing blank line keeps every pull block, success or warning, the
+    same height before the ``Checking configurations...`` line.
+    """
+    typer.secho(message, fg=typer.colors.YELLOW, err=True)
+    typer.echo("", err=True)
 
 
 def _pull_workspace_on_start(
@@ -303,8 +314,9 @@ def _pull_workspace_on_start(
     a Git repository, so a disabled toggle or a non-repository directory stays
     silent. A detached HEAD, a missing upstream, or an in-progress operation
     also stays silent, because there is nothing safe to fast-forward. A dirty
-    worktree or a failed pull reports one warning and leaves the workspace
-    unchanged. A successful fast-forward names the number of commits it moved.
+    worktree, a failed pull, a timeout, or an unavailable git binary reports
+    one warning and leaves the workspace unchanged. A successful fast-forward
+    names the number of commits it moved.
 
     The Git process is injected through ``run_func`` so every decision is
     testable without spawning a real repository.
@@ -317,7 +329,9 @@ def _pull_workspace_on_start(
     try:
         _fast_forward_workspace(git_run)
     except subprocess.TimeoutExpired:
-        typer.secho(_PULL_TIMEOUT_WARNING, fg=typer.colors.YELLOW, err=True)
+        _warn_pull(_PULL_TIMEOUT_WARNING)
+    except OSError:
+        _warn_pull(_PULL_GIT_UNAVAILABLE_WARNING)
 
 
 def _fast_forward_workspace(git_run: Callable[..., Any]) -> None:
@@ -330,7 +344,7 @@ def _fast_forward_workspace(git_run: Callable[..., Any]) -> None:
     skip_reason = _pull_skip_reason(git_run)
     if skip_reason is not None:
         if skip_reason:
-            typer.secho(skip_reason, fg=typer.colors.YELLOW, err=True)
+            _warn_pull(skip_reason)
         return
     before = _read_head(git_run)
     result = git_run(
@@ -341,7 +355,7 @@ def _fast_forward_workspace(git_run: Callable[..., Any]) -> None:
         timeout=_GIT_PULL_TIMEOUT_SECONDS,
     )
     if result.returncode != 0:
-        typer.secho(_PULL_SKIPPED_WARNING, fg=typer.colors.YELLOW, err=True)
+        _warn_pull(_PULL_SKIPPED_WARNING)
         return
     _report_fast_forward(git_run, before, _read_head(git_run))
 
@@ -414,10 +428,13 @@ def _report_fast_forward(git_run: Callable[..., Any], before: str, after: str) -
         return
     noun = "commit" if commits == 1 else "commits"
     typer.secho(
-        f"Workspace fast-forwarded ({commits} {noun})",
+        f"✓ Workspace fast-forwarded ({commits} {noun})",
         fg=typer.colors.GREEN,
         err=True,
     )
+    # A trailing blank line separates the fast-forward block from the
+    # ``Checking configurations...`` line that follows it.
+    typer.echo("", err=True)
 
 
 def _start_background_update_check(container: Container) -> list[str]:
@@ -440,22 +457,27 @@ def _start_background_update_check(container: Container) -> list[str]:
     return _display_update_notification(container, cache_path)
 
 
-def _run_startup_preamble(
+def _run_startup_preamble(  # noqa: PLR0913  # Each parameter is an explicit startup gate.
     container: Container,
     fired: list[str],
     agent: Optional[str] = None,
     setup_editor: Optional[bool] = None,
     setup_api_key: Optional[bool] = None,
+    pull_workspace: bool = False,
 ) -> None:
     """Run the shared startup preamble for both session entry points.
 
     The order is fixed so the banner layout cannot drift: health checks, the
-    ``Checking configurations...`` line, the preflight check (whose returned
-    keys extend ``fired``), then the shared disable-footer. ``start`` forwards
-    its ``agent`` so the preflight validates the agent prompt; ``resume``
-    leaves it ``None`` and validates no agent.
+    start-only workspace fast-forward line, the ``Checking configurations...``
+    line, the preflight check (whose returned keys extend ``fired``), then the
+    shared disable-footer. ``start`` forwards its ``agent`` so the preflight
+    validates the agent prompt and enables ``pull_workspace``; ``resume``
+    leaves the agent ``None`` and keeps the pull off.
     """
-    _run_health_checks(container.resolve(IConfigService))
+    config_service = container.resolve(IConfigService)
+    _run_health_checks(config_service)
+    if pull_workspace:
+        _pull_workspace_on_start(config_service)
     typer.echo("Checking configurations...", err=True)
     fired.extend(
         _run_cli_preflight_check(
@@ -861,8 +883,8 @@ def handle_new_session(  # noqa: PLR0913
             agent=agent,
             setup_editor=setup_editor,
             setup_api_key=setup_api_key,
+            pull_workspace=True,
         )
-        _pull_workspace_on_start(container.resolve(IConfigService))
         _echo_config_success(container, agent, model=model)
 
         session_manager: ISessionManager = container.resolve(ISessionManager)
