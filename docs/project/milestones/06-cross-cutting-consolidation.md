@@ -32,6 +32,7 @@ Extract shared constants and helpers into their canonical modules; consolidate b
 - **MRP resource-root test setup:** the real-`tmp_path` `MRP.md` resource-root construction in `test_prompt_manager.py` is duplicated in `test_prompt_resolution.py`; extract a shared harness helper.
 - **Contract-violating session doubles:** `test_session_replan_loop.py`, `test_session_start_resequencing.py`, and `test_resume_message_threading.py` build their own containers and register a bare `Mock(spec=IInitUseCase)` whose `check_drift()` returns a dynamic Mock (no `__len__`). Extract a shared pre-configured session-container / ports fixture so doubles stay contract-faithful.
 - **Silent error swallowing (Failure Transparency):** broad `except` blocks without logging across `cli_helpers.py`, `local_file_system_adapter.py`, `shell_adapter.py`, `web_scraper_adapter.py`, `yaml_config_adapter.py`, `action_executor.py`, `context_service.py`, `session_pruning_service.py`, `session_repository.py`, `update_checker.py`, and `io.py`. Narrow the type or add debug-level logging; keep legitimate "safe to ignore" comments.
+- **Unused action-param threshold path:** `resolve_similarity_threshold` in `validation_rules/helpers.py` reads an action parameter named `edit.similarity_threshold` that no caller sets, because the global config lookup already supplies the threshold. Confirm no plan producer emits that parameter, then delete the dead branch.
 
 ## Slices
 

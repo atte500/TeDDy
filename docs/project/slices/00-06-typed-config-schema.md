@@ -1,5 +1,5 @@
 # Slice: Typed Config Schema
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** [00-05](/docs/project/slices/00-05-workspace-config-improvements.md)
 - **Specs:** None
