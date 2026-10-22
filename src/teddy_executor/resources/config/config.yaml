@@ -19,6 +19,7 @@ read:
 
 context:
   max_tree_depth: 4                 # Max project tree depth (0 = omit tree; raise the number to show more levels).
+  max_tree_width: 20                # Max entries listed per directory (the root lists all).
 
 research:
   max_results: 5                    # Number of search results to fetch and scrape.

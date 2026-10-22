@@ -129,12 +129,25 @@ def test_zero_tree_depth_is_accepted():
     assert config.context.max_tree_depth == 0
 
 
+def test_default_tree_width_is_twenty():
+    """The shipped width cap defaults to twenty entries per directory."""
+    assert DEFAULT_APP_CONFIG.context.max_tree_width == 20
+
+
+def test_nested_tree_width_overrides_the_default():
+    """A nested override replaces the width cap."""
+    config = construct_app_config({"context": {"max_tree_width": 5}})
+
+    assert config.context.max_tree_width == 5
+
+
 @pytest.mark.parametrize(
     ("group", "key"),
     [
         ("execute", "max_output_lines"),
         ("read", "max_lines"),
         ("research", "max_results"),
+        ("context", "max_tree_width"),
     ],
 )
 def test_zero_capacity_raises(group, key):
@@ -149,6 +162,7 @@ def test_zero_capacity_raises(group, key):
         ("execute", "max_output_lines"),
         ("read", "max_lines"),
         ("research", "max_results"),
+        ("context", "max_tree_width"),
     ],
 )
 def test_single_capacity_is_accepted(group, key):

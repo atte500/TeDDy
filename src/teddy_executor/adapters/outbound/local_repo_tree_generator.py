@@ -19,15 +19,30 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         self,
         root_dir: str = ".",
         max_depth: int = DEFAULT_APP_CONFIG.context.max_tree_depth,
+        max_tree_width: int = DEFAULT_APP_CONFIG.context.max_tree_width,
     ):
         from teddy_executor.adapters.outbound.filesystem_helpers import (
             load_ignore_spec,
         )
 
         assert max_depth >= 0, f"max_depth must be non-negative, got {max_depth}"
+        assert max_tree_width >= 1, (
+            f"max_tree_width must be positive, got {max_tree_width}"
+        )
         self.root_dir = Path(root_dir).resolve()
         self.ignore_spec = load_ignore_spec(self.root_dir)
         self._max_depth = max_depth
+        self._max_tree_width = max_tree_width
+
+    @property
+    def max_depth(self) -> int:
+        """The configured maximum directory nesting depth."""
+        return self._max_depth
+
+    @property
+    def max_tree_width(self) -> int:
+        """The configured maximum visible entries per non-root directory."""
+        return self._max_tree_width
 
     def generate_tree(self) -> str:
         """
