@@ -85,7 +85,7 @@ None. The renders, the token ladder, and the four wiring sites are measured.
 - [x] **Logic** — Compact the depth notice to `[X folders, Y files]`, render `[unreadable]` for a failed scan, and withhold any non-root directory that holds more visible entries than the width cap. Keep the root listing uncapped and omit the sections of a withheld directory. Rewrite the notice assertions across the four affected test modules in the same commit, and add unit coverage for the width cap, the exact-cap boundary, and the root exemption.
 - [x] **Logic** — Render the italic subtitle between the heading and the fence in the form `*Tree capped at depth {depth} and width {width}: truncated directories show counts only.*`, substituting both limits from the port properties.
 - [x] **Migration** — Lower `max_tree_depth` to 3, align the `__main__` depth fallback literal with 3, and set an explicit `max_depth` in `test_tree_integrity_with_deep_unignored_file` in one commit. Update every remaining literal depth assertion that the new default breaks.
-- [ ] **Cleanup** — Update the tree-generator port contract, the adapter contract, the context-service contract, and the config-service key table for the compact notices, the default depth, the width cap, and the subtitle.
+- [x] **Cleanup** — Update the tree-generator port contract, the adapter contract, the context-service contract, and the config-service key table for the compact notices, the default depth, the width cap, and the subtitle.
 
 ## Implementation Notes
 - **Partition:** The depth default, the `__main__` fallback literal, and the deep-chain fixture are atomic companions. The schema default stays at 4 until the Migration deliverable lowers it with both companions in one commit, so every earlier commit stays green.
@@ -118,6 +118,11 @@ None. The renders, the token ladder, and the four wiring sites are measured.
 - **Migration:** `test_tree_integrity_with_deep_unignored_file` now pins an explicit `max_depth=4`, because its `a/b/c/file.txt` chain needs depth four to expand the deepest directory.
 - **Migration:** The Red run failed only the two new depth-3 assertions with `assert 4 == 3` while 34 tests passed. The Green focused run reported 71 passed.
 - **Migration:** The full suite passes with 2137 tests and 5 skips.
+- **Cleanup:** The port contract now states both limit properties, the compact `[X folders, Y files]` notice, the `[unreadable]` marker, the default depth of 3, and the root-exempt width cap of 20.
+- **Cleanup:** The adapter contract records the width-cap invariant, the depth default of 3, the compact notice postconditions, and the forwarded width at both the composition root and the CLI adapter.
+- **Cleanup:** The context-service contract documents the italic subtitle and its single-statement placement between the heading and the fence.
+- **Cleanup:** The config-service key table lowered the depth default to 3 and added `context.max_tree_width` with a default of 20, so the documentation-drift test keeps passing.
+- **Cleanup:** The full suite passes with 2137 tests and 5 skips.
 
 ## Verification
 1. **Compact notices and subtitle:**

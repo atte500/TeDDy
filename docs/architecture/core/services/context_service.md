@@ -34,10 +34,11 @@ Implements the `IGetContextUseCase` inbound port. It orchestrates the outbound p
 ## Data Contracts
 - **`ProjectContext`** (`teddy_executor.core.domain.models.project_context`): The assembled aggregate.
 - **`ContextItem`** (`teddy_executor.core.domain.models.project_context`): Per-file context metadata.
+- **Project Structure subtitle:** `_format_content` renders the italic line `*Tree capped at depth {depth} and width {width}: truncated directories show counts only.*` between the `## Project Structure` heading and the opening fence. Both limits come from the `IRepoTreeGenerator` properties, so the section states them once above the compact notices.
 
 ## Operations
 
 ### `get_context(context_files=None, include_tokens=True, agent_name="Unknown", total_window=0, cache_dir=None, current_turn=None, system_prompt_tokens=0) -> ProjectContext`
 - **Preconditions:** None.
-- **Postconditions:** Returns a `ProjectContext` carrying the header, content, scoped paths, Git status, and per-file items. Each scope expands `.context` manifests, directories, and URLs before deduplication. Remote URLs are fetched in parallel and cached when `cache_dir` is set.
+- **Postconditions:** Returns a `ProjectContext` carrying the header, content, scoped paths, Git status, and per-file items. Each scope expands `.context` manifests, directories, and URLs before deduplication. The Project Structure section names both tree limits once in an italic subtitle between the heading and the fence. Remote URLs are fetched in parallel and cached when `cache_dir` is set.
 - **Exceptions:** None declared; per-URL fetch failures are recorded as missing content.
