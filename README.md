@@ -236,17 +236,29 @@ teddy resume -m "your next instruction"
 
 ### Optional Flags
 
-| Flag               | Description                                                                                                                                   |
-| :----------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--agent`, `-a`    | Select agent persona (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`). Default: `pathfinder` (`assistant` in pipeline mode). |
-| `--context`, `-c`  | Supply additional context files or directories. Repeatable (`-c a.py -c b.md`) or comma-separated (`-c "a.py,b.md"`).                         |
-| `--model`          | Override the default configured model.                                                                                                        |
-| `--yolo`, `-y`     | Auto-approve all actions. To make this default, set `yolo_default: true` in `.teddy/config.yaml`.                                             |
-| `--no-yolo`, `-n`  | Force interactive mode for a single run.                                                                                                      |
-| `--message`, `-m`  | Initial instruction to pass directly to the agent.                                                                                            |
-| `--pipeline`, `-p` | Pipeline mode. Auto-approves actions, requires `-m`, exits immediately after the first message turn, and defaults to the `assistant` agent.   |
-| `--max-turns`      | Maximum turns for a non-interactive run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`.                                            |
-| `--max-cost`       | Maximum session cost in dollars for a non-interactive run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`.                   |
+| Flag | Description |
+| :--- | :--- |
+| <nobr>`--agent`, `-a`</nobr> | Select agent persona (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`). Default: `pathfinder` (`assistant` in pipeline mode). |
+| <nobr>`--context`, `-c`</nobr> | Supply additional context files or directories. Repeatable (`-c a.py -c b.md`) or comma-separated (`-c "a.py,b.md"`). |
+| <nobr>`--model`</nobr> | Override the default configured model. |
+| <nobr>`--yolo`, `-y`</nobr> | Auto-approve all actions. To make this default, set `yolo_default: true` in `.teddy/config.yaml`. |
+| <nobr>`--no-yolo`, `-n`</nobr> | Force interactive mode for a single run. |
+| <nobr>`--message`, `-m`</nobr> | Initial instruction to pass directly to the agent. |
+| <nobr>`--pipeline`, `-p`</nobr> | Pipeline mode. Auto-approves actions, requires `-m`, exits immediately after the first message turn, and defaults to the `assistant` agent. |
+| <nobr>`--max-turns`</nobr> | Maximum turns for a non-interactive run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`. |
+| <nobr>`--max-cost`</nobr> | Maximum session cost in dollars for a non-interactive run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`. |
+
+### Chat-Oriented Workflow (CHOP)
+
+You do not need API keys or per-token billing to use TeDDy. If you already have an active subscription (ChatGPT, Claude, Gemini, etc.), you can also use TeDDy to practice **[Chat-Oriented Programming (CHOP)](https://arxiv.org/html/2510.10819v1#S2.2)** from your web browser.
+
+TeDDy packages your workspace context into a single clipboard payload, and the agent prompts instruct the model to automatically format its response as an executable, self-contained Markdown plan.
+
+1. **Set the system instructions:** Copy your chosen agent persona's prompt with `teddy get-prompt <agent_name>` and paste it into your web interface's system prompt or custom instructions field.
+2. **Bundle project context:** Export your workspace context to the clipboard with `teddy context` (see [Exporting Context](#exporting-context)). This bundles system information, current git status, project structure, and the full verbatim contents of all files listed in `.teddy/init.context` into a single Markdown payload.
+3. **Prompt the AI:** Paste the context payload into the chat alongside your task request. Guided by the system instructions, the model will automatically structure its response as an executable Markdown plan.
+4. **Apply changes:** Copy the full Markdown plan to your clipboard and run `teddy execute` to validate, review diffs, and apply approved changes automatically, or copy and run individual snippets manually as you would in standard CHOP.
+5. **Report back:** When `teddy execute` finishes, it automatically copies a concise execution report back to your clipboard to paste into the chat.
 
 ### Exporting Context
 
@@ -272,18 +284,6 @@ teddy context -c review.context
 ```
 
 `--only` requires at least one `-c` value. Without one the command exits with a usage error, because an empty explicit set would export no files.
-
-### Chat-Oriented Workflow (CHOP)
-
-You do not need API keys or per-token billing to use TeDDy. If you already have an active subscription (ChatGPT, Claude, Gemini, etc.), you can also use TeDDy to practice **[Chat-Oriented Programming (CHOP)](https://sourcegraph.com/blog/chat-oriented-programming-in-action)** from your web browser.
-
-TeDDy packages your workspace context into a single clipboard payload, and the agent prompts instruct the model to automatically format its response as an executable, self-contained Markdown plan.
-
-1. **Set the system instructions:** Copy your chosen agent persona's prompt with `teddy get-prompt <agent_name>` and paste it into your web interface's system prompt or custom instructions field.
-2. **Bundle project context:** Export your workspace context to the clipboard with `teddy context`. This bundles system information, current git status, project structure, and the full verbatim contents of all files listed in `.teddy/init.context` into a single Markdown payload.
-3. **Prompt the AI:** Paste the context payload into the chat alongside your task request. Guided by the system instructions, the model will automatically structure its response as an executable Markdown plan.
-4. **Apply changes:** Copy the full Markdown plan to your clipboard and run `teddy execute` to validate, review diffs, and apply approved changes automatically, or copy and run individual snippets manually as you would in standard CHOP.
-5. **Report back:** When `teddy execute` finishes, it automatically copies a concise execution report back to your clipboard to paste into the chat.
 
 ---
 
