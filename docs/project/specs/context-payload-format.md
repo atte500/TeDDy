@@ -111,11 +111,16 @@ A textual representation of the repository's file tree, using simple indentation
 -   `.gitignore`: The standard git ignore file.
 -   `.teddyignore`: A TeDDy-specific file that takes priority and can be used to include files that are excluded in `.gitignore`.
 
-The tree also honors `context.max_tree_depth`. Every non-negative depth is a literal cap, so a directory at or beyond the limit renders one omission notice `[... directory not expanded (depth limit N): X folders, Y files]` instead of its children. A depth of zero collapses the section to one notice for the project root and lists no child entry, so the section stays present and auditable.
+The tree honors two limits. `context.max_tree_depth` bounds nesting, and `context.max_tree_width` bounds width. A directory at or beyond the depth limit, or holding more visible entries than the width cap, renders one notice `[X folders, Y files]` instead of its children. Its descendant sections are omitted, because names without their parent folder cannot be mapped. The counts cover visible immediate children only, after ignore rules. A depth of zero collapses the section to one notice for the project root and lists no child entry.
+
+An unreadable directory renders `[unreadable]`, because a failed scan must not present a count. A directory with no visible child renders no section, because an empty directory is not an omission. The project root listing is exempt from the width cap, because it is the only place where a top-level file is named. The depth limit still applies first, so a depth of zero withholds the root.
+
+The notices carry no explanation, so the section states both limits once in an italic subtitle placed between the heading and the fence.
 
 -   **Example:**
     `````markdown
     ## Project Structure
+    *Tree capped at depth 3 and width 20: truncated directories show counts only.*
     ```
     README.md
     docs
@@ -138,6 +143,12 @@ The tree also honors `context.max_tree_depth`. Every non-negative depth is a lit
 
     ./src/teddy_executor:
     main.py
+
+    ./src/teddy_executor/core:
+    [2 folders, 0 files]
+
+    ./tests/suites/acceptance:
+    [0 folders, 82 files]
     ```
     `````
 
