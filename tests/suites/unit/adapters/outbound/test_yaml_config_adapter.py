@@ -102,9 +102,9 @@ def test_get_setting_respects_caller_default_at_call_site(fs, container):
     adapter = container.resolve(IConfigService)
 
     # Act & Assert
-    # The adapter itself doesn't have hardcoded defaults,
-    # but we verify it respects the default passed by the caller.
-    assert adapter.get_setting("editor", default="auto") == "auto"
+    # The typed view owns every declared key, so the caller default applies
+    # only to keys the schema does not declare.
+    assert adapter.get_setting("undeclared_setting", default="auto") == "auto"
 
 
 def test_get_setting_output_capping_keys(fs, container):

@@ -7,11 +7,18 @@ the key. The hyphenated ``workspace.pre-commit`` YAML key maps to the
 ``pre_commit`` Python field.
 """
 
+import re
+from pathlib import Path
+
 import pytest
 
+import teddy_executor
+from teddy_executor.adapters.outbound.yaml_config_adapter import YamlConfigAdapter
 from teddy_executor.core.domain.models.config_schema import (
     DEFAULT_APP_CONFIG,
     construct_app_config,
+    is_declared_key,
+    read_declared_value,
 )
 from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
@@ -149,3 +156,46 @@ def test_single_capacity_is_accepted(group, key):
     config = construct_app_config({group: {key: 1}})
 
     assert getattr(getattr(config, group), key) == 1
+
+
+# --- Documentation / schema drift closure ---
+
+_DOC_PATH = (
+    Path(teddy_executor.__file__).resolve().parents[2]
+    / "docs"
+    / "architecture"
+    / "core"
+    / "ports"
+    / "outbound"
+    / "config_service.md"
+)
+
+
+def _documented_configuration_keys() -> list[str]:
+    """Return every documented key except the ``llm.*`` passthrough."""
+    line = next(
+        raw
+        for raw in _DOC_PATH.read_text(encoding="utf-8").splitlines()
+        if raw.startswith("- **Configuration keys:**")
+    )
+    return [key for key in re.findall(r"`([^`]+)`", line) if "*" not in key]
+
+
+def test_documentation_and_schema_declare_the_same_keys():
+    """Every documented key exists in the schema, so the two cannot drift."""
+    documented = _documented_configuration_keys()
+    missing = [key for key in documented if not is_declared_key(key)]
+
+    assert missing == [], f"Documented keys missing from the schema: {missing}"
+
+
+def test_every_documented_key_resolves_through_get_setting(tmp_path):
+    """Every documented key is reachable and matches its typed value."""
+    adapter = YamlConfigAdapter(
+        config_path=".teddy/config.yaml", root_dir=str(tmp_path)
+    )
+
+    for key in _documented_configuration_keys():
+        assert adapter.get_setting(key) == read_declared_value(
+            adapter.app_config, key
+        ), key

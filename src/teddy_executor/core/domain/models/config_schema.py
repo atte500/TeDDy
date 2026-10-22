@@ -88,6 +88,8 @@ class AppConfig:
     checks: ChecksConfig = field(default_factory=ChecksConfig)
     auto_pruning: AutoPruningConfig = field(default_factory=AutoPruningConfig)
     guardrails: GuardrailsConfig = field(default_factory=GuardrailsConfig)
+    editor: str = ""
+    yolo_default: bool = False
 
 
 DEFAULT_APP_CONFIG = AppConfig()
@@ -159,16 +161,26 @@ def _coerce_bool(key: str, value: Any) -> bool:
     raise ConfigurationError(expected)
 
 
+def _coerce_str(key: str, value: Any) -> str:
+    """Coerce ``value`` to a ``str`` or raise a named configuration error."""
+    if isinstance(value, str):
+        return value
+    raise ConfigurationError(f"Configuration key '{key}' expected str, got {value!r}.")
+
+
 @dataclass(frozen=True)
 class _FieldSpec:
     """Declares one configuration key, its typed target, and its valid range.
 
-    ``minimum`` and ``maximum`` are inclusive bounds. A ``None`` bound leaves
-    that side unbounded, so a spec without bounds accepts any coercible value.
+    ``group`` names the owning dataclass on ``AppConfig``. A ``None`` group
+    marks a top-level scalar key that lives directly on ``AppConfig``. The
+    ``minimum`` and ``maximum`` bounds are inclusive, and a ``None`` bound
+    leaves that side unbounded, so a spec without bounds accepts any coercible
+    value.
     """
 
     key: str
-    group: str
+    group: str | None
     target: str
     kind: type
     minimum: float | None = None
@@ -176,6 +188,7 @@ class _FieldSpec:
 
 
 _SCHEMA_FIELDS: tuple[_FieldSpec, ...] = (
+    _FieldSpec("editor", None, "editor", str),
     _FieldSpec(
         "execute.default_timeout_seconds",
         "execute",
@@ -237,14 +250,17 @@ _SCHEMA_FIELDS: tuple[_FieldSpec, ...] = (
     _FieldSpec("guardrails.max_turns", "guardrails", "max_turns", int),
     _FieldSpec("guardrails.max_session_cost", "guardrails", "max_session_cost", float),
     _FieldSpec("guardrails.message_reset", "guardrails", "message_reset", bool),
+    _FieldSpec("yolo_default", None, "yolo_default", bool),
 )
 
-_DECLARED_KEY_TARGETS: dict[str, tuple[str, str]] = {
+_DECLARED_KEY_TARGETS: dict[str, tuple[str | None, str]] = {
     spec.key: (spec.group, spec.target) for spec in _SCHEMA_FIELDS
 }
 
 _KNOWN_TOP_LEVEL = frozenset(
-    {spec.group for spec in _SCHEMA_FIELDS} | {"llm", "editor", "yolo_default"}
+    {spec.group for spec in _SCHEMA_FIELDS if spec.group is not None}
+    | {spec.key for spec in _SCHEMA_FIELDS if spec.group is None}
+    | {"llm"}
 )
 
 
@@ -261,6 +277,8 @@ def read_declared_value(config: AppConfig, key: str) -> Any:
     """
     assert is_declared_key(key), f"key {key!r} is not declared in the schema"
     group, target = _DECLARED_KEY_TARGETS[key]
+    if group is None:
+        return getattr(config, target)
     return getattr(getattr(config, group), target)
 
 
@@ -270,6 +288,8 @@ def _coerce(spec: _FieldSpec, value: Any) -> Any:
         return _coerce_bool(spec.key, value)
     if spec.kind is int:
         return _coerce_int(spec.key, value)
+    if spec.kind is str:
+        return _coerce_str(spec.key, value)
     return _coerce_float(spec.key, value)
 
 
@@ -310,23 +330,27 @@ def construct_app_config(merged: Mapping[str, Any]) -> AppConfig:
     compatible.
     """
     _log_unknown_keys(merged)
-    overrides: dict[str, dict[str, Any]] = {}
+    group_overrides: dict[str, dict[str, Any]] = {}
+    top_level_overrides: dict[str, Any] = {}
     for spec in _SCHEMA_FIELDS:
         raw = _lookup(merged, spec.key)
         if raw is None or raw == "":
             continue
-        overrides.setdefault(spec.group, {})[spec.target] = _validate_range(
-            spec, _coerce(spec, raw)
-        )
+        coerced = _validate_range(spec, _coerce(spec, raw))
+        if spec.group is None:
+            top_level_overrides[spec.target] = coerced
+        else:
+            group_overrides.setdefault(spec.group, {})[spec.target] = coerced
 
     return AppConfig(
-        execute=ExecuteConfig(**overrides.get("execute", {})),
-        edit=EditConfig(**overrides.get("edit", {})),
-        workspace=WorkspaceConfig(**overrides.get("workspace", {})),
-        read=ReadConfig(**overrides.get("read", {})),
-        context=ContextConfig(**overrides.get("context", {})),
-        research=ResearchConfig(**overrides.get("research", {})),
-        checks=ChecksConfig(**overrides.get("checks", {})),
-        auto_pruning=AutoPruningConfig(**overrides.get("auto_pruning", {})),
-        guardrails=GuardrailsConfig(**overrides.get("guardrails", {})),
+        execute=ExecuteConfig(**group_overrides.get("execute", {})),
+        edit=EditConfig(**group_overrides.get("edit", {})),
+        workspace=WorkspaceConfig(**group_overrides.get("workspace", {})),
+        read=ReadConfig(**group_overrides.get("read", {})),
+        context=ContextConfig(**group_overrides.get("context", {})),
+        research=ResearchConfig(**group_overrides.get("research", {})),
+        checks=ChecksConfig(**group_overrides.get("checks", {})),
+        auto_pruning=AutoPruningConfig(**group_overrides.get("auto_pruning", {})),
+        guardrails=GuardrailsConfig(**group_overrides.get("guardrails", {})),
+        **top_level_overrides,
     )
