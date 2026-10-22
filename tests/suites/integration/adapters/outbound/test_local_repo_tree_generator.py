@@ -4,6 +4,7 @@ import pytest
 from pathlib import Path
 from textwrap import dedent
 from tests.harness.setup.test_environment import TestEnvironment
+from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 
 
@@ -138,6 +139,14 @@ def test_tree_generator_handles_circular_symlinks_without_hanging(env, tmp_path)
     assert "circular_link" in tree_output
     # The fix treats symlinks as files, so it shouldn't recurse into 'circular_link/'
     assert "./subdir/circular_link:" not in tree_output
+
+
+def test_harness_default_depth_matches_the_schema_default(tmp_path, monkeypatch):
+    """An implicit harness depth mirrors the schema default, not the old sentinel."""
+    env = TestEnvironment(monkeypatch).setup().with_real_tree_generator(str(tmp_path))
+    generator = env.get_service(IRepoTreeGenerator)
+
+    assert generator._max_depth == DEFAULT_APP_CONFIG.context.max_tree_depth
 
 
 def test_tree_generator_renders_full_tree_when_depth_is_zero(tmp_path, monkeypatch):

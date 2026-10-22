@@ -2,6 +2,8 @@ from typing import Any, Optional
 
 from punq import Container
 
+from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
+
 
 class RealAdapterMixin:
     """
@@ -52,7 +54,11 @@ class RealAdapterMixin:
         )
         return self
 
-    def with_real_tree_generator(self: Any, root_dir: str, max_depth: int = 0) -> Any:
+    def with_real_tree_generator(
+        self: Any,
+        root_dir: str,
+        max_depth: int = DEFAULT_APP_CONFIG.context.max_tree_depth,
+    ) -> Any:
         from teddy_executor.core.ports.outbound import IRepoTreeGenerator
         from teddy_executor.adapters.outbound.local_repo_tree_generator import (
             LocalRepoTreeGenerator,
