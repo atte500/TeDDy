@@ -100,7 +100,7 @@ class YamlConfigAdapter(IConfigService):
         The view is a frozen snapshot, so it must be reconstructed whenever
         the merged cache changes, or a read would return a stale value.
         """
-        self.app_config = construct_app_config(self._config)
+        self.app_config = construct_app_config(self._maybe_interpolate(self._config))
 
     def _load_layered_config(self) -> Dict[str, Any]:
         """Loads the baseline config and merges it with the user config."""
