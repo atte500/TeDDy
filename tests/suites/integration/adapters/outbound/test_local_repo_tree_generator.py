@@ -163,8 +163,7 @@ def test_tree_generator_renders_one_notice_when_depth_is_zero(tmp_path, monkeypa
 
     tree = generator.generate_tree()
 
-    assert "[... directory not expanded (depth limit 0): 1 folder, 0 files]" in tree
-    assert tree.count("directory not expanded") == 1
+    assert tree.strip() == "[1 folder, 0 files]", tree
     assert "./a:" not in tree
     assert "deep.txt" not in tree
 
@@ -185,7 +184,7 @@ def test_tree_generator_marks_directories_at_the_depth_limit(tmp_path, monkeypat
     tree = generator.generate_tree()
 
     assert "./top:" in tree
-    assert "[... directory not expanded (depth limit 1): 1 folder, 1 file]" in tree
+    assert "[1 folder, 1 file]" in tree
     assert "nested" not in tree
     assert "deep.txt" not in tree
 
@@ -206,7 +205,7 @@ def test_tree_generator_marks_plural_counts_at_a_deeper_limit(tmp_path, monkeypa
 
     tree = generator.generate_tree()
 
-    assert "[... directory not expanded (depth limit 2): 1 folder, 2 files]" in tree
+    assert "[1 folder, 2 files]" in tree
     assert "three.txt" not in tree
 
 
@@ -231,7 +230,7 @@ def test_tree_generator_marks_unreadable_directories(tmp_path, monkeypatch):
 
     tree = generator.generate_tree()
 
-    assert "[... directory not expanded (unreadable): 0 folders, 0 files]" in tree
+    assert "[unreadable]" in tree
     assert "./locked:" in tree
     assert "secret.txt" not in tree
     assert "visible.txt" in tree

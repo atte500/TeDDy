@@ -82,7 +82,7 @@ None. The renders, the token ladder, and the four wiring sites are measured.
 - [x] **Contract** — Declare `max_depth` and `max_tree_width` read-only properties on `IRepoTreeGenerator` and implement them on `LocalRepoTreeGenerator`. Declare `max_tree_width: int = 20` in `ContextConfig` with the `_FieldSpec("context.max_tree_width", "context", "max_tree_width", int, minimum=1)` entry, and add the bundled width value with the comment `# Max entries listed per directory (the root lists all).` Extend the adapter constructor with the width cap. Keep `max_tree_depth` at 4 so this additive step stays green.
 - [x] **Harness** — Set integer limits on every shared mock tree generator from the schema defaults, so the subtitle never renders a mock repr.
 - [x] **Wiring** — Forward `context.max_tree_width` in `__main__._ensure_project_initialized` and in `registries/infrastructure.py`. Add an integration regression at the composition seam that resolves the generator on a workspace with a configured width and asserts the resolved limit.
-- [ ] **Logic** — Compact the depth notice to `[X folders, Y files]`, render `[unreadable]` for a failed scan, and withhold any non-root directory that holds more visible entries than the width cap. Keep the root listing uncapped and omit the sections of a withheld directory. Rewrite the notice assertions across the four affected test modules in the same commit, and add unit coverage for the width cap, the exact-cap boundary, and the root exemption.
+- [x] **Logic** — Compact the depth notice to `[X folders, Y files]`, render `[unreadable]` for a failed scan, and withhold any non-root directory that holds more visible entries than the width cap. Keep the root listing uncapped and omit the sections of a withheld directory. Rewrite the notice assertions across the four affected test modules in the same commit, and add unit coverage for the width cap, the exact-cap boundary, and the root exemption.
 - [ ] **Logic** — Render the italic subtitle between the heading and the fence in the form `*Tree capped at depth {depth} and width {width}: truncated directories show counts only.*`, substituting both limits from the port properties.
 - [ ] **Migration** — Lower `max_tree_depth` to 3, align the `__main__` depth fallback literal with 3, and set an explicit `max_depth` in `test_tree_integrity_with_deep_unignored_file` in one commit. Update every remaining literal depth assertion that the new default breaks.
 - [ ] **Cleanup** — Update the tree-generator port contract, the adapter contract, the context-service contract, and the config-service key table for the compact notices, the default depth, the width cap, and the subtitle.
@@ -104,6 +104,11 @@ None. The renders, the token ladder, and the four wiring sites are measured.
 - **Wiring:** The width anchoring regression sits beside the depth regressions in `test_project_anchoring.py`. The workspace helper gained an optional width, so both depth tests keep their current signatures.
 - **Wiring:** The Red run failed only the new width test with 20 against 5, and both depth tests passed. That confirmed the anchored factory forwarded depth alone, so one width argument at each factory is the whole fix.
 - **Wiring:** The full suite passes with 2130 tests and 5 skips.
+- **Logic:** `_collect_directory` now takes an `is_root` flag, applies the depth limit first, and withholds a non-root directory whose visible entries exceed `max_tree_width`. The root stays exempt from the width cap while the depth limit still applies first.
+- **Logic:** `_depth_limit_marker` was replaced by `_omission_notice` plus a shared `_compact_notice` formatter, so one scan serves both limits and the rescan disappears.
+- **Logic:** `UNREADABLE_MARKER` now renders `[unreadable]` with no counts, because a failed scan has no count to state.
+- **Logic:** The Red run failed 9 tests confined to the notice text and the width behavior. The Green focused run reported 22 passed across the width, unreadable, anchoring, integration, and performance modules.
+- **Logic:** The full suite passes with 2134 tests and 5 skips.
 
 ## Verification
 1. **Compact notices and subtitle:**

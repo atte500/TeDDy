@@ -6,7 +6,7 @@ from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGene
 
 logger = logging.getLogger(__name__)
 
-UNREADABLE_MARKER = "[... directory not expanded (unreadable): 0 folders, 0 files]"
+UNREADABLE_MARKER = "[unreadable]"
 
 
 class LocalRepoTreeGenerator(IRepoTreeGenerator):
@@ -49,7 +49,7 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         Generates a string representation of the file tree in a single pass.
         """
         sections: list[tuple[str, str, list[str]]] = []
-        root_names = self._collect_directory(self.root_dir, "", sections)
+        root_names = self._collect_directory(self.root_dir, "", sections, is_root=True)
         # Sections sort by their relative path, and the root resolves to ".",
         # so a top-level name below "." (for example "!important") renders
         # before the root block. The "." key preserves that exact order.
@@ -72,25 +72,33 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
         relative_path: str,
         sections: list[tuple[str, str, list[str]]],
         depth: int = 0,
+        is_root: bool = False,
     ) -> list[str]:
         """
         Collects one directory's visible names and recurses into its children.
 
-        A directory at or beyond the configured depth limit renders one
-        omission marker instead of expanding, so truncation is never silent.
-        An unreadable directory renders an explicit marker rather than an
-        empty section, so it never looks like a readable empty directory.
-        Directory and symlink flags come from the scan cache, so each entry
-        costs no additional stat call. Symlinks are listed as files and are
-        never followed, which keeps circular links from recursing.
+        One scan supplies both limits. A directory at or beyond the configured
+        depth limit renders one compact count notice instead of expanding, so
+        truncation is never silent. A non-root directory holding more visible
+        entries than the width cap renders the same notice and withholds its
+        descendants, because names without their parent folder cannot be
+        mapped. The project root is exempt from the width cap, because it is
+        the only place where a top-level file is named. An unreadable directory
+        renders an explicit marker rather than an empty section, so it never
+        looks like a readable empty directory. Directory and symlink flags come
+        from the scan cache, so each entry costs no additional stat call.
+        Symlinks are listed as files and are never followed, which keeps
+        circular links from recursing.
         """
         if depth >= self._max_depth:
-            marker = self._depth_limit_marker(directory, relative_path)
-            return [marker] if marker else []
+            return self._omission_notice(directory, relative_path)
 
         entries = self._scan_visible_entries(directory, relative_path)
         if entries is None:
             return [UNREADABLE_MARKER]
+
+        if not is_root and len(entries) > self._max_tree_width:
+            return [self._compact_notice(entries)]
 
         names: list[str] = []
         for entry, is_directory, child_path in entries:
@@ -134,25 +142,27 @@ class LocalRepoTreeGenerator(IRepoTreeGenerator):
             visible.append((entry, is_directory, child_path))
         return visible
 
-    def _depth_limit_marker(self, directory: str | Path, relative_path: str) -> str:
+    def _omission_notice(self, directory: str | Path, relative_path: str) -> list[str]:
         """
-        Renders the omission marker for a directory at the depth limit.
+        Renders the compact notice for a directory at the depth limit.
 
         Counts only the visible immediate children after ignore rules. An
-        unreadable directory renders the unreadable marker instead. Returns an
-        empty string when no child is visible, so a genuinely empty directory
-        renders no section rather than a misleading marker.
+        unreadable directory renders the unreadable marker instead, and a
+        directory with no visible child renders nothing, so a genuinely empty
+        directory is not shown as an omission.
         """
         entries = self._scan_visible_entries(directory, relative_path)
         if entries is None:
-            return UNREADABLE_MARKER
+            return [UNREADABLE_MARKER]
+        if not entries:
+            return []
+        return [self._compact_notice(entries)]
+
+    @staticmethod
+    def _compact_notice(entries: list[tuple[os.DirEntry, bool, str]]) -> str:
+        """Render the compact ``[X folders, Y files]`` notice for ``entries``."""
         folders = sum(1 for _entry, is_directory, _path in entries if is_directory)
         files = len(entries) - folders
-        if not folders and not files:
-            return ""
         folder_noun = "folder" if folders == 1 else "folders"
         file_noun = "file" if files == 1 else "files"
-        return (
-            f"[... directory not expanded (depth limit {self._max_depth}): "
-            f"{folders} {folder_noun}, {files} {file_noun}]"
-        )
+        return f"[{folders} {folder_noun}, {files} {file_noun}]"

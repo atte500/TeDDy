@@ -109,6 +109,6 @@ def test_depth_limit_bounds_recursion_on_a_deep_tree(tmp_path: Path, monkeypatch
     assert "d003" not in tree
     # The boundary directory renders an explicit omission marker.
     assert "./d000/d001/d002:" in tree
-    assert "[... directory not expanded (depth limit 3): 1 folder, 1 file]" in tree
+    assert "[1 folder, 1 file]" in tree
     # Only three nested sections render, never the full 20-level chain.
     assert tree.count("./") == 3

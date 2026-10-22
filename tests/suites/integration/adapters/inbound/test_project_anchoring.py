@@ -49,7 +49,7 @@ def test_anchoring_preserves_configured_tree_depth(container, tmp_path: Path) ->
     assert generator._max_depth == CONFIGURED_DEPTH, (
         f"Anchoring discarded the configured depth: {generator._max_depth}"
     )
-    assert "[... directory not expanded (depth limit 1)" in tree, tree
+    assert "[1 folder, 1 file]" in tree, tree
     assert "folder2" not in tree, tree
 
 
@@ -80,5 +80,5 @@ def test_anchoring_renders_one_notice_at_zero_depth(container, tmp_path: Path) -
 
     # Assert
     assert generator._max_depth == 0
-    assert tree.count("directory not expanded") == 1, tree
+    assert tree.strip() == "[1 folder, 0 files]", tree
     assert "folder1" not in tree, tree
