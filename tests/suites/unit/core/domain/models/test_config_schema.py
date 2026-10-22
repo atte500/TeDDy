@@ -117,13 +117,13 @@ def test_similarity_threshold_bounds_are_accepted(value):
 
 
 def test_negative_tree_depth_raises():
-    """A negative depth is rejected, because zero already means unlimited."""
+    """A negative depth is rejected, because a negative cap is meaningless."""
     with pytest.raises(ConfigurationError, match="context.max_tree_depth"):
         construct_app_config({"context": {"max_tree_depth": -1}})
 
 
 def test_zero_tree_depth_is_accepted():
-    """A depth of zero means unlimited, so it stays a valid value."""
+    """A depth of zero is a valid literal cap that collapses the tree to one notice."""
     config = construct_app_config({"context": {"max_tree_depth": 0}})
 
     assert config.context.max_tree_depth == 0
