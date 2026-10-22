@@ -5,6 +5,7 @@ from importlib import resources
 from typing import Any, Dict, Optional
 import yaml
 from dotenv import dotenv_values, set_key
+from teddy_executor.core.domain.models.config_schema import construct_app_config
 from teddy_executor.core.domain.models.exceptions import ConfigurationError
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 
@@ -83,6 +84,7 @@ class YamlConfigAdapter(IConfigService):
         else:
             self._config_path = config_path
         self._config: Dict[str, Any] = self._load_layered_config()
+        self.app_config = construct_app_config(self._config)
 
     def _load_layered_config(self) -> Dict[str, Any]:
         """Loads the baseline config and merges it with the user config."""

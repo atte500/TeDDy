@@ -11,6 +11,7 @@ import typer
 from teddy_executor.core.domain.models import (
     ExecutionReport,
 )
+from teddy_executor.core.domain.models.exceptions import ConfigurationError
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 
@@ -127,6 +128,20 @@ def _display_init_drift(container) -> None:
     )
 
     _display_checks_footer(_display_drift_notification(container))
+
+
+def _resolve_config_or_exit(container) -> IConfigService:
+    """Resolve the config service, failing fast on an invalid configuration.
+
+    A value that cannot be coerced to its declared type raises
+    ``ConfigurationError`` during adapter construction. Printing the message
+    and exiting keeps the failure visible instead of escaping as a traceback.
+    """
+    try:
+        return container.resolve(IConfigService)
+    except ConfigurationError as error:
+        typer.secho(f"Error: {error}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from error
 
 
 def _ensure_project_initialized(container, root_dir: str | None = None) -> None:
@@ -246,7 +261,7 @@ def start(  # noqa: PLR0913
 
     container = get_container()
     _ensure_project_initialized(container)
-    config_service = container.resolve(IConfigService)
+    config_service = _resolve_config_or_exit(container)
 
     from teddy_executor.adapters.inbound.cli_helpers import normalize_context_values
 
@@ -538,7 +553,7 @@ def resume(  # noqa: PLR0913
 
     container = get_container()
     _ensure_project_initialized(container)
-    config_service = container.resolve(IConfigService)
+    config_service = _resolve_config_or_exit(container)
 
     interactive = not (_resolve_yolo(yolo, config_service) or pipeline)
     system_env = container.resolve(ISystemEnvironment)
