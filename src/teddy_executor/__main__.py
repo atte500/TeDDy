@@ -186,7 +186,19 @@ def _ensure_project_initialized(container, root_dir: str | None = None) -> None:
     if not is_override(IFileSystemManager):
         c.register(IFileSystemManager, LocalFileSystemAdapter, root_dir=root)
     if not is_override(IRepoTreeGenerator):
-        c.register(IRepoTreeGenerator, LocalRepoTreeGenerator, root_dir=root)
+        # Forward the configured depth through a lazy factory. The anchoring
+        # step runs before configuration resolution finishes, so the depth is
+        # read at resolve time instead of at registration time.
+        c.register(
+            IRepoTreeGenerator,
+            factory=lambda: LocalRepoTreeGenerator(
+                root_dir=root,
+                max_depth=c.resolve(IConfigService).get_setting(
+                    "context.max_tree_depth", 4
+                ),
+            ),
+            scope=Scope.transient,
+        )
     if not is_override(IConfigService):
         c.register(IConfigService, YamlConfigAdapter, root_dir=root)
 

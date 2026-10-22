@@ -1,5 +1,5 @@
 # Slice: Project Tree Depth Anchoring and Zero-Depth Contract
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** [00-05-workspace-config-improvements.md](/docs/project/slices/00-05-workspace-config-improvements.md), [00-06-typed-config-schema.md](/docs/project/slices/00-06-typed-config-schema.md)
 - **Specs:** [context-payload-format.md](/docs/project/specs/context-payload-format.md)
@@ -70,14 +70,17 @@ None. The case file resolves every unknown and provides a proven replica and ver
 6. `[CONTRACT]` Documentation — describe depth zero as one omission notice and remove the legacy sentences.
 
 ## Deliverables
-- [ ] **Wiring** — In `_ensure_project_initialized`, register `IRepoTreeGenerator` through a lazy factory that forwards `root_dir` and `context.max_tree_depth`. Add an integration regression test that runs anchoring on a workspace with depth 1 and asserts the resolved depth, the omission marker, and the absence of a deeper folder.
+- [x] **Wiring** — In `_ensure_project_initialized`, register `IRepoTreeGenerator` through a lazy factory that forwards `root_dir` and `context.max_tree_depth`. Add an integration regression test that runs anchoring on a workspace with depth 1 and asserts the resolved depth, the omission marker, and the absence of a deeper folder.
 - [ ] **Harness** — Raise `with_real_tree_generator` in `tests/harness/setup/real_adapter_mixin.py` to default `max_depth=4`, because an implicit default must keep rendering a real tree under the literal-cap contract.
 - [ ] **Logic** — Remove the `_max_depth > 0` guard and set the constructor default to 4 in `LocalRepoTreeGenerator`. Change the `infrastructure.py` fallback to 4. Update the bundled comment. Assert the new default in the depth unit test, rewrite the zero-depth integration test to expect one notice, and add a zero-depth anchoring regression. Update the container-wiring default literal.
 - [ ] **Cleanup** — Remove all legacy configuration support: delete the yaml migration symbols and call, remove the guard `_UNSET` sentinel and `yolo_guardrails` fallback, delete the two legacy test modules, rewrite the guard legacy case to assert the key is ignored, migrate `execution.*` assertions to canonical keys, and add a test that a legacy `execution.*` key resolves the bundled default.
 - [ ] **Cleanup** — Align the documentation: describe zero depth in the context payload spec, the tree-generator port and adapter contracts, and the config-service key table, and remove the legacy sentences from the yaml adapter and session-loop-guard designs.
 
 ## Implementation Notes
-Record per-deliverable decisions and deviations here.
+- **Wiring:** The anchored `IRepoTreeGenerator` registration now uses a transient lazy factory that forwards `root_dir` and `context.max_tree_depth` with a fallback of `4`. The factory resolves `IConfigService` at resolve time because the tree registration executes before the config registration in source order.
+- **Wiring:** The `IFileSystemManager` anchoring registration stays bare, so session turn contents stay uncapped until the read-path decoupling slice restores `read.max_lines`.
+- **Wiring:** The primary regression lives at the composition seam in `test_project_anchoring.py`, because the acceptance harness registers `IRepoTreeGenerator` as a mock that returns an empty tree and cannot observe the depth marker. The harness registers the config and tree ports as instance overrides, so `_ensure_project_initialized` skips the anchored re-registration in acceptance paths and those tests stay green.
+- **Wiring:** The full suite passes with 2118 tests and 5 skips.
 
 ## Verification
 1. **Tree depth cap:**
