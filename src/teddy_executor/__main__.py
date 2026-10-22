@@ -196,6 +196,9 @@ def _ensure_project_initialized(container, root_dir: str | None = None) -> None:
                 max_depth=c.resolve(IConfigService).get_setting(
                     "context.max_tree_depth", 4
                 ),
+                max_tree_width=c.resolve(IConfigService).get_setting(
+                    "context.max_tree_width", 20
+                ),
             ),
             scope=Scope.transient,
         )

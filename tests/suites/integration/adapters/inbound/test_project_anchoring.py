@@ -12,14 +12,21 @@ from teddy_executor.__main__ import _ensure_project_initialized
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 
 CONFIGURED_DEPTH = 1
+CONFIGURED_WIDTH = 5
 
 
-def _write_anchored_workspace(root: Path, depth: int) -> None:
-    """Writes a config with ``depth`` and a tree deep enough to exceed it."""
+def _write_anchored_workspace(root: Path, depth: int, width: int | None = None) -> None:
+    """Writes a config with ``depth`` and a tree deep enough to exceed it.
+
+    An optional ``width`` adds the width cap to the same context block.
+    """
     teddy_dir = root / ".teddy"
     teddy_dir.mkdir(parents=True, exist_ok=True)
+    lines = ["context:", f"  max_tree_depth: {depth}"]
+    if width is not None:
+        lines.append(f"  max_tree_width: {width}")
     (teddy_dir / "config.yaml").write_text(
-        f"context:\n  max_tree_depth: {depth}\n",
+        "\n".join(lines) + "\n",
         encoding="utf-8",
     )
     deep = root / "folder1" / "folder2"
@@ -44,6 +51,21 @@ def test_anchoring_preserves_configured_tree_depth(container, tmp_path: Path) ->
     )
     assert "[... directory not expanded (depth limit 1)" in tree, tree
     assert "folder2" not in tree, tree
+
+
+def test_anchoring_preserves_configured_tree_width(container, tmp_path: Path) -> None:
+    """Anchoring forwards the configured width so the port reports it."""
+    # Arrange
+    _write_anchored_workspace(tmp_path, CONFIGURED_DEPTH, width=CONFIGURED_WIDTH)
+
+    # Act
+    _ensure_project_initialized(container, root_dir=str(tmp_path))
+    generator = container.resolve(IRepoTreeGenerator)
+
+    # Assert
+    assert generator.max_tree_width == CONFIGURED_WIDTH, (
+        f"Anchoring discarded the configured width: {generator.max_tree_width}"
+    )
 
 
 def test_anchoring_renders_one_notice_at_zero_depth(container, tmp_path: Path) -> None:
