@@ -1,5 +1,5 @@
 # Slice: Compact Tree Notices and Per-Directory Width Cap
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** [00-07-project-tree-depth-anchoring.md](/docs/project/slices/00-07-project-tree-depth-anchoring.md)
 - **Specs:** [context-payload-format.md](/docs/project/specs/context-payload-format.md)
@@ -123,6 +123,9 @@ None. The renders, the token ladder, and the four wiring sites are measured.
 - **Cleanup:** The context-service contract documents the italic subtitle and its single-statement placement between the heading and the fence.
 - **Cleanup:** The config-service key table lowered the depth default to 3 and added `context.max_tree_width` with a default of 20, so the documentation-drift test keeps passing.
 - **Cleanup:** The full suite passes with 2137 tests and 5 skips.
+- **Verification:** The full suite passes with 2137 tests and 5 skips at commit a769a53f, and the production-double audit found no stub, skeleton, or test double in the slice production code.
+- **Verification:** The source-checkout `teddy context --no-copy` renders `*Tree capped at depth 3 and width 20: truncated directories show counts only.*` with no depth-4 marker, so the shipped limits are live in this checkout.
+- **Verification:** The repo `.teddy/config.yaml` declares no tree override, so the depth-4 marker in the session payload comes from an installed release, not this slice.
 
 ## Verification
 1. **Compact notices and subtitle:**
