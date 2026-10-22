@@ -146,3 +146,30 @@ def test_without_reviewer_supplies_real_interrupt_guard(monkeypatch, container):
     assert isinstance(orchestrator._interrupt_guard, InterruptGuard)
 
     env.teardown()
+
+
+def test_environment_tree_mock_declares_schema_limits(monkeypatch):
+    """The harness tree mock states both integer limits from the schema.
+
+    The context subtitle reads both limits from the port, so a mock that omits a
+    limit renders a mock repr instead of the shipped value.
+    """
+    from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
+    from teddy_executor.core.ports.outbound import IRepoTreeGenerator
+
+    env = TestEnvironment(monkeypatch)
+    env.setup()
+    try:
+        mock = env.get_service(IRepoTreeGenerator)
+        assert mock.max_depth == DEFAULT_APP_CONFIG.context.max_tree_depth
+        assert mock.max_tree_width == DEFAULT_APP_CONFIG.context.max_tree_width
+    finally:
+        env.teardown()
+
+
+def test_mock_tree_gen_fixture_declares_schema_limits(mock_tree_gen):
+    """The shared mock_tree_gen fixture states both integer limits from the schema."""
+    from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
+
+    assert mock_tree_gen.max_depth == DEFAULT_APP_CONFIG.context.max_tree_depth
+    assert mock_tree_gen.max_tree_width == DEFAULT_APP_CONFIG.context.max_tree_width

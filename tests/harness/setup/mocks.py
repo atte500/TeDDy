@@ -1,7 +1,11 @@
 from typing import Any
 import pytest
 import pyperclip
-from tests.harness.setup.mocking import POSIXPathMock, register_mock
+from tests.harness.setup.mocking import (
+    POSIXPathMock,
+    apply_tree_generator_defaults,
+    register_mock,
+)
 
 
 @pytest.fixture
@@ -99,7 +103,7 @@ def mock_tree_gen(container):
     from teddy_executor.core.ports.outbound import IRepoTreeGenerator
 
     mock = register_mock(container, IRepoTreeGenerator)
-    mock.generate_tree.return_value = ""
+    apply_tree_generator_defaults(mock)
     return mock
 
 

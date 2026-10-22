@@ -80,7 +80,7 @@ None. The renders, the token ladder, and the four wiring sites are measured.
 
 ## Deliverables
 - [x] **Contract** — Declare `max_depth` and `max_tree_width` read-only properties on `IRepoTreeGenerator` and implement them on `LocalRepoTreeGenerator`. Declare `max_tree_width: int = 20` in `ContextConfig` with the `_FieldSpec("context.max_tree_width", "context", "max_tree_width", int, minimum=1)` entry, and add the bundled width value with the comment `# Max entries listed per directory (the root lists all).` Extend the adapter constructor with the width cap. Keep `max_tree_depth` at 4 so this additive step stays green.
-- [ ] **Harness** — Set integer limits on every shared mock tree generator from the schema defaults, so the subtitle never renders a mock repr.
+- [x] **Harness** — Set integer limits on every shared mock tree generator from the schema defaults, so the subtitle never renders a mock repr.
 - [ ] **Wiring** — Forward `context.max_tree_width` in `__main__._ensure_project_initialized` and in `registries/infrastructure.py`. Add an integration regression at the composition seam that resolves the generator on a workspace with a configured width and asserts the resolved limit.
 - [ ] **Logic** — Compact the depth notice to `[X folders, Y files]`, render `[unreadable]` for a failed scan, and withhold any non-root directory that holds more visible entries than the width cap. Keep the root listing uncapped and omit the sections of a withheld directory. Rewrite the notice assertions across the four affected test modules in the same commit, and add unit coverage for the width cap, the exact-cap boundary, and the root exemption.
 - [ ] **Logic** — Render the italic subtitle between the heading and the fence in the form `*Tree capped at depth {depth} and width {width}: truncated directories show counts only.*`, substituting both limits from the port properties.
@@ -96,6 +96,10 @@ None. The renders, the token ladder, and the four wiring sites are measured.
 - **Contract:** The bundled config gained `max_tree_width: 20`, aligned to the existing inline-comment column, so the shipped value is visible beside the depth value.
 - **Contract:** The bundled `config.yaml` loader moved to `tests/harness/setup/bundled_config.py`, so the notification-toggle and tree-limit contract tests read one resource source of truth.
 - **Contract:** The full suite passes with 2127 tests and 5 skips.
+- **Harness:** `apply_tree_generator_defaults` in `tests/harness/setup/mocking.py` is the single source of the tree-mock defaults. It sets `generate_tree` to an empty string and both limits to the schema defaults, so the Migration commit that lowers the depth default to 3 moves the harness automatically with no second harness edit.
+- **Harness:** `TestEnvironment._register_io_mocks` and the shared `mock_tree_gen` fixture both call the helper, so every shared tree mock states both integers and the subtitle never renders a mock repr.
+- **Harness:** The Red run failed only the two new limit assertions, and each printed a child mock unequal to the schema integer. That confirmed the spec-set mock auto-creates a child mock for an unset limit, so a direct integer assignment is the correct fix.
+- **Harness:** The full suite passes with 2129 tests and 5 skips.
 
 ## Verification
 1. **Compact notices and subtitle:**

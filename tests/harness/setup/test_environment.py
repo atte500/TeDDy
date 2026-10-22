@@ -7,7 +7,11 @@ from unittest.mock import Mock
 import teddy_executor.__main__
 from teddy_executor.container import create_container
 from tests.harness.setup.real_adapter_mixin import RealAdapterMixin
-from tests.harness.setup.mocking import POSIXPathMock, register_mock
+from tests.harness.setup.mocking import (
+    POSIXPathMock,
+    apply_tree_generator_defaults,
+    register_mock,
+)
 
 T = TypeVar("T")
 
@@ -149,7 +153,7 @@ class TestEnvironment(RealAdapterMixin):
         self.mock_port(IConfigService)
 
         mock_tree = self.mock_port(IRepoTreeGenerator)
-        mock_tree.generate_tree.return_value = ""
+        apply_tree_generator_defaults(mock_tree)
 
         mock_inspector = self.mock_port(IEnvironmentInspector)
         mock_inspector.get_git_status.return_value = None

@@ -100,3 +100,17 @@ def register_mock(container: Any, port_type: Any) -> Any:
     mock = POSIXPathMock(spec=port_type)
     container.register(port_type, instance=mock)
     return mock
+
+
+def apply_tree_generator_defaults(mock: Any) -> None:
+    """Apply the standard tree-generator mock defaults.
+
+    The context subtitle reads both limits from the port. A mock that omits a
+    limit renders a mock repr instead of the shipped value, so each limit takes
+    the schema default as a real integer.
+    """
+    from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
+
+    mock.generate_tree.return_value = ""
+    mock.max_depth = DEFAULT_APP_CONFIG.context.max_tree_depth
+    mock.max_tree_width = DEFAULT_APP_CONFIG.context.max_tree_width
