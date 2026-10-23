@@ -283,13 +283,11 @@ def _run_health_checks(config_service: IConfigService) -> None:
 
 
 _GIT_PULL_TIMEOUT_SECONDS = 15
-_PULL_SKIPPED_WARNING = "⚠ Workspace pull skipped; continuing with the current branch."
-_PULL_TIMEOUT_WARNING = "⚠ Workspace pull timed out; continuing without it."
+_PULL_SKIPPED_WARNING = "⚠ Workspace pull skipped."
+_PULL_TIMEOUT_WARNING = "⚠ Workspace pull timed out."
 _PULL_GIT_UNAVAILABLE_WARNING = "⚠ Workspace pull skipped; git is unavailable."
 _PULL_UP_TO_DATE_NOTICE = "✓ Workspace up-to-date with remote"
-_PULL_IN_PROGRESS_NOTICE = "✓ Workspace pull skipped; Git operation in progress"
-_PULL_DETACHED_HEAD_NOTICE = "✓ Workspace pull skipped; detached HEAD"
-_PULL_NO_UPSTREAM_NOTICE = "✓ Workspace pull skipped; no upstream branch"
+_PULL_SKIPPED_NOTICE = "✓ Workspace pull skipped"
 _IN_PROGRESS_GIT_MARKERS = (
     "rebase-merge",
     "rebase-apply",
@@ -325,11 +323,12 @@ def _pull_workspace_on_start(
     The pull runs only when ``workspace.pull`` is enabled and the workspace is
     a Git repository, so a disabled toggle or a non-repository directory stays
     silent. A detached HEAD, a missing upstream, or an in-progress operation
-    reports one checkmark notice, because the user needs a pull outcome on
-    every run. A dirty worktree, a failed pull, a timeout, or an unavailable
-    git binary reports one warning and leaves the workspace unchanged. A
-    successful fast-forward names the number of commits it moved, and a pull
-    that moves no commit confirms the workspace is up to date.
+    reports one generic checkmark notice, because the user needs a pull outcome
+    on every run without the diagnostic detail. A dirty worktree, a failed
+    pull, a timeout, or an unavailable git binary reports one warning and
+    leaves the workspace unchanged. A successful fast-forward names the number
+    of commits it moved, and a pull that moves no commit confirms the workspace
+    is up to date.
 
     The Git process is injected through ``run_func`` so every decision is
     testable without spawning a real repository.
@@ -352,16 +351,15 @@ def _fast_forward_workspace(git_run: Callable[..., Any]) -> None:
 
     Each precondition is probed before the pull so an unsafe state never
     reaches ``git pull``. A dirty worktree reports one warning, while every
-    other unsafe state reports one checkmark notice so the user always sees a
-    pull outcome.
+    other unsafe state reports one generic checkmark notice so the user always
+    sees a pull outcome.
     """
     skip = _pull_skip_reason(git_run)
     if skip is not None:
-        message, is_warning = skip
-        if is_warning:
-            _warn_pull(message)
+        if skip:
+            _warn_pull(_PULL_SKIPPED_WARNING)
         else:
-            _notice_pull(message)
+            _notice_pull(_PULL_SKIPPED_NOTICE)
         return
     before = _read_head(git_run)
     result = git_run(
@@ -377,33 +375,31 @@ def _fast_forward_workspace(git_run: Callable[..., Any]) -> None:
     _report_fast_forward(git_run, before, _read_head(git_run))
 
 
-def _pull_skip_reason(
-    git_run: Callable[..., Any],
-) -> Optional[tuple[str, bool]]:
-    """Return the outcome text and severity, or None when the pull may proceed.
+def _pull_skip_reason(git_run: Callable[..., Any]) -> Optional[bool]:
+    """Return the skip severity, or None when the pull may proceed.
 
-    Each unsafe state names its own reason, because the user needs a pull
-    outcome on every run. The boolean marks a warning (``True``) versus a
-    checkmark notice (``False``). A dirty worktree returns the skipped
-    warning, because tracked changes can conflict.
+    Every skip prints one generic notice, so the caller only needs to know
+    whether an attention-worthy warning replaces it. The boolean marks a
+    warning (``True``) versus a checkmark notice (``False``). A dirty worktree
+    returns the warning, because tracked changes can conflict.
     """
     git_dir = Path.cwd() / ".git"
     if any((git_dir / marker).exists() for marker in _IN_PROGRESS_GIT_MARKERS):
-        return _PULL_IN_PROGRESS_NOTICE, False
+        return False
     detached = git_run(
         ["git", "symbolic-ref", "-q", "HEAD"],
         capture_output=True,
         timeout=_GIT_PULL_TIMEOUT_SECONDS,
     )
     if detached.returncode != 0:
-        return _PULL_DETACHED_HEAD_NOTICE, False
+        return False
     upstream = git_run(
         ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
         capture_output=True,
         timeout=_GIT_PULL_TIMEOUT_SECONDS,
     )
     if upstream.returncode != 0:
-        return _PULL_NO_UPSTREAM_NOTICE, False
+        return False
     status = git_run(
         ["git", "status", "--porcelain"],
         capture_output=True,
@@ -416,7 +412,7 @@ def _pull_skip_reason(
         if line and not line.startswith("??")
     ]
     if tracked_changes:
-        return _PULL_SKIPPED_WARNING, True
+        return True
     return None
 
 

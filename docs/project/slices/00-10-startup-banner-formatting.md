@@ -17,7 +17,7 @@ Key findings from static code reading of `src/teddy_executor/adapters/inbound/se
 - `session_cli_handlers._report_fast_forward`: prints the fast-forward line with no trailing blank line, and reports the up-to-date notice when no commit moves.
 - `session_cli_handlers._display_drift_notification`: prints the drift block directly under `Checking configurations...`.
 - `session_cli_handlers._echo_config_success`: prepends a blank line before the identity block.
-- `session_cli_handlers._pull_workspace_on_start`: reports a checkmark skip notice on a detached HEAD, a missing upstream, or an in-progress Git operation.
+- `session_cli_handlers._pull_workspace_on_start`: reports one generic checkmark skip notice for every unsafe state, without naming the reason.
 
 ## Scenarios
 Primary user journeys and happy paths.
@@ -58,7 +58,7 @@ And no workspace pull line appears
 Boundary conditions and validation cases.
 - **No-op pull**: If a successful pull moves no commit, then it prints `✓ Workspace up-to-date with remote`, because the user needs positive confirmation.
 - **Dirty worktree**: If tracked changes exist, then it prints the skipped warning with no extra trailing blank line.
-- **Skip notice**: If the HEAD is detached, the upstream is missing, or a Git operation is in progress, then it prints a checkmark skip notice naming the reason, because the user needs a pull outcome on every run.
+- **Skip notice**: If the HEAD is detached, the upstream is missing, or a Git operation is in progress, then it prints one generic checkmark skip notice without the reason, because the user needs a pull outcome but not the diagnostic detail.
 - **Disabled pull or non-repository**: If the pull check does not run, then no pull line appears, because no remote status exists.
 - **Disabled health checks**: If every health check is disabled and the block is empty, then one leading blank line precedes `Checking configurations...`. This is accepted for simplicity.
 - **Drift and footer**: If notices exist, then they abut `Checking configurations...`, and the identity block keeps its single leading blank line.
@@ -81,6 +81,7 @@ Affected components and non-breaking migration order.
 - [x] **Migration** - Update `tests/suites/unit/adapters/inbound/test_session_startup_banner.py` and `tests/suites/unit/adapters/inbound/test_workspace_config_toggles.py` so they pin the new spacing and the up-to-date line.
 - [x] **Logic** - Report a checkmark skip notice for a detached HEAD, a missing upstream, and an in-progress Git operation.
 - [x] **Migration** - Move the drift notices, the disable footer, and the update notice to stderr.
+- [x] **Logic** - Collapse the skip reasons into one generic checkmark notice and drop the continuation clauses from the pull warnings.
 
 ## Implementation Notes
 The update notification is emitted before the checkmark block. It now prints to stderr, so its trailing newline no longer splits the banner across two streams.
@@ -88,6 +89,8 @@ The update notification is emitted before the checkmark block. It now prints to 
 Pathfinder executes this slice directly, because the user approved a self-contained change over one production module plus its asserting tests. The drift notices, the disable footer, and the update notice now print to stderr, so a redirected run keeps the banner order.
 
 A follow-up direct change replaced the silent unsafe pull skips with checkmark skip notices. The banner therefore reports a pull outcome on every run without claiming the workspace is up to date.
+
+A final refinement collapsed the three skip reasons into one generic `✓ Workspace pull skipped` notice, because the reason adds noise without changing what the user does. The dirty-worktree and timeout warnings also dropped their continuation clauses for the same reason.
 
 The acceptance pull test asserts the fast-forward line as a substring, so it needed no change. The up-to-date line is pinned by the unit pull-outcome test instead. The separator blank line is unconditional, so a run with every check disabled opens with one empty line. This trade-off keeps the preamble assembly simple.
 
