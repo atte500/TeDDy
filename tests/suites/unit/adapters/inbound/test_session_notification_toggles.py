@@ -4,8 +4,8 @@ Item 5 (session-behaviour): each user-facing preflight notification is gated by
 its own checks.* config toggle (defaulting to enabled). The drift notification is
 split PER CHANNEL -- ``checks.prompts`` and ``checks.templates`` gate the prompts
 and templates advice independently -- and the helper returns the list of checks
-that actually fired so the shared disable-footer can name them. A disabled toggle
-suppresses ONLY its notification; the background version fetch still runs.
+that actually fired. A disabled toggle suppresses ONLY its notification; the
+background version fetch still runs.
 """
 
 import json
@@ -15,7 +15,6 @@ from pathlib import Path
 import pytest
 
 from teddy_executor.adapters.inbound.session_cli_handlers import (
-    _display_checks_footer,
     _display_drift_notification,
     _display_update_notification,
 )
@@ -226,8 +225,7 @@ def test_update_notification_fires_when_update_toggle_absent(env, capsys, tmp_pa
 
 def test_update_notification_reports_fired_key_when_it_fires(env, capsys, tmp_path):
     # When the update notification actually fires (toggle enabled AND a newer
-    # version is displayed), the helper must report its fired key so the shared
-    # disable-footer can name it.
+    # version is displayed), the helper must report its fired key.
     config = env.mock_port(IConfigService)
     config.get_setting.side_effect = lambda key, default=None: default
     cache_path = tmp_path / ".update_cache.json"
@@ -262,45 +260,3 @@ def test_update_notification_returns_empty_when_no_update_available(
     assert fired == [], (
         f"An absent update cache must not report a fired check; got: {fired!r}"
     )
-
-
-def test_footer_is_silent_when_no_check_fired(capsys):
-    # No check fired -> the shared footer is a pure no-op (no line printed).
-    _display_checks_footer([])
-
-    captured = capsys.readouterr()
-    assert captured.err == "", (
-        f"An empty fired-keys list must print no footer; got: {captured.err!r}"
-    )
-
-
-def test_footer_names_a_single_fired_check_with_singular_wording(capsys):
-    # Exactly one check fired -> the singular "this check" footer naming the key.
-    _display_checks_footer(["checks.templates"])
-
-    captured = capsys.readouterr()
-    assert captured.err == (
-        "You can disable this check in .teddy/config.yaml: checks.templates.\n"
-    ), f"Singular footer wording mismatch; got: {captured.err!r}"
-
-
-def test_footer_names_multiple_fired_checks_in_canonical_order(capsys):
-    # Multiple checks fired -> the plural footer, with the keys deduped and
-    # ordered by the canonical sequence regardless of the reported order.
-    _display_checks_footer(["checks.update", "checks.templates", "checks.prompts"])
-
-    captured = capsys.readouterr()
-    assert captured.err == (
-        "You can disable these checks in .teddy/config.yaml: "
-        "checks.prompts, checks.templates, checks.update.\n"
-    ), f"Plural footer wording/order mismatch; got: {captured.err!r}"
-
-
-def test_footer_dedupes_repeated_fired_keys(capsys):
-    # A repeated fired key must collapse to a single entry (and stay singular).
-    _display_checks_footer(["checks.update", "checks.update"])
-
-    captured = capsys.readouterr()
-    assert captured.err == (
-        "You can disable this check in .teddy/config.yaml: checks.update.\n"
-    ), f"Duplicate fired keys must be deduped; got: {captured.err!r}"

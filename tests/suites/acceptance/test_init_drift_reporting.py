@@ -3,8 +3,7 @@
 Wiring (slice 00-39): after its non-destructive copy and summary echo, bare
 ``teddy init`` must print the SAME drift advice as ``teddy start`` -- a yellow
 count-aware line naming the actionable command (``teddy init prompts`` /
-``teddy init templates``) and the shared disable-footer naming the fired checks.
-The destructive subcommands stay unchanged.
+``teddy init templates``). The destructive subcommands stay unchanged.
 """
 
 from tests.harness.setup.test_environment import TestEnvironment
@@ -41,10 +40,3 @@ def test_init_advises_drifted_prompt_and_missing_templates(tmp_path, monkeypatch
         "Missing templates must trigger the 'teddy init templates' advice; "
         f"got: {output!r}"
     )
-
-    # Assert: the single shared disable-footer names both fired checks in the
-    # canonical order (prompts, then templates).
-    assert (
-        "You can disable these checks in .teddy/config.yaml: "
-        "checks.prompts, checks.templates." in output
-    ), f"The shared disable-footer must name both fired checks; got: {output!r}"

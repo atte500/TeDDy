@@ -433,8 +433,7 @@ def _start_background_update_check(container: Container) -> list[str]:
 
     Both session entry points share this preamble: it spawns the daemon
     version-fetch thread, then emits the cached update notification (if any).
-    The returned list names the checks that fired so the shared disable-footer
-    can report them.
+    The returned list names the update checks that fired.
     """
     import threading
 
@@ -448,9 +447,8 @@ def _start_background_update_check(container: Container) -> list[str]:
     return _display_update_notification(container, cache_path)
 
 
-def _run_startup_preamble(  # noqa: PLR0913  # Each parameter is an explicit startup gate.
+def _run_startup_preamble(
     container: Container,
-    fired: list[str],
     agent: Optional[str] = None,
     setup_editor: Optional[bool] = None,
     setup_api_key: Optional[bool] = None,
@@ -460,11 +458,10 @@ def _run_startup_preamble(  # noqa: PLR0913  # Each parameter is an explicit sta
 
     The order is fixed so the banner layout cannot drift: health checks, the
     start-only workspace fast-forward line, one separator blank line, the
-    ``Checking configurations...`` line, the preflight check (whose returned
-    keys extend ``fired``), then the shared disable-footer. ``start`` forwards
-    its ``agent`` so the preflight validates the agent prompt and enables
-    ``pull_workspace``; ``resume`` leaves the agent ``None`` and keeps the pull
-    off.
+    ``Checking configurations...`` line, then the preflight check. ``start``
+    forwards its ``agent`` so the preflight validates the agent prompt and
+    enables ``pull_workspace``; ``resume`` leaves the agent ``None`` and keeps
+    the pull off.
     """
     config_service = container.resolve(IConfigService)
     _run_health_checks(config_service)
@@ -473,15 +470,12 @@ def _run_startup_preamble(  # noqa: PLR0913  # Each parameter is an explicit sta
     # One separator groups the checkmark block above with the notices below.
     typer.echo("", err=True)
     typer.echo("Checking configurations...", err=True)
-    fired.extend(
-        _run_cli_preflight_check(
-            container,
-            agent=agent,
-            setup_editor=setup_editor,
-            setup_api_key=setup_api_key,
-        )
+    _run_cli_preflight_check(
+        container,
+        agent=agent,
+        setup_editor=setup_editor,
+        setup_api_key=setup_api_key,
     )
-    _display_checks_footer(fired)
 
 
 def _handle_startup_error(container: Container, error: Exception) -> None:
@@ -774,32 +768,6 @@ def _display_drift_notification(container: Container) -> list[str]:
     return fired
 
 
-def _display_checks_footer(keys: list[str]) -> None:
-    """Emit the shared disable-footer naming the checks that just fired.
-
-    No-op when no check fired. Otherwise prints exactly ONE plain (uncolored)
-    line so the user can discover how to silence the notifications they saw,
-    ordering the deduped keys by the canonical check sequence.
-    """
-    if not keys:
-        return
-
-    canonical = ("checks.prompts", "checks.templates", "checks.update")
-    unique = set(keys)
-    ordered = [key for key in canonical if key in unique]
-
-    if len(ordered) == 1:
-        typer.echo(
-            f"You can disable this check in .teddy/config.yaml: {ordered[0]}.",
-            err=True,
-        )
-    else:
-        typer.echo(
-            f"You can disable these checks in .teddy/config.yaml: {', '.join(ordered)}.",
-            err=True,
-        )
-
-
 def _display_update_notification(container: Container, cache_path: Path) -> list[str]:
     """Check the update cache and display a non-blocking notification
     if a newer version is available. Called on session startup, after
@@ -862,7 +830,7 @@ def handle_new_session(  # noqa: PLR0913
     max_cost: Optional[float] = None,
 ):
     """Logic for the 'start' command."""
-    fired = _start_background_update_check(container)
+    _start_background_update_check(container)
 
     try:
         # 0. Pipeline mode requires an initial message
@@ -874,10 +842,9 @@ def handle_new_session(  # noqa: PLR0913
         # 1. Ensure project is initialized
         container.resolve(IInitUseCase).ensure_initialized()
 
-        # 2. Shared startup preamble (health checks + preflight + footer)
+        # 2. Shared startup preamble (health checks + preflight)
         _run_startup_preamble(
             container,
-            fired,
             agent=agent,
             setup_editor=setup_editor,
             setup_api_key=setup_api_key,
@@ -1546,13 +1513,12 @@ def handle_resume_session(  # noqa: PLR0913
     max_cost: Optional[float] = None,
 ):
     """Logic for the 'resume' command."""
-    fired = _start_background_update_check(container)
+    _start_background_update_check(container)
 
     try:
-        # 1. Shared startup preamble (health checks + preflight + footer)
+        # 1. Shared startup preamble (health checks + preflight)
         _run_startup_preamble(
             container,
-            fired,
             setup_editor=setup_editor,
             setup_api_key=setup_api_key,
         )

@@ -33,7 +33,7 @@ def _stub_handler_collaborators(env, monkeypatch, record):
         record.setdefault("background", []).append(container)
         return []
 
-    def record_preamble(container, fired, **kwargs):
+    def record_preamble(container, **kwargs):
         record.setdefault("preamble", []).append(kwargs)
 
     monkeypatch.setattr(handlers, "_start_background_update_check", record_background)

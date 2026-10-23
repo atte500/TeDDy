@@ -12,7 +12,7 @@ Group the startup checkmark lines, always report the workspace pull outcome, and
 
 ## Context
 Key findings from static code reading of `src/teddy_executor/adapters/inbound/session_cli_handlers.py`.
-- `session_cli_handlers._run_startup_preamble`: prints health checks, the optional pull line, `Checking configurations...`, the preflight drift block, and the shared disable footer.
+- `session_cli_handlers._run_startup_preamble`: prints health checks, the optional pull line, `Checking configurations...`, and the preflight drift block.
 - `session_cli_handlers._warn_pull`: prints one yellow warning with no trailing blank line.
 - `session_cli_handlers._report_fast_forward`: prints the fast-forward line with no trailing blank line, and reports the up-to-date notice when no commit moves.
 - `session_cli_handlers._display_drift_notification`: prints the drift block directly under `Checking configurations...`.
@@ -68,7 +68,7 @@ Boundary conditions and validation cases.
 - **Failed pull**: If the pull returns non-zero, then it prints `⚠ Workspace pull failed.`, so a real failure never looks like a deliberate skip.
 - **Timeout or missing git**: If the pull times out or git is unavailable, then it prints `⚠ Workspace pull timed out after 15s.` or `⚠ Workspace pull failed: git is unavailable.`.
 - **Disabled health checks**: If every health check is disabled and the block is empty, then one leading blank line precedes `Checking configurations...`. This is accepted for simplicity.
-- **Drift and footer**: If notices exist, then they abut `Checking configurations...`, and the identity block keeps its single leading blank line.
+- **Drift notices**: If notices exist, then they abut `Checking configurations...`, and the identity block keeps its single leading blank line.
 
 ## Key Unknowns
 No open unknowns. The all-yellow pull outcome policy is a recorded product decision, not an unresolved ambiguity.
@@ -90,6 +90,7 @@ Affected components and non-breaking migration order.
 - [x] **Logic** - Collapse the skip reasons into one generic checkmark notice and drop the continuation clauses from the pull warnings.
 - [x] **Logic** - Warn with the cause for every pull skip, count the blocking files, and split the failed pull from the deliberate skip.
 - [x] **Cleanup** - Retire the generic skip notice, the green pull helper, and the disabled-gate warnings.
+- [x] **Cleanup** - Remove the disable-checks footer from the startup banner and from bare `teddy init`.
 
 ## Implementation Notes
 The update notification is emitted before the checkmark block. It now prints to stderr, so its trailing newline no longer splits the banner across two streams.
@@ -101,6 +102,8 @@ A follow-up direct change replaced the silent unsafe pull skips with checkmark s
 A final refinement collapsed the three skip reasons into one generic `✓ Workspace pull skipped` notice, because the reason adds noise without changing what the user does. The dirty-worktree and timeout warnings also dropped their continuation clauses for the same reason.
 
 A later refinement reversed that collapse. A checkmark asserts a verified pass, and a skipped pull was never attempted, so every skip is now a warning that names its cause. The dirty-worktree warning reports the blocking file count, the failed pull gets its own message, the timeout names its configured budget, and the disabled-gate reminders were removed because the opt-out is the user's own choice.
+
+A final cleanup removed the disable-checks footer, so the banner no longer prints the `You can disable this check in .teddy/config.yaml: ...` line. `_display_checks_footer` is deleted, and `_run_startup_preamble` no longer accepts or extends a fired-key list. The update and drift helpers keep returning their fired keys, because the toggle tests pin the suppression contract through those values. That plumbing now has no production consumer, which is recorded as debt rather than deleted in the same pass.
 
 The acceptance pull test asserts the fast-forward line as a substring, so it needed no change. The up-to-date line is pinned by the unit pull-outcome test instead. The separator blank line is unconditional, so a run with every check disabled opens with one empty line. This trade-off keeps the preamble assembly simple.
 

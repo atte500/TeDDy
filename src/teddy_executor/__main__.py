@@ -119,15 +119,14 @@ def _display_init_drift(container) -> None:
     Bare ``teddy init`` reuses the SAME advice ``teddy start`` prints, so its
     "unchanged" summary cannot mislead: it flags drifted prompts and missing
     templates and names the actionable ``teddy init prompts`` /
-    ``teddy init templates`` commands. The two shared helpers are imported
-    lazily, and they are advisory only -- they never block the command.
+    ``teddy init templates`` commands. The helper is imported lazily, and it is
+    advisory only -- it never blocks the command.
     """
     from teddy_executor.adapters.inbound.session_cli_handlers import (
-        _display_checks_footer,
         _display_drift_notification,
     )
 
-    _display_checks_footer(_display_drift_notification(container))
+    _display_drift_notification(container)
 
 
 def _resolve_config_or_exit(container) -> IConfigService:
