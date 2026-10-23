@@ -2,18 +2,16 @@
 
 The public ``teddy start`` entry point must honour the ``workspace`` toggles
 from the resolved configuration. A disabled gate skips its startup step and
-prints exactly one warning naming the real consequence.
+prints no reminder, because the opt-out is the user's own choice.
 """
 
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.setup.test_environment import TestEnvironment
 
 
-PRE_COMMIT_WARNING = (
-    "⚠ Pre-commit hook installation is disabled. "
-    "The post-commit test gate will not run."
-)
-INIT_WARNING = "⚠ Git repository not initialized. Version control actions will fail."
+PRE_COMMIT_REMINDER = "Pre-commit hook installation is disabled"
+INIT_REMINDER = "Git repository not initialized"
+NOT_A_REPOSITORY_WARNING = "⚠ Workspace pull skipped: not a Git repository."
 
 
 def _write_workspace_config(tmp_path, text: str) -> None:
@@ -22,8 +20,8 @@ def _write_workspace_config(tmp_path, text: str) -> None:
     (teddy_dir / "config.yaml").write_text(text, encoding="utf-8")
 
 
-def test_start_warns_when_both_workspace_gates_are_disabled(tmp_path, monkeypatch):
-    """Both disabled gates emit one warning each and skip their startup steps."""
+def test_start_silences_both_disabled_workspace_gates(tmp_path, monkeypatch):
+    """Both disabled gates skip their startup steps without a reminder."""
     # Arrange
     (
         TestEnvironment(monkeypatch, tmp_path)
@@ -51,5 +49,6 @@ def test_start_warns_when_both_workspace_gates_are_disabled(tmp_path, monkeypatc
     # Assert
     output = result.stdout + result.stderr
     assert result.exit_code == 0, output
-    assert PRE_COMMIT_WARNING in output
-    assert INIT_WARNING in output
+    assert PRE_COMMIT_REMINDER not in output
+    assert INIT_REMINDER not in output
+    assert NOT_A_REPOSITORY_WARNING in output

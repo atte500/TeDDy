@@ -17,7 +17,7 @@ Key findings from static code reading of `src/teddy_executor/adapters/inbound/se
 - `session_cli_handlers._report_fast_forward`: prints the fast-forward line with no trailing blank line, and reports the up-to-date notice when no commit moves.
 - `session_cli_handlers._display_drift_notification`: prints the drift block directly under `Checking configurations...`.
 - `session_cli_handlers._echo_config_success`: prepends a blank line before the identity block.
-- `session_cli_handlers._pull_workspace_on_start`: reports one generic checkmark skip notice for every unsafe state, without naming the reason.
+- `session_cli_handlers._pull_workspace_on_start`: warns once for every skip and every failure, naming the cause, so a skipped pull carries no checkmark.
 
 ## Scenarios
 Primary user journeys and happy paths.
@@ -57,15 +57,21 @@ And no workspace pull line appears
 ## Edge Cases
 Boundary conditions and validation cases.
 - **No-op pull**: If a successful pull moves no commit, then it prints `✓ Workspace up-to-date with remote`, because the user needs positive confirmation.
-- **Dirty worktree**: If tracked changes exist, then it prints the skipped warning with no extra trailing blank line.
-- **Skip notice**: If the HEAD is detached, the upstream is missing, or a Git operation is in progress, then it prints one generic checkmark skip notice without the reason, because the user needs a pull outcome but not the diagnostic detail.
-- **Disabled pull or non-repository**: If the pull check does not run, then no pull line appears, because no remote status exists.
+- **Fast-forward**: If the pull moves commits, then it prints `✓ Workspace fast-forwarded (N commits)`.
+- **Dirty worktree**: If tracked changes exist, then it prints `⚠ Workspace pull skipped: N uncommitted file(s).`, because the count shows how much work stands between the user and a pull.
+- **Detached HEAD**: If the HEAD is detached, then it prints `⚠ Workspace pull skipped: detached HEAD.`, because a skipped pull is never a verified pass.
+- **Missing upstream**: If the branch has no upstream, then it prints `⚠ Workspace pull skipped: no upstream branch.`.
+- **In-progress operation**: If a merge, rebase, or cherry-pick is running, then it prints `⚠ Workspace pull skipped: Git operation in progress.`, because that is a risky moment to start a session.
+- **Not a repository**: If the pull is enabled but the workspace has no `.git`, then it prints `⚠ Workspace pull skipped: not a Git repository.`, because the user asked for a pull outcome on every run.
+- **Disabled pull**: If `workspace.pull` is disabled, then no pull line appears, because the user opted out.
+- **Disabled workspace gate**: If `workspace.init` or `workspace.pre-commit` is disabled, then its step is skipped and no warning names the opt-out, because the setting is the user's own choice.
+- **Failed pull**: If the pull returns non-zero, then it prints `⚠ Workspace pull failed.`, so a real failure never looks like a deliberate skip.
+- **Timeout or missing git**: If the pull times out or git is unavailable, then it prints `⚠ Workspace pull timed out after 15s.` or `⚠ Workspace pull failed: git is unavailable.`.
 - **Disabled health checks**: If every health check is disabled and the block is empty, then one leading blank line precedes `Checking configurations...`. This is accepted for simplicity.
 - **Drift and footer**: If notices exist, then they abut `Checking configurations...`, and the identity block keeps its single leading blank line.
-- **Pull warning**: If the pull fails, times out, or git is unavailable, then one yellow warning appears in the checkmark block with no extra trailing blank line.
 
 ## Key Unknowns
-No open unknowns. The skip-notice behavior is a recorded product decision, not an unresolved ambiguity.
+No open unknowns. The all-yellow pull outcome policy is a recorded product decision, not an unresolved ambiguity.
 
 ## Impact
 Affected components and non-breaking migration order.
@@ -82,6 +88,8 @@ Affected components and non-breaking migration order.
 - [x] **Logic** - Report a checkmark skip notice for a detached HEAD, a missing upstream, and an in-progress Git operation.
 - [x] **Migration** - Move the drift notices, the disable footer, and the update notice to stderr.
 - [x] **Logic** - Collapse the skip reasons into one generic checkmark notice and drop the continuation clauses from the pull warnings.
+- [x] **Logic** - Warn with the cause for every pull skip, count the blocking files, and split the failed pull from the deliberate skip.
+- [x] **Cleanup** - Retire the generic skip notice, the green pull helper, and the disabled-gate warnings.
 
 ## Implementation Notes
 The update notification is emitted before the checkmark block. It now prints to stderr, so its trailing newline no longer splits the banner across two streams.
@@ -92,6 +100,8 @@ A follow-up direct change replaced the silent unsafe pull skips with checkmark s
 
 A final refinement collapsed the three skip reasons into one generic `✓ Workspace pull skipped` notice, because the reason adds noise without changing what the user does. The dirty-worktree and timeout warnings also dropped their continuation clauses for the same reason.
 
+A later refinement reversed that collapse. A checkmark asserts a verified pass, and a skipped pull was never attempted, so every skip is now a warning that names its cause. The dirty-worktree warning reports the blocking file count, the failed pull gets its own message, the timeout names its configured budget, and the disabled-gate reminders were removed because the opt-out is the user's own choice.
+
 The acceptance pull test asserts the fast-forward line as a substring, so it needed no change. The up-to-date line is pinned by the unit pull-outcome test instead. The separator blank line is unconditional, so a run with every check disabled opens with one empty line. This trade-off keeps the preamble assembly simple.
 
 ## Verification
@@ -101,3 +111,7 @@ The acceptance pull test asserts the fast-forward line as a substring, so it nee
 2. **Drift notices:**
    Run `teddy start` when a prompt differs from the bundled default.
    Verify each notice sits directly under `Checking configurations...` and one blank line precedes `Agent:`.
+3. **Dirty worktree:**
+   Leave two tracked files modified in a repository that has an upstream.
+   Run `teddy start`.
+   Verify the block ends with `⚠ Workspace pull skipped: 2 uncommitted files.`

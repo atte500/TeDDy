@@ -1,35 +1,33 @@
 """Unit tests for the start-only workspace pull failure matrix.
 
 ``_pull_workspace_on_start`` must leave the workspace untouched on every
-precondition it cannot satisfy. It warns once when a risky or failed pull
-leaves the workspace unchanged, and it reports one generic checkmark notice
-for every skip that has nothing to fast-forward. The notice omits the reason,
-so the banner stays concise. It reports every successful pull outcome,
-including the up-to-date case. The Git process is injected through the
-``run_func`` seam so each decision is deterministic without spawning a real
-repository.
+precondition it cannot satisfy. Every skip and every failure warns exactly
+once and names its cause, so the user can tell why the workspace stayed
+unchanged. A skip therefore carries no checkmark. A successful pull reports
+its outcome, including the up-to-date case. The Git process is injected
+through the ``run_func`` seam so each decision is deterministic without
+spawning a real repository.
 """
 
 import subprocess
 
 import pytest
 
+from teddy_executor.adapters.inbound import session_cli_handlers
 from teddy_executor.adapters.inbound.session_cli_handlers import (
     _pull_workspace_on_start,
-    _warn_disabled_workspace_steps,
+    _run_health_checks,
 )
 
 FAST_FORWARD_PREFIX = "Workspace fast-forwarded"
-SKIPPED_WARNING = "⚠ Workspace pull skipped."
-TIMEOUT_WARNING = "⚠ Workspace pull timed out."
-GIT_UNAVAILABLE_WARNING = "⚠ Workspace pull skipped; git is unavailable."
+DETACHED_HEAD_WARNING = "⚠ Workspace pull skipped: detached HEAD."
+NO_UPSTREAM_WARNING = "⚠ Workspace pull skipped: no upstream branch."
+IN_PROGRESS_WARNING = "⚠ Workspace pull skipped: Git operation in progress."
+NOT_A_REPOSITORY_WARNING = "⚠ Workspace pull skipped: not a Git repository."
+FAILED_WARNING = "⚠ Workspace pull failed."
+TIMEOUT_WARNING = "⚠ Workspace pull timed out after 15s."
+GIT_UNAVAILABLE_WARNING = "⚠ Workspace pull failed: git is unavailable."
 UP_TO_DATE_NOTICE = "✓ Workspace up-to-date with remote"
-SKIPPED_NOTICE = "✓ Workspace pull skipped"
-PRE_COMMIT_WARNING = (
-    "⚠ Pre-commit hook installation is disabled. "
-    "The post-commit test gate will not run."
-)
-INIT_WARNING = "⚠ Git repository not initialized. Version control actions will fail."
 
 
 class FakeGitRunner:
@@ -115,68 +113,79 @@ def test_disabled_pull_skips_before_running_git(git_repository, mock_config, cap
     assert capsys.readouterr().err == ""
 
 
-def test_missing_git_directory_skips_silently(
+def test_missing_git_directory_reports_not_a_repository(
     tmp_path, monkeypatch, mock_config, capsys
 ):
-    """A workspace that is not a repository stays silent without invoking Git."""
+    """A workspace without a repository warns and never invokes Git."""
     monkeypatch.chdir(tmp_path)
     runner = FakeGitRunner()
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
     assert runner.calls == []
-    assert capsys.readouterr().err == ""
+    assert capsys.readouterr().err == NOT_A_REPOSITORY_WARNING + "\n"
 
 
-def test_detached_head_reports_a_generic_skip_notice(
-    git_repository, mock_config, capsys
-):
-    """A detached HEAD reports one generic notice and skips the pull."""
+def test_detached_head_names_its_reason(git_repository, mock_config, capsys):
+    """A detached HEAD names the state and skips the pull."""
     runner = FakeGitRunner(symbolic_ref_ok=False)
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
     assert "pull" not in runner.operations()
-    assert capsys.readouterr().err == SKIPPED_NOTICE + "\n"
+    assert capsys.readouterr().err == DETACHED_HEAD_WARNING + "\n"
 
 
-def test_missing_upstream_reports_a_generic_skip_notice(
-    git_repository, mock_config, capsys
-):
-    """A branch without an upstream reports one generic notice and skips the pull."""
+def test_missing_upstream_names_its_reason(git_repository, mock_config, capsys):
+    """A branch without an upstream names the state and skips the pull."""
     runner = FakeGitRunner(upstream_ok=False)
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
     assert "pull" not in runner.operations()
-    assert capsys.readouterr().err == SKIPPED_NOTICE + "\n"
+    assert capsys.readouterr().err == NO_UPSTREAM_WARNING + "\n"
 
 
 @pytest.mark.parametrize(
     "marker", ["rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD"]
 )
-def test_in_progress_operation_reports_a_generic_skip_notice(
+def test_in_progress_operation_names_its_reason(
     git_repository, mock_config, capsys, marker
 ):
-    """An in-progress Git operation is never interrupted and reports one generic notice."""
+    """An in-progress Git operation is never interrupted and names the state."""
     (git_repository / ".git" / marker).touch()
     runner = FakeGitRunner()
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
     assert "pull" not in runner.operations()
-    assert capsys.readouterr().err == SKIPPED_NOTICE + "\n"
+    assert capsys.readouterr().err == IN_PROGRESS_WARNING + "\n"
 
 
-def test_tracked_changes_warn_and_skip_the_pull(git_repository, mock_config, capsys):
-    """Tracked worktree changes warn once and skip the pull without a trailing blank."""
+def test_tracked_changes_count_as_one_uncommitted_file(
+    git_repository, mock_config, capsys
+):
+    """One tracked change warns once with the singular noun and skips the pull."""
     runner = FakeGitRunner(status_output=" M src/app.py\n")
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
     err = capsys.readouterr().err
     assert "pull" not in runner.operations()
-    assert err == SKIPPED_WARNING + "\n"
+    assert err == "⚠ Workspace pull skipped: 1 uncommitted file.\n"
+
+
+def test_multiple_tracked_changes_report_the_plural_count(
+    git_repository, mock_config, capsys
+):
+    """Two tracked changes warn once with the plural noun."""
+    runner = FakeGitRunner(status_output=" M src/app.py\nMM tests/conftest.py\n")
+
+    _pull_workspace_on_start(mock_config, run_func=runner)
+
+    err = capsys.readouterr().err
+    assert "pull" not in runner.operations()
+    assert err == "⚠ Workspace pull skipped: 2 uncommitted files.\n"
 
 
 def test_untracked_files_do_not_block_a_fast_forward(
@@ -191,24 +200,24 @@ def test_untracked_files_do_not_block_a_fast_forward(
     assert f"{FAST_FORWARD_PREFIX} (2 commits)" in capsys.readouterr().err
 
 
-def test_failed_pull_warns_and_continues(git_repository, mock_config, capsys):
-    """A non-zero pull exit warns once and leaves the workspace unchanged."""
+def test_failed_pull_reports_a_failure_not_a_skip(git_repository, mock_config, capsys):
+    """A non-zero pull exit reports a failure and leaves the workspace unchanged."""
     runner = FakeGitRunner(pull_returncode=1)
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
-    assert SKIPPED_WARNING in capsys.readouterr().err
+    assert capsys.readouterr().err == FAILED_WARNING + "\n"
 
 
-def test_timeout_warns_and_continues(git_repository, mock_config, capsys):
-    """A timed-out Git command warns once and lets the session proceed."""
+def test_timeout_names_the_configured_budget(git_repository, mock_config, capsys):
+    """A timed-out Git command warns once and names the configured budget."""
 
     def timeout_runner(cmd, **kwargs):
         raise subprocess.TimeoutExpired(cmd, 15)
 
     _pull_workspace_on_start(mock_config, run_func=timeout_runner)
 
-    assert TIMEOUT_WARNING in capsys.readouterr().err
+    assert capsys.readouterr().err == TIMEOUT_WARNING + "\n"
 
 
 def test_unavailable_git_binary_warns_and_continues(
@@ -257,74 +266,23 @@ def test_already_current_workspace_reports_up_to_date(
     assert capsys.readouterr().err == UP_TO_DATE_NOTICE + "\n"
 
 
-def test_warn_disabled_workspace_steps_emits_pre_commit_warning(
+def test_disabled_workspace_gates_skip_their_steps_silently(
     tmp_path, monkeypatch, mock_config, capsys
 ):
-    """A disabled pre-commit gate warns about the missing post-commit test gate."""
+    """A disabled gate runs no step and prints no reminder about the opt-out."""
     monkeypatch.chdir(tmp_path)
-    (tmp_path / ".git").mkdir()
-    mock_config.get_setting.side_effect = lambda key, default=None: (
-        False if key == "workspace.pre-commit" else default
+    invoked: list[str] = []
+    monkeypatch.setattr(
+        session_cli_handlers, "_ensure_commit_hooks", lambda: invoked.append("hooks")
     )
-
-    _warn_disabled_workspace_steps(mock_config)
-
-    assert PRE_COMMIT_WARNING in capsys.readouterr().err
-
-
-def test_warn_disabled_workspace_steps_emits_init_warning_when_git_absent(
-    tmp_path, monkeypatch, mock_config, capsys
-):
-    """A disabled init gate warns only when the workspace is not a repository."""
-    monkeypatch.chdir(tmp_path)
-    mock_config.get_setting.side_effect = lambda key, default=None: (
-        False if key == "workspace.init" else default
+    monkeypatch.setattr(
+        session_cli_handlers, "_check_git_initialized", lambda: invoked.append("init")
     )
-
-    _warn_disabled_workspace_steps(mock_config)
-
-    err = capsys.readouterr().err
-    assert INIT_WARNING in err
-    assert PRE_COMMIT_WARNING not in err
-
-
-def test_warn_disabled_workspace_steps_skips_init_warning_when_git_present(
-    tmp_path, monkeypatch, mock_config, capsys
-):
-    """An existing repository needs no init warning even when the gate is off."""
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / ".git").mkdir()
-    mock_config.get_setting.side_effect = lambda key, default=None: (
-        False if key == "workspace.init" else default
-    )
-
-    _warn_disabled_workspace_steps(mock_config)
-
-    assert capsys.readouterr().err == ""
-
-
-def test_warn_disabled_workspace_steps_silent_when_both_enabled(
-    tmp_path, monkeypatch, mock_config, capsys
-):
-    """Both enabled gates emit no warning."""
-    monkeypatch.chdir(tmp_path)
-    mock_config.get_setting.side_effect = lambda key, default=None: default
-
-    _warn_disabled_workspace_steps(mock_config)
-
-    assert capsys.readouterr().err == ""
-
-
-def test_warn_disabled_workspace_steps_emits_both_warnings_in_order(
-    tmp_path, monkeypatch, mock_config, capsys
-):
-    """Both disabled gates warn in the documented order: pre-commit, then init."""
-    monkeypatch.chdir(tmp_path)
     mock_config.get_setting.side_effect = lambda key, default=None: (
         False if key in {"workspace.pre-commit", "workspace.init"} else default
     )
 
-    _warn_disabled_workspace_steps(mock_config)
+    _run_health_checks(mock_config)
 
-    err = capsys.readouterr().err
-    assert err.index(PRE_COMMIT_WARNING) < err.index(INIT_WARNING)
+    assert invoked == []
+    assert capsys.readouterr().err == ""
