@@ -286,6 +286,7 @@ _GIT_PULL_TIMEOUT_SECONDS = 15
 _PULL_SKIPPED_WARNING = "⚠ Workspace pull skipped; continuing with the current branch."
 _PULL_TIMEOUT_WARNING = "⚠ Workspace pull timed out; continuing without it."
 _PULL_GIT_UNAVAILABLE_WARNING = "⚠ Workspace pull skipped; git is unavailable."
+_PULL_UP_TO_DATE_NOTICE = "✓ Workspace up-to-date with remote"
 _IN_PROGRESS_GIT_MARKERS = (
     "rebase-merge",
     "rebase-apply",
@@ -295,13 +296,12 @@ _IN_PROGRESS_GIT_MARKERS = (
 
 
 def _warn_pull(message: str) -> None:
-    """Print one yellow pull warning followed by a blank line.
+    """Print one yellow pull warning.
 
-    The trailing blank line keeps every pull block, success or warning, the
-    same height before the ``Checking configurations...`` line.
+    The shared preamble owns the separator blank line before
+    ``Checking configurations...``, so this line carries no trailing blank.
     """
     typer.secho(message, fg=typer.colors.YELLOW, err=True)
-    typer.echo("", err=True)
 
 
 def _pull_workspace_on_start(
@@ -411,20 +411,22 @@ def _read_head(git_run: Callable[..., Any]) -> str:
 
 
 def _report_fast_forward(git_run: Callable[..., Any], before: str, after: str) -> None:
-    """Report how many commits the fast-forward moved, or stay silent.
+    """Report the pull outcome so the user always sees a result.
 
-    A pull that moves no commit has nothing to report, so it prints nothing.
+    A fast-forward names the number of moved commits. A pull that moves no
+    commit confirms the workspace is already up to date.
     """
-    if after == before:
-        return
-    count_output = git_run(
-        ["git", "rev-list", "--count", f"{before}..{after}"],
-        capture_output=True,
-        text=True,
-        timeout=_GIT_PULL_TIMEOUT_SECONDS,
-    ).stdout.strip()
-    commits = int(count_output) if count_output else 0
+    commits = 0
+    if after != before:
+        count_output = git_run(
+            ["git", "rev-list", "--count", f"{before}..{after}"],
+            capture_output=True,
+            text=True,
+            timeout=_GIT_PULL_TIMEOUT_SECONDS,
+        ).stdout.strip()
+        commits = int(count_output) if count_output else 0
     if commits <= 0:
+        typer.secho(_PULL_UP_TO_DATE_NOTICE, fg=typer.colors.GREEN, err=True)
         return
     noun = "commit" if commits == 1 else "commits"
     typer.secho(
@@ -432,9 +434,6 @@ def _report_fast_forward(git_run: Callable[..., Any], before: str, after: str) -
         fg=typer.colors.GREEN,
         err=True,
     )
-    # A trailing blank line separates the fast-forward block from the
-    # ``Checking configurations...`` line that follows it.
-    typer.echo("", err=True)
 
 
 def _start_background_update_check(container: Container) -> list[str]:
@@ -468,16 +467,19 @@ def _run_startup_preamble(  # noqa: PLR0913  # Each parameter is an explicit sta
     """Run the shared startup preamble for both session entry points.
 
     The order is fixed so the banner layout cannot drift: health checks, the
-    start-only workspace fast-forward line, the ``Checking configurations...``
-    line, the preflight check (whose returned keys extend ``fired``), then the
-    shared disable-footer. ``start`` forwards its ``agent`` so the preflight
-    validates the agent prompt and enables ``pull_workspace``; ``resume``
-    leaves the agent ``None`` and keeps the pull off.
+    start-only workspace fast-forward line, one separator blank line, the
+    ``Checking configurations...`` line, the preflight check (whose returned
+    keys extend ``fired``), then the shared disable-footer. ``start`` forwards
+    its ``agent`` so the preflight validates the agent prompt and enables
+    ``pull_workspace``; ``resume`` leaves the agent ``None`` and keeps the pull
+    off.
     """
     config_service = container.resolve(IConfigService)
     _run_health_checks(config_service)
     if pull_workspace:
         _pull_workspace_on_start(config_service)
+    # One separator groups the checkmark block above with the notices below.
+    typer.echo("", err=True)
     typer.echo("Checking configurations...", err=True)
     fired.extend(
         _run_cli_preflight_check(
@@ -772,11 +774,10 @@ def _display_drift_notification(container: Container) -> list[str]:
         fired.append("checks.templates")
 
     if drift_lines:
-        # A single leading blank separates this block from the
-        # ``Checking configurations...`` line above it. The lines carry no
-        # trailing newline, so the shared disable-footer (emitted next) abuts
-        # the final drift line.
-        typer.echo("\n" + "\n".join(drift_lines))
+        # The notices sit directly under ``Checking configurations...``. The
+        # lines carry no trailing newline, so the shared disable-footer
+        # (emitted next) abuts the final drift line.
+        typer.echo("\n".join(drift_lines))
 
     return fired
 

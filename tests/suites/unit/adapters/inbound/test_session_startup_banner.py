@@ -69,7 +69,7 @@ def test_start_banner_session_line_has_no_leading_blank(env, monkeypatch, capsys
     assert captured.out == "Session created at: /fake/sessions/my-session\n"
     assert (
         captured.err
-        == "Checking configurations...\n\nAgent: Pathfinder\nModel: gpt-4o\n"
+        == "\nChecking configurations...\n\nAgent: Pathfinder\nModel: gpt-4o\n"
     )
 
 
@@ -89,4 +89,4 @@ def test_resume_banner_session_line_has_no_leading_blank(env, monkeypatch, capsy
 
     captured = capsys.readouterr()
     assert captured.out == "Resuming session: .teddy/sessions/my-session\n"
-    assert captured.err == "Checking configurations...\n\nModel: gpt-4o\n"
+    assert captured.err == "\nChecking configurations...\n\nModel: gpt-4o\n"

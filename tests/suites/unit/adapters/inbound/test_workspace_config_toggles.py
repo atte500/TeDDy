@@ -2,9 +2,10 @@
 
 ``_pull_workspace_on_start`` must leave the workspace untouched and stay
 silent on every precondition it cannot satisfy. It warns once when a risky or
-failed pull leaves the workspace unchanged, and it reports a successful
-fast-forward. The Git process is injected through the ``run_func`` seam so
-each decision is deterministic without spawning a real repository.
+failed pull leaves the workspace unchanged, and it reports every successful
+pull outcome, including the up-to-date case. The Git process is injected
+through the ``run_func`` seam so each decision is deterministic without
+spawning a real repository.
 """
 
 import subprocess
@@ -20,6 +21,7 @@ FAST_FORWARD_PREFIX = "Workspace fast-forwarded"
 SKIPPED_WARNING = "⚠ Workspace pull skipped; continuing with the current branch."
 TIMEOUT_WARNING = "⚠ Workspace pull timed out; continuing without it."
 GIT_UNAVAILABLE_WARNING = "⚠ Workspace pull skipped; git is unavailable."
+UP_TO_DATE_NOTICE = "✓ Workspace up-to-date with remote"
 PRE_COMMIT_WARNING = (
     "⚠ Pre-commit hook installation is disabled. "
     "The post-commit test gate will not run."
@@ -160,15 +162,14 @@ def test_in_progress_operation_skips_silently(
 
 
 def test_tracked_changes_warn_and_skip_the_pull(git_repository, mock_config, capsys):
-    """Tracked worktree changes warn once, skip the pull, and end with a blank line."""
+    """Tracked worktree changes warn once and skip the pull without a trailing blank."""
     runner = FakeGitRunner(status_output=" M src/app.py\n")
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
     err = capsys.readouterr().err
     assert "pull" not in runner.operations()
-    assert SKIPPED_WARNING in err
-    assert err.endswith("\n\n")
+    assert err == SKIPPED_WARNING + "\n"
 
 
 def test_untracked_files_do_not_block_a_fast_forward(
@@ -214,19 +215,17 @@ def test_unavailable_git_binary_warns_and_continues(
     _pull_workspace_on_start(mock_config, run_func=missing_git_runner)
 
     err = capsys.readouterr().err
-    assert GIT_UNAVAILABLE_WARNING in err
-    assert err.endswith("\n\n")
+    assert err == GIT_UNAVAILABLE_WARNING + "\n"
 
 
 def test_fast_forward_reports_the_commit_count(git_repository, mock_config, capsys):
-    """A multi-commit fast-forward prints a checkmark line plus a blank line."""
+    """A multi-commit fast-forward prints one checkmark line with no trailing blank."""
     runner = FakeGitRunner(fast_forward_count=3)
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
     err = capsys.readouterr().err
-    assert f"✓ {FAST_FORWARD_PREFIX} (3 commits)" in err
-    assert err.endswith("\n\n")
+    assert err == f"✓ {FAST_FORWARD_PREFIX} (3 commits)\n"
 
 
 def test_single_commit_fast_forward_uses_the_singular_noun(
@@ -240,13 +239,15 @@ def test_single_commit_fast_forward_uses_the_singular_noun(
     assert f"{FAST_FORWARD_PREFIX} (1 commit)" in capsys.readouterr().err
 
 
-def test_already_current_workspace_stays_silent(git_repository, mock_config, capsys):
-    """A successful pull that moves no commit stays silent."""
+def test_already_current_workspace_reports_up_to_date(
+    git_repository, mock_config, capsys
+):
+    """A successful pull that moves no commit confirms the workspace is up to date."""
     runner = FakeGitRunner(fast_forward_count=0)
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
-    assert capsys.readouterr().err == ""
+    assert capsys.readouterr().err == UP_TO_DATE_NOTICE + "\n"
 
 
 def test_warn_disabled_workspace_steps_emits_pre_commit_warning(
