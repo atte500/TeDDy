@@ -287,6 +287,9 @@ _PULL_SKIPPED_WARNING = "⚠ Workspace pull skipped; continuing with the current
 _PULL_TIMEOUT_WARNING = "⚠ Workspace pull timed out; continuing without it."
 _PULL_GIT_UNAVAILABLE_WARNING = "⚠ Workspace pull skipped; git is unavailable."
 _PULL_UP_TO_DATE_NOTICE = "✓ Workspace up-to-date with remote"
+_PULL_IN_PROGRESS_NOTICE = "✓ Workspace pull skipped; Git operation in progress"
+_PULL_DETACHED_HEAD_NOTICE = "✓ Workspace pull skipped; detached HEAD"
+_PULL_NO_UPSTREAM_NOTICE = "✓ Workspace pull skipped; no upstream branch"
 _IN_PROGRESS_GIT_MARKERS = (
     "rebase-merge",
     "rebase-apply",
@@ -304,6 +307,15 @@ def _warn_pull(message: str) -> None:
     typer.secho(message, fg=typer.colors.YELLOW, err=True)
 
 
+def _notice_pull(message: str) -> None:
+    """Print one green pull notice.
+
+    The checkmark line joins the startup block, so it carries no trailing
+    blank and never uses the warning color.
+    """
+    typer.secho(message, fg=typer.colors.GREEN, err=True)
+
+
 def _pull_workspace_on_start(
     config_service: IConfigService,
     run_func: Optional[Callable[..., Any]] = None,
@@ -313,10 +325,11 @@ def _pull_workspace_on_start(
     The pull runs only when ``workspace.pull`` is enabled and the workspace is
     a Git repository, so a disabled toggle or a non-repository directory stays
     silent. A detached HEAD, a missing upstream, or an in-progress operation
-    also stays silent, because there is nothing safe to fast-forward. A dirty
-    worktree, a failed pull, a timeout, or an unavailable git binary reports
-    one warning and leaves the workspace unchanged. A successful fast-forward
-    names the number of commits it moved.
+    reports one checkmark notice, because the user needs a pull outcome on
+    every run. A dirty worktree, a failed pull, a timeout, or an unavailable
+    git binary reports one warning and leaves the workspace unchanged. A
+    successful fast-forward names the number of commits it moved, and a pull
+    that moves no commit confirms the workspace is up to date.
 
     The Git process is injected through ``run_func`` so every decision is
     testable without spawning a real repository.
@@ -339,12 +352,16 @@ def _fast_forward_workspace(git_run: Callable[..., Any]) -> None:
 
     Each precondition is probed before the pull so an unsafe state never
     reaches ``git pull``. A dirty worktree reports one warning, while every
-    other unsafe state stays silent because it has nothing to report.
+    other unsafe state reports one checkmark notice so the user always sees a
+    pull outcome.
     """
-    skip_reason = _pull_skip_reason(git_run)
-    if skip_reason is not None:
-        if skip_reason:
-            _warn_pull(skip_reason)
+    skip = _pull_skip_reason(git_run)
+    if skip is not None:
+        message, is_warning = skip
+        if is_warning:
+            _warn_pull(message)
+        else:
+            _notice_pull(message)
         return
     before = _read_head(git_run)
     result = git_run(
@@ -360,30 +377,33 @@ def _fast_forward_workspace(git_run: Callable[..., Any]) -> None:
     _report_fast_forward(git_run, before, _read_head(git_run))
 
 
-def _pull_skip_reason(git_run: Callable[..., Any]) -> Optional[str]:
-    """Return the outcome text to print, or None when the pull may proceed.
+def _pull_skip_reason(
+    git_run: Callable[..., Any],
+) -> Optional[tuple[str, bool]]:
+    """Return the outcome text and severity, or None when the pull may proceed.
 
-    An empty string marks a silent skip, because the workspace holds no safe
-    fast-forward and reporting it would only add noise. A dirty worktree
-    returns the skipped warning, because tracked changes can conflict.
+    Each unsafe state names its own reason, because the user needs a pull
+    outcome on every run. The boolean marks a warning (``True``) versus a
+    checkmark notice (``False``). A dirty worktree returns the skipped
+    warning, because tracked changes can conflict.
     """
     git_dir = Path.cwd() / ".git"
     if any((git_dir / marker).exists() for marker in _IN_PROGRESS_GIT_MARKERS):
-        return ""
+        return _PULL_IN_PROGRESS_NOTICE, False
     detached = git_run(
         ["git", "symbolic-ref", "-q", "HEAD"],
         capture_output=True,
         timeout=_GIT_PULL_TIMEOUT_SECONDS,
     )
     if detached.returncode != 0:
-        return ""
+        return _PULL_DETACHED_HEAD_NOTICE, False
     upstream = git_run(
         ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
         capture_output=True,
         timeout=_GIT_PULL_TIMEOUT_SECONDS,
     )
     if upstream.returncode != 0:
-        return ""
+        return _PULL_NO_UPSTREAM_NOTICE, False
     status = git_run(
         ["git", "status", "--porcelain"],
         capture_output=True,
@@ -396,7 +416,7 @@ def _pull_skip_reason(git_run: Callable[..., Any]) -> Optional[str]:
         if line and not line.startswith("??")
     ]
     if tracked_changes:
-        return _PULL_SKIPPED_WARNING
+        return _PULL_SKIPPED_WARNING, True
     return None
 
 
@@ -774,10 +794,10 @@ def _display_drift_notification(container: Container) -> list[str]:
         fired.append("checks.templates")
 
     if drift_lines:
-        # The notices sit directly under ``Checking configurations...``. The
-        # lines carry no trailing newline, so the shared disable-footer
-        # (emitted next) abuts the final drift line.
-        typer.echo("\n".join(drift_lines))
+        # Stderr keeps the notices in the startup banner order even when the
+        # run is redirected. The lines carry no trailing newline, so the
+        # shared disable-footer (emitted next) abuts the final drift line.
+        typer.echo("\n".join(drift_lines), err=True)
 
     return fired
 
@@ -797,10 +817,14 @@ def _display_checks_footer(keys: list[str]) -> None:
     ordered = [key for key in canonical if key in unique]
 
     if len(ordered) == 1:
-        typer.echo(f"You can disable this check in .teddy/config.yaml: {ordered[0]}.")
+        typer.echo(
+            f"You can disable this check in .teddy/config.yaml: {ordered[0]}.",
+            err=True,
+        )
     else:
         typer.echo(
-            f"You can disable these checks in .teddy/config.yaml: {', '.join(ordered)}."
+            f"You can disable these checks in .teddy/config.yaml: {', '.join(ordered)}.",
+            err=True,
         )
 
 
@@ -838,7 +862,8 @@ def _display_update_notification(container: Container, cache_path: Path) -> list
                     f"ℹ A new version {latest} is available. "
                     f"To upgrade, run: {command}\n",
                     fg=typer.colors.YELLOW,
-                )
+                ),
+                err=True,
             )
             return ["checks.update"]
     except Exception:

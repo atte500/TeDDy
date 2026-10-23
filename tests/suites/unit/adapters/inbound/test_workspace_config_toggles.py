@@ -1,11 +1,12 @@
 """Unit tests for the start-only workspace pull failure matrix.
 
-``_pull_workspace_on_start`` must leave the workspace untouched and stay
-silent on every precondition it cannot satisfy. It warns once when a risky or
-failed pull leaves the workspace unchanged, and it reports every successful
-pull outcome, including the up-to-date case. The Git process is injected
-through the ``run_func`` seam so each decision is deterministic without
-spawning a real repository.
+``_pull_workspace_on_start`` must leave the workspace untouched on every
+precondition it cannot satisfy. It warns once when a risky or failed pull
+leaves the workspace unchanged, and it reports one checkmark notice for every
+skip that has nothing to fast-forward. It reports every successful pull
+outcome, including the up-to-date case. The Git process is injected through
+the ``run_func`` seam so each decision is deterministic without spawning a
+real repository.
 """
 
 import subprocess
@@ -22,6 +23,9 @@ SKIPPED_WARNING = "⚠ Workspace pull skipped; continuing with the current branc
 TIMEOUT_WARNING = "⚠ Workspace pull timed out; continuing without it."
 GIT_UNAVAILABLE_WARNING = "⚠ Workspace pull skipped; git is unavailable."
 UP_TO_DATE_NOTICE = "✓ Workspace up-to-date with remote"
+IN_PROGRESS_NOTICE = "✓ Workspace pull skipped; Git operation in progress"
+DETACHED_HEAD_NOTICE = "✓ Workspace pull skipped; detached HEAD"
+NO_UPSTREAM_NOTICE = "✓ Workspace pull skipped; no upstream branch"
 PRE_COMMIT_WARNING = (
     "⚠ Pre-commit hook installation is disabled. "
     "The post-commit test gate will not run."
@@ -125,40 +129,40 @@ def test_missing_git_directory_skips_silently(
     assert capsys.readouterr().err == ""
 
 
-def test_detached_head_skips_silently(git_repository, mock_config, capsys):
-    """A detached HEAD has no branch to fast-forward and stays silent."""
+def test_detached_head_reports_a_skip_notice(git_repository, mock_config, capsys):
+    """A detached HEAD has no branch to fast-forward and reports a checkmark notice."""
     runner = FakeGitRunner(symbolic_ref_ok=False)
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
     assert "pull" not in runner.operations()
-    assert capsys.readouterr().err == ""
+    assert capsys.readouterr().err == DETACHED_HEAD_NOTICE + "\n"
 
 
-def test_missing_upstream_skips_silently(git_repository, mock_config, capsys):
-    """A branch without an upstream has nothing to pull and stays silent."""
+def test_missing_upstream_reports_a_skip_notice(git_repository, mock_config, capsys):
+    """A branch without an upstream reports a checkmark notice and skips the pull."""
     runner = FakeGitRunner(upstream_ok=False)
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
     assert "pull" not in runner.operations()
-    assert capsys.readouterr().err == ""
+    assert capsys.readouterr().err == NO_UPSTREAM_NOTICE + "\n"
 
 
 @pytest.mark.parametrize(
     "marker", ["rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD"]
 )
-def test_in_progress_operation_skips_silently(
+def test_in_progress_operation_reports_a_skip_notice(
     git_repository, mock_config, capsys, marker
 ):
-    """An in-progress Git operation is never interrupted by a pull."""
+    """An in-progress Git operation is never interrupted and reports a notice."""
     (git_repository / ".git" / marker).touch()
     runner = FakeGitRunner()
 
     _pull_workspace_on_start(mock_config, run_func=runner)
 
     assert "pull" not in runner.operations()
-    assert capsys.readouterr().err == ""
+    assert capsys.readouterr().err == IN_PROGRESS_NOTICE + "\n"
 
 
 def test_tracked_changes_warn_and_skip_the_pull(git_repository, mock_config, capsys):

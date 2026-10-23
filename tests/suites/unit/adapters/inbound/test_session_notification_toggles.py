@@ -52,9 +52,9 @@ def test_drift_notification_suppressed_when_prompts_toggle_disabled(env, capsys)
     fired = _display_drift_notification(env.container)
 
     captured = capsys.readouterr()
-    assert "teddy init prompts" not in captured.out, (
+    assert "teddy init prompts" not in captured.err, (
         "A disabled checks.prompts toggle must suppress the prompts drift "
-        f"advice; got: {captured.out!r}"
+        f"advice; got: {captured.err!r}"
     )
     assert fired == [], (
         "A disabled checks.prompts toggle must not report a fired check; "
@@ -75,9 +75,9 @@ def test_drift_notification_suppressed_when_templates_toggle_disabled(env, capsy
     fired = _display_drift_notification(env.container)
 
     captured = capsys.readouterr()
-    assert "teddy init templates" not in captured.out, (
+    assert "teddy init templates" not in captured.err, (
         "A disabled checks.templates toggle must suppress the templates drift "
-        f"advice; got: {captured.out!r}"
+        f"advice; got: {captured.err!r}"
     )
     assert fired == [], (
         "A disabled checks.templates toggle must not report a fired check; "
@@ -99,9 +99,9 @@ def test_update_notification_suppressed_when_update_toggle_disabled(
     fired = _display_update_notification(env.container, cache_path)
 
     captured = capsys.readouterr()
-    assert "new version" not in captured.out.lower(), (
+    assert "new version" not in captured.err.lower(), (
         "A disabled checks.update toggle must suppress the update notification; "
-        f"got: {captured.out!r}"
+        f"got: {captured.err!r}"
     )
     assert fired == [], (
         f"A disabled checks.update toggle must not report a fired check; got: {fired!r}"
@@ -121,9 +121,9 @@ def test_drift_notification_fires_when_toggles_absent(env, capsys):
     fired = _display_drift_notification(env.container)
 
     captured = capsys.readouterr()
-    assert "teddy init prompts" in captured.out, (
+    assert "teddy init prompts" in captured.err, (
         "An absent checks.prompts toggle must default to enabled so the drift "
-        f"advice fires; got: {captured.out!r}"
+        f"advice fires; got: {captured.err!r}"
     )
     assert fired == ["checks.prompts"], (
         "An enabled prompts check that fired must report 'checks.prompts'; "
@@ -162,8 +162,8 @@ def test_drift_notification_count_aware_wording(env, capsys, report, expected):
     _display_drift_notification(env.container)
 
     captured = capsys.readouterr()
-    assert expected in captured.out, (
-        f"Count-aware wording mismatch; expected {expected!r}; got: {captured.out!r}"
+    assert expected in captured.err, (
+        f"Count-aware wording mismatch; expected {expected!r}; got: {captured.err!r}"
     )
 
 
@@ -177,11 +177,11 @@ def test_drift_notification_uses_update_wording(env, capsys):
     _display_drift_notification(env.container)
 
     captured = capsys.readouterr()
-    assert "To update them, run: teddy init prompts" in captured.out, (
-        f"Drift advice must say 'To update them'; got: {captured.out!r}"
+    assert "To update them, run: teddy init prompts" in captured.err, (
+        f"Drift advice must say 'To update them'; got: {captured.err!r}"
     )
-    assert "To overwrite" not in captured.out, (
-        f"The retired 'To overwrite' wording must not appear; got: {captured.out!r}"
+    assert "To overwrite" not in captured.err, (
+        f"The retired 'To overwrite' wording must not appear; got: {captured.err!r}"
     )
 
 
@@ -202,9 +202,9 @@ def test_drift_notification_reports_both_channel_keys(env, capsys):
         "Both drifted channels must report their keys in canonical order; "
         f"got: {fired!r}"
     )
-    assert captured.out.index("teddy init prompts") < captured.out.index(
+    assert captured.err.index("teddy init prompts") < captured.err.index(
         "teddy init templates"
-    ), f"Prompts line must precede the templates line; got: {captured.out!r}"
+    ), f"Prompts line must precede the templates line; got: {captured.err!r}"
 
 
 def test_update_notification_fires_when_update_toggle_absent(env, capsys, tmp_path):
@@ -218,9 +218,9 @@ def test_update_notification_fires_when_update_toggle_absent(env, capsys, tmp_pa
     _display_update_notification(env.container, cache_path)
 
     captured = capsys.readouterr()
-    assert "new version" in captured.out.lower(), (
+    assert "new version" in captured.err.lower(), (
         "An absent checks.update toggle must default to enabled so the update "
-        f"notification fires; got: {captured.out!r}"
+        f"notification fires; got: {captured.err!r}"
     )
 
 
@@ -236,8 +236,8 @@ def test_update_notification_reports_fired_key_when_it_fires(env, capsys, tmp_pa
     fired = _display_update_notification(env.container, cache_path)
 
     captured = capsys.readouterr()
-    assert "new version" in captured.out.lower(), (
-        f"The update notification must fire; got: {captured.out!r}"
+    assert "new version" in captured.err.lower(), (
+        f"The update notification must fire; got: {captured.err!r}"
     )
     assert fired == ["checks.update"], (
         f"A fired update check must report 'checks.update'; got: {fired!r}"
@@ -256,8 +256,8 @@ def test_update_notification_returns_empty_when_no_update_available(
     fired = _display_update_notification(env.container, cache_path)
 
     captured = capsys.readouterr()
-    assert "new version" not in captured.out.lower(), (
-        f"No update must be displayed; got: {captured.out!r}"
+    assert "new version" not in captured.err.lower(), (
+        f"No update must be displayed; got: {captured.err!r}"
     )
     assert fired == [], (
         f"An absent update cache must not report a fired check; got: {fired!r}"
@@ -269,8 +269,8 @@ def test_footer_is_silent_when_no_check_fired(capsys):
     _display_checks_footer([])
 
     captured = capsys.readouterr()
-    assert captured.out == "", (
-        f"An empty fired-keys list must print no footer; got: {captured.out!r}"
+    assert captured.err == "", (
+        f"An empty fired-keys list must print no footer; got: {captured.err!r}"
     )
 
 
@@ -279,9 +279,9 @@ def test_footer_names_a_single_fired_check_with_singular_wording(capsys):
     _display_checks_footer(["checks.templates"])
 
     captured = capsys.readouterr()
-    assert captured.out == (
+    assert captured.err == (
         "You can disable this check in .teddy/config.yaml: checks.templates.\n"
-    ), f"Singular footer wording mismatch; got: {captured.out!r}"
+    ), f"Singular footer wording mismatch; got: {captured.err!r}"
 
 
 def test_footer_names_multiple_fired_checks_in_canonical_order(capsys):
@@ -290,10 +290,10 @@ def test_footer_names_multiple_fired_checks_in_canonical_order(capsys):
     _display_checks_footer(["checks.update", "checks.templates", "checks.prompts"])
 
     captured = capsys.readouterr()
-    assert captured.out == (
+    assert captured.err == (
         "You can disable these checks in .teddy/config.yaml: "
         "checks.prompts, checks.templates, checks.update.\n"
-    ), f"Plural footer wording/order mismatch; got: {captured.out!r}"
+    ), f"Plural footer wording/order mismatch; got: {captured.err!r}"
 
 
 def test_footer_dedupes_repeated_fired_keys(capsys):
@@ -301,6 +301,6 @@ def test_footer_dedupes_repeated_fired_keys(capsys):
     _display_checks_footer(["checks.update", "checks.update"])
 
     captured = capsys.readouterr()
-    assert captured.out == (
+    assert captured.err == (
         "You can disable this check in .teddy/config.yaml: checks.update.\n"
-    ), f"Duplicate fired keys must be deduped; got: {captured.out!r}"
+    ), f"Duplicate fired keys must be deduped; got: {captured.err!r}"
