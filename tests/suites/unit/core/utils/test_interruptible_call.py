@@ -1,18 +1,20 @@
 """Unit tests: the interruptible-call daemon-worker helper.
 
 ``run_interruptible`` runs a blocking callable on a daemon worker and returns
-its result on the calling thread. The planning completion blocks the main
-thread inside a raw socket read, which the Windows CRT raise cannot wake.
-Moving the call to a daemon worker keeps the main thread in a condition wait,
-which every SIGINT delivery primitive wakes immediately. The worker is a daemon
-so a pending completion cannot block process exit after a quit, and every
-worker failure is forwarded to the waiter unchanged.
+its result on the calling thread. The main thread polls the worker's future in
+short slices, so a quit is handled within one slice instead of after the worker
+returns. The worker is a daemon so a pending completion cannot block process
+exit after a quit, and every worker failure is forwarded to the waiter
+unchanged.
 """
 
+import signal
 import threading
+import time
 
 import pytest
 
+from teddy_executor.core.utils.interrupt_guard import InterruptGuard, raise_interrupt
 from teddy_executor.core.utils.interruptible_call import run_interruptible
 
 
@@ -85,3 +87,32 @@ def test_forwards_base_exceptions_unchanged() -> None:
         run_interruptible(_raise)
 
     assert excinfo.value is original
+
+
+def test_a_quit_wakes_the_waiter_before_the_worker_finishes() -> None:
+    """A quit must interrupt the wait, not wait for the worker to finish."""
+    fire_delay_seconds = 0.3
+    worker_seconds = 3.0
+
+    guard = InterruptGuard(monotonic=time.monotonic)
+    previous = signal.signal(signal.SIGINT, guard._handle_signal)
+
+    def _fire() -> None:
+        time.sleep(fire_delay_seconds)
+        guard.record_source("q")
+        raise_interrupt()
+
+    threading.Thread(target=_fire, daemon=True).start()
+    started = time.perf_counter()
+    try:
+        with guard.enter_waiting():
+            run_interruptible(lambda: time.sleep(worker_seconds))
+    except KeyboardInterrupt:
+        observed = time.perf_counter() - started
+    else:
+        pytest.fail("the quit did not interrupt the wait")
+    finally:
+        signal.signal(signal.SIGINT, previous)
+
+    # A blocking wait would observe the quit only after the worker returns.
+    assert observed < worker_seconds / 2
