@@ -147,11 +147,11 @@ def register_infrastructure(container: punq.Container) -> None:
         IRepoTreeGenerator,
         factory=lambda: LocalRepoTreeGenerator(
             max_depth=container.resolve(IConfigService).get_setting(
-                "context.max_tree_depth", DEFAULT_APP_CONFIG.context.max_tree_depth
+                "context.max_depth", DEFAULT_APP_CONFIG.context.max_depth
             ),
-            max_tree_width=container.resolve(IConfigService).get_setting(
-                "context.max_tree_width",
-                DEFAULT_APP_CONFIG.context.max_tree_width,
+            max_children=container.resolve(IConfigService).get_setting(
+                "context.max_children",
+                DEFAULT_APP_CONFIG.context.max_children,
             ),
         ),
         scope=punq.Scope.transient,

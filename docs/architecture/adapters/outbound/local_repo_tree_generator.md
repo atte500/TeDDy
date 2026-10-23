@@ -7,8 +7,8 @@ Implements the `IRepoTreeGenerator` outbound port. It traverses the repository o
 
 ## Consumers
 - [`ContextService`](../../core/services/context_service.md): Generates the project-structure section of the context payload.
-- [Composition Root](/src/teddy_executor/container.py): Constructs the generator with the project root and the configured `context.max_tree_depth` and `context.max_tree_width`.
-- [CLI Adapter](../inbound/cli.md): Re-registers the generator during project anchoring, forwarding the detected project root and the configured `context.max_tree_depth` and `context.max_tree_width`.
+- [Composition Root](/src/teddy_executor/container.py): Constructs the generator with the project root and the configured `context.max_depth` and `context.max_children`.
+- [CLI Adapter](../inbound/cli.md): Re-registers the generator during project anchoring, forwarding the detected project root and the configured `context.max_depth` and `context.max_children`.
 
 ## Dependencies
 - **`filesystem_helpers`** (`teddy_executor.adapters.outbound.filesystem_helpers`): Loads the combined ignore spec. The adapter owns its own traversal, because the shared recursive walk also serves `LocalFileSystemAdapter`.

@@ -44,8 +44,8 @@ class ReadConfig:
 
 @dataclass(frozen=True)
 class ContextConfig:
-    max_tree_depth: int = 3
-    max_tree_width: int = 20
+    max_depth: int = 3
+    max_children: int = 20
 
 
 @dataclass(frozen=True)
@@ -211,8 +211,8 @@ _SCHEMA_FIELDS: tuple[_FieldSpec, ...] = (
     _FieldSpec("workspace.pre-commit", "workspace", "pre_commit", bool),
     _FieldSpec("workspace.pull", "workspace", "pull", bool),
     _FieldSpec("read.max_lines", "read", "max_lines", int, minimum=1),
-    _FieldSpec("context.max_tree_depth", "context", "max_tree_depth", int, minimum=0),
-    _FieldSpec("context.max_tree_width", "context", "max_tree_width", int, minimum=1),
+    _FieldSpec("context.max_depth", "context", "max_depth", int, minimum=0),
+    _FieldSpec("context.max_children", "context", "max_children", int, minimum=1),
     _FieldSpec("research.max_results", "research", "max_results", int, minimum=1),
     _FieldSpec("checks.prompts", "checks", "prompts", bool),
     _FieldSpec("checks.templates", "checks", "templates", bool),

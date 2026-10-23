@@ -193,11 +193,9 @@ def _ensure_project_initialized(container, root_dir: str | None = None) -> None:
             IRepoTreeGenerator,
             factory=lambda: LocalRepoTreeGenerator(
                 root_dir=root,
-                max_depth=c.resolve(IConfigService).get_setting(
-                    "context.max_tree_depth", 3
-                ),
-                max_tree_width=c.resolve(IConfigService).get_setting(
-                    "context.max_tree_width", 20
+                max_depth=c.resolve(IConfigService).get_setting("context.max_depth", 3),
+                max_children=c.resolve(IConfigService).get_setting(
+                    "context.max_children", 20
                 ),
             ),
             scope=Scope.transient,

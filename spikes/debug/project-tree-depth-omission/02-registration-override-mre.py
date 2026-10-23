@@ -18,7 +18,7 @@ def build_workspace() -> Path:
     config_dir = root / ".teddy"
     config_dir.mkdir(parents=True, exist_ok=True)
     (config_dir / "config.yaml").write_text(
-        f"context:\n  max_tree_depth: {CONFIGURED_DEPTH}\n", encoding="utf-8"
+        f"context:\n  max_depth: {CONFIGURED_DEPTH}\n", encoding="utf-8"
     )
     nested = root / "folder1" / "folder2"
     nested.mkdir(parents=True)

@@ -118,32 +118,32 @@ def test_similarity_threshold_bounds_are_accepted(value):
 
 def test_negative_tree_depth_raises():
     """A negative depth is rejected, because a negative cap is meaningless."""
-    with pytest.raises(ConfigurationError, match="context.max_tree_depth"):
-        construct_app_config({"context": {"max_tree_depth": -1}})
+    with pytest.raises(ConfigurationError, match="context.max_depth"):
+        construct_app_config({"context": {"max_depth": -1}})
 
 
 def test_zero_tree_depth_is_accepted():
     """A depth of zero is a valid literal cap that collapses the tree to one notice."""
-    config = construct_app_config({"context": {"max_tree_depth": 0}})
+    config = construct_app_config({"context": {"max_depth": 0}})
 
-    assert config.context.max_tree_depth == 0
+    assert config.context.max_depth == 0
 
 
 def test_default_tree_depth_is_three():
     """The shipped depth cap defaults to three levels."""
-    assert DEFAULT_APP_CONFIG.context.max_tree_depth == 3
+    assert DEFAULT_APP_CONFIG.context.max_depth == 3
 
 
 def test_default_tree_width_is_twenty():
     """The shipped width cap defaults to twenty entries per directory."""
-    assert DEFAULT_APP_CONFIG.context.max_tree_width == 20
+    assert DEFAULT_APP_CONFIG.context.max_children == 20
 
 
 def test_nested_tree_width_overrides_the_default():
     """A nested override replaces the width cap."""
-    config = construct_app_config({"context": {"max_tree_width": 5}})
+    config = construct_app_config({"context": {"max_children": 5}})
 
-    assert config.context.max_tree_width == 5
+    assert config.context.max_children == 5
 
 
 @pytest.mark.parametrize(
@@ -152,7 +152,7 @@ def test_nested_tree_width_overrides_the_default():
         ("execute", "max_output_lines"),
         ("read", "max_lines"),
         ("research", "max_results"),
-        ("context", "max_tree_width"),
+        ("context", "max_children"),
     ],
 )
 def test_zero_capacity_raises(group, key):
@@ -167,7 +167,7 @@ def test_zero_capacity_raises(group, key):
         ("execute", "max_output_lines"),
         ("read", "max_lines"),
         ("research", "max_results"),
-        ("context", "max_tree_width"),
+        ("context", "max_children"),
     ],
 )
 def test_single_capacity_is_accepted(group, key):

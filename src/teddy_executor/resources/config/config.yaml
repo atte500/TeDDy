@@ -10,16 +10,16 @@ edit:
   similarity_threshold: 0.95        # EDIT match threshold (1.0 = exact match; ignores relative indentation).
 
 workspace:
-  init: true         # Initialize a missing Git repository (start and resume).
-  pre-commit: true   # Install pre-commit and post-commit git hooks (start and resume).
-  pull: true         # Fast-forward pull before starting a new session (start only).
+  init: true                        # Initialize a missing Git repository (start and resume).
+  pre-commit: true                  # Install pre-commit and post-commit git hooks (start and resume).
+  pull: true                        # Fast-forward pull before starting a new session (start only).
 
 read:
   max_lines: 1000                   # Caps READ action output lines.
 
 context:
-  max_tree_depth: 3                 # Max project tree depth.
-  max_tree_width: 20                # Max entries listed per directory.
+  max_depth: 3                      # Max project tree depth.
+  max_children: 20                  # Max entries listed per directory.
 
 research:
   max_results: 5                    # Number of search results to fetch and scrape.
@@ -40,15 +40,18 @@ guardrails:                         # Non-interactive limits (--yolo / --pipelin
 auto_pruning:
   enabled: true
   turn_context_threshold: 50000     # Token budget for turn-scoped files only (excludes session.context & system prompts).
-  prune_failure_history: true      # Prunes non-green turns once recovery succeeds.
+  prune_failure_history: true       # Prunes non-green turns once recovery succeeds.
   prune_validation_failures: true   # Prunes malformed turns that failed validation.
   preserve_message_turns: true      # Preserves user-communicating turns from pruning.
   max_turns_retention: 10           # Max historical turns retained in turn context.
 
 # LiteLLM reference: https://docs.litellm.ai/docs/completion/input (all keys under llm pass directly to litellm).
+# OpenRouter syntax: "openrouter/<slug>" (:nitro=fastest, :floor=cheapest).
+# ${TEDDY_LLM_API_KEY} resolves from .teddy/.env or shell environment.
+
 llm:
-  model: "openrouter/~deepseek/deepseek-flash-latest:nitro"  # OpenRouter syntax: "openrouter/<slug>" (:nitro=fast, :floor=cheap).
-  api_key: "${TEDDY_LLM_API_KEY}"                           # Resolves from .teddy/.env or shell environment.
+  model: "openrouter/~deepseek/deepseek-flash-latest:nitro"
+  api_key: "${TEDDY_LLM_API_KEY}"
   max_retries: 3
   timeout: 300
   extra_headers:

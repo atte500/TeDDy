@@ -2,7 +2,7 @@
 
 The anchoring step re-registers IRepoTreeGenerator so adapters resolve against
 the detected project root. That re-registration must forward
-``context.max_tree_depth``; otherwise it falls back to the constructor default
+``context.max_depth``; otherwise it falls back to the constructor default
 and renders the whole tree, silently discarding the user value.
 """
 
@@ -22,9 +22,9 @@ def _write_anchored_workspace(root: Path, depth: int, width: int | None = None) 
     """
     teddy_dir = root / ".teddy"
     teddy_dir.mkdir(parents=True, exist_ok=True)
-    lines = ["context:", f"  max_tree_depth: {depth}"]
+    lines = ["context:", f"  max_depth: {depth}"]
     if width is not None:
-        lines.append(f"  max_tree_width: {width}")
+        lines.append(f"  max_children: {width}")
     (teddy_dir / "config.yaml").write_text(
         "\n".join(lines) + "\n",
         encoding="utf-8",
@@ -63,8 +63,8 @@ def test_anchoring_preserves_configured_tree_width(container, tmp_path: Path) ->
     generator = container.resolve(IRepoTreeGenerator)
 
     # Assert
-    assert generator.max_tree_width == CONFIGURED_WIDTH, (
-        f"Anchoring discarded the configured width: {generator.max_tree_width}"
+    assert generator.max_children == CONFIGURED_WIDTH, (
+        f"Anchoring discarded the configured width: {generator.max_children}"
     )
 
 

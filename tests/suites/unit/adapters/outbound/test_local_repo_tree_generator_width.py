@@ -23,7 +23,7 @@ def test_width_cap_withholds_a_directory_above_the_cap(tmp_path):
     narrow.mkdir()
     (narrow / "n-00.txt").touch()
 
-    generator = LocalRepoTreeGenerator(root_dir=str(tmp_path), max_tree_width=5)
+    generator = LocalRepoTreeGenerator(root_dir=str(tmp_path), max_children=5)
     tree = generator.generate_tree()
 
     assert "./wide:" in tree, tree
@@ -39,7 +39,7 @@ def test_width_cap_expands_a_directory_at_exactly_the_cap(tmp_path):
     for index in range(5):
         (exact / f"e-{index:02d}.txt").touch()
 
-    generator = LocalRepoTreeGenerator(root_dir=str(tmp_path), max_tree_width=5)
+    generator = LocalRepoTreeGenerator(root_dir=str(tmp_path), max_children=5)
     tree = generator.generate_tree()
 
     assert "e-00.txt" in tree, tree
@@ -51,7 +51,7 @@ def test_width_cap_leaves_the_root_listing_uncapped(tmp_path):
     for index in range(6):
         (tmp_path / f"root-{index:02d}.txt").touch()
 
-    generator = LocalRepoTreeGenerator(root_dir=str(tmp_path), max_tree_width=1)
+    generator = LocalRepoTreeGenerator(root_dir=str(tmp_path), max_children=1)
     tree = generator.generate_tree()
 
     for index in range(6):
@@ -67,7 +67,7 @@ def test_withheld_directory_omits_its_child_sections(tmp_path):
     for index in range(4):
         (wide / f"w-{index:02d}.txt").touch()
 
-    generator = LocalRepoTreeGenerator(root_dir=str(tmp_path), max_tree_width=3)
+    generator = LocalRepoTreeGenerator(root_dir=str(tmp_path), max_children=3)
     tree = generator.generate_tree()
 
     assert "./wide:" in tree, tree

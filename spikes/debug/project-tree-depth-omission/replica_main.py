@@ -63,7 +63,7 @@ def ensure_project_initialized(container, root_dir: str | None = None) -> None:
             factory=lambda: LocalRepoTreeGenerator(
                 root_dir=root,
                 max_depth=c.resolve(IConfigService).get_setting(
-                    "context.max_tree_depth", 0
+                    "context.max_depth", 0
                 ),
             ),
             scope=Scope.transient,

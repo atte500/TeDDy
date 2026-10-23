@@ -112,5 +112,5 @@ def apply_tree_generator_defaults(mock: Any) -> None:
     from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
 
     mock.generate_tree.return_value = ""
-    mock.max_depth = DEFAULT_APP_CONFIG.context.max_tree_depth
-    mock.max_tree_width = DEFAULT_APP_CONFIG.context.max_tree_width
+    mock.max_depth = DEFAULT_APP_CONFIG.context.max_depth
+    mock.max_children = DEFAULT_APP_CONFIG.context.max_children

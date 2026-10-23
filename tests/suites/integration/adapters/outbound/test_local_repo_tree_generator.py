@@ -146,7 +146,7 @@ def test_harness_default_depth_matches_the_schema_default(tmp_path, monkeypatch)
     env = TestEnvironment(monkeypatch).setup().with_real_tree_generator(str(tmp_path))
     generator = env.get_service(IRepoTreeGenerator)
 
-    assert generator._max_depth == DEFAULT_APP_CONFIG.context.max_tree_depth
+    assert generator._max_depth == DEFAULT_APP_CONFIG.context.max_depth
 
 
 def test_tree_generator_renders_one_notice_when_depth_is_zero(tmp_path, monkeypatch):

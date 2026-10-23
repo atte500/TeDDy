@@ -11,11 +11,11 @@ def test_bundled_config_declares_the_tree_depth_cap():
     """The shipped context group declares the depth cap of three."""
     context = load_bundled_config().get("context") or {}
 
-    assert context.get("max_tree_depth") == 3
+    assert context.get("max_depth") == 3
 
 
 def test_bundled_config_declares_the_tree_width_cap():
     """The shipped context group declares the width cap of twenty."""
     context = load_bundled_config().get("context") or {}
 
-    assert context.get("max_tree_width") == 20
+    assert context.get("max_children") == 20

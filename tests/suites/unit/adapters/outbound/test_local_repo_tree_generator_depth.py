@@ -16,7 +16,7 @@ from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
 def test_tree_generator_defaults_to_the_schema_default(tmp_path):
     generator = LocalRepoTreeGenerator(root_dir=str(tmp_path))
 
-    assert generator._max_depth == DEFAULT_APP_CONFIG.context.max_tree_depth
+    assert generator._max_depth == DEFAULT_APP_CONFIG.context.max_depth
 
 
 @pytest.mark.parametrize("max_depth", [1, 2, 5])

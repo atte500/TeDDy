@@ -57,7 +57,7 @@ class RealAdapterMixin:
     def with_real_tree_generator(
         self: Any,
         root_dir: str,
-        max_depth: int = DEFAULT_APP_CONFIG.context.max_tree_depth,
+        max_depth: int = DEFAULT_APP_CONFIG.context.max_depth,
     ) -> Any:
         from teddy_executor.core.ports.outbound import IRepoTreeGenerator
         from teddy_executor.adapters.outbound.local_repo_tree_generator import (

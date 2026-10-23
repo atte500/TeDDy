@@ -1,4 +1,4 @@
-"""Minimal reproduction: context.max_tree_depth never reaches the tree generator.
+"""Minimal reproduction: context.max_depth never reaches the tree generator.
 
 The script builds the production container exactly as the CLI does, runs the
 same project-anchoring step, and then inspects the resolved tree generator.
@@ -16,7 +16,7 @@ def build_workspace() -> Path:
     config_dir = root / ".teddy"
     config_dir.mkdir(parents=True, exist_ok=True)
     (config_dir / "config.yaml").write_text(
-        "context:\n  max_tree_depth: 1\n", encoding="utf-8"
+        "context:\n  max_depth: 1\n", encoding="utf-8"
     )
     for depth in range(1, 5):
         folder = root
@@ -42,7 +42,7 @@ def main() -> int:
     _ensure_project_initialized(container)
 
     config = container.resolve(IConfigService)
-    print(f"configured depth: {config.get_setting('context.max_tree_depth', 0)!r}")
+    print(f"configured depth: {config.get_setting('context.max_depth', 0)!r}")
 
     try:
         generator = container.resolve(IRepoTreeGenerator)

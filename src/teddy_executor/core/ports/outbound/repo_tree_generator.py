@@ -12,7 +12,7 @@ class IRepoTreeGenerator(Protocol):
         ...
 
     @property
-    def max_tree_width(self) -> int:
+    def max_children(self) -> int:
         """The maximum visible entries listed for a non-root directory."""
         ...
 

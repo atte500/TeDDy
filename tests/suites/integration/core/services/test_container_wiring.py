@@ -22,9 +22,9 @@ def test_container_resolves_foundational_services(container):
 
 
 def test_tree_generator_receives_configured_max_depth(container):
-    """The composition root injects context.max_tree_depth into the factory."""
+    """The composition root injects context.max_depth into the factory."""
     config_service = container.resolve(IConfigService)
-    expected_depth = config_service.get_setting("context.max_tree_depth", 0)
+    expected_depth = config_service.get_setting("context.max_depth", 0)
 
     generator = container.resolve(IRepoTreeGenerator)
 
