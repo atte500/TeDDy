@@ -125,7 +125,7 @@ TeDDy is built on the belief that you should own your software delivery lifecycl
 
 - **High-Level Governance Rules (`PROJECT.md` & `ARCHITECTURE.md`):** The simplest way to guide agents. Define product roadmaps, engineering principles, system laws, and component boundaries in living Markdown documents that agents read on every turn.
 - **Artifact Templates (`docs/templates/`):** Standardize the artifacts produced during development. Customize the Markdown templates for vertical slices, specifications, case files, and milestones to match your documentation standards.
-- **Agent Prompts (`.teddy/prompts/`):** To change the process itself, customize the agent prompts. Each agent's workflow is broken down into structured phases and individual steps, defined entirely in Markdown. You can tweak instructions, add domain-specific quality gates, or introduce brand-new agent personas to match how your team builds software.
+- **Agent Prompts (`.teddy/prompts/`):** To change the process itself, customize the agent prompts. Each agent's workflow is broken down into structured phases and individual steps, defined entirely in Markdown. You can tweak instructions, add domain-specific quality gates, or introduce brand-new agent personas to match how your team builds software. TeDDy assembles each system prompt from two layers: the agent-specific instructions come first and the shared response protocol instructions are appended automatically. The composed prompt is saved in the session folder, and `teddy get-prompt <agent>` prints the identical result, so you can read exactly what the model receives. A customized prompt that already carries its own `<response_format>` suppresses the shared block and is used as-is.
 - **Command Automation (`Makefile`):** Instead of hardcoding shell commands inside agent prompts, common development and verification operations are routed through the Makefile. When you need to change a flag, runner, or environment setup, you change it once in the Makefile instead of updating instructions across multiple agent prompts.
 - **Context Filtering (`.teddyignore`):** Control which files TeDDy scans during context generation and tree traversal. A `.teddyignore` file in the project root follows standard ignore syntax and takes precedence over `.gitignore`, allowing you to ignore extra paths or re-include git-ignored files using negation patterns.
 
@@ -236,17 +236,17 @@ teddy resume -m "your next instruction"
 
 ### Optional Flags
 
-| Flag | Description |
-| :--- | :--- |
-| <nobr>`--agent`, `-a`</nobr> | Select agent persona (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`). Default: `pathfinder` (`assistant` in pipeline mode). |
-| <nobr>`--context`, `-c`</nobr> | Supply additional context files or directories. Repeatable (`-c a.py -c b.md`) or comma-separated (`-c "a.py,b.md"`). |
-| <nobr>`--model`</nobr> | Override the default configured model. |
-| <nobr>`--yolo`, `-y`</nobr> | Auto-approve all actions. To make this default, set `yolo_default: true` in `.teddy/config.yaml`. |
-| <nobr>`--no-yolo`, `-n`</nobr> | Force interactive mode for a single run. |
-| <nobr>`--message`, `-m`</nobr> | Initial instruction to pass directly to the agent. |
-| <nobr>`--pipeline`, `-p`</nobr> | Pipeline mode. Auto-approves actions, requires `-m`, exits immediately after the first message turn, and defaults to the `assistant` agent. |
-| <nobr>`--max-turns`</nobr> | Maximum turns for a non-interactive run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`. |
-| <nobr>`--max-cost`</nobr> | Maximum session cost in dollars for a non-interactive run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`. |
+| Flag                            | Description                                                                                                                                   |
+| :------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------- |
+| <nobr>`--agent`, `-a`</nobr>    | Select agent persona (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`). Default: `pathfinder` (`assistant` in pipeline mode). |
+| <nobr>`--context`, `-c`</nobr>  | Supply additional context files or directories. Repeatable (`-c a.py -c b.md`) or comma-separated (`-c "a.py,b.md"`).                         |
+| <nobr>`--model`</nobr>          | Override the default configured model.                                                                                                        |
+| <nobr>`--yolo`, `-y`</nobr>     | Auto-approve all actions. To make this default, set `yolo_default: true` in `.teddy/config.yaml`.                                             |
+| <nobr>`--no-yolo`, `-n`</nobr>  | Force interactive mode for a single run.                                                                                                      |
+| <nobr>`--message`, `-m`</nobr>  | Initial instruction to pass directly to the agent.                                                                                            |
+| <nobr>`--pipeline`, `-p`</nobr> | Pipeline mode. Auto-approves actions, requires `-m`, exits immediately after the first message turn, and defaults to the `assistant` agent.   |
+| <nobr>`--max-turns`</nobr>      | Maximum turns for a non-interactive run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`.                                            |
+| <nobr>`--max-cost`</nobr>       | Maximum session cost in dollars for a non-interactive run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`.                   |
 
 ### Chat-Oriented Workflow (CHOP)
 
@@ -289,18 +289,18 @@ teddy context -c review.context
 
 ## Command Reference
 
-| Command                       | Description                                                                  |
-| :---------------------------- | :--------------------------------------------------------------------------- |
-| `init`                        | Initialize `.teddy` workspace with defaults and pre-warm dependencies.       |
-| <nobr>`init prompts`</nobr>   | Overwrite bundled prompt Markdown files in `.teddy/prompts/` with defaults.  |
-| <nobr>`init config`</nobr>    | Overwrite `config.yaml`, `.gitignore`, and `init.context` with defaults.     |
-| <nobr>`init templates`</nobr> | Overwrite bundled Markdown templates in `docs/templates/` with defaults.     |
-| `start`                       | Start an interactive agent session.                                          |
-| `resume`                      | Resume an existing session.                                                  |
-| `update`                      | Check for updates and display upgrade instructions.                          |
-| `execute`                     | Execute a Markdown plan (reads from clipboard if no path is provided).       |
+| Command                       | Description                                                                                                                              |
+| :---------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
+| `init`                        | Initialize `.teddy` workspace with defaults and pre-warm dependencies.                                                                   |
+| <nobr>`init prompts`</nobr>   | Overwrite bundled prompt Markdown files in `.teddy/prompts/` with defaults.                                                              |
+| <nobr>`init config`</nobr>    | Overwrite `config.yaml`, `.gitignore`, and `init.context` with defaults.                                                                 |
+| <nobr>`init templates`</nobr> | Overwrite bundled Markdown templates in `docs/templates/` with defaults.                                                                 |
+| `start`                       | Start an interactive agent session.                                                                                                      |
+| `resume`                      | Resume an existing session.                                                                                                              |
+| `update`                      | Check for updates and display upgrade instructions.                                                                                      |
+| `execute`                     | Execute a Markdown plan (reads from clipboard if no path is provided).                                                                   |
 | `context`                     | Export context payload (system info, git status, file tree, `init.context`). Add ad-hoc files with `-c` and skip defaults with `--only`. |
-| <nobr>`get-prompt`</nobr>     | Retrieve agent system prompts (respects overrides in `.teddy/prompts/`).     |
+| <nobr>`get-prompt`</nobr>     | Print the composed system prompt (agent-specific instructions plus shared `MRP.md`).                                                     |
 
 > [!NOTE]
 > By default, `execute` and `context` copy output to the clipboard. Use `--no-copy` to bypass.
