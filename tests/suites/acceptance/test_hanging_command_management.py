@@ -65,32 +65,33 @@ def test_timeout_captures_partial_output(monkeypatch, tmp_path):
     assert "124" in report.stdout  # The exit code for timeout should be in the report
 
 
+@pytest.mark.timeout(30)
 def test_intentional_background_execution(monkeypatch, tmp_path):
     """Scenario: Verifies that a command can be run in the background."""
     TestEnvironment(monkeypatch, tmp_path).setup().with_real_shell()
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
-    # 1. Define a plan with a background command
+    # The child writes this marker only after it finishes sleeping. An awaited
+    # command therefore produces the marker before the plan returns, while a
+    # detached command leaves it absent regardless of how slow the runner is.
+    marker = tmp_path / "background-completed.txt"
+    script = (
+        "import pathlib, sys, time; time.sleep(5); "
+        "pathlib.Path(sys.argv[1]).write_text('done', encoding='utf-8')"
+    )
     plan = (
         MarkdownPlanBuilder("Background Plan")
-        .add_execute('python -c "import time; time.sleep(5)"', background=True)
+        .add_execute(f'python -c "{script}" "{marker.as_posix()}"', background=True)
         .build()
     )
 
-    # 2. Execute the plan with a timing check
-    import time
-
-    start_time = time.time()
     report = adapter.execute_plan(plan, user_input="y\n")
-    end_time = time.time()
 
-    # 3. Assertions
-    MAX_BACKGROUND_STARTUP_SECONDS = 2.0
-    assert (
-        end_time - start_time < MAX_BACKGROUND_STARTUP_SECONDS
-    )  # Should be much faster than 5s
     assert report.action_was_successful(0) is True
     assert "SUCCESS: Background process started with PID" in report.stdout
+    assert not marker.exists(), (
+        "background dispatch awaited the command instead of detaching it"
+    )
 
 
 @pytest.mark.timeout(5)
