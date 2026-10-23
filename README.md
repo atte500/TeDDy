@@ -96,7 +96,7 @@ For **technical defects**, TeDDy prevents structural failures through Design by 
 For **misalignment**, TeDDy prevents building the wrong thing by using spikes and prototypes to de-risk uncertain solutions before committing to an architecture. During implementation, it mitigates drift by delivering features through small vertical slices. Specific Markdown documents mediate every phase transition, anchoring the agents and providing a high-level steering interface to keep humans in the loop.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/atte500/teddy/main/assets/matrix.png" alt="Workflow Matrix" width="800" />
+  <img src="https://raw.githubusercontent.com/atte500/teddy/main/assets/matrix.png" alt="Workflow Matrix" width="100%" />
 </p>
 
 ---
@@ -106,7 +106,7 @@ For **misalignment**, TeDDy prevents building the wrong thing by using spikes an
 Instead of winging the process on the go or taking the shortest path to generate code, agents follow a structured delivery process mediated by plain Markdown documents:
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/atte500/teddy/main/assets/workflow-schematic.png" alt="TeDDy Workflow" width="850" />
+  <img src="https://raw.githubusercontent.com/atte500/teddy/main/assets/workflow-schematic.png" alt="TeDDy Workflow" width="100%" />
 </p>
 
 1. **Strategic Alignment & Roadmapping:** The **Pathfinder** aligns incoming requests with the product vision, roadmap, and permanent system invariant specifications.
