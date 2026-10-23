@@ -30,7 +30,7 @@ This section defines the conventions for our project management artifacts.
 - **Build & Run Commands:** The `Makefile` is the canonical entry point for common operations: `make test` (full suite), `make commit MSG="<msg>"` (stage and commit locally), `make push` (rebase and push), `make ci-watch` (monitor CI results), and `make probe REASON="<reason>"` (Remote Probing Protocol).
 - **Release Process:** The release process follows these steps:
     1. **Triage:** Determine the scope (patch, minor, major) by reviewing `git log v<last_tag>..HEAD` for conventional commits.
-    2. **Release Notes:** Create a new file at `docs/project/releases/v<new_version>.md` summarizing features and fixes from the commit log.
+    2. **Release Notes:** Create a new file at `docs/project/releases/v<new_version>.md` summarizing features and fixes from the commit log. Record net user-visible outcomes only. Group related changes under one high-level entry instead of listing commits separately. Omit changes that cancel each other out within the release window.
     3. **Version Bump:** Update the `version` field in `pyproject.toml`. Confirm the README badges still match `pyproject.toml` (the Python requirement and the license); the PyPI version badge is dynamic and needs no update.
     4. **Approval Gate:** Present the proposed release notes and version bump to the user for review and approval.
     5. **Commit:** Stage changes (including `uv.lock` if it was modified by the version bump build) and commit with `chore(release): bump version to <new_version>`.
