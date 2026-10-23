@@ -1,4 +1,29 @@
-.PHONY: commit push ci-watch probe test logs _preflight
+.PHONY: ci-watch commit help logs probe push test _preflight
+
+# Print the target list when make runs with no goal.
+.DEFAULT_GOAL := help
+
+# Named inputs for the targets that need a value. A command-line assignment
+# such as MSG="..." is a variable, never a goal, so no word of a commit
+# message can execute another target.
+MSG ?=
+REASON ?=
+RUN ?=
+STEP ?=
+
+# Every command-line word is a goal, and Make builds goals in order, so a word
+# that names a target (probe, test) would execute it. Reject more than one goal
+# and reject a goal that no rule defines.
+_KNOWN_GOALS := ci-watch commit help logs probe push test
+_UNKNOWN_GOALS := $(filter-out $(_KNOWN_GOALS),$(MAKECMDGOALS))
+ifneq ($(words $(MAKECMDGOALS)),0)
+ifneq ($(words $(MAKECMDGOALS)),1)
+$(error Detected $(words $(MAKECMDGOALS)) goals: $(MAKECMDGOALS). Pass values as NAME="value", as in: make commit MSG="<type>(<scope>): <description>")
+endif
+endif
+ifneq ($(_UNKNOWN_GOALS),)
+$(error Unknown target '$(_UNKNOWN_GOALS)'. Run make help for the list of targets.)
+endif
 
 # Always use GNU Make native features for cross-platform compatibility.
 # On Windows, ensure a POSIX shell is used for pipeline targets (ci-watch, probe, logs).
@@ -26,14 +51,14 @@ _preflight:
 
 # commit - VCP workflow (LOCAL ONLY): stage, advisory pre-commit auto-fix pass, commit.
 # Usage:
-#   make commit '<type>(<scope>): <description>'
+#   make commit MSG="<type>(<scope>): <description>"
 #
 # This target is LOCAL-ONLY: it does NOT pull or push. The push is deferred to the
 # session Conclusion via `make push` (see below).
 #
-# The '-' prefix on pre-commit tells Make to ignore a non-zero exit code. This is
-# cross-platform (works on both POSIX shells and Windows cmd.exe) and avoids
-# shell-specific error-suppression operators (||, &&) that behave differently per OS.
+# The advisory pass consumes its own exit code with `|| echo`, so a failing run
+# prints one plain sentence instead of Make's bare "(ignored)" marker. The line
+# reaches the recipe shell because `||` is a shell metacharacter.
 # The hooks run through the project runner (`uv run pre-commit run`), so the pinned
 # pre-commit version and its hook environments are the ones that execute.
 # This first pre-commit pass is advisory: a non-zero exit is ignored and auto-fixed
@@ -41,10 +66,7 @@ _preflight:
 # and that second run is the blocking local gate. The unskippable post-commit test
 # gate (.githooks/post-commit.py) remains the final safety net.
 
-# Target-specific variables capture positional arguments before recipe execution.
-# These are Make variables, not shell variables, so they persist across all recipe lines.
-# $(wordlist 2,...) drops only the FIRST goal (the target name) and preserves every
-# remaining word of the message verbatim -- including the literal word "commit".
+# The message arrives in MSG, so its words never become goals.
 #
 # `git commit` is invoked WITHOUT `--no-verify`, so Git's own pre-commit hook is the
 # real local gate. The local hook set is only formatters + detect-secrets + conflict
@@ -52,14 +74,12 @@ _preflight:
 # Git's own invocation -- is cheap and accepted.
 #
 # `git add .` stages ALL local changes, including currently unstaged ones.
-commit: ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-
 commit:
-	$(if $(strip $(ARGS)),,$(error Usage: make commit '<message>'))
+	$(if $(strip $(MSG)),,$(error Usage: make commit MSG="<type>(<scope>): <description>"))
 	git add .
-	-uv run pre-commit run
+	@uv run pre-commit run || echo "Advisory pre-commit reported issues. Auto-fixed files were re-staged and the commit continues."
 	git add .
-	git commit -m "$(ARGS)"
+	git commit -m "$(MSG)"
 
 # push - VCP workflow (Conclusion phase): fast rebase and push.
 # Usage:
@@ -130,8 +150,8 @@ ci-watch: _preflight
 	  if [ -n "$$NEWSTEPS" ]; then \
 	    echo "$$WF: failing step(s): $$NEWSTEPS (run $$NEW)"; \
 	    gh run view "$$NEW" --log-failed 2>/dev/null | awk -F'\t' '{ l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/) next; gsub(/^##\[error\]/,"Error: ",l); print l }' | tail -n $(DETAIL_LINES) | sed 's/^/    /'; \
-	    echo "  view all failed logs: make logs $$NEW"; \
-	    echo "  view specific step:   make logs $$NEW \"<step-name>\""; \
+	    echo "  view all failed logs: make logs RUN=$$NEW"; \
+	    echo "  view specific step:   make logs RUN=$$NEW STEP=\"<step-name>\""; \
 	  fi; \
 	  if [ "$$NEWCONC" = "success" ]; then \
 	    if [ -n "$$NEWFAIL" ]; then \
@@ -186,9 +206,9 @@ ci-watch: _preflight
 
 # probe - Remote Probing Protocol: push probe, trigger CI workflow, retrieve logs
 # Usage:
-#   make probe '<reason>'  # reason is required, appears in workflow dispatch metadata
+#   make probe REASON="<reason>"  # reason is required, appears in workflow dispatch metadata
 #
-# Target-specific variable captures the reason string.
+# The reason arrives in REASON, so its words never become goals.
 # The first three lines (add, commit, push) call git.exe, which exists on every
 # platform, and their failures must stay visible.
 # The dispatch/watch section is ONE shell block. A recipe line without a shell
@@ -201,11 +221,10 @@ ci-watch: _preflight
 # The reason travels in double quotes so a cmd.exe caller and a Git Bash caller
 # pass the same value. Keep the reason free of $, backticks, and nested quotes.
 
-probe: REASON := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 probe: _preflight
 
 probe:
-	$(if $(strip $(REASON)),,$(error Usage: make probe '<reason>'))
+	$(if $(strip $(REASON)),,$(error Usage: make probe REASON="<reason>"))
 	git add -f spikes/debug/probe.sh
 	git commit -m "debug: probe" --no-verify --allow-empty
 	git push
@@ -229,23 +248,21 @@ probe:
 
 # logs - CI Log Extraction: extract logs for all failed steps or a specific step.
 # Usage:
-#   make logs <run-id>                # extracts logs for ALL failed steps
-#   make logs <run-id> "<step-name>"  # extracts logs for a specific step (substring match)
+#   make logs RUN=<run-id>                # extracts logs for ALL failed steps
+#   make logs RUN=<run-id> STEP="<step>"  # extracts logs for a specific step (substring match)
 #
 # If no step name is provided, extracts all failed steps using `gh run view --log-failed`.
 # If a step name is given, matches against the step name using substring matching.
 # Strips ANSI escapes and GitHub boilerplate, adding clean [job > step] headers.
 
-logs: LOGS_RUN := $(word 2,$(MAKECMDGOALS))
-logs: LOGS_STEP := $(wordlist 3,99,$(MAKECMDGOALS))
 logs: _preflight
 
 logs:
-	$(if $(strip $(LOGS_RUN)),,$(error Usage: make logs <run-id> ["<step-name>"]))
-	@if [ -z "$(LOGS_STEP)" ]; then \
-	  gh run view "$(LOGS_RUN)" --log-failed 2>/dev/null | awk -F'\t' '{ if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
+	$(if $(strip $(RUN)),,$(error Usage: make logs RUN=<run-id> [STEP="<step-name>"]))
+	@if [ -z "$(STEP)" ]; then \
+	  gh run view "$(RUN)" --log-failed 2>/dev/null | awk -F'\t' '{ if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
 	else \
-	  gh run view "$(LOGS_RUN)" --log 2>/dev/null | awk -F'\t' -v step="$(LOGS_STEP)" 'index($$2, step) > 0 { if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/, "Error: ", l); print l }'; \
+	  gh run view "$(RUN)" --log 2>/dev/null | awk -F'\t' -v step="$(STEP)" 'index($$2, step) > 0 { if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/, "Error: ", l); print l }'; \
 	fi
 
 # test - Run the full test suite via the project's designated runner (uv).
@@ -259,6 +276,16 @@ logs:
 test:
 	uv run pytest
 
-# Empty recipe absorbs extra arguments without invoking a subshell.
-# Always use GNU Make native features for cross-platform compatibility.
-%: ;
+# help - Print the target list.
+#
+# No catch-all rule exists. The goal check above aborts on an unknown word, so
+# Make never prints an "up to date" line for a typo or for a stray argument.
+help:
+	@echo "Usage: make <target> [NAME=\"value\"]"
+	@echo ""
+	@echo "  commit MSG=\"<type>(<scope>): <description>\""
+	@echo "  push"
+	@echo "  test"
+	@echo "  ci-watch [COMMIT=<sha>] [BASE=<sha>]"
+	@echo "  probe REASON=\"<reason>\""
+	@echo "  logs RUN=<run-id> [STEP=\"<step-name>\"]"

@@ -162,7 +162,7 @@ jobs:
 
 ### How to use it
 1. Create a probe script at `spikes/debug/remote_probe.sh` containing diagnostic logic.
-2. Commit and push via: `make probe 'reason for probing'`
+2. Commit and push via: `make probe REASON="reason for probing"`
 3. The Makefile will: push the probe → trigger the workflow → wait for completion → retrieve logs.
 
 ### Prerequisites

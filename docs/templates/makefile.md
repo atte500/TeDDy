@@ -9,11 +9,18 @@ and the Debugger's Remote Probing Protocol (RPP). Below are concrete examples ad
 
 ### Commit
 ```shell
-make commit "feat(templates): add PROJECT.md template"
+make commit MSG="feat(templates): add PROJECT.md template"
 ```
 
 **What is `.PHONY`?**
-`.PHONY` is a Makefile directive that declares `commit`, `push`, `ci-watch`, `probe`, `test`, `logs`, and the internal `_preflight` gate as phony targets — they do not correspond to actual files. Without `.PHONY`, if a file named `commit` or `probe` existed in the directory (e.g., a script called `commit`), Make would see it as up-to-date and skip the target entirely. By declaring them phony, Make always runs the recipe when you call `make commit`, `make push`, `make ci-watch`, `make probe`, or `make test`.
+`.PHONY` is a Makefile directive that declares `commit`, `push`, `ci-watch`, `probe`, `test`, `logs`, `help`, and the internal `_preflight` gate as phony targets — they do not correspond to actual files. Without `.PHONY`, if a file named `commit` or `probe` existed in the directory (e.g., a script called `commit`), Make would see it as up-to-date and skip the target entirely. By declaring them phony, Make always runs the recipe when you call `make commit`, `make push`, `make ci-watch`, `make probe`, or `make test`.
+
+### Help
+```shell
+make
+```
+
+The default goal is `help`, so a bare `make` prints the target list. An unknown goal aborts with its own name instead of an "up to date" line.
 
 ### Push
 ```shell
@@ -38,7 +45,7 @@ make test
 
 ### Probe
 ```shell
-make probe "investigate windows path handling"
+make probe REASON="investigate windows path handling"
 ```
 
 **Why does `probe` need a reason?**
@@ -46,12 +53,12 @@ The Remote Probing Protocol requires a reason string because it is passed as the
 
 ### Logs
 ```shell
-make logs 12345              # extract logs for ALL failed steps
-make logs 12345 "Run tests"  # extract logs for a specific step (substring match)
+make logs RUN=12345                   # extract logs for ALL failed steps
+make logs RUN=12345 STEP="Run tests"  # extract logs for a specific step (substring match)
 ```
 
 **How does `make logs` work?**
-The first argument is the GitHub Actions run ID (as shown by `gh run list`). If invoked without a second argument, it extracts and formats logs for **all failed steps** using `gh run view --log-failed`. An optional second argument filters down to a specific step using substring matching, stripping ANSI escapes and GitHub boilerplate so you see the failure without noise. See [CI Log Extraction](#ci-log-extraction).
+The `RUN` value is the GitHub Actions run ID (as shown by `gh run list`). If `STEP` is omitted, it extracts and formats logs for **all failed steps** using `gh run view --log-failed`. An optional `STEP` value filters down to a specific step using substring matching, stripping ANSI escapes and GitHub boilerplate so you see the failure without noise. See [CI Log Extraction](#ci-log-extraction).
 
 ## Probe Script
 
@@ -85,13 +92,14 @@ EOF
 Always use GNU Make native features for cross-platform compatibility instead of shell-specific constructs:
 
 - **Native argument validation:** Use `$(if $(strip $(VAR)),,$(error Usage: ...))` instead of POSIX `[ -n "$$VAR" ]`. GNU Make validates parameters before spawning any shell process.
-- **Shell-less empty recipe:** Use `%: ;` to absorb extra command-line arguments. In Windows `cmd.exe`, the Unix built-in `@:` fails because `:` is reserved syntax for labels and drives. The empty recipe `%: ;` tells Make to do nothing without spawning a subshell.
+- **Named inputs instead of positional goals:** Pass values as `NAME="value"`, as in `make commit MSG="feat(scope): add thing"`. GNU Make treats a command-line assignment as a variable, so no word of the value can become a goal. Positional capture through `$(MAKECMDGOALS)` is forbidden, because a word that names a real target executes that target.
+- **Parse-time goal validation:** Compare `$(MAKECMDGOALS)` against a `_KNOWN_GOALS` list and abort with `$(error ...)` when a goal is unknown or when more than one goal is present. The check runs while Make reads the file, so no recipe line can run first.
 - **POSIX shell preflight:** Every POSIX recipe target (`ci-watch`, `probe`, `logs`) depends on the internal `_preflight` target, which verifies `git`, `gh`, `awk`, and `sed` before any network call. It aborts with one actionable message instead of a generic `make: *** Error 1`.
 - **Shell routing for Bash-only commands:** Make spawns a recipe line directly when the line carries no shell metacharacter. That direct spawn bypasses `SHELL`. On Windows it fails for Git Bash-only programs such as `sleep` and for shell builtins such as `echo`. Keep these commands inside a shell block that carries `;`, `&&`, or a variable expansion.
 - **Windows shell selection:** Set `SHELL := bash.exe` when `OS` is `Windows_NT` so multi-line shell pipelines (`ci-watch`, `probe`, `logs`) execute through Git Bash. `_preflight` also confirms that the shell is Git Bash rather than the WSL `bash.exe` shim, and it names the `SHELL=` override when it is not.
 - **Portable quoting:** Pass values with double quotes, as in `--field reason="..."`, because Windows `cmd.exe` keeps single quotes literally.
 - **ASCII-only output:** Recipe output stays ASCII, because a Windows console turns a non-ASCII dash into mojibake in captured logs.
-- **Native error suppression:** The Makefile uses Make's built-in `-` prefix (`-pre-commit run`) instead of shell-level `|| true` or `&&`/`||` chaining. Make suppresses non-zero exit codes natively before passing lines to the shell.
+- **Explicit advisory fallback:** The advisory pre-commit pass consumes its own exit code with `|| echo "<sentence>"`, so a failing run prints one plain sentence. Make's `-` prefix is forbidden here, because it prints a bare `Error 1 (ignored)` line that reads as an unexplained defect.
 - **Error transparency:** The first pre-commit pass is advisory, so its non-zero exit is ignored and auto-fixed files are re-staged. Git then runs the same hooks again during `git commit`, and that second run is the blocking local gate. A hook failure there aborts the commit. The post-commit test gate is the final safety net. `make push` runs `git pull --rebase` and `git push` without suppression, so a rebase conflict or push rejection surfaces as a non-zero exit.
 
 ## Test Workflow
@@ -118,25 +126,22 @@ test:
 ### Example
 
 ```makefile
-commit: ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-
 commit:
-	$(if $(strip $(ARGS)),,$(error Usage: make commit '<message>'))
+	$(if $(strip $(MSG)),,$(error Usage: make commit MSG="<type>(<scope>): <description>"))
 	git add .
-	-uv run pre-commit run
+	@uv run pre-commit run || echo "Advisory pre-commit reported issues. Auto-fixed files were re-staged and the commit continues."
 	git add .
-	git commit -m "$(ARGS)"
+	git commit -m "$(MSG)"
 
-# Empty recipe absorbs extra arguments without invoking a subshell.
-%: ;
 ```
 
 **Usage:**
-- `make commit 'feat(templates): add PROJECT.md template'`
+- `make commit MSG="feat(templates): add PROJECT.md template"`
 
-**Message-input contract:** the recipe captures the message from the extra `make` goals via `$(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))`. Supported input:
+**Message-input contract:** the message arrives in the named variable `MSG`, so its words are data and never goals. Supported input:
 
-- ✅ **Single-line Conventional Commits in double quotes survive verbatim** — e.g. `make commit "feat(scope): add thing"`. Always use double quotes across all operating systems.
+- ✅ **Single-line Conventional Commits in double quotes survive verbatim** — e.g. `make commit MSG="feat(scope): add thing"`. Always use double quotes across all operating systems.
+- ✅ **`#` survives** — Make keeps the character inside a quoted command-line value, so `MSG="fix: close #42"` commits that subject.
 - ❌ **`$VAR` is swallowed or expanded** — `make` and shells expand `$(...)`/`$X`; avoid `$`.
 - ❌ **Backticks trigger command substitution** in POSIX shells when inside double quotes; avoid backticks.
 - ❌ **Multiline messages fail hard** (`unexpected EOF`).
@@ -169,7 +174,7 @@ The pushed RUN's own conclusion is authoritative: it already folds in `continue-
 - **all green / non-blocking** → PASSED → **exit 0**.
 - **job-less base** → NOT green: a base run that exists but carries zero jobs (an invalid-workflow failure) is treated as an unknown base and fails safe (block).
 
-When any step fails — blocking or not — the target prints the failing step's name and its run id, then that step's log details (ANSI/timestamp-stripped and indented), bounded to `DETAIL_LINES` lines (default 50), and points to `make logs <run-id> "<step-name>"` for the full step log when needed.
+When any step fails — blocking or not — the target prints the failing step's name and its run id, then that step's log details (ANSI/timestamp-stripped and indented), bounded to `DETAIL_LINES` lines (default 50), and points to `make logs RUN=<run-id> STEP="<step-name>"` for the full step log when needed.
 
 Attribution is deterministic: SHA → run → run-level + per-job conclusion (never "the latest run").
 
@@ -229,8 +234,8 @@ ci-watch: _preflight
 	  if [ -n "$$NEWSTEPS" ]; then \
 	    echo "$$WF: failing step(s): $$NEWSTEPS (run $$NEW)"; \
 	    gh run view "$$NEW" --log-failed 2>/dev/null | awk -F'\t' '{ l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/) next; gsub(/^##\[error\]/,"Error: ",l); print l }' | tail -n $(DETAIL_LINES) | sed 's/^/    /'; \
-	    echo "  view all failed logs: make logs $$NEW"; \
-	    echo "  view specific step:   make logs $$NEW \"<step-name>\""; \
+	    echo "  view all failed logs: make logs RUN=$$NEW"; \
+	    echo "  view specific step:   make logs RUN=$$NEW STEP=\"<step-name>\""; \
 	  fi; \
 	  if [ "$$NEWCONC" = "success" ]; then \
 	    if [ -n "$$NEWFAIL" ]; then \
@@ -294,11 +299,10 @@ ci-watch: _preflight
 ### Example
 
 ```makefile
-probe: REASON := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 probe: _preflight
 
 probe:
-	$(if $(strip $(REASON)),,$(error Usage: make probe '<reason>'))
+	$(if $(strip $(REASON)),,$(error Usage: make probe REASON="<reason>"))
 	git add -f spikes/debug/probe.sh
 	git commit -m "debug: probe" --no-verify --allow-empty
 	git push
@@ -321,7 +325,7 @@ probe:
 	cat spikes/debug/probe_output.txt 2>/dev/null || echo "(no output file)"
 ```
 
-**Usage:** `make probe 'investigate windows path handling'`
+**Usage:** `make probe REASON="investigate windows path handling"`
 
 `make probe` resolves the dispatched run by the pushed SHA inside a bounded retry loop. It reuses `RETRY_POLLS` and `RETRY_SLEEP` from the CI watch section. The dispatch, the run resolution, the watch, and the download stay in one shell block, because a metacharacter-free line would bypass the recipe shell on Windows. The target rejects the probe with a stderr reason when no run registers for that SHA, so a stale run can never be mistaken for the new probe.
 
@@ -332,27 +336,22 @@ The Debugger's Reproduction phase needs to read CI logs without drowning in the 
 ### Example
 
 ```makefile
-logs: LOGS_RUN := $(word 2,$(MAKECMDGOALS))
-logs: LOGS_STEP := $(wordlist 3,99,$(MAKECMDGOALS))
-
 logs:
-	$(if $(strip $(LOGS_RUN)),,$(error Usage: make logs <run-id> ["<step-name>"]))
-	@if [ -z "$(LOGS_STEP)" ]; then \
-	  gh run view "$(LOGS_RUN)" --log-failed 2>/dev/null | awk -F'\t' '{ if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
+	$(if $(strip $(RUN)),,$(error Usage: make logs RUN=<run-id> [STEP="<step-name>"]))
+	@if [ -z "$(STEP)" ]; then \
+	  gh run view "$(RUN)" --log-failed 2>/dev/null | awk -F'\t' '{ if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
 	else \
-	  gh run view "$(LOGS_RUN)" --log 2>/dev/null | awk -F'\t' -v step="$(LOGS_STEP)" 'index($$2, step) > 0 { if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/, "Error: ", l); print l }'; \
+	  gh run view "$(RUN)" --log 2>/dev/null | awk -F'\t' -v step="$(STEP)" 'index($$2, step) > 0 { if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/, "Error: ", l); print l }'; \
 	fi
 
-# Empty recipe absorbs extra arguments without invoking a subshell.
-%: ;
 ```
 
 **Usage:**
-- `make logs 12345` — extract logs for ALL failed steps from run `12345`.
-- `make logs 12345 "Run tests"` — extract logs for a specific step (substring match) from run `12345`.
+- `make logs RUN=12345` — extract logs for ALL failed steps from run `12345`.
+- `make logs RUN=12345 STEP="Run tests"` — extract logs for a specific step (substring match) from run `12345`.
 
 **How it works:**
-- `$(word 2,$(MAKECMDGOALS))` takes the run ID and `$(wordlist 3,99,$(MAKECMDGOALS))` captures any optional step name.
+- `RUN` carries the run ID and `STEP` carries the optional step name. Both arrive as command-line variables, so neither can become a goal.
 - When no step name is provided, `gh run view --log-failed` is used so only failed steps are fetched and printed with `[job > step]` headers.
 - When a step name is supplied, `index($2, step) > 0` performs substring matching against column 2.
 - Timestamps and ANSI escapes are stripped, and `##[error]` lines are prefixed with `Error: `.

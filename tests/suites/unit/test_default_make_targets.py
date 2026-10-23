@@ -19,7 +19,7 @@ _BUNDLED_TEMPLATE = (
     _PROJECT_ROOT / "src" / "teddy_executor" / "resources" / "templates" / "makefile.md"
 )
 
-_DEFAULT_TARGETS = ("commit", "push", "ci-watch", "probe", "logs", "test")
+_DEFAULT_TARGETS = ("commit", "push", "ci-watch", "probe", "logs", "test", "help")
 _POSIX_TARGETS = ("ci-watch", "probe", "logs")
 _CMD_SAFE_TARGETS = ("commit", "push", "test")
 _POSIX_ONLY_PROGRAMS = ("awk", "sed", "grep", "command -v", "sleep")
@@ -144,9 +144,33 @@ def test_each_blocking_verdict_is_repeated_on_stderr() -> None:
         assert any(verdict in line for line in stderr_lines), verdict
 
 
-def test_commit_runs_the_hooks_through_the_project_runner() -> None:
+def test_advisory_hook_pass_reports_its_outcome_in_plain_language() -> None:
     _, recipe = _rule("commit")
-    assert "-uv run pre-commit run" in [line.strip() for line in recipe]
+    body = "\n".join(recipe)
+    assert "uv run pre-commit run || echo" in body, (
+        "the advisory pass must consume its own exit code"
+    )
+    assert not any(line.strip().startswith("-uv run") for line in recipe), (
+        "the ignore marker prints a bare error line that reads as a defect"
+    )
+
+
+def test_make_prints_help_when_it_runs_without_a_goal() -> None:
+    body = _MAKEFILE.read_text(encoding="utf-8")
+    assert ".DEFAULT_GOAL := help" in body
+
+
+def test_command_line_words_must_be_known_targets() -> None:
+    body = _MAKEFILE.read_text(encoding="utf-8")
+    assert "_KNOWN_GOALS :=" in body
+    assert "$(filter-out $(_KNOWN_GOALS),$(MAKECMDGOALS))" in body
+    assert "Unknown target" in body
+
+
+def test_values_arrive_through_named_variables() -> None:
+    for target, variable in (("commit", "MSG"), ("probe", "REASON"), ("logs", "RUN")):
+        _, recipe = _rule(target)
+        assert f"$({variable})" in "\n".join(recipe), target
 
 
 def test_probe_passes_the_reason_with_portable_quoting() -> None:
@@ -232,3 +256,37 @@ def test_probe_reports_an_unregistered_run_on_stderr() -> None:
     _, recipe = _rule("probe")
     stderr_lines = [line for line in recipe if ">&2" in line]
     assert any("no run registered" in line for line in stderr_lines)
+
+
+_DOCUMENTED_SURFACES = (
+    _MAKEFILE,
+    _PROJECT_TEMPLATE,
+    _BUNDLED_TEMPLATE,
+    _PROJECT_ROOT / "src" / "teddy_executor" / "resources" / "MRP.md",
+    *sorted(
+        (
+            _PROJECT_ROOT
+            / "src"
+            / "teddy_executor"
+            / "resources"
+            / "config"
+            / "prompts"
+        ).glob("*.md")
+    ),
+)
+
+_POSITIONAL_INVOCATIONS = (
+    re.compile(r"make commit [\"']"),
+    re.compile(r"make probe [\"']"),
+    re.compile(r"make logs <"),
+    re.compile(r"make logs \$\$"),
+)
+
+
+def test_documented_invocations_use_named_variables() -> None:
+    """A positional call aborts at parse time, so no document may teach one."""
+    for path in _DOCUMENTED_SURFACES:
+        text = path.read_text(encoding="utf-8")
+        for pattern in _POSITIONAL_INVOCATIONS:
+            match = pattern.search(text)
+            assert match is None, f"{path.name} still teaches {match.group(0)!r}"

@@ -64,10 +64,10 @@ The entire commit cycle (test, stage, commit) MUST occur in a dedicated Version 
 
 1. Pre-conditions: Clean up temporary files. If recurring script, test, or tool detritus appears, do not just delete it manually: update `.gitignore` or configure the script to write outside tracked directories. If unsure of changes, inspect via `EXECUTE git add . && git diff HEAD`.
 2. Commit Message: Use Conventional Commits `"<type>(<scope>): <description>"` in double quotes (imperative mood; plain text without backticks, quotes, or `$`; append `!` for breaking changes) on a single line.
-3. Execution: Run `make commit "<type>(<scope>): <description>"`. This stages all local changes (`git add .`) and runs Git's local hooks before committing.
+3. Execution: Run `make commit MSG="<type>(<scope>): <description>"`. This stages all local changes (`git add .`) and runs Git's local hooks before committing.
 4. Post-conditions: All tests MUST pass: the post-commit hook reverts automatically on failure and cannot be bypassed.
 5. Push at Conclusion: In the Conclusion phase, if a remote is configured, run `make push`.
-6. CI Monitoring: If remote CI is configured and a push occurred, run `make ci-watch` to monitor workflow runs and to inspect results: use `make logs <run-id>` (or `make logs <run-id> '<step-name>'`) for full logs.
+6. CI Monitoring: If remote CI is configured and a push occurred, run `make ci-watch` to monitor workflow runs and to inspect results: use `make logs RUN=<run-id>` (or `make logs RUN=<run-id> STEP="<step-name>"`) for full logs.
 
 ### Standardized Plan Types
 
