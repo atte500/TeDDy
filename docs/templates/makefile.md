@@ -202,7 +202,7 @@ Attribution is deterministic: SHA → run → run-level + per-job conclusion (ne
 
 Key behaviors:
 
-1. **Automatic SHA and BASE resolution.** `SHA` defaults to current `HEAD` (or `COMMIT=<sha>`), and `BASE` resolves per workflow to the most recent ancestor of `SHA` that carries a run for that workflow (bounded by `BASE_DEPTH`, default 50). An explicit `BASE=<sha>` pins the baseline verbatim and skips resolution; if the pinned commit carries no run for the workflow, the target fails safe as an unknown base.
+1. **Automatic SHA and BASE resolution.** `SHA` defaults to current `HEAD` (or `COMMIT=<sha>`), and `BASE` resolves per workflow to the most recent ancestor of `SHA` that carries a run for that workflow. The target fetches one bounded list of the workflow's latest runs (`BASE_SCAN`, default 200) and intersects it with the newest `BASE_DEPTH` ancestors (`git rev-list`, default 50), so resolution costs one API call instead of one per ancestor. An explicit `BASE=<sha>` pins the baseline verbatim and skips resolution; if the pinned commit carries no run for the workflow, the target fails safe as an unknown base.
 2. **Registration lag is tolerated by a bounded retry.** CI can fail to register a run for the pushed SHA immediately. The target polls `gh run list --commit <sha>` up to `RETRY_POLLS × RETRY_SLEEP` (default 10 × 2s ≈ 20s) before attributing. It fails safe if the run never registers.
 3. **No CI is non-blocking.** If the repository has no workflow files under `.github/workflows/` (`*.yml`/`*.yaml`), the target logs `No CI configured - skipping attribution` and exits 0.
 4. **Workflow names with spaces stay whole.** The target reads workflow names one line at a time. A name such as `Publish to PyPI` is attributed as one workflow.
@@ -214,6 +214,7 @@ RETRY_POLLS ?= 10
 RETRY_SLEEP ?= 2
 DETAIL_LINES ?= 50
 BASE_DEPTH ?= 50
+BASE_SCAN ?= 200
 BASE ?=
 
 ci-watch: _preflight
@@ -250,9 +251,10 @@ ci-watch: _preflight
 	while IFS= read -r WF; do \
 	  NEW=$$(gh run list --commit "$$SHA" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
 	  gh run watch "$$NEW" --exit-status >/dev/null 2>&1 || true; \
-	  NEWCONC=$$(gh run view "$$NEW" --json conclusion --jq '.conclusion'); \
-	  NEWFAIL=$$(gh run view "$$NEW" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")'); \
-	  NEWSTEPS=$$(gh run view "$$NEW" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .steps[]? | select(.conclusion=="failure") | .name] | sort | join(", ")'); \
+	  NEWMETA=$$(gh run view "$$NEW" --json conclusion,jobs --jq '.conclusion, ([.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")), ([.jobs[] | select(.conclusion=="failure") | .steps[]? | select(.conclusion=="failure") | .name] | sort | join(", "))'); \
+	  NEWCONC=$$(printf '%s\n' "$$NEWMETA" | sed -n '1p'); \
+	  NEWFAIL=$$(printf '%s\n' "$$NEWMETA" | sed -n '2p'); \
+	  NEWSTEPS=$$(printf '%s\n' "$$NEWMETA" | sed -n '3p'); \
 	  if [ -n "$$NEWSTEPS" ]; then \
 	    echo "$$WF: failing step(s): $$NEWSTEPS (run $$NEW)"; \
 	    gh run view "$$NEW" --log-failed 2>/dev/null | awk -F'\t' '{ l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/) next; gsub(/^##\[error\]/,"Error: ",l); print l }' | tail -n $(DETAIL_LINES) | sed 's/^/    /'; \
@@ -272,33 +274,36 @@ ci-watch: _preflight
 	    echo "$$WF: unknown conclusion '$$NEWCONC' on run $$NEW blocks the session." >&2; \
 	    STATUS=1; continue; \
 	  fi; \
-	  BASE="$(BASE)"; CUR="$$SHA"; DEPTH=0; \
-	  while [ -z "$$BASE" ] && [ $$DEPTH -lt $(BASE_DEPTH) ]; do \
-	    CUR=$$(git rev-parse "$$CUR~1" 2>/dev/null) || break; \
-	    [ -n "$$CUR" ] || break; \
-	    if [ -n "$$(gh run list --commit "$$CUR" --workflow "$$WF" --json databaseId --jq '.[0].databaseId')" ]; then \
-	      BASE="$$CUR"; break; \
-	    fi; \
-	    DEPTH=$$((DEPTH + 1)); \
-	  done; \
+	  BASE="$(BASE)"; OLD=""; \
+	  if [ -n "$$BASE" ]; then \
+	    OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
+	  else \
+	    RUNLIST=$${TMPDIR:-/tmp}/ci-watch-runs.$$$$; \
+	    gh run list --workflow "$$WF" -L $(BASE_SCAN) --json headSha,databaseId --jq '.[] | "\(.headSha) \(.databaseId)"' > "$$RUNLIST" 2>/dev/null; \
+	    for CUR in $$(git rev-list -n $(BASE_DEPTH) "$$SHA^" 2>/dev/null); do \
+	      OLD=$$(awk -v sha="$$CUR" '$$1 == sha { print $$2; exit }' "$$RUNLIST"); \
+	      if [ -n "$$OLD" ]; then BASE="$$CUR"; break; fi; \
+	    done; \
+	    rm -f "$$RUNLIST"; \
+	  fi; \
 	  if [ -z "$$BASE" ]; then \
 	    echo "$$WF: BLOCKING failure ($$NEWFAIL) - no run-bearing ancestor (unknown base) - YOUR regression"; \
 	    echo "$$WF: no run-bearing ancestor within $(BASE_DEPTH) commits, so the baseline is unknown." >&2; \
 	    STATUS=1; continue; \
 	  fi; \
-	  OLD=$$(gh run list --commit "$$BASE" --workflow "$$WF" --json databaseId --jq '.[0].databaseId'); \
 	  if [ -z "$$OLD" ]; then \
 	    echo "$$WF: BLOCKING failure ($$NEWFAIL) - pinned base has no run (unknown base) - YOUR regression"; \
 	    echo "$$WF: pinned base $$BASE carries no run for this workflow." >&2; \
 	    STATUS=1; continue; \
 	  fi; \
-	  OLDJOBS=$$(gh run view "$$OLD" --json jobs --jq '.jobs | length'); \
+	  OLDMETA=$$(gh run view "$$OLD" --json jobs --jq '(.jobs | length), ([.jobs[] | select(.conclusion=="failure") | .name] | sort | join(","))'); \
+	  OLDJOBS=$$(printf '%s\n' "$$OLDMETA" | sed -n '1p'); \
 	  if [ "$$OLDJOBS" = "0" ]; then \
 	    echo "$$WF: BLOCKING failure ($$NEWFAIL) - base run is job-less (invalid workflow, not green) - YOUR regression"; \
 	    echo "$$WF: base run $$OLD carries zero jobs, so it cannot prove a green baseline." >&2; \
 	    STATUS=1; continue; \
 	  fi; \
-	  OLDFAIL=$$(gh run view "$$OLD" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | .name] | sort | join(",")'); \
+	  OLDFAIL=$$(printf '%s\n' "$$OLDMETA" | sed -n '2p'); \
 	  SUBSET=$$(awk -v new="$$NEWFAIL" -v old="$$OLDFAIL" 'BEGIN { n=split(new,na,","); m=split(old,oa,","); for (i=1;i<=n;i++) { if (na[i]=="") continue; f=0; for (j=1;j<=m;j++) { if (oa[j]==na[i]) { f=1; break } } if (!f) { print "regression"; exit } } print "pre-existing" }' </dev/null); \
 	  if [ "$$SUBSET" = "pre-existing" ]; then \
 	    echo "$$WF: pre-existing BLOCKING failure ($$NEWFAIL) - not yours"; \
