@@ -34,7 +34,7 @@ Implements the `IGetContextUseCase` inbound port. It orchestrates the outbound p
 ## Data Contracts
 - **`ProjectContext`** (`teddy_executor.core.domain.models.project_context`): The assembled aggregate.
 - **`ContextItem`** (`teddy_executor.core.domain.models.project_context`): Per-file context metadata.
-- **Project Structure subtitle:** `_format_content` renders the italic line `*Tree capped at depth {depth} and width {width}: truncated directories show counts only.*` between the `## Project Structure` heading and the opening fence. Both limits come from the `IRepoTreeGenerator` properties, so the section states them once above the compact notices.
+- **Project Structure subtitle:** `_format_content` renders the italic line `*Tree capped at depth {max_depth} and {max_children} entries per subdirectory: truncated directories show entry counts only.*` between the `## Project Structure` heading and the opening fence. Both limits come from the `IRepoTreeGenerator` properties, so the section states them once above the compact notices.
 
 ## Operations
 

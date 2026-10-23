@@ -393,8 +393,8 @@ class ContextService(IGetContextUseCase):
         """State both tree limits once, so the compact notices stay meaningful."""
         return (
             f"*Tree capped at depth {self._repo_tree_generator.max_depth} "
-            f"and width {self._repo_tree_generator.max_children}: "
-            "truncated directories show counts only.*"
+            f"and {self._repo_tree_generator.max_children} entries per subdirectory: "
+            "truncated directories show entry counts only.*"
         )
 
     def _format_workspace_contents(

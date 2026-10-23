@@ -687,8 +687,8 @@ def test_get_context_renders_the_tree_limit_subtitle(
 
     expected_subtitle = (
         f"*Tree capped at depth {mock_tree_gen.max_depth} "
-        f"and width {mock_tree_gen.max_children}: "
-        "truncated directories show counts only.*"
+        f"and {mock_tree_gen.max_children} entries per subdirectory: "
+        "truncated directories show entry counts only.*"
     )
 
     # Act

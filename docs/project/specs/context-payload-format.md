@@ -111,16 +111,16 @@ A textual representation of the repository's file tree, using simple indentation
 -   `.gitignore`: The standard git ignore file.
 -   `.teddyignore`: A TeDDy-specific file that takes priority and can be used to include files that are excluded in `.gitignore`.
 
-The tree honors two limits. `context.max_depth` bounds nesting, and `context.max_children` bounds width. A directory at or beyond the depth limit, or holding more visible entries than the width cap, renders one notice `[X folders, Y files]` instead of its children. Its descendant sections are omitted, because names without their parent folder cannot be mapped. The counts cover visible immediate children only, after ignore rules. A depth of zero collapses the section to one notice for the project root and lists no child entry.
+The tree honors two limits. `context.max_depth` bounds nesting, and `context.max_children` bounds visible entries per subdirectory. A directory at or beyond the depth limit, or holding more visible entries than the `max_children` cap, renders one notice `[X folders, Y files]` instead of its children. Its descendant sections are omitted, because names without their parent folder cannot be mapped. The counts cover visible immediate children only, after ignore rules. A depth of zero collapses the section to one notice for the project root and lists no child entry.
 
-An unreadable directory renders `[unreadable]`, because a failed scan must not present a count. A directory with no visible child renders no section, because an empty directory is not an omission. The project root listing is exempt from the width cap, because it is the only place where a top-level file is named. The depth limit still applies first, so a depth of zero withholds the root.
+An unreadable directory renders `[unreadable]`, because a failed scan must not present a count. A directory with no visible child renders no section, because an empty directory is not an omission. The project root listing is exempt from the `max_children` cap, because it is the only place where a top-level file is named. The depth limit still applies first, so a depth of zero withholds the root.
 
 The notices carry no explanation, so the section states both limits once in an italic subtitle placed between the heading and the fence.
 
 -   **Example:**
     `````markdown
     ## Project Structure
-    *Tree capped at depth 3 and width 20: truncated directories show counts only.*
+    *Tree capped at depth 3 and 20 entries per subdirectory: truncated directories show entry counts only.*
     ```
     README.md
     docs

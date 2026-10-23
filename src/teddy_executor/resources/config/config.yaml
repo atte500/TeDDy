@@ -19,7 +19,7 @@ read:
 
 context:
   max_depth: 3                      # Max project tree depth.
-  max_children: 20                  # Max entries listed per directory.
+  max_children: 20                  # Max entries listed per subdirectory.
 
 research:
   max_results: 5                    # Number of search results to fetch and scrape.
