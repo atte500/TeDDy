@@ -71,8 +71,7 @@ _TARGET_RULE = re.compile(r"^(?P<name>[\w%-]+):(?:\s+(?P<prereqs>[^=]*))?$")
 def _rule(target: str) -> tuple[list[str], list[str]]:
     """Collects every prerequisite and recipe line declared for one target.
 
-    A target may span several lines, as ``probe`` and ``logs`` do: a
-    target-specific variable, a prerequisite-only line, and the recipe line.
+    A target may declare its prerequisites on a line separate from its recipe.
     Merging every declaration keeps assertions independent of that split.
     """
     lines = _MAKEFILE.read_text(encoding="utf-8").splitlines()

@@ -44,7 +44,9 @@ endif
 endif
 
 # Always use GNU Make native features for cross-platform compatibility.
-# On Windows, ensure a POSIX shell is used for pipeline targets (ci-watch, probe, logs).
+# On Windows every target runs through Git Bash, because cmd.exe tokenizes the
+# quoting and the `||` fallbacks in these recipes differently. _preflight also
+# confirms that the shell is Git Bash rather than the WSL bash shim.
 ifeq ($(OS),Windows_NT)
     SHELL := bash.exe
     .SHELLFLAGS := -c
@@ -59,38 +61,24 @@ endif
 # ci-watch, probe, and logs are shell pipelines that need a POSIX shell plus
 # git, gh, awk, and sed. Running this gate first turns an unmet contract into
 # one actionable message instead of a generic 'make: *** Error 1'.
-# The commit, push, and test targets stay cmd.exe-safe and do not use this gate.
+# Only the pipeline targets carry this prerequisite, because commit, push, and
+# test need nothing beyond git and the project runner.
 _preflight:
-	@command -v git >/dev/null 2>&1 || { echo "ERROR: git is not on PATH inside the recipe shell." >&2; exit 1; }
-	@command -v gh >/dev/null 2>&1 || { echo "ERROR: gh is not on PATH. Install the GitHub CLI, then run gh auth login." >&2; exit 1; }
-	@command -v awk >/dev/null 2>&1 || { echo "ERROR: awk is not on PATH inside the recipe shell. Git Bash ships gawk." >&2; exit 1; }
-	@command -v sed >/dev/null 2>&1 || { echo "ERROR: sed is not on PATH inside the recipe shell. Git Bash ships sed." >&2; exit 1; }
-	@$(SHELL_CHECK) || { echo "ERROR: the recipe shell is not Git Bash. Install Git for Windows, or pass SHELL=\"C:/Program Files/Git/bin/bash.exe\"." >&2; exit 1; }
+	@command -v git >/dev/null 2>&1 || { echo "ERROR: git is not on PATH inside the recipe shell." >&2; exit 1; }; \
+	command -v gh >/dev/null 2>&1 || { echo "ERROR: gh is not on PATH. Install the GitHub CLI, then run gh auth login." >&2; exit 1; }; \
+	command -v awk >/dev/null 2>&1 || { echo "ERROR: awk is not on PATH inside the recipe shell. Git Bash ships gawk." >&2; exit 1; }; \
+	command -v sed >/dev/null 2>&1 || { echo "ERROR: sed is not on PATH inside the recipe shell. Git Bash ships sed." >&2; exit 1; }; \
+	$(SHELL_CHECK) || { echo "ERROR: the recipe shell is not Git Bash. Install Git for Windows, or pass SHELL=\"C:/Program Files/Git/bin/bash.exe\"." >&2; exit 1; }
 
-# commit - VCP workflow (LOCAL ONLY): stage, advisory pre-commit auto-fix pass, commit.
+# commit - Stage every change, run an advisory auto-fix pass, then commit locally.
 # Usage:
 #   make commit MSG="<type>(<scope>): <description>"
 #
-# This target is LOCAL-ONLY: it does NOT pull or push. The push is deferred to the
-# session Conclusion via `make push` (see below).
-#
-# The advisory pass consumes its own exit code with `|| echo`, so a failing run
-# prints one plain sentence instead of Make's bare "(ignored)" marker. The line
-# reaches the recipe shell because `||` is a shell metacharacter.
-# The hooks run through the project runner (`uv run pre-commit run`), so the pinned
-# pre-commit version and its hook environments are the ones that execute.
-# This first pre-commit pass is advisory: a non-zero exit is ignored and auto-fixed
-# files are re-staged. Git then runs the same hooks again during `git commit` below,
-# and that second run is the blocking local gate. The unskippable post-commit test
-# gate (.githooks/post-commit.py) remains the final safety net.
-
-# The message arrives in MSG, so its words never become goals.
-#
-# `git commit` is invoked WITHOUT `--no-verify`, so Git's own pre-commit hook is the
-# real local gate. The local hook set is only formatters + detect-secrets + conflict
-# check (see .pre-commit-config.yaml), so running it twice -- this advisory pass plus
-# Git's own invocation -- is cheap and accepted.
-#
+# LOCAL-ONLY: the push is deferred to the session Conclusion via `make push`.
+# The first pre-commit pass is advisory, so a non-zero exit is ignored and any
+# auto-fixed files are re-staged. Git then runs the same hooks again during
+# `git commit` without `--no-verify`, and that second run is the blocking gate.
+# The post-commit hook (.githooks/post-commit.py) remains the final safety net.
 # `git add .` stages ALL local changes, including currently unstaged ones.
 commit:
 	git add .
@@ -239,8 +227,6 @@ ci-watch: _preflight
 # pass the same value. Keep the reason free of $, backticks, and nested quotes.
 
 probe: _preflight
-
-probe:
 	git add -f spikes/debug/probe.sh
 	git commit -m "debug: probe" --no-verify --allow-empty
 	git push
@@ -272,8 +258,6 @@ probe:
 # Strips ANSI escapes and GitHub boilerplate, adding clean [job > step] headers.
 
 logs: _preflight
-
-logs:
 	@if [ -z "$(STEP)" ]; then \
 	  gh run view "$(RUN)" --log-failed 2>/dev/null | awk -F'\t' '{ if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
 	else \
@@ -296,11 +280,11 @@ test:
 # No catch-all rule exists. The goal check above aborts on an unknown word, so
 # Make never prints an "up to date" line for a typo or for a stray argument.
 help:
-	@echo "Usage: make <target> [NAME=\"value\"]"
-	@echo ""
-	@echo "  commit MSG=\"<type>(<scope>): <description>\""
-	@echo "  push"
-	@echo "  test"
-	@echo "  ci-watch [COMMIT=<sha>] [BASE=<sha>]"
-	@echo "  probe REASON=\"<reason>\""
-	@echo "  logs RUN=<run-id> [STEP=\"<step-name>\"]"
+	@echo "Usage: make <target> [NAME=\"value\"]"; \
+	echo ""; \
+	echo "  commit MSG=\"<type>(<scope>): <description>\""; \
+	echo "  push"; \
+	echo "  test"; \
+	echo "  ci-watch [COMMIT=<sha>] [BASE=<sha>]"; \
+	echo "  probe REASON=\"<reason>\""; \
+	echo "  logs RUN=<run-id> [STEP=\"<step-name>\"]"
