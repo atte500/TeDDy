@@ -56,7 +56,7 @@ Every EXECUTE action runs in a fresh subshell rooted at the project root (CWD). 
 
 ### Information Gathering Workflow
 
-If you are missing information critical to your immediate goal, gather it efficiently without getting sidetracked. You can chain multiple discovery actions in one turn. Discover locally via `EXECUTE` (`git grep`) and externally via `RESEARCH`. Never rely on search snippets; always `READ` target URLs. For opaque sources (JavaScript-rendered pages, PDFs, binary formats) where `READ` fails or yields unusable content, `CREATE` and `EXECUTE` a minimal extraction script to inspect the raw data or API. If static reading leaves behavioral ambiguity, validate assumptions via a minimal spike in `spikes/`. Check flags with `[tool] --help` before running complex CLI commands.
+If you are missing information critical to your immediate goal, gather it efficiently without getting sidetracked. You can chain multiple discovery actions in one turn. Discover locally via `EXECUTE` (`git grep`) and externally via `RESEARCH`. Never rely on search snippets; always `READ` target URLs. For opaque sources (JavaScript-rendered pages, PDFs, binary formats) where `READ` fails or yields unusable content, `CREATE` and `EXECUTE` a minimal extraction script to inspect the raw data or API. If static reading leaves behavioral ambiguity, validate assumptions via a minimal spike in `spikes/`. Check flags with `[tool] --help` before running complex CLI commands. To read CI logs, use `make logs RUN=<run-id>` for all failed steps, or `make logs RUN=<run-id> STEP="<step-name>"` for one step.
 
 ### Version Control
 
@@ -67,7 +67,7 @@ The entire commit cycle (test, stage, commit) MUST occur in a dedicated Version 
 3. Execution: Run `make commit MSG="<type>(<scope>): <description>"`. This stages all local changes (`git add .`) and runs Git's local hooks before committing.
 4. Post-conditions: All tests MUST pass: the post-commit hook reverts automatically on failure and cannot be bypassed.
 5. Push at Conclusion: In the Conclusion phase, if a remote is configured, run `make push`.
-6. CI Monitoring: If remote CI is configured and a push occurred, run `make ci-watch` to monitor workflow runs and to inspect results: use `make logs RUN=<run-id>` (or `make logs RUN=<run-id> STEP="<step-name>"`) for full logs.
+6. CI Monitoring: If remote CI is configured and a push occurred, run `make ci-watch` to monitor workflow runs. If needed inspect details using `make logs`.
 
 ### Standardized Plan Types
 

@@ -14,7 +14,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 1. **Case File Check:**
    If a Case File was not provided in the initial context, CREATE one following the case file template and path conventions.
 2. **Context and History Gathering:**
-   Use EXECUTE `git grep`, EXECUTE `git log`, READ, and RESEARCH to understand the codebase, recent changes, and identify the last known green CI run or commit. For historical CI failures, do not try to read the entire log: extract failed step logs by executing `make logs RUN=[ID]` (for all failed steps) or `make logs RUN=[ID] STEP="[STEP_NAME]"` (for a specific step).
+   Use EXECUTE `git grep`, EXECUTE `git log`, READ, and RESEARCH to understand the codebase, recent changes, and identify the last known green CI run or commit. For historical CI failures pull the failed step logs.
 3. **Diagnostic MRE and Platform Check:**
    Trigger the symptom: if an existing command, test, or CI failure exists, execute it to observe the failure live. If the bug is reported verbally or without an existing test, write a targeted probe script in `spikes/debug/{scope-slug}/` to trigger the symptom.
 

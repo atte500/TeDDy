@@ -91,16 +91,38 @@ EOF
 
 Always use GNU Make native features for cross-platform compatibility instead of shell-specific constructs:
 
-- **Native argument validation:** Use `$(if $(strip $(VAR)),,$(error Usage: ...))` instead of POSIX `[ -n "$$VAR" ]`. GNU Make validates parameters before spawning any shell process.
+- **Required input validation:** Reject a missing required input in a parse-time block, not in the recipe. Make runs the check while it reads the file, so it aborts before any prerequisite and before any shell process starts. See [Parse-Time Input Validation](#parse-time-input-validation).
 - **Named inputs instead of positional goals:** Pass values as `NAME="value"`, as in `make commit MSG="feat(scope): add thing"`. GNU Make treats a command-line assignment as a variable, so no word of the value can become a goal. Positional capture through `$(MAKECMDGOALS)` is forbidden, because a word that names a real target executes that target.
 - **Parse-time goal validation:** Compare `$(MAKECMDGOALS)` against a `_KNOWN_GOALS` list and abort with `$(error ...)` when a goal is unknown or when more than one goal is present. The check runs while Make reads the file, so no recipe line can run first.
-- **POSIX shell preflight:** Every POSIX recipe target (`ci-watch`, `probe`, `logs`) depends on the internal `_preflight` target, which verifies `git`, `gh`, `awk`, and `sed` before any network call. It aborts with one actionable message instead of a generic `make: *** Error 1`.
+- **POSIX shell preflight:** Every POSIX recipe target (`ci-watch`, `probe`, `logs`) depends on the internal `_preflight` target, which verifies `git`, `gh`, `awk`, and `sed` before any network call. It aborts with one actionable message instead of a generic `make: *** Error 1`. A missing required input aborts at parse time, before the tool gate runs.
 - **Shell routing for Bash-only commands:** Make spawns a recipe line directly when the line carries no shell metacharacter. That direct spawn bypasses `SHELL`. On Windows it fails for Git Bash-only programs such as `sleep` and for shell builtins such as `echo`. Keep these commands inside a shell block that carries `;`, `&&`, or a variable expansion.
 - **Windows shell selection:** Set `SHELL := bash.exe` when `OS` is `Windows_NT` so multi-line shell pipelines (`ci-watch`, `probe`, `logs`) execute through Git Bash. `_preflight` also confirms that the shell is Git Bash rather than the WSL `bash.exe` shim, and it names the `SHELL=` override when it is not.
 - **Portable quoting:** Pass values with double quotes, as in `--field reason="..."`, because Windows `cmd.exe` keeps single quotes literally.
 - **ASCII-only output:** Recipe output stays ASCII, because a Windows console turns a non-ASCII dash into mojibake in captured logs.
 - **Explicit advisory fallback:** The advisory pre-commit pass consumes its own exit code with `|| echo "<sentence>"`, so a failing run prints one plain sentence. Make's `-` prefix is forbidden here, because it prints a bare `Error 1 (ignored)` line that reads as an unexplained defect.
 - **Error transparency:** The first pre-commit pass is advisory, so its non-zero exit is ignored and auto-fixed files are re-staged. Git then runs the same hooks again during `git commit`, and that second run is the blocking local gate. A hook failure there aborts the commit. The post-commit test gate is the final safety net. `make push` runs `git pull --rebase` and `git push` without suppression, so a rebase conflict or push rejection surfaces as a non-zero exit.
+
+### Parse-Time Input Validation
+
+A required input is rejected while Make reads the file, so the check runs before any prerequisite and before any shell process starts. A recipe-level check is forbidden, because it runs after the `_preflight` prerequisite.
+
+```makefile
+ifneq ($(filter commit,$(MAKECMDGOALS)),)
+ifeq ($(strip $(MSG)),)
+$(error Usage: make commit MSG="<type>(<scope>): <description>")
+endif
+endif
+ifneq ($(filter probe,$(MAKECMDGOALS)),)
+ifeq ($(strip $(REASON)),)
+$(error Usage: make probe REASON="<reason>")
+endif
+endif
+ifneq ($(filter logs,$(MAKECMDGOALS)),)
+ifeq ($(strip $(RUN)),)
+$(error Usage: make logs RUN=<run-id> [STEP="<step-name>"])
+endif
+endif
+```
 
 ## Test Workflow
 
@@ -127,7 +149,6 @@ test:
 
 ```makefile
 commit:
-	$(if $(strip $(MSG)),,$(error Usage: make commit MSG="<type>(<scope>): <description>"))
 	git add .
 	@uv run pre-commit run || echo "Advisory pre-commit reported issues. Auto-fixed files were re-staged and the commit continues."
 	git add .
@@ -302,7 +323,6 @@ ci-watch: _preflight
 probe: _preflight
 
 probe:
-	$(if $(strip $(REASON)),,$(error Usage: make probe REASON="<reason>"))
 	git add -f spikes/debug/probe.sh
 	git commit -m "debug: probe" --no-verify --allow-empty
 	git push
@@ -336,8 +356,9 @@ The Debugger's Reproduction phase needs to read CI logs without drowning in the 
 ### Example
 
 ```makefile
+logs: _preflight
+
 logs:
-	$(if $(strip $(RUN)),,$(error Usage: make logs RUN=<run-id> [STEP="<step-name>"]))
 	@if [ -z "$(STEP)" ]; then \
 	  gh run view "$(RUN)" --log-failed 2>/dev/null | awk -F'\t' '{ if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
 	else \

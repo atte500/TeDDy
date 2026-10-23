@@ -25,6 +25,24 @@ ifneq ($(_UNKNOWN_GOALS),)
 $(error Unknown target '$(_UNKNOWN_GOALS)'. Run make help for the list of targets.)
 endif
 
+# Reject a missing required input before any prerequisite runs. The _preflight
+# gate would otherwise report a missing tool and hide the real problem.
+ifneq ($(filter commit,$(MAKECMDGOALS)),)
+ifeq ($(strip $(MSG)),)
+$(error Usage: make commit MSG="<type>(<scope>): <description>")
+endif
+endif
+ifneq ($(filter probe,$(MAKECMDGOALS)),)
+ifeq ($(strip $(REASON)),)
+$(error Usage: make probe REASON="<reason>")
+endif
+endif
+ifneq ($(filter logs,$(MAKECMDGOALS)),)
+ifeq ($(strip $(RUN)),)
+$(error Usage: make logs RUN=<run-id> [STEP="<step-name>"])
+endif
+endif
+
 # Always use GNU Make native features for cross-platform compatibility.
 # On Windows, ensure a POSIX shell is used for pipeline targets (ci-watch, probe, logs).
 ifeq ($(OS),Windows_NT)
@@ -75,7 +93,6 @@ _preflight:
 #
 # `git add .` stages ALL local changes, including currently unstaged ones.
 commit:
-	$(if $(strip $(MSG)),,$(error Usage: make commit MSG="<type>(<scope>): <description>"))
 	git add .
 	@uv run pre-commit run || echo "Advisory pre-commit reported issues. Auto-fixed files were re-staged and the commit continues."
 	git add .
@@ -224,7 +241,6 @@ ci-watch: _preflight
 probe: _preflight
 
 probe:
-	$(if $(strip $(REASON)),,$(error Usage: make probe REASON="<reason>"))
 	git add -f spikes/debug/probe.sh
 	git commit -m "debug: probe" --no-verify --allow-empty
 	git push
@@ -258,7 +274,6 @@ probe:
 logs: _preflight
 
 logs:
-	$(if $(strip $(RUN)),,$(error Usage: make logs RUN=<run-id> [STEP="<step-name>"]))
 	@if [ -z "$(STEP)" ]; then \
 	  gh run view "$(RUN)" --log-failed 2>/dev/null | awk -F'\t' '{ if(j!=$$1||s!=$$2){j=$$1;s=$$2;print "\n["j" > "s"]"} l=$$3; p=index(l,"Z "); if(p>0)l=substr(l,p+2); gsub(/\x1B\[[0-9;]*[a-zA-Z]/,"",l); gsub(/\^\[\[[0-9;]*[a-zA-Z]/,"",l); if(l ~ /^##\[group\]Run /){k=1;next} if(k && l ~ /^##\[endgroup\]/){k=0;next} if(k)next; if(l ~ /^##\[group\]/ || l ~ /^##\[endgroup\]/)next; gsub(/^##\[error\]/,"Error: ",l); print l }'; \
 	else \

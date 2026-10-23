@@ -167,10 +167,13 @@ def test_command_line_words_must_be_known_targets() -> None:
     assert "Unknown target" in body
 
 
-def test_values_arrive_through_named_variables() -> None:
+def test_required_values_are_enforced_at_parse_time() -> None:
+    body = _MAKEFILE.read_text(encoding="utf-8")
     for target, variable in (("commit", "MSG"), ("probe", "REASON"), ("logs", "RUN")):
+        assert f"$(filter {target},$(MAKECMDGOALS))" in body, target
         _, recipe = _rule(target)
         assert f"$({variable})" in "\n".join(recipe), target
+        assert not any("$(error Usage" in line for line in recipe), target
 
 
 def test_probe_passes_the_reason_with_portable_quoting() -> None:
