@@ -1,13 +1,13 @@
 <div align="center">
 
 <p align="center">
-  <img src="./assets/banner.png" alt="TeDDy: The opinionated software engineering harness - Because you should own the means of development" width="100%" style="max-width: 650px;" />
+  <img src="https://raw.githubusercontent.com/atte500/teddy/main/assets/banner.png" alt="TeDDy: The opinionated software engineering harness - Because you should own the means of development" width="100%" style="max-width: 650px;" />
 </p>
 
 <p align="center">
   <a href="https://pypi.org/project/teddy-cli/"><img src="https://img.shields.io/pypi/v/teddy-cli?color=blue&style=flat-square" alt="PyPI version" /></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.11+-blue.svg?style=flat-square" alt="Python 3.11+" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-purple.svg?style=flat-square" alt="License: AGPL-3.0" /></a>
+  <a href="https://github.com/atte500/teddy/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-purple.svg?style=flat-square" alt="License: AGPL-3.0" /></a>
 </p>
 
 ```bash
@@ -15,7 +15,7 @@ uv tool install teddy-cli
 ```
 
 <p align="center">
-  <img src="./assets/demo.gif" alt="TeDDy TUI Demo" width="100%" style="max-width: 100%; height: auto;" />
+  <img src="https://raw.githubusercontent.com/atte500/teddy/main/assets/demo.gif" alt="TeDDy TUI Demo" width="100%" style="max-width: 100%; height: auto;" />
 </p>
 
 [Why TeDDy?](#why-not-just-use) &bull; [TeDDy's SDLC](#teddys-software-delivery-lifecycle) &bull; [Owning Your SDLC](#owning-your-sdlc) &bull; [Quickstart](#getting-started) &bull; [Usage](#usage) &bull; [FAQ](#frequently-asked-questions) &bull; [Support](#support)
@@ -96,7 +96,7 @@ For **technical defects**, TeDDy prevents structural failures through Design by 
 For **misalignment**, TeDDy prevents building the wrong thing by using spikes and prototypes to de-risk uncertain solutions before committing to an architecture. During implementation, it mitigates drift by delivering features through small vertical slices. Specific Markdown documents mediate every phase transition, anchoring the agents and providing a high-level steering interface to keep humans in the loop.
 
 <p align="center">
-  <img src="./assets/matrix.png" alt="Workflow Matrix" width="800" />
+  <img src="https://raw.githubusercontent.com/atte500/teddy/main/assets/matrix.png" alt="Workflow Matrix" width="800" />
 </p>
 
 ---
@@ -106,7 +106,7 @@ For **misalignment**, TeDDy prevents building the wrong thing by using spikes an
 Instead of winging the process on the go or taking the shortest path to generate code, agents follow a structured delivery process mediated by plain Markdown documents:
 
 <p align="center">
-  <img src="./assets/workflow-schematic.png" alt="TeDDy Workflow" width="850" />
+  <img src="https://raw.githubusercontent.com/atte500/teddy/main/assets/workflow-schematic.png" alt="TeDDy Workflow" width="850" />
 </p>
 
 1. **Strategic Alignment & Roadmapping:** The **Pathfinder** aligns incoming requests with the product vision, roadmap, and permanent system invariant specifications.
@@ -364,9 +364,9 @@ The tool itself is not monetized. If your team needs custom agent architectures,
 
 ## Learn More
 
-- [Project Roadmap & Vision](./docs/project/PROJECT.md)
-- [System Architecture](./docs/architecture/ARCHITECTURE.md)
-- [Agent Prompt Templates](./src/teddy_executor/resources/config/prompts/)
+- [Project Roadmap & Vision](https://github.com/atte500/teddy/blob/main/docs/project/PROJECT.md)
+- [System Architecture](https://github.com/atte500/teddy/blob/main/docs/architecture/ARCHITECTURE.md)
+- [Agent Prompt Templates](https://github.com/atte500/teddy/tree/main/src/teddy_executor/resources/config/prompts)
 
 ---
 

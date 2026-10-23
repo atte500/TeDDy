@@ -9,6 +9,8 @@ leading blank line, so the identity block is followed immediately by the path.
 
 from pathlib import Path
 
+import typer
+
 from teddy_executor.adapters.inbound import session_cli_handlers as handlers
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.outbound.config_service import IConfigService
@@ -90,3 +92,35 @@ def test_resume_banner_session_line_has_no_leading_blank(env, monkeypatch, capsy
     captured = capsys.readouterr()
     assert captured.out == "Resuming session: .teddy/sessions/my-session\n"
     assert captured.err == "\nChecking configurations...\n\nModel: gpt-4o\n"
+
+
+def _emit_notice(line: str) -> list[str]:
+    """Write one notice line to stderr and report no fired check."""
+    typer.echo(line, err=True)
+    return []
+
+
+def test_startup_preamble_orders_update_notice_before_drift(env, monkeypatch, capsys):
+    """The update notice follows the config line and precedes the drift advice."""
+    env.mock_port(IConfigService)
+    monkeypatch.setattr(handlers, "find_project_root", lambda: Path("/fake/project"))
+    monkeypatch.setattr(handlers, "_run_health_checks", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        handlers,
+        "_display_update_notification",
+        lambda container, cache_path: _emit_notice("update-notice"),
+    )
+    monkeypatch.setattr(
+        handlers,
+        "_run_cli_preflight_check",
+        lambda container, **kwargs: _emit_notice("drift-notice"),
+    )
+
+    handlers._run_startup_preamble(env.container)
+
+    captured = capsys.readouterr()
+    assert (
+        captured.err.index("Checking configurations...")
+        < captured.err.index("update-notice")
+        < captured.err.index("drift-notice")
+    ), f"Notices out of order: {captured.err!r}"

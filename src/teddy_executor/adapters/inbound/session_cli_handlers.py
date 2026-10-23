@@ -428,23 +428,25 @@ def _report_fast_forward(git_run: Callable[..., Any], before: str, after: str) -
     )
 
 
-def _start_background_update_check(container: Container) -> list[str]:
-    """Start the non-blocking version check and report the update-check keys.
+def _update_cache_path() -> Path:
+    """Resolve the project-local cache file that carries the latest version."""
+    return find_project_root() / ".teddy" / ".update_cache.json"
 
-    Both session entry points share this preamble: it spawns the daemon
-    version-fetch thread, then emits the cached update notification (if any).
-    The returned list names the update checks that fired.
+
+def _start_background_update_check() -> None:
+    """Start the daemon version fetch that fills the cache for the next run.
+
+    The fetch never blocks startup and never prints. The startup preamble emits
+    the notice from the cache this fetch leaves behind.
     """
     import threading
 
-    cache_path = find_project_root() / ".teddy" / ".update_cache.json"
     thread = threading.Thread(
         target=background_check,
-        args=(cache_path,),
+        args=(_update_cache_path(),),
         daemon=True,
     )
     thread.start()
-    return _display_update_notification(container, cache_path)
 
 
 def _run_startup_preamble(
@@ -458,10 +460,10 @@ def _run_startup_preamble(
 
     The order is fixed so the banner layout cannot drift: health checks, the
     start-only workspace fast-forward line, one separator blank line, the
-    ``Checking configurations...`` line, then the preflight check. ``start``
-    forwards its ``agent`` so the preflight validates the agent prompt and
-    enables ``pull_workspace``; ``resume`` leaves the agent ``None`` and keeps
-    the pull off.
+    ``Checking configurations...`` line, the cached update notice, then the
+    preflight check with its drift advice. ``start`` forwards its ``agent`` so
+    the preflight validates the agent prompt and enables ``pull_workspace``;
+    ``resume`` leaves the agent ``None`` and keeps the pull off.
     """
     config_service = container.resolve(IConfigService)
     _run_health_checks(config_service)
@@ -470,6 +472,7 @@ def _run_startup_preamble(
     # One separator groups the checkmark block above with the notices below.
     typer.echo("", err=True)
     typer.echo("Checking configurations...", err=True)
+    _display_update_notification(container, _update_cache_path())
     _run_cli_preflight_check(
         container,
         agent=agent,
@@ -800,7 +803,7 @@ def _display_update_notification(container: Container, cache_path: Path) -> list
             typer.echo(
                 typer.style(
                     f"ℹ A new version {latest} is available. "
-                    f"To upgrade, run: {command}\n",
+                    f"To upgrade, run: {command}",
                     fg=typer.colors.YELLOW,
                 ),
                 err=True,
@@ -830,7 +833,7 @@ def handle_new_session(  # noqa: PLR0913
     max_cost: Optional[float] = None,
 ):
     """Logic for the 'start' command."""
-    _start_background_update_check(container)
+    _start_background_update_check()
 
     try:
         # 0. Pipeline mode requires an initial message
@@ -1513,7 +1516,7 @@ def handle_resume_session(  # noqa: PLR0913
     max_cost: Optional[float] = None,
 ):
     """Logic for the 'resume' command."""
-    _start_background_update_check(container)
+    _start_background_update_check()
 
     try:
         # 1. Shared startup preamble (health checks + preflight)

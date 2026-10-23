@@ -14,46 +14,12 @@ permissions:
   contents: read
 
 jobs:
-  publish-dev-to-pypi:
-    name: Publish Dev Pre-release to PyPI
-    if: >
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
-      github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/teddy-cli
-    permissions:
-      id-token: write  # MANDATORY: This permission is required for OIDC Trusted Publishing
-    steps:
-    - name: Checkout source
-      uses: actions/checkout@v5
-
-    - name: Set up Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: "3.14"
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@v8.3.2
-
-    - name: Generate Dynamic Dev Version
-      run: |
-        # Bump patch version and append .dev<run_number> for PEP 440 compliance
-        CURRENT_VERSION=$(uv run python -c "import tomllib; f=open('pyproject.toml','rb'); print(tomllib.load(f)['project']['version'])")
-        NEXT_VERSION=$(echo "$CURRENT_VERSION" | awk -F. '{OFS=FS; $NF=$NF+1; print}')
-        sed -i "s/^version = \".*\"/version = \"${NEXT_VERSION}.dev${{ github.run_number }}\"/" pyproject.toml
-
-    - name: Build package
-      run: uv build
-
-    - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      # Default target is PyPI (no repository-url needed)
-
-  publish-to-pypi:
+  publish:
     name: Publish to PyPI
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: >
+      github.event_name == 'release' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -63,6 +29,7 @@ jobs:
       actions: read  # Required to check CI workflow run status before publishing
     steps:
     - name: Wait for CI to pass
+      if: github.event_name == 'release'
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
@@ -88,17 +55,49 @@ jobs:
 
     - name: Checkout source
       uses: actions/checkout@v5
+      with:
+        # Full history and tags let the channel step detect a release tag.
+        fetch-depth: 0
+        fetch-tags: true
+
+    - name: Select release channel
+      id: channel
+      run: |
+        if [ "${{ github.event_name }}" = "release" ]; then
+          echo "mode=final" >> "$GITHUB_OUTPUT"
+          echo "Release event: publishing the manifest version."
+          exit 0
+        fi
+        if git tag --points-at HEAD | grep -qE '^v[0-9]'; then
+          echo "mode=skip" >> "$GITHUB_OUTPUT"
+          echo "A release tag points at ${{ github.sha }}, so the release event publishes this commit."
+          exit 0
+        fi
+        echo "mode=dev" >> "$GITHUB_OUTPUT"
+        echo "Continuous channel: publishing a dev pre-release."
 
     - name: Set up Python
+      if: steps.channel.outputs.mode != 'skip'
       uses: actions/setup-python@v6
       with:
         python-version: "3.14"
 
     - name: Install uv
+      if: steps.channel.outputs.mode != 'skip'
       uses: astral-sh/setup-uv@v8.3.2
 
+    - name: Stamp dev version
+      if: steps.channel.outputs.mode == 'dev'
+      run: |
+        # Bump the patch version and append .dev<run_number> for PEP 440 compliance
+        CURRENT_VERSION=$(uv run python -c "import tomllib; f=open('pyproject.toml','rb'); print(tomllib.load(f)['project']['version'])")
+        NEXT_VERSION=$(echo "$CURRENT_VERSION" | awk -F. '{OFS=FS; $NF=$NF+1; print}')
+        sed -i "s/^version = \".*\"/version = \"${NEXT_VERSION}.dev${{ github.run_number }}\"/" pyproject.toml
+
     - name: Build package
+      if: steps.channel.outputs.mode != 'skip'
       run: uv build
 
     - name: Publish to PyPI
+      if: steps.channel.outputs.mode != 'skip'
       uses: pypa/gh-action-pypi-publish@release/v1
