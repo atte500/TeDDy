@@ -8,6 +8,8 @@ import os
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.setup.test_environment import TestEnvironment
 
@@ -51,6 +53,9 @@ def _advance_origin(origin: Path, workdir: Path) -> None:
     _git(["push", "origin", "main"], clone)
 
 
+# Real git subprocess work plus a full CLI start can outlast the shared CI
+# budget under Windows contention, and a thread-method expiry kills the worker.
+@pytest.mark.timeout(30)
 def test_start_fast_forwards_a_behind_workspace(
     tmp_path: Path, tmp_path_factory, monkeypatch
 ) -> None:

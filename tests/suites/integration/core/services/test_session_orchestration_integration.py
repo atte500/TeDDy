@@ -1,3 +1,4 @@
+import pytest
 import yaml
 import sys
 from tests.harness.setup.mocking import POSIXPathMock
@@ -7,6 +8,11 @@ from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
 
 runner = CliRunner()
+
+# Every test here drives a full CLI turn, and the append-mode test drives two.
+# That cost can exceed the shared CI timeout under Windows contention, whose
+# thread-method expiry kills the xdist worker instead of failing one test.
+pytestmark = pytest.mark.timeout(30)
 
 
 def make_mock_response(content, model="gpt-4o"):
