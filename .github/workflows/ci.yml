@@ -15,6 +15,7 @@ jobs:
   test-suite:
     name: Test Suite (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     defaults:
       run:
         shell: bash

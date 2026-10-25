@@ -13,6 +13,7 @@ The CI pipeline consists of two parallel jobs:
 - Executes across multiple OS targets (e.g., ubuntu-latest, windows-latest, macos-latest).
 - Runs the full test suite: `{runner} pytest`.
 - Discovers tests via `testpaths` in `pyproject.toml`; the CI step passes no path so the config stays the single source of truth.
+- Pairs one shared per-test timeout budget with a job wall-clock cap, because the pytest-timeout thread method terminates a worker outright.
 - **Blocking:** If this job fails, the CI pipeline is marked as failed.
 
 ### Job 2: Non-Blocking Quality Checks
@@ -53,6 +54,7 @@ jobs:
   test-suite:
     name: Test Suite (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     defaults:
       run:
         shell: bash

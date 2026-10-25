@@ -47,6 +47,7 @@ from tests.harness.setup.composition import (
     is_tee_active,
     temp_cache_dir,
 )
+from tests.harness.setup.timeouts import ci_per_test_timeout
 
 # Pin the mock HTTP server to the IPv4 loopback literal. On Windows, 'localhost'
 # resolves to ::1 first; the IPv4-only test server never answers there, and every
@@ -57,17 +58,17 @@ os.environ.setdefault("PYTEST_HTTPSERVER_HOST", "127.0.0.1")
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_configure(config):
+    """Apply the shared CI per-test budget and force UTF-8 text encoding.
+
+    The budget keeps a transient CI runner stall from killing an xdist worker,
+    because the thread timeout method terminates the worker process outright.
     """
-    Systemic Fix for Windows CI: Provide 10s of extra headroom for tests
-    running in CI environments to prevent worker crashes under contention.
-    """
-    if os.getenv("CI") == "true":
-        config.option.timeout = 15
-    """
-    Systemic Fix for Windows CI: Force UTF-8 as the default for all file I/O
-    in tests. This prevents UnicodeEncodeError on Windows runners when
-    handling emojis or non-ASCII characters in plans, reports, or source code.
-    """
+    budget = ci_per_test_timeout()
+    if budget is not None:
+        config.option.timeout = budget
+
+    # Force UTF-8 as the default for all file I/O in tests. This prevents
+    # UnicodeEncodeError on Windows runners when handling non-ASCII text.
     original_write_text = Path.write_text
     original_read_text = Path.read_text
 

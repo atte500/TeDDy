@@ -55,7 +55,7 @@ def _advance_origin(origin: Path, workdir: Path) -> None:
 
 # Real git subprocess work plus a full CLI start can outlast the shared CI
 # budget under Windows contention, and a thread-method expiry kills the worker.
-@pytest.mark.timeout(30)
+@pytest.mark.timeout(60)
 def test_start_fast_forwards_a_behind_workspace(
     tmp_path: Path, tmp_path_factory, monkeypatch
 ) -> None:
