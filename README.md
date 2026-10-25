@@ -236,17 +236,17 @@ teddy resume -m "your next instruction"
 
 ### Optional Flags
 
-| Flag                            | Description                                                                                                                                   |
-| :------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------- |
-| <nobr>`--agent`, `-a`</nobr>    | Select agent persona (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`). Default: `pathfinder` (`assistant` in pipeline mode). |
-| <nobr>`--context`, `-c`</nobr>  | Supply additional context files or directories. Repeatable (`-c a.py -c b.md`) or comma-separated (`-c "a.py,b.md"`).                         |
-| <nobr>`--model`</nobr>          | Override the default configured model.                                                                                                        |
-| <nobr>`--yolo`, `-y`</nobr>     | Auto-approve all actions. To make this default, set `yolo_default: true` in `.teddy/config.yaml`.                                             |
-| <nobr>`--no-yolo`, `-n`</nobr>  | Force interactive mode for a single run.                                                                                                      |
-| <nobr>`--message`, `-m`</nobr>  | Initial instruction to pass directly to the agent.                                                                                            |
-| <nobr>`--pipeline`, `-p`</nobr> | Pipeline mode. Auto-approves actions, requires `-m`, exits immediately after the first message turn, and defaults to the `assistant` agent.   |
-| <nobr>`--max-turns`</nobr>      | Maximum turns for a non-interactive run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`.                                            |
-| <nobr>`--max-cost`</nobr>       | Maximum session cost in dollars for a non-interactive run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`.                   |
+| Parameters                 | Short | Description                                                                                                                                   |
+| :------------------------- | :---: | :-------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--message`                | `-m`  | Initial instruction to pass directly to the agent.                                                                                            |
+| `--agent`                  | `-a`  | Select agent persona (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`). Default: `pathfinder` (`assistant` in pipeline mode). |
+| `--context`                | `-c`  | Supply additional context files or directories. Repeatable (`-c a.py -c b.md`) or comma-separated (`-c "a.py,b.md"`).                         |
+| `--pipeline`               | `-p`  | Pipeline mode. Auto-approves actions, requires `-m`, exits immediately after the first message turn, and defaults to the `assistant` agent.   |
+| `--yolo`                   | `-y`  | Auto-approve all actions. To make this default, set `yolo_default: true` in `.teddy/config.yaml`.                                             |
+| `--no-yolo`                | `-n`  | Force interactive mode for a single run.                                                                                                      |
+| <nobr>`--max-turns`</nobr> |       | Maximum turns for a non-interactive run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`.                                            |
+| <nobr>`--max-cost`</nobr>  |       | Maximum session cost in dollars for a non-interactive run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`.                   |
+| `--model`                  |       | Override the default configured model.                                                                                                        |
 
 ### Chat-Oriented Workflow (CHOP)
 
