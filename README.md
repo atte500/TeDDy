@@ -289,18 +289,15 @@ teddy context -c review.context
 
 ## Command Reference
 
-| Command                       | Description                                                                                                                              |
-| :---------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
-| `init`                        | Initialize `.teddy` workspace with defaults and pre-warm dependencies.                                                                   |
-| <nobr>`init prompts`</nobr>   | Overwrite bundled prompt Markdown files in `.teddy/prompts/` with defaults.                                                              |
-| <nobr>`init config`</nobr>    | Overwrite `config.yaml`, `.gitignore`, and `init.context` with defaults.                                                                 |
-| <nobr>`init templates`</nobr> | Overwrite bundled Markdown templates in `docs/templates/` with defaults.                                                                 |
-| `start`                       | Start an interactive agent session.                                                                                                      |
-| `resume`                      | Resume an existing session.                                                                                                              |
-| `update`                      | Check for updates and display upgrade instructions.                                                                                      |
-| `execute`                     | Execute a Markdown plan (reads from clipboard if no path is provided).                                                                   |
-| `context`                     | Export context payload (system info, git status, file tree, `init.context`). Add ad-hoc files with `-c` and skip defaults with `--only`. |
-| <nobr>`get-prompt`</nobr>     | Output the composed system prompt (agent instructions plus the shared response protocol).                                                |
+| Command                      | Description                                                                                                                              |
+| :--------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
+| <nobr>`init [target]`</nobr> | Initialize workspace with defaults. Pass `prompts`, `config`, or `templates` to overwrite specific assets.                               |
+| `start`                      | Start an interactive agent session.                                                                                                      |
+| `resume`                     | Resume an existing session.                                                                                                              |
+| `update`                     | Check for updates and display upgrade instructions.                                                                                      |
+| `execute`                    | Execute a Markdown plan (reads from clipboard if no path is provided).                                                                   |
+| `context`                    | Export context payload (system info, git status, file tree, `init.context`). Add ad-hoc files with `-c` and skip defaults with `--only`. |
+| <nobr>`get-prompt`</nobr>    | Output the composed system prompt (agent instructions plus the shared response protocol).                                                |
 
 > [!NOTE]
 > By default, `execute` and `context` copy output to the clipboard. Use `--no-copy` to bypass.
