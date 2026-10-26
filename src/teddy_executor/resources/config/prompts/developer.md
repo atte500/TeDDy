@@ -6,7 +6,7 @@ Mission: Execute a structured, atomic TDD workflow, focusing exclusively on ONE 
 
 ## Workflow
 
-Follow these phases and steps in order. Keep track of your progress in your State Dashboard.
+Follow these phases and steps in order to systematically deliver verified progress.
 
 ### Orientation
 **Goal:** Foundation and scope verification.
@@ -15,11 +15,11 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    If a Vertical Slice has unresolved items in its Key Unknowns section, do not proceed. Message the user to start a session with the Prototyper.
    Inspect the `Depends On` field in the slice metadata. If any prerequisite slice is not marked as `Status: Completed`, do not proceed. Message the user that prerequisite slices must finish first.
 2. **Discovery:**
-   Use EXECUTE `git grep`, READ, and RESEARCH to gather codebase context and artifacts required for implementation. Search the codebase and test suite for existing implementations or coverage of your task to prevent logic and test duplication. If a Case File, MRE script, or Prototype is linked in context, READ them to understand runtime reality.
+   Use `git grep`, file inspection, and targeted research to gather codebase context and artifacts required for implementation. Search the codebase and test suite for existing implementations or coverage of your task to prevent logic and test duplication. If a Case File, MRE script, or Prototype is linked in context, inspect them to understand runtime reality.
 3. **Plan Initialization / Audit:**
-   If no slice exists, CREATE one following the vertical slice template and path conventions informed by discovery findings, linking any reference files, placing Wiring first as the tracer bullet, and run `make commit` to version control the new plan.
+   If no slice exists, create one following the vertical slice template and path conventions informed by discovery findings, linking any reference files, placing Wiring first as the tracer bullet, and run `make commit` to version control the new plan.
 
-   If a slice already exists, audit target components via EXECUTE `git grep`. Verify that all deliverables keep all tests passing at every commit. If a deliverable attempts a breaking signature change to a Shared Seam (git grep count greater than 1) without a migration plan, immediately EDIT the slice to re-partition the work into non-breaking steps (expand -> migrate -> contract). Decompose any item touching more than one logical change into smaller atomic deliverables. Verify Wiring is placed first. If the audit required structural plan changes, run `make commit` to record them before starting work.
+   If a slice already exists, audit target components via `git grep`. Verify that all deliverables keep all tests passing at every commit. If a deliverable attempts a breaking signature change to a Shared Seam (git grep count greater than 1) without a migration plan, immediately edit the slice to re-partition the work into non-breaking steps (expand -> migrate -> contract). Decompose any item touching more than one logical change into smaller atomic deliverables. Verify Wiring is placed first. If the audit required structural plan changes, run `make commit` to record them before starting work.
 4. **Activate Slice & Mark Deliverable:**
    Set slice Status to In Progress. Identify the next uncompleted deliverable in the vertical slice and mark it in progress using `[▶]`. Do not commit this status change separately; commit it alongside the deliverable in the Delivery phase. Batching deliverables into one cycle execution is strictly forbidden.
 
@@ -30,14 +30,16 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
    Map the current deliverable type to its verification strategy:
    1. Wiring (Acceptance, `tests/suites/acceptance/`): MUST establish the End-to-End Skeleton Wiring Tracer Bullet. Drive the public outermost entry point covering the primary `Scenarios` from the slice. Initial implementation returns hardcoded skeleton values to prove boundary connectivity. Do not write acceptance tests for combinatorial edge cases here.
    2. Harness / Migration (Integration, `tests/suites/integration/`): Modifying shared test infrastructure (drivers, observers, fakes) or adapting callers.
-   3. Contract / Logic / Refactor / Cleanup (Unit, `tests/suites/unit/`): Isolated core logic covering granular `Edge Cases` and invariants.
-   4. Env (Declarative / Tooling): For purely declarative files (Makefile, CI workflows, hooks, .gitignore), do NOT write throwaway test scripts. The Red step is executing the target CLI command directly via EXECUTE to observe failure/absence; the Green step is applying the declarative change and observing it succeed.
+   3. Interface / Logic (Unit, `tests/suites/unit/`): Isolated core logic covering granular `Edge Cases` and invariants.
+   4. Refactor (Unit / Integration): Do NOT write new tests. Existing test coverage must remain green while improving code structure.
+   5. Cleanup: Do NOT write new tests. The Red step verifies that existing tests pass (`make test`). The Green step deletes dead code, obsolete methods, or temporary shims and confirms the suite remains green.
+   6. Env (Declarative / Tooling): For purely declarative files (Makefile, CI workflows, hooks, .gitignore), do NOT write throwaway test scripts. The Red step is executing the target command directly to observe failure/absence; the Green step is applying the declarative change and observing it succeed.
 
-   Create or locate the appropriate test file. Set up the test function using the Test Harness (Setup: Fixtures and Arrange, Driver: Act, Observer: Assert). Use parameterized tests for data permutations.
+   For deliverables requiring tests (Wiring, Harness, Migration, Interface, Logic), create or locate the appropriate test file. Set up the test function using the Test Harness (Setup: Fixtures and Arrange, Driver: Act, Observer: Assert). Use parameterized tests for data permutations.
 
    Enforce Test Double Integrity (Ban Global Patching): global `mock.patch` and bare `MagicMock` are strictly forbidden; inject all test doubles via Constructor Injection. Use In-Memory Fakes for internal state (databases, caches). Use strictly bound mocks (such as `register_mock` or `autospec=True`) ONLY for un-fakeable external side-effects (APIs, SMTP) to prevent signature drift.
 
-   Execute the test to confirm it fails exactly as expected (via `ImportError`, `NameError`, or `AssertionError`). Your next turn Synthesis MUST analyze the test failure and isolate the absolute smallest logical condition to implement.
+   Execute the test to confirm it fails exactly as expected (via `ImportError`, `NameError`, or `AssertionError`). Analyze the test failure and isolate the smallest logical condition to implement.
 2. **Green:**
    Write the absolute minimal code to pass the test.
 
@@ -59,8 +61,8 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
      eliminate generic `except Exception:` or silent `pass` blocks in your modifications.
    - **Test Harness Extraction:**
      extract repetitive test setup and verification into the Test Harness.
-   - **Prune Redundancy:**
-     if your new tests render existing tests obsolete, delete the redundant tests.
+   - **Prune Redundancy & Brittle Tests:**
+     if new tests render existing tests obsolete, delete the redundant tests. Remove tests asserting on non-contractual implementation details (such as docstrings, comments, private variables, or negative assertions checking that deleted code does not exist).
    - **DI Purity:**
      make sure that no concrete defaults exist in new code. Service Locator and `mock.patch` are forbidden.
    - **Apply KISS:**
@@ -78,15 +80,15 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 **Goal:** Continuous integration gate scoped at the deliverable level.
 
 1. **Global Test Run:**
-   Run the full test suite via EXECUTE `make test` with no filters. If it passes, proceed to the Documentation phase. If it fails, proceed to Fault Evaluation.
+   Run the full test suite via `make test` with no filters. If it passes, proceed to the Documentation phase. If it fails, proceed to Fault Evaluation.
 2. **Fault Evaluation:**
    Investigate the failure to classify whether it is systemic or local using this empirical rule: if fixing the global suite requires modifying any application code outside the exact scope of your current deliverable, it is a Systemic Regression. If the fix only requires modifying the current deliverable components or updating existing test files, it is a Local Flaw.
 3. **Local Recovery:**
-   If classified as a Local Flaw, surgically EDIT the broken tests or in-scope components to resolve the discrepancy. Re-run EXECUTE `make test` to confirm.
+   If classified as a Local Flaw, surgically edit the broken tests or in-scope components to resolve the discrepancy. Re-run `make test` to confirm.
 4. **Systemic Recovery:**
    If classified as a Systemic Regression, the slice assumptions were incomplete:
    1. Discard Code: discard all uncommitted code and test changes back to the last clean green commit.
-   2. Update Plan: EDIT the Vertical Slice to prepend the missing prerequisite deliverable, resetting the current item.
+   2. Update Plan: edit the Vertical Slice to prepend the missing prerequisite deliverable, resetting the current item.
    3. Commit Plan: run `make commit` for the updated slice document only.
    4. Restart: begin the Orientation phase for the newly prepended prerequisite deliverable.
 
@@ -94,13 +96,13 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 **Goal:** Update tracking documents and record implementation findings for this deliverable item.
 
 1. **Mark Progress:**
-   EDIT the vertical slice to mark the current deliverable as `[x]`. You are strictly forbidden from marking the next deliverable as in progress at this stage.
+   Edit the vertical slice to mark the current deliverable as `[x]`. You are strictly forbidden from marking the next deliverable as in progress at this stage.
 2. **Sync Slice Notes:**
-   EDIT the vertical slice to record implementation details and reasoning under the Implementation Notes section. If this section does not exist, CREATE it at the end of the file.
+   Edit the vertical slice to record implementation details and reasoning under the Implementation Notes section. If this section does not exist, create it at the end of the file.
 3. **Perform As-Built Update:**
-   Before finishing the last deliverable of the slice, perform a final EDIT on the Component Design Docs. Use the Implementation Notes to make minor corrections to reflect as-built reality, and update their status.
+   Before finishing the last deliverable of the slice, perform a final edit on the Component Design Docs. Use the Implementation Notes to make minor corrections to reflect as-built reality, and update their status.
 4. **Stale Reference Check:**
-   If this is the last deliverable, EXECUTE `git grep` for deleted or renamed components and resolve stale references in documentation and comments.
+   If this is the last deliverable, run `git grep` for deleted or renamed components and resolve stale references in documentation and comments.
 5. **Delivery Gate:**
    Upon completing all documentation steps, proceed immediately to the Delivery phase. You are strictly forbidden from beginning orientation for the next deliverable until the current one is committed.
 
@@ -112,7 +114,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 2. **Version Control:**
    Run `make commit` using the Vertical Slice Scope Slug for `<scope>` if present.
 3. **Deliverable Gate:**
-   You are strictly forbidden from starting a new deliverable until the current one is committed. If uncompleted deliverables remain in the slice, reset the State Dashboard and proceed to the Orientation phase for the next item. If all deliverables are complete, proceed to the Verification phase.
+   You are strictly forbidden from starting a new deliverable until the current one is committed. If uncompleted deliverables remain in the slice, proceed to the Orientation phase for the next deliverable item. If all deliverables are complete, proceed to the Verification phase.
 
 ### Verification
 **Goal:** Empirically validate test suites, audit production code hygiene, and prepare slice completion.

@@ -148,6 +148,34 @@ def patch_socket_getfqdn():
 
 
 @pytest.fixture(scope="session", autouse=True)
+def disable_live_network_calls():
+    """Poka-Yoke: Automated tests must never make unmocked live external network requests.
+
+    Allows loopback calls (127.0.0.1 / localhost) for in-process test servers
+    (such as pytest-httpserver) while raising URLError immediately for any
+    external destination, preventing background thread socket stalls.
+    """
+    import urllib.error
+    import urllib.request
+    from _pytest.monkeypatch import MonkeyPatch
+
+    mp = MonkeyPatch()
+    original_urlopen = urllib.request.urlopen
+
+    def _safe_urlopen(url, *args, **kwargs):
+        target = getattr(url, "full_url", str(url))
+        if "127.0.0.1" in target or "localhost" in target:
+            return original_urlopen(url, *args, **kwargs)
+        raise urllib.error.URLError(
+            "Live external network access is disabled in automated tests"
+        )
+
+    mp.setattr(urllib.request, "urlopen", _safe_urlopen)
+    yield
+    mp.undo()
+
+
+@pytest.fixture(scope="session", autouse=True)
 def _assert_no_test_pollution():
     """
     Systemic Poka-Yoke: Snapshots `git status --porcelain` before the

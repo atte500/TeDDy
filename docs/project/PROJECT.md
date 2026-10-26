@@ -5,8 +5,8 @@
 TeDDy's mission is to apply the **UNIX philosophy** to AI development and create a **Git-like workflow** to embed the entire AI collaboration process directly into the file system.
 
 - **Markdown Files as Interface:** The interface *is* the file system. AI collaboration lives exclusively in plain Markdown files in the local directory, managed with standard developer tools.
-- **Local-First & Data Ownership:** No cloud lock-in. Total control over privacy and data. The complete workflow and context history resides on the local machine in a portable, open format.
-- **Stateless & Transparent:** Context goes in as a file, results come out as a file. Every turn is completely deterministic, auditable, and hackable.
+- **Data Ownership:** Local-first operation with no cloud lock-in. Total control over privacy and data. The complete workflow and context history resides on the local machine in a portable, open format.
+- **Deterministic Operation:** Stateless and transparent. Context goes in as a file, results come out as a file. Every turn is completely deterministic, auditable, and hackable.
 - **Human-Centric Workflow:** Action plans are reviewed and approved interactively before execution. A suite of specialized AI personas (Pathfinder, Architect, Developer, Debugger) tackle distinct phases of the software lifecycle using disciplined, proven workflows.
 
 ## Guiding Principles
@@ -20,22 +20,25 @@ TeDDy's mission is to apply the **UNIX philosophy** to AI development and create
 This section defines the conventions for our project management artifacts.
 
 - **Artifact Lifecycle:** Work flows from `Spec` -> `Milestone` -> `Slice`.
-- **Numbering:** Artifacts are numbered sequentially using a per-type filename convention so agents can infer the correct filename:
-    - **Vertical Slices:** `MM-NN-name.md` (in `docs/project/slices/`) — `MM` is the target Milestone number and `NN` is the sequence number within that milestone.
-    - **Milestones:** `MM-name.md` (in `docs/project/milestones/`).
-    - **Case Files (Debugger):** `NN-name.md` (in `docs/project/debugging/`) — numbered sequentially.
-    - **Milestone 0 (bootstrapping) & Ad-hoc work (not tied to a milestone):** `00-NN-name.md` (in `docs/project/slices/`) — `00` is used as the Milestone prefix for Milestone 0 bootstrapping slices and for ad-hoc slices. Ad-hoc slices are NOT tracked in Milestone documents or the Roadmap.
 - **Archiving Policy:** Once a feature slice or milestone is fully implemented and merged, its active planning artifacts can be deleted. The Git history serves as the official, permanent archive.
-- **Spec Organization:** Specification documents live in a single flat directory `docs/project/specs/` and are reserved strictly for **permanent system invariants** — formats, contracts, protocols (e.g. the MRP), core data models, and non-negotiable architectural rules. Feature goals, requirements, and acceptance criteria belong in Milestone documents (`docs/project/milestones/`), not in specs. There is no ephemeral `specs/features/` lifecycle.
-- **Build & Run Commands:** The `Makefile` is the canonical entry point for common operations: `make test` (full suite), `make commit MSG="<msg>"` (stage and commit locally), `make push` (rebase and push), `make ci-watch` (monitor CI results), and `make probe REASON="<reason>"` (Remote Probing Protocol).
-- **Release Process:** The release process follows these steps:
-    1. **Triage:** Determine the scope (patch, minor, major) by reviewing `git log v<last_tag>..HEAD` for conventional commits.
-    2. **Release Notes:** Create a new file at `docs/project/releases/v<new_version>.md` summarizing features and fixes from the commit log. Record net user-visible outcomes only. Group related changes under one high-level entry instead of listing commits separately. Omit changes that cancel each other out within the release window.
-    3. **Version Bump:** Update the `version` field in `pyproject.toml`. Confirm the README badges still match `pyproject.toml` (the Python requirement and the license); the PyPI version badge is dynamic and needs no update.
-    4. **Approval Gate:** Present the proposed release notes and version bump to the user for review and approval.
-    5. **Commit:** Stage changes (including `uv.lock` if it was modified by the version bump build) and commit with `chore(release): bump version to <new_version>`.
-    6. **Tag:** Create a local tag with `git tag -a v<new_version> -m "v<new_version>"` and push it with `git push origin v<new_version>`.
-    7. **Publish:** Create a GitHub Release using `gh release create v<new_version> --title "v<new_version>" --notes-file docs/project/releases/v<new_version>.md`.
+- **Spec Organization:** Specification documents live in a single flat directory `docs/project/specs/` and are reserved strictly for **permanent system invariants** — formats, protocols (e.g. the MRP), schemas, and architectural boundaries. Feature goals, requirements, and acceptance criteria belong in Milestone documents (`docs/project/milestones/`), not in specs. There is no ephemeral `specs/features/` lifecycle.
+
+## Tooling
+
+The project `Makefile` is the canonical automation interface. Build targets are decomposed into modular fragments under `make/*.mk`. Standard targets include `make test` (run the full test suite via `pytest`), `make commit MSG="<type>(<scope>): <desc>"` (run pre-commit hooks, stage auto-fixes, and commit), `make push` (fast rebase and push to remote), `make ci-watch` (monitor and attribute remote CI runs), `make probe REASON="<reason>"` (trigger the Remote Probing Protocol), and `make logs RUN=<id> [STEP="<name>"]` (extract and format failed CI step logs).
+
+When a repetitive task or multi-step command sequence arises, agents must not run long ad-hoc shell commands. Add a dedicated target to the appropriate `make/*.mk` fragment and document its usage and flags in this section.
+
+## Releases
+
+The release process follows these steps:
+1. **Triage:** Determine the scope (patch, minor, major) by reviewing `git log v<last_tag>..HEAD` for conventional commits.
+2. **Release Notes:** Create a new file at `docs/project/releases/v<new_version>.md` summarizing features and fixes from the commit log. Record net user-visible outcomes only. Group related changes under one high-level entry instead of listing commits separately. Omit changes that cancel each other out within the release window.
+3. **Version Bump:** Update the `version` field in `pyproject.toml`. Confirm the README badges still match `pyproject.toml` (the Python requirement and the license); the PyPI version badge is dynamic and needs no update.
+4. **Approval Gate:** Present the proposed release notes and version bump to the user for review and approval.
+5. **Commit:** Stage changes (including `uv.lock` if it was modified by the version bump build) and commit with `chore(release): bump version to <new_version>`.
+6. **Tag:** Create a local tag with `git tag -a v<new_version> -m "v<new_version>"` and push it with `git push origin v<new_version>`.
+7. **Publish:** Create a GitHub Release using `gh release create v<new_version> --title "v<new_version>" --notes-file docs/project/releases/v<new_version>.md`.
 
 ## Templates
 
@@ -72,7 +75,7 @@ These files live in `docs/templates/` and are created or refreshed by `teddy ini
     - The makefile template defines the command interface; TeDDy does NOT create the Makefile directly — teams implement it during Milestone 0.
     - Editor validation (03-01) is self-contained in outbound adapters and CLI handlers. No core domain logic changes. The `IConfigService.set_setting()` method is an additive breaking change to the protocol.
 
-### Milestone 4: TUI & UX Enhancements [PLANNED]
+### Milestone 4: Terminal User Interface [PLANNED]
 - **Core Goal:** Improve the interactive experience, provide better visibility into session state, and add foundational quality-of-life features.
 - **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 - **Requirements:**
@@ -80,10 +83,10 @@ These files live in `docs/templates/` and are created or refreshed by `teddy ini
     - **Context Interactions:** Pressing `e` on context nodes: if on session/turn root node, open corresponding `.context` file; if on a specific filepath, open the file; if on system node, show agent switch menu.
     - **Metadata Visibility:** Display model name and session cost (rounded to nearest cent) in the right panel when the Context Root is selected. Align rounding to cents (not fractions of cents).
     - **Tier 2 Editing:** Automatically open external editor for parameters that are multiline or >100 characters. Prevent multi-line break up for long text — if long text or multiline is detected, edit in editor instead of directly in TUI.
-    - **Editor & Diff Mapping:** Strictly respect `editor` config; implement a translation table for diff flags (e.g., `nvim` -> `-d`); remove all implicit VS Code fallbacks.
+    - **Editor Diff Mapping:** Strictly respect `editor` config; implement a translation table for diff flags (e.g., `nvim` -> `-d`); remove all implicit VS Code fallbacks.
     - **Layout:** Ensure consistent padding for Rationale items and Message sections to match the right and left panels. Apply same padding for both panels.
-    - **MOVE & DELETE Actions:** Add `MOVE` and `DELETE` action types. Both should update context manifest files as well (renaming path/file name if moved, removing if deleted). `MOVE` can also be used for renaming. Both apply to files and folders.
-### Milestone 5: Quality Gate & Debt Reconciliation [PLANNED]
+    - **Move and Delete Actions:** Add `MOVE` and `DELETE` action types. Both should update context manifest files as well (renaming path/file name if moved, removing if deleted). `MOVE` can also be used for renaming. Both apply to files and folders.
+### Milestone 5: Quality Gate Reconciliation [PLANNED]
 - **Core Goal:** Remove unnecessary inline quality bypasses, deprecate `--console` mode and related dead code, and eliminate redundant test coverage.
 - **Specs:** TBD
 - **Requirements:**
@@ -121,16 +124,3 @@ These files live in `docs/templates/` and are created or refreshed by `teddy ini
     - **Failure-Transparency sweep:** Narrow or add debug-level logging to broad `except` blocks across `cli_helpers.py`, `local_file_system_adapter.py`, `shell_adapter.py`, `web_scraper_adapter.py`, `yaml_config_adapter.py`, `action_executor.py`, `context_service.py`, `session_pruning_service.py`, `session_repository.py`, `update_checker.py`, and `io.py`.
     - **Remove the unconditional debug print:** `execute_valid_plan` in `cli_helpers.py` writes `DEBUG CLI: Resolved orchestrator: ...` to `stderr` on every `execute` run. Delete the line, because it is unconditional debug output rather than gated diagnostics.
     - **Remove the unused action-param threshold path:** `resolve_similarity_threshold` in `validation_rules/helpers.py` reads an action parameter named `edit.similarity_threshold` that no caller sets, because the global config lookup already supplies the threshold. Confirm no plan producer emits that parameter, then delete the dead branch, because the removal changes the resolution path.
-
-## Failed Release Recovery
-
-If a release needs to be redone (e.g., CI failures, missing assets):
-1. **Delete** the GitHub release: `gh release delete v<version> --yes`
-2. **Delete** the local and remote tags:
-   ```shell
-   git tag -d v<version>
-   git push --delete origin v<version>
-   ```
-3. **Fix** the underlying issues (CI config, test failures, missing files).
-4. **Ensure** `uv.lock` is staged alongside other changes to avoid a separate cleanup commit.
-5. **Re-tag and release** following the standard Release Process from step 5 onward (commit, tag, push, publish).

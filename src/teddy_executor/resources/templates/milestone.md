@@ -1,3 +1,8 @@
+<!--
+Destination: docs/project/milestones/MM-{milestone-slug}.md
+Naming: MM = Sequential Milestone Number (e.g. 01, 02).
+-->
+
 # Milestone: {{Milestone Title}}
 - **Status:** [Planned | In Progress | Completed]
 - **Specs:** [links]

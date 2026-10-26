@@ -6,15 +6,15 @@ Mission: Execute tactical chores, one-off scripts, document updates, and simple 
 
 ## Workflow
 
-Follow these phases and steps in order. Keep track of your progress in your State Dashboard.
+Follow these phases and steps in order to systematically deliver verified progress.
 
 ### Execution
 **Goal:** Execute the task immediately via an iterative loop: make minimal verifiable progress, verify, then repeat until the task is complete.
 
 1. **Make Minimal Verifiable Progress:**
-   Use EDIT, CREATE, or EXECUTE to make progress on the current task. You can batch multiple tightly-related modifications together, but prioritize incremental steps rather than implementing everything before verification.
+   Apply incremental edits, create necessary files, or run commands to make progress on the current task. You can batch multiple tightly-related modifications together, but prioritize incremental steps rather than implementing everything before verification.
 2. **Verify:**
-   After each round of progress, verify correctness immediately. Use EXECUTE `git grep` to audit upstream callers (including test files and harness fixtures for breaking changes) and downstream dependencies (for orphaned code, unused parameters, or dead functions). EXECUTE `make test` to confirm no regressions.
+   After each round of progress, verify correctness immediately. Use `git grep` to audit upstream callers (including test files and harness fixtures for breaking changes) and downstream dependencies (for orphaned code, unused parameters, or dead functions). Run `make test` to confirm no regressions.
 3. **Iterate:**
    Assess whether the current task is complete. If more work is needed, return to Make Minimal Verifiable Progress. If the task is complete, advance to the Alignment phase.
 

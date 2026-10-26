@@ -2,9 +2,9 @@
 
 This document outlines the technical standards, conventions, and setup process for the `TeDDy` project.
 
-## Conventions & Standards
+## Architectural Standards
 
-- **Version Control:** Default to Trunk-Based Development on main. Commits MUST follow Conventional Commits. `make commit` is LOCAL-ONLY (stage, advisory pre-commit auto-fix pass, commit); the push is deferred to the session Conclusion via `make push`, which rebases, pushes, then reports CI results back, blocking only on failures the push introduced.
+- **Version Control:** Default to Trunk-Based Development on main. Commits MUST follow Conventional Commits. `make commit` is LOCAL-ONLY (stage, pre-commit auto-fix pass, commit); the push is deferred to the session Conclusion via `make push`, which rebases, pushes, then reports CI results back, blocking only on failures the push introduced.
 - **Run Environment:** All execution commands MUST be prefixed with the project's designated runner ('uv run').
 - **Failure Transparency:** Silent error suppression is strictly forbidden. Generic catch-all blocks MUST NOT be used to swallow errors. Every try/catch block MUST either catch a specific error type or ensure generic catches log full context and re-raise. Empty catch blocks are only allowed with an explicit "safe to ignore" comment.
 - **Testing Strategy:** Define structural rules (Unit > Integration > Acceptance) and mandate designated temporary directories for detritus (`tests/.tmp/`). The Test Harness is a first-class boundary requiring its own unit tests. Mandate: Real domain objects for logic; In-Memory Fakes for state-managing Outbound Ports; Mocks ONLY for un-verifiable external side-effects. To prevent Mock Poisoning, any allowed Mocks MUST strictly bind to their target contracts (e.g., via the project's designated mock registration helper that enforces auto-speccing) to prevent Signature Drift. Direct instantiation of bare, dynamic mock objects is strictly forbidden. Global/runtime module patching is strictly forbidden to prevent State Leakage; swap dependencies explicitly via Constructor Injection. Ensure the suite is designed to be fast and parallelized. A session-scoped, autouse fixture (`_assert_no_test_pollution`) snapshots `git status --porcelain` before the suite and asserts no filesystem pollution after all tests complete, acting as a Poka-Yoke against stray test artifacts.
@@ -35,7 +35,7 @@ The canonical domain vocabulary for TeDDy. All documentation, component names, t
 
 ---
 
-## Component & Boundary Map
+## Component Map
 
 This section serves as both the strategic **Boundary Map** and the detailed **Component Map** for the system.
 
@@ -156,7 +156,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 
 ---
 
-## Debug Mode & Branch by Abstraction
+## Debug Diagnostics
 
 - **Activation:** Use scoped environment toggles (e.g., `APP_DEBUG=auth,parser`).
 - **Zero-Cost Guards:** All debug and prototype logic MUST use language-native dead-code elimination (e.g., `if __debug__:`) to ensure zero performance impact in production.
@@ -165,7 +165,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 
 ---
 
-## Prompt Assembly & Template Lifecycle
+## Prompt Assembly
 
 This section documents how the system prompt delivered to the LLM is assembled and how TeDDy manages user-editable prompts and project templates.
 

@@ -1,3 +1,8 @@
+<!--
+Destination: docs/project/debugging/NN-{bug-slug}.md
+Naming: NN = Sequential Bug Number (e.g. 01, 02).
+-->
+
 # Bug: {{Bug Title}}
 - **Status:** Unresolved
 - **Milestone:** [link]

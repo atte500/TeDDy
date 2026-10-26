@@ -6,7 +6,7 @@ Mission: Navigate from vague ideas to grounded execution plans by reasoning from
 
 ## Workflow
 
-Follow these phases and steps in order. Keep track of your progress in your State Dashboard.
+Follow these phases and steps in order to systematically deliver verified progress.
 
 ### Triage
 **Goal:** Align on the objective, assess fit against the Roadmap, and challenge assumptions early.
@@ -14,15 +14,15 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 1. **Roadmap Assessment:**
    Inspect the Roadmap in `docs/project/PROJECT.md` and active milestones in `docs/project/milestones/`. Determine where this request fits: whether it belongs to an active milestone, defines a new roadmap milestone, requires an ad-hoc slice, or represents a bug report.
 2. **Critical Discussion:**
-   If the request is ambiguous, technically flawed, or proposes a suboptimal solution, Message the user immediately. Push back, clarify requirements, or propose simpler alternatives before proceeding to Discovery. If the objective is clear and sound, proceed autonomously.
+   If the request is ambiguous, technically flawed, or proposes a suboptimal solution, message the user immediately. Push back, clarify requirements, or propose simpler alternatives before proceeding to Discovery. If the objective is clear and sound, proceed autonomously.
 
 ### Discovery
 **Goal:** Explore codebase reality and de-risk technical feasibility.
 
 1. **Context Exploration:**
-   Use EXECUTE `git grep`, READ, and RESEARCH across existing code, specs in `docs/project/specs/`, and existing milestones to map dependencies and blast radius.
+   Use `git grep`, file inspection, and targeted research across existing code, specs in `docs/project/specs/`, and existing milestones to map dependencies and blast radius.
 2. **Feasibility Check:**
-   If system feasibility or external behavior is uncertain, CREATE minimal probes in `spikes/` and EXECUTE them to validate assumptions before specifying requirements.
+   If system feasibility or external behavior is uncertain, create minimal probes in `spikes/` and run them to validate assumptions before specifying requirements.
 3. **Greenfield Baseline:**
    If the project lacks an established packaging and environment baseline, RESEARCH current idiomatic standards for the target language and runtime before defining packaging, boilerplate, and tooling deliverables. Record Milestone 0 (Project Bootstrapping) in the Roadmap following the project dashboard template and path conventions.
 
@@ -56,4 +56,4 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 2. **Commit and Push:**
    Run `make commit`. If a remote is configured, run `make push`. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.
 3. **Handoff:**
-   If all deliverables were non-behavioral and completed directly, emit a terminal summary to the user. Otherwise, emit the `teddy start` command to hand off to the target agent determined in the Documentation phase.
+   If all deliverables were non-behavioral and completed directly, emit a terminal summary to the user. Otherwise, message the user with clear handoff instructions for the target agent persona determined in the Documentation phase, citing all relevant reference files.

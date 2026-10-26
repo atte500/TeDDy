@@ -1,3 +1,8 @@
+<!--
+Destination: docs/project/slices/MM-NN-{slice-slug}.md
+Naming: MM = Milestone Number (e.g. 01, or 00 for ad-hoc). NN = Sequential Slice Number.
+-->
+
 # Slice: {{Feature Name}}
 - **Status:** [Planned | In Progress | Completed]
 - **Milestone:** [link]
@@ -61,21 +66,21 @@ Map affected components using non-breaking steps (expand -> migrate -> contract)
 **Types:**
 - **Env:** Declarative tooling, build files, CI workflows, hooks, or config templates.
 - **Wiring:** Outermost boundary tracer bullet returning skeleton/fake data to connect layers end-to-end.
-- **Contract:** Signatures, ports, interfaces, DTOs, domain models.
+- **Interface:** Signatures, ports, interfaces, DTOs, domain models.
 - **Harness:** Modifying or extending shared test infrastructure (Drivers, Observers, Fakes, Setup fixtures).
 - **Logic:** Core domain logic and business rules driven by unit tests, systematically replacing skeleton returns and temporary fakes with real implementations.
 - **Migration:** Adapting existing consumers to new contracts.
-- **Refactor:** Improving code design without altering behavior (DRY, SRP, extracting helpers).
-- **Cleanup:** Removing deprecated methods, dead code, and temporary shims.
+- **Refactor:** Improving code design without altering behavior. Requires no new tests; existing tests must remain green while pruning brittle or flaky tests.
+- **Cleanup:** Removing deprecated methods, dead code, and temporary shims. Requires no new tests; verified by the existing suite remaining green.
 
 **Order:** Order deliverables to keep all tests passing at every commit (`make test`). `(Env)` is placed first whenever tooling or environment setup is a prerequisite:
-`(Env) -> Wiring -> Contract -> Harness -> Logic -> Migration -> Refactor -> Cleanup`
+`(Env) -> Wiring -> Interface -> Harness -> Logic -> Migration -> Refactor -> Cleanup`
 
 **Tests:** Do not specify individual tests in deliverables. Scenarios and Edge Cases must define test requirements.
 
 **Format:**
 - [ ] **Wiring** - Connect outermost boundaries with skeleton response.
-- [ ] **Contract** - Define port interfaces and DTOs.
+- [ ] **Interface** - Define port interfaces and DTOs.
 - [ ] **Logic** - Implement business logic replacing skeleton responses.
 
 ## Implementation Notes

@@ -13,19 +13,24 @@ Core engineering philosophy, quality standards, and foundational rules that dict
 ## Workflow Standards
 Defines the high-level artifact lifecycle and conventions for project management documents.
 
-**Format:** Bulleted list. Each entry defines a specific standard.
-
-### Required Topics:
 - **Artifact Lifecycle:** How work flows (e.g., Spec → Milestone → Slice).
-- **Numbering:** Artifacts are numbered sequentially using a per-type filename convention so agents can infer the correct filename:
-    - **Vertical Slices:** `MM-NN-name.md` (in `docs/project/slices/`) — `MM` is the target Milestone number and `NN` is the sequence number within that milestone.
-    - **Milestones:** `MM-name.md` (in `docs/project/milestones/`).
-    - **Case Files (Debugger):** `NN-name.md` (in `docs/project/debugging/`) — numbered sequentially.
-    - **Milestone 0 (bootstrapping) & Ad-hoc work (not tied to a milestone):** `00-NN-name.md` (in `docs/project/slices/`) — `00` is used as the Milestone prefix for Milestone 0 bootstrapping slices and for ad-hoc slices. Ad-hoc slices are NOT tracked in Milestone documents or the Roadmap.
 - **Archiving Policy:** When and how completed artifacts are archived or deleted.
-- **Spec Organization:** Specification documents live in a single flat directory `docs/project/specs/` and are reserved strictly for **permanent system invariants** — formats, contracts, protocols (e.g. the MRP), core data models, and non-negotiable architectural rules. Feature goals, requirements, and acceptance criteria belong in Milestone documents (`docs/project/milestones/`), not in specs.
-- **Build & Run Commands:** Document the standard commands in the project `Makefile` (see [docs/templates/makefile.md](docs/templates/makefile.md)). At minimum: `make test` (full suite), `make commit MSG="<msg>"`, `make push`, `make ci-watch` (CI monitoring), and `make probe REASON="<reason>"` (Remote Probing Protocol).
-- **Release Process:** Document how releases are cut. At minimum: (1) **Triage** the scope (patch/minor/major) from conventional commits since the last tag; (2) write **release notes** to `docs/project/releases/v<version>.md`; (3) bump the `version` field in the project manifest; (4) present the notes and version bump at an **approval gate**; (5) **commit** (`chore(release): bump version to <version>`) and **tag** (`git tag -a v<version>`); and (6) **publish** (e.g. create a GitHub Release). Adapt the concrete commands to the project's packaging and distribution channel.
+
+## Tooling
+The project `Makefile` is the canonical automation interface. Build targets are decomposed into modular fragments under `make/*.mk` (see [docs/templates/makefile.md](docs/templates/makefile.md)). Standard targets include `make test` (full test suite execution via the project runner), `make commit MSG="<type>(<scope>): <desc>"` (run pre-commit hooks, stage auto-fixes, and commit), `make push` (fast rebase and push to remote), `make ci-watch` (remote CI workflow monitoring and regression attribution), `make probe REASON="<reason>"` (Remote Probing Protocol for isolated CI diagnostics), and `make logs RUN=<id> [STEP="<name>"]` (extract sanitized CI failure logs).
+
+When a repetitive task or multi-step command sequence arises, agents must not run long ad-hoc shell commands. Add a dedicated target to the appropriate `make/*.mk` fragment and document its usage and flags in this section.
+
+## Releases
+The project release lifecycle:
+
+1. **Triage:** Determine semantic version bump (patch, minor, major) by inspecting conventional commits since the last tag.
+2. **Release Notes:** Write notes at `docs/project/releases/v<version>.md` capturing net user-facing outcomes.
+3. **Version Bump:** Update the project manifest version field.
+4. **Approval Gate:** Present release notes and version bump for user approval.
+5. **Commit:** Commit version bump with `chore(release): bump version to <version>`.
+6. **Tag:** Create and push annotated tag `git tag -a v<version> -m "v<version>"`.
+7. **Publish:** Publish release assets or GitHub Release.
 
 ## Templates
 
@@ -67,8 +72,8 @@ A living list of upcoming Milestones and their high-level features.
 - **Core Goal:** Establish foundational infrastructure for testing, quality gates, and automated delivery.
 - **Specs:** N/A — Milestone 0 is self-defining.
 - **Requirements:**
-    - **Language & Runtime Standards:** Set up packaging, dependency management, and project boilerplate using current idiomatic standards for the target language and runtime.
+    - **Runtime Standards:** Set up packaging, dependency management, and project boilerplate using current idiomatic standards for the target language and runtime.
     - **Project Readme:** Create a minimal `README.md` focused strictly on the end-user entry point: product overview, prerequisites, and installation/usage instructions.
-    - **Testing & Tooling Entry Points:** Configure the test runner (`pytest`) exposed via `make test`, along with standard `Makefile` targets (`make commit`, `make push`, `make ci-watch`, `make probe`). Configure project `.gitignore` keeping `spikes/` tracked.
+    - **Tooling Entry Points:** Configure the test runner (`pytest`) exposed via `make test`, along with standard `Makefile` targets (`make commit`, `make push`, `make ci-watch`, `make probe`). Configure project `.gitignore` keeping `spikes/` tracked.
     - **Local Quality Gates:** Install Pre-commit with fast local hooks (formatters, secret detection, merge conflict checks) and the unskippable post-commit test gate (`.githooks/post-commit.py`) that runs `make test` and reverts on failure.
-    - **CI/CD & Remote Diagnostics:** Set up parallel GitHub Actions jobs: 1) Blocking OS matrix test suite. 2) Non-blocking quality checks. Configure `.github/workflows/debug.yml` for the Remote Probing Protocol.
+    - **Continuous Integration:** Set up parallel GitHub Actions jobs: 1) Blocking OS matrix test suite. 2) Non-blocking quality checks. Configure `.github/workflows/debug.yml` for the Remote Probing Protocol.

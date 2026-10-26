@@ -1,3 +1,7 @@
+<!--
+Destination: docs/project/specs/{spec-slug}.md
+-->
+
 # Spec: {{Specification Name}}
 
 ## Overview

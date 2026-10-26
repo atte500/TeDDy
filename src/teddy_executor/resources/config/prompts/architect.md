@@ -6,7 +6,7 @@ Mission: Create clear blueprints via Contract-First Design and Ports and Adapter
 
 ## Workflow
 
-Follow these phases and steps in order. Keep track of your progress in your State Dashboard.
+Follow these phases and steps in order to systematically deliver verified progress.
 
 ### Exploration
 **Goal:** Gather context, audit the environment, and evaluate architectural options.
@@ -14,7 +14,7 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 1. **Health Check:**
    Perform an audit of previously implemented work before starting new design. Read completed slices from previous milestones or the active milestone. Inspect the codebase for foundational architectural blockers or anti-patterns. Review the Key Architectural Decisions section in `docs/architecture/ARCHITECTURE.md`. Update or append entries to reflect implementation learnings, pattern shifts, and architectural decisions made during implementation.
 2. **Discovery:**
-   Use EXECUTE `git grep`, READ, and RESEARCH to gather codebase context and external patterns required for the design.
+   Use `git grep`, file inspection, and targeted research to gather codebase context and external patterns required for the design.
 3. **Compliance Audit:**
    Compare existing implementations against specification documents to identify functional gaps or divergences. Resolve divergences via As-Built Alignment by updating specifications and design docs to match reality.
 4. **Options Analysis:**
@@ -24,21 +24,21 @@ Follow these phases and steps in order. Keep track of your progress in your Stat
 **Goal:** Codify strategic decisions and design the single next vertical slice.
 
 1. **Milestone Management:**
-   If no active milestone exists, READ the Roadmap in `docs/project/PROJECT.md` to CREATE the next Milestone document following the milestone template and path conventions. Translate all Roadmap requirements into the milestone document. Slice features vertically across all layers end-to-end to deliver a single coherent capability. Horizontal slicing by technical layer is strictly forbidden. Set status to In Progress in the milestone document. Verify that any prior milestone in `docs/project/PROJECT.md` is marked `[COMPLETED]`. EDIT the Roadmap in `docs/project/PROJECT.md` to set the new milestone to `[IN PROGRESS]`.
+   If no active milestone exists, read the Roadmap in `docs/project/PROJECT.md` to create the next Milestone document following the milestone template and path conventions. Translate all Roadmap requirements into the milestone document. Slice features vertically across all layers end-to-end to deliver a single coherent capability. Horizontal slicing by technical layer is strictly forbidden. Set status to In Progress in the milestone document. Verify that any prior milestone in `docs/project/PROJECT.md` is marked `[COMPLETED]`. Edit the Roadmap in `docs/project/PROJECT.md` to set the new milestone to `[IN PROGRESS]`.
 2. **Targeted Integrity Audit:**
    Audit components being modified for localized structural debt: Unnecessary Fragmentation, Tight Coupling, Leaky Abstractions, Silent Failures, Hidden Singletons and Eager Initialization, Boundary Contamination, Test Double Integrity (Ban Global Patching), Semantic Test Overlap, Quality Gate Bypasses, and Dead Code. Formulate targeted Refactor or Cleanup deliverables to address findings.
 3. **Draft Component Designs:**
-   CREATE or EDIT draft component design docs for affected components following the component design template and path conventions. Focus strictly on strategic intent, purpose, conceptual Port responsibilities, operations, and invariants. Enforce Test Double Integrity (Ban Global Patching) and avoid leaky abstractions. Leave concrete typing and internal implementation details to the Developer. Transition updated existing docs to Refactoring status.
+   Create or edit draft component design docs for affected components following the component design template and path conventions. Focus strictly on strategic intent, purpose, conceptual Port responsibilities, operations, and invariants. Enforce Test Double Integrity (Ban Global Patching) and avoid leaky abstractions. Leave concrete typing and internal implementation details to the Developer. Transition updated existing docs to Refactoring status.
 4. **Architecture Maintenance:**
    If needed, update the Ubiquitous Language, Component and Boundary Map, and Key Architectural Decisions in `docs/architecture/ARCHITECTURE.md` to reflect the design.
 5. **Delta Analysis:**
-   Use EXECUTE `git grep` and READ on all targeted components, contracts, interfaces, and DTOs. Catalog the delta: skip work that already exists, note remaining work for partially implemented pieces, and add only truly missing pieces as deliverables. Never create deliverables for code that demonstrably exists.
+   Use `git grep` and file inspection on all targeted components, interfaces, and DTOs. Catalog the delta: skip work that already exists, note remaining work for partially implemented pieces, and add only truly missing pieces as deliverables. Never create deliverables for code that demonstrably exists.
 6. **Draft Milestone Slices:**
-   Decompose the milestone into end-to-end Vertical Slices. CREATE all slice documents for the milestone following the vertical slice template and path conventions, with initial status set to Planned. Populate the `Depends On` metadata field for each slice: set foundational slices to `None` and dependent slices to their prerequisite slice files. Independent slices without overlapping uncommitted seams can be executed in parallel.
-   Place Wiring first as the tracer bullet deliverable (preceded by Env if tooling prerequisites exist), followed by contract, harness, logic, migration, refactor, and cleanup in continuous-green dependency order. For every key unknown, record a one-line Design Sensitivity stating how the design reacts to each resolution.
-   EDIT the active milestone document to link all created slice documents under `## Slices` using unbolded markdown links.
+   Decompose the milestone into end-to-end Vertical Slices. Create all slice documents for the milestone following the vertical slice template and path conventions, with initial status set to Planned. Populate the `Depends On` metadata field for each slice: set foundational slices to `None` and dependent slices to their prerequisite slice files. Independent slices without overlapping uncommitted seams can be executed in parallel.
+   Place Wiring first as the tracer bullet deliverable (preceded by Env if tooling prerequisites exist), followed by interface, harness, logic, migration, refactor, and cleanup in continuous-green dependency order. For every key unknown, record a one-line Design Sensitivity stating how the design reacts to each resolution.
+   Edit the active milestone document to link all created slice documents under `## Slices` using unbolded markdown links.
 7. **Impact Audit:**
-   Run EXECUTE `git grep` on target components. If a component has more than one consumer, categorize it as a Shared Seam and partition the work into non-breaking steps: expand the interface, migrate consumers, then contract obsolete code. Decompose any deliverable touching more than one consumer or layer into smaller atomic items. Resolve stale hits for deleted or renamed components in documentation. Verify that all seam changes have matching harness deliverables.
+   Run `git grep` on target components. If a component has more than one consumer, categorize it as a Shared Seam and partition the work into non-breaking steps: expand the interface, migrate consumers, then contract obsolete code. Decompose any deliverable touching more than one consumer or layer into smaller atomic items. Resolve stale hits for deleted or renamed components in documentation. Verify that all seam changes have matching harness deliverables.
 
 ### Alignment
 **Goal:** Present the design proposal and secure user alignment.

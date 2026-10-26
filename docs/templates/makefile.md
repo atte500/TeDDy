@@ -2,8 +2,35 @@
 
 > **⚠️ This is an example template.** Adapt the runner, test commands, and tool-specific details (e.g., `uv run pytest`, pre-commit hook list) to match your project's actual setup. The concrete examples shown may not work verbatim in all environments.
 
-This template defines the standard commands for the commit workflow
-and the Debugger's Remote Probing Protocol (RPP). Below are concrete examples adapted for the TeDDy project.
+Build targets are decomposed into modular fragments under `make/*.mk` included via `-include make/*.mk` from the root `Makefile`:
+
+- `Makefile`: Entry point, global tunable variables, help target, and `-include make/*.mk`.
+- `make/base.mk`: Shell selection, goal validation, named variable defaults, and tool preflight.
+- `make/test.mk`: `test` target and test runner configuration.
+- `make/git.mk`: `commit` and `push` targets.
+- `make/ci.mk`: `ci-watch` and `logs` targets.
+- `make/probe.mk`: `probe` target for the Remote Probing Protocol.
+
+## Modular Guardrails (`make/base.mk`)
+
+All foundational validation and platform guards reside in `make/base.mk`:
+
+1. **Named Inputs Fallback:** Ensures `MSG ?=`, `REASON ?=`, `RUN ?=`, and `STEP ?=` are declared as variables so words in values never execute as Makefile goals.
+2. **Single-Goal & Unknown-Goal Validation:**
+   ```makefile
+   _KNOWN_GOALS := ci-watch commit help logs probe push test
+   _UNKNOWN_GOALS := $(filter-out $(_KNOWN_GOALS),$(MAKECMDGOALS))
+   ifneq ($(words $(MAKECMDGOALS)),0)
+   ifneq ($(words $(MAKECMDGOALS)),1)
+   $(error Detected $(words $(MAKECMDGOALS)) goals: $(MAKECMDGOALS). Pass values as NAME="value", as in: make commit MSG="<type>(<scope>): <description>")
+   endif
+   endif
+   ifneq ($(_UNKNOWN_GOALS),)
+   $(error Unknown target '$(_UNKNOWN_GOALS)'. Run make help for the list of targets.)
+   endif
+   ```
+3. **Cross-Platform Shell Selection:** Sets `SHELL := bash.exe` and `.SHELLFLAGS := -c` on Windows, confirming the shell is Git Bash rather than the WSL shim via `uname -s 2>/dev/null | grep -Eq 'MINGW|MSYS'`.
+4. **POSIX Tool Preflight (`_preflight`):** Verifies that `git`, `gh`, `awk`, and `sed` are available before initiating any network or CI workflow command.
 
 ## Usage
 
@@ -100,8 +127,8 @@ Always use GNU Make native features for cross-platform compatibility instead of 
 - **Windows shell selection:** Set `SHELL := bash.exe` when `OS` is `Windows_NT`. The assignment covers every target, not only the pipelines, and `_preflight` confirms that the shell is Git Bash rather than the WSL `bash.exe` shim and names the `SHELL=` override when it is not.
 - **Portable quoting:** Pass values with double quotes, as in `--field reason="..."`, because Windows `cmd.exe` keeps single quotes literally.
 - **ASCII-only output:** Recipe output stays ASCII, because a Windows console turns a non-ASCII dash into mojibake in captured logs.
-- **Explicit advisory fallback:** The advisory pre-commit pass consumes its own exit code with `|| echo "<sentence>"`, so a failing run prints one plain sentence. Make's `-` prefix is forbidden here, because it prints a bare `Error 1 (ignored)` line that reads as an unexplained defect.
-- **Error transparency:** The first pre-commit pass is advisory, so its non-zero exit is ignored and auto-fixed files are re-staged. Git then runs the same hooks again during `git commit`, and that second run is the blocking local gate. A hook failure there aborts the commit. The post-commit test gate is the final safety net. `make push` runs `git pull --rebase` and `git push` without suppression, so a rebase conflict or push rejection surfaces as a non-zero exit.
+- **Explicit fallback pass:** The initial pre-commit auto-fix pass consumes its own exit code with `|| echo "<sentence>"`, so a failing run prints one plain sentence. Make's `-` prefix is forbidden here, because it prints a bare `Error 1 (ignored)` line that reads as an unexplained defect.
+- **Error transparency:** The first pre-commit pass applies auto-fixes and re-stages modified files. Git then runs the same hooks again during `git commit`, and that second run is the blocking local gate. A hook failure there aborts the commit. The post-commit test gate is the final safety net. `make push` runs `git pull --rebase` and `git push` without suppression, so a rebase conflict or push rejection surfaces as a non-zero exit.
 
 ### Parse-Time Input Validation
 
@@ -151,7 +178,7 @@ test:
 ```makefile
 commit:
 	git add .
-	@uv run pre-commit run || echo "Advisory pre-commit reported issues. Auto-fixed files were re-staged and the commit continues."
+	@uv run pre-commit run || echo "Pre-commit auto-fixes applied. Staging changes and continuing to commit gate."
 	git add .
 	git commit -m "$(MSG)"
 

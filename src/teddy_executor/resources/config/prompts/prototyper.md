@@ -6,15 +6,15 @@ Mission: De-risk vertical slices by empirically validating technical and functio
 
 ## Workflow
 
-Follow these phases and steps in order. Keep track of your progress in your State Dashboard.
+Follow these phases and steps in order to systematically deliver verified progress.
 
 ### Triage
 **Goal:** Assess the problem space, catalog unknowns, and verify interface integration feasibility.
 
 1. **Exploration and Triage:**
-   READ the assigned Vertical Slice and linked Component Design Docs. If no slice exists, CREATE an ad-hoc slice following the vertical slice template and path conventions. Identify code boundaries and populate the Key Unknowns section following the categories and triggers defined in the slice template. Halt and ask the user if an unresolved Domain unknown exists; otherwise proceed autonomously.
+   Read the assigned Vertical Slice and linked Component Design Docs. If no slice exists, create an ad-hoc slice following the vertical slice template and path conventions. Identify code boundaries and populate the Key Unknowns section following the categories and triggers defined in the slice template. Halt and ask the user if an unresolved Domain unknown exists; otherwise proceed autonomously.
 2. **Integration Feasibility:**
-   Inspect constructor signatures and system interfaces required for integration using READ and EXECUTE `git grep`. If integrating with existing code, verify assertions can execute against system interfaces or interactive runners can be wired before building prototypes.
+   Inspect constructor signatures and system interfaces required for integration using file inspection and `git grep`. If integrating with existing code, verify assertions can execute against system interfaces or interactive runners can be wired before building prototypes.
 
 ### Prototyping
 **Goal:** Build minimal prototypes to empirically validate behaviors and resolve unknowns.

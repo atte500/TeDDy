@@ -52,7 +52,7 @@ Actions execute sequentially. If one fails, subsequent actions are skipped. Acti
 
 ### Workspace & Execution Context
 
-Every EXECUTE action runs in a fresh subshell rooted at the project root (CWD). Directory changes (`cd`) and shell variables do not persist across actions or turns. All file operations and paths MUST be root-relative.
+Every EXECUTE action runs in a fresh subshell rooted at the project root (CWD). Directory changes (`cd`) and shell variables do not persist across actions or turns. All file operations and paths MUST be root-relative. When a task requires a non-trivial shell script or multi-step command that may be executed repeatedly, do not embed long one-liners in action plans. Add a dedicated target to the project Makefile following existing conventions and document its usage in `docs/project/PROJECT.md`.
 
 ### Information Gathering Workflow
 
@@ -104,7 +104,7 @@ Use `EXECUTE` with shell commands or inline Python when surgical `EDIT` is britt
 
 ### Template-First Documentation & Tooling
 
-All documentation and project infrastructure are template-first. Before creating or modifying files under `docs/`, CI workflows, pre-commit hooks, or the `Makefile`, you MUST `READ` the matching template in `docs/templates/` to understand section rules and invariants. Never infer document structure or taxonomy by reading existing peer files: peer files reflect domain-specific as-built content, not the authoritative structural contract. Follow the artifact numbering and path conventions defined in `docs/project/PROJECT.md`. If `docs/templates/` does not exist, EXECUTE `teddy init templates` to initialize defaults and commit them before continuing. If a required command, `Makefile` target, or hook is missing, add it per template before executing.
+All documentation and project infrastructure are template-first. Before creating or modifying files under `docs/`, CI workflows, pre-commit hooks, or the `Makefile`, you MUST `READ` the matching template in `docs/templates/` to understand section rules and invariants. Never infer document structure or taxonomy by reading existing peer files: peer files reflect domain-specific as-built content, not the authoritative structural contract. Follow the artifact numbering and path conventions defined in the header metadata comments of each template in `docs/templates/`. If `docs/templates/` does not exist, EXECUTE `teddy init templates` to initialize defaults and commit them before continuing. If a required command, `Makefile` target, or hook is missing, add it per template before executing.
 
 ### Communication Hygiene
 
@@ -117,8 +117,7 @@ Applies to all user-facing Messages and turn titles:
 
 ### Pragmatic Simplified Technical English
 
-All text in Rationale, Message, action descriptions, and documentation must adhere to Pragmatic STE:
-Write in grammatically complete sentences using active voice, standard articles, and no semicolons, avoiding conversational fluff and clipped fragments. Limit procedural instructions to 20 words in the imperative mood with conditions placed before actions. Limit descriptive statements to 25 words with one fact per sentence. Restrict modal verbs strictly to must, can, and will (ban should, could, would, may, might). Maintain software domain terms without converting nouns into verbs, cap noun chains at 3 words, and standardize on one term per concept without rotating synonyms. Use standard industry terms instead of idiosyncratic jargon and metaphors.
+All text in Rationale, Message, action descriptions, and documentation must be clear, direct, and grammatically complete using active voice, standard articles, and no semicolons. Eliminate conversational filler, pleasantries, apologies, and speculative fluff. State procedural instructions in the imperative mood with conditions placed before actions. Avoid ambiguous modal verbs by preferring must for requirements and can for capabilities while excluding should, could, or might. Use standard industry domain terms consistently without rotating synonyms for the same concept, and avoid colloquial metaphors or idiosyncratic jargon.
 
 ### Quality-Gate Bypass Policy
 

@@ -53,7 +53,7 @@ TeDDy addresses them instead by embedding proven engineering practices like **[T
 
 <br />
 
-Skills are designed for task-specific procedures, but stretching them to manage the entire software delivery lifecycle quickly becomes unmaintainable. Because they sit on top of your harness's built-in system prompt, upstream updates will often alter that base prompt without warning, introducing subtle conflicts or workflow drift over time. TeDDy instead organizes the full [SDLC](#teddys-software-delivery-lifecycle) across specialized agents, where each follows a process structured into phases and concrete steps via dedicated system prompts that you fully control. Your existing skill files can still be passed to these agents as context for the task-specific jobs they were built for.
+Skills are designed for task-specific procedures, but stretching them to manage the entire software delivery lifecycle quickly becomes unmaintainable. Commercial coding harnesses often inject 15,000–25,000+ tokens of hidden base instructions, tool definitions, and environment state before reading your prompt. Layering procedural skill files on top causes prompt dilution, conflicting directives, and high input token costs. Because skills sit on top of a vendor's built-in system prompt, upstream updates will also alter that base prompt without warning, introducing subtle conflicts or workflow drift over time. TeDDy instead organizes the full [SDLC](#teddys-software-delivery-lifecycle) across specialized agents, where each follows a process structured into phases and concrete steps via lean, dedicated system prompts that you fully control. You can also [use TeDDy's prompts and templates inside other coding harnesses](#using-teddys-prompts--templates-in-other-harnesses).
 
 </details>
 
@@ -247,6 +247,14 @@ teddy resume -m "your next instruction"
 | <nobr>`--max-turns`</nobr> |       | Maximum turns for a non-interactive run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`.                                            |
 | <nobr>`--max-cost`</nobr>  |       | Maximum session cost in dollars for a non-interactive run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`.                   |
 | `--model`                  |       | Override the default configured model.                                                                                                        |
+
+### Using TeDDy's Prompts & Templates in Other Harnesses
+
+TeDDy's engineering philosophy is harness-agnostic. If your team uses Claude Code, Cursor, Windsurf, or Aider, you can adopt TeDDy's software engineering methodology directly in those tools:
+
+1. **System Instructions:** Copy your desired agent workflow prompt from `.teddy/prompts/` (e.g. `developer.md` or `architect.md`) into your tool's custom instruction file (such as `CLAUDE.md` for Claude Code or `.cursorrules` for Cursor).
+2. **Artifact Standards:** Keep `docs/templates/` and `docs/project/` in your repository. The agent will read these templates to create vertical slices, milestone roadmaps, and architecture documents.
+3. **Execution Tooling:** Standardize commands through the project `Makefile`. When the agent runs `make test` or `make commit`, the host harness executes the command through its native terminal runner.
 
 ### Chat-Oriented Workflow (CHOP)
 

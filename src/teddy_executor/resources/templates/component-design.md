@@ -1,3 +1,7 @@
+<!--
+Destination: docs/architecture/{boundary}/{layer}/{type}/{component-name}.md
+-->
+
 # Component Design: {{Component Name}}
 - **Status:** [Planned | Implemented | Refactoring]
 - **Source:** [`src/path/to/file.ext`](/src/path/to/file.ext)
