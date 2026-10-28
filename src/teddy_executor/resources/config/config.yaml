@@ -46,11 +46,11 @@ auto_pruning:
   max_turns_retention: 10           # Max historical turns retained in turn context.
 
 # LiteLLM reference: https://docs.litellm.ai/docs/completion/input (all keys under llm pass directly to litellm).
-# OpenRouter syntax: "openrouter/<slug>" (:nitro=fastest, :floor=cheapest).
+# OpenRouter syntax: "openrouter/<slug>". Variants documented at: https://openrouter.ai/docs/guides/routing/model-variants/overview
 # ${TEDDY_LLM_API_KEY} resolves from .teddy/.env or shell environment.
 
 llm:
-  model: "openrouter/~deepseek/deepseek-flash-latest:nitro"
+  model: "openrouter/~deepseek/deepseek-flash-latest"
   api_key: "${TEDDY_LLM_API_KEY}"
   max_retries: 3
   timeout: 300
