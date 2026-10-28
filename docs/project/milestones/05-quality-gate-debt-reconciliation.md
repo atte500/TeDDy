@@ -7,7 +7,7 @@
 To clean up the codebase by eliminating unnecessary quality bypasses, removing dead code and redundant tests, and fixing pre-existing quality gate violations that block pre-commit and CI. This ensures the quality gates can run cleanly and the codebase is maintainable.
 
 ## Solution
-Audit and fix all unnecessary inline quality suppression comments (`# noqa`, `# pylint: disable`, `# type: ignore`). Deprecate and remove `--console` mode and all related dead code paths. Remove tests that duplicate coverage without adding behavioral value. Fix the three known Mypy errors and the C901 complexity issue that currently require `--no-verify` to commit. Audit Git history for bypass commits and verify their justification.
+Audit and fix all unnecessary inline quality suppression comments (`# noqa`, `# pylint: disable`, `# type: ignore`). Deprecate and remove `--console` mode and all related dead code paths. Remove tests that duplicate coverage without adding behavioral value. Fix the pre-existing Mypy errors and the remaining structural quality violations that keep the non-blocking quality job red. Audit Git history for bypass commits and verify their justification.
 
 ## Guidelines
 - **Test Harness Strategy:**
@@ -19,10 +19,7 @@ Audit and fix all unnecessary inline quality suppression comments (`# noqa`, `# 
 - **Poka-Yoke:** Add a CI check that fails if new inline quality bypasses are introduced without justification comment.
 
 ## Technical Specifications
-- **Files to Fix (Mypy):**
-    - `src/teddy_executor/core/services/action_executor.py:191` — Fix return type mismatch.
-    - `src/teddy_executor/core/services/session_orchestrator.py:251` — Fix union-attr on DataclassInstance.
-    - `src/teddy_executor/adapters/outbound/openrouter_hydrator.py:17` — Add type annotations.
+- **Files to Fix (Mypy), measured 2026-10-28:** `uv run mypy src` reports 8 errors across 6 files. The confirmed findings are `action_executor.py:208` (return-value), `console_interactor_ask_loop.py:80` and `:81` (missing `kbhit` and `getwch` attributes on the Windows console module), `session_cli_handlers.py:1426` (assignment), and `session_lifecycle_manager.py:92` (assignment). The previously named `session_orchestrator.py:251` and `openrouter_hydrator.py:17` errors no longer reproduce, so the list must be re-derived from the live run during decomposition. The remaining three findings were truncated by the audit output limit.
 - **File to Refactor (C901):**
     - `src/teddy_executor/core/services/markdown_plan_parser.py` — `parse` method (complexity 10, threshold 9). Extract preamble stripping, normalization, and AST validation steps.
 - **Dead Code to Remove:**

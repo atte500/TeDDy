@@ -75,7 +75,7 @@ These files live in `docs/templates/` and are created or refreshed by `teddy ini
     - The makefile template defines the command interface; TeDDy does NOT create the Makefile directly — teams implement it during Milestone 0.
     - Editor validation (03-01) is self-contained in outbound adapters and CLI handlers. No core domain logic changes. The `IConfigService.set_setting()` method is an additive breaking change to the protocol.
 
-### Milestone 4: Terminal User Interface [PLANNED]
+### Milestone 4: Terminal User Interface [IN PROGRESS]
 - **Core Goal:** Improve the interactive experience, provide better visibility into session state, and add foundational quality-of-life features.
 - **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 - **Requirements:**
@@ -93,14 +93,19 @@ These files live in `docs/templates/` and are created or refreshed by `teddy ini
     - **Audit Inline Quality Bypasses:** Find and remove all unnecessary inline suppression comments (`# noqa`, `# pylint: disable`, `# type: ignore`) that mask real issues or are no longer needed. These bypasses allow code to bypass quality gates without justification.
     - **Deprecate `--console` Mode:** Remove the `--console` mode and all related dead code paths.
     - **Remove Redundant Tests:** Audit the test suite for acceptance tests that duplicate unit coverage, or tests that exist only to satisfy coverage targets without verifying real behavior. Remove redundant tests.
-    - **Fix Pre-existing Mypy Errors:** Resolve the three known Mypy errors that block the pre-commit Mypy hook:
-        - `action_executor.py:191` — Incompatible return value type.
-        - `session_orchestrator.py:251` — Union-attr on DataclassInstance.
-        - `openrouter_hydrator.py:17` — Untyped function body.
+    - **Fix Pre-existing Mypy Errors:** Resolve the Mypy errors that block the pre-commit Mypy hook. A full-slice audit on 2026-10-28 measured 8 errors across 6 files, and the previously named `session_orchestrator.py:251` and `openrouter_hydrator.py:17` errors no longer reproduce. The confirmed findings are `action_executor.py:208` (return value), `console_interactor_ask_loop.py:80` and `:81` (missing `kbhit` and `getwch` attributes), `session_cli_handlers.py:1426` (assignment), and `session_lifecycle_manager.py:92` (assignment). Re-derive the complete list from `uv run mypy src` during decomposition.
     - **Fix Pre-existing C901 Complexity [COMPLETED]:** Refactored the `parse` method in `markdown_plan_parser.py` into `_normalize_plan_content`, `_is_session_plan`, and `_write_back_session_plan` during the Windows newline fix. `ruff check` and `make test` pass.
     - **Audit Quality Gate Bypasses in Git History:** Check Git history for any `--no-verify` commits and verify the bypasses are still justified or can be resolved.
     - **Re-homed Debt Reconciliation:** The quality-gate, reliability, and specific-defect items formerly parked in the retired `## Technical Debt` section are now scheduled as Vertical Slices in the milestone document (`docs/project/milestones/05-quality-gate-debt-reconciliation.md`). Cross-cutting duplication/consolidation items are scheduled in Milestone 6.
-    - **Reconcile Pre-existing Non-blocking Quality Checks:** The CI `Quality Checks` job (`continue-on-error: true`) fails the same nine steps on `main` independent of any change (detect-secrets, file hygiene, ruff, mypy, bandit/pip-audit, structural, test pyramid, file length, jscpd). Drive the job green by reconciling each check. Triage of the Windows newline fix (f0ea0335) confirmed it adds no new findings. Removing the ci-watch acceptance suite left acceptance at 142 tests against 131 integration tests, so the pyramid rule still needs reconciliation. The duplicate-key fix moved its six new tests into `test_yaml_config_adapter_duplicate_keys.py`, which keeps both config-adapter test modules below the file-length limit. The quit-key interrupt fix (771604e8) adds one new jscpd clone pair inside `tests/suites/unit/test_sigint_delivery_harness.py`, because the two recording tests share a nine-line body, so fold them into one parameterized case during reconciliation.
+    - **Reconcile Pre-existing Non-blocking Quality Checks:** The CI `Quality Checks` job (`continue-on-error: true`) fails the same nine steps on `main` independent of any change (detect-secrets, file hygiene, ruff, mypy, bandit/pip-audit, structural, test pyramid, file length, jscpd). Drive the job green by reconciling each check. A full-slice audit on 2026-10-28 re-measured the baseline, so the earlier per-fix triage notes are superseded:
+        - **Structural:** all five `.githooks/check_*.py` scripts pass, so this check is already green.
+        - **Test pyramid:** 156 acceptance tests exceed 140 integration tests, so the rule is still violated.
+        - **File length:** 54 tracked Python files exceed the 300-line gate, far beyond the four named in the Technical Specifications.
+        - **Ruff:** 72 findings, dominated by 60 `TID251` bare-mock violations, alongside 7 `F841`, 3 `PLR0913`, 1 `PLR0915`, and 1 `F401`.
+        - **Mypy:** 8 errors across 6 files, and the previously named errors no longer reproduce.
+        - **Inline suppressions:** 126 across `src/` and `tests/`, split into 72 `noqa` and 54 `type: ignore`.
+        - **Slice 04-01 ignores:** the `per-file-ignores` added to stage that slice still suppress 7 live violations, so they are real debt rather than stale configuration.
+        - **Duplication:** the quit-key interrupt clone pair inside `tests/suites/unit/test_sigint_delivery_harness.py` remains open, because the two recording tests share a nine-line body, so fold them into one parameterized case.
     - **Reconcile Structural-Replan Title Fix Debt:** The structural-replan title fix grew `session_orchestrator.py` to 670 lines and `test_session_orchestrator.py` to 806 lines, both above the 300-line limit, so split them when next touched. Remove the dead `_parse_and_handle_structural_errors` method, which duplicates the live structural replan logic in `_prepare_plan_parsing` and has no remaining call sites. Document the structural replan branch in `docs/architecture/core/services/session_orchestrator.md`.
     - **Reduce `yaml_config_adapter.py` Length:** The adapter reached 406 lines against the 300-line limit. It already exceeded the limit at 350 lines before the duplicate-key fix, which added 56 lines. Split the comment-preserving writer helpers (`_surgically_set`, `_find_key_line`, `_insert_key`, and the insertion helpers) into a sibling module when the file is next touched.
 
