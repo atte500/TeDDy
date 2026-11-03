@@ -420,12 +420,13 @@ def _start_background_update_check() -> None:
     thread.start()
 
 
-def _run_startup_preamble(
+def _run_startup_preamble(  # noqa: PLR0913 - forwards the shared CLI startup options
     container: Container,
     agent: Optional[str] = None,
     setup_editor: Optional[bool] = None,
     setup_api_key: Optional[bool] = None,
     pull_workspace: bool = False,
+    verbose_workspace: bool = False,
 ) -> None:
     """Run the shared startup preamble for both session entry points.
 
@@ -433,11 +434,12 @@ def _run_startup_preamble(
     start-only workspace fast-forward line, one separator blank line, the
     ``Checking configurations...`` line, the cached update notice, then the
     preflight check with its drift advice. ``start`` forwards its ``agent`` so
-    the preflight validates the agent prompt and enables ``pull_workspace``;
-    ``resume`` leaves the agent ``None`` and keeps the pull off.
+    the preflight validates the agent prompt, enables ``pull_workspace``, and
+    sets ``verbose_workspace`` to keep the workspace banner; ``resume`` leaves
+    the agent ``None`` and keeps both the pull and the workspace banner off.
     """
     config_service = container.resolve(IConfigService)
-    _run_health_checks(config_service)
+    _run_health_checks(config_service, verbose=verbose_workspace)
     if pull_workspace:
         _pull_workspace_on_start(config_service)
     # One separator groups the checkmark block above with the notices below.
@@ -828,6 +830,7 @@ def handle_new_session(  # noqa: PLR0913
             setup_editor=setup_editor,
             setup_api_key=setup_api_key,
             pull_workspace=True,
+            verbose_workspace=True,
         )
         _echo_config_success(container, agent, model=model)
 
