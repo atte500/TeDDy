@@ -1,5 +1,5 @@
 # Slice: Harden `make probe` Download Step
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** [05-quality-gate-debt-reconciliation.md](/docs/project/milestones/05-quality-gate-debt-reconciliation.md)
 - **Depends On:** N/A
 - **Specs:** N/A
@@ -46,12 +46,17 @@ Then the target clears any prior output file before download, prints a stderr er
 3. `[MIGRATE]` `src/teddy_executor/resources/templates/makefile.md` — apply the identical recipe change so bootstrapped projects inherit the fix.
 
 ## Deliverables
-- [ ] **Harness** - Extend `tests/suites/unit/test_default_make_targets.py` with a structural pin that the `probe` recipe clears `spikes/debug/probe_output.txt` before the download and that the download is not suppressed with `|| true`.
+- [x] **Harness** - Extend `tests/suites/unit/test_default_make_targets.py` with a structural pin that the `probe` recipe clears `spikes/debug/probe_output.txt` before the download and that the download is not suppressed with `|| true`.
 - [ ] **Migration** - Harden the `probe` recipe in `make/probe.mk`: `rm -f spikes/debug/probe_output.txt` before the download, and replace the suppressed download with a conditional that prints a stderr error naming the run and exits nonzero on failure.
 - [ ] **Migration** - Mirror the identical recipe change into `docs/templates/makefile.md` and `src/teddy_executor/resources/templates/makefile.md`, keeping the two byte-identical.
 
 ## Implementation Notes
-Free-form notes recording decisions, deviations, or discoveries during implementation.
+
+### Harness (Deliverable 1)
+- Added `test_probe_recipe_clears_output_and_fails_loudly_on_download_failure` to `tests/suites/unit/test_default_make_targets.py`. It locates the `rm -f spikes/debug/probe_output.txt` line and the `gh run download` line in `make/probe.mk` and asserts the clear precedes the download and that the download line carries no `|| true` suppression. It also asserts both lines exist.
+- Genuine Red was proven with `--runxfail`: the test fails at `AssertionError: probe recipe must clear spikes/debug/probe_output.txt` against the current recipe, confirming the pin exercises the real gap rather than trivially passing.
+- The hardened recipe does not exist until Deliverable 2. To honor the green-at-every-commit gate, the pin is staged with `@pytest.mark.xfail(strict=True)`. Strict mode forces removal of the marker the moment the recipe is hardened (an unexpected pass becomes a failure otherwise). The marker MUST be removed in Deliverable 2's Green step.
+- Integration gate passed: full `make test` reports `2121 passed, 5 skipped, 1 xfailed`, exit 0.
 
 ## Verification
 1. **Recipe shape:**
