@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from teddy_executor.core.domain.models.plan import Plan
     from teddy_executor.core.domain.models.project_context import ProjectContext
     from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
     from teddy_executor.core.ports.outbound.file_system_manager import (
         IFileSystemManager,
     )
@@ -88,6 +89,7 @@ class ReviewerApp(App):
         file_system: Optional[IFileSystemManager] = None,
         project_context: Optional[ProjectContext] = None,
         web_scraper: Optional[WebScraper] = None,
+        config_service: Optional[IConfigService] = None,
     ):
         super().__init__()
         self.plan = plan
@@ -97,6 +99,7 @@ class ReviewerApp(App):
         self._action_dispatcher = action_dispatcher
         self._file_system = file_system
         self._web_scraper = web_scraper
+        self.config_service = config_service
         self._edit_simulator = EditSimulator()
         self._user_message_cache: Optional[str] = None
         self._log_preview_files: list[str] = []

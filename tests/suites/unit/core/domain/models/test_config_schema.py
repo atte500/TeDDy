@@ -146,6 +146,18 @@ def test_nested_tree_width_overrides_the_default():
     assert config.context.max_children == 5
 
 
+def test_default_plan_max_lines_is_five_thousand():
+    """The shipped plan display cap defaults to five thousand lines."""
+    assert DEFAULT_APP_CONFIG.plan.max_lines == 5000
+
+
+def test_nested_plan_max_lines_overrides_the_default():
+    """A nested override replaces the plan display cap."""
+    config = construct_app_config({"plan": {"max_lines": 200}})
+
+    assert config.plan.max_lines == 200
+
+
 @pytest.mark.parametrize(
     ("group", "key"),
     [
@@ -153,6 +165,7 @@ def test_nested_tree_width_overrides_the_default():
         ("read", "max_lines"),
         ("research", "max_results"),
         ("context", "max_children"),
+        ("plan", "max_lines"),
     ],
 )
 def test_zero_capacity_raises(group, key):
@@ -168,6 +181,7 @@ def test_zero_capacity_raises(group, key):
         ("read", "max_lines"),
         ("research", "max_results"),
         ("context", "max_children"),
+        ("plan", "max_lines"),
     ],
 )
 def test_single_capacity_is_accepted(group, key):

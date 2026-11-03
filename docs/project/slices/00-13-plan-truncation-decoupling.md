@@ -1,6 +1,6 @@
 # Slice: Plan Truncation Decoupling
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc, from Case File 76)
 - **Depends On:** N/A
 - **Specs:** N/A
@@ -78,11 +78,18 @@ No `[CONTRACT]` step: no obsolete contract or method is removed. `read_file` rem
 
 ## Deliverables
 
-- [ ] **Interface** - Add `PlanConfig` (`max_lines: int = 5000`) to `config_schema.py`; wire into `AppConfig` via `field(default_factory=...)`; add a `plan:` block with `max_lines: 5000` to the bundled default config at `src/teddy_executor/resources/config/config.yaml`; and add optional `config_service: IConfigService | None = None` to `TextualPlanReviewer.__init__` and the `ReviewerApp` attribute.
+- [x] **Interface** - Add `PlanConfig` (`max_lines: int = 5000`) to `config_schema.py`; wire into `AppConfig` via `field(default_factory=...)`; add a `plan:` block with `max_lines: 5000` to the bundled default config at `src/teddy_executor/resources/config/config.yaml`; and add optional `config_service: IConfigService | None = None` to `TextualPlanReviewer.__init__` and the `ReviewerApp` attribute.
 - [ ] **Wiring** - Thread `IConfigService` through `registries/reviewer.py::tui_factory` into `TextualPlanReviewer` / `ReviewerApp`. Then `textual_plan_reviewer_previews.view_plan_handler` reads the plan via `read_raw_file`, truncates at `plan.max_lines` (from `app.config_service.get_setting("plan.max_lines", 5000)`, falling back to `5000` when the config handle is absent), and appends the hint-less plain notice `[Showing first N of M lines.]`. Thinnest end-to-end user-visible fix; drives the display-level acceptance test.
 - [ ] **Core** - Switch all correctness plan reads to `read_raw_file`: `session_orchestrator._prepare_plan_parsing`, `session_orchestrator._validate_plan_with_context`, `execution_orchestrator` plan resolution, `session_lifecycle_manager` plan synthesis, `session_service._is_preserved_turn`. Resolves the resume write-back data-loss hazard and the `## Message`-beyond-1000 marker miss.
 
 ## Implementation Notes
+
+- **Interface (config layer):** Added the frozen `PlanConfig(max_lines: int = 5000)` dataclass to `config_schema.py`, wired `plan: PlanConfig = field(default_factory=PlanConfig)` into `AppConfig`, and registered `_FieldSpec("plan.max_lines", "plan", "max_lines", int, minimum=1)` so the key is declared, typed, and range-checked (it auto-extends `_KNOWN_TOP_LEVEL`). `construct_app_config` now passes `plan=PlanConfig(**group_overrides.get("plan", {}))` explicitly, so a nested `plan` override survives construction rather than being silently dropped.
+- **Interface (bundled config):** The bundled `src/teddy_executor/resources/config/config.yaml` declares a `plan:` block with `max_lines: 5000` and an explanatory comment, so the cap is visible and editable by users.
+- **Interface (documentation):** `config_service.md` documents `plan.max_lines` (int, default 5000) in the configuration-keys table, keeping the drift test (documented ⊆ schema) and the `get_setting`-parity test green.
+- **Interface (reviewer handles):** `TextualPlanReviewer.__init__` gained an optional `config_service: Optional[IConfigService] = None`, stored as `_config_service` and threaded into the `ReviewerApp` it constructs. `ReviewerApp.__init__` gained the matching optional `config_service` parameter, exposed as the public `config_service` attribute so the plan-view handler can read `plan.max_lines`. Both default to `None`, so every existing construction site stays valid.
+- **Interface (tests):** Added default/override/zero-rejection coverage for `plan.max_lines` to `test_config_schema.py` (extending the existing capacity parametrization), a bundled-config contract test `test_bundled_config_plan_limits.py`, and `test_reviewer_config_service.py` asserting both reviewer classes accept and retain the injected handle (using `register_mock`, not bare `MagicMock`).
+- **Verification:** 43 targeted tests pass; the full `make test` suite is green (2173 passed, 5 skipped).
 
 ## Verification
 

@@ -17,6 +17,9 @@ workspace:
 read:
   max_lines: 1000                   # Caps READ action output lines.
 
+plan:
+  max_lines: 5000                   # Caps plan display lines in the TUI viewer.
+
 context:
   max_depth: 3                      # Max project tree depth.
   max_children: 20                  # Max entries listed per subdirectory.

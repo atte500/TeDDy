@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
     from teddy_executor.core.domain.models.plan import ActionData, Plan
     from teddy_executor.core.domain.models.project_context import ProjectContext
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
     from teddy_executor.core.ports.outbound.file_system_manager import (
         IFileSystemManager,
     )
@@ -24,19 +25,21 @@ class TextualPlanReviewer(IPlanReviewer):
     Implements IPlanReviewer using the Textual TUI framework.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - injects the port set plus optional handles
         self,
         system_env: ISystemEnvironment,
         file_system: IFileSystemManager,
         console_tooling: ConsoleToolingHelper,
         action_dispatcher: ActionDispatcher,
         web_scraper: Optional[WebScraper] = None,
+        config_service: Optional[IConfigService] = None,
     ):
         self._system_env = system_env
         self._file_system = file_system
         self._console_tooling = console_tooling
         self._action_dispatcher = action_dispatcher
         self._web_scraper = web_scraper
+        self._config_service = config_service
 
     def review(
         self, plan: Plan, project_context: Optional[ProjectContext] = None
@@ -74,6 +77,7 @@ class TextualPlanReviewer(IPlanReviewer):
             file_system=self._file_system,
             project_context=project_context,
             web_scraper=self._web_scraper,
+            config_service=self._config_service,
         )
         # The session-level quit-key reader polls stdin for the whole turn
         # loop; Textual owns the keyboard for the app's lifetime, so claim

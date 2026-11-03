@@ -43,6 +43,11 @@ class ReadConfig:
 
 
 @dataclass(frozen=True)
+class PlanConfig:
+    max_lines: int = 5000
+
+
+@dataclass(frozen=True)
 class ContextConfig:
     max_depth: int = 3
     max_children: int = 20
@@ -84,6 +89,7 @@ class AppConfig:
     edit: EditConfig = field(default_factory=EditConfig)
     workspace: WorkspaceConfig = field(default_factory=WorkspaceConfig)
     read: ReadConfig = field(default_factory=ReadConfig)
+    plan: PlanConfig = field(default_factory=PlanConfig)
     context: ContextConfig = field(default_factory=ContextConfig)
     research: ResearchConfig = field(default_factory=ResearchConfig)
     checks: ChecksConfig = field(default_factory=ChecksConfig)
@@ -211,6 +217,7 @@ _SCHEMA_FIELDS: tuple[_FieldSpec, ...] = (
     _FieldSpec("workspace.pre-commit", "workspace", "pre_commit", bool),
     _FieldSpec("workspace.pull", "workspace", "pull", bool),
     _FieldSpec("read.max_lines", "read", "max_lines", int, minimum=1),
+    _FieldSpec("plan.max_lines", "plan", "max_lines", int, minimum=1),
     _FieldSpec("context.max_depth", "context", "max_depth", int, minimum=0),
     _FieldSpec("context.max_children", "context", "max_children", int, minimum=1),
     _FieldSpec("research.max_results", "research", "max_results", int, minimum=1),
@@ -349,6 +356,7 @@ def construct_app_config(merged: Mapping[str, Any]) -> AppConfig:
         edit=EditConfig(**group_overrides.get("edit", {})),
         workspace=WorkspaceConfig(**group_overrides.get("workspace", {})),
         read=ReadConfig(**group_overrides.get("read", {})),
+        plan=PlanConfig(**group_overrides.get("plan", {})),
         context=ContextConfig(**group_overrides.get("context", {})),
         research=ResearchConfig(**group_overrides.get("research", {})),
         checks=ChecksConfig(**group_overrides.get("checks", {})),
