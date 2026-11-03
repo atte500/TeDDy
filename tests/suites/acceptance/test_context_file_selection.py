@@ -97,16 +97,18 @@ def test_context_only_flag_excludes_default_context_set(
     assert "### [README.md](/README.md)" not in result.stdout
 
 
-def test_context_only_without_context_value_is_usage_error(
+def test_context_only_without_context_value_omits_resource_contents(
     tmp_path: Path, monkeypatch
 ) -> None:
-    """--only without -c exits with a usage error before any context work."""
+    """--only without -c exports the payload without the Resource Contents section."""
     _seed_context_workspace(tmp_path)
 
     result = _run_context(monkeypatch, tmp_path, ["--only"])
 
-    assert result.exit_code == 2, result.stdout
+    assert result.exit_code == 0, result.stdout
+    assert "## Project Structure" in result.stdout
     assert "## Resource Contents" not in result.stdout
+    assert "### [README.md](/README.md)" not in result.stdout
 
 
 def test_context_command_expands_context_manifest(tmp_path: Path, monkeypatch) -> None:

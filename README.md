@@ -283,6 +283,9 @@ teddy context -c "README.md,pyproject.toml"
 
 # Export only the chosen files and skip the default set
 teddy context --only -c README.md
+
+# Export the payload without any file contents
+teddy context --only
 ```
 
 A `-c` value resolves by kind. A directory expands recursively. A URL is fetched instead of resolved on disk. A file named `<name>.context` is treated as a manifest: the command reads one path per line, skips blank lines and `#` comments, and expands each entry. Any other file is embedded verbatim.
@@ -291,7 +294,7 @@ A `-c` value resolves by kind. A directory expands recursively. A URL is fetched
 teddy context -c review.context
 ```
 
-`--only` requires at least one `-c` value. Without one the command exits with a usage error, because an empty explicit set would export no files.
+`--only` skips the default set and the session scopes. With no `-c` value the explicit set is empty, so the payload carries system information, git status, and project structure but no `Resource Contents` section.
 
 ---
 

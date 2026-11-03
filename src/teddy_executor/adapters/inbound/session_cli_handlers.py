@@ -1417,23 +1417,22 @@ def handle_context_gathering(
     context_service: IGetContextUseCase = container.resolve(IGetContextUseCase)
     context_files = detect_session_context()
 
-    if only and not additional_context:
-        raise typer.BadParameter("--only requires at least one --context value.")
-
-    if additional_context:
+    if only:
+        # An explicit-only run drops the default and session sets. With no -c
+        # the explicit scope stays empty, so the payload carries no Resource
+        # Contents section instead of falling back to the defaults.
+        context_files = {"Explicit": list(additional_context or [])}
+    elif additional_context:
         explicit_scope = {"Explicit": list(additional_context)}
-        if only:
-            context_files = explicit_scope
-        else:
-            # Outside a session no scope map exists, so the defaults are
-            # resolved here: the service globs only when the map is falsy.
-            scopes = (
-                dict(context_files)
-                if context_files
-                else {"Default": _default_context_paths(container)}
-            )
-            scopes.update(explicit_scope)
-            context_files = scopes
+        # Outside a session no scope map exists, so the defaults are
+        # resolved here: the service globs only when the map is falsy.
+        scopes = (
+            dict(context_files)
+            if context_files
+            else {"Default": _default_context_paths(container)}
+        )
+        scopes.update(explicit_scope)
+        context_files = scopes
 
     # Performance: Formatting context for Markdown doesn't use tokens, so we skip them.
     context_result = context_service.get_context(
