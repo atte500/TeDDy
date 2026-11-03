@@ -170,7 +170,7 @@ def test_reply_finalizes_awaiting_turn_then_plans_next_turn(manager) -> None:
     # Assert: the interrupted plan was parsed for the synthesis.
     manager._plan_parser.parse.assert_called_once()
     # Assert: the synthesized report carries the MESSAGE log in the canonical
-    # shape — the USER's reply in `details` (rendered under `- **User Reply:**`)
+    # shape — the USER's reply in `details` (rendered under `## User Reply`)
     # and the agent's own text preserved in `params["content"]`.
     manager._report_formatter.format.assert_called_once()
     synthesized = manager._report_formatter.format.call_args.args[0]
@@ -209,7 +209,7 @@ def test_reply_finalizes_awaiting_turn_then_plans_next_turn(manager) -> None:
 
 def test_finalized_report_renders_user_reply_not_agent_message(container) -> None:
     """Regression (Bug 54 / defect 4b): the finalized message-turn report
-    must render the USER's injected reply under `- **User Reply:**` and must
+    must render the USER's injected reply under `## User Reply` and must
     NEVER mislabel the agent's own message as the user's reply.
 
     Rendered through the REAL MarkdownReportFormatter so the assertion is
@@ -229,12 +229,12 @@ def test_finalized_report_renders_user_reply_not_agent_message(container) -> Non
     )
 
     # Assert: the finalized report renders the USER's reply under the
-    # `- **User Reply:**` header and NEVER the agent's own message.
+    # `## User Reply` header and NEVER the agent's own message.
     written_path = str(manager._file_system_manager.write_file.call_args.args[0])
     assert written_path.endswith("01/report.md"), written_path
     rendered = manager._file_system_manager.write_file.call_args.args[1]
-    assert "**User Reply:**" in rendered
-    user_reply_section = rendered[rendered.index("**User Reply:**") :]
+    assert "## User Reply" in rendered
+    user_reply_section = rendered[rendered.index("## User Reply") :]
     assert REPLY in user_reply_section
     assert AGENT_MESSAGE not in user_reply_section
 

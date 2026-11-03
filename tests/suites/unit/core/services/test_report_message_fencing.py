@@ -52,7 +52,7 @@ def test_report_handles_missing_user_message(formatter):
 def test_message_action_shows_content_in_fenced_codeblock(formatter):
     """
     Ensures that a MESSAGE action's content is rendered in a fenced code block
-    under "- **User Reply:**" in the Action Log.
+    under the top-level "## User Reply" section.
     """
     from teddy_executor.core.domain.models import ActionLog, ActionStatus
 
@@ -74,9 +74,10 @@ def test_message_action_shows_content_in_fenced_codeblock(formatter):
 
     markdown = formatter.format(report)
 
-    # Check the Action Log section contains the expected elements
-    assert "### `MESSAGE`:" in markdown
-    assert "**User Reply:**" in markdown
+    # A MESSAGE renders as a top-level User Reply section, not an Action Log entry
+    assert "## User Reply" in markdown
+    assert "## Action Log" not in markdown
+    assert "### `MESSAGE`" not in markdown
     assert "This is the reply text" in markdown
     # Check it's inside a code fence (content has no backticks, so fence is triple backticks)
     assert (
@@ -111,7 +112,7 @@ def test_message_action_with_backticks_in_content_uses_safe_fence(formatter):
     markdown = formatter.format(report)
 
     # Content has triple backticks, so fence must be at least 4 backticks
-    assert "**User Reply:**" in markdown
+    assert "## User Reply" in markdown
     assert "Use `code` and ```fenced``` blocks here" in markdown
     # The fence surrounding the content should be longer than the longest internal backtick sequence (3)
     assert "````\nUse `code` and ```fenced``` blocks here\n````" in markdown
@@ -142,9 +143,10 @@ def test_message_action_with_string_details_shows_in_fenced_codeblock(formatter)
 
     markdown = formatter.format(report)
 
-    # Check the Action Log section contains the expected elements
-    assert "### `MESSAGE`:" in markdown
-    assert "**User Reply:**" in markdown
+    # A MESSAGE renders as a top-level User Reply section, not an Action Log entry
+    assert "## User Reply" in markdown
+    assert "## Action Log" not in markdown
+    assert "### `MESSAGE`" not in markdown
     assert "reply text from ask_question" in markdown
     # Should NOT show raw - **Details:** `reply text...`
     assert "**Details:**" not in markdown

@@ -107,12 +107,12 @@ def test_pipeline_message_turn_and_resume_m_round_trip(tmp_path, monkeypatch):
         "The reply must finalize the interrupted turn's report."
     )
     report01 = (turn01 / "report.md").read_text(encoding="utf-8")
-    assert "**User Reply:**" in report01, (
+    assert "## User Reply" in report01, (
         "The finalized report must carry the MESSAGE User Reply block."
     )
     assert "I am great, tell me a joke" in report01, (
         "The finalized report must render the USER's injected reply under "
-        "`- **User Reply:**` — never the agent's message (Bug 54 / defect 4b)."
+        "`## User Reply` — never the agent's message (Bug 54 / defect 4b)."
     )
     assert "## User Request" not in report01, (
         "The consumption path must not append a User Request section — "
@@ -263,11 +263,11 @@ def test_resume_pipeline_message_finalizes_interrupted_turn(tmp_path, monkeypatc
     # Turn 01 is finalized: standard message-turn report, no User Request.
     assert (turn01 / "report.md").exists()
     report01 = (turn01 / "report.md").read_text(encoding="utf-8")
-    assert "**User Reply:**" in report01
-    user_reply_section = report01[report01.index("**User Reply:**") :]
+    assert "## User Reply" in report01
+    user_reply_section = report01[report01.index("## User Reply") :]
     assert "I am great, tell me a joke" in user_reply_section, (
         "The finalized report must render the USER's injected reply under "
-        "`- **User Reply:**`."
+        "`## User Reply`."
     )
     assert "Hi! How are you?" not in user_reply_section, (
         "The finalized report must NEVER mislabel the agent's own message as "

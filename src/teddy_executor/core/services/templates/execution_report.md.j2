@@ -16,7 +16,7 @@
 
 {% macro render_action_summary(log) %}
 {# Scalar, status-adjacent metadata rendered directly after `- **Status:**`. #}
-{% if log.action_type.upper() != 'MESSAGE' and log.details -%}
+{% if log.details -%}
 {% if log.details is mapping -%}
 {% if log.details.get("error") -%}
 - **Error:** {{ log.details.error }}
@@ -54,17 +54,11 @@
 {% endmacro -%}
 
 {% macro render_action_blocks(log) %}
-{# Multi-line diagnostic blocks + MESSAGE reply content (rendered at block end). #}
-{% if log.action_type.upper() == 'MESSAGE' and log.details %}
-{% if log.details is mapping and log.details.get('content') %}
-- **User Reply:**
-{{ log.details.content | trim | embed_fence('') }}
-{% else %}
-- **User Reply:**
-{{ log.details | trim | embed_fence('') }}
-{% endif %}
+{# Multi-line diagnostic blocks (stdout/stderr/diff), rendered at block end.
 
-{% elif log.details and log.details is mapping -%}
+   MESSAGE logs never reach this macro: they are partitioned out of the action
+   loop and rendered as a top-level `## User Reply` section instead. #}
+{% if log.details and log.details is mapping -%}
 {% if log.details.get("stdout") -%}
 #### `stdout`
 {{ log.details.stdout | trim | embed_fence('text') }}
@@ -142,8 +136,18 @@
 {{ render_resource(res_path, log.details.content) }}
 {% endfor %}
 {% endif -%}
-## Action Log
+{# Partition MESSAGE logs from action logs: a message turn is a communication, not an action, so its reply renders as a top-level `## User Reply` section and never inside `## Action Log`. #}
+{% set split_ns = namespace(messages=[], actions=[]) %}
 {% for log in report.action_logs %}
+{% if log.action_type.upper() == 'MESSAGE' %}
+{% set split_ns.messages = split_ns.messages + [log] %}
+{% else %}
+{% set split_ns.actions = split_ns.actions + [log] %}
+{% endif %}
+{% endfor %}
+{% if split_ns.actions or not report.action_logs %}
+## Action Log
+{% for log in split_ns.actions %}
 {% set action_type = log.action_type.upper() %}
 {% set params = log.params or {} %}
 {% set target = '' %}
@@ -164,7 +168,7 @@
     {% set target = '' %}
   {% endif %}
 {% else %}
-  {# Legacy link-form header for MESSAGE and other types; Migration relocates MESSAGE. #}
+  {# Fallback link-form header for unrecognized action types; MESSAGE is partitioned out upstream, and CREATE/EDIT/READ/EXECUTE/RESEARCH render their plain forms above. #}
   {% set full_path = params.get('File Path') or params.get('file_path') or params.get('Resource') or params.get('resource') or params.get('path') or '' %}
   {% if full_path.startswith('http:') or full_path.startswith('https:') %}
     {% set target = '[' ~ full_path ~ '](' ~ full_path ~ ')' %}
@@ -268,6 +272,21 @@ _**Hint:** NOW you MUST use READ on the most promising results_
 {% else %}
 *(No actions were executed.)*
 {% endfor %}
+{% endif %}
+{% set reply_ns = namespace(log=None) %}
+{% for message in split_ns.messages %}
+{% if message.details %}
+{% set reply_ns.log = message %}
+{% endif %}
+{% endfor %}
+{% if reply_ns.log %}
+## User Reply
+{% if reply_ns.log.details is mapping and reply_ns.log.details.get('content') %}
+{{ reply_ns.log.details.content | trim | embed_fence('') }}
+{% else %}
+{{ reply_ns.log.details | trim | embed_fence('') }}
+{% endif %}
+{% endif %}
 {% if report.validation_result %}
 
 ## Validation Recovery

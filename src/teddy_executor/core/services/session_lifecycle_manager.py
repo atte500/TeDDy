@@ -423,7 +423,7 @@ class SessionLifecycleManager:
         has no prior report).
 
         Canonical `details` semantics: a MESSAGE ActionLog's `details` holds
-        the USER's reply (rendered under `- **User Reply:**`), while the
+        the USER's reply (rendered under `## User Reply`), while the
         agent's own text lives in `params["content"]` (render-ignored). The
         injected `reply` is therefore stored in `details`; the stop-again
         path passes none (no user reply yet, `details` stays empty so the
