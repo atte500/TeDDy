@@ -27,5 +27,6 @@ probe: _preflight
 	fi; \
 	echo "Probe: watching run $$RUN_ID for $$SHA"; \
 	gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 || true; \
-	gh run download "$$RUN_ID" --name probe-result --dir spikes/debug >/dev/null 2>&1 || true; \
+	rm -f spikes/debug/probe_output.txt; \
+	gh run download "$$RUN_ID" --name probe-result --dir spikes/debug >/dev/null 2>&1 || { echo "Probe: failed to download probe-result artifact for run $$RUN_ID." >&2; exit 1; }; \
 	cat spikes/debug/probe_output.txt 2>/dev/null || echo "(no output file)"

@@ -5,8 +5,6 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-import pytest
-
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _MAKEFILE = _PROJECT_ROOT / "Makefile"
 _PROJECT_TEMPLATE = _PROJECT_ROOT / "docs" / "templates" / "makefile.md"
@@ -40,10 +38,6 @@ def test_make_help_executes_successfully() -> None:
     assert "Available Makefile targets:" in result.stdout
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="probe recipe hardening lands with the migration deliverable",
-)
 def test_probe_recipe_clears_output_and_fails_loudly_on_download_failure() -> None:
     """The probe recipe must clear stale output before download and never suppress download errors."""
     lines = _PROBE_MK.read_text(encoding="utf-8").splitlines()
