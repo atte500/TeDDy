@@ -274,7 +274,17 @@ class LiteLLMAdapter(ILlmClient):
     def get_completion_cost(
         self, completion_response: Any, model_override: Optional[str] = None
     ) -> float:
-        """Calculates the precise USD cost of a completion response."""
+        """Calculates the precise USD cost of a completion response.
+
+        Prefers the cost the provider already reported on the response (litellm
+        stores it in ``_hidden_params["response_cost"]``) because it reflects the
+        vendor that actually served the request. Falls back to the registry
+        recompute when no reported cost is present.
+        """
+        reported = self._reported_cost(completion_response)
+        if reported is not None:
+            return reported
+
         litellm = self._get_litellm()
         try:
             return float(
@@ -305,6 +315,26 @@ class LiteLLMAdapter(ILlmClient):
             # Graceful fallback for unmapped models or hydration failure
             self._log_cost_failure(e, completion_response, model_override)
             return 0.0
+
+    def _reported_cost(self, completion_response: Any) -> Optional[float]:
+        """Returns the cost the provider reported on the response, if any.
+
+        litellm writes the vendor-reported spend to
+        ``_hidden_params["response_cost"]``. A non-dict holder, an absent key, a
+        ``None`` value, or an unconvertible value all mean "no reported cost", so
+        the caller recomputes instead. A non-finite guard is added in the Core
+        deliverable.
+        """
+        hidden = getattr(completion_response, "_hidden_params", None)
+        if not isinstance(hidden, dict):
+            return None
+        value = hidden.get("response_cost")
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
 
     def _log_cost_failure(
         self, error: Exception, completion_response: Any, model_override: Optional[str]

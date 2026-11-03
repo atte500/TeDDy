@@ -1,5 +1,5 @@
 # Slice: Cost Estimation Precision by Resolved Vendor
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** None
 - **Specs:** None
@@ -67,13 +67,15 @@ Map affected components using non-breaking steps (expand -> migrate -> contract)
 
 ## Deliverables
 
-- [ ] **Wiring** - Acceptance test: a completion whose `_hidden_params["response_cost"]` is a concrete float returns that value without calling `litellm.completion_cost`; a completion without it falls back to `litellm.completion_cost`. Implement the reported-cost read, preferring `_hidden_params["response_cost"]`, then `get_response_cost_from_hidden_params`, then the existing recompute.
+- [x] **Wiring** - Acceptance test: a completion whose `_hidden_params["response_cost"]` is a concrete float returns that value without calling `litellm.completion_cost`; a completion without it falls back to `litellm.completion_cost`. Implement the reported-cost read, preferring `_hidden_params["response_cost"]`, then `get_response_cost_from_hidden_params`, then the existing recompute.
 - [ ] **Core** - Cover the read edge cases with unit tests: non-dict hidden params, absent/`None` value, non-finite value, free-model `0.0`, and header-only fallback.
 - [ ] **Migration** - Relax the `_display_telemetry` `$???` gate so a recorded reported cost shows even when `supports_pricing` is false, without masking a genuinely unpriced model (a free model still reads `$0.0000`). Introduce an explicit "cost was recorded" signal (Option B) so the gate keys off recorded-ness rather than `supports_pricing`, because a free model legitimately records `0.0` and cannot be distinguished from "no cost" by `cost > 0`.
 - [ ] **Cleanup** - Align `_resolve_cost_model` (diagnostic summary) with the reported-cost source so anomaly logs report the identity actually priced.
 
 ## Implementation Notes
 Discovery resolved the technical unknowns against the installed litellm sources. The reported cost is already computed by litellm and stored on the response; the adapter simply discards it by calling `completion_cost` directly. No provider-keyed price table or `custom_llm_provider` forwarding is needed. Existing telemetry tests keep passing because a bare `Mock()` response yields a non-dict `_hidden_params` and falls through to the recompute. All unknowns are resolved; the display-gate decision is Option B, approved at the alignment gate on 2026-11-03. Route to the Developer.
+
+- **Wiring (2026-11-03):** Added `LiteLLMAdapter._reported_cost`, which reads `_hidden_params["response_cost"]` and returns it before the recompute; `get_completion_cost` now prefers it, then falls through to `litellm.completion_cost`. The helper returns `None` for a non-dict holder, an absent key, a `None` value, or an unconvertible value, preserving the `cost_never_raises` invariant. Deviation: the slice labels Wiring an *acceptance* test, but the behavior is only reachable at the adapter boundary (the acceptance harness mocks `ILlmClient` wholesale), so the tracer-bullet tests live in `tests/suites/unit/adapters/outbound/test_litellm_adapter_telemetry.py` using `SimpleNamespace` + a minimal `_FakeCostLitellm` double (no bare `Mock`). The OpenRouter-header fallback (`get_response_cost_from_hidden_params`) and the non-finite guard are deliberately deferred to Core so Core gets a genuine Red.
 
 ## Verification
 1. **Reported cost precedence:**

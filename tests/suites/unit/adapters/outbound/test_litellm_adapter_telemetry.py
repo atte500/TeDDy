@@ -1,6 +1,23 @@
 import logging
+from types import SimpleNamespace
 from unittest.mock import Mock
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+
+
+class _FakeCostLitellm:
+    """Minimal litellm double exposing only what cost telemetry reads."""
+
+    def __init__(self, *, cost=0.0, side_effect=None, model_cost=None):
+        self._cost = cost
+        self._side_effect = side_effect
+        self.model_cost = model_cost if model_cost is not None else {}
+        self.completion_cost_calls = []
+
+    def completion_cost(self, completion_response=None):
+        self.completion_cost_calls.append(completion_response)
+        if self._side_effect is not None:
+            raise self._side_effect
+        return self._cost
 
 
 def test_get_token_count_delegates_to_litellm(container):
@@ -225,3 +242,42 @@ def test_get_completion_cost_debug_for_unpriced_model_failure(container, caplog)
     assert any("unpriced-model" in r.getMessage() for r in debugs), caplog.text
     warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
     assert not any("unpriced-model" in r.getMessage() for r in warnings), caplog.text
+
+
+def test_get_completion_cost_prefers_reported_response_cost(container):
+    """A response carrying a reported cost returns it without recomputing."""
+    from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+    adapter = LiteLLMAdapter(container.resolve(IConfigService))
+    fake = _FakeCostLitellm(cost=999.0)
+    adapter._litellm_initialized = True
+    adapter._litellm_module = fake
+
+    response = SimpleNamespace(
+        _hidden_params={"response_cost": 0.1234},
+        model="served-model",
+    )
+
+    cost = adapter.get_completion_cost(response)
+
+    assert cost == 0.1234
+    assert fake.completion_cost_calls == []
+
+
+def test_get_completion_cost_falls_back_when_no_reported_cost(container):
+    """A response without a reported cost falls back to the litellm recompute."""
+    from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+    adapter = LiteLLMAdapter(container.resolve(IConfigService))
+    fake = _FakeCostLitellm(cost=0.05)
+    adapter._litellm_initialized = True
+    adapter._litellm_module = fake
+
+    response = SimpleNamespace(model="served-model")  # no _hidden_params
+
+    cost = adapter.get_completion_cost(response)
+
+    assert cost == 0.05
+    assert fake.completion_cost_calls == [response]
