@@ -1,5 +1,5 @@
 # Slice: Silent-on-Resume Workspace Bootstrap
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** Ad-hoc
 - **Depends On:** None
 - **Specs:** None
@@ -69,11 +69,9 @@ No open unknowns. The design is settled: full silence on resume including warnin
 5. `[MIGRATE]` `config.yaml` comments and the `cli.md` startup-preamble contract — document that the workspace steps run on both entry points but report only on `start`.
 
 ## Deliverables
-- [ ] **Wiring** — Add `verbose_workspace: bool = False` to `_run_startup_preamble`, forward it to `_run_health_checks(config_service, verbose=verbose_workspace)`, and set `verbose_workspace=True` in `handle_new_session`.
-- [ ] **Core** — Add `verbose: bool = True` to `_run_health_checks`, `_ensure_commit_hooks`, and `_check_git_initialized`; gate every `typer.secho` on `verbose`; keep all repair side effects unconditional.
-- [ ] **Wiring** — Suppress the preamble separator blank when the workspace block emits nothing, so resume does not open with a leading blank while `start` stays byte-identical.
-- [ ] **Harness** — Extend the start-vs-resume recorder pair in `test_session_cli_handlers.py` to pin the workspace-verbosity flag on both entry points, and add coverage proving a silenced resume still runs the repair side effects.
-- [ ] **Harness** — Update `test_session_startup_banner.py` so the resume assertion drops the leading newline and the start assertion stays byte-identical.
+- [ ] **Core** — Add `verbose: bool = True` to `_run_health_checks`, `_ensure_commit_hooks`, and `_check_git_initialized`; gate every `typer.secho` on `verbose`; keep all repair side effects unconditional; forward `verbose` from `_run_health_checks` to both helpers. Write the silencing tests first (Red), including coverage that a silenced helper still performs its repair, and update the two helper stubs that assert the call signature so they accept the forwarded keyword.
+- [ ] **Wiring** — Add `verbose_workspace: bool = False` to `_run_startup_preamble`, forward it as `_run_health_checks(config_service, verbose=verbose_workspace)`, and pass `verbose_workspace=True` from `handle_new_session` while `handle_resume_session` keeps the default `False`. Pin the forwarded flag in the start-vs-resume recorder pair. The separator blank stays unconditional so this commit is green: resume silences the workspace lines but still emits the blank the current banner assertion expects.
+- [ ] **Wiring** — Gate the preamble separator blank on `verbose_workspace` so resume does not open with a leading blank while `start` stays byte-identical, and update the resume banner assertion in `test_session_startup_banner.py` to drop the leading newline in the same commit (the start assertion stays byte-identical).
 - [ ] **Cleanup** — Update the `workspace.init` and `workspace.pre-commit` comments in `config.yaml`, the `start_only_workspace_pull` invariant, and the startup-preamble section of `docs/architecture/adapters/inbound/cli.md`.
 
 ## Implementation Notes
