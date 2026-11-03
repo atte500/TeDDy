@@ -127,3 +127,63 @@ def test_execute_handles_timeout_without_output():
     assert result["return_code"] == ShellAdapter.TIMEOUT_EXIT_CODE
     assert result["stdout"] == "[ERROR: Command timed out after 0.5 seconds]"
     assert result["stderr"] == ""
+
+
+def test_execute_timeout_truncates_partial_output_to_default_cap():
+    """A timed-out command's partial stdout is capped to max_execute_lines."""
+    if sys.platform == "win32":
+        pytest.skip("killpg is POSIX only")
+
+    max_lines = 3
+    adapter = ShellAdapter(max_execute_lines=max_lines)
+
+    mock_process = MagicMock()
+    mock_process.pid = 999999
+    partial = "\n".join(f"line{i}" for i in range(1, 11))  # 10 lines
+    mock_process.communicate.side_effect = [
+        subprocess.TimeoutExpired(cmd="sleep 10", timeout=0.1),
+        (partial, "partial stderr"),
+    ]
+
+    with (
+        patch.object(adapter, "_popen", return_value=mock_process),
+        patch("os.killpg", create=True),
+        patch.object(adapter, "_restore_terminal_state"),
+    ):
+        result = adapter.execute("sleep 10", timeout=0.1)
+
+    lines = result["stdout"].splitlines()
+    assert result["return_code"] == ShellAdapter.TIMEOUT_EXIT_CODE
+    assert "[ERROR: Command timed out after 0.1 seconds]" in lines[0]
+    assert "[Output truncated" in result["stdout"]
+    assert len(lines) == 2 + max_lines  # warning + hint + capped body
+    assert lines[-max_lines:] == ["line8", "line9", "line10"]
+
+
+def test_execute_timeout_truncates_partial_output_with_max_lines_override():
+    """The per-call max_lines override is honoured on the timeout path."""
+    if sys.platform == "win32":
+        pytest.skip("killpg is POSIX only")
+
+    adapter = ShellAdapter(max_execute_lines=100)
+
+    mock_process = MagicMock()
+    mock_process.pid = 999999
+    partial = "\n".join(f"line{i}" for i in range(1, 11))  # 10 lines
+    mock_process.communicate.side_effect = [
+        subprocess.TimeoutExpired(cmd="sleep 10", timeout=0.1),
+        (partial, ""),
+    ]
+
+    with (
+        patch.object(adapter, "_popen", return_value=mock_process),
+        patch("os.killpg", create=True),
+        patch.object(adapter, "_restore_terminal_state"),
+    ):
+        result = adapter.execute("sleep 10", timeout=0.1, max_lines=2)
+
+    lines = result["stdout"].splitlines()
+    assert result["return_code"] == ShellAdapter.TIMEOUT_EXIT_CODE
+    assert "[Output truncated" in result["stdout"]
+    assert len(lines) == 2 + 2
+    assert lines[-2:] == ["line9", "line10"]

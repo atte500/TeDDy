@@ -42,4 +42,4 @@ None — this is an outbound (driven) adapter.
 - **Exceptions:** `ValueError` when a relative `cwd` escapes the project root.
 
 ### Internal helpers
-`_validate_cwd` resolves and containment-checks the working directory. `_await_process` polls the guard between slices or blocks once. `_handle_timeout` kills the process group and returns exit code `124`. `_decode_stream` converts each captured stream to text without raising. `_process_execution_results` sanitizes, truncates, and maps the raw output. `_detect_interactive_prompt` scans both streams for interactive-input patterns.
+`_validate_cwd` resolves and containment-checks the working directory. `_await_process` polls the guard between slices or blocks once. `_handle_timeout` kills the process group, tail-truncates the captured partial output to the effective line cap, and returns exit code `124`. `_decode_stream` converts each captured stream to text without raising. `_process_execution_results` sanitizes, truncates, and maps the raw output. `_detect_interactive_prompt` scans both streams for interactive-input patterns.

@@ -177,7 +177,12 @@ class ShellAdapter(IShellExecutor):
             kwargs["preexec_fn"] = preexec_fn
         return kwargs
 
-    def _handle_timeout(self, process: subprocess.Popen, timeout: float) -> ShellOutput:
+    def _handle_timeout(
+        self,
+        process: subprocess.Popen,
+        timeout: float,
+        max_lines: Optional[int] = None,
+    ) -> ShellOutput:
         """Handles a subprocess timeout by terminating the process and gathering output."""
         if sys.platform != "win32":
             import signal
@@ -211,10 +216,21 @@ class ShellAdapter(IShellExecutor):
 
         self._log_debug_error(Exception(f"TimeoutExpired: {timeout} seconds"))
         warning = f"[ERROR: Command timed out after {timeout} seconds]"
+        if stdout:
+            effective_max_lines = (
+                max_lines if max_lines is not None else self.max_execute_lines
+            )
+            truncated_body = truncate_lines(
+                self._sanitize_output(stdout),
+                max_lines=effective_max_lines,
+                direction="tail",
+                action_type="execute",
+            )
+            combined_stdout = f"{warning}\n{truncated_body}".strip()
+        else:
+            combined_stdout = warning
         return {
-            "stdout": f"{warning}\n{self._sanitize_output(stdout)}".strip()
-            if stdout
-            else warning,
+            "stdout": combined_stdout,
             "stderr": sanitized_stderr,
             "return_code": self.TIMEOUT_EXIT_CODE,
         }
@@ -421,7 +437,7 @@ class ShellAdapter(IShellExecutor):
             try:
                 stdout, stderr, interrupted = self._await_process(process, timeout)
             except subprocess.TimeoutExpired:
-                return self._handle_timeout(process, timeout or 0)
+                return self._handle_timeout(process, timeout or 0, max_lines=max_lines)
 
             self._log_debug_result(
                 subprocess.CompletedProcess(
