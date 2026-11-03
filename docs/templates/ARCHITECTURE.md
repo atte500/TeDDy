@@ -1,6 +1,6 @@
 # System Architecture: {{Project Name}}
 
-## Conventions & Standards
+## Architectural Standards
 
 This section defines foundational engineering practices. Each entry MUST be a specific, enforceable rule.
 
@@ -10,17 +10,17 @@ This section defines foundational engineering practices. Each entry MUST be a sp
 - **Version Control:** Branch strategy and commit conventions. Every commit MUST pass the full test suite before and after each change (`make test`). Commit locally per deliverable; defer the push to the session Conclusion and report CI results back (blocking only on failures the push introduced).
 - **Run Environment:** Designated runner (e.g., `uv run`, `poetry run`).
 - **Failure Transparency:** Error handling policy — specific exceptions only, no silent suppression.
-- **Testing Strategy:** Define test types (Unit, Integration, Acceptance), boundaries, and filesystem hygiene. Mandate **Test Double Integrity**. Ban global patching. Use in-memory fakes for state-managing outbound ports. Use strictly autospec-bound mocks only for external side-effects.
+- **Testing Strategy:** Define test types across three suites: Unit (`tests/suites/unit/` for isolated core domain logic and schemas), Integration (`tests/suites/integration/` for infrastructure adapters and stateful fakes running against local isolated resources), and Acceptance (`tests/suites/acceptance/` for outer boundary user journeys). Tests must be fast, deterministic, hermetic, and offline with zero real network calls or sleep statements. Mandate Test Double Integrity: ban global patching, use in-memory fakes for state-managing outbound ports, and use strictly autospec-bound mocks only for external side-effects.
 - **Runtime Contract Assertions:** Enforce Design-by-Contract with native `assert condition, "message"` for pre/post-conditions and invariants (strippable via `python -O`); never custom exceptions for contract checks.
 - **Dependency Injection:** Constructor injection mandate; forbid Service Locator and global containers.
 - **Centralized Configuration:** Config file location, prohibition of magic numbers.
-- **Continuous Integration & Remote Diagnostics:** Parallel CI jobs: 1) Blocking OS matrix test suite. 2) Non-blocking (`continue-on-error: true`) quality checks running fast formatters, linters, security scanners, type checkers, and repository-wide structural checks. Platform-specific and CI-only issues are investigated via the Remote Probing Protocol (`make probe REASON="<reason>"`). See [docs/templates/ci.md](docs/templates/ci.md).
-- **Local Quality Gates (Pre-commit & Post-commit):** Local pre-commit hooks MUST stay fast, checking only staged files (formatters, secret detection, merge conflict markers). Heavy, false-positive-prone checks run non-blocking in CI. The full test suite runs via the post-commit hook (`.githooks/post-commit.py`) as an unskippable safety net, reverting automatically on failure. See [docs/templates/pre-commit.md](docs/templates/pre-commit.md).
+- **Continuous Integration:** Parallel CI jobs: 1) Blocking OS matrix test suite. 2) Non-blocking (`continue-on-error: true`) quality checks running fast formatters, linters, security scanners, type checkers, and repository-wide structural checks. Platform-specific and CI-only issues are investigated via the Remote Probing Protocol (`make probe REASON="<reason>"`). See [docs/templates/ci.md](docs/templates/ci.md).
+- **Local Quality Gates:** Local pre-commit hooks MUST stay fast, checking only staged files (formatters, secret detection, merge conflict markers). Heavy, false-positive-prone checks run non-blocking in CI. The full test suite runs via the post-commit hook (`.githooks/post-commit.py`) as an unskippable safety net, reverting automatically on failure. See [docs/templates/pre-commit.md](docs/templates/pre-commit.md).
 - **Diagnostic Instrumentation:** High-value diagnostics MUST use zero-cost language-native dead-code elimination (e.g. `if __debug__:`) and Composition Root toggles; mid-logic environment checks are forbidden.
 - **Experimental Code:** The `spikes/` directory is reserved for rapid, isolated experimentation (`debug/`, `prototypes/`, `showcases/`) and is explicitly excluded from all quality gates (linters, type checkers, test suites).
 - **Directory Conventions:**
   `docs/architecture/BOUNDARY/LAYER/TYPE/name.md` -> Source path: `src/{pkg}/BOUNDARY/LAYER/TYPE/name.ext` -> Test path: `tests/suites/TEST_TYPE/BOUNDARY/LAYER/TYPE/test_name.ext`
-- **Makefile Commands:** The `Makefile` is the canonical entry point for the version control workflow and on-demand test runs: `make test` (full suite), `make commit MSG="<msg>"` (local commit with advisory auto-fix and unskippable post-commit test gate), `make push` (rebase and push), `make ci-watch` (CI monitoring), and `make probe REASON="<reason>"` (Remote Probing Protocol). See [docs/templates/makefile.md](docs/templates/makefile.md).
+- **Makefile Commands:** The `Makefile` is the canonical entry point for the version control workflow and on-demand test runs: `make test` (full suite), `make commit MSG="<msg>"` (local commit with pre-commit auto-fix and unskippable post-commit test gate), `make push` (rebase and push), `make ci-watch` (CI monitoring), and `make probe REASON="<reason>"` (Remote Probing Protocol). See [docs/templates/makefile.md](docs/templates/makefile.md).
 
 ## Ubiquitous Language
 
@@ -30,7 +30,7 @@ The canonical domain vocabulary. All documentation, component names, tests, and 
 
 - **TermName:** Definition of the core domain concept and its operational boundaries.
 
-## Component & Boundary Map
+## Component Map
 
 Single source of truth for system structure, organized by architectural layer.
 

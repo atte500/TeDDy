@@ -1,3 +1,8 @@
+<!--
+Destination: docs/project/slices/MM-NN-{slice-slug}.md
+Naming: MM = Milestone Number (e.g. 01, or 00 for ad-hoc). NN = Sequential Slice Number.
+-->
+
 # Slice: {{Feature Name}}
 - **Status:** [Planned | In Progress | Completed]
 - **Milestone:** [link]
@@ -27,7 +32,7 @@ Then [expected outcome]
 ```
 
 ## Edge Cases
-Boundary conditions, errors, and validation edge cases. These drive granular Unit Tests in Logic deliverables.
+Boundary conditions, errors, and validation edge cases. These drive granular Unit Tests in Core deliverables.
 - **Title**: If [condition], then [behavior], because [reason/invariant].
 
 ## Key Unknowns
@@ -59,24 +64,27 @@ Map affected components using non-breaking steps (expand -> migrate -> contract)
 ## Deliverables
 
 **Types:**
-- **Env:** Declarative tooling, build files, CI workflows, hooks, or config templates.
-- **Wiring:** Outermost boundary tracer bullet returning skeleton/fake data to connect layers end-to-end.
-- **Contract:** Signatures, ports, interfaces, DTOs, domain models.
-- **Harness:** Modifying or extending shared test infrastructure (Drivers, Observers, Fakes, Setup fixtures).
-- **Logic:** Core domain logic and business rules driven by unit tests, systematically replacing skeleton returns and temporary fakes with real implementations.
+- **Env:** Declarative tooling, build files, CI workflows, hooks, or package dependencies.
+- **Wiring:** Outermost boundary tracer bullet returning skeleton data to connect layers end-to-end.
+- **Interface:** Signatures, ports, interfaces, DTOs, and domain models.
+- **Harness:** Shared test infrastructure (drivers, observers, in-memory fakes, and fixtures).
+- **Core:** Domain entities, business rules, workflows, and algorithmic invariants driven by unit tests.
+- **Adapter:** Real infrastructure implementations (filesystem, CLI, subprocess, database, external protocols) driven by integration tests.
 - **Migration:** Adapting existing consumers to new contracts.
-- **Refactor:** Improving code design without altering behavior (DRY, SRP, extracting helpers).
-- **Cleanup:** Removing deprecated methods, dead code, and temporary shims.
+- **Refactor:** Improving code design without altering behavior. Requires no new tests; existing tests remain green.
+- **Cleanup:** Removing deprecated methods, dead code, and temporary shims. Requires no new tests; verified by pruning obsolete tests while the suite stays green.
 
-**Order:** Order deliverables to keep all tests passing at every commit (`make test`). `(Env)` is placed first whenever tooling or environment setup is a prerequisite:
-`(Env) -> Wiring -> Contract -> Harness -> Logic -> Migration -> Refactor -> Cleanup`
+**Order:** Order deliverables to keep all tests passing at every commit (`make test`). Include Env before Wiring only when tooling or package prerequisites must exist for tests to run:
+`(Env) -> Wiring -> Interface -> Harness -> Core -> Adapter -> Migration -> Refactor -> Cleanup`
 
 **Tests:** Do not specify individual tests in deliverables. Scenarios and Edge Cases must define test requirements.
 
 **Format:**
 - [ ] **Wiring** - Connect outermost boundaries with skeleton response.
-- [ ] **Contract** - Define port interfaces and DTOs.
-- [ ] **Logic** - Implement business logic replacing skeleton responses.
+- [ ] **Interface** - Define port interfaces and DTOs.
+- [ ] **Harness** - Build or update shared test doubles and fixtures.
+- [ ] **Core** - Implement domain logic and invariants.
+- [ ] **Adapter** - Implement infrastructure adapter.
 
 ## Implementation Notes
 Free-form notes recording decisions, deviations, or discoveries during implementation.
