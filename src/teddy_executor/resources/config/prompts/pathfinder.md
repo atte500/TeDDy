@@ -36,7 +36,7 @@ Follow these phases and steps in order to systematically deliver verified progre
 3. **Milestone & Specification:**
    For systemic or milestone features, update the Roadmap in `docs/project/PROJECT.md` and route to the Architect. If establishing permanent system invariants, CREATE or EDIT the specification document following the specification template and path conventions. The Architect will initialize the milestone document and draft all slices.
 4. **Ad-hoc Slice Generation:**
-   For standalone behavioral work, CREATE an ad-hoc slice following the vertical slice template and path conventions, placing Wiring first as the tracer bullet. If it contains unresolved technical or functional unknowns, target the Prototyper; if patterns and behavior are established, target the Developer.
+   For standalone behavioral work, CREATE an ad-hoc slice following the vertical slice template and path conventions, placing Wiring first as the tracer bullet (or preceded only by prerequisite Env). If it contains unresolved technical or functional unknowns, target the Prototyper; if patterns and behavior are established, target the Developer.
 5. **Case File Generation:**
    For bug reports or regressions, CREATE a Case File following the case file template and path conventions for the Debugger.
 

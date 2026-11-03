@@ -17,9 +17,9 @@ Follow these phases and steps in order to systematically deliver verified progre
 2. **Discovery:**
    Use `git grep`, file inspection, and targeted research to gather codebase context and artifacts required for implementation. Search the codebase and test suite for existing implementations or coverage of your task to prevent logic and test duplication. If a Case File, MRE script, or Prototype is linked in context, inspect them to understand runtime reality.
 3. **Plan Initialization / Audit:**
-   If no slice exists, create one following the vertical slice template and path conventions informed by discovery findings, linking any reference files, placing Wiring first as the tracer bullet, and run `make commit` to version control the new plan.
+   If no slice exists, create one following the vertical slice template and path conventions informed by discovery findings, linking any reference files, placing Wiring first as the tracer bullet (or preceded only by prerequisite Env), and run `make commit` to version control the new plan.
 
-   If a slice already exists, audit target components via `git grep`. Verify that all deliverables keep all tests passing at every commit. If a deliverable attempts a breaking signature change to a Shared Seam (git grep count greater than 1) without a migration plan, immediately edit the slice to re-partition the work into non-breaking steps (expand -> migrate -> contract). Decompose any item touching more than one logical change into smaller atomic deliverables. Verify Wiring is placed first. If the audit required structural plan changes, run `make commit` to record them before starting work.
+   If a slice already exists, audit target components via `git grep`. Verify that all deliverables keep all tests passing at every commit. If a deliverable attempts a breaking signature change to a Shared Seam (git grep count greater than 1) without a migration plan, immediately edit the slice to re-partition the work into non-breaking steps (expand -> migrate -> contract). Decompose any item touching more than one logical change into smaller atomic deliverables. Verify Wiring is placed first (or preceded only by prerequisite Env). If the audit required structural plan changes, run `make commit` to record them before starting work.
 4. **Activate Slice & Mark Deliverable:**
    Set slice Status to In Progress. Identify the next uncompleted deliverable in the vertical slice and mark it in progress using `[▶]`. Do not commit this status change separately; commit it alongside the deliverable in the Delivery phase. Batching deliverables into one cycle execution is strictly forbidden.
 
@@ -27,15 +27,20 @@ Follow these phases and steps in order to systematically deliver verified progre
 **Goal:** Satisfy the current deliverable requirements via Just-In-Time implementation without overbuilding.
 
 1. **Red:**
-   Map the current deliverable type to its verification strategy:
-   1. Wiring (Acceptance, `tests/suites/acceptance/`): MUST establish the End-to-End Skeleton Wiring Tracer Bullet. Drive the public outermost entry point covering the primary `Scenarios` from the slice. Initial implementation returns hardcoded skeleton values to prove boundary connectivity. Do not write acceptance tests for combinatorial edge cases here.
-   2. Harness / Migration (Integration, `tests/suites/integration/`): Modifying shared test infrastructure (drivers, observers, fakes) or adapting callers.
-   3. Interface / Logic (Unit, `tests/suites/unit/`): Isolated core logic covering granular `Edge Cases` and invariants.
-   4. Refactor (Unit / Integration): Do NOT write new tests. Existing test coverage must remain green while improving code structure.
-   5. Cleanup: Do NOT write new tests. The Red step verifies that existing tests pass (`make test`). The Green step deletes dead code, obsolete methods, or temporary shims and confirms the suite remains green.
-   6. Env (Declarative / Tooling): For purely declarative files (Makefile, CI workflows, hooks, .gitignore), do NOT write throwaway test scripts. The Red step is executing the target command directly to observe failure/absence; the Green step is applying the declarative change and observing it succeed.
+   Tests must run fast, deterministically, and hermetically without network access or sleep calls. Use isolated temporary directories for filesystem access, and use in-memory fakes or synchronous drivers instead of timers or remote resources.
 
-   For deliverables requiring tests (Wiring, Harness, Migration, Interface, Logic), create or locate the appropriate test file. Set up the test function using the Test Harness (Setup: Fixtures and Arrange, Driver: Act, Observer: Assert). Use parameterized tests for data permutations.
+   Map the current deliverable type to its verification strategy:
+   1. Wiring (Acceptance, `tests/suites/acceptance/`): Establish the End-to-End Skeleton Wiring Tracer Bullet. Drive the public outermost entry point covering the primary `Scenarios` from the slice. Initial implementation returns hardcoded skeleton values to prove boundary connectivity. Do not write acceptance tests for combinatorial edge cases here.
+   2. Interface (Unit, `tests/suites/unit/`): Define port signatures, protocols, DTOs, and schemas. Write contract and validation tests.
+   3. Harness (Unit / Integration): Build or update shared test infrastructure (drivers, observers, in-memory fakes, fixtures). Write Unit tests for pure in-memory fakes; write Integration tests if doubles interact with the filesystem, subprocesses, or databases.
+   4. Core (Unit, `tests/suites/unit/`): Isolated domain logic covering granular `Edge Cases` and business invariants.
+   5. Adapter (Integration, `tests/suites/integration/`): Real infrastructure implementations (filesystem, CLI, subprocess, database, external protocols) tested against local resources.
+   6. Migration: Adapting existing consumers to new contracts. Do not write new behavioral test files; update existing caller tests to match revised signatures while preserving coverage.
+   7. Refactor: Improving internal code design without altering behavior. Do not write new tests; the full existing test suite must remain green throughout.
+   8. Cleanup: Removing obsolete methods, dead code, or temporary shims. Do not write new tests; delete superseded tests and confirm the remaining suite passes.
+   9. Env (Declarative / Tooling): For purely declarative files (Makefile, CI workflows, hooks, .gitignore), do not write test scripts. The Red step executes the command directly to observe failure or absence; the Green step applies the declarative change and confirms success.
+
+   For deliverables requiring tests (Wiring, Interface, Harness, Core, Adapter), create or locate the appropriate test file. Set up the test function using the Test Harness (Setup: Fixtures and Arrange, Driver: Act, Observer: Assert). Use parameterized tests for data permutations.
 
    Enforce Test Double Integrity (Ban Global Patching): global `mock.patch` and bare `MagicMock` are strictly forbidden; inject all test doubles via Constructor Injection. Use In-Memory Fakes for internal state (databases, caches). Use strictly bound mocks (such as `register_mock` or `autospec=True`) ONLY for un-fakeable external side-effects (APIs, SMTP) to prevent signature drift.
 
@@ -45,7 +50,9 @@ Follow these phases and steps in order to systematically deliver verified progre
 
    If the current deliverable is Wiring, you MUST use hardcoded or trivial return values (the End-to-End Skeleton Wiring Tracer Bullet) to connect components across boundaries and force the Acceptance test Green. Do not implement complex business rules yet.
 
-   If the current deliverable is Logic, use Unit Tests to drive out real business rules covering `Edge Cases` and invariants, systematically swapping out skeleton responses and temporary fakes with real production logic while keeping acceptance tests green.
+   If the current deliverable is Core, drive out real business rules covering `Edge Cases` and invariants, systematically replacing skeleton responses with real domain logic while keeping acceptance tests green.
+
+   If the current deliverable is Adapter, implement the real infrastructure integration, replacing temporary harness doubles where appropriate while keeping all suites green.
 
    Enforce Contract Enforcement (DbC): contracts require active runtime checks via native assertions (`assert condition, "Message"`). Do not use custom exceptions or raises for contract assertions so they can be optimized via `python -O`. State explicitly which contract condition failed.
 3. **Refactor:**
@@ -74,7 +81,7 @@ Follow these phases and steps in order to systematically deliver verified progre
    - **Structural Refactoring:**
      if refactoring requires cross-cutting or structural changes outside the slice scope, record it in the roadmap in `docs/project/PROJECT.md` rather than attempting out-of-scope rewrites.
 4. **Loop Exit:**
-   If the implementation fully satisfies the single current deliverable, exit the inner loop and proceed immediately to the Integration phase. You are strictly forbidden from changing your active deliverable or starting a new one until the current one is committed.
+   If the implementation fully satisfies the single current deliverable, exit the inner loop and proceed immediately to the Integration phase.
 
 ### Integration
 **Goal:** Continuous integration gate scoped at the deliverable level.
@@ -104,7 +111,7 @@ Follow these phases and steps in order to systematically deliver verified progre
 4. **Stale Reference Check:**
    If this is the last deliverable, run `git grep` for deleted or renamed components and resolve stale references in documentation and comments.
 5. **Delivery Gate:**
-   Upon completing all documentation steps, proceed immediately to the Delivery phase. You are strictly forbidden from beginning orientation for the next deliverable until the current one is committed.
+   Upon completing all documentation steps, proceed immediately to the Delivery phase.
 
 ### Delivery
 **Goal:** Clean workspace and commit the individual deliverable.

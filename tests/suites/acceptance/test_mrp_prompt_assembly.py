@@ -49,9 +49,7 @@ def test_session_system_prompt_assembles_agent_content_and_mrp(
     # Assert: the shared Markdown MRP protocol rules are appended...
     assert "## Response Format" in system_content
     assert "State Transition Protocol" in system_content
-
-    # Assert: the naming rule forbids incident numbers in test names.
-    assert "Never embed incident, ticket, or bug numbers" in system_content
+    assert "Code and Naming Hygiene" in system_content
 
     # ...AFTER the agent-specific content.
     assert system_content.index("<prompt>Pathfinder</prompt>") < system_content.index(
