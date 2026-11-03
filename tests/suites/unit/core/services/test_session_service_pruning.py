@@ -17,9 +17,13 @@ def mock_deps(container):
     from teddy_executor.core.ports.outbound.config_service import IConfigService
 
     fsm = register_mock(container, IFileSystemManager)
-    # Default read_file to a valid non-message plan so _is_preserved_turn()
-    # doesn't receive a MagicMock and can properly check patterns.
-    fsm.read_file.return_value = "# Test Plan\n## Action Plan\n\nSome actions\n"
+    # Default the plan read to a valid non-message plan so _is_preserved_turn()
+    # doesn't receive a MagicMock and can properly check patterns. The plan
+    # marker check now routes through read_raw_file; the report check still
+    # uses read_file.
+    _plan_text = "# Test Plan\n## Action Plan\n\nSome actions\n"
+    fsm.read_file.return_value = _plan_text
+    fsm.read_raw_file.return_value = _plan_text
 
     return {
         "fsm": fsm,

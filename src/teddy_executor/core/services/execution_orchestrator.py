@@ -246,7 +246,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             )
 
         if plan_path is not None:
-            content = self._file_system_manager.read_file(plan_path)
+            content = self._file_system_manager.read_raw_file(plan_path)
             return self._plan_parser.parse(content, plan_path=plan_path), None
 
         raise ValueError("Must provide either plan, plan_content, or plan_path")

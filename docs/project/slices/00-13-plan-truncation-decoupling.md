@@ -10,7 +10,7 @@
 
 ## Goal
 
-Decouple plan-file truncation from the READ-tool `read.max_lines` cap. Display reads truncate at a plan-specific limit with a hint-less notice, while correctness reads always see the full plan. This fixes the user-visible truncation in the TUI viewer/refinement and removes the two correctness hazards — resume write-back data loss and `## Message` marker miss on long plans — captured in Case File 76.
+Decouple plan-file truncation from the READ-tool `read.max_lines` cap with three outcomes: the TUI `v` viewer always opens the real, uncapped `plan.md`; correctness reads always see the full plan; and `plan.max_lines` caps only the plan content embedded in the LLM context window (`input.md`), with pruning token counts derived from that truncated content so budgets track real window impact.
 
 ## Context
 
@@ -21,17 +21,29 @@ Decouple plan-file truncation from the READ-tool `read.max_lines` cap. Display r
 - `session_orchestrator._prepare_plan_parsing` reads the plan via `read_file` only when `plan_content` is None. The greenfield create path already feeds the full `plan_content` string into the parser, so routing through `read_raw_file` matches established behavior rather than introducing a new performance surface.
 - The reviewer is composed in `registries/reviewer.py::tui_factory`, which constructs `TextualPlanReviewer` from container-resolved ports. Neither `TextualPlanReviewer` nor its `ReviewerApp` currently carries a config handle, so the slice adds an optional `config_service: IConfigService | None = None` to both (defaulting to `None`) to keep existing `ReviewerApp(` and `TextualPlanReviewer(` test construction sites green.
 - `read_raw_file` is implemented concretely on `LocalFileSystemAdapter` (line 301), not just declared on the port, so correctness reads are directly callable today.
+- **Option A re-scope (2026-11-03, user decision):** The plan cap belongs in the LLM context window, not the TUI viewer. `v` always opens the real `plan.md`; `plan.max_lines` caps `plan.md` content at context-assembly time (`ContextService`). Because `ContextService._get_path_to_tokens` derives each `ContextItem.token_count` from the same `file_contents` map that `_format_content` embeds, capping `plan.md` in `file_contents` before both steps makes pruning (`SessionPruningService._apply_global_budget`) prune on truncated length, matching real window impact. The rule is truncate-first-then-count. Only `plan.md` is capped; the cap applies wherever a `plan.md` is embedded (turn context and session history alike).
+- `ContextService` currently has no `IConfigService` handle; it gains an optional one (defaulting to `None`) to read `plan.max_lines`, mirroring the reviewer's optional-handle pattern so the many existing construction sites stay valid.
 
 ## Scenarios
 
-> As a developer viewing or refining a long plan, I want the plan displayed in full (or truncated at a plan-appropriate limit) so that I can review and edit it without a misleading READ-tool hint.
+> As a developer reviewing a long plan, I want `v` to open the real `plan.md` on disk in full so that I inspect and edit exactly what will run.
 
 ```gherkin
-Given a plan file longer than plan.max_lines
-When I open the plan in the TUI viewer
-Then the editor displays the first plan.max_lines lines
-And the content is succeeded by a hint-less notice "[Showing first N of M lines.]"
-And the "Use the 'Lines' parameter" hint is absent
+Given a plan file of any length
+When I press 'v' in the TUI plan reviewer
+Then the editor opens the real plan.md read-only
+And no truncated temp copy is created
+And no "Use the 'Lines' parameter" hint is shown
+```
+
+> As a maintainer, I want a gigantic plan capped in the LLM context window so a rambling plan cannot dominate the token budget, while pruning counts what actually lands in the window.
+
+```gherkin
+Given a prior-turn plan.md longer than plan.max_lines embedded in context
+When the context payload (input.md) is assembled
+Then the embedded plan content is capped at plan.max_lines
+And the plan item's token_count reflects the capped content
+And pruning uses that capped length to decide what to drop
 ```
 
 > As a developer resuming or executing a long plan, I want the plan parsed from full untruncated content so that the plan executes correctly and is preserved across turns.
@@ -46,11 +58,13 @@ And a plan turn containing "## Message" beyond line 1000 is preserved in session
 
 ## Edge Cases
 
-- **At the cap:** A plan file with exactly `plan.max_lines` lines is not truncated and carries no notice, because `truncate_lines` preserves content at or below the cap.
-- **Empty plan:** An empty plan file renders empty and carries no notice, because `truncate_lines` short-circuits on empty content.
-- **Zero or negative cap:** If `plan.max_lines` is configured `<= 0`, `truncate_lines` returns content unchanged. Document the defensive behavior; no new handling is added.
+- **At the cap:** A `plan.md` with exactly `plan.max_lines` lines is embedded unchanged, because `truncate_lines` preserves content at or below the cap.
+- **Empty plan:** An empty `plan.md` embeds empty with no notice, because `truncate_lines` short-circuits on empty content.
+- **Zero or negative cap:** If `plan.max_lines` is `<= 0`, content is embedded unchanged; the schema already rejects non-positive values, so this is defensive only.
+- **Non-plan files are never capped:** Only paths ending in `plan.md` are capped; `report.md` and all other files embed in full.
+- **No config handle:** If `ContextService` is constructed without a config service (existing test sites), `plan.max_lines` falls back to the schema default (5000).
 - **Config default:** `plan.max_lines` defaults to `5000` when absent from config, so existing workspaces require no migration.
-- **Marker detection:** `_is_preserved_turn` searches full plan content for `## Message`, so a plan whose `## Message` section falls beyond the old 1000-line cap is now correctly preserved.
+- **Marker detection:** `_is_preserved_turn` searches full plan content for `## Message`, so a plan whose `## Message` falls beyond the old 1000-line cap is now correctly preserved.
 
 ## Key Unknowns
 
@@ -63,24 +77,27 @@ None. Every technical question was resolved during Discovery:
 
 ## Impact
 
-1. `[NEW]` `config_schema.PlanConfig` — New frozen dataclass with `max_lines: int = 5000`.
-2. `[EXPAND]` `config_schema.AppConfig` — Add `plan: PlanConfig = field(default_factory=PlanConfig)` alongside existing sub-configs.
-3. `[EXPAND]` `TextualPlanReviewer.__init__` — Add optional `config_service: IConfigService | None = None`, defaulting to `None` so the two existing test construction sites stay valid.
-4. `[EXPAND]` `ReviewerApp` — Add an optional `config_service: IConfigService | None = None` attribute, threaded from `TextualPlanReviewer`.
-5. `[MIGRATE]` `registries/reviewer.py::tui_factory` — Resolve `IConfigService` from the container and pass it into `TextualPlanReviewer(...)`.
-6. `[MIGRATE]` `textual_plan_reviewer_previews.view_plan_handler` — Switch from `read_file` to `read_raw_file`, truncate at `plan.max_lines` (read from `app.config_service.get_setting("plan.max_lines", 5000)` when present, else `5000`) with a plain `[Showing first N of M lines.]` notice.
-7. `[MIGRATE]` `session_orchestrator._prepare_plan_parsing` and `_validate_plan_with_context` — Switch the plan read from `read_file` to `read_raw_file`.
-8. `[MIGRATE]` `execution_orchestrator` plan resolution (line 249) — Switch to `read_raw_file`.
-9. `[MIGRATE]` `session_lifecycle_manager` plan synthesis (line 400) — Switch to `read_raw_file`.
-10. `[MIGRATE]` `session_service._is_preserved_turn` plan read (line 339) — Switch to `read_raw_file`.
+1. `[NEW]` `config_schema.PlanConfig` — frozen dataclass `max_lines: int = 5000` (shipped).
+2. `[EXPAND]` `config_schema.AppConfig` — `plan: PlanConfig` sub-config (shipped).
+3. `[EXPAND]` `TextualPlanReviewer` / `ReviewerApp` — optional `config_service` handle (shipped; retained harmlessly, though the viewer no longer reads `plan.max_lines`).
+4. `[MIGRATE]` `textual_plan_reviewer_previews.view_plan_handler` — **revert display truncation**: always open the real `plan.md` read-only via `read_raw_file`; remove the temp-copy truncation branch.
+5. `[MIGRATE]` `session_orchestrator._prepare_plan_parsing` and `_validate_plan_with_context` — correctness reads via `read_raw_file` (Core).
+6. `[MIGRATE]` `execution_orchestrator._resolve_plan` — correctness read via `read_raw_file` (Core).
+7. `[MIGRATE]` `session_lifecycle_manager._parse_awaiting_plan` — correctness read via `read_raw_file` (Core).
+8. `[MIGRATE]` `session_service._is_preserved_turn` — correctness plan read via `read_raw_file` (Core).
+9. `[EXPAND]` `ContextService` — add optional `config_service: IConfigService | None = None`; after `read_files_in_vault`, cap `plan.md` content in `file_contents` at `plan.max_lines` (truncate-first, so both the embed and `_get_path_to_tokens` see capped content).
+10. `[MIGRATE]` `container.py` — pass `IConfigService` into the `ContextService` factory.
+11. `[MIGRATE]` bundled `config.yaml` comment — reword the `plan.max_lines` comment from "Caps plan display lines in the TUI viewer." to "Caps plan lines included in the LLM context window."
 
-No `[CONTRACT]` step: no obsolete contract or method is removed. `read_file` remains the truncating entry point for user READ actions.
+`read_file` remains the truncating entry point for user READ actions; no contract is removed.
 
 ## Deliverables
 
 - [x] **Interface** - Add `PlanConfig` (`max_lines: int = 5000`) to `config_schema.py`; wire into `AppConfig` via `field(default_factory=...)`; add a `plan:` block with `max_lines: 5000` to the bundled default config at `src/teddy_executor/resources/config/config.yaml`; and add optional `config_service: IConfigService | None = None` to `TextualPlanReviewer.__init__` and the `ReviewerApp` attribute.
-- [x] **Wiring** - Thread `IConfigService` through `registries/reviewer.py::tui_factory` into `TextualPlanReviewer` / `ReviewerApp`. Then `textual_plan_reviewer_previews.view_plan_handler` reads the plan via `read_raw_file`, truncates at `plan.max_lines` (from `app.config_service.get_setting("plan.max_lines", 5000)`, falling back to `5000` when the config handle is absent), and appends the hint-less plain notice `[Showing first N of M lines.]`. Thinnest end-to-end user-visible fix; drives the display-level acceptance test.
-- [ ] **Core** - Switch all correctness plan reads to `read_raw_file`: `session_orchestrator._prepare_plan_parsing`, `session_orchestrator._validate_plan_with_context`, `execution_orchestrator` plan resolution, `session_lifecycle_manager` plan synthesis, `session_service._is_preserved_turn`. Resolves the resume write-back data-loss hazard and the `## Message`-beyond-1000 marker miss.
+- [x] **Wiring** - Thread `IConfigService` through `registries/reviewer.py::tui_factory` into `TextualPlanReviewer` / `ReviewerApp`, and (originally) truncate the viewer. Option A re-scope: the viewer-truncation half is superseded by the Cleanup deliverable below; the config-threading half stays.
+- [x] **Core** - Switch all correctness plan reads to `read_raw_file`: `session_orchestrator._prepare_plan_parsing`, `session_orchestrator._validate_plan_with_context`, `execution_orchestrator` plan resolution, `session_lifecycle_manager` plan synthesis, `session_service._is_preserved_turn`. Resolves the resume write-back data-loss hazard and the `## Message`-beyond-1000 marker miss.
+- [ ] **Adapter** - `ContextService` gains an optional `IConfigService` and caps `plan.md` content in `file_contents` at `plan.max_lines` at context-embed time (truncate-first, so the embedded window AND the pruning `token_count` reflect the cap). Container wires the handle. Integration tests drive a real context assembly with a long prior-turn plan.
+- [ ] **Cleanup** - Revert the TUI viewer to always open the real `plan.md`: remove `render_plan_view`, `_resolve_plan_max_lines`, and their display-truncation tests; update the bundled `config.yaml` `plan.max_lines` comment to describe the LLM context window, not the TUI viewer.
 
 ## Implementation Notes
 
@@ -98,17 +115,23 @@ No `[CONTRACT]` step: no obsolete contract or method is removed. `read_file` rem
 - **Verification:** 10 targeted tests pass; the full `make test` suite is green (2179 passed, 5 skipped).
 - **Wiring (lint exemption):** `test_view_plan_regression.py` builds a duck-typed fake app and intercepts the module-level `launch_editor`, which has no constructor-injection seam, so it reuses the `patch`/`MagicMock` pattern grandfathered for the sibling inbound test modules. Added a scoped `per-file-ignores` entry (`TID251`) in `pyproject.toml`, mirroring the existing `test_tui_editor_suspend_resume.py` and `test_console_ask_loop_wiring.py` exemptions.
 
+- **Option A re-scope (2026-11-03):** The user redirected the plan cap from the TUI viewer to the LLM context window. The Adapter (context cap) and Cleanup (viewer revert) deliverables implement this; correctness reads (Core) are unaffected and remain required. Pruning needs no separate change: capping `plan.md` in `file_contents` before `_get_path_to_tokens` makes `token_count` — and therefore `_apply_global_budget` — track the truncated length, which matches real window impact.
+
+- **Core (correctness reads):** Switched all five correctness plan reads to `read_raw_file`, so parsing, validation-error surfacing, execution, resume synthesis, and turn-preservation always consume the full plan: `session_orchestrator._prepare_plan_parsing` and `_validate_plan_with_context`, `execution_orchestrator._resolve_plan`, `session_lifecycle_manager._parse_awaiting_plan`, and `session_service._is_preserved_turn`. This eliminates the resume/execute write-back data-loss hazard (parsing no longer sees the READ-capped view) and the `## Message`-beyond-1000 marker miss. `read_file` stays the truncating entry point for user READ actions and for the report/user-request reads that remain on it.
+- **Core (tests):** Added `test_is_preserved_turn_full_plan.py`, which proves Red the marker miss via the real `LocalFileSystemAdapter` at `max_read_lines=1000`, then goes Green after the `_is_preserved_turn` swap. Migrated two fixtures to the new read path: the bespoke `InMemoryFileSystem` fake in `test_session_lifecycle_resume_message_persistence.py` gained `read_raw_file` (mirrors `read_file` because it stores full content), and `test_session_orchestrator.py::...trigger_replan...` pins `"plan content"` on `read_raw_file` at the swapped site.
+- **Verification:** Full `make test` green (2180 passed, 5 skipped).
+
 ## Verification
 
-1. **TUI viewer truncation:**
+1. **Viewer opens the real plan:**
    Create a plan file longer than `plan.max_lines` (e.g., 6000 lines) in a session directory.
-   Open the plan via the TUI plan reviewer's view action.
-   Confirm the editor shows the first `plan.max_lines` lines and a trailing `[Showing first N of M lines.]` notice, with no "Use the 'Lines' parameter" text.
-2. **Correctness reads:**
+   Press 'v' in the TUI plan reviewer.
+   Confirm the editor opens the real `plan.md` in full (no truncation notice, no "Use the 'Lines' parameter" text, and the on-disk file is what is opened).
+2. **Context-window cap:**
+   Set `plan.max_lines: 200` in `.teddy/config.yaml`; start a turn whose context embeds a 500-line prior `plan.md`.
+   Inspect `input.md` and confirm the embedded plan is capped at 200 lines, while the on-disk `plan.md` remains 500 lines.
+3. **Pruning tracks capped length:**
+   With a small `auto_pruning.turn_context_threshold`, confirm the plan item's token count reflects the capped content (a huge plan no longer alone blows the budget).
+4. **Correctness reads:**
    Create a plan file longer than 1000 lines whose `## Message` section falls after line 1000.
-   Execute the plan and confirm the full plan is parsed (all actions executed).
-   Verify the turn remains in `session.context` (message-turn preservation).
-3. **Config override:**
-   Set `plan.max_lines: 200` in `.teddy/config.yaml`.
-   Open a 500-line plan in the viewer.
-   Confirm the notice reports "Showing first 200 of 500 lines."
+   Execute the plan and confirm the full plan is parsed (all actions executed) and the turn remains in `session.context` (message-turn preservation).

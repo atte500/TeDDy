@@ -397,7 +397,7 @@ class SessionLifecycleManager:
             "SessionPorts.plan_parser must be injected to synthesize the "
             "awaiting-reply turn's report."
         )
-        content = str(self._file_system_manager.read_file(f"{turn_path}/plan.md"))
+        content = str(self._file_system_manager.read_raw_file(f"{turn_path}/plan.md"))
         if plan_path is None:
             return self._plan_parser.parse(content)
         return self._plan_parser.parse(content, plan_path=plan_path)

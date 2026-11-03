@@ -549,7 +549,7 @@ class SessionOrchestrator(IRunPlanUseCase):
                 )
 
         content = plan_content or (
-            self._file_system_manager.read_file(plan_path) if plan_path else ""
+            self._file_system_manager.read_raw_file(plan_path) if plan_path else ""
         )
         if not plan:
             try:
@@ -592,7 +592,7 @@ class SessionOrchestrator(IRunPlanUseCase):
         errors = self._plan_validator.validate(plan, context_paths=context_paths)
         if errors:
             content = (
-                self._file_system_manager.read_file(plan_path) if plan_path else ""
+                self._file_system_manager.read_raw_file(plan_path) if plan_path else ""
             )
             return self._handle_logical_validation_errors(
                 plan, errors, content, plan_path, is_session

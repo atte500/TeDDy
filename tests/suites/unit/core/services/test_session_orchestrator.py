@@ -290,6 +290,7 @@ def test_session_orchestrator_passes_plan_to_trigger_replan_on_validation_failur
 
     mock_fs.path_exists.return_value = True  # is_session_mode
     mock_fs.read_file.return_value = "plan content"
+    mock_fs.read_raw_file.return_value = "plan content"
 
     plan_path = "path/to/01/plan.md"
 

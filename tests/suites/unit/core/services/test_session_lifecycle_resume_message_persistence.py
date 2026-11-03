@@ -82,6 +82,9 @@ class InMemoryFileSystem:
     def read_file(self, path: str) -> str:
         return self.files[str(path)]
 
+    def read_raw_file(self, path: str) -> str:
+        return self.files[str(path)]
+
     def write_file(self, path: str, content: str) -> None:
         self.files[str(path)] = content
         self._register_parents(str(path))

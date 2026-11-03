@@ -336,7 +336,7 @@ class SessionService(ISessionManager):
         # Check plan.md for ## Message
         plan_path = (cur_dir / "plan.md").as_posix()
         if self._file_system_manager.path_exists(plan_path):
-            content = self._file_system_manager.read_file(plan_path)
+            content = self._file_system_manager.read_raw_file(plan_path)
             if re.search(r"^## Message", content, re.MULTILINE):
                 return True
 
