@@ -76,7 +76,7 @@ Affected components, migrated in non-breaking steps.
 
 ## Deliverables
 - [x] **Wiring** - Normalize a whitespace-only or empty `-m` to absent at the `start` boundary so the existing opening prompt fires interactively and pipeline mode errors on empty.
-- [ ] **Core** - Resolve a present-but-blank `-m` in the EMPTY and COMPLETE_TURN `resume` branches to an interactive prompt when interactive (empty reply terminates) and to absent when non-interactive.
+- [x] **Core** - Resolve a present-but-blank `-m` in the EMPTY and COMPLETE_TURN `resume` branches to an interactive prompt when interactive (empty reply terminates) and to absent when non-interactive.
 - [ ] **Migration** - Update the start and resume test suites to pin empty-`-m` prompting, bare-`resume` proceeding, and the pipeline-empty error split.
 
 ## Implementation Notes
@@ -86,6 +86,12 @@ Affected components, migrated in non-breaking steps.
 - New coverage: `test_handle_new_session_prompts_when_message_is_blank` (parametrized `""` / `"   "`) in `tests/suites/unit/adapters/inbound/test_session_start_resequencing.py`, and `test_handle_new_session_pipeline_empty_message_raises_exit` (parametrized) in `tests/suites/unit/adapters/inbound/test_pipeline_wiring.py`. Both are hermetic (health checks, background fetch, and workspace pull neutralized) and fail on the pre-fix handler.
 - Full suite green after the change: 2125 passed, 5 skipped via `make test`.
 - Remaining in this slice: Core (resume EMPTY/COMPLETE_TURN blank-message resolution) and Migration (consolidate the empty-message test matrix).
+
+### Core - present-but-blank message resolution in `resume`
+- `SessionLifecycleManager.resume` resolves a present-but-blank `message` in the EMPTY and COMPLETE_TURN branches only, through a shared `_resolve_blank_message(message, interactive)` helper called before any append/transition/planning. An absent (`None`) or non-blank message passes through unchanged. A present-but-blank message (`""` / whitespace-only) normalizes to `None` when non-interactive, so the run resumes against context without blocking. When interactive, it prompts `"What are we working on?"` (matching the start-boundary literal) and returns a `terminated` flag on an empty/whitespace reply, so the branch returns `(session_name, None)` before any side effect (the abort idiom).
+- The PENDING awaiting-reply (`_consume_awaiting_reply`) and pending non-awaiting branches are untouched.
+- New coverage: `tests/suites/unit/core/services/test_session_lifecycle_blank_message.py` (12 tests) pins EMPTY/COMPLETE_TURN interactive prompting, interactive empty-reply termination, non-interactive normalization to `None`, and absent/non-blank pass-through guards.
+- Full suite green after the change: 2137 passed, 5 skipped via `make test`.
 
 ## Verification
 1. **Interactive start with empty `-m`:**

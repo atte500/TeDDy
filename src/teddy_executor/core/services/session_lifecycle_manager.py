@@ -21,6 +21,11 @@ from teddy_executor.core.utils.markdown import embed_in_fence
 
 logger = logging.getLogger(__name__)
 
+# The prompt shown when a resume injects a present-but-blank `-m` and the run is
+# interactive. Mirrors the start-boundary opening prompt so both entry points
+# present the same question.
+_NEXT_INSTRUCTION_PROMPT = "What are we working on?"
+
 if TYPE_CHECKING:
     from teddy_executor.core.domain.models.planning_ports import (
         SessionPorts,
@@ -106,6 +111,42 @@ class SessionLifecycleManager:
                 )
             return (session_name, report)
 
+        if state in (SessionState.EMPTY, SessionState.COMPLETE_TURN):
+            return self._resume_ready_turn(
+                session_name,
+                state,
+                turn_path,
+                orchestrator,
+                interactive,
+                project_context,
+                pipeline,
+                message,
+            )
+
+        return (session_name, None)
+
+    def _resume_ready_turn(  # noqa: PLR0913  # threads the resume state-machine inputs
+        self,
+        session_name: str,
+        state: SessionState,
+        turn_path: str,
+        orchestrator: IRunPlanUseCase,
+        interactive: bool,
+        project_context: Optional[Any],
+        pipeline: bool,
+        message: Optional[str],
+    ) -> tuple[str, Optional[ExecutionReport]]:
+        """Drive resume for an EMPTY or COMPLETE_TURN session ready to plan.
+
+        A present-but-blank message is resolved first (interactive prompt, empty
+        reply terminates; non-interactive normalizes to absent). An EMPTY turn
+        appends the message to the initial request or the previous report, then
+        plans in place. A COMPLETE_TURN turn appends a ``## User Request``
+        section, transitions to the next turn, then plans.
+        """
+        message, terminated = self._resolve_blank_message(message, interactive)
+        if terminated:
+            return (session_name, None)
         if state == SessionState.EMPTY:
             if message:
                 if Path(turn_path).name == "01":
@@ -120,22 +161,38 @@ class SessionLifecycleManager:
                 pipeline=pipeline,
                 message=message,
             )
+        if message:
+            self._append_user_request(turn_path, message)
+        next_turn_dir = self._session_service.transition_to_next_turn(
+            plan_path=f"{turn_path}/plan.md"
+        )
+        return self._handle_planning_and_execution(
+            next_turn_dir,
+            orchestrator,
+            interactive,
+            project_context=project_context,
+            message=message,
+        )
 
-        if state == SessionState.COMPLETE_TURN:
-            if message:
-                self._append_user_request(turn_path, message)
-            next_turn_dir = self._session_service.transition_to_next_turn(
-                plan_path=f"{turn_path}/plan.md"
-            )
-            return self._handle_planning_and_execution(
-                next_turn_dir,
-                orchestrator,
-                interactive,
-                project_context=project_context,
-                message=message,
-            )
+    def _resolve_blank_message(
+        self, message: Optional[str], interactive: bool
+    ) -> tuple[Optional[str], bool]:
+        """Resolve a present-but-blank message in the EMPTY/COMPLETE_TURN branches.
 
-        return (session_name, None)
+        A blank ``-m`` must not seed a turn with no real instruction. When the
+        run is interactive, the user is prompted for the next instruction and an
+        empty reply terminates the session (abort idiom, reported by ``True``).
+        A non-interactive run cannot block, so the message normalizes to absent.
+        A present-and-non-blank or absent message is returned unchanged.
+        """
+        if message is None or message.strip():
+            return message, False
+        if not interactive:
+            return None, False
+        reply = self._user_interactor.ask_question(_NEXT_INSTRUCTION_PROMPT)
+        if not reply or not reply.strip():
+            return None, True
+        return reply, False
 
     def _parse_pending_plan(
         self, turn_path: str, plan_path: str, message: Optional[str]
