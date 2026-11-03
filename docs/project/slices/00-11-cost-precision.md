@@ -1,5 +1,5 @@
 # Slice: Cost Estimation Precision by Resolved Vendor
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** None
 - **Specs:** None
@@ -20,7 +20,7 @@ Compute precise USD cost tied to the vendor/hoster that actually served the requ
 - `OpenRouterMetadataHydrator._find_model`: reads only the catalog `pricing.prompt`, `pricing.completion`, and cache rates; it has no per-upstream-provider price because the reported cost is the source of truth.
 - `PlanningService._perform_generation_with_retry`: accumulates `turn_cost` across retries; that value feeds both `cumulative_cost` telemetry and the loop guard's `max_session_cost` checks.
 - `PlanningService._display_telemetry`: shows `$???` when `context_window <= 0` or `supports_pricing(model)` is false; it does not consider the recorded reported cost.
-- `PromptManager.update_meta`: stores `actual_model` from `response.model`; `_resolve_cost_model` prefers `model_override` over the response identity for diagnostics only.
+- `PromptManager.update_meta`: stores `actual_model` from `response.model`; `_resolve_cost_model` prefers the served `response.model` over the configured override so cost-failure diagnostics name the identity actually priced.
 - Milestone 6 "Provider resolution behind ILlmClient" will consolidate provider resolution; this slice MUST NOT introduce a second divergent resolution path, and any new resolution seam must be shaped so M6 can subsume it.
 
 ## Scenarios
