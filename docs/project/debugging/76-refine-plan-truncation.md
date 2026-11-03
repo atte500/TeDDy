@@ -1,6 +1,6 @@
 # Bug: Plan Refinement Truncated by the READ Line Cap
 
-- **Status:** Unresolved
+- **Status:** Resolved
 - **Milestone:** N/A (ad-hoc bug fix)
 - **Vertical Slice:** [Slices/00-13-plan-truncation-decoupling.md](/docs/project/slices/00-13-plan-truncation-decoupling.md)
 - **Specs:** N/A
@@ -54,9 +54,9 @@ Any plan file longer than `read.max_lines` (default 1000). No OS or environment 
 
 ### Discrepancies
 
-- [ ] Plan viewing/refinement truncates a long plan at `read.max_lines` and appends the READ hint.
-- [ ] Plan parsing on resume/execute consumes truncated content; `_write_back_session_plan` can then persist the truncated content back to disk.
-- [ ] `_is_preserved_turn` can miss a `## Message` beyond line 1000, so a message turn is not preserved.
+- [x] Plan viewing/refinement opens the real, uncapped `plan.md`; display truncation was removed (Resolved: viewer always opens the real file).
+- [x] Plan parsing on resume/execute reads full content via `read_raw_file`; `_write_back_session_plan` no longer persists truncated content (Resolved: five correctness reads switched to `read_raw_file`).
+- [x] `_is_preserved_turn` reads full content via `read_raw_file`, so a `## Message` beyond line 1000 is preserved (Resolved).
 - [x] Session-history display does not truncate (Resolved: it uses `read_files_in_vault`, which bypasses the cap).
 
 ### Investigation History

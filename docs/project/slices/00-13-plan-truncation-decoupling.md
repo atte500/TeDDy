@@ -1,6 +1,6 @@
 # Slice: Plan Truncation Decoupling
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc, from Case File 76)
 - **Depends On:** N/A
 - **Specs:** N/A
