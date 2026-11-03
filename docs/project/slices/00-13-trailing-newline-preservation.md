@@ -1,5 +1,5 @@
 # Slice: Preserve Authored Trailing Newlines in CREATE and EDIT Fence Content
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** N/A
 - **Specs:** N/A
