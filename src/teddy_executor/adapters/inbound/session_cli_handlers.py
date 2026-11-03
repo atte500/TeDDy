@@ -435,15 +435,19 @@ def _run_startup_preamble(  # noqa: PLR0913 - forwards the shared CLI startup op
     ``Checking configurations...`` line, the cached update notice, then the
     preflight check with its drift advice. ``start`` forwards its ``agent`` so
     the preflight validates the agent prompt, enables ``pull_workspace``, and
-    sets ``verbose_workspace`` to keep the workspace banner; ``resume`` leaves
-    the agent ``None`` and keeps both the pull and the workspace banner off.
+    sets ``verbose_workspace`` to keep the workspace banner and its separator
+    blank; ``resume`` leaves the agent ``None`` and keeps the pull, the
+    workspace banner, and the separator blank off.
     """
     config_service = container.resolve(IConfigService)
     _run_health_checks(config_service, verbose=verbose_workspace)
     if pull_workspace:
         _pull_workspace_on_start(config_service)
     # One separator groups the checkmark block above with the notices below.
-    typer.echo("", err=True)
+    # It prints only when the workspace banner above is shown, so a silent
+    # resume never opens with an orphan leading blank line.
+    if verbose_workspace:
+        typer.echo("", err=True)
     typer.echo("Checking configurations...", err=True)
     _display_update_notification(container, _update_cache_path())
     _run_cli_preflight_check(
