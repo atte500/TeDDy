@@ -47,17 +47,8 @@ class EditSimulator(IEditSimulator):
         if offset != 0:
             replace = self._apply_indent_offset(replace, offset)
 
-        # Align replacement newline with original match to prevent concatenation
-        final_replace = replace
-        if (
-            best_match.endswith("\n")
-            and not find.endswith("\n")
-            and not replace.endswith("\n")
-            and replace != ""
-        ):
-            # Detect original line ending to prevent "Git Noise"
-            terminator = "\r\n" if best_match.endswith("\r\n") else "\n"
-            final_replace += terminator
+        # Align the REPLACE terminal newline with the matched region.
+        final_replace = self._align_terminator(find, replace, best_match)
 
         if replace == "" and not match_all:
             # Newline cleanup logic for surgical deletions
@@ -88,6 +79,30 @@ class EditSimulator(IEditSimulator):
             else:
                 result.append(line)
         return "".join(result)
+
+    def _align_terminator(self, find: str, replace: str, best_match: str) -> str:
+        """
+        Aligns the REPLACE terminal newline with the matched region so a
+        line-oriented edit never injects or drops a newline.
+        """
+        if (
+            best_match.endswith("\n")
+            and not find.endswith("\n")
+            and not replace.endswith("\n")
+            and replace != ""
+        ):
+            # Detect original line ending to prevent "Git Noise"
+            terminator = "\r\n" if best_match.endswith("\r\n") else "\n"
+            return replace + terminator
+        if (
+            find.endswith("\n")
+            and not best_match.endswith("\n")
+            and replace.endswith("\n")
+        ):
+            # The intra-line fragment match dropped the FIND terminator, so drop
+            # the AUTHORED REPLACE terminator too to avoid injecting it mid-line.
+            return replace[:-2] if replace.endswith("\r\n") else replace[:-1]
+        return replace
 
     def simulate_edits(
         self,
