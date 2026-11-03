@@ -227,6 +227,7 @@ def _register_orchestration_services(container: punq.Container) -> None:
             environment_inspector=container.resolve(IEnvironmentInspector),
             llm_client=container.resolve(ILlmClient),
             web_scraper=container.resolve(IWebScraper),
+            config_service=container.resolve(IConfigService),
         ),
         scope=punq.Scope.transient,
     )

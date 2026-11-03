@@ -18,6 +18,9 @@ from teddy_executor.core.ports.outbound.environment_inspector import (
 )
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
+from teddy_executor.core.ports.outbound.config_service import IConfigService
+from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
+from teddy_executor.core.utils.string import truncate_lines
 
 
 class ContextService(IGetContextUseCase):
@@ -25,19 +28,21 @@ class ContextService(IGetContextUseCase):
     Application service for orchestrating the gathering of project context.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - injects the port set plus optional handles
         self,
         file_system_manager: IFileSystemManager,
         repo_tree_generator: IRepoTreeGenerator,
         environment_inspector: IEnvironmentInspector,
         llm_client: ILlmClient,
         web_scraper: IWebScraper,
+        config_service: Optional[IConfigService] = None,
     ):
         self._file_system_manager = file_system_manager
         self._repo_tree_generator = repo_tree_generator
         self._environment_inspector = environment_inspector
         self._llm_client = llm_client
         self._web_scraper = web_scraper
+        self._config_service = config_service
 
     def get_context(  # noqa: PLR0913
         self,
@@ -62,6 +67,9 @@ class ContextService(IGetContextUseCase):
         urls = [p for p in all_resolved_paths if self._is_url(p)]
 
         file_contents = self._file_system_manager.read_files_in_vault(local_paths)
+        # Truncate-first: cap plan.md content before both the embed and the
+        # token count, so pruning budgets track real window impact.
+        file_contents = self._cap_plan_contents(file_contents)
 
         # Fetch remote content with session-level caching (parallelized)
         if urls:
@@ -119,6 +127,40 @@ class ContextService(IGetContextUseCase):
             system_prompt_tokens=system_prompt_tokens,
             content_tokens=content_tokens,
         )
+
+    def _cap_plan_contents(
+        self, file_contents: Dict[str, Optional[str]]
+    ) -> Dict[str, Optional[str]]:
+        """Cap ``plan.md`` content at ``plan.max_lines`` before embedding/counting.
+
+        Truncate-first: the embedded window and the pruning token counts both
+        read this same map, so capping here makes ``token_count`` track the
+        capped length. Only ``plan.md`` files are capped; a not-found entry
+        (``None``) passes through unchanged.
+        """
+        max_lines = self._resolve_plan_max_lines()
+        for path, content in file_contents.items():
+            if content is not None and path.endswith("plan.md"):
+                file_contents[path] = self._cap_plan_content(content, max_lines)
+        return file_contents
+
+    def _cap_plan_content(self, content: str, max_lines: int) -> str:
+        """Head-truncate a plan with a hint-less ``[Showing first N of M lines.]`` notice."""
+        if not content or max_lines <= 0:
+            return content
+        total_lines = len(content.splitlines())
+        if total_lines <= max_lines:
+            return content
+        hint = f"[Showing first {max_lines} of {total_lines} lines.]"
+        return truncate_lines(content, max_lines=max_lines, direction="head", hint=hint)
+
+    def _resolve_plan_max_lines(self) -> int:
+        """Resolve the plan context cap, falling back to the schema default."""
+        default = DEFAULT_APP_CONFIG.plan.max_lines
+        if self._config_service is None:
+            return default
+        value = self._config_service.get_setting("plan.max_lines", default)
+        return value if value is not None else default
 
     def _resolve_scoped_paths(
         self, context_files: Optional[Dict[str, Sequence[str]]]
