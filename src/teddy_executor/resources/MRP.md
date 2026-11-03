@@ -118,7 +118,7 @@ Applies to all user-facing Messages and turn titles:
 2. Ingest Directives: When the user messages, immediately log tasks as `[TODO]` and constraints as `[!]` under `NOTES` in your State Dashboard.
 3. Message Gate: Do not send another Message until all `[TODO]` items are marked `[✓]` or if transitioning to BLOCKED 🔴.
 4. Brevity: Do not restate past explanations or re-ask answered questions. State facts, observations, and decisions directly without unnecessary preamble.
-5. Terminal TL;DR: End every user-facing message with `TL;DR: [summary]` on the final line.
+5. Terminal TL;DR: End every user-facing message with `TL;DR: [summary]` on the final line. When presenting decisions or gates, state a concrete recommendation rather than an open question, so a simple confirmation is sufficient to proceed.
 
 ### Plain Language Directive
 
