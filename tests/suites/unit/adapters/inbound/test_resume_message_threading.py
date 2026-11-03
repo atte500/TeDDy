@@ -16,6 +16,8 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+import pytest
+
 from teddy_executor.adapters.inbound.session_cli_handlers import (
     handle_resume_session,
 )
@@ -209,4 +211,41 @@ class TestResumePipelineThreading:
             interactive=False,
             pipeline=True,
             message=None,
+        )
+
+
+class TestResumeBlankMessageThreading:
+    """A present-but-blank `-m` must reach the lifecycle manager verbatim."""
+
+    @pytest.mark.parametrize("blank", ["", "   "])
+    def test_blank_message_threads_verbatim_to_orchestrator_resume(
+        self, blank: str
+    ) -> None:
+        """The resume handler must NOT normalize a blank `-m` to absent.
+
+        The EMPTY/COMPLETE_TURN blank-message resolution lives in
+        `SessionLifecycleManager`, which distinguishes a present-but-blank
+        message (interactive prompt) from an absent one (resume against
+        context). Collapsing `""` to `None` at the handler would suppress the
+        prompt, so the handler must thread the blank value verbatim.
+        """
+        # Arrange
+        h = _build_resume_harness()
+
+        # Act
+        handle_resume_session(
+            container=h.container,
+            path="test-session",
+            interactive=True,
+            no_copy=True,
+            message=blank,
+        )
+
+        # Assert: verbatim threading preserves the present-but-blank signal
+        # so the lifecycle manager can resolve it to an interactive prompt.
+        h.orchestrator.resume.assert_called_once_with(
+            session_name="test-session",
+            interactive=True,
+            pipeline=False,
+            message=blank,
         )

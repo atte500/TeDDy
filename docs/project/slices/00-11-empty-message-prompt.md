@@ -77,7 +77,7 @@ Affected components, migrated in non-breaking steps.
 ## Deliverables
 - [x] **Wiring** - Normalize a whitespace-only or empty `-m` to absent at the `start` boundary so the existing opening prompt fires interactively and pipeline mode errors on empty.
 - [x] **Core** - Resolve a present-but-blank `-m` in the EMPTY and COMPLETE_TURN `resume` branches to an interactive prompt when interactive (empty reply terminates) and to absent when non-interactive.
-- [ ] **Migration** - Update the start and resume test suites to pin empty-`-m` prompting, bare-`resume` proceeding, and the pipeline-empty error split.
+- [x] **Migration** - Update the start and resume test suites to pin empty-`-m` prompting, bare-`resume` proceeding, and the pipeline-empty error split.
 
 ## Implementation Notes
 
@@ -92,6 +92,13 @@ Affected components, migrated in non-breaking steps.
 - The PENDING awaiting-reply (`_consume_awaiting_reply`) and pending non-awaiting branches are untouched.
 - New coverage: `tests/suites/unit/core/services/test_session_lifecycle_blank_message.py` (12 tests) pins EMPTY/COMPLETE_TURN interactive prompting, interactive empty-reply termination, non-interactive normalization to `None`, and absent/non-blank pass-through guards.
 - Full suite green after the change: 2137 passed, 5 skipped via `make test`.
+
+
+### Migration - empty-message test matrix
+- Extended `tests/suites/unit/adapters/inbound/test_resume_message_threading.py` with `TestResumeBlankMessageThreading` (parametrized `""` / `"   "`) pinning that `handle_resume_session` threads a present-but-blank `-m` VERBATIM to `orchestrator.resume` — it must not collapse the blank to `None`, because the EMPTY/COMPLETE_TURN blank-message resolution lives in `SessionLifecycleManager` and collapsing the signal would suppress the interactive prompt.
+- The start-side behaviors were already pinned by Wiring (`test_handle_new_session_prompts_when_message_is_blank`, `test_handle_new_session_pipeline_empty_message_raises_exit`) and bare-resume proceeding by `test_resume_without_message_passes_none`, so Migration adds only the missing resume verbatim-threading pin. The migration is inert (handler already threaded verbatim); the test guards against a future handler-level normalization regression.
+- `SessionOrchestrator.execute` empty-message termination is left unchanged and remains pinned by `tests/suites/unit/core/services/test_session_orchestrator_empty_message.py`.
+- Full suite green after the change: 2139 passed, 5 skipped via `make test`.
 
 ## Verification
 1. **Interactive start with empty `-m`:**
