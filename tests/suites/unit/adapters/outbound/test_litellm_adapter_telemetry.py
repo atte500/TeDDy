@@ -362,3 +362,45 @@ def test_get_completion_cost_falls_back_to_openrouter_header(container):
 
     assert cost == 0.42
     assert fake.completion_cost_calls == []
+
+
+def test_get_completion_cost_marks_reported_cost_as_recorded(container):
+    """A reported cost marks the response so the display can trust the figure."""
+    adapter, _fake = _adapter_with_cost_fake(container, cost=999.0)
+
+    response = SimpleNamespace(
+        _hidden_params={"response_cost": 0.1234}, model="served-model"
+    )
+
+    adapter.get_completion_cost(response)
+
+    assert response._teddy_cost_recorded is True
+
+
+def test_get_completion_cost_marks_free_model_as_recorded(container):
+    """A reported 0.0 free-model price still marks the response as recorded."""
+    adapter, _fake = _adapter_with_cost_fake(container, cost=999.0)
+
+    response = SimpleNamespace(_hidden_params={"response_cost": 0.0}, model="free")
+
+    adapter.get_completion_cost(response)
+
+    assert response._teddy_cost_recorded is True
+
+
+def test_get_completion_cost_does_not_mark_fallback_as_recorded(container):
+    """A recompute failure falling back to 0.0 leaves the response unmarked."""
+    from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+    adapter = LiteLLMAdapter(container.resolve(IConfigService))
+    fake = _FakeCostLitellm(side_effect=Exception("This model isn't mapped yet"))
+    adapter._litellm_initialized = True
+    adapter._litellm_module = fake
+
+    response = SimpleNamespace(model="unmapped")
+
+    cost = adapter.get_completion_cost(response)
+
+    assert cost == 0.0
+    assert getattr(response, "_teddy_cost_recorded", False) is not True

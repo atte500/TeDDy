@@ -637,3 +637,61 @@ def test_quit_during_planning_interrupts_the_planning_wait(env):
     finally:
         release.set()
         delivery.join(timeout=2.0)
+
+
+def test_generate_plan_shows_recorded_cost_for_unpriced_model(env):
+    """A recorded cost shows even when the model has no catalog pricing."""
+    mock_ui = env.mock_port(IUserInteractor)
+    mock_llm = env.mock_port(ILlmClient)
+    mock_prompt = env.mock_port(IPromptManager)
+    env.mock_port(IGetContextUseCase).get_context.return_value = ProjectContext(
+        header="H", content="C", scoped_paths={}
+    )
+
+    mock_prompt.resolve_message.return_value = "test"
+    mock_prompt.resolve_agent_metadata.return_value = (
+        "pathfinder",
+        {
+            "cumulative_cost": 0.05,
+            "model": "openrouter/unpriced",
+            "cost_recorded": True,
+        },
+        "meta.yaml",
+    )
+    mock_llm.get_token_count.return_value = 1000
+    mock_llm.get_context_window.return_value = 128000
+    mock_llm.supports_pricing.return_value = False
+
+    service = env.get_service(PlanningService)
+
+    service.generate_plan(user_message="test", turn_dir="turns/01")
+
+    calls = [call[0][0] for call in mock_ui.display_message.call_args_list]
+    assert any("• Session Cost:" in c and "$0.0500" in c for c in calls)
+
+
+def test_generate_plan_shows_recorded_zero_cost_for_free_model(env):
+    """A recorded 0.0 free-model cost shows as $0.0000, not $???."""
+    mock_ui = env.mock_port(IUserInteractor)
+    mock_llm = env.mock_port(ILlmClient)
+    mock_prompt = env.mock_port(IPromptManager)
+    env.mock_port(IGetContextUseCase).get_context.return_value = ProjectContext(
+        header="H", content="C", scoped_paths={}
+    )
+
+    mock_prompt.resolve_message.return_value = "test"
+    mock_prompt.resolve_agent_metadata.return_value = (
+        "pathfinder",
+        {"cumulative_cost": 0.0, "model": "free-model", "cost_recorded": True},
+        "meta.yaml",
+    )
+    mock_llm.get_token_count.return_value = 1000
+    mock_llm.get_context_window.return_value = 128000
+    mock_llm.supports_pricing.return_value = False
+
+    service = env.get_service(PlanningService)
+
+    service.generate_plan(user_message="test", turn_dir="turns/01")
+
+    calls = [call[0][0] for call in mock_ui.display_message.call_args_list]
+    assert any("• Session Cost:" in c and "$0.0000" in c for c in calls)

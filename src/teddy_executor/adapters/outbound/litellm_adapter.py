@@ -284,13 +284,16 @@ class LiteLLMAdapter(ILlmClient):
         """
         reported = self._reported_cost(completion_response)
         if reported is not None:
+            self._mark_cost_recorded(completion_response)
             return reported
 
         litellm = self._get_litellm()
         try:
-            return float(
+            cost = float(
                 litellm.completion_cost(completion_response=completion_response)
             )
+            self._mark_cost_recorded(completion_response)
+            return cost
         except (Exception, TypeError) as e:
             if "This model isn't mapped yet" in str(e) and self._hydrator:
                 candidates = set()
@@ -302,11 +305,13 @@ class LiteLLMAdapter(ILlmClient):
 
                 if self._hydrate_all_candidates(candidates):
                     try:
-                        return float(
+                        cost = float(
                             litellm.completion_cost(
                                 completion_response=completion_response
                             )
                         )
+                        self._mark_cost_recorded(completion_response)
+                        return cost
                     except (Exception, TypeError) as retry_error:
                         self._log_cost_failure(
                             retry_error, completion_response, model_override
@@ -363,6 +368,23 @@ class LiteLLMAdapter(ILlmClient):
         except (TypeError, ValueError):
             return None
         return number if math.isfinite(number) else None
+
+    @staticmethod
+    def _mark_cost_recorded(completion_response: Any) -> None:
+        """Flags the response so the display can trust the recorded cost.
+
+        A real price was used whenever a reported value is returned or the
+        registry recompute succeeds, including a valid free-model ``0.0``. The
+        fallback ``0.0`` (a recompute failure) is deliberately NOT marked, so
+        the display keeps its ``$???`` placeholder for a genuinely unpriced
+        model. A response that forbids attribute assignment still yields its
+        cost; only the display hint is lost.
+        """
+        try:
+            completion_response._teddy_cost_recorded = True
+        except (AttributeError, TypeError):
+            # Only the display hint is affected; the cost itself is unaffected.
+            pass
 
     def _log_cost_failure(
         self, error: Exception, completion_response: Any, model_override: Optional[str]

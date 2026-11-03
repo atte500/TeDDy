@@ -98,6 +98,13 @@ class PlanningService(IPlanningUseCase):
             lambda: self._run_planning_phase(messages, model, meta)
         )
 
+        # Persist the explicit recorded-cost signal (Option B): a real price was
+        # used for this turn whenever the adapter marked the response, so a
+        # later turn can show the accumulated figure even for an unpriced model.
+        # The `is True` guard keeps an auto-specced Mock response from counting.
+        if getattr(response, "_teddy_cost_recorded", False) is True:
+            meta["cost_recorded"] = True
+
         cost_val = self._prompt_manager.log_telemetry(token_count, turn_cost)
         plan_path = (turn_path / "plan.md").as_posix()
         self._file_system_manager.write_file(plan_path, plan_content)
@@ -229,9 +236,13 @@ class PlanningService(IPlanningUseCase):
         )
 
         pricing_supported = self._llm_client.supports_pricing(model=model)
+        # Option B: gate on an explicit recorded-cost signal, never on
+        # `cumulative_cost > 0`, because a free model legitimately records 0.0
+        # and cannot be distinguished from "no cost" by cost > 0.
+        cost_recorded = meta.get("cost_recorded") is True
         cost_str = (
             f"${cumulative_cost:.4f}"
-            if context_window > 0 and pricing_supported
+            if context_window > 0 and (pricing_supported or cost_recorded)
             else "$???"
         )
         self._user_interactor.display_message(

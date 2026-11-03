@@ -488,6 +488,11 @@ class SessionService(ISessionManager):
             if key in current_meta:
                 meta[key] = current_meta[key]
 
+        # A recorded cost stays recorded for the rest of the session, so an
+        # unpriced model keeps showing its accumulated figure, not "$???".
+        if current_meta.get("cost_recorded") is True:
+            meta["cost_recorded"] = True
+
         if is_validation_failure:
             meta["is_replan"] = True
             if "user_request" in current_meta:
