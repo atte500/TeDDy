@@ -97,6 +97,24 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                     halt_execution = True
         return action_logs
 
+    def _emit_preexecuted_console_log(
+        self, action: ActionData, action_log: ActionLog
+    ) -> None:
+        """Emit the console lines a freshly dispatched action would log.
+
+        Actions executed manually in the TUI run silently, so on plan
+        submission the orchestrator re-emits the same progress lines
+        ``ActionDispatcher`` logs for freshly dispatched actions
+        (``{ACTION} - {description}`` then the uppercase status). MESSAGE
+        actions stay silent, matching the dispatcher.
+        """
+        action_name = action.type.upper()
+        if action_name == "MESSAGE":
+            return
+        log_desc = f" - {action.description}" if action.description else ""
+        logger.info(f"{action_name}{log_desc}")
+        logger.info(action_log.status.value.upper())
+
     def _handle_action_in_loop(
         self,
         action: ActionData,
@@ -116,6 +134,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             )
 
         if action.executed and action.action_log:
+            self._emit_preexecuted_console_log(action, action.action_log)
             should_halt = (
                 action.action_log.status == ActionStatus.FAILURE
                 and not action.params.get("allow_failure")
