@@ -1,5 +1,5 @@
 # Slice: Harden `make probe` Download Step
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [05-quality-gate-debt-reconciliation.md](/docs/project/milestones/05-quality-gate-debt-reconciliation.md)
 - **Depends On:** N/A
 - **Specs:** N/A
@@ -71,6 +71,10 @@ Then the target clears any prior output file before download, prints a stderr er
 - Restored green by applying the identical edit to the bundled template; `diff` reports the two files IDENTICAL and the targeted file reports 4 passed.
 - Both template copies now carry `rm -f spikes/debug/probe_output.txt` immediately before the download and the loud `|| { echo "Probe: failed to download probe-result artifact for run $$RUN_ID." >&2; exit 1; }` guard, with the `gh run watch ... || true` suppression and the `--name probe-result --dir spikes/debug` contract preserved verbatim.
 - Integration gate passed: full `make test` reports `2122 passed, 5 skipped`, exit 0.
+
+### Verification
+- Quality audit swept the slice footprint: no `download.*|| true` remains anywhere; `rm -f spikes/debug/probe_output.txt` and the loud download guard are present in `make/probe.mk` and both byte-identical templates; the `gh run watch ... || true` suppression is intact.
+- Milestone 05 remains a multi-slice milestone with 12 other slices outstanding, and its `## Slices` section is an Architect-owned placeholder with no per-slice checkbox for `00-11`, so the milestone is neither marked Completed nor flipped in the roadmap. Only this slice is marked Completed.
 
 ## Verification
 1. **Recipe shape:**
