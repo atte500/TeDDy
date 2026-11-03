@@ -73,12 +73,12 @@ Any plan file longer than `read.max_lines` (default 1000). No OS or environment 
 
 Verified root cause: plan content read through `IFileSystemManager.read_file` inherits the READ-tool truncation (`read.max_lines`, default 1000) and the READ-action hint. Because plan refinement/viewing/parsing re-reads the plan file through `read_file`, long plans are truncated and stamped with the inappropriate "Use the 'Lines' parameter" hint. No fix has been applied yet; this case file establishes the verified mechanism for the Debugger.
 
-Proposed fix shape (approved 2026-11-03):
+Approved fix shape (2026-11-03, revised to Option A the same day):
 
 - Add a configurable `plan.max_lines` setting in the config layer, default `5000`.
-- Correctness reads (`_prepare_plan_parsing`, `_validate_plan_with_context`, `_is_preserved_turn`, resume/synthesis) switch to `read_raw_file` so plans are never truncated for parsing or marker detection.
-- Display reads (TUI viewer/refinement) truncate at `plan.max_lines` with a hint-less plain notice `[Showing first N of M lines.]`; the "Use the 'Lines' parameter" hint is dropped.
-- Keep truncation behavior for long plans; only decouple from `read.max_lines` and remove the READ-tool hint.
+- Correctness reads (`_prepare_plan_parsing`, `_validate_plan_with_context`, `_is_preserved_turn`, resume/execution synthesis) switch to `read_raw_file` so plans are never truncated for parsing or marker detection, eliminating the resume write-back data-loss hazard.
+- The TUI `v` viewer always opens the real, uncapped `plan.md`; display truncation was removed per Option A, so the "Use the 'Lines' parameter" hint is never shown.
+- `plan.max_lines` caps only the plan content embedded in the LLM context window (`input.md`). `ContextService` truncates `plan.md` in `file_contents` before both embedding and token counting, so pruning (`SessionPruningService._apply_global_budget`) counts the truncated length, matching real window impact.
 
 ### Affected Components
 

@@ -15,6 +15,7 @@ Implements the `IGetContextUseCase` inbound port. It orchestrates the outbound p
 - [`IEnvironmentInspector`](../ports/outbound/environment_inspector.md): Supplies system information and Git status.
 - [`ILlmClient`](../ports/outbound/llm_client.md): Counts tokens for the assembled content.
 - [`IWebScraper`](../ports/outbound/web_scraper.md): Fetches remote URL content.
+- [`IConfigService`](../ports/outbound/config_service.md): Optional handle that resolves `plan.max_lines` for the plan-content cap; a `None` handle falls back to the schema default (5000).
 - **`core.utils.markdown` helpers**: Provide fence embedding and session-history naming.
 
 ## Class Invariants
@@ -24,6 +25,7 @@ Implements the `IGetContextUseCase` inbound port. It orchestrates the outbound p
 - `scope_dedup_priority`: A path present in several scopes keeps the non-`Turn` scope.
 - `falsy_scope_map_triggers_defaults`: A falsy `context_files` value falls back to the `.teddy/*.context` glob. A supplied scope map resolves exactly the scopes it names, with no glob fallback.
 - `single_git_status_call`: `get_git_status` runs once per turn. Its value feeds the fenced Git Status body, the `ProjectContext.git_status` field, and the badge parser.
+- `plan_cap_truncate_first`: `plan.md` content is capped at `plan.max_lines` in the `file_contents` map before both `_format_content` (the embed) and `_get_path_to_tokens` (the token count), so the embedded window and the pruning `token_count` both reflect the capped length. Only paths ending in `plan.md` are capped; other files and not-found entries pass through unchanged.
 
 ## Inbound Ports
 - **`IGetContextUseCase`**: Exposes the single `get_context(...)` operation.
@@ -40,5 +42,5 @@ Implements the `IGetContextUseCase` inbound port. It orchestrates the outbound p
 
 ### `get_context(context_files=None, include_tokens=True, agent_name="Unknown", total_window=0, cache_dir=None, current_turn=None, system_prompt_tokens=0) -> ProjectContext`
 - **Preconditions:** None.
-- **Postconditions:** Returns a `ProjectContext` carrying the header, content, scoped paths, Git status, and per-file items. Each scope expands `.context` manifests, directories, and URLs before deduplication. The Project Structure section names both tree limits once in an italic subtitle between the heading and the fence. Remote URLs are fetched in parallel and cached when `cache_dir` is set.
+- **Postconditions:** Returns a `ProjectContext` carrying the header, content, scoped paths, Git status, and per-file items. Each scope expands `.context` manifests, directories, and URLs before deduplication. The Project Structure section names both tree limits once in an italic subtitle between the heading and the fence. Remote URLs are fetched in parallel and cached when `cache_dir` is set. Any `plan.md` content is capped at `plan.max_lines` before both embedding and token counting, so the embedded plan and its item `token_count` track the cap while the on-disk file stays full.
 - **Exceptions:** None declared; per-URL fetch failures are recorded as missing content.
