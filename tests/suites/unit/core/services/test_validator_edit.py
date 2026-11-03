@@ -108,7 +108,7 @@ def test_validate_edit_fails_if_find_block_not_unique(parser, validator, mock_fs
     plan = _p(
         parser,
         MarkdownPlanBuilder("Test").add_edit(
-            "source.py", "def foo():\n    pass\n", "bar"
+            "source.py", "def foo():\n    pass", "bar"
         ),
     )
     errors = validator.validate(plan)

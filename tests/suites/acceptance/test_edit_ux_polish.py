@@ -38,8 +38,9 @@ def test_multi_edit_ux_polish(monkeypatch, tmp_path):
     report = result.stdout
 
     # 1. Similarity Scores should show both
-    # 0.8 is the threshold. "line_two XXX 2" vs "line_two = 2" is approx 0.81
-    assert "**Similarity Scores:** 1.00, 0.81" in report
+    # 0.8 is the threshold. "line_two XXX 2" vs "line_two = 2" scores 0.86 once
+    # the parsed FIND block carries its authored trailing newline.
+    assert "**Similarity Scores:** 1.00, 0.86" in report
 
     # 2. Check for ndiff markers
     assert "?" in report  # Character level marker

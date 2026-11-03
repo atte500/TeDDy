@@ -32,7 +32,7 @@ None — the module declares no injected dependencies.
 
 ### `parse_create_action(stream, node=None) -> ActionData`
 - **Preconditions:** The stream yields a Markdown list, then a content code fence.
-- **Postconditions:** Returns a CREATE action carrying `path`, an optional coerced `overwrite` flag, and `content`.
+- **Postconditions:** Returns a CREATE action carrying `path`, an optional coerced `overwrite` flag, and the fence `content` taken verbatim, including any authored trailing newlines.
 - **Exceptions:** `InvalidPlanError` when the metadata list or the content block is missing.
 
 ### `parse_resource_action(stream, action_type, node=None) -> ActionData`

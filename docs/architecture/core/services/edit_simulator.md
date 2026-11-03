@@ -18,7 +18,7 @@ Implements the `IEditSimulator` inbound port. It applies a sequence of FIND/REPL
 
 ## Class Invariants
 - `stateless_pure`: The service holds no state and performs no I/O; every result depends only on its arguments.
-- `line_ending_preservation`: An appended newline reuses the detected terminator (`\n` or `\r\n`) of the matched block.
+- `line_ending_preservation`: An appended newline reuses the detected terminator (`\n` or `\r\n`) of the matched block, and a matched region that lacks a trailing newline (an intra-line fragment match) drops the authored REPLACE terminator so it is never injected mid-line.
 - `ambiguity_guard`: A tie between equally scored candidates raises `MultipleMatchesFoundError` unless `match_all` is set.
 
 ## Inbound Ports

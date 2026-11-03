@@ -24,8 +24,8 @@ def test_crlf_plan_edit_blocks_are_normalized_to_lf():
     plan = MarkdownPlanParser().parse(_crlf_plan(builder))
 
     edit = plan.actions[0].params["edits"][0]
-    assert edit["find"] == "second line"
-    assert edit["replace"] == "replacement one\nreplacement two"
+    assert edit["find"] == "second line\n"
+    assert edit["replace"] == "replacement one\nreplacement two\n"
     assert "\r" not in plan.raw_content
 
 

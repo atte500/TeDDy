@@ -133,10 +133,10 @@ class MyClass:
     assert action.description == "Add a new method."
     assert action.params["path"] == "src/my_class.py"
     assert len(action.params["edits"]) == 1
-    assert action.params["edits"][0]["find"] == "class MyClass:\n    pass"
+    assert action.params["edits"][0]["find"] == "class MyClass:\n    pass\n"
     assert (
         action.params["edits"][0]["replace"]
-        == "class MyClass:\n    def new_method(self):\n        pass"
+        == "class MyClass:\n    def new_method(self):\n        pass\n"
     )
 
 
@@ -146,8 +146,8 @@ def test_parse_edit_action_preserves_indentation_in_find_and_replace(
     """
     Given a Markdown plan with an EDIT action,
     When the find and replace blocks contain critical indentation,
-    Then the parser should preserve this indentation exactly, except for the
-    single trailing newline, which is consistently stripped by the AST parser.
+    Then the parser preserves this indentation and the authored trailing
+    newline verbatim.
     """
     from textwrap import dedent
 
@@ -200,10 +200,10 @@ Rationale.
     assert len(edit_action.params["edits"]) == 1
     edit_block = edit_action.params["edits"][0]
 
-    # The mistletoe parser strips the single trailing newline from a code block.
-    # We must rstrip the expected value to match this valid behavior.
-    assert edit_block["find"] == indented_find_block.rstrip("\n")
-    assert edit_block["replace"] == indented_replace_block.rstrip("\n")
+    # Fence content is taken verbatim. The f-string template authors one blank
+    # line before the closing fence, so the parsed block carries an extra "\n".
+    assert edit_block["find"] == indented_find_block + "\n"
+    assert edit_block["replace"] == indented_replace_block + "\n"
 
 
 def test_parse_edit_action_ignores_find_in_codeblock(parser: IPlanParser):
@@ -260,8 +260,8 @@ This should be ignored.
 #### `REPLACE:`
 This too."""
 
-    assert action.params["edits"][0]["find"] == expected_find
-    assert action.params["edits"][0]["replace"] == "New documentation."
+    assert action.params["edits"][0]["find"] == expected_find + "\n"
+    assert action.params["edits"][0]["replace"] == "New documentation.\n"
 
 
 def test_parser_succeeds_on_builder_generated_create_action(parser: IPlanParser):

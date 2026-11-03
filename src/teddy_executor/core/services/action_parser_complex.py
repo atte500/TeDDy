@@ -33,7 +33,7 @@ def parse_find_replace_pair(stream: _PeekableStream) -> Optional[dict[str, Any]]
         raise InvalidPlanError(
             "Missing code block for FIND in EDIT action.", offending_node=find_code
         )
-    find_content = get_child_text(find_code).rstrip("\n")
+    find_content = get_child_text(find_code)
 
     replace_heading = stream.next()
     if not (
@@ -51,7 +51,7 @@ def parse_find_replace_pair(stream: _PeekableStream) -> Optional[dict[str, Any]]
             "Missing REPLACE block after FIND block",
             offending_node=replace_code,
         )
-    replace_content = get_child_text(replace_code).rstrip("\n")
+    replace_content = get_child_text(replace_code)
 
     return {
         "find": find_content,
