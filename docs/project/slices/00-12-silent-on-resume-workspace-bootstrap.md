@@ -1,5 +1,5 @@
 # Slice: Silent-on-Resume Workspace Bootstrap
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Ad-hoc
 - **Depends On:** None
 - **Specs:** None
