@@ -65,24 +65,24 @@ Map affected components using non-breaking steps (expand -> migrate -> contract)
 
 **Types:**
 - **Env:** Declarative tooling, build files, CI workflows, hooks, or package dependencies.
-- **Wiring:** Outermost boundary tracer bullet returning skeleton data to connect layers end-to-end.
-- **Interface:** Signatures, ports, interfaces, DTOs, and domain models.
+- **Interface:** Signatures, ports, interfaces, DTOs, and schemas. Expands shared contracts additively so existing callers remain unbroken.
 - **Harness:** Shared test infrastructure (drivers, observers, in-memory fakes, and fixtures).
+- **Wiring:** Outermost boundary tracer bullet connecting entry points with skeleton responses using defined interfaces and harness doubles.
 - **Core:** Domain entities, business rules, workflows, and algorithmic invariants driven by unit tests.
 - **Adapter:** Real infrastructure implementations (filesystem, CLI, subprocess, database, external protocols) driven by integration tests.
-- **Migration:** Adapting existing consumers to new contracts.
+- **Migration:** Adapting existing callers across the codebase to use newly expanded contracts, updating their caller tests.
 - **Refactor:** Improving code design without altering behavior. Requires no new tests; existing tests remain green.
-- **Cleanup:** Removing deprecated methods, dead code, and temporary shims. Requires no new tests; verified by pruning obsolete tests while the suite stays green.
+- **Cleanup:** Contracting shared seams by removing deprecated methods, dead code, and temporary shims once callers have migrated.
 
-**Order:** Order deliverables to keep all tests passing at every commit (`make test`). Include Env before Wiring only when tooling or package prerequisites must exist for tests to run:
-`(Env) -> Wiring -> Interface -> Harness -> Core -> Adapter -> Migration -> Refactor -> Cleanup`
+**Order:** Order deliverables to keep all tests passing at every commit (`make test`). Include Env before Interface only when tooling or package prerequisites must exist for tests to run:
+`(Env) -> Interface -> Harness -> Wiring -> Core -> Adapter -> Migration -> Refactor -> Cleanup`
 
 **Tests:** Do not specify individual tests in deliverables. Scenarios and Edge Cases must define test requirements.
 
 **Format:**
-- [ ] **Wiring** - Connect outermost boundaries with skeleton response.
-- [ ] **Interface** - Define port interfaces and DTOs.
+- [ ] **Interface** - Define port interfaces, DTOs, and schemas.
 - [ ] **Harness** - Build or update shared test doubles and fixtures.
+- [ ] **Wiring** - Connect outermost boundaries with skeleton response using defined interfaces and harness doubles.
 - [ ] **Core** - Implement domain logic and invariants.
 - [ ] **Adapter** - Implement infrastructure adapter.
 
