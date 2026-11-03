@@ -17,6 +17,8 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
     preview_edit_diff_viewer,
     spawn_editor,
 )
+from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
+from teddy_executor.core.utils.string import truncate_lines
 
 logger = logging.getLogger(__name__)
 
@@ -265,13 +267,40 @@ async def view_details_handler(app: "ReviewerApp") -> None:
         )
 
 
+def render_plan_view(content: str, max_lines: int) -> str:
+    """Render plan content truncated at ``max_lines`` with a hint-less notice.
+
+    The notice is a plain ``[Showing first N of M lines.]`` line. It never
+    carries the READ-tool "Use the 'Lines' parameter" hint, because the plan
+    viewer cannot act on that hint. Content at or below the cap, empty content,
+    and a non-positive cap are returned unchanged.
+    """
+    if not content or max_lines <= 0:
+        return content
+    total_lines = len(content.splitlines())
+    if total_lines <= max_lines:
+        return content
+    hint = f"[Showing first {max_lines} of {total_lines} lines.]"
+    return truncate_lines(content, max_lines=max_lines, direction="head", hint=hint)
+
+
+def _resolve_plan_max_lines(app: "ReviewerApp") -> int:
+    """Resolve the plan display cap, falling back to the schema default."""
+    default = DEFAULT_APP_CONFIG.plan.max_lines
+    config_service = getattr(app, "config_service", None)
+    if config_service is None:
+        return default
+    value = config_service.get_setting("plan.max_lines", default)
+    return value if value is not None else default
+
+
 async def view_plan_handler(app: "ReviewerApp") -> None:
     """Implementation for viewing the full plan."""
     content: Optional[str] = None
     plan_path = app.plan.plan_path
     if plan_path and app._file_system:
         try:
-            content = app._file_system.read_file(plan_path)
+            content = app._file_system.read_raw_file(plan_path)
         except Exception as e:
             logger.debug("Failed to read plan file for viewing: %s", e)
     if not content:
@@ -279,16 +308,30 @@ async def view_plan_handler(app: "ReviewerApp") -> None:
     if not content:
         content = f"# Plan: {app.plan.title}\n\n{app.plan.rationale}\n\n"
 
-    if content:
-        # If we have a persistent path, we use it. We skip confirmation because
-        # 'view' is intended to be a read-only or informational action.
-        await launch_editor(
-            app,
-            content,
-            suffix=".md",
-            persistent_path=plan_path,
-            skip_confirm=True,
-        )
+    if not content:
+        return
+
+    rendered = render_plan_view(content, _resolve_plan_max_lines(app))
+
+    # When the plan is not truncated, open the real plan file read-only in
+    # place. When truncation applies, the editor must open a persisted temp copy
+    # carrying the rendered content, because ``launch_editor`` ignores the passed
+    # content when the persistent path is a real non-empty file.
+    if rendered == content:
+        persistent_path = plan_path
+    else:
+        persistent_path = app._system_env.create_temp_file(suffix=".md")
+        app._log_preview_files.append(persistent_path)
+        pathlib.Path(persistent_path).write_text(rendered, encoding="utf-8")
+
+    # 'view' is a read-only or informational action, so we skip confirmation.
+    await launch_editor(
+        app,
+        rendered,
+        suffix=".md",
+        persistent_path=persistent_path,
+        skip_confirm=True,
+    )
 
 
 async def add_message_handler(app: "ReviewerApp") -> None:

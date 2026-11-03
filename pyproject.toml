@@ -113,6 +113,7 @@ ignore = ["E501"]
     "TID251",
 ]
 
+"tests/suites/unit/adapters/inbound/test_view_plan_regression.py" = ["TID251"]  # view_plan_handler calls module-level launch_editor (no injection seam)
 [tool.ruff.lint.mccabe]
 # Enforce a maximum cyclomatic complexity of 9
 max-complexity = 9

@@ -1,5 +1,6 @@
 import yaml
 from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
+from teddy_executor.core.ports.outbound import IConfigService
 from teddy_executor.adapters.inbound.textual_plan_reviewer import TextualPlanReviewer
 from teddy_executor.container import create_container
 
@@ -17,6 +18,7 @@ def test_container_resolves_textual_reviewer(fs):
 
     # Assert
     assert isinstance(reviewer, TextualPlanReviewer)
+    assert isinstance(reviewer._config_service, IConfigService)
 
 
 def test_container_ignores_stale_console_config(fs):
