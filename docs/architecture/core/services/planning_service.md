@@ -25,6 +25,8 @@ Implements the `IPlanningUseCase` inbound port. It gathers project context, reso
 - `single_gather_per_turn`: Project context is gathered exactly once and threaded to the caller.
 - `retry_on_empty`: An empty LLM response is retried up to `llm.max_retries` times.
 - `cost_accumulation`: Every billed attempt accumulates into the turn cost.
+- `recorded_cost_signal`: `generate_plan` persists `meta["cost_recorded"]=True` when the adapter marked the response (`_teddy_cost_recorded is True`), so a later turn shows the accumulated figure even for an unpriced model.
+- `display_gate`: `_display_telemetry` shows the accumulated cost when `context_window > 0 and (pricing_supported or cost_recorded)`. Keying on the explicit recorded-cost flag — never `cost > 0` — keeps a recorded free-model `0.0` visible as `$0.0000` while a genuinely unpriced model stays `$???`.
 - `primitive_serialization`: All metadata is cast to primitive types before serialization.
 - `preflight_once`: The local preflight check runs once per process via a class-level flag.
 - `budget_guard`: A request that strictly exceeds the model context window raises before the LLM call.
@@ -45,7 +47,7 @@ None declared directly — the service consumes the ports bundled in `PlanningPo
 
 ### `generate_plan(user_message, turn_dir, context_files=None) -> tuple[str, float, ProjectContext]`
 - **Preconditions:** `turn_dir` exists; the agent prompt file exists in the turn directory.
-- **Postconditions:** Writes `plan.md` and `input.md`, updates `meta.yaml` telemetry, and returns the plan path, the turn cost, and the gathered `ProjectContext`. The blocking network phase runs on the interruptible daemon worker, so the calling thread waits on a future instead of a raw socket read.
+- **Postconditions:** Writes `plan.md` and `input.md`, updates `meta.yaml` telemetry (including `cost_recorded` when the adapter marked the response), and returns the plan path, the turn cost, and the gathered `ProjectContext`. The blocking network phase runs on the interruptible daemon worker, so the calling thread waits on a future instead of a raw socket read.
 - **Exceptions:** `ConfigurationError` when configuration is invalid or the request exceeds the context window; `FileNotFoundError` when the system prompt is missing; `KeyboardInterrupt` when the user quits while the wait is pending.
 
 ### `_run_planning_phase(messages, model, meta) -> tuple[Any, int, str, float]`

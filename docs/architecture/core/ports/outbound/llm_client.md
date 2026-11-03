@@ -42,7 +42,7 @@ None — this is an outbound (driven) port.
 
 ### `get_completion_cost(completion_response, model_override=None) -> float`
 - **Preconditions:** `completion_response` is a response from `get_completion`.
-- **Postconditions:** Returns the USD cost of the completion.
+- **Postconditions:** Returns the USD cost of the completion. An implementation may prefer a cost the provider reported on the response over a local registry recompute, because the reported value reflects the vendor that actually served the request.
 
 ### `validate_config(include_remote=False) -> List[str]`
 - **Preconditions:** None.

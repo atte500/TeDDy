@@ -404,3 +404,33 @@ def test_get_completion_cost_does_not_mark_fallback_as_recorded(container):
 
     assert cost == 0.0
     assert getattr(response, "_teddy_cost_recorded", False) is not True
+
+
+def test_cost_failure_diagnostics_prefer_served_model_over_override(container, caplog):
+    """A cost-failure anomaly names and tiers by the served model, not the override.
+
+    The registry recompute prices against ``completion_response.model``, so the
+    diagnostic must report that served identity. Naming the configured override
+    instead would both mislabel the summary and pick the wrong log tier: a priced
+    served model whose override is absent from the registry would log DEBUG,
+    silently hiding a real anomaly instead of raising a WARNING.
+    """
+    from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+    adapter = LiteLLMAdapter(container.resolve(IConfigService))
+    fake = _FakeCostLitellm(
+        side_effect=Exception("cost blew up"),
+        model_cost={"served-model": {"input_cost_per_token": 0.00001}},
+    )
+    adapter._litellm_initialized = True
+    adapter._litellm_module = fake
+
+    response = SimpleNamespace(model="served-model")
+
+    with caplog.at_level(logging.WARNING):
+        cost = adapter.get_completion_cost(response, model_override="openrouter/foo")
+
+    assert cost == 0.0
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert any("served-model" in r.getMessage() for r in warnings), caplog.text

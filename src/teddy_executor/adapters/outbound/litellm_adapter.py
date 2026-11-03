@@ -427,12 +427,20 @@ class LiteLLMAdapter(ILlmClient):
     def _resolve_cost_model(
         self, completion_response: Any, model_override: Optional[str]
     ) -> Optional[str]:
-        """Resolves the model identity used by cost-failure diagnostics."""
-        if model_override:
-            return str(model_override)
+        """Resolves the model identity used by cost-failure diagnostics.
+
+        Prefers ``completion_response.model`` because that is the identity the
+        registry recompute actually prices against. A configured override names
+        the routing alias (e.g. ``openrouter/foo``), which need not be present in
+        the registry, so naming it would both mislabel the anomaly summary and
+        pick the wrong log tier — silently downgrading a real priced-model
+        failure to DEBUG instead of WARNING.
+        """
         model_id = getattr(completion_response, "model", None)
         if model_id:
             return str(model_id)
+        if model_override:
+            return str(model_override)
         config_model = self._config_service.get_setting("llm.model")
         return str(config_model) if config_model else None
 

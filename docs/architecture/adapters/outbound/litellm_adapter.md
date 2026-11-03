@@ -22,6 +22,8 @@ Implements the `ILlmClient` outbound port using the `litellm` library. It provid
 - `auth_not_retried`: Authentication errors are never retried; they surface immediately as `ConfigurationError`.
 - `error_translation`: Provider failures surface as `LlmApiError` or `ConfigurationError`, never as a raw provider exception.
 - `cost_never_raises`: `get_completion_cost` returns `0.0` on any failure and never raises.
+- `reported_cost_precedence`: `get_completion_cost` prefers the provider-reported cost on the response before any registry recompute, because it reflects the vendor that actually served the request.
+- `recorded_cost_signal`: A real price (reported, or a successful recompute including a free-model `0.0`) sets `_teddy_cost_recorded=True` on the response; the recompute-failure fallback `0.0` is left unmarked.
 
 ## Inbound Ports
 None — this is an outbound (driven) adapter.
@@ -49,7 +51,8 @@ None — this is an outbound (driven) adapter.
 - **Postconditions:** Returns the token count of a raw string through the cached `tiktoken` encoding. Returns `0` for empty text.
 
 ### `get_completion_cost(completion_response, model_override=None) -> float`
-- **Postconditions:** Returns the USD cost. On failure it logs with tiered severity (WARNING for a priced-model anomaly, DEBUG for an unpriced-model miss) and returns `0.0`.
+- **Postconditions:** Returns the USD cost. It prefers the cost the provider already reported on the response (`_hidden_params["response_cost"]`, then the OpenRouter `additional_headers["llm_provider-x-litellm-response-cost"]` header) because that reflects the vendor that actually served the request; a non-dict holder, an absent/`None` value, or a non-finite value falls through to the recompute. When no reported cost is present it recomputes via `litellm.completion_cost`. On a real price (reported or a successful recompute, including a free-model `0.0`) it sets `_teddy_cost_recorded=True` on the response so the display can trust the figure; the recompute-failure fallback `0.0` is left unmarked.
+- **Postconditions:** On failure it logs with tiered severity (WARNING for a priced-model anomaly, DEBUG for an unpriced-model miss) and returns `0.0`.
 
 ### `validate_config(include_remote=False) -> List[str]`
 - **Postconditions:** Returns configuration error messages, where an empty list means valid.
@@ -65,6 +68,9 @@ None — this is an outbound (driven) adapter.
 
 ### `supports_pricing(model=None) -> bool`
 - **Postconditions:** Returns `True` when the model's registry entry carries `input_cost_per_token`. A non-dict registry is treated as unpriced.
+
+### Cost-failure diagnostics identity
+`_resolve_cost_model` prefers `completion_response.model` — the identity the registry recompute prices against — over the configured `model_override` for the anomaly summary and the WARNING-vs-DEBUG tier. A routing override (e.g. `openrouter/foo`) absent from the registry therefore never downgrades a real priced-model failure to DEBUG, and the logged identity matches the model actually priced.
 
 ### Retry and authentication handling
 The retry loop attempts `llm.max_retries` times with exponential backoff (`0.5 * 2**attempt`). `_is_auth_error` detects an auth failure by message hint or by the `litellm.AuthenticationError` type, so a wrong or expired key fails on the first attempt with no backoff.
