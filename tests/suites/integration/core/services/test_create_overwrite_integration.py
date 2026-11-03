@@ -40,7 +40,7 @@ def test_create_passes_if_file_exists_with_overwrite_integration(tmp_path, monke
     assert report.action_logs[0].status == ActionStatus.SUCCESS
 
     # Verify real-world side effect
-    assert existing_file.read_text(encoding="utf-8") == "new content"
+    assert existing_file.read_text(encoding="utf-8") == "new content\n"
 
     # Verify the report includes the diff (Scenario 3 requirement)
     action_log = report.action_logs[0]

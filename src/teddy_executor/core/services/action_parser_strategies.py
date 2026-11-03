@@ -50,7 +50,7 @@ def parse_create_action(
         if children:
             child = children[0]
             if hasattr(child, "content"):
-                params["content"] = child.content.rstrip("\n")
+                params["content"] = child.content
 
     return ActionData(type="CREATE", description=description, params=params, node=node)
 

@@ -47,7 +47,7 @@ Hello, world!
     assert action.description == "Create a hello world file."
     assert action.params == {
         "path": "hello.txt",
-        "content": "Hello, world!",
+        "content": "Hello, world!\n",
     }
 
 
@@ -293,5 +293,5 @@ def test_parser_succeeds_on_builder_generated_create_action(parser: IPlanParser)
     action = plan.actions[0]
     assert action.type == "CREATE"
     assert action.params["path"] == "new_file.txt"
-    assert action.params["content"] == "Hello, TeDDy!"
+    assert action.params["content"] == "Hello, TeDDy!\n"
     assert action.description == "Create a new file."

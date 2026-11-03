@@ -103,5 +103,6 @@ echo "hello"
 - **Description:** A command.
 ```shell
 echo "hello"
-```"""
+```
+"""
     assert action.params["content"] == expected_content

@@ -1,5 +1,5 @@
 # Slice: Preserve Authored Trailing Newlines in CREATE and EDIT Fence Content
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** N/A
 - **Specs:** N/A
@@ -60,10 +60,16 @@ None. The bug doc proves the fix in an isolated sandbox replica and re-verifies 
 
 ## Deliverables
 
-- [ ] **Core** - Preserve authored trailing newlines in CREATE content. Remove `.rstrip("\n")` at `action_parser_strategies.py:53` (take `child.content` verbatim). Migrate CREATE assertions: `test_parser_basic_actions.py` (`test_parse_create_action`, `test_parser_succeeds_on_builder_generated_create_action`), `test_parser_fence_cleanup.py` (both closing-fence tests), `test_parser_misc.py` (nested-fence test). Each migrated expectation equals the current value plus its authored trailing newline(s).
+- [x] **Core** - Preserve authored trailing newlines in CREATE content. Remove `.rstrip("\n")` at `action_parser_strategies.py:53` (take `child.content` verbatim). Migrate CREATE assertions: `test_parser_basic_actions.py` (`test_parse_create_action`, `test_parser_succeeds_on_builder_generated_create_action`), `test_parser_fence_cleanup.py` (both closing-fence tests), `test_parser_misc.py` (nested-fence test). Each migrated expectation equals the current value plus its authored trailing newline(s).
 - [ ] **Core** - Preserve authored trailing newlines in EDIT FIND/REPLACE. Remove `.rstrip("\n")` at `action_parser_complex.py:36/54` (take `get_child_text(...)` verbatim). Migrate EDIT assertions: `test_parser_basic_actions.py` (`test_parse_edit_action`, `test_parse_edit_action_preserves_indentation_in_find_and_replace` including the false mistletoe-strips comments, `test_parse_edit_action_ignores_find_in_codeblock`) and `test_parser_crlf_normalization.py` (EDIT test; MESSAGE test unaffected).
 
 ## Implementation Notes
+
+### Deliverable 1 (CREATE preservation)
+- Removed `.rstrip("\n")` from the CREATE content assignment at `action_parser_strategies.py:53`; `params["content"]` now takes `child.content` verbatim, matching the proven replica.
+- Migrated five CREATE parser assertions to the verbatim value (current parsed content plus its authored trailing newline): `test_parser_basic_actions.py` (`test_parse_create_action`, `test_parser_succeeds_on_builder_generated_create_action`), `test_parser_fence_cleanup.py` (both closing-fence tests), and `test_parser_misc.py` (the nested-fence test, whose expected literal was restructured to append the authored `\n`).
+- Red proved the strip was the sole cause (`actual == expected` minus the trailing `\n`); Green flipped all five to pass (`12 passed` across the three modules).
+- Integration surfaced one Local Flaw: `test_create_overwrite_integration.py` asserted the pre-fix stripped bytes. Migrated the side-effect assertion to `"new content\n"`, because `MarkdownPlanBuilder` always emits a trailing newline before the closing fence. Full `make test` green afterward (2164 passed, 5 skipped).
 
 ## Verification
 1. **CREATE trailing newline persisted:**

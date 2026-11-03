@@ -38,7 +38,7 @@ Hello, World!
     result = parser.parse(plan)
     assert len(result.actions) == 1
     assert result.actions[0].type == "CREATE"
-    assert result.actions[0].params["content"] == "Hello, World!"
+    assert result.actions[0].params["content"] == "Hello, World!\n"
 
 
 def test_parser_ignores_trailing_text_on_fence_opener():
@@ -104,7 +104,7 @@ Hello, 6-tilde World!
     result = parser.parse(plan)
     assert len(result.actions) == 1
     assert result.actions[0].type == "CREATE"
-    assert result.actions[0].params["content"] == "Hello, 6-tilde World!"
+    assert result.actions[0].params["content"] == "Hello, 6-tilde World!\n"
 
 
 def test_trailing_code_block_after_actions_silently_ignored():
