@@ -2,7 +2,7 @@
 
 - **Status:** Unresolved
 - **Milestone:** N/A (ad-hoc bug fix)
-- **Vertical Slice:** N/A (bug report)
+- **Vertical Slice:** [Slices/00-13-plan-truncation-decoupling.md](/docs/project/slices/00-13-plan-truncation-decoupling.md)
 - **Specs:** N/A
 
 ## Symptoms
