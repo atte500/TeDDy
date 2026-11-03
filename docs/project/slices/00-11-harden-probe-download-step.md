@@ -48,7 +48,7 @@ Then the target clears any prior output file before download, prints a stderr er
 ## Deliverables
 - [x] **Harness** - Extend `tests/suites/unit/test_default_make_targets.py` with a structural pin that the `probe` recipe clears `spikes/debug/probe_output.txt` before the download and that the download is not suppressed with `|| true`.
 - [x] **Migration** - Harden the `probe` recipe in `make/probe.mk`: `rm -f spikes/debug/probe_output.txt` before the download, and replace the suppressed download with a conditional that prints a stderr error naming the run and exits nonzero on failure.
-- [ ] **Migration** - Mirror the identical recipe change into `docs/templates/makefile.md` and `src/teddy_executor/resources/templates/makefile.md`, keeping the two byte-identical.
+- [x] **Migration** - Mirror the identical recipe change into `docs/templates/makefile.md` and `src/teddy_executor/resources/templates/makefile.md`, keeping the two byte-identical.
 
 ## Implementation Notes
 
@@ -63,6 +63,13 @@ Then the target clears any prior output file before download, prints a stderr er
 - Preserved the `gh run watch "$$RUN_ID" --exit-status >/dev/null 2>&1 || true` suppression verbatim, because a probe run legitimately exits nonzero in the expected diagnostic case; only the download must fail loudly.
 - Preserved the `--name probe-result --dir spikes/debug` download contract verbatim.
 - Removed the `@pytest.mark.xfail(strict=True)` marker and the now-unused `import pytest` from `test_default_make_targets.py`. Genuine Red was re-confirmed against the unhardened recipe (failure at "probe recipe must clear spikes/debug/probe_output.txt") before the fix; the pin now passes as a normal strict test.
+- Integration gate passed: full `make test` reports `2122 passed, 5 skipped`, exit 0.
+
+### Migration (Deliverable 3)
+- Mirrored the identical hardened recipe into both `docs/templates/makefile.md` and `src/teddy_executor/resources/templates/makefile.md` using the same tab-safe inline-Python replacement that asserted exactly one suppressed-download occurrence per file.
+- Genuine Red was proven first: editing only `docs/templates/makefile.md` made `test_template_copies_are_byte_identical` FAIL (byte diff at index 22483), confirming the lockstep guard cannot be bypassed by a one-sided edit.
+- Restored green by applying the identical edit to the bundled template; `diff` reports the two files IDENTICAL and the targeted file reports 4 passed.
+- Both template copies now carry `rm -f spikes/debug/probe_output.txt` immediately before the download and the loud `|| { echo "Probe: failed to download probe-result artifact for run $$RUN_ID." >&2; exit 1; }` guard, with the `gh run watch ... || true` suppression and the `--name probe-result --dir spikes/debug` contract preserved verbatim.
 - Integration gate passed: full `make test` reports `2122 passed, 5 skipped`, exit 0.
 
 ## Verification
