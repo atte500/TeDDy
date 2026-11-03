@@ -1,4 +1,5 @@
 import logging
+import math
 from typing import Any, Dict, List, Optional, Protocol
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.domain.models.exceptions import ConfigurationError
@@ -320,21 +321,48 @@ class LiteLLMAdapter(ILlmClient):
         """Returns the cost the provider reported on the response, if any.
 
         litellm writes the vendor-reported spend to
-        ``_hidden_params["response_cost"]``. A non-dict holder, an absent key, a
-        ``None`` value, or an unconvertible value all mean "no reported cost", so
-        the caller recomputes instead. A non-finite guard is added in the Core
-        deliverable.
+        ``_hidden_params["response_cost"]``; when that key is absent, the same
+        reported spend may instead be carried by the OpenRouter response-cost
+        header under ``_hidden_params["additional_headers"]``, exactly as the
+        litellm ``get_response_cost_from_hidden_params`` helper reads it. A
+        non-dict holder, an absent key, a ``None`` value, or an unconvertible or
+        non-finite value all mean "no reported cost" from that source, so the
+        read falls through to the next source and ultimately the recompute. A
+        ``0.0`` reported cost is a valid free-model price and is returned as-is.
         """
         hidden = getattr(completion_response, "_hidden_params", None)
         if not isinstance(hidden, dict):
             return None
-        value = hidden.get("response_cost")
+
+        direct = self._finite_cost(hidden.get("response_cost"))
+        if direct is not None:
+            return direct
+
+        additional_headers = hidden.get("additional_headers")
+        if isinstance(additional_headers, dict):
+            header_cost = self._finite_cost(
+                additional_headers.get("llm_provider-x-litellm-response-cost")
+            )
+            if header_cost is not None:
+                return header_cost
+
+        return None
+
+    @staticmethod
+    def _finite_cost(value: Any) -> Optional[float]:
+        """Converts a reported value to a finite float, or None when unusable.
+
+        A ``NaN`` or infinite reported cost cannot be a spend, so it is treated
+        as absent. The graph at the call site depends only on which price source
+        is authoritative, never on a non-finite anomaly.
+        """
         if value is None:
             return None
         try:
-            return float(value)
+            number = float(value)
         except (TypeError, ValueError):
             return None
+        return number if math.isfinite(number) else None
 
     def _log_cost_failure(
         self, error: Exception, completion_response: Any, model_override: Optional[str]

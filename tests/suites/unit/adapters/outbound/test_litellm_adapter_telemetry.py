@@ -281,3 +281,84 @@ def test_get_completion_cost_falls_back_when_no_reported_cost(container):
 
     assert cost == 0.05
     assert fake.completion_cost_calls == [response]
+
+
+def _adapter_with_cost_fake(container, *, cost=0.0):
+    """Builds a LiteLLMAdapter wired to a minimal cost fake."""
+    from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+    from teddy_executor.core.ports.outbound.config_service import IConfigService
+
+    adapter = LiteLLMAdapter(container.resolve(IConfigService))
+    fake = _FakeCostLitellm(cost=cost)
+    adapter._litellm_initialized = True
+    adapter._litellm_module = fake
+    return adapter, fake
+
+
+def test_get_completion_cost_falls_back_when_hidden_params_not_a_dict(container):
+    """A non-dict _hidden_params holder means no reported cost; recompute runs."""
+    adapter, fake = _adapter_with_cost_fake(container, cost=0.07)
+
+    response = SimpleNamespace(_hidden_params="not-a-dict", model="served-model")
+
+    cost = adapter.get_completion_cost(response)
+
+    assert cost == 0.07
+    assert fake.completion_cost_calls == [response]
+
+
+def test_get_completion_cost_falls_back_when_reported_cost_is_none(container):
+    """A None response_cost is treated as absent; recompute runs."""
+    adapter, fake = _adapter_with_cost_fake(container, cost=0.03)
+
+    response = SimpleNamespace(_hidden_params={"response_cost": None}, model="x")
+
+    cost = adapter.get_completion_cost(response)
+
+    assert cost == 0.03
+    assert fake.completion_cost_calls == [response]
+
+
+def test_get_completion_cost_treats_non_finite_reported_cost_as_absent(container):
+    """A NaN or infinite reported cost is not a spend; recompute runs."""
+    adapter, fake = _adapter_with_cost_fake(container, cost=0.05)
+
+    response = SimpleNamespace(
+        _hidden_params={"response_cost": float("nan")}, model="served-model"
+    )
+
+    cost = adapter.get_completion_cost(response)
+
+    assert cost == 0.05
+    assert fake.completion_cost_calls == [response]
+
+
+def test_get_completion_cost_returns_zero_for_free_model(container):
+    """A reported 0.0 is a valid free-model price and skips the recompute."""
+    adapter, fake = _adapter_with_cost_fake(container, cost=999.0)
+
+    response = SimpleNamespace(
+        _hidden_params={"response_cost": 0.0}, model="free-model"
+    )
+
+    cost = adapter.get_completion_cost(response)
+
+    assert cost == 0.0
+    assert fake.completion_cost_calls == []
+
+
+def test_get_completion_cost_falls_back_to_openrouter_header(container):
+    """When response_cost is absent, the OpenRouter header value is returned."""
+    adapter, fake = _adapter_with_cost_fake(container, cost=999.0)
+
+    response = SimpleNamespace(
+        _hidden_params={
+            "additional_headers": {"llm_provider-x-litellm-response-cost": 0.42}
+        },
+        model="served-model",
+    )
+
+    cost = adapter.get_completion_cost(response)
+
+    assert cost == 0.42
+    assert fake.completion_cost_calls == []
