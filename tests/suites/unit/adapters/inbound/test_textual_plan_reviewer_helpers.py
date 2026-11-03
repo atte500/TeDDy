@@ -1,5 +1,4 @@
-from unittest.mock import MagicMock
-
+from types import SimpleNamespace
 
 from teddy_executor.core.domain.models.execution_report import ActionLog, ActionStatus
 from teddy_executor.core.domain.models.project_context import (
@@ -27,7 +26,7 @@ def test_format_action_log_success():
     formatted = format_action_log(log)
 
     assert "- **Overall Status:** SUCCESS" in formatted
-    assert "### `CREATE`: [test.txt](/test.txt)" in formatted
+    assert "### `CREATE`: `test.txt`" in formatted
     assert "- **Status:** SUCCESS" in formatted
     assert "- **Details:** `File created successfully.`" in formatted
 
@@ -66,7 +65,7 @@ def test_populate_context_detail_shows_merged_system_line():
     content_tokens - selected_item_tokens and shows the merged System line.
     """
     # Arrange
-    app = MagicMock()
+    app = SimpleNamespace()
     pane = []
     data = {"type": "CONTEXT_ROOT"}
 
@@ -139,7 +138,7 @@ def test_populate_context_detail_system_info_tokens_equals_content_tokens_when_n
     and System shows all of it plus the system prompt.
     """
     # Arrange
-    app = MagicMock()
+    app = SimpleNamespace()
     pane = []
     data = {"type": "CONTEXT_ROOT"}
 

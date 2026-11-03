@@ -59,10 +59,7 @@ def test_tui_context_aware_editing_marks_action_as_modified(env):
 
         formatter = env.get_service(IMarkdownReportFormatter)
         report_content = formatter.format(report)
-        assert (
-            "### `CREATE` (user modified: content): [new_file.py](/new_file.py)"
-            in report_content
-        )
+        assert "### `CREATE` (user modified: content): `new_file.py`" in report_content
 
     finally:
         os.environ.pop("TEDDY_TEST_MOCK_EDITOR_OUTPUT", None)

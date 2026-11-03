@@ -1,4 +1,3 @@
-from unittest.mock import MagicMock
 from teddy_executor.core.services.markdown_report_formatter import (
     MarkdownReportFormatter,
 )
@@ -15,8 +14,13 @@ from datetime import datetime
 
 def test_formatter_no_longer_passes_is_concise_to_template():
     formatter = MarkdownReportFormatter()
-    # Mock the template render method to capture arguments
-    formatter.template.render = MagicMock(return_value="rendered")
+    captured = {}
+
+    def fake_render(context):
+        captured["context"] = context
+        return "rendered"
+
+    formatter.template.render = fake_render
 
     summary = RunSummary(
         status=RunStatus.SUCCESS, start_time=datetime.now(), end_time=datetime.now()
@@ -26,15 +30,19 @@ def test_formatter_no_longer_passes_is_concise_to_template():
     formatter.format(report)
 
     # Check that is_concise is NO LONGER in the context passed to render
-    args, kwargs = formatter.template.render.call_args
-    context = args[0]
+    context = captured["context"]
     assert "is_concise" not in context
 
 
 def test_formatter_passes_is_session_to_template():
     formatter = MarkdownReportFormatter()
-    # Mock the template render method to capture arguments
-    formatter.template.render = MagicMock(return_value="rendered")
+    captured = {}
+
+    def fake_render(context):
+        captured["context"] = context
+        return "rendered"
+
+    formatter.template.render = fake_render
 
     summary = RunSummary(
         status=RunStatus.SUCCESS, start_time=datetime.now(), end_time=datetime.now()
@@ -44,8 +52,7 @@ def test_formatter_passes_is_session_to_template():
     formatter.format(report)
 
     # Check that is_session was in the context passed to render
-    args, kwargs = formatter.template.render.call_args
-    context = args[0]
+    context = captured["context"]
     assert context["is_session"] is True
 
 
@@ -81,10 +88,11 @@ def test_formatter_sanitizes_whitespace():
     3+ newlines into 2.
     """
     formatter = MarkdownReportFormatter()
-    # Mock the template to return a string with excessive whitespace and newlines
-    formatter.template.render = MagicMock(
-        return_value="\n\n  # Header\n\n\n\nContent  \n\n\nFooter\n\n  "
-    )
+
+    def fake_render(_context):
+        return "\n\n  # Header\n\n\n\nContent  \n\n\nFooter\n\n  "
+
+    formatter.template.render = fake_render
 
     summary = RunSummary(
         status=RunStatus.SUCCESS, start_time=datetime.now(), end_time=datetime.now()
@@ -135,4 +143,4 @@ def test_formatter_hides_resource_contents_in_session_mode():
     assert "## Resource Contents" not in output_session
     assert "print('hello')" not in output_session
     # The action log entry should still exist
-    assert "### `READ`: [test.py](/test.py)" in output_session
+    assert "### `READ`: `test.py`" in output_session

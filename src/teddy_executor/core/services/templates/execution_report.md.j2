@@ -10,11 +10,7 @@
   rendered output when conditional sections are not rendered.
 #}
 {% macro render_resource(path, content) %}
-{% if path.startswith('http:') or path.startswith('https:') %}
-### [{{ path }}]({{ path }})
-{% else %}
-### [{{ path }}]({% if not path.startswith('/') %}/{% endif %}{{ path }})
-{% endif %}
+### `{{ path }}`
 {{ content | embed_fence(path | language_from_path) }}
 {% endmacro %}
 
@@ -48,7 +44,8 @@
 {% endif -%}
 {# Render generic details if no specific fields matched, but avoid rendering if it's just content #}
 {% if not log.details.get("error") and not log.details.get("return_code") and not log.details.get("stdout") and not log.details.get("stderr") and not log.details.get("content") and not log.details.get("diff") and not log.details.get("failed_command") and not log.details.get("similarity_scores") and not log.details.get("similarity_score") and not log.details.get("query_results") %}
-- **Details:** `{{ log.details }}`
+- **Details:**
+{{ log.details | tojson(indent=2) | embed_fence('json') }}
 {% endif -%}
 {% else -%}
 - **Details:** `{{ log.details }}`
@@ -112,14 +109,6 @@
 {% if report.validation_ast -%}
 {{ report.validation_ast }}
 {% endif -%}
-{% if report.failed_resources and not is_session %}
-
-## Resource Contents
-{% for path, content in report.failed_resources.items() %}
-{{ render_resource(path, content) }}
-{% endfor %}
-{%- endif %}
-
 {# Classify content-bearing logs ONCE — the single source of truth deciding
    where each log's content renders:
      - resource_logs: rendered under `## Resource Contents` (non-session only)
@@ -143,8 +132,11 @@
   {% endif %}
 {% endfor -%}
 
-{% if report_ns.resource_logs and not is_session %}
+{% if not is_session and (report.failed_resources or report_ns.resource_logs) %}
 ## Resource Contents
+{% for path, content in (report.failed_resources or {}).items() %}
+{{ render_resource(path, content) }}
+{% endfor %}
 {% for log in report_ns.resource_logs %}
 {% set res_path = log.params.get('File Path') or log.params.get('Resource') or log.params.get('resource') or log.params.get('path') %}
 {{ render_resource(res_path, log.details.content) }}
@@ -157,14 +149,23 @@
 {% set target = '' %}
 
 {# Determine Header Target #}
-{% if action_type == 'EXECUTE' %}
-  {% set target = '"' ~ (params.get('description') or params.get('Description') or 'Execute Command') ~ '"' %}
-{% elif action_type == 'RESEARCH' %}
-  {% set target = params.get('description') or params.get('Description') or 'Research' %}
-{% else %}
-  {# Use Markdown Link for CREATE/EDIT/READ #}
+{% if action_type in ['EXECUTE', 'RESEARCH'] %}
+  {% set subject = params.get('description') or params.get('Description') %}
+  {% if subject %}
+    {% set target = subject %}
+  {% else %}
+    {% set target = '' %}
+  {% endif %}
+{% elif action_type in ['CREATE', 'EDIT', 'READ'] %}
   {% set full_path = params.get('File Path') or params.get('file_path') or params.get('Resource') or params.get('resource') or params.get('path') or '' %}
-  {# Check for URL schemes http and https #}
+  {% if full_path %}
+    {% set target = '`' ~ full_path ~ '`' %}
+  {% else %}
+    {% set target = '' %}
+  {% endif %}
+{% else %}
+  {# Legacy link-form header for MESSAGE and other types; Migration relocates MESSAGE. #}
+  {% set full_path = params.get('File Path') or params.get('file_path') or params.get('Resource') or params.get('resource') or params.get('path') or '' %}
   {% if full_path.startswith('http:') or full_path.startswith('https:') %}
     {% set target = '[' ~ full_path ~ '](' ~ full_path ~ ')' %}
   {% else %}
@@ -190,17 +191,11 @@
 {% if action_type == 'READ' and log in report_ns.resource_logs %}
 - **Note:** Up-to-date contents are provided under `Resource Contents`.
 {% endif %}
-{% if action_type in ['CREATE', 'EDIT'] -%}
-  {% set path_val = params.get('File Path') or params.get('file_path') or params.get('path') -%}
-  {% if path_val -%}
-- **File Path:** `{{ path_val }}`
-  {%- endif %}
-{%- endif %}
 {# Params Rendering - Flattened #}
 {% if action_type == 'EXECUTE' %}
   {% set outcome = params.get('expected_outcome') or params.get('Expected Outcome') %}
   {% if outcome %}
-- **Expected outcome:** {{ outcome }}
+- **Expected Outcome:** {{ outcome }}
   {% endif %}
 
   {% set setup = params.get('setup') or params.get('Setup') %}
