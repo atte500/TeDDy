@@ -214,3 +214,40 @@ def test_orchestrate_session_loop_non_pipeline_ignores_message(monkeypatch) -> N
 
     # Assert: resume called twice (MESSAGE was ignored, loop continued to second iteration)
     assert mock_orchestrator.resume.call_count == 2
+
+
+@pytest.mark.parametrize("blank_message", ["", "   "])
+def test_handle_new_session_pipeline_empty_message_raises_exit(
+    capsys, monkeypatch, blank_message
+) -> None:
+    """An empty or whitespace-only `-m` must normalize to absent so pipeline
+    mode raises the requires-a-message error instead of planning against
+    nothing."""
+    from teddy_executor.adapters.inbound import session_cli_handlers as handlers
+    from teddy_executor.adapters.inbound.session_cli_handlers import (
+        handle_new_session,
+    )
+
+    # Keep the background fetch, health checks, and pull out of the test so
+    # the pre-fix path never spawns a subprocess.
+    monkeypatch.setattr(handlers, "_start_background_update_check", lambda: None)
+    monkeypatch.setattr(handlers, "_run_health_checks", lambda *a, **k: None)
+    monkeypatch.setattr(handlers, "_pull_workspace_on_start", lambda *a, **k: None)
+
+    mock_interactor = Mock()
+    mock_container = Mock()
+    mock_container.resolve.return_value = mock_interactor
+
+    with pytest.raises(typer.Exit):
+        handle_new_session(
+            container=mock_container,
+            name="test_session",
+            agent="assistant",
+            interactive=False,
+            no_copy=False,
+            message=blank_message,
+            pipeline=True,
+        )
+
+    captured = capsys.readouterr()
+    assert "Pipeline mode requires an initial message via -m/--message." in captured.err

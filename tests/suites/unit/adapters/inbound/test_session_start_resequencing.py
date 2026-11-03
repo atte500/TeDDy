@@ -230,3 +230,80 @@ def test_handle_new_session_raises_eof_error_on_empty_prompt_response_in_non_int
 
     assert excinfo.value.exit_code == 1
     mock_session_manager.create_session.assert_not_called()
+
+
+@pytest.mark.parametrize("blank_message", ["", "   "])
+def test_handle_new_session_prompts_when_message_is_blank(blank_message, monkeypatch):
+    """An empty or whitespace-only `-m` must normalize to absent so the
+    opening prompt fires instead of seeding a session with no request."""
+    # Arrange
+    container = Container()
+    mock_session_manager = Mock(spec=ISessionManager)
+    mock_user_interactor = Mock(spec=IUserInteractor)
+    mock_orchestrator = Mock(spec=IRunPlanUseCase)
+    mock_llm_client = Mock(spec=ILlmClient)
+    mock_config_service = Mock(spec=IConfigService)
+    mock_loop_guard = create_autospec(ISessionLoopGuard)
+    mock_prompt_manager = Mock(spec=IPromptManager)
+
+    init_mock = Mock(spec=IInitUseCase)
+    init_mock.check_drift.return_value = DriftReport()
+    container.register(IInitUseCase, instance=init_mock)
+    container.register(IPromptManager, instance=mock_prompt_manager)
+    container.register(ISessionManager, instance=mock_session_manager)
+    container.register(IUserInteractor, instance=mock_user_interactor)
+    container.register(IRunPlanUseCase, instance=mock_orchestrator)
+    container.register(ILlmClient, instance=mock_llm_client)
+    container.register(IConfigService, instance=mock_config_service)
+    container.register(ISessionLoopGuard, instance=mock_loop_guard)
+
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+
+    container.register(
+        InterruptGuard, instance=InterruptGuard(monotonic=time.monotonic)
+    )
+    from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
+    from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
+        TerminalQuitKeyListener,
+    )
+
+    container.register(IQuitKeyListener, instance=TerminalQuitKeyListener())
+
+    # Keep the background fetch and health checks out of the test.
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._start_background_update_check",
+        lambda: None,
+    )
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._run_health_checks",
+        lambda *args, **kwargs: None,
+    )
+
+    mock_llm_client.validate_config.return_value = []
+    mock_user_interactor.ask_question.return_value = "Build a rocket"
+    mock_session_manager.create_session.return_value = (
+        ".teddy/sessions/20260427_110000-build-a-rocket"
+    )
+    mock_orchestrator.resume.return_value = ("session_name", None)
+
+    # Act
+    handle_new_session(
+        container=container,
+        name=None,
+        agent="pathfinder",
+        interactive=True,
+        no_copy=False,
+        message=blank_message,
+    )
+
+    # Assert: the blank flag normalized to absent, so the prompt fired and
+    # the typed answer seeded the session's initial request.
+    mock_user_interactor.ask_question.assert_called_once_with("What are we working on?")
+    mock_session_manager.create_session.assert_called_once_with(
+        SessionOptions(
+            name="build-rocket",
+            agent_name="pathfinder",
+            initial_request="Build a rocket",
+            additional_context=[],
+        )
+    )

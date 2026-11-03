@@ -836,6 +836,11 @@ def handle_new_session(  # noqa: PLR0913
     _start_background_update_check()
 
     try:
+        # 0. An empty or whitespace-only -m means the flag was omitted: the
+        # interactive opening prompt fires, and pipeline mode errors on empty.
+        if message is not None and not message.strip():
+            message = None
+
         # 0. Pipeline mode requires an initial message
         if pipeline and message is None:
             raise ValueError(

@@ -1,5 +1,5 @@
 # Slice: Empty Message Ask-Loop
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** None
 - **Specs:** None
@@ -75,11 +75,17 @@ Affected components, migrated in non-breaking steps.
 3. `[MIGRATE]` Existing start and resume tests — pin the new empty-`-m` prompting and pipeline behavior.
 
 ## Deliverables
-- [ ] **Wiring** - Normalize a whitespace-only or empty `-m` to absent at the `start` boundary so the existing opening prompt fires interactively and pipeline mode errors on empty.
+- [x] **Wiring** - Normalize a whitespace-only or empty `-m` to absent at the `start` boundary so the existing opening prompt fires interactively and pipeline mode errors on empty.
 - [ ] **Core** - Resolve a present-but-blank `-m` in the EMPTY and COMPLETE_TURN `resume` branches to an interactive prompt when interactive (empty reply terminates) and to absent when non-interactive.
 - [ ] **Migration** - Update the start and resume test suites to pin empty-`-m` prompting, bare-`resume` proceeding, and the pipeline-empty error split.
 
 ## Implementation Notes
+
+### Wiring - empty `-m` normalization at the `start` boundary
+- `handle_new_session` now normalizes a present-but-blank `message` to `None` immediately before the pipeline guard: `if message is not None and not message.strip(): message = None`. A whitespace-only or empty `-m` therefore behaves exactly like an omitted `-m`: the interactive `"What are we working on?"` prompt fires, and `--pipeline` raises the `Pipeline mode requires an initial message via -m/--message.` error instead of planning against nothing.
+- New coverage: `test_handle_new_session_prompts_when_message_is_blank` (parametrized `""` / `"   "`) in `tests/suites/unit/adapters/inbound/test_session_start_resequencing.py`, and `test_handle_new_session_pipeline_empty_message_raises_exit` (parametrized) in `tests/suites/unit/adapters/inbound/test_pipeline_wiring.py`. Both are hermetic (health checks, background fetch, and workspace pull neutralized) and fail on the pre-fix handler.
+- Full suite green after the change: 2125 passed, 5 skipped via `make test`.
+- Remaining in this slice: Core (resume EMPTY/COMPLETE_TURN blank-message resolution) and Migration (consolidate the empty-message test matrix).
 
 ## Verification
 1. **Interactive start with empty `-m`:**
