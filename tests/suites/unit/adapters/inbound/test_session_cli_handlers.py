@@ -259,10 +259,10 @@ def test_run_health_checks_calls_both(monkeypatch):
     """_run_health_checks should call _ensure_commit_hooks and _check_git_initialized."""
     calls = []
 
-    def fake_commit_hooks():
+    def fake_commit_hooks(**kwargs):
         calls.append("commit_hooks")
 
-    def fake_git():
+    def fake_git(**kwargs):
         calls.append("git")
 
     monkeypatch.setattr(

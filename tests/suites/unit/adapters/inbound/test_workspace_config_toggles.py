@@ -273,10 +273,14 @@ def test_disabled_workspace_gates_skip_their_steps_silently(
     monkeypatch.chdir(tmp_path)
     invoked: list[str] = []
     monkeypatch.setattr(
-        session_cli_handlers, "_ensure_commit_hooks", lambda: invoked.append("hooks")
+        session_cli_handlers,
+        "_ensure_commit_hooks",
+        lambda **kwargs: invoked.append("hooks"),
     )
     monkeypatch.setattr(
-        session_cli_handlers, "_check_git_initialized", lambda: invoked.append("init")
+        session_cli_handlers,
+        "_check_git_initialized",
+        lambda **kwargs: invoked.append("init"),
     )
     mock_config.get_setting.side_effect = lambda key, default=None: (
         False if key in {"workspace.pre-commit", "workspace.init"} else default

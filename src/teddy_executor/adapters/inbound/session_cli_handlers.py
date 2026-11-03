@@ -135,44 +135,42 @@ def _shim_is_current(hooks_dir: Path, hook_type: str) -> bool:
     )
 
 
-def _ensure_commit_hooks() -> None:
+def _workspace_notice(verbose: bool, message: str, color: str) -> None:
+    """Emit one workspace banner line only when ``verbose`` is set.
+
+    The repair itself always runs; only the user-facing line is gated, so a
+    silent ``resume`` still heals the workspace without banner noise."""
+    if verbose:
+        typer.secho(message, fg=color, err=True)
+
+
+def _ensure_commit_hooks(verbose: bool = True) -> None:
     """Install pre-commit hooks if config exists and CLI is available.
-    Shows green notification on success, yellow warning if config missing,
-    CLI not found, CLI lookup fails, or install subprocess fails."""
+
+    The repair runs whether or not ``verbose`` is set; only the green and
+    yellow banner lines are gated."""
     config_path = Path.cwd() / ".pre-commit-config.yaml"
     if not config_path.exists():
-        typer.secho(
-            "⚠ No pre-commit hooks configured",
-            fg=typer.colors.YELLOW,
-            err=True,
+        _workspace_notice(
+            verbose, "⚠ No pre-commit hooks configured", typer.colors.YELLOW
         )
         return
     try:
         pre_commit_path = shutil.which("pre-commit")
     except (OSError, AttributeError):
         logger.debug("pre-commit CLI lookup failed", exc_info=True)
-        typer.secho(
-            "⚠ Could not check for pre-commit CLI",
-            fg=typer.colors.YELLOW,
-            err=True,
+        _workspace_notice(
+            verbose, "⚠ Could not check for pre-commit CLI", typer.colors.YELLOW
         )
         return
     if not pre_commit_path:
-        typer.secho(
-            "⚠ pre-commit CLI not found",
-            fg=typer.colors.YELLOW,
-            err=True,
-        )
+        _workspace_notice(verbose, "⚠ pre-commit CLI not found", typer.colors.YELLOW)
         return
     hooks_dir = _resolve_hooks_dir()
     if hooks_dir is not None and all(
         _shim_is_current(hooks_dir, hook_type) for hook_type in _HOOK_TYPES
     ):
-        typer.secho(
-            "✓ pre-commit hooks installed",
-            fg=typer.colors.GREEN,
-            err=True,
-        )
+        _workspace_notice(verbose, "✓ pre-commit hooks installed", typer.colors.GREEN)
         return
     try:
         subprocess.run(  # nosec B603 B607
@@ -182,79 +180,52 @@ def _ensure_commit_hooks() -> None:
         )
     except subprocess.CalledProcessError:
         logger.debug("pre-commit install failed", exc_info=True)
-        typer.secho(
-            "⚠ pre-commit install failed",
-            fg=typer.colors.YELLOW,
-            err=True,
-        )
+        _workspace_notice(verbose, "⚠ pre-commit install failed", typer.colors.YELLOW)
         return
-    typer.secho(
-        "✓ pre-commit hooks installed",
-        fg=typer.colors.GREEN,
-        err=True,
-    )
+    _workspace_notice(verbose, "✓ pre-commit hooks installed", typer.colors.GREEN)
 
 
-def _check_git_initialized() -> None:
+def _check_git_initialized(verbose: bool = True) -> None:
     """Verify git repository status. Auto-initializes if not a repo.
-    Shows green notification if already a repo or freshly initialized,
-    yellow warning if git CLI not found, CLI lookup fails, or git init
-    fails.
+
+    The repair runs whether or not ``verbose`` is set; only the banner lines
+    are gated, so a silent ``resume`` still initializes a missing repository.
     Only checks the current working directory for a `.git` marker.
     Does NOT walk up parent directories."""
     try:
         git_path = shutil.which("git")
     except (OSError, AttributeError):
         logger.debug("git CLI lookup failed", exc_info=True)
-        typer.secho(
-            "⚠ Could not check for git CLI",
-            fg=typer.colors.YELLOW,
-            err=True,
-        )
+        _workspace_notice(verbose, "⚠ Could not check for git CLI", typer.colors.YELLOW)
         return
     if not git_path:
-        typer.secho(
-            "⚠ Git CLI not found",
-            fg=typer.colors.YELLOW,
-            err=True,
-        )
+        _workspace_notice(verbose, "⚠ Git CLI not found", typer.colors.YELLOW)
         return
     # Check if CWD itself contains a .git marker (directory or file)
     if (Path.cwd() / ".git").exists():
-        typer.secho(
-            "✓ Git repository detected",
-            fg=typer.colors.GREEN,
-            err=True,
-        )
+        _workspace_notice(verbose, "✓ Git repository detected", typer.colors.GREEN)
         return
     # No local .git found – auto-initialize
     try:
         subprocess.run(["git", "init"], check=True, capture_output=True)  # nosec B603 B607
     except subprocess.CalledProcessError:
         logger.debug("git init failed", exc_info=True)
-        typer.secho(
-            "⚠ git init failed",
-            fg=typer.colors.YELLOW,
-            err=True,
-        )
+        _workspace_notice(verbose, "⚠ git init failed", typer.colors.YELLOW)
         return
-    typer.secho(
-        "✓ Git repository initialized",
-        fg=typer.colors.GREEN,
-        err=True,
-    )
+    _workspace_notice(verbose, "✓ Git repository initialized", typer.colors.GREEN)
 
 
-def _run_health_checks(config_service: IConfigService) -> None:
+def _run_health_checks(config_service: IConfigService, verbose: bool = True) -> None:
     """Run each startup health check the workspace toggles allow.
 
     A disabled step is skipped without a warning, because the setting is the
-    user's own choice and needs no reminder.
+    user's own choice and needs no reminder. ``verbose`` is forwarded to both
+    helpers so a caller can run the repairs without their banner lines.
     """
     if config_service.get_setting("workspace.pre-commit", True):
-        _ensure_commit_hooks()
+        _ensure_commit_hooks(verbose=verbose)
     if config_service.get_setting("workspace.init", True):
-        _check_git_initialized()
+        _check_git_initialized(verbose=verbose)
 
 
 _GIT_PULL_TIMEOUT_SECONDS = 15
