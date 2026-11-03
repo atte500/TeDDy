@@ -33,6 +33,7 @@ class ReportParser:
         self._content = content
         self.run_summary: Dict[str, str] = {}
         self.action_logs: List[ActionLogEntry] = []
+        self.user_reply: Optional[str] = None
         self._parse()
 
     def _parse(self):
@@ -56,6 +57,8 @@ class ReportParser:
                 self._parse_action_logs(section)
             elif section.startswith("Resource Contents"):
                 self._parse_resource_contents(section)
+            elif section.startswith("User Reply"):
+                self._parse_user_reply(section)
 
     def _parse_action_logs(self, section: str):
         # Split by action headings (H3) - allow lowercase and different status styles
@@ -70,12 +73,15 @@ class ReportParser:
         # ````[lang]
         # content
         # ````
-        chunks = re.split(r"(?m)(?=^\s*###\s*\[)", section)
+        chunks = re.split(r"(?m)(?=^\s*###\s*(?:\[|`))", section)
         for chunk in chunks:
-            # Match the link destination if available, otherwise the text
+            # Match the link destination if available, otherwise the text,
+            # then fall back to a backtick-form heading.
             path_match = re.search(r"###\s*\[.*?\]\((.*?)\)", chunk)
             if not path_match:
                 path_match = re.search(r"###\s*\[(.*?)\]", chunk)
+            if not path_match:
+                path_match = re.search(r"###\s*`([^`]+)`", chunk)
 
             if path_match:
                 path = path_match.group(1).lstrip("/")
@@ -85,6 +91,14 @@ class ReportParser:
                 )
                 if content_match:
                     self.resource_contents[path] = content_match.group(2).strip()
+
+    def _parse_user_reply(self, section: str):
+        """Extracts fenced content from a top-level `## User Reply` section."""
+        content_match = re.search(
+            r"(`{3,})(?:\w+)?\s*\n(.*?)\n\s*\1", section, re.DOTALL
+        )
+        if content_match:
+            self.user_reply = content_match.group(2).strip()
 
     def extract_resource_contents(self) -> Dict[str, str]:
         """Returns the dictionary of Resource Contents found in the report."""
@@ -162,6 +176,8 @@ class ReportParser:
             subject = link_match.group(1).lstrip("/")
 
         if action_type in ["CREATE", "EDIT", "READ"]:
+            if subject.startswith("`") and subject.endswith("`") and len(subject) >= 2:
+                subject = subject[1:-1]
             params["File Path"] = subject
             if action_type == "READ":
                 params["Resource"] = subject

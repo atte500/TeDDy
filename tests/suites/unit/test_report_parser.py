@@ -70,3 +70,64 @@ def test_action_was_successful_helper(container):
     """)
     parser = ReportParser(report_content)
     assert parser.action_was_successful(0) is True
+
+
+def test_parse_backtick_form_action_subject(container):
+    """Backtick-form action subjects map to File Path without the backticks."""
+    report_content = dedent("""\
+        # Execution Report: Test Plan
+        - **Overall Status:** SUCCESS
+
+        ## Action Log
+
+        ### `CREATE`: `src/new_module.py`
+        - **Status:** SUCCESS
+        - **Description:** Creating the module.
+    """)
+
+    parser = ReportParser(report_content)
+
+    assert parser.action_logs[0].type == "CREATE"
+    assert parser.action_logs[0].params["File Path"] == "src/new_module.py"
+
+
+def test_parse_backtick_form_resource_heading(container):
+    """Backtick-form Resource Contents headings are parsed like link form."""
+    report_content = dedent("""\
+        # Execution Report: Test Plan
+        - **Overall Status:** SUCCESS
+
+        ## Action Log
+
+        ### `READ`: `test.txt`
+        - **Status:** SUCCESS
+
+        ## Resource Contents
+
+        ### `test.txt`
+        ```text
+        Hello from the file!
+        ```
+    """)
+
+    parser = ReportParser(report_content)
+
+    assert parser.extract_resource_contents()["test.txt"] == "Hello from the file!"
+
+
+def test_parse_user_reply_section(container):
+    """A top-level `## User Reply` section is read into `user_reply`."""
+    report_content = dedent("""\
+        # Execution Report: Test Plan
+        - **Overall Status:** SUCCESS
+
+        ## User Reply
+
+        ```
+        Yes, please proceed.
+        ```
+    """)
+
+    parser = ReportParser(report_content)
+
+    assert parser.user_reply == "Yes, please proceed."

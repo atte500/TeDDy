@@ -1,5 +1,5 @@
 # Slice: Report Formatting Normalization And MESSAGE Relocation
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** N/A
 - **Specs:** N/A (no permanent system invariant changed)
@@ -80,7 +80,7 @@ No unresolved unknowns. Every rendering decision — backticked paths, plain sub
 4. `[CONTRACT]` Placeholder fallbacks (`Execute Command`, `Research`), the `- **File Path:**` bullet, and the broken `### `MESSAGE`: [](/)` header with its `- **Status:**` line are removed once tests no longer expect them.
 
 ## Deliverables
-- [ ] **Harness** - Extend `ReportParser` to parse both link-form and backtick-form action subjects and Resource Contents headings, and to read MESSAGE content rendered under `## User Reply`.
+- [x] **Harness** - Extend `ReportParser` to parse both link-form and backtick-form action subjects and Resource Contents headings, and to read MESSAGE content rendered under `## User Reply`.
 - [ ] **Core** - Update `execution_report.md.j2`: backticked path headers, plain EXECUTE/RESEARCH subjects, removed File Path bullet, backticked Resource Contents headings, merged resource guards, Title Case `Expected Outcome`, fenced JSON for unrecognized details, and MESSAGE partitioned to a top-level `## User Reply` with `## Action Log` skipped when no non-MESSAGE actions exist.
 - [ ] **Migration** - Update affected report and MESSAGE test assertions and snapshot expectations to the new rendering.
 
@@ -88,6 +88,7 @@ No unresolved unknowns. Every rendering decision — backticked paths, plain sub
 - Change the parser first (accept both formats) so the suite stays green while the template flips.
 - Keep the `ReportParser` link-form parsing so older reports remain parseable in tests.
 - Partition `report.action_logs` into messages versus actions inside the template; do not change how the report model stores the log.
+- Harness as-built: `ReportParser` now exposes a `user_reply` attribute populated by `_parse_user_reply`, which reads the fenced block under a top-level `## User Reply` section. `_parse_resource_contents` splits on both link-form (`### [`) and backtick-form (`### `) headings and extracts the backticked path as a fallback. `_apply_subject_to_params` strips surrounding backticks from CREATE/EDIT/READ subjects. Link-form parsing is retained unchanged for older reports. New unit tests in `tests/suites/unit/test_report_parser.py` cover the backtick-form subject, backtick-form resource heading, and User Reply cases.
 
 ## Verification
 1. **Action-plan report rendering:**
