@@ -16,7 +16,6 @@ from teddy_executor.core.services.validation_rules.edit_matcher_heuristics impor
 LARGE_BLOCK_LINE_LIMIT = 20
 SUB_SAMPLE_RATIO_THRESHOLD = 0.7
 SUB_SAMPLE_PASS_THRESHOLD = 0.7
-CANDIDATE_EVALUATION_CAP = 5
 # A runner-up exists only once refinement yields two or more candidate ratios.
 MIN_RATIOS_FOR_RUNNER_UP = 2
 
@@ -123,7 +122,7 @@ def _evaluate_candidates(
     find_block: str,
     threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
 ) -> MatchResult:
-    """Evaluates candidates using difflib ratio, with sub-sampling and priority capping."""
+    """Evaluates every candidate, sub-sampling the ratio for large blocks."""
     num_find_lines = len(find_lines)
     scored_candidates = []
 
@@ -139,13 +138,11 @@ def _evaluate_candidates(
             score = matcher.ratio()
             scored_candidates.append((score, window))
 
-    # Sort by score descending and cap evaluation
+    # Rank the pool by coarse score, then refine every candidate so the
+    # reported candidate count is exact. The sort keeps the winner tie-break
+    # when two distinct windows promote to the same refined ratio.
     scored_candidates.sort(key=lambda x: x[0], reverse=True)
-    candidates_to_refine = scored_candidates[:CANDIDATE_EVALUATION_CAP]
-
-    # FALLBACK: pick first block if no candidates found
-    if not candidates_to_refine and file_lines:
-        candidates_to_refine = [(0.0, file_lines[:num_find_lines])]
+    candidates_to_refine = scored_candidates or [(0.0, file_lines[:num_find_lines])]
 
     return _refine_and_select_best(
         candidates_to_refine, find_lines, num_find_lines, find_block, threshold
