@@ -1,6 +1,9 @@
 import logging
 from types import SimpleNamespace
 from unittest.mock import Mock
+
+import pytest
+
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
 
@@ -434,3 +437,88 @@ def test_cost_failure_diagnostics_prefer_served_model_over_override(container, c
     assert cost == 0.0
     warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
     assert any("served-model" in r.getMessage() for r in warnings), caplog.text
+
+
+def test_get_completion_cost_prefers_byok_upstream_spend_over_waived_fee(container):
+    """A BYOK response's waived OpenRouter fee yields the real provider spend."""
+    adapter, fake = _adapter_with_cost_fake(container, cost=999.0)
+
+    response = SimpleNamespace(
+        _hidden_params={"response_cost": 0.0},
+        model="anthropic/claude-sonnet-4",
+        usage=SimpleNamespace(
+            prompt_tokens=1000,
+            completion_tokens=500,
+            cost=0.0,
+            cost_details={"upstream_inference_cost": 0.0061},
+        ),
+    )
+
+    cost = adapter.get_completion_cost(response)
+
+    assert cost == pytest.approx(0.0061)
+    assert fake.completion_cost_calls == []
+    assert response._teddy_cost_recorded is True
+
+
+def test_get_completion_cost_adds_byok_spend_and_charged_fee(container):
+    """When OpenRouter also charges its fee, the turn cost sums spend and fee."""
+    adapter, fake = _adapter_with_cost_fake(container, cost=999.0)
+
+    response = SimpleNamespace(
+        _hidden_params={
+            "additional_headers": {"llm_provider-x-litellm-response-cost": 0.0004}
+        },
+        model="anthropic/claude-sonnet-4",
+        usage=SimpleNamespace(
+            cost_details={"upstream_inference_cost": 0.0061},
+        ),
+    )
+
+    cost = adapter.get_completion_cost(response)
+
+    assert cost == pytest.approx(0.0065)
+    assert fake.completion_cost_calls == []
+
+
+@pytest.mark.parametrize(
+    "usage",
+    [
+        pytest.param(None, id="usage-absent"),
+        pytest.param(
+            SimpleNamespace(prompt_tokens=1000, completion_tokens=500),
+            id="cost-details-absent",
+        ),
+        pytest.param(SimpleNamespace(cost_details=None), id="cost-details-none"),
+        pytest.param(SimpleNamespace(cost_details=Mock()), id="cost-details-mock"),
+        pytest.param(SimpleNamespace(cost_details={}), id="upstream-key-absent"),
+        pytest.param(
+            SimpleNamespace(cost_details={"upstream_inference_cost": 0.0}),
+            id="upstream-zero",
+        ),
+        pytest.param(
+            SimpleNamespace(cost_details={"upstream_inference_cost": None}),
+            id="upstream-none",
+        ),
+        pytest.param(
+            SimpleNamespace(cost_details={"upstream_inference_cost": float("inf")}),
+            id="upstream-infinite",
+        ),
+    ],
+)
+def test_get_completion_cost_keeps_reported_fee_without_upstream_spend(
+    container, usage
+):
+    """Absent or non-positive upstream spend leaves the reported fee authoritative."""
+    adapter, fake = _adapter_with_cost_fake(container, cost=999.0)
+
+    response = SimpleNamespace(
+        _hidden_params={"response_cost": 0.0105},
+        model="anthropic/claude-sonnet-4",
+        usage=usage,
+    )
+
+    cost = adapter.get_completion_cost(response)
+
+    assert cost == 0.0105
+    assert fake.completion_cost_calls == []

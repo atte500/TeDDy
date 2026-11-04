@@ -323,6 +323,42 @@ class LiteLLMAdapter(ILlmClient):
             return 0.0
 
     def _reported_cost(self, completion_response: Any) -> Optional[float]:
+        """Returns the cost the response reports, preferring real spend.
+
+        OpenRouter reports two figures on a BYOK request: ``usage.cost``, the
+        fee it charges for the request (``0`` while the monthly free allowance
+        lasts), and ``usage.cost_details.upstream_inference_cost``, the spend the
+        user's own provider actually billed. The upstream spend is the real
+        cost, so it wins whenever it is positive, with any reported fee added on
+        top when OpenRouter also charged one. Every other response falls through
+        to the reported cost from ``_hidden_params``, so non-BYOK and native
+        providers keep their existing behavior unchanged.
+        """
+        upstream = self._upstream_inference_cost(completion_response)
+        if upstream is not None and upstream > 0.0:
+            fee = self._hidden_reported_cost(completion_response)
+            return upstream + (fee if fee else 0.0)
+        return self._hidden_reported_cost(completion_response)
+
+    def _upstream_inference_cost(self, completion_response: Any) -> Optional[float]:
+        """Returns OpenRouter's BYOK upstream spend, or None when absent.
+
+        OpenRouter documents ``usage.cost_details.upstream_inference_cost`` as
+        the spend charged by the user's upstream provider, reported only for
+        BYOK requests (``0`` or ``null`` otherwise). litellm preserves the field
+        as a plain ``dict`` on the response usage, so a non-dict ``cost_details``
+        is treated as absent. That also keeps an auto-specced test double from
+        being mistaken for real spend. A non-finite value is absent too.
+        """
+        usage = getattr(completion_response, "usage", None)
+        if usage is None:
+            return None
+        details = getattr(usage, "cost_details", None)
+        if not isinstance(details, dict):
+            return None
+        return self._finite_cost(details.get("upstream_inference_cost"))
+
+    def _hidden_reported_cost(self, completion_response: Any) -> Optional[float]:
         """Returns the cost the provider reported on the response, if any.
 
         litellm writes the vendor-reported spend to
