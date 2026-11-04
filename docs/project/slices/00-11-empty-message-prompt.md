@@ -91,6 +91,7 @@ Affected components, migrated in non-breaking steps.
 - `SessionLifecycleManager.resume` resolves a present-but-blank `message` in the EMPTY and COMPLETE_TURN branches only, through a shared `_resolve_blank_message(message, interactive)` helper called before any append/transition/planning. An absent (`None`) or non-blank message passes through unchanged. A present-but-blank message (`""` / whitespace-only) normalizes to `None` when non-interactive, so the run resumes against context without blocking. When interactive, it prompts `"What are we working on?"` (matching the start-boundary literal) and returns a `terminated` flag on an empty/whitespace reply, so the branch returns `(session_name, None)` before any side effect (the abort idiom).
 - The PENDING awaiting-reply (`_consume_awaiting_reply`) and pending non-awaiting branches are untouched.
 - New coverage: `tests/suites/unit/core/services/test_session_lifecycle_blank_message.py` (12 tests) pins EMPTY/COMPLETE_TURN interactive prompting, interactive empty-reply termination, non-interactive normalization to `None`, and absent/non-blank pass-through guards.
+- Superseded: the interactive prompt now reads `"What would you like to do next?"`, deliberately distinct from the start-boundary opening prompt, so a resumed session does not repeat the new-session question.
 - Full suite green after the change: 2137 passed, 5 skipped via `make test`.
 
 

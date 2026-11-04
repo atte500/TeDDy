@@ -22,9 +22,9 @@ from teddy_executor.core.utils.markdown import embed_in_fence
 logger = logging.getLogger(__name__)
 
 # The prompt shown when a resume injects a present-but-blank `-m` and the run is
-# interactive. Mirrors the start-boundary opening prompt so both entry points
-# present the same question.
-_NEXT_INSTRUCTION_PROMPT = "What are we working on?"
+# interactive. Deliberately distinct from the start-boundary opening prompt:
+# the user continues an existing session rather than opening a new one.
+_NEXT_INSTRUCTION_PROMPT = "What would you like to do next?"
 
 if TYPE_CHECKING:
     from teddy_executor.core.domain.models.planning_ports import (

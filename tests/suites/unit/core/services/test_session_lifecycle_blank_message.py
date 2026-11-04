@@ -35,7 +35,7 @@ from tests.harness.setup.mocking import register_mock
 SESSION_ROOT = ".teddy/sessions/20260417_120000-feature"
 TURN01 = f"{SESSION_ROOT}/01"
 TURN02 = f"{SESSION_ROOT}/02"
-PROMPT = "What are we working on?"
+PROMPT = "What would you like to do next?"
 
 
 @pytest.fixture

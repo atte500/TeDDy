@@ -234,6 +234,12 @@ Resume with additional instructions:
 teddy resume -m "your next instruction"
 ```
 
+Pass an empty message to be prompted instead, so you can write a multi-line instruction in your editor (press `e` at the prompt):
+
+```bash
+teddy resume -m ""
+```
+
 ### Optional Flags
 
 | Parameters                 | Short | Description                                                                                                                                   |
