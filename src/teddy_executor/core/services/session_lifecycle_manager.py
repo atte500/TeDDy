@@ -109,6 +109,7 @@ class SessionLifecycleManager:
                     project_context=project_context,
                     pipeline=pipeline,
                 )
+                self._record_reply_on_resumed_turn(turn_path, message)
             return (session_name, report)
 
         if state in (SessionState.EMPTY, SessionState.COMPLETE_TURN):
@@ -236,6 +237,33 @@ class SessionLifecycleManager:
         return bool(turn_meta.get("awaiting_reply")) or (
             plan is not None and plan.is_communication_turn()
         )
+
+    def _record_reply_on_resumed_turn(
+        self, turn_path: str, message: Optional[str]
+    ) -> None:
+        """Records an injected reply on a re-executed pending turn's report.
+
+        The pending plan was unparseable, so the reply reached neither
+        ``plan.metadata["user_request"]`` nor the structural-failure report
+        the replan wrote. That report exists once ``execute`` returns (the
+        replan finalizes the turn synchronously), so append the smart-fenced
+        ``## User Request`` section and re-run preservation to admit the
+        turn to the prune-exempt ``session.context`` -- the pair the
+        ``EMPTY`` branch already uses.
+
+        A bare re-execute (no reply) and a missing report (execution aborted
+        before finalization) are both no-ops, so the bare path stays
+        byte-identical.
+        """
+        if not message:
+            return
+        report_path = self._session_service.to_root_relative(
+            Path(turn_path), "report.md"
+        )
+        if not self._file_system_manager.path_exists(report_path):
+            return
+        self._append_user_request(turn_path, message)
+        self._session_service.preserve_turn_in_session_context(Path(turn_path))
 
     def _append_message_to_previous_turn(self, turn_path: str, message: str) -> None:
         """Appends the injected reply to the previous turn's report if present.

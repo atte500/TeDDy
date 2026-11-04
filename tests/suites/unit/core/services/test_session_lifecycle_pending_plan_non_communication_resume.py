@@ -15,12 +15,19 @@ orchestrator.execute(plan=plan, plan_path=plan_path, ...) WITHOUT message=
 plan.metadata["user_request"] and discard a TUI harvest). An unparseable
 pending plan falls back to the existing re-execute path.
 
+An unparseable pending plan still re-executes WITHOUT a seeded plan, but the
+reply is no longer dropped: once `execute` returns, the structural replan has
+written the resumed turn's failure report, so the reply is appended to it as a
+`## User Request` section and the turn is re-evaluated for preservation into
+the prune-exempt `session.context`.
+
 Controls pinned here (must stay green): a resume with NO injected reply
-re-executes the pending turn unchanged, and an unparseable pending plan
-degrades gracefully to that same re-execute path.
+re-executes the pending turn unchanged, and an unparseable pending plan with
+no report on disk degrades gracefully without recording anything.
 """
 
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import cast
 from unittest.mock import Mock, create_autospec
 
@@ -54,6 +61,10 @@ from tests.harness.setup.mocking import register_mock
 TURN03 = ".teddy/sessions/20261002_152331-follow-up/03"
 REPLY = "next instruction"
 PLAN_PATH = f"{TURN03}/plan.md"
+REPORT_PATH = f"{TURN03}/report.md"
+VALIDATION_REPORT = (
+    "# Execution Report: Follow-up\n- **Overall Status:** Validation Failed\n"
+)
 
 
 def _action_plan() -> Plan:
@@ -112,6 +123,15 @@ def _arrange_pending_action_turn(manager) -> None:
         TURN03,
     )
     manager._session_service.load_turn_meta.return_value = {"agent_name": "assistant"}
+
+
+def _arrange_resumed_turn_report(manager, present: bool) -> None:
+    """The structural replan's report either exists or does not after execute."""
+    manager._file_system_manager.path_exists.return_value = present
+    manager._file_system_manager.read_file.return_value = VALIDATION_REPORT
+    manager._session_service.to_root_relative.side_effect = lambda turn_dir, filename: (
+        f"{Path(turn_dir).as_posix()}/{filename}"
+    )
 
 
 class TestPendingPlanNonCommunicationResume:
@@ -173,12 +193,13 @@ class TestPendingPlanNonCommunicationResume:
         assert plan.metadata.get("user_request") is None
         assert result[0] == "follow-up"
 
-    def test_unparseable_plan_falls_back_to_reexecute(self, container) -> None:
-        # Arrange: the pending plan cannot be parsed.
+    def test_unparseable_plan_records_reply_on_resumed_turn(self, container) -> None:
+        # Arrange: the pending plan cannot be parsed; the replan wrote a report.
         plan = _action_plan()
         manager = _build_manager(container, plan)
         manager._plan_parser.parse.side_effect = InvalidPlanError("bad plan")
         _arrange_pending_action_turn(manager)
+        _arrange_resumed_turn_report(manager, present=True)
         orchestrator = _orchestrator_with_report()
 
         # Act
@@ -189,9 +210,69 @@ class TestPendingPlanNonCommunicationResume:
             message=REPLY,
         )
 
-        # Assert: graceful fallback to the re-execute path (no seed, no crash).
-        orchestrator.execute.assert_called_once()
+        # Assert: the fallback re-execute is unchanged (no seeded plan)...
         execute_kwargs = orchestrator.execute.call_args.kwargs
         assert execute_kwargs["plan_path"] == PLAN_PATH
         assert execute_kwargs.get("plan") is None
+        # ...and the reply is recorded on the report the replan wrote.
+        written = manager._file_system_manager.find_call_by_path(
+            "write_file", REPORT_PATH
+        )
+        content = written.args[1]
+        assert "Validation Failed" in content
+        assert "## User Request" in content
+        assert REPLY in content
+        # Assert: the augmented turn is promoted into the prune-exempt scope.
+        preserve = manager._session_service.preserve_turn_in_session_context
+        preserve.assert_called_once_with(Path(TURN03))
+        assert result[0] == "follow-up"
+
+    def test_unparseable_plan_skips_recording_when_report_absent(
+        self, container
+    ) -> None:
+        # Arrange: the plan cannot be parsed and no report exists after execute
+        # returned (execution aborted before finalization).
+        plan = _action_plan()
+        manager = _build_manager(container, plan)
+        manager._plan_parser.parse.side_effect = InvalidPlanError("bad plan")
+        _arrange_pending_action_turn(manager)
+        _arrange_resumed_turn_report(manager, present=False)
+        orchestrator = _orchestrator_with_report()
+
+        # Act
+        result = manager.resume(
+            session_name="follow-up",
+            orchestrator=orchestrator,
+            interactive=False,
+            message=REPLY,
+        )
+
+        # Assert: the recording step is guarded on file existence, not asserted.
+        orchestrator.execute.assert_called_once()
+        manager._file_system_manager.write_file.assert_not_called()
+        manager._session_service.preserve_turn_in_session_context.assert_not_called()
+        assert result[0] == "follow-up"
+
+    def test_unparseable_plan_without_reply_stays_byte_identical(
+        self, container
+    ) -> None:
+        # Arrange: the plan cannot be parsed and no reply is injected.
+        plan = _action_plan()
+        manager = _build_manager(container, plan)
+        _arrange_pending_action_turn(manager)
+        _arrange_resumed_turn_report(manager, present=True)
+        orchestrator = _orchestrator_with_report()
+
+        # Act
+        result = manager.resume(
+            session_name="follow-up",
+            orchestrator=orchestrator,
+            interactive=False,
+        )
+
+        # Assert: the bare re-execute path records nothing and promotes nothing.
+        execute_kwargs = orchestrator.execute.call_args.kwargs
+        assert execute_kwargs.get("plan") is None
+        manager._file_system_manager.write_file.assert_not_called()
+        manager._session_service.preserve_turn_in_session_context.assert_not_called()
         assert result[0] == "follow-up"

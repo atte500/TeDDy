@@ -1,5 +1,5 @@
 # Slice: Persist Injected Resume Messages On Unparseable Pending Plans
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** None (ad-hoc slice)
 - **Depends On:** None
 - **Specs:** None
@@ -40,14 +40,15 @@ And the resumed turn's plan.md and report.md are listed in session.context
 - **Parseable pending plan**: If the pending plan parses, then `plan.metadata["user_request"]` is set and the plan is executed by object, because that arm is untouched.
 
 ## Key Unknowns
-- [ ] [Domain] Replan delivery: Should the injected message also seed the structural replan's feedback so the successor plan acts on it, or is recording-only parity sufficient? Design Sensitivity: if delivery is in scope → `trigger_replan` and `IRunPlanUseCase` gain a message parameter and the slice grows to a second production file; if not → the change stays inside `SessionLifecycleManager` and the message is recorded without shaping the next plan.
+- [x] [Domain] Replan delivery: Should the injected message also seed the structural replan's feedback so the successor plan acts on it, or is recording-only parity sufficient? Design Sensitivity: if delivery is in scope → `trigger_replan` and `IRunPlanUseCase` gain a message parameter and the slice grows to a second production file; if not → the change stays inside `SessionLifecycleManager` and the message is recorded without shaping the next plan.
+  **Resolved (2026-11-04):** Recording-only parity. The message is appended to the resumed turn's report after `execute` returns; the structural replan runs unchanged, so `trigger_replan`, `IRunPlanUseCase`, and `SessionReplanner` are untouched.
 
 ## Impact
 1. `[EXPAND]` `SessionLifecycleManager.resume` — the `PENDING_PLAN` parse-failure arm gains a post-execute recording step. The `resume` signature and `IRunPlanUseCase.execute` are unchanged, so no caller or contract test is affected.
 
 ## Deliverables
 
-- [ ] **Core** - Record an injected message as a `## User Request` section on the resumed turn's structural-failure report after the synchronous replan writes it, then re-run preservation so the turn enters `session.context`.
+- [x] **Core** - Record an injected message as a `## User Request` section on the resumed turn's structural-failure report after the synchronous replan writes it, then re-run preservation so the turn enters `session.context`.
 
 ## Implementation Notes
 - Reuse `_append_user_request` and `SessionService.preserve_turn_in_session_context` — the pair the `EMPTY` branch already uses — guarded on the resumed `report.md` existing after `execute` returns.
@@ -55,6 +56,9 @@ And the resumed turn's plan.md and report.md are listed in session.context
 - Recording-only parity: the parseable arm sets `plan.metadata["user_request"]` without altering the plan's actions, so this arm records the message without altering the replan. Delivering the message to the replanner is the open `[Domain]` unknown, not part of this slice.
 - No change is needed to the successor's `turn.context`: `ContextService._collect_items` deduplicates by path and keeps the promoted `Session` entry over the `Turn` duplicate.
 - `SessionLifecycleManager` and the structural-replan arm are not yet listed in the `ARCHITECTURE.md` component map, so this slice links no component doc.
+- **As built:** `SessionLifecycleManager._record_reply_on_resumed_turn(turn_path, message)` implements the step and is called on the parse-failure arm only, immediately after `orchestrator.execute(plan_path=...)` returns. The parseable arm and the awaiting-reply branch are untouched. Guards run in order: falsy message → return; missing `report.md` (resolved via `to_root_relative`) → return; then `_append_user_request` and `preserve_turn_in_session_context`. The missing-report guard is a plain `return` rather than an assertion because `_append_user_request` asserts on the same file and a partially aborted run is a legitimate no-op, not a contract violation.
+- **Test shape:** the old `test_unparseable_plan_falls_back_to_reexecute` was replaced by three focused cases: `test_unparseable_plan_records_reply_on_resumed_turn` (write at the report path, `Validation Failed` retained, `## User Request` holding the reply, promotion called once with `Path(TURN03)`), `test_unparseable_plan_skips_recording_when_report_absent`, and `test_unparseable_plan_without_reply_stays_byte_identical`. The fallback itself stays pinned (no seeded plan) inside the recording case plus the existing `test_no_message_reexecutes_unchanged`.
+- **Evidence:** Red produced exactly one failure — `AssertionError: No write_file call found for path: .teddy/sessions/20261002_152331-follow-up/03/report.md` with `Available paths: []`. Green produced `9 passed` across the pending-plan and resume-persistence modules, and the full suite produced `2203 passed, 5 skipped`.
 
 ## Verification
 1. **Malformed pending plan, mid-session:**
