@@ -159,12 +159,16 @@ def _refine_and_select_best(
     find_block: str,
     threshold: float = DEFAULT_SIMILARITY_THRESHOLD,
 ) -> MatchResult:
-    """Refines top candidates and returns the decision record for the best match."""
+    """Refines candidates and returns the decision record for the best match.
+
+    The verdict follows the refined ambiguity rule (see
+    ``_decide_refined_ambiguity``); an intra-window ambiguity reported by the
+    substring boost on the winning window also blocks the edit.
+    """
     best_ratio = -1.0
     best_match_lines: List[str] = []
-    is_ambiguous = False
+    winner_is_ambiguous = False
     best_offset = 0
-    ratio_calls = 0
     refined_ratios: List[float] = []
 
     for score, window in candidates:
@@ -182,18 +186,15 @@ def _refine_and_select_best(
         )
 
         refined_ratios.append(ratio)
-        ratio_calls += 1
         if ratio > best_ratio:
             best_ratio = ratio
             best_match_lines = current_match_lines
-            is_ambiguous = current_is_ambiguous
+            winner_is_ambiguous = current_is_ambiguous
             best_offset = current_offset
-        elif ratio == best_ratio and ratio > 0 and ratio >= threshold:
-            is_ambiguous = True
 
     if os.environ.get("TEDDY_DEBUG"):
         print(f"Top Candidates Refined: {len(candidates)}")
-        print(f"Ratio Calls: {ratio_calls}")
+        print(f"Ratio Calls: {len(refined_ratios)}")
 
     runner_up = (
         sorted(refined_ratios, reverse=True)[1]
@@ -201,6 +202,9 @@ def _refine_and_select_best(
         else 0.0
     )
     candidate_count = sum(1 for ratio in refined_ratios if ratio >= threshold)
+    is_ambiguous = winner_is_ambiguous or _decide_refined_ambiguity(
+        refined_ratios, threshold
+    )
     return MatchResult(
         "".join(best_match_lines),
         best_ratio,
@@ -209,6 +213,23 @@ def _refine_and_select_best(
         runner_up,
         candidate_count,
     )
+
+
+def _decide_refined_ambiguity(refined_ratios: List[float], threshold: float) -> bool:
+    """Applies the refined ambiguity rule to the refined candidate ratios.
+
+    A FIND block is ambiguous when two candidates tie at or above the threshold,
+    or when a sub-verbatim winner (``top < 1.0``, i.e. no verbatim or
+    indentation-only promotion) still has a runner-up at or above the threshold.
+    A sub-threshold winner is never ambiguous.
+    """
+    if not refined_ratios:
+        return False
+    ordered = sorted(refined_ratios, reverse=True)
+    top = ordered[0]
+    second = ordered[1] if len(ordered) > 1 else 0.0
+    ties = sum(1 for ratio in ordered if ratio == top)
+    return (ties > 1 and top >= threshold) or (top < 1.0 and second >= threshold)
 
 
 def _apply_indentation_bonus(

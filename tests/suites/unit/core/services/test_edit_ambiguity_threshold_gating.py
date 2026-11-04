@@ -1,22 +1,18 @@
 """Regression coverage for EDIT ambiguity detection gated on the effective threshold.
 
-The edit matcher previously flagged *any* tie between candidate windows as
-"ambiguous" regardless of how low the similarity score was. Because the
-validator checked ambiguity *before* the threshold, a FIND block that barely
-matched anything produced a misleading:
+The matcher once flagged *any* tie between candidate windows as ambiguous
+regardless of how low the similarity score was, so a FIND block that barely
+matched anything reported "ambiguous" instead of the actionable "could not be
+located" error with its Closest Match Diff. The verdict now comes from the
+matcher decision record:
 
-    The `FIND` block is ambiguous
+  * a tie below the effective threshold (or any winner below it) is "not found";
+  * a tie at or above the effective threshold is "ambiguous", as is a
+    sub-verbatim winner whose runner-up also clears the threshold.
 
-error with no diff guidance, instead of the actionable:
-
-    The `FIND` block could not be located
-
-error that includes the Closest Match Diff.
-
-These tests pin the corrected contract:
-  * a tie below the effective threshold is treated as "not found";
-  * a tie at or above the effective threshold is treated as "ambiguous";
-and they guard against regressing to a hard-coded threshold.
+The three identical windows here tie at the same ratio, so they classify the
+same under both the tie-only and the refined rules; these tests pin the
+threshold gating and guard against a hard-coded threshold.
 """
 
 from teddy_executor.core.domain.models.plan import ValidationError
