@@ -53,26 +53,26 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 **Design Sensitivity:** For every unknown, record a one-line Design Sensitivity stating how the design reacts to each resolution (e.g., "if this resolves as X → contracts hold; if Y → this port/DTO changes").
 
 ## Impact
-Map affected components using non-breaking steps (expand -> migrate -> contract) to protect existing consumers.
+Map affected components using non-breaking steps (extend -> migrate -> prune) to protect existing consumers.
 
 **Format:**
 1. `[NEW]` `ComponentOrModule` — Create new boundary or component.
-2. `[EXPAND]` `ComponentOrModule.method` — Additive, non-breaking contract extension alongside existing code.
-3. `[MIGRATE]` `ConsumerComponent` — Transition consumers one by one to use the expanded contract.
-4. `[CONTRACT]` `ObsoleteComponentOrMethod` — Safely remove deprecated methods, shims, or dead code once all callers have migrated.
+2. `[EXTEND]` `ComponentOrModule.method` — Additive, non-breaking contract extension alongside existing code.
+3. `[MIGRATE]` `ConsumerComponent` — Transition consumers one by one to use the extended contract.
+4. `[PRUNE]` `ObsoleteComponentOrMethod` — Safely prune deprecated methods, shims, or dead code once all callers have migrated.
 
 ## Deliverables
 
 **Types:**
 - **Env:** Declarative tooling, build files, CI workflows, hooks, or package dependencies.
-- **Interface:** Signatures, ports, interfaces, DTOs, and schemas. Expands shared contracts additively so existing callers remain unbroken.
+- **Interface:** Signatures, ports, interfaces, DTOs, and schemas. Extends shared contracts additively so existing callers remain unbroken.
 - **Harness:** Shared test infrastructure (drivers, observers, in-memory fakes, and fixtures).
 - **Wiring:** Outermost boundary tracer bullet connecting entry points with skeleton responses using defined interfaces and harness doubles.
 - **Core:** Domain entities, business rules, workflows, and algorithmic invariants driven by unit tests.
 - **Adapter:** Real infrastructure implementations (filesystem, CLI, subprocess, database, external protocols) driven by integration tests.
-- **Migration:** Adapting existing callers across the codebase to use newly expanded contracts, updating their caller tests.
+- **Migration:** Adapting existing callers across the codebase to use newly extended contracts, updating their caller tests.
 - **Refactor:** Improving code design without altering behavior. Requires no new tests; existing tests remain green.
-- **Cleanup:** Contracting shared seams by removing deprecated methods, dead code, and temporary shims once callers have migrated.
+- **Cleanup:** Pruning shared seams, deprecated methods, dead code, and temporary shims once callers have migrated.
 
 **Order:** Order deliverables to keep all tests passing at every commit (`make test`). Include Env before Interface only when tooling or package prerequisites must exist for tests to run:
 `(Env) -> Interface -> Harness -> Wiring -> Core -> Adapter -> Migration -> Refactor -> Cleanup`

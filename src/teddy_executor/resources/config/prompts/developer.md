@@ -19,7 +19,7 @@ Follow these phases and steps in order to systematically deliver verified progre
 3. **Plan Initialization / Audit:**
    If no slice exists, create one following the vertical slice template and path conventions informed by discovery findings, linking any reference files, placing Interface first (or preceded only by prerequisite Env), followed by Harness and Wiring as the tracer bullet, and run `make commit` to version control the new plan.
 
-   If a slice already exists, audit target components via `git grep`. Verify that all deliverables keep all tests passing at every commit. If a deliverable attempts a breaking signature change to a Shared Seam (git grep count greater than 1) without a migration plan, immediately edit the slice to re-partition the work into non-breaking steps (expand -> migrate -> contract). Decompose any item touching more than one logical change into smaller atomic deliverables. Verify Interface is placed first (or preceded only by prerequisite Env), followed by Harness and Wiring. If the audit required structural plan changes, run `make commit` to record them before starting work.
+   If a slice already exists, audit target components via `git grep`. Verify that all deliverables keep all tests passing at every commit. If a deliverable attempts a breaking signature change to a Shared Seam (git grep count greater than 1) without a migration plan, immediately edit the slice to re-partition the work into non-breaking steps (extend -> migrate -> prune). Decompose any item touching more than one logical change into smaller atomic deliverables. Verify Interface is placed first (or preceded only by prerequisite Env), followed by Harness and Wiring. If the audit required structural plan changes, run `make commit` to record them before starting work.
 4. **Activate Slice & Mark Deliverable:**
    Set slice Status to In Progress. Identify the next uncompleted deliverable in the vertical slice and mark it in progress using `[▶]`. Do not commit this status change separately; commit it alongside the deliverable in the Delivery phase. Batching deliverables into one cycle execution is strictly forbidden.
 
@@ -37,7 +37,7 @@ Follow these phases and steps in order to systematically deliver verified progre
    5. Adapter (Integration, `tests/suites/integration/`): Real infrastructure implementations (filesystem, CLI, subprocess, database, external protocols) tested against local resources.
    6. Migration: Adapting existing consumers to new contracts. Do not write new behavioral test files; update existing caller tests to match revised signatures while preserving coverage.
    7. Refactor: Improving internal code design without altering behavior. Do not write new tests; the full existing test suite must remain green throughout.
-   8. Cleanup: Contracting shared seams by removing deprecated methods, dead code, or temporary shims once callers have migrated. Do not write new tests; delete superseded tests and confirm the remaining suite passes.
+   8. Cleanup: Pruning shared seams, deprecated methods, dead code, or temporary shims once callers have migrated. Do not write new tests; delete superseded tests and confirm the remaining suite passes.
    9. Env (Declarative / Tooling): For purely declarative files (Makefile, CI workflows, hooks, .gitignore), do not write test scripts. The Red step executes the command directly to observe failure or absence; the Green step applies the declarative change and confirms success.
 
    For deliverables requiring tests (Wiring, Interface, Harness, Core, Adapter), create or locate the appropriate test file. Set up the test function using the Test Harness (Setup: Fixtures and Arrange, Driver: Act, Observer: Assert). Use parameterized tests for data permutations.
@@ -77,7 +77,9 @@ Follow these phases and steps in order to systematically deliver verified progre
    - **Apply SRP:**
      ensure each class, function, and module has exactly one reason to change. Extract distinct responsibilities into cohesive helpers.
    - **Clean Code:**
-     simplify logic, improve readability, and update or improve confusing comments rather than leaving stale text.
+     simplify logic, eliminate intermediate variables, and improve readability without altering behavior.
+   - **Comment Hygiene:**
+     remove obsolete comments, dead code, and ticket references. Retain only comments explaining non-obvious intent or domain invariants.
    - **Structural Refactoring:**
      if refactoring requires cross-cutting or structural changes outside the slice scope, record it in the roadmap in `docs/project/PROJECT.md` rather than attempting out-of-scope rewrites.
 4. **Loop Exit:**

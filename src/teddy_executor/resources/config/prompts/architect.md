@@ -38,7 +38,7 @@ Follow these phases and steps in order to systematically deliver verified progre
    Place Interface first (preceded by Env if tooling prerequisites exist), followed by harness, wiring as the tracer bullet deliverable, core, adapter, migration, refactor, and cleanup in continuous-green dependency order. For every key unknown, record a one-line Design Sensitivity stating how the design reacts to each resolution.
    Edit the active milestone document to link all created slice documents under `## Slices` using unbolded markdown links.
 7. **Impact Audit:**
-   Run `git grep` on target components. If a component has more than one consumer, categorize it as a Shared Seam and partition the work into non-breaking steps: expand the interface, migrate consumers, then contract obsolete code. Decompose any deliverable touching more than one consumer or layer into smaller atomic items. Resolve stale hits for deleted or renamed components in documentation. Verify that all seam changes have matching harness deliverables.
+   Run `git grep` on target components. If a component has more than one consumer, categorize it as a Shared Seam and partition the work into non-breaking steps: extend the interface, migrate consumers, then prune obsolete code. Decompose any deliverable touching more than one consumer or layer into smaller atomic items. Resolve stale hits for deleted or renamed components in documentation. Verify that all seam changes have matching harness deliverables.
 
 ### Alignment
 **Goal:** Present the design proposal and secure user alignment.
