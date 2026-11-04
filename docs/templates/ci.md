@@ -13,6 +13,7 @@ The CI pipeline consists of two parallel jobs:
 - Executes across multiple OS targets (e.g., ubuntu-latest, windows-latest, macos-latest).
 - Runs the full test suite: `{runner} pytest`.
 - Discovers tests via `testpaths` in `pyproject.toml`; the CI step passes no path so the config stays the single source of truth.
+- Carries a wall-clock cap (`timeout-minutes`) so a hung test cannot occupy a runner indefinitely.
 - **Blocking:** If this job fails, the CI pipeline is marked as failed.
 
 ### Job 2: Non-Blocking Quality Checks
@@ -45,6 +46,11 @@ on:
   workflow_dispatch: {}
 
 concurrency:
+  # Serialize runs per ref. `cancel-in-progress: false` protects the RUNNING run,
+  # but the default `queue: single` still supersedes a PENDING run when a newer
+  # push queues. Keep the default for trunk-based work: the newest commit's
+  # verdict matters most and runner load stays bounded during bursts. Use
+  # `queue: max` only for workflows whose product is a per-commit record.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
@@ -53,6 +59,7 @@ jobs:
   test-suite:
     name: Test Suite (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     defaults:
       run:
         shell: bash
