@@ -32,6 +32,7 @@ The canonical domain vocabulary for TeDDy. All documentation, component names, t
 - **Turn Context (`turn.context`):** The dynamic working set of file paths scoped strictly to the current turn, updated forward-looking by `READ` actions.
 - **Action:** A single atomic operation within a plan (`CREATE`, `EDIT`, `EXECUTE`, `READ`, `RESEARCH`).
 - **Communicating Turn:** A turn that outputs a `## Message` instead of an `## Action Plan`, used for approval gates, user questions, or handoffs.
+- **Candidate:** A window of consecutive file lines seeded by the matcher's heuristic tiers and scored against a FIND block; the ambiguity count is the number of refined candidates at or above the similarity threshold.
 
 ---
 
@@ -70,6 +71,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **IWebSearcher**              | Defines the outbound port for performing web searches and returning structured results.                                                             | [IWebSearcher](./core/ports/outbound/web_searcher.md)                            |
 | **ActionDispatcher**          | A service that resolves and executes a single action, delegating to the `ActionFactory`.                                                            | [ActionDispatcher](./core/services/action_dispatcher.md)                         |
 | **ActionFactory**             | A factory service that creates validated `Action` domain objects from raw plan data.                                                                | [ActionFactory](./core/services/action_factory.md)                               |
+| **EditMatcher**               | Heuristic block matcher that scores candidate windows and decides EDIT ambiguity.                                                                    | [EditMatcher](./core/services/edit_matcher.md)                                  |
 | **EditSimulator**             | A pure service for applying a sequence of FIND/REPLACE edits to a string in memory.                                                                 | [EditSimulator](./core/services/edit_simulator.md)                               |
 | **ContextService**            | The service that implements `IGetContextUseCase` by orchestrating outbound ports to gather and format project context.                              | [ContextService](./core/services/context_service.md)                             |
 | **ExecutionOrchestrator**     | The primary service that implements `IRunPlanUseCase`, managing the step-by-step execution of a parsed `Plan` object.                               | [ExecutionOrchestrator](./core/services/execution_orchestrator.md)               |

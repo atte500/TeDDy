@@ -3,8 +3,8 @@
 - **Milestone:** N/A (ad-hoc slice)
 - **Depends On:** N/A
 - **Specs:** N/A
-- **Prototype:** N/A
-- **Component Docs:** [EditSimulator](/docs/architecture/core/services/edit_simulator.md), [PlanValidator](/docs/architecture/core/services/plan_validator.md)
+- **Prototype:** [spikes/prototypes/edit-ambiguity](/spikes/prototypes/edit-ambiguity/)
+- **Component Docs:** [EditMatcher](/docs/architecture/core/services/edit_matcher.md), [EditSimulator](/docs/architecture/core/services/edit_simulator.md), [PlanValidator](/docs/architecture/core/services/plan_validator.md)
 - **Scope Slug:** `edit-ambiguity`
 
 ## Goal
@@ -12,25 +12,32 @@ Stop an EDIT from silently landing on the wrong block when the winning FIND matc
 
 ## Context
 
-- `edit_matcher._refine_and_select_best`: the candidate loop sets `is_ambiguous = True` only when `ratio == best_ratio and ratio > 0 and ratio >= threshold`. A winner at `0.9948` against a runner-up at `0.9816` is accepted silently.
-- `edit_matcher.find_best_match`: returns `(match_str, round(score, 2), is_ambiguous, offset)`. The tie comparison runs on the raw ratio while the reported score is rounded to two decimals, so two distinct candidates can both display `0.99`.
+- `edit_matcher._refine_and_select_best`: the candidate loop sets `is_ambiguous = True` only when `ratio == best_ratio and ratio > 0 and ratio >= threshold`. A winner at `0.9939` against a runner-up at `0.9879` is accepted silently.
+- `edit_matcher.find_best_match`: returns `(match_str, round(score, 2), is_ambiguous, offset)`. The tie comparison runs on the raw ratio while the reported score is rounded to two decimals, so two distinct candidates can both display `0.99`. Disabling the rounding fails exactly one assertion, `test_matcher_rounds_score_to_two_decimal_places`.
 - `edit_matcher._apply_indentation_bonus`: promotes a window that matches after `rstrip` with one constant relative indentation offset to exactly `1.0` and returns that offset.
 - `edit_matcher._apply_substring_boost`: promotes a verbatim intra-line fragment (single-line FIND) or a literal contiguous multi-line block to `1.0`, and flags ambiguity when the fragment occurs more than once inside the same window.
-- `edit_matcher_heuristics.gather_candidate_starts`: Tier 1 seeds windows from up to five longest non-blank FIND lines found verbatim in the file; the Tier 2 fuzzy first-line cascade runs only when Tier 1 is empty; Tier 3 scans substrings for a single-line FIND; Tier 4 falls back to exhaustive. On real source with an injected one-character `def` typo, Tier 1 seeded exactly one candidate in all three probes.
-- `edit_simulator._apply_single_edit`: raises `MultipleMatchesFoundError` when `is_ambiguous and not match_all`, computing `count = content.count(find) if score == 1.0 else 2`. It replaces `best_match` — the real file text — with the REPLACE block, so a tolerated typo cannot corrupt surrounding content.
-- `validation_rules/edit.py:_validate_single_edit`: applies the same gate, `is_ambiguous and not match_all and score >= effective_threshold`. Its message carries the path, the two-decimal score, the FIND embed, and a hint — no occurrence count.
+- `edit_matcher._evaluate_candidates`: scores every seeded window, sorts by the coarse score, then refines only `scored_candidates[:CANDIDATE_EVALUATION_CAP]` (5). The cap is a refinement budget, not a pool filter.
+- `edit_matcher_heuristics.gather_candidate_starts`: Tier 1 seeds windows from up to five longest non-blank FIND lines found verbatim in the file; the Tier 2 fuzzy first-line cascade runs only when Tier 1 is empty; Tier 3 scans substrings for a single-line FIND; Tier 4 falls back to exhaustive. On real source with an injected one-character `def` typo, Tier 1 seeded exactly one candidate in all six functions and methods measured.
+- `edit_simulator._apply_single_edit`: raises `MultipleMatchesFoundError` when `is_ambiguous and not match_all`, computing `count = content.count(find) if score == 1.0 else 2`. An indentation-only duplicate reports `content.count(find) == 0` while two candidates qualify, so today's message reads "Found 0 ambiguous occurrences". It replaces `best_match` — the real file text — with the REPLACE block, so a tolerated typo cannot corrupt surrounding content.
+- `validation_rules/edit.py:_validate_single_edit`: applies the same gate, `is_ambiguous and not match_all and score >= effective_threshold`. Its message carries the path, the two-decimal score, the FIND embed, and a hint — no runner-up and no candidate count.
 - `plan.DEFAULT_SIMILARITY_THRESHOLD = 0.95`, applied inclusively. `resolve_similarity_threshold` resolves action params first, then global config, then the default.
-- `tests/suites/unit/core/services/test_edit_ambiguity_threshold_gating.py`: deliberately pins the ties-only contract — a tie at or above the threshold is "ambiguous", a tie below it is "could not be located" so the author gets the closest-match diff instead.
+- `tests/suites/unit/core/services/test_edit_ambiguity_threshold_gating.py`: deliberately pins the ties-only contract — a tie at or above the threshold is "ambiguous", a tie below it is "could not be located" so the author gets the closest-match diff instead. Its three identical `0.80` windows tie above their own threshold under both the ties-only and refined rules and classify identically, so its assertions hold; only its docstring narrative describes the old contract.
 
-Observed candidate distributions at threshold `0.95`:
+Measured candidate distribution at threshold `0.95`:
 
-| Scenario | Best | Runner-up | Current rule | Naive multi-above | Refined rule |
-| :-- | --: | --: | :-- | :-- | :-- |
-| Verbatim FIND, near-duplicate sibling | 1.0000 | 0.9816 | accept | block | accept |
-| Fuzzy FIND (one-character typo), same sibling | 0.9948 | 0.9816 | accept | block | block |
-| Verbatim FIND at two locations | 1.0000 | 1.0000 | block | block | block |
+| Scenario | Best | Runner-up | Current rule | Refined rule |
+| :-- | --: | --: | :-- | :-- |
+| Fuzzy near-tie (one-character typo in the target's def line) | 0.9939 | 0.9879 | accept | block |
+| Verbatim FIND, near-duplicate sibling | 1.0000 | 0.9939 | accept | accept |
+| Verbatim FIND at two locations | 1.0000 | 1.0000 | block | block |
+| Indentation-only duplicate | 1.0000 | 1.0000 | block | block |
+| Repeating inner lines, one true location | 0.9960 | 0.9237 | accept | accept |
+| Tail-duplicate adjacent start | 0.9960 | 0.9237 | accept | accept |
+| Def typo on six real functions and methods | 0.9565–0.9994 | 0.0000 | accept | accept (single candidate) |
 
-Two further observations. Swapping a single character in the FIND's `def` line flipped which sibling block was edited, with `success` reported at both the simulator and the validator. And a fuzzy FIND present two, three, and five times all reported "Found 2 ambiguous occurrences".
+Swapping a single character in the FIND's `def` line flips which sibling block is edited, with `success` reported at both the simulator and the validator. That is the defect this slice removes.
+
+Three further measurements constrain the design. The refinement cap truncates the reported count without changing any verdict: seeded windows of 7, 40, 8, and 100 all refined to 5, while refine-all cost 19.61 ms against 19.60 ms for 40 small windows, 3.73 ms against 0.78 ms for 100 large windows, and at most +37.89 ms on a 462–1827 ms exhaustive-pool run. The sub-sample filter that gates large blocks never discards a viable window: across the 1571 windows it filtered on a disjoint 1600-line file, the highest true full ratio was `0.0000`. And the full suite stays green under the refined rule, under cap removal, and under both (2196 passed, 5 skipped).
 
 ## Scenarios
 
@@ -64,60 +71,87 @@ Then every occurrence is replaced
 ## Edge Cases
 - **Verbatim best with a near-duplicate sibling**: If the best match is exactly `1.0` and the runner-up sits above the threshold but below `1.0`, then the edit is accepted, because a byte-exact match at one location is conclusive and rejecting it would make any edit against a shared boilerplate body impossible.
 - **Fuzzy best with a below-threshold runner-up**: If the best match is below `1.0` and the runner-up is below the threshold, then the edit is accepted, because only one candidate clears the acceptance floor.
-- **Indentation-only drift**: If the only difference is a constant relative indentation, then the match is promoted to `1.0` and treated as verbatim, because the REPLACE block is re-indented to the matched offset and indentation-insensitive matching is intentional.
+- **Indentation-only drift**: If the only difference is a constant relative indentation, then the match is promoted to `1.0` and treated as verbatim, because the REPLACE block is re-indented to the matched offset and indentation-insensitive matching is intentional. Both promoted windows count as candidates even though the authored FIND appears zero times in the file.
 - **Tie below the threshold**: If two candidates tie below the effective threshold, then the failure is "could not be located" with the closest-match diff, not an ambiguity error, because there is nothing to disambiguate.
 - **Match All requested**: If `Match All: true` is set, then ambiguity never blocks, because the author has declared intent to change every occurrence.
-- **Single seeded candidate**: If Tier 1 exact anchoring yields one window, then the refined clause cannot fire, because there is no runner-up above the threshold.
+- **Single seeded candidate**: If Tier 1 exact anchoring yields one window, then the refined clause cannot fire, because there is no runner-up above the threshold. Measured on six real functions and methods with an injected `def` typo: `seeded=1`, runner-up `0.0000`, scores `0.9565–0.9994`, all accepted.
 - **Duplicate inside one window**: If a single-line FIND occurs twice within the same matched window, then the substring boost keeps reporting ambiguity, because two replacements inside one window are still ambiguous.
-- **Rounded-equal but raw-distinct scores**: If two candidates display the same two-decimal score but differ in raw ratio, then they are not a tie, because the comparison must run on raw ratios.
+- **Shifted start inside one true location**: If a later window start shares most of the true location's lines, then the runner-up stays below the floor. Measured `0.9237` against `0.95` for both a repeating-inner-line block and its tail-duplicate variant, so the edit is accepted.
+- **Large-block near-tie**: If two large windows differ only in their first line, then both clear the coarse filter, the cap truncates nothing, and the refined clause blocks the edit exactly as it does for small blocks.
+- **Candidate count above five**: Every scored candidate reaches refinement, so the reported count is exact rather than capped at five. Verdicts were identical with and without the cap in every measured scenario.
+- **Raw-distinct scores**: The reported score is the raw ratio and is no longer rounded on return, so a distinct winner and runner-up cannot present as an identical two-decimal tie.
+- **Large-block exhaustive fallback**: If no FIND line anchors verbatim in a long file, then the exhaustive tier seeds a window per start and the sub-sample filter discards the non-viable ones. Measured: 1571 discarded windows, highest true full ratio `0.0000`.
 
 ## Key Unknowns
 
-- [ ] [Domain] Carve-out boundary for whitespace-promoted matches: an indentation-only difference is promoted to `1.0`, so a whitespace-drifted match with a `0.98` sibling stays accepted. Is that the intended reading of "verbatim"? Design Sensitivity: if yes → `top < 1.0` is the whole clause and nothing else changes; if no → the clause needs a separate signal distinguishing a byte-exact winner from a whitespace-promoted one, which the matcher does not currently expose.
-- [ ] [Technical] Shape of the candidate distribution in the matcher contract: widen the existing 4-tuple, or add a sibling function returning a small DTO? Design Sensitivity: if the tuple widens → three production unpack sites and roughly five test modules change in one commit; if a DTO is added → the existing tuple stays intact and only new consumers migrate, but two entry points must stay in sync.
-- [ ] [Functional] Message convergence: should the executor and the validator share one ambiguity message builder? Design Sensitivity: if shared → one new helper in `validation_rules` and both call sites shrink; if separate → the executor keeps its occurrence count, the validator gains the runner-up score, and the two texts stay divergent.
+- [x] [Domain] Carve-out boundary for whitespace-promoted matches: an indentation-only difference is promoted to `1.0`, so a whitespace-drifted match with a `0.98` sibling stays accepted. Resolved: both promotion helpers assign exactly `1.0`, so `top < 1.0` is precisely "no verbatim and no indentation-only match" and is the whole clause. No additional signal is needed.
+- [x] [Technical] Shape of the candidate distribution in the matcher contract: widen the existing 4-tuple, or add a sibling function returning a small DTO? Resolved: a six-field `NamedTuple` raises `ValueError: too many values to unpack (expected 4)` at every legacy 4-way site, while a sibling `find_best_match_ex` leaves the 4-tuple intact. The additive seam is chosen, and both legacy entry points derive from one internal decision record.
+- [x] [Functional] Message convergence: should the executor and the validator share one ambiguity message builder? Resolved: they share the facts (winner, runner-up, candidate count) and one hint constant, but keep two renderers — the executor emits a single-line exception message and the validator emits structured Markdown with the fenced FIND block. One builder would either flatten the validation detail or bloat the exception.
 
 ## Impact
 
-1. `[EXPAND]` `edit_matcher._refine_and_select_best` — additionally track and return the runner-up ratio and the count of candidates at or above the threshold.
-2. `[EXPAND]` `edit_matcher.find_best_match` and `find_best_match_and_diff` — surface the new fields through the return contract, keeping every comparison on raw ratios and the displayed score at higher precision.
-3. `[MIGRATE]` `EditSimulator._apply_single_edit` — consume the runner-up and the candidate count, deleting the hardcoded `else 2`.
-4. `[MIGRATE]` `validation_rules/edit.py:_validate_single_edit` — consume the runner-up and print it in the ambiguity message.
-5. `[CONTRACT]` The hardcoded `2` in the fuzzy count branch — removed once the real count is available.
+The matcher contract has more than one production consumer, so the change follows the non-breaking expand → migrate → contract sequence.
+
+1. `[EXPAND]` `edit_matcher` — introduce one internal decision record (`match`, raw `score`, `is_ambiguous`, `offset`, `runner_up`, `candidate_count`) and expose it through a new `find_best_match_ex`. `find_best_match` and `find_best_match_and_diff` keep returning their 4-tuples, derived from the same record.
+2. `[EXPAND]` `edit_matcher._refine_and_select_best` — apply the refined ambiguity condition so both legacy entry points surface the new verdict without a signature change.
+3. `[MIGRATE]` `EditSimulator._apply_single_edit` — read the decision record, raise with the exact candidate count, and drop the hardcoded `else 2`.
+4. `[MIGRATE]` `validation_rules/edit.py:_validate_single_edit` — read the decision record and print the runner-up and candidate count at four decimals.
+5. `[CONTRACT]` `edit_matcher._evaluate_candidates` — remove `CANDIDATE_EVALUATION_CAP` so every scored candidate reaches refinement.
+6. `[CONTRACT]` `edit_matcher.find_best_match` — remove the two-decimal rounding on both return paths, and drop the stale "already rounded" comment in `find_best_match_and_diff`.
+7. `[CONTRACT]` `edit_simulator.py` and `validation_rules/edit.py` — delete both local hint literals in favour of one `AMBIGUITY_HINT` constant in `edit_matcher.py`, unified on the "list item `Match All: true`" phrasing.
 
 ## Deliverables
 
-- [ ] **Interface** - Widen the matcher's result contract to carry the runner-up ratio and the above-threshold candidate count, keeping raw ratios for every comparison.
-- [ ] **Harness** - Add shared fixtures for the three canonical scenarios (verbatim versus near-duplicate sibling, fuzzy near-tie, verbatim duplicate) plus a generator for an N-copy fuzzy duplicate.
-- [ ] **Core** - Implement the refined ambiguity condition `(ties > 1 and top >= threshold) or (top < 1.0 and second >= threshold)` and reconcile `test_edit_ambiguity_threshold_gating.py` in the same commit, because that module pins the previous contract.
-- [ ] **Core** - Replace the hardcoded fuzzy count with the real number of above-threshold candidates in `EditSimulator._apply_single_edit`.
-- [ ] **Migration** - Print the runner-up score and the true candidate count in the validator's ambiguity message so both layers describe the same condition.
-- [ ] **Cleanup** - Update the matcher and simulator suites whose assertions destructure the return contract, and remove the two-decimal rounding that lets distinct candidate scores present as an identical `0.99`.
+- [ ] **Interface** - Introduce the matcher's six-field decision record and `find_best_match_ex`, keeping `find_best_match` and `find_best_match_and_diff` on their existing 4-tuples derived from that record.
+- [ ] **Harness** - Promote the canonical scenarios (verbatim versus near-duplicate sibling, fuzzy near-tie, verbatim duplicate, indentation-only duplicate, repeating-inner-line block) and the N-copy generator into shared test fixtures. The rule, cap, and rounding pytest plugins stay measurement-only.
+- [ ] **Core** - Implement the refined condition `(ties > 1 and top >= threshold) or (top < 1.0 and second >= threshold)`, and extend the gating module with fuzzy near-tie coverage; its existing assertions hold, so only the docstring narrative changes.
+- [ ] **Core** - Refine every scored candidate (remove `CANDIDATE_EVALUATION_CAP`) so the reported candidate count is exact.
+- [ ] **Migration** - `EditSimulator` raises with the exact candidate count from the decision record, imports the shared `AMBIGUITY_HINT`, and loses the hardcoded `else 2`. Update the caller assertion in `tests/suites/integration/adapters/outbound/test_file_system_adapter.py` that pins `Found 2 ambiguous occurrences of 'hello'`.
+- [ ] **Migration** - `EditActionValidator` prints the similarity score, the runner-up score, and the candidate count at four decimals, and uses the shared `AMBIGUITY_HINT`.
+- [ ] **Cleanup** - Remove the two-decimal rounding, rewrite `test_matcher_rounds_score_to_two_decimal_places` against the raw-ratio contract, drop the stale "already rounded" comment, and delete the empty `spikes/debug/edit-matcher-ambiguity/` directory.
 
 ## Implementation Notes
-Every comparison must run on the raw ratio. `find_best_match` rounds only on return, so comparing rounded values would make `0.9948` and `0.9949` a false tie.
+Every comparison runs on the raw ratio, and the reported score is the raw ratio too, so the ambiguity message can print the winner and runner-up at four decimals.
 
 `_apply_indentation_bonus` and `_apply_substring_boost` both promote to exactly `1.0`, which makes `top < 1.0` precisely mean "no verbatim and no indentation-only match" — the intended carve-out, and the reason the refined clause cannot block a routine edit.
 
-The rule change and the gating-test rework must land in one commit. That module deliberately asserts the ties-only contract, so shipping the rule first turns the suite red.
+The ambiguity count comes from the candidate set, never from `content.count(find)`. An indentation-promoted duplicate has `content.count(find) == 0` while both windows score `1.0`; the current executor prints "Found 0 ambiguous occurrences" for that case. Switching the wording from "occurrences" to "candidates" also crosses `tests/suites/integration/adapters/outbound/test_file_system_adapter.py`, which pins `Found 2 ambiguous occurrences of 'hello'`.
 
-Tier 1 exact anchoring keeps the blast radius narrow: on real source with an injected typo, every probe seeded a single candidate. The new clause only fires where sibling blocks genuinely share body text.
+`CANDIDATE_EVALUATION_CAP` is a refinement budget, not a pool filter: every seeded window is scored before the top five are sliced. Removing it changes no verdict on any measured path.
+
+The gating module needs no assertion changes. Its three identical `0.80` windows tie above their own threshold under both the ties-only and refined rules and classify identically; only the module docstring's narrative describes the old contract.
+
+The sub-sample filter is not a recall risk. Above `LARGE_BLOCK_LINE_LIMIT` it discards windows before refinement, but across 1571 discarded windows on a disjoint 1600-line file the highest true full ratio was `0.0000`. Both promotions require every stripped line to match or a literal contiguous block, which the sub-sample already catches.
+
+Tier 1 exact anchoring keeps the blast radius narrow: on real source with an injected typo, every probe seeded a single candidate. The new clause only fires where sibling blocks genuinely share body text; a shifted start inside one true location lands at `0.9237`, below the `0.95` floor.
 
 The simulator replaces `best_match` — the real file text — rather than the FIND string, which is why a tolerated typo cannot corrupt surrounding content and needs no extra guard.
 
-If a new result DTO is introduced, register it in the `ARCHITECTURE.md` component map when the slice lands.
+`find_best_match_ex` returns a six-field `NamedTuple` (`match`, `score`, `is_ambiguous`, `offset`, `runner_up`, `candidate_count`). A widened tuple cannot replace the legacy contract: every 4-way unpack site raises `ValueError: too many values to unpack (expected 4)`.
+
+`AMBIGUITY_HINT` lives in `edit_matcher.py`, which both consumers already import. The executor renders a single-line exception message; the validator renders structured Markdown with the fenced FIND block.
+
+The cap-measurement probes (`cap_impact_probe.py`, `cap_worst_case_probe.py`, `cap_exhaustive_pool_probe.py`, `large_block_filter_probe.py`, and `candidate_cap_patch_plugin.py`) import `CANDIDATE_EVALUATION_CAP` and become unrunnable once the cap lands. They stay in the prototype folder as the evidence trail and must not be cited in Verification.
 
 ## Verification
 
 1. **Fuzzy near-tie is blocked:**
-   Run `uv run python spikes/debug/edit-matcher-ambiguity/near_tie_probe.py`.
+   Run `uv run python spikes/prototypes/edit-ambiguity/near_tie_probe.py`.
    Verify both `near_tie_closer_to_alpha` and `near_tie_closer_to_beta` report `ambiguous=True` and the validator classification `ambiguous`.
 2. **Verbatim match stays editable:**
-   Run `uv run python spikes/debug/edit-matcher-ambiguity/ambiguity_rule_verdict_probe.py`.
+   Run `uv run python spikes/prototypes/edit-ambiguity/ambiguity_rule_verdict_probe.py`.
    Verify `verbatim_vs_near_duplicate` reports `refined: accepted` while `fuzzy_near_tie` reports `refined: AMBIGUOUS`.
-3. **Occurrence count is truthful:**
-   Run `uv run python spikes/debug/edit-matcher-ambiguity/ambiguity_rule_probe.py`.
-   Verify the hardcoded-count section reports three distinct counts across `copies=2`, `copies=3`, and `copies=5` instead of `Found 2` three times.
-4. **Ambiguity message reads correctly in the review pane:**
-   Author a plan whose `EDIT` targets one of two sibling functions, with a one-character typo in the target function's `def` line, then start a session and open the plan review pane on that turn.
-   Confirm the `EDIT` node is flagged, that the message names the true number of candidates that cleared the threshold rather than a fixed `2`, and that it prints the runner-up score beside the winning score so the near-tie is visible.
+3. **Candidate count is truthful:**
+   Run `uv run python spikes/prototypes/edit-ambiguity/ambiguity_rule_probe.py`.
+   Verify `copies=2`, `3`, `5`, and `7` report `refined_candidates` equal to the copy count and that the executor message carries that same number, never `Found 0` and never a fixed `2`.
+4. **Indentation-promoted duplicates count from the candidate set:**
+   Run `uv run python spikes/prototypes/edit-ambiguity/overlap_and_count_probe.py`.
+   Verify `indentation_only_duplicate` reports `candidates=2 count_find=0` and its executor message reports 2 candidates.
+5. **Real source is unaffected:**
+   Run `uv run python spikes/prototypes/edit-ambiguity/real_source_probe.py`.
+   Verify every line reports `refined=accepted seeded=1`, with def-typo scores between `0.9565` and `0.9994`.
+6. **Ambiguity message reads correctly in the review pane:**
+   Run `uv run python spikes/prototypes/edit-ambiguity/message_preview_probe.py --precision 4`.
+   Verify the validator and executor messages print the winning score, the runner-up score, and the candidate count.
+   Then author a plan whose `EDIT` targets one of two sibling functions, with a one-character typo in the target function's `def` line, start a session, and open the plan review pane on that turn.
+   Confirm the `EDIT` node is flagged and shows the runner-up beside the winning score so the near-tie is visible.

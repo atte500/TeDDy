@@ -11,15 +11,15 @@ Implements the `IEditSimulator` inbound port. It applies a sequence of FIND/REPL
 - [Composition Root](/src/teddy_executor/container.py): Constructs the simulator.
 
 ## Dependencies
-- **`find_best_match`** (`teddy_executor.core.services.validation_rules.edit_matcher`): Locates the best matching block and returns its score, ambiguity flag, and indentation offset.
+- [`EditMatcher`](./edit_matcher.md): Provides `find_best_match_ex`, returning the decision record (`match`, raw `score`, `is_ambiguous`, `offset`, `runner_up`, `candidate_count`) and the shared `AMBIGUITY_HINT`.
 - **`SearchTextNotFoundError`** (`teddy_executor.core.domain.models`): Raised when no block meets the threshold.
-- **`MultipleMatchesFoundError`** (`teddy_executor.core.domain.models`): Raised on an ambiguous tie.
+- **`MultipleMatchesFoundError`** (`teddy_executor.core.domain.models`): Raised on an ambiguous match.
 - **`DEFAULT_SIMILARITY_THRESHOLD`** (`teddy_executor.core.domain.models.plan`): The default fuzzy-match threshold.
 
 ## Class Invariants
 - `stateless_pure`: The service holds no state and performs no I/O; every result depends only on its arguments.
 - `line_ending_preservation`: An appended newline reuses the detected terminator (`\n` or `\r\n`) of the matched block, and a matched region that lacks a trailing newline (an intra-line fragment match) drops the authored REPLACE terminator so it is never injected mid-line.
-- `ambiguity_guard`: A tie between equally scored candidates raises `MultipleMatchesFoundError` unless `match_all` is set.
+- `ambiguity_guard`: A fuzzy winner with a second candidate at or above the threshold, or a tie at or above the threshold, raises `MultipleMatchesFoundError` unless `match_all` is set. The exception message carries the exact candidate count and the shared `AMBIGUITY_HINT`, never a hardcoded `2`.
 
 ## Inbound Ports
 - **`IEditSimulator`**: Exposes the single `simulate_edits(...)` operation.
@@ -29,6 +29,7 @@ None — the simulator declares no injected dependencies.
 
 ## Data Contracts
 - **`EditPair`** (`TypedDict`, `total=False`): `find: str`, `replace: str`, `match_all: bool`.
+- **`MatchResult`** (`EditMatcher`): `match: str`, `score: float`, `is_ambiguous: bool`, `offset: int`, `runner_up: float`, `candidate_count: int`; the simulator consumes every field.
 - **Return tuple:** `tuple[str, list[float]]` — the transformed string and the per-edit similarity scores.
 
 ## Operations
@@ -36,4 +37,4 @@ None — the simulator declares no injected dependencies.
 ### `simulate_edits(content, edits, threshold=DEFAULT_SIMILARITY_THRESHOLD, match_all=False) -> tuple[str, list[float]]`
 - **Preconditions:** `content` is a string; each `edits` entry carries a `find` block.
 - **Postconditions:** Returns the transformed string and the list of similarity scores, applying every pair in sequence. A per-edit `match_all` overrides the global flag.
-- **Exceptions:** `SearchTextNotFoundError` when no match meets the threshold; `MultipleMatchesFoundError` on an ambiguous tie.
+- **Exceptions:** `SearchTextNotFoundError` when no match meets the threshold; `MultipleMatchesFoundError` on an ambiguous match, whether a tie or a fuzzy winner with a second candidate at or above the threshold.

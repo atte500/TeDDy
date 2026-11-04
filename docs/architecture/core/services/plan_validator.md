@@ -11,6 +11,7 @@ Implements the `IPlanValidator` inbound port. It performs pre-flight validation 
 
 ## Dependencies
 - [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Stored for the validator strategies that inspect paths.
+- [`EditMatcher`](./edit_matcher.md): Consumed indirectly by the injected `EditActionValidator` strategy for EDIT similarity matching and ambiguity diagnostics.
 - [`IActionValidator`](/src/teddy_executor/core/services/validation_rules/helpers.py): The injected strategy protocol exposing `can_validate` and `validate`.
 - [`ValidationError`](/src/teddy_executor/core/services/validation_rules/helpers.py): The error DTO accumulated by `validate`.
 
@@ -38,5 +39,5 @@ Implements the `IPlanValidator` inbound port. It performs pre-flight validation 
 
 ### `validate(plan, context_paths=None) -> List[ValidationError]`
 - **Preconditions:** `plan` is a parsed `Plan`.
-- **Postconditions:** Returns the accumulated `ValidationError` list. The method dispatches each action to the first injected validator whose `can_validate` matches; actions of type `research`, `prompt`, `invoke`, or `return` are accepted with no rules; a `message` action under `## Action Plan` yields a mutual-exclusivity error; any other unmatched action yields an unknown-action error.
+- **Postconditions:** Returns the accumulated `ValidationError` list. The method dispatches each action to the first injected validator whose `can_validate` matches; actions of type `research`, `prompt`, `invoke`, or `return` are accepted with no rules; a `message` action under `## Action Plan` yields a mutual-exclusivity error; any other unmatched action yields an unknown-action error. EDIT validation errors produced by the injected strategy carry the winning similarity score, the runner-up score, and the exact candidate count at four decimals, sourced from the matcher decision record; not-found errors carry the closest-match diff.
 - **Exceptions:** None — failures are returned as errors, never raised.
