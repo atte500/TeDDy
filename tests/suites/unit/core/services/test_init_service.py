@@ -162,19 +162,54 @@ def test_ensure_initialized_returns_summary_when_files_missing(service, mock_fs)
 
 
 def test_ensure_prompts_initialized_overwrite_true(service, mock_fs):
-    """All prompts exist, but overwrite=True → overwrites all 6 and returns "Prompts overwritten (6 files)." """
+    """All prompts exist with stale content, overwrite=True → rewrites all 6.
 
-    def mock_exists(p):
-        if p.startswith("/mock/config"):
-            return True
-        return True  # everything else also exists
-
-    mock_fs.path_exists.side_effect = mock_exists
-    mock_fs.read_file.return_value = "mock content"
+    Every on-disk prompt differs from its bundled default, so all six count as
+    changed.
+    """
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.side_effect = lambda p: (
+        "bundled prompt" if p.startswith("/mock/config") else "stale prompt"
+    )
 
     result = service.ensure_prompts_initialized(overwrite=True)
     assert mock_fs.write_file.call_count == 6
     assert result == "Prompts overwritten (6 files)."
+
+
+def test_ensure_prompts_initialized_overwrite_skips_unchanged_prompts(service, mock_fs):
+    """Every prompt already matches its bundled default → no writes, "Prompts unchanged." """
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.return_value = "bundled prompt"
+
+    result = service.ensure_prompts_initialized(overwrite=True)
+
+    mock_fs.write_file.assert_not_called()
+    assert result == "Prompts unchanged."
+
+
+def test_ensure_prompts_initialized_overwrite_counts_only_changed_prompts(
+    service, mock_fs
+):
+    """Only the edited prompts differ from the bundled default → the count reports just those."""
+    edited = {"pathfinder.md", "developer.md"}
+
+    def mock_read(p: str) -> str:
+        name = p.rsplit("/", 1)[-1]
+        if p.startswith("/mock/config") or name not in edited:
+            return f"bundled {name}"
+        return "edited by the user"
+
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.side_effect = mock_read
+
+    result = service.ensure_prompts_initialized(overwrite=True)
+
+    written = [call.args[0] for call in mock_fs.write_file.call_args_list]
+    assert written == [
+        f".teddy/prompts/{name}" for name in PROMPT_FILES if name in edited
+    ]
+    assert result == "Prompts overwritten (2 files)."
 
 
 def test_ensure_prompts_initialized_overwrite_false(service, mock_fs):
@@ -235,6 +270,34 @@ def test_init_prompts_overwrite_replaces_same_stem_xml_with_md(service, mock_fs)
     mock_fs.remove_file.assert_any_call(".teddy/prompts/pathfinder.xml")
 
 
+def test_init_prompts_overwrite_prunes_stale_xml_when_md_already_matches(
+    service, mock_fs
+):
+    """A stale same-stem `.xml` is removed even when the `.md` already matches.
+
+    Overwrite restores the canonical state: each stem resolves to exactly one
+    file, and the count stays at zero because no prompt content changed.
+    """
+
+    def mock_read(p: str) -> str:
+        if p.startswith(".teddy/prompts/"):
+            name = p.rsplit("/", 1)[-1]
+            return f"content::/mock/config/prompts/{name}"
+        return f"content::{p}"
+
+    mock_fs.path_exists.return_value = True
+    mock_fs.list_directory.side_effect = lambda d: {
+        ".teddy/prompts": ["pathfinder.md", "pathfinder.xml"],
+    }.get(d, [])
+    mock_fs.read_file.side_effect = mock_read
+
+    result = service._init_prompts(overwrite=True)
+
+    mock_fs.write_file.assert_not_called()
+    mock_fs.remove_file.assert_any_call(".teddy/prompts/pathfinder.xml")
+    assert result == "unchanged"
+
+
 def test_init_prompts_non_overwrite_skips_when_same_stem_xml_present(service, mock_fs):
     """Non-destructive init treats a same-stem `.xml` as already present.
 
@@ -267,7 +330,9 @@ def test_ensure_config_initialized_overwrite_true(service, mock_fs):
     """All config exist, overwrite=True → overwrites the 3 regenerable files
     (config.yaml, .gitignore, init.context) and PRESERVES the existing `.env`."""
     mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = "mock content"
+    mock_fs.read_file.side_effect = lambda p: (
+        "bundled content" if p.startswith("/mock/config") else "stale content"
+    )
 
     result = service.ensure_config_initialized(overwrite=True)
 
@@ -347,7 +412,9 @@ def test_ensure_config_initialized_overwrite_true_creates_missing_env(service, m
         return p != ".teddy/.env"
 
     mock_fs.path_exists.side_effect = mock_exists
-    mock_fs.read_file.return_value = "mock content"
+    mock_fs.read_file.side_effect = lambda p: (
+        "bundled content" if p.startswith("/mock/config") else "stale content"
+    )
 
     service.ensure_config_initialized(overwrite=True)
 
@@ -355,6 +422,23 @@ def test_ensure_config_initialized_overwrite_true_creates_missing_env(service, m
     assert ".teddy/.env" in written
     assert "TEDDY_LLM_API_KEY" in written[".teddy/.env"]
     assert ".teddy/config.yaml" in written
+
+
+def test_ensure_config_initialized_overwrite_skips_unchanged_files(service, mock_fs):
+    """Regenerable config files already match the defaults → "Configuration files unchanged." """
+
+    def mock_read(p: str) -> str:
+        if p == ".teddy/.gitignore":
+            return _GITIGNORE_PLACEHOLDER
+        return "stable content"
+
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.side_effect = mock_read
+
+    result = service.ensure_config_initialized(overwrite=True)
+
+    mock_fs.write_file.assert_not_called()
+    assert result == "Configuration files unchanged."
 
 
 # ── Template initialization tests ────────────────────────────────────────────
@@ -419,6 +503,30 @@ def test_init_templates_overwrite_true_replaces(templates_service, mock_fs):
 
     assert mock_fs.write_file.call_count == len(_TEMPLATE_FILES)
     assert result == f"overwritten ({len(_TEMPLATE_FILES)} files)"
+
+
+def test_init_templates_overwrite_true_counts_only_changed_templates(
+    templates_service, mock_fs
+):
+    """Only the templates whose content differs are rewritten and counted."""
+    edited = {"milestone.md", "PROJECT.md"}
+
+    def mock_read(p: str) -> str:
+        name = p.rsplit("/", 1)[-1]
+        if p.startswith("/mock/templates"):
+            return f"bundled {name}"
+        return "edited by the user" if name in edited else f"bundled {name}"
+
+    mock_fs.path_exists.return_value = True
+    mock_fs.read_file.side_effect = mock_read
+
+    result = templates_service._init_templates(overwrite=True)
+
+    written = [call.args[0] for call in mock_fs.write_file.call_args_list]
+    assert written == [
+        f"docs/templates/{name}" for name in _TEMPLATE_FILES if name in edited
+    ]
+    assert result == "overwritten (2 files)"
 
 
 def test_init_templates_missing_resource_no_op(templates_service, mock_fs):

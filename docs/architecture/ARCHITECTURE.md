@@ -188,5 +188,5 @@ This section documents how the system prompt delivered to the LLM is assembled a
 ### Template Generation Lifecycle
 
 - **Bundled templates:** `src/teddy_executor/resources/templates/*.md` ship inside the package.
-- **Project templates:** `docs/templates/` in the user's project. `teddy init templates` copies the bundled defaults to `docs/templates/` (overwriting existing files). Bare `teddy init` and agent startup do NOT create `docs/templates/`.
+- **Project templates:** `docs/templates/` in the user's project. `teddy init templates` copies the bundled defaults to `docs/templates/`, rewriting only the files whose content differs from the default and leaving byte-identical files untouched. Bare `teddy init` and agent startup do NOT create `docs/templates/`.
 - **Artifact directives:** each agent XML carries an inline directive instructing the agent to `READ` the corresponding template from `docs/templates/` before creating an artifact.

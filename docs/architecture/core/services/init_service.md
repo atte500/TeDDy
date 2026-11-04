@@ -11,12 +11,13 @@ Implements the `IInitUseCase` inbound port. It idempotently initializes a projec
 - [Composition Root](/src/teddy_executor/container.py): Registers `InitService` and binds it to `IInitUseCase`.
 
 ## Dependencies
-- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Creates directories, writes files, and reads bundled resources.
+- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Creates directories, writes files, reads bundled resources, and reads existing user files to compare their content against the bundled defaults.
 
 ## Class Invariants
 - `non_destructive_default`: No existing file is overwritten unless `overwrite` is `True`.
+- `content_aware_overwrite`: An overwrite rewrites only the files whose on-disk content differs from the bundled default. Byte-identical files are left untouched and excluded from the reported count, so the status names only the files that actually changed.
 - `env_create_only`: `.teddy/.env` is written only when absent and is never overwritten, because it holds the non-regenerable API key.
-- `stem_identity_prompts`: A prompt destination counts as present when any file shares its stem under any extension.
+- `stem_identity_prompts`: A prompt destination counts as present when any file shares its stem under any extension. A stale same-stem sibling is removed whenever the canonical prompt is present, so no two same-stem files coexist after an overwrite.
 - `templates_explicit_only`: Bare `ensure_initialized` never creates `docs/templates/`; only `ensure_templates_initialized` does.
 
 ## Inbound Ports
@@ -38,15 +39,15 @@ Implements the `IInitUseCase` inbound port. It idempotently initializes a projec
 
 ### `ensure_prompts_initialized(overwrite=True) -> str`
 - **Preconditions:** None.
-- **Postconditions:** Ensures prompt files exist in `.teddy/prompts/`, overwriting when `overwrite` is `True` and removing stale same-stem files.
+- **Postconditions:** Ensures prompt files exist in `.teddy/prompts/`, rewriting when `overwrite` is `True` and the prompt's content differs from the bundled default, and removing stale same-stem files on a rewrite.
 
 ### `ensure_config_initialized(overwrite=True) -> str`
 - **Preconditions:** None.
-- **Postconditions:** Ensures `config.yaml`, `.gitignore`, `init.context`, and `.env` exist. `.env` is create-only.
+- **Postconditions:** Ensures `config.yaml`, `.gitignore`, `init.context`, and `.env` exist. `.env` is create-only. The three regenerable files are rewritten only when their content differs from the default.
 
 ### `ensure_templates_initialized(overwrite=False) -> str`
 - **Preconditions:** None.
-- **Postconditions:** Ensures the bundled templates exist in `docs/templates/`, overwriting only when `overwrite` is `True`.
+- **Postconditions:** Ensures the bundled templates exist in `docs/templates/`, rewriting only when `overwrite` is `True` and the template's content differs from the bundled default.
 
 ### `check_drift() -> DriftReport`
 - **Preconditions:** None.

@@ -171,6 +171,8 @@ Use subcommands to overwrite specific defaults:
 - `teddy init config`: Overwrite `config.yaml`, `.gitignore`, and `init.context` with defaults. Preserves existing `.env` files.
 - `teddy init templates`: Overwrite bundled Markdown templates in `docs/templates/` with defaults.
 
+Each subcommand rewrites only the files whose content differs from the bundled default, and reports how many it changed.
+
 ### Configuration
 
 The first execution of `teddy start` runs an interactive setup to configure your API key and preferred editor. For deeper customization, edit `.teddy/config.yaml`. All `llm.*` settings pass directly through to [LiteLLM](https://docs.litellm.ai/docs/completion/input), allowing you to route to cloud providers or local endpoints (Ollama, llama.cpp, or any OpenAI-compatible server via `api_base`). The config file also lets you adjust your external editor, command execution timeouts, diff similarity thresholds, and automated context pruning budgets.
