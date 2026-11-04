@@ -1,5 +1,5 @@
 # Slice: Ambiguity Detection for Approximate EDIT Matches
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc slice)
 - **Depends On:** N/A
 - **Specs:** N/A
@@ -102,13 +102,13 @@ The matcher contract has more than one production consumer, so the change follow
 
 ## Deliverables
 
-- [ ] **Interface** - Introduce the matcher's six-field decision record and `find_best_match_ex`, keeping `find_best_match` and `find_best_match_and_diff` on their existing 4-tuples derived from that record.
+- [x] **Interface** - Introduce the matcher's six-field decision record and `find_best_match_ex`, keeping `find_best_match` and `find_best_match_and_diff` on their existing 4-tuples derived from that record.
 - [ ] **Harness** - Promote the canonical scenarios (verbatim versus near-duplicate sibling, fuzzy near-tie, verbatim duplicate, indentation-only duplicate, repeating-inner-line block) and the N-copy generator into shared test fixtures. The rule, cap, and rounding pytest plugins stay measurement-only.
 - [ ] **Core** - Implement the refined condition `(ties > 1 and top >= threshold) or (top < 1.0 and second >= threshold)`, and extend the gating module with fuzzy near-tie coverage; its existing assertions hold, so only the docstring narrative changes.
 - [ ] **Core** - Refine every scored candidate (remove `CANDIDATE_EVALUATION_CAP`) so the reported candidate count is exact.
 - [ ] **Migration** - `EditSimulator` raises with the exact candidate count from the decision record, imports the shared `AMBIGUITY_HINT`, and loses the hardcoded `else 2`. Update the caller assertion in `tests/suites/integration/adapters/outbound/test_file_system_adapter.py` that pins `Found 2 ambiguous occurrences of 'hello'`.
 - [ ] **Migration** - `EditActionValidator` prints the similarity score, the runner-up score, and the candidate count at four decimals, and uses the shared `AMBIGUITY_HINT`.
-- [ ] **Cleanup** - Remove the two-decimal rounding, rewrite `test_matcher_rounds_score_to_two_decimal_places` against the raw-ratio contract, drop the stale "already rounded" comment, and delete the empty `spikes/debug/edit-matcher-ambiguity/` directory.
+- [ ] **Cleanup** - Remove the two-decimal rounding, rewrite `test_matcher_rounds_score_to_two_decimal_places` against the raw-ratio contract, re-point `test_decision_record_keeps_raw_score_while_legacy_adapter_rounds` and `test_diff_entry_point_gates_the_diff_on_the_rounded_score` in `test_edit_matcher_decision_record.py` at raw scores, drop the stale "already rounded" comment, and delete the empty `spikes/debug/edit-matcher-ambiguity/` directory.
 
 ## Implementation Notes
 Every comparison runs on the raw ratio, and the reported score is the raw ratio too, so the ambiguity message can print the winner and runner-up at four decimals.
@@ -132,6 +132,8 @@ The simulator replaces `best_match` — the real file text — rather than the F
 `AMBIGUITY_HINT` lives in `edit_matcher.py`, which both consumers already import. The executor renders a single-line exception message; the validator renders structured Markdown with the fenced FIND block.
 
 The cap-measurement probes (`cap_impact_probe.py`, `cap_worst_case_probe.py`, `cap_exhaustive_pool_probe.py`, `large_block_filter_probe.py`, and `candidate_cap_patch_plugin.py`) import `CANDIDATE_EVALUATION_CAP` and become unrunnable once the cap lands. They stay in the prototype folder as the evidence trail and must not be cited in Verification.
+
+As built, the Interface deliverable put `MatchResult` and `find_best_match_ex` in `edit_matcher.py`, and both `_evaluate_candidates` and `_refine_and_select_best` now return that record, which makes it the single place either legacy entry point reads from. `find_best_match` folds the record back to its four-tuple with `round(result.score, 2)`, and `find_best_match_and_diff` continues to consume `find_best_match`, so the ties-only verdict, the rounding, and the rounded-score diff gate are all unchanged. `test_edit_matcher_decision_record.py` pins the six fields, the raw-versus-rounded split, and the diff gate. Two of its four assertions are intentionally temporary: they describe the legacy adapter that Cleanup rewrites, not the target contract.
 
 ## Verification
 
