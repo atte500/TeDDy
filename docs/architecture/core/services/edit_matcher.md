@@ -1,5 +1,5 @@
 # Component Design: EditMatcher
-- **Status:** Refactoring
+- **Status:** Implemented
 - **Source:** [`src/teddy_executor/core/services/validation_rules/edit_matcher.py`](/src/teddy_executor/core/services/validation_rules/edit_matcher.py)
 
 ## Purpose

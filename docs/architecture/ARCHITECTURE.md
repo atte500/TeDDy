@@ -120,6 +120,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **CliTestAdapter** (Driver)      | A specialized adapter that drives the CLI in-process and orchestrates builders and parsers.                                                | [CliTestAdapter](./tests/drivers/cli_adapter.md)       |
 | **TestEnvironment** (Setup)      | A harness that encapsulates DI isolation, environment patching, and workspace management.                                                  | [TestEnvironment](./tests/setup/test_environment.md)   |
 | **TestComposition (Fixtures)**   | A set of reusable pytest fixtures and globally mocked heavy dependencies (e.g., LiteLLM).                                                  | [TestComposition](./tests/setup/composition.md)        |
+| **EditScenarios** (Setup)        | A data-only module of canonical EDIT scenarios: composable builders and named content/FIND bundles shared by matcher and validator tests.  | [EditScenarios](./tests/setup/edit_scenarios.md)       |
 
 ---
 

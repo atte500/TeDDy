@@ -78,10 +78,10 @@ def find_best_match(
     Finds the most similar block of text in the file content.
 
     Returns:
-        tuple[str, float, bool, int]: (best_match_string, best_score, is_ambiguous, offset)
+        tuple[str, float, bool, int]: (best_match_string, raw_score, is_ambiguous, offset)
     """
     result = find_best_match_ex(file_content, find_block, threshold)
-    return result.match, round(result.score, 2), result.is_ambiguous, result.offset
+    return result.match, result.score, result.is_ambiguous, result.offset
 
 
 def find_best_match_and_diff(
@@ -106,7 +106,6 @@ def find_best_match_and_diff(
     res = ""
     if best_match_str and not is_ambiguous:
         # Generate character-level diff only for non-perfect matches
-        # Note: score is already rounded to 2 decimal places by find_best_match
         if 0 < score < 1.0:
             find_lines = find_block.splitlines(keepends=True)
             match_lines = best_match_str.splitlines(keepends=True)

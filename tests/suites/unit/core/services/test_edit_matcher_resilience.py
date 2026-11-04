@@ -1,3 +1,5 @@
+import pytest
+
 from teddy_executor.core.services.validation_rules.edit_matcher import (
     find_best_match_and_diff,
 )
@@ -69,8 +71,8 @@ def test_matcher_surgical_substring_boost():
     assert is_ambiguous is False
 
 
-def test_matcher_rounds_score_to_two_decimal_places():
-    """Verify that similarity scores are rounded to 2 decimal places."""
+def test_matcher_returns_the_raw_similarity_ratio():
+    """Verify that similarity scores stay raw and are never rounded on return."""
     from teddy_executor.core.services.validation_rules.edit_matcher import (
         find_best_match,
     )
@@ -83,6 +85,4 @@ def test_matcher_rounds_score_to_two_decimal_places():
 
     _, score, _, _ = find_best_match(content, find_block)
 
-    # Should be rounded to 0.95
-    expected_rounded_score = 0.95
-    assert score == expected_rounded_score
+    assert score == pytest.approx(36 / 38)
