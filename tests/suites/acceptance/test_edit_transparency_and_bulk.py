@@ -1,3 +1,4 @@
+from teddy_executor.core.services.validation_rules.edit_matcher import AMBIGUITY_HINT
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
@@ -79,7 +80,4 @@ def test_edit_ambiguity_hint_update(monkeypatch, tmp_path):
 
     # Should fail validation
     assert "The `FIND` block is ambiguous" in result.stdout
-    assert (
-        "use `Match All: true` to change all occurrences in the file at once"
-        in result.stdout
-    )
+    assert AMBIGUITY_HINT in result.stdout

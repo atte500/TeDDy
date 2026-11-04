@@ -11,7 +11,9 @@ from teddy_executor.core.domain.models.plan import (
 )
 from teddy_executor.core.ports.outbound import IConfigService, IFileSystemManager
 from teddy_executor.core.services.validation_rules.edit_matcher import (
+    AMBIGUITY_HINT,
     find_best_match_and_diff,
+    find_best_match_ex,
 )
 from teddy_executor.core.services.validation_rules.helpers import (
     BaseActionValidator,
@@ -140,14 +142,19 @@ def _validate_single_edit(
         find_embed = embed_in_fence(find_block, "")
 
         if is_ambiguous and not match_all and score >= effective_threshold:
+            # The ambiguity message reports the decision record facts at four
+            # decimals; the not-found path below keeps its rounded score.
+            record = find_best_match_ex(content, find_block, **matcher_kwargs)
             errors.append(
                 ValidationError(
                     message=(
                         f"The `FIND` block is ambiguous in: {file_path}\n"
-                        f"**Similarity Score:** {score:.2f}\n"
+                        f"**Similarity Score:** {record.score:.4f}\n"
+                        f"**Runner-up Score:** {record.runner_up:.4f}\n"
+                        f"**Candidates Above Threshold:** {record.candidate_count}\n"
                         f"**FIND Block:**\n"
                         f"{find_embed}\n"
-                        "**Hint:** Please provide a larger FIND block to uniquely identify the section, refactor the code to avoid duplication. Alternatively you can use `Match All: true` to change all occurrences in the file at once."
+                        f"**Hint:** {AMBIGUITY_HINT}"
                     ),
                     file_path=str(file_path),
                 )

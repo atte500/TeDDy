@@ -13,6 +13,7 @@ text lives in one place.
 from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.services.validation_rules.edit import _validate_single_edit
 from teddy_executor.core.services.validation_rules.edit_matcher import (
+    AMBIGUITY_HINT,
     find_best_match,
     find_best_match_and_diff,
     find_best_match_ex,
@@ -96,6 +97,10 @@ def test_validator_reports_the_fuzzy_near_tie_as_ambiguous():
     message = errors[0].message
     assert "ambiguous" in message.lower()
     assert FUZZY_NEAR_TIE.find in message
+    assert "**Similarity Score:** 0.9939" in message
+    assert "**Runner-up Score:** 0.9879" in message
+    assert "**Candidates Above Threshold:** 2" in message
+    assert AMBIGUITY_HINT in message
 
 
 def test_match_all_bypasses_the_refined_verdict():
