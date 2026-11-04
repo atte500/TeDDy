@@ -27,6 +27,7 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
     - Consistent padding across both panels.
     - Editor detection: Long/multiline params open in external editor.
 - **Deprecation:** `--console` flag marked deprecated. No functional removal in this milestone (deferred to M5).
+- **Manual Execution Logging & Ordering:** On plan submit, skipped actions (deselected, halted, interrupted) should be re-emitted to the console via the existing `notify_skipped_action` formatter. Manually executed actions (`x`) must appear in actual execution order in both the console log and `report.md`, not original plan order. This requires a per-action execution sequence stamped when each action runs.
 
 ## Slices
 > Slice definitions will be created by the Architect during the Design phase. The following high-level breakdown is anticipated:
@@ -42,6 +43,7 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
 > 9. Configurable tree depth
 > 10. Session interrupt mechanism
 > 11. `--console` deprecation marking
+> 12. Manual execution logging and ordering
 
 **Delivered Slices:**
 - [x] [04-01: Normalize Editor Basenames for Windows Launcher Suffixes](/docs/project/slices/04-01-editor-basename-normalization.md)
