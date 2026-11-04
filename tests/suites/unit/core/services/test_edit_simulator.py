@@ -4,6 +4,10 @@ from teddy_executor.core.domain.models import (
     SearchTextNotFoundError,
     MultipleMatchesFoundError,
 )
+from tests.harness.setup.edit_scenarios import (
+    INDENTATION_ONLY_DUPLICATE,
+    VERBATIM_DUPLICATE,
+)
 
 
 def test_simulate_edits_applies_multiple_pairs_sequentially():
@@ -54,3 +58,20 @@ def test_simulate_edits_removes_newline_on_empty_replacement():
     result, _ = simulator.simulate_edits(content, edits)
 
     assert result == "Line 1\nLine 3\n"
+
+
+@pytest.mark.parametrize(
+    "scenario",
+    [INDENTATION_ONLY_DUPLICATE, VERBATIM_DUPLICATE],
+    ids=["indentation_only_duplicate", "verbatim_duplicate"],
+)
+def test_ambiguity_message_reports_the_candidate_count(scenario):
+    simulator = EditSimulator()
+
+    with pytest.raises(MultipleMatchesFoundError) as excinfo:
+        simulator.simulate_edits(
+            scenario.content,
+            [{"find": scenario.find, "replace": "    return 0\n"}],
+        )
+
+    assert "Found 2 ambiguous candidates" in str(excinfo.value)

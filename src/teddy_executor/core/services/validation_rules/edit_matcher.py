@@ -19,6 +19,13 @@ SUB_SAMPLE_PASS_THRESHOLD = 0.7
 # A runner-up exists only once refinement yields two or more candidate ratios.
 MIN_RATIOS_FOR_RUNNER_UP = 2
 
+# Shared hint appended to every ambiguity message (executor and validator).
+AMBIGUITY_HINT = (
+    "Please provide a larger FIND block to uniquely identify the section, "
+    "refactor the code to avoid duplication. Alternatively you can use the "
+    "list item `Match All: true` to change all occurrences in the file at once."
+)
+
 
 class MatchResult(NamedTuple):
     """The complete decision for one FIND block match."""

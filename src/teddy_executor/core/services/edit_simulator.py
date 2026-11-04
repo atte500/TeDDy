@@ -6,7 +6,10 @@ from teddy_executor.core.domain.models import (
 )
 from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.ports.inbound.edit_simulator import EditPair, IEditSimulator
-from teddy_executor.core.services.validation_rules.edit_matcher import find_best_match
+from teddy_executor.core.services.validation_rules.edit_matcher import (
+    AMBIGUITY_HINT,
+    find_best_match_ex,
+)
 
 
 class EditSimulator(IEditSimulator):
@@ -25,15 +28,19 @@ class EditSimulator(IEditSimulator):
         """
         Applies a single find/replace operation to content with domain logic.
         """
-        best_match, score, is_ambiguous, offset = find_best_match(
-            content, find, threshold
-        )
+        result = find_best_match_ex(content, find, threshold)
+        best_match = result.match
+        score = result.score
+        offset = result.offset
 
-        if is_ambiguous and not match_all:
-            count = content.count(find) if score == 1.0 else 2
-            hint = " Please provide a larger FIND block to uniquely identify the section, refactor the code to avoid duplication. Alternatively you can use the list item `Match All: true` to change all occurrences in the file at once."
+        if result.is_ambiguous and not match_all:
+            noun = "candidate" if result.candidate_count == 1 else "candidates"
             raise MultipleMatchesFoundError(
-                message=f"Found {count} ambiguous occurrences of {find!r}. Aborting edit to prevent ambiguity.{hint}",
+                message=(
+                    f"Found {result.candidate_count} ambiguous {noun} for "
+                    f"{find!r}. Aborting edit to prevent ambiguity. "
+                    f"{AMBIGUITY_HINT}"
+                ),
                 content=content,
             )
 

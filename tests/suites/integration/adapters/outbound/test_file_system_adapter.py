@@ -132,7 +132,7 @@ def test_edit_file_raises_error_on_multiple_occurrences(adapter, tmp_path: Path)
             path=str(test_file), edits=[{"find": "hello", "replace": "goodbye"}]
         )
 
-    assert "Found 2 ambiguous occurrences of 'hello'" in str(exc_info.value)
+    assert "Found 1 ambiguous candidate for 'hello'" in str(exc_info.value)
     assert exc_info.value.content == original_content
     assert test_file.read_text() == original_content
 
