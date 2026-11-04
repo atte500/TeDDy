@@ -18,6 +18,7 @@ import teddy_executor.core.services.validation_rules.edit_matcher as edit_matche
 from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.services.validation_rules.edit_matcher import (
     LARGE_BLOCK_LINE_LIMIT,
+    MatchResult,
     _apply_indentation_bonus,
     _apply_substring_boost,
 )
@@ -127,7 +128,7 @@ def install_recording_rule() -> None:
 
 
 def install_refined_rule() -> None:
-    """Install the proposed rule while keeping the production 4-tuple shape."""
+    """Install the proposed rule while returning the production record shape."""
 
     _install_observation()
 
@@ -149,11 +150,13 @@ def install_refined_rule() -> None:
         for candidate in measured[1:]:
             if candidate.ratio > best.ratio:
                 best = candidate
-        return (
-            best.match_lines,
+        return MatchResult(
+            "".join(best.match_lines),
             best.ratio,
             decision.ambiguous or best.window_ambiguous,
             best.offset,
+            decision.second,
+            decision.above_threshold,
         )
 
     edit_matcher._refine_and_select_best = refined_refine
