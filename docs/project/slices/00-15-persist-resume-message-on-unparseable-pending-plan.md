@@ -1,5 +1,5 @@
 # Slice: Persist Injected Resume Messages On Unparseable Pending Plans
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** None (ad-hoc slice)
 - **Depends On:** None
 - **Specs:** None
