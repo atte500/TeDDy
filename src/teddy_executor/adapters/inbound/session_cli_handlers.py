@@ -136,10 +136,10 @@ def _shim_is_current(hooks_dir: Path, hook_type: str) -> bool:
 
 
 def _workspace_notice(verbose: bool, message: str, color: str) -> None:
-    """Emit one workspace banner line only when ``verbose`` is set.
+    """Emit one workspace maintenance line only when ``verbose`` is set.
 
-    The repair itself always runs; only the user-facing line is gated, so a
-    silent ``resume`` still heals the workspace without banner noise."""
+    The start path always requests verbose output, so every repair outcome is
+    visible there. The gate lets a caller run the repairs without banner noise."""
     if verbose:
         typer.secho(message, fg=color, err=True)
 
@@ -189,8 +189,7 @@ def _check_git_initialized(verbose: bool = True) -> None:
     """Verify git repository status. Auto-initializes if not a repo.
 
     The repair runs whether or not ``verbose`` is set; only the banner lines
-    are gated, so a silent ``resume`` still initializes a missing repository.
-    Only checks the current working directory for a `.git` marker.
+    are gated. Only checks the current working directory for a `.git` marker.
     Does NOT walk up parent directories."""
     try:
         git_path = shutil.which("git")
@@ -216,11 +215,13 @@ def _check_git_initialized(verbose: bool = True) -> None:
 
 
 def _run_health_checks(config_service: IConfigService, verbose: bool = True) -> None:
-    """Run each startup health check the workspace toggles allow.
+    """Run each workspace health check the toggles allow on session start.
 
-    A disabled step is skipped without a warning, because the setting is the
-    user's own choice and needs no reminder. ``verbose`` is forwarded to both
-    helpers so a caller can run the repairs without their banner lines.
+    Only the start path invokes this helper, so a resumed session never repairs
+    the workspace. A disabled step is skipped without a warning, because the
+    setting is the user's own choice and needs no reminder. ``verbose`` is
+    forwarded to both helpers so a caller can run the repairs without their
+    banner lines.
     """
     if config_service.get_setting("workspace.pre-commit", True):
         _ensure_commit_hooks(verbose=verbose)
@@ -425,23 +426,23 @@ def _run_startup_preamble(  # noqa: PLR0913 - forwards the shared CLI startup op
     agent: Optional[str] = None,
     setup_editor: Optional[bool] = None,
     setup_api_key: Optional[bool] = None,
-    pull_workspace: bool = False,
+    workspace_maintenance: bool = False,
     verbose_workspace: bool = False,
 ) -> None:
     """Run the shared startup preamble for both session entry points.
 
-    The order is fixed so the banner layout cannot drift: health checks, the
-    start-only workspace fast-forward line, one separator blank line, the
-    ``Checking configurations...`` line, the cached update notice, then the
-    preflight check with its drift advice. ``start`` forwards its ``agent`` so
-    the preflight validates the agent prompt, enables ``pull_workspace``, and
-    sets ``verbose_workspace`` to keep the workspace banner and its separator
-    blank; ``resume`` leaves the agent ``None`` and keeps the pull, the
-    workspace banner, and the separator blank off.
+    The order is fixed so the banner layout cannot drift: workspace maintenance,
+    one separator blank line, the ``Checking configurations...`` line, the cached
+    update notice, then the preflight check with its drift advice. ``start``
+    forwards its ``agent`` so the preflight validates the agent prompt, enables
+    ``workspace_maintenance``, and sets ``verbose_workspace`` to keep the
+    workspace banner and its separator blank; ``resume`` leaves the agent
+    ``None`` and keeps the workspace repairs, the workspace banner, and the
+    separator blank off.
     """
     config_service = container.resolve(IConfigService)
-    _run_health_checks(config_service, verbose=verbose_workspace)
-    if pull_workspace:
+    if workspace_maintenance:
+        _run_health_checks(config_service, verbose=verbose_workspace)
         _pull_workspace_on_start(config_service)
     # One separator groups the checkmark block above with the notices below.
     # It prints only when the workspace banner above is shown, so a silent
@@ -827,13 +828,13 @@ def handle_new_session(  # noqa: PLR0913
         # 1. Ensure project is initialized
         container.resolve(IInitUseCase).ensure_initialized()
 
-        # 2. Shared startup preamble (health checks + preflight)
+        # 2. Shared startup preamble (workspace maintenance + preflight)
         _run_startup_preamble(
             container,
             agent=agent,
             setup_editor=setup_editor,
             setup_api_key=setup_api_key,
-            pull_workspace=True,
+            workspace_maintenance=True,
             verbose_workspace=True,
         )
         _echo_config_success(container, agent, model=model)
@@ -1501,7 +1502,7 @@ def handle_resume_session(  # noqa: PLR0913
     _start_background_update_check()
 
     try:
-        # 1. Shared startup preamble (health checks + preflight)
+        # 1. Shared startup preamble (preflight only; workspace repairs are start-only)
         _run_startup_preamble(
             container,
             setup_editor=setup_editor,

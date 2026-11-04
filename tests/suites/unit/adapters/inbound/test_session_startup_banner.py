@@ -100,12 +100,11 @@ def _emit_notice(line: str) -> list[str]:
     return []
 
 
-def test_run_startup_preamble_forwards_verbose_workspace_to_health_checks(
-    env, monkeypatch
-):
-    """The shared preamble forwards its workspace verbosity to the health checks."""
+def test_run_startup_preamble_gates_workspace_checks_on_maintenance(env, monkeypatch):
+    """The shared preamble runs workspace checks only when maintenance is on."""
     env.mock_port(IConfigService)
     received_verbose: list[object] = []
+    pull_calls: list[object] = []
 
     def record_health_checks(config_service, **kwargs):
         received_verbose.append(kwargs.get("verbose"))
@@ -113,16 +112,23 @@ def test_run_startup_preamble_forwards_verbose_workspace_to_health_checks(
     monkeypatch.setattr(handlers, "find_project_root", lambda: Path("/fake/project"))
     monkeypatch.setattr(handlers, "_run_health_checks", record_health_checks)
     monkeypatch.setattr(
+        handlers, "_pull_workspace_on_start", lambda config: pull_calls.append(config)
+    )
+    monkeypatch.setattr(
         handlers, "_display_update_notification", lambda container, cache_path: []
     )
     monkeypatch.setattr(
         handlers, "_run_cli_preflight_check", lambda container, **kwargs: []
     )
 
-    handlers._run_startup_preamble(env.container, verbose_workspace=True)
+    handlers._run_startup_preamble(
+        env.container, workspace_maintenance=True, verbose_workspace=True
+    )
     handlers._run_startup_preamble(env.container)
+    handlers._run_startup_preamble(env.container, workspace_maintenance=True)
 
     assert received_verbose == [True, False]
+    assert len(pull_calls) == 2
 
 
 def test_startup_preamble_orders_update_notice_before_drift(env, monkeypatch, capsys):

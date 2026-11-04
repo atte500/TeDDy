@@ -10,9 +10,9 @@ edit:
   similarity_threshold: 0.95        # EDIT match threshold (1.0 = exact match; ignores relative indentation).
 
 workspace:
-  init: true                        # Repair a missing Git repository (runs on start and resume; reports on start only).
-  pre-commit: true                  # Repair pre-commit and post-commit git hooks (runs on start and resume; reports on start only).
-  pull: true                        # Fast-forward pull before starting a new session (start only).
+  init: true                        # Repair a missing Git repository on session start.
+  pre-commit: true                  # Repair pre-commit and post-commit git hooks on session start.
+  pull: true                        # Fast-forward the workspace on session start.
 
 read:
   max_lines: 1000                   # Caps READ action output lines.

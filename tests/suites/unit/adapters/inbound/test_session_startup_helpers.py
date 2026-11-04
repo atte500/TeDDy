@@ -70,8 +70,10 @@ def test_both_handlers_route_startup_through_shared_helpers(env, monkeypatch):
     # `start` forwards its agent to the preflight; `resume` leaves it unset.
     assert record["preamble"][0]["agent"] == "developer"
     assert record["preamble"][1].get("agent") is None
-    # `start` enables the workspace banner; `resume` keeps it silent by default.
+    # `start` enables workspace maintenance and the banner; `resume` skips both.
+    assert record["preamble"][0].get("workspace_maintenance") is True
     assert record["preamble"][0].get("verbose_workspace") is True
+    assert record["preamble"][1].get("workspace_maintenance", False) is False
     assert record["preamble"][1].get("verbose_workspace", False) is False
 
 
