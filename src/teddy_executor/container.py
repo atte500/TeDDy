@@ -231,7 +231,14 @@ def _register_orchestration_services(container: punq.Container) -> None:
         ),
         scope=punq.Scope.transient,
     )
-    container.register(IGetContextUseCase, ContextService, scope=punq.Scope.transient)
+    # Delegate to the concrete registration so the inbound port inherits the
+    # injected config service. Registering the bare class here makes punq
+    # auto-resolve the constructor and fall back to `config_service=None`.
+    container.register(
+        IGetContextUseCase,
+        factory=lambda: container.resolve(ContextService),
+        scope=punq.Scope.transient,
+    )
     from teddy_executor.core.domain.models.planning_ports import PlanningPorts
 
     container.register(

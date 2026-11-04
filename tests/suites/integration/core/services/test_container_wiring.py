@@ -1,6 +1,9 @@
+from teddy_executor.container import create_container
+from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
+from teddy_executor.core.services.context_service import ContextService
 
 
 def test_container_resolves_foundational_services(container):
@@ -29,3 +32,35 @@ def test_tree_generator_receives_configured_max_depth(container):
     generator = container.resolve(IRepoTreeGenerator)
 
     assert generator._max_depth == expected_depth
+
+
+def test_context_use_case_receives_the_injected_config_service(container):
+    """The inbound context port must inherit the composition root's config service.
+
+    Regression: registering the bare ContextService class for the port made punq
+    auto-resolve the constructor and substitute config_service=None, so
+    plan.max_lines silently fell back to the schema default.
+    """
+    context_service = container.resolve(IGetContextUseCase)
+
+    assert isinstance(context_service, ContextService)
+    assert isinstance(context_service._config_service, IConfigService)
+
+
+def test_composition_root_caps_plan_content_at_plan_max_lines(monkeypatch, tmp_path):
+    """The container-built context service honours the configured plan cap."""
+    (tmp_path / ".teddy").mkdir()
+    (tmp_path / ".teddy" / "config.yaml").write_text(
+        "plan:\n  max_lines: 5\n", encoding="utf-8"
+    )
+    plan = "\n".join(f"line {i}" for i in range(1, 11))
+    (tmp_path / "plan.md").write_text(plan + "\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    context_service = create_container().resolve(IGetContextUseCase)
+    context = context_service.get_context(
+        context_files={"Turn": ["plan.md"]}, include_tokens=False
+    )
+
+    assert "[Showing first 5 of 10 lines.]" in context.content
+    assert "line 10" not in context.content

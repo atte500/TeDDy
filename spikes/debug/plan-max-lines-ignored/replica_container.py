@@ -1,0 +1,389 @@
+from __future__ import annotations
+
+import time
+
+import punq
+
+
+from teddy_executor.registries.infrastructure import register_infrastructure
+from teddy_executor.registries.reviewer import register_reviewer
+from teddy_executor.registries.validators import register_validators
+
+_container = None
+
+
+def get_container():
+    global _container
+    if _container is None:
+        _container = create_container()
+    return _container
+
+
+def create_container() -> punq.Container:
+    """
+    Creates and configures the dependency injection container.
+    """
+    container = punq.Container()
+    register_infrastructure(container)
+    register_validators(container)
+    _register_services(container)
+    _register_orchestration(container)
+    return container
+
+
+def _record_quit_source(container: punq.Container) -> None:
+    """Record the bare-`q` source on the shared guard, then self-deliver SIGINT.
+
+    Invoked from the quit-key listener's reader thread when `q` is pressed.
+    Recording the source lets the boundary notice name `q` instead of the
+    default `Ctrl+C`; the self-delivered SIGINT then drives the shared guard's
+    already-tested WAITING/EXECUTING branch unchanged.
+    """
+    from teddy_executor.core.utils.interrupt_guard import (
+        InterruptGuard,
+        raise_interrupt,
+    )
+
+    container.resolve(InterruptGuard).record_source("q")
+    raise_interrupt()
+
+
+def _register_services(container: punq.Container) -> None:
+    """Registers core application services."""
+    from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
+    from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+    from teddy_executor.core.ports.outbound import (
+        IConfigService,
+        IFileSystemManager,
+        IMarkdownReportFormatter,
+        IUserInteractor,
+    )
+    from teddy_executor.core.services.action_dispatcher import (
+        ActionDispatcher,
+        IActionFactory,
+    )
+    from teddy_executor.core.services.action_executor import ActionExecutor
+    from teddy_executor.core.services.action_factory import ActionFactory
+    from teddy_executor.core.services.edit_simulator import EditSimulator
+    from teddy_executor.core.ports.outbound.session_repository import (
+        ISessionRepository,
+    )
+    from teddy_executor.core.services.session_repository import SessionRepository
+    from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
+    from teddy_executor.core.services.markdown_report_formatter import (
+        MarkdownReportFormatter,
+    )
+    from teddy_executor.core.services.session_loop_guard import (
+        ProductionSessionLoopGuard,
+    )
+    from teddy_executor.core.domain.models.action_ports import ActionPorts
+
+    container.register(
+        ISessionRepository,
+        factory=lambda: SessionRepository(container.resolve(IFileSystemManager)),
+        scope=punq.Scope.transient,
+    )
+    container.register(IEditSimulator, EditSimulator, scope=punq.Scope.transient)
+    container.register(IPlanParser, MarkdownPlanParser, scope=punq.Scope.transient)
+
+    register_reviewer(container)
+
+    from teddy_executor.core.ports.outbound import (
+        IShellExecutor,
+        IWebScraper,
+        IWebSearcher,
+    )
+    from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
+
+    container.register(
+        IActionFactory,
+        factory=lambda: ActionFactory(
+            ports=ActionPorts(
+                shell_executor=container.resolve(IShellExecutor),
+                file_system_manager=container.resolve(IFileSystemManager),
+                user_interactor=container.resolve(IUserInteractor),
+                web_scraper=container.resolve(IWebScraper),
+                web_searcher=container.resolve(IWebSearcher),
+                config_service=container.resolve(IConfigService),
+            )
+        ),
+        scope=punq.Scope.transient,
+    )
+    container.register(ActionDispatcher, scope=punq.Scope.transient)
+    container.register(
+        ActionExecutor,
+        factory=lambda: ActionExecutor(
+            action_dispatcher=container.resolve(ActionDispatcher),
+            user_interactor=container.resolve(IUserInteractor),
+            file_system_manager=container.resolve(IFileSystemManager),
+            edit_simulator=container.resolve(IEditSimulator),
+            config_service=container.resolve(IConfigService),
+        ),
+        scope=punq.Scope.transient,
+    )
+    container.register(
+        IMarkdownReportFormatter, MarkdownReportFormatter, scope=punq.Scope.transient
+    )
+
+    container.register(
+        ISessionLoopGuard, ProductionSessionLoopGuard, scope=punq.Scope.transient
+    )
+    _register_orchestration_services(container)
+
+
+def _register_orchestration_services(container: punq.Container) -> None:
+    """Registers orchestration and use case implementation services."""
+    from teddy_executor.core.ports.inbound.get_context_use_case import (
+        IGetContextUseCase,
+    )
+    from teddy_executor.core.ports.inbound.init import IInitUseCase
+    from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
+    from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+    from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
+    from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
+    from teddy_executor.core.ports.outbound import (
+        IConfigService,
+        IFileSystemManager,
+        ILlmClient,
+        ISessionManager,
+        IUserInteractor,
+    )
+    from teddy_executor.core.ports.outbound.execution_report_assembler import (
+        IExecutionReportAssembler,
+    )
+    from teddy_executor.core.services.action_executor import ActionExecutor
+    from teddy_executor.core.services.context_service import ContextService
+    from teddy_executor.core.services.execution_orchestrator import (
+        ExecutionOrchestrator,
+    )
+    from teddy_executor.core.services.execution_report_assembler import (
+        ExecutionReportAssembler,
+    )
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+    from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
+    from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
+        TerminalQuitKeyListener,
+    )
+    from teddy_executor.core.services.init_service import InitService
+    from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+    from teddy_executor.core.services.prompt_manager import PromptManager
+    from teddy_executor.core.services.planning_service import PlanningService
+    from teddy_executor.core.services.session_service import SessionService
+
+    container.register(
+        IExecutionReportAssembler, ExecutionReportAssembler, scope=punq.Scope.transient
+    )
+    from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
+
+    # Documented exception to the transient-scope rule (ARCHITECTURE.md DI
+    # Scopes): the InterruptGuard owns the process-global SIGINT disposition,
+    # so the session-loop boundary (session_cli_handlers) and the
+    # OrchestratorPorts factory MUST resolve the SAME instance to share the
+    # WAITING/EXECUTING phase state and the interrupted drain flag.
+    container.register(
+        InterruptGuard,
+        factory=lambda: InterruptGuard(
+            monotonic=time.monotonic,
+        ),
+        scope=punq.Scope.singleton,
+    )
+    # Documented exception to the transient-scope rule, mirroring the
+    # InterruptGuard precedent: the quit-key listener is a process-global
+    # resource whose start()/stop() lifecycle the session-loop boundary owns,
+    # so ONE instance serves the boundary's install/restore window.
+    container.register(
+        IQuitKeyListener,
+        factory=lambda: TerminalQuitKeyListener(
+            on_quit=lambda: _record_quit_source(container)
+        ),
+        scope=punq.Scope.singleton,
+    )
+    container.register(
+        OrchestratorPorts,
+        factory=lambda: OrchestratorPorts(
+            plan_parser=container.resolve(IPlanParser),
+            plan_validator=container.resolve(IPlanValidator),
+            action_executor=container.resolve(ActionExecutor),
+            file_system_manager=container.resolve(IFileSystemManager),
+            report_assembler=container.resolve(IExecutionReportAssembler),
+            user_interactor=container.resolve(IUserInteractor),
+            plan_reviewer=container.resolve(IPlanReviewer),
+            interrupt_guard=container.resolve(InterruptGuard),
+        ),
+        scope=punq.Scope.transient,
+    )
+    container.register(ExecutionOrchestrator, scope=punq.Scope.transient)
+    from teddy_executor.core.ports.outbound import (
+        IEnvironmentInspector,
+        IRepoTreeGenerator,
+        IWebScraper,
+    )
+
+    container.register(
+        ContextService,
+        factory=lambda: ContextService(
+            file_system_manager=container.resolve(IFileSystemManager),
+            repo_tree_generator=container.resolve(IRepoTreeGenerator),
+            environment_inspector=container.resolve(IEnvironmentInspector),
+            llm_client=container.resolve(ILlmClient),
+            web_scraper=container.resolve(IWebScraper),
+            config_service=container.resolve(IConfigService),
+        ),
+        scope=punq.Scope.transient,
+    )
+    container.register(IGetContextUseCase, factory=lambda: container.resolve(ContextService), scope=punq.Scope.transient)
+    from teddy_executor.core.domain.models.planning_ports import PlanningPorts
+
+    container.register(
+        IPromptManager,
+        factory=lambda: PromptManager(
+            file_system_manager=container.resolve(IFileSystemManager),
+            user_interactor=container.resolve(IUserInteractor),
+        ),
+        scope=punq.Scope.transient,
+    )
+
+    container.register(
+        PlanningPorts,
+        factory=lambda: PlanningPorts(
+            context=container.resolve(IGetContextUseCase),
+            llm=container.resolve(ILlmClient),
+            fs=container.resolve(IFileSystemManager),
+            config=container.resolve(IConfigService),
+            prompts=container.resolve(IPromptManager),
+            ui=container.resolve(IUserInteractor),
+            session_manager=container.resolve(ISessionManager),
+        ),
+        scope=punq.Scope.transient,
+    )
+    container.register(PlanningService, scope=punq.Scope.transient)
+    container.register(IPlanningUseCase, PlanningService, scope=punq.Scope.transient)
+    from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+
+    container.register(
+        IInitUseCase,
+        factory=lambda: InitService(container.resolve(IFileSystemManager)),
+        scope=punq.Scope.transient,
+    )
+
+    container.register(
+        ISessionManager,
+        factory=lambda: SessionService(
+            file_system_manager=container.resolve(IFileSystemManager),
+            repository=container.resolve(ISessionRepository),
+            time_service=container.resolve(ITimeService),
+            prompt_manager=container.resolve(IPromptManager),
+            init_service=container.resolve(IInitUseCase),
+            config_service=container.resolve(IConfigService),
+        ),
+        scope=punq.Scope.transient,
+    )
+
+
+def _register_orchestration(container: punq.Container) -> None:
+    """Registers session orchestration components."""
+    from teddy_executor.core.ports.inbound.get_context_use_case import (
+        IGetContextUseCase,
+    )
+    from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+    from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
+    from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+    from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
+    from teddy_executor.core.ports.outbound import (
+        IConfigService,
+        IFileSystemManager,
+        ILlmClient,
+        IMarkdownReportFormatter,
+        ISessionManager,
+        IUserInteractor,
+    )
+    from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+    from teddy_executor.core.services.execution_orchestrator import (
+        ExecutionOrchestrator,
+    )
+    from teddy_executor.core.services.session_lifecycle_manager import (
+        SessionLifecycleManager,
+    )
+    from teddy_executor.core.services.session_orchestrator import SessionOrchestrator
+    from teddy_executor.core.services.session_planner import SessionPlanner
+    from teddy_executor.core.services.session_replanner import SessionReplanner
+    from teddy_executor.core.services.session_pruning_service import (
+        SessionPruningService,
+    )
+
+    container.register(
+        SessionPruningService,
+        factory=lambda: SessionPruningService(
+            config_service=container.resolve(IConfigService),
+            file_system_manager=container.resolve(IFileSystemManager),
+        ),
+        scope=punq.Scope.transient,
+    )
+    container.register(
+        SessionReplanner,
+        factory=lambda: SessionReplanner(
+            file_system_manager=container.resolve(IFileSystemManager),
+            planning_service=container.resolve(IPlanningUseCase),
+        ),
+        scope=punq.Scope.transient,
+    )
+    container.register(
+        SessionPlanner,
+        factory=lambda: SessionPlanner(
+            file_system_manager=container.resolve(IFileSystemManager),
+            planning_service=container.resolve(IPlanningUseCase),
+            user_interactor=container.resolve(IUserInteractor),
+            session_service=container.resolve(ISessionManager),
+        ),
+        scope=punq.Scope.transient,
+    )
+
+    from teddy_executor.core.domain.models.planning_ports import SessionPorts
+    from teddy_executor.core.ports.outbound.time_service import ITimeService
+    from teddy_executor.core.ports.outbound.execution_report_assembler import (
+        IExecutionReportAssembler,
+    )
+
+    container.register(
+        SessionPorts,
+        factory=lambda: SessionPorts(
+            session_service=container.resolve(ISessionManager),
+            file_system_manager=container.resolve(IFileSystemManager),
+            report_formatter=container.resolve(IMarkdownReportFormatter),
+            user_interactor=container.resolve(IUserInteractor),
+            session_planner=container.resolve(SessionPlanner),
+            replanner=container.resolve(SessionReplanner),
+            plan_parser=container.resolve(IPlanParser),
+            time_service=container.resolve(ITimeService),
+            report_assembler=container.resolve(IExecutionReportAssembler),
+        ),
+        scope=punq.Scope.transient,
+    )
+    container.register(
+        SessionLifecycleManager,
+        factory=lambda: SessionLifecycleManager(
+            ports=container.resolve(SessionPorts),
+        ),
+        scope=punq.Scope.transient,
+    )
+
+    container.register(
+        IRunPlanUseCase,
+        factory=lambda: SessionOrchestrator(
+            execution_orchestrator=container.resolve(ExecutionOrchestrator),
+            session_service=container.resolve(ISessionManager),
+            file_system_manager=container.resolve(IFileSystemManager),
+            plan_validator=container.resolve(IPlanValidator),
+            plan_parser=container.resolve(IPlanParser),
+            user_interactor=container.resolve(IUserInteractor),
+            lifecycle_manager=container.resolve(SessionLifecycleManager),
+            replanner=container.resolve(SessionReplanner),
+            context_service=container.resolve(IGetContextUseCase),
+            config_service=container.resolve(IConfigService),
+            llm_client=container.resolve(ILlmClient),
+            prompt_manager=container.resolve(IPromptManager),
+            pruning_service=container.resolve(SessionPruningService),
+        ),
+        scope=punq.Scope.transient,
+    )
