@@ -45,14 +45,10 @@ on:
     branches: [ main ]
   workflow_dispatch: {}
 
-concurrency:
-  # Serialize runs per ref. `cancel-in-progress: false` protects the RUNNING run,
-  # but the default `queue: single` still supersedes a PENDING run when a newer
-  # push queues. Keep the default for trunk-based work: the newest commit's
-  # verdict matters most and runner load stays bounded during bursts. Use
-  # `queue: max` only for workflows whose product is a per-commit record.
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+# No `concurrency` block: GitHub runs workflow runs in parallel unless a block
+# serializes them. Add one only when overlapping runs are unsafe (for example a
+# deploy that must not race itself). A per-ref group instead queues every commit
+# behind its predecessor for the full duration of the older run.
 
 jobs:
   # Job 1: Blocking OS matrix test suite.

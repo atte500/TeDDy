@@ -7,9 +7,10 @@ on:
     branches: [ "**" ]
   workflow_dispatch: {}
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+# No `concurrency` block on purpose: trunk-based development means every push
+# lands on `main`, so serializing per ref would queue each commit behind its
+# predecessor while isolating nothing. Without a block, GitHub runs each commit's
+# CI in parallel and every commit keeps its own verdict.
 
 jobs:
   test-suite:

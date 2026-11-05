@@ -13,6 +13,15 @@ on:
 permissions:
   contents: read
 
+# Serialize publishes per event and ref. CI now runs in parallel, so several
+# green runs on `main` can complete at once and their `workflow_run` triggers
+# would otherwise race each other on PyPI. Keying on the event name keeps a
+# `release` publish in its own group, so a dev publish can never queue ahead of
+# or cancel a release.
+concurrency:
+  group: publish-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   publish:
     name: Publish to PyPI
