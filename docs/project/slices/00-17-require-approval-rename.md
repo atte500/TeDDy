@@ -11,7 +11,7 @@
 Rename the internal action-approval signal from `interactive` to `require_approval` so the identifier states what the boolean decides, and remove the user-facing strings that describe approval as "interactive". The naming defect is what let Bug 79 happen: a reader saw `interactive=False` and concluded "no human is present".
 
 ## Context
-- Measured footprint on 2026-11-05: 123 occurrences of `interactive` in `src/` across 23 files, 315 in `tests/`.
+- Measured footprint on 2026-11-05: 122 matching lines of `interactive` in `src/` across 23 files (`git grep -c`), 366 occurrences in `tests/` (`git grep -o`).
 - `IRunPlanUseCase` (`src/teddy_executor/core/ports/inbound/run_plan_use_case.py:20,43`) carries the flag as a keyword on both `execute` and `resume`, and every session caller passes it by keyword.
 - The flag threads `__main__.py` -> `session_cli_handlers.py` -> `SessionOrchestrator` -> `SessionLifecycleManager` -> `ExecutionOrchestrator` -> `ActionExecutor`, and is read by `SessionLoopGuard` (guardrail suppression) and `IPlanReviewer`.
 - Polarity today: `__main__.py:282` and `:570` compute `interactive = not (_resolve_yolo(yolo, config_service) or pipeline)`, so `False` means auto-approve. `require_approval` keeps that polarity, making the change a pure substitution with no boolean inversion.
@@ -62,7 +62,7 @@ Then the blank-message prompt appears
 - **No behaviour change**: every existing test stays green with identifier substitutions only — no assertion, fixture default, or expected value changes.
 
 ## Key Unknowns
-- [ ] [Technical] Persisted contracts: whether any stored artifact (plan parameter name, session `meta.yaml` key, report template variable, config setting) uses the identifier `interactive`. Design sensitivity: if one exists, the wire name is preserved and only the code signal is renamed, keeping the slice non-breaking; if none exists, the rename stays confined to code and docs.
+- [x] [Technical] Persisted contracts: whether any stored artifact (plan parameter name, session `meta.yaml` key, report template variable, config setting) uses the identifier `interactive`. **Resolved 2026-11-05:** no stored artifact uses the identifier. The only `interactive` occurrences under `src/teddy_executor/resources` are English prose in `config.yaml` comments and prompt/template Markdown; no YAML/JSON/Jinja key, plan parameter, session metadata field, or report template variable carries the name. The rename is confined to code and docs and is non-breaking.
 
 ## Impact
 1. `[MIGRATE]` `IRunPlanUseCase.execute` / `.resume` — rename the keyword to `require_approval`, keeping the contract shape and parameter order identical.
@@ -74,12 +74,13 @@ Then the blank-message prompt appears
 7. `[PRUNE]` `interactive_mode` — the duplicate local name in the `execute` handler is removed.
 
 ## Deliverables
-- [ ] **Refactor** - Rename the internal approval signal to `require_approval` across ports, services, and adapters, preserving polarity, parameter order, and every existing behaviour.
-- [ ] **Migration** - Update all callers, handler signatures, and test doubles to the new keyword without touching any assertion.
-- [ ] **Cleanup** - Rewrite the user-facing strings and the glossary entry so approval is never described as "interactive", and confirm no persisted contract carried the old identifier.
+- [ ] **Migration** - Rename the approval keyword and variable from `interactive` to `require_approval` across ports, core services, inbound adapters, and every in-repo test call site in one atomic commit, inlining the redundant `interactive_mode` alias in the `execute` handler. Preserve polarity and parameter order; touch no assertion; leave the suite green after the commit.
+- [ ] **Cleanup** - Rewrite the user-facing strings (README usage and flag table, the three `--no-yolo` help strings, `config.yaml` comments) and the `ARCHITECTURE.md` glossary entry so approval is never described as "interactive".
 
 ## Implementation Notes
-Planned; no implementation notes yet.
+- 2026-11-05: Key Unknown resolved by inspection. No persisted contract uses `interactive`; the rename is confined to code and prose.
+- 2026-11-05: Audit re-partitioned the deliverables. The original plan renamed source (deliverable 1) before callers and tests (deliverable 2), which would leave the suite red at the first commit because every unit test passes `interactive=` by keyword. Since every caller is in-repo, the whole call graph moves in one atomic Migration commit. The `[PRUNE] interactive_mode` item is folded into that commit.
+- 2026-11-05: `ShellAdapter._detect_interactive_prompt`, `system_environment_adapter`, `stdin_ownership`, `plan_reviewer`/`textual_plan_reviewer` docstrings, prompt Markdown, and the vertical-slice template keep the word "interactive" — they describe a TTY or a subprocess prompt, not the approval signal.
 
 ## Verification
 1. **Interactive approval:**
