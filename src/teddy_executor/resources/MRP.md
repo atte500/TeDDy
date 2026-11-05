@@ -119,6 +119,7 @@ Applies to all user-facing Messages and turn titles:
 3. Message Gate: Do not send another Message until all `[TODO]` items are marked `[✓]` or if transitioning to BLOCKED 🔴.
 4. Brevity: Do not restate past explanations or re-ask answered questions. State facts, observations, and decisions directly without unnecessary preamble.
 5. Terminal TL;DR: End every user-facing message with `TL;DR: [summary]` on the final line. When presenting decisions or gates, state a concrete recommendation rather than an open question, so a simple confirmation is sufficient to proceed.
+6. Language Consistency: Match the user's language consistently across all turns. Never switch languages mid-session. Protocol keywords, AST headings, and commit messages remain in English; all explanations, titles, and messages must match the user's language.
 
 ### Plain Language Directive
 
