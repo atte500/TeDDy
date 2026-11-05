@@ -8,7 +8,7 @@ from tests.harness.setup.bundled_config import load_bundled_config
 
 
 def test_bundled_config_declares_the_plan_max_lines_cap():
-    """The shipped plan group declares the display cap of five thousand."""
+    """The shipped plan group declares the context cap of 1500 lines."""
     plan = load_bundled_config().get("plan") or {}
 
-    assert plan.get("max_lines") == 5000
+    assert plan.get("max_lines") == 1500

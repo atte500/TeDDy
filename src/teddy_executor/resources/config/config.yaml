@@ -18,7 +18,7 @@ read:
   max_lines: 1000                   # Caps READ action output lines.
 
 plan:
-  max_lines: 5000                   # Caps plan lines included in the LLM context window.
+  max_lines: 1500                   # Caps plan lines included in the LLM context window.
 
 context:
   max_depth: 3                      # Max project tree depth.

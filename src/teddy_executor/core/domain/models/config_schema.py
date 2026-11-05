@@ -44,7 +44,7 @@ class ReadConfig:
 
 @dataclass(frozen=True)
 class PlanConfig:
-    max_lines: int = 5000
+    max_lines: int = 1500
 
 
 @dataclass(frozen=True)

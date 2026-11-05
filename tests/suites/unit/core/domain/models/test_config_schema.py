@@ -146,9 +146,9 @@ def test_nested_tree_width_overrides_the_default():
     assert config.context.max_children == 5
 
 
-def test_default_plan_max_lines_is_five_thousand():
-    """The shipped plan display cap defaults to five thousand lines."""
-    assert DEFAULT_APP_CONFIG.plan.max_lines == 5000
+def test_default_plan_context_cap_is_1500_lines():
+    """The shipped plan context cap defaults to 1500 lines."""
+    assert DEFAULT_APP_CONFIG.plan.max_lines == 1500
 
 
 def test_nested_plan_max_lines_overrides_the_default():
