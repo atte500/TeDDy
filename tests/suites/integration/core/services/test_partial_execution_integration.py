@@ -91,7 +91,7 @@ def test_orchestrator_skips_unselected_actions_integration(
     mock_user_interactor.confirm_action.return_value = (True, "")
 
     # When I run execute
-    report = orchestrator.execute(plan_content=plan_content, interactive=True)
+    report = orchestrator.execute(plan_content=plan_content, require_approval=True)
 
     # Then only 2 actions should be dispatched
     expected_dispatch_count = 2

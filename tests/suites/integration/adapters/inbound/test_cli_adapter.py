@@ -43,7 +43,7 @@ def test_cli_invokes_orchestrator_with_plan_file(monkeypatch, tmp_path):
     assert result.exit_code == 0, f"CLI exited with error: {result.stderr}"
     _, kwargs = mock_run_plan.execute.call_args
     assert kwargs["plan_path"] is not None
-    assert kwargs["interactive"] is False
+    assert kwargs["require_approval"] is False
 
 
 def test_cli_exits_with_error_code_on_failure(monkeypatch, tmp_path):
@@ -109,4 +109,4 @@ def test_cli_handles_interactive_mode_flag(monkeypatch, tmp_path):
 
     # ASSERT
     _, kwargs = mock_run_plan.execute.call_args
-    assert kwargs["interactive"] is True
+    assert kwargs["require_approval"] is True

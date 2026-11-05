@@ -250,7 +250,7 @@ def test_handle_new_session_halts_on_preflight_failure_before_prompt(env):
             container=env.container,
             name=None,
             agent="pathfinder",
-            interactive=True,
+            require_approval=True,
             no_copy=False,
             message=None,
         )

@@ -33,7 +33,7 @@ def test_create_passes_if_file_exists_with_overwrite_integration(tmp_path, monke
     plan = parser.parse(plan_content)
 
     # Act
-    report = orchestrator.execute(plan=plan, interactive=False)
+    report = orchestrator.execute(plan=plan, require_approval=False)
 
     # Assert
     assert report.run_summary.status == RunStatus.SUCCESS

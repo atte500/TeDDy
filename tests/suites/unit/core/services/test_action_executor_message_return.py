@@ -48,7 +48,7 @@ def test_confirm_and_dispatch_returns_user_message_for_message_action(executor):
 
     # Act: dispatch the MESSAGE action
     action_log, user_message = executor.confirm_and_dispatch(
-        message_action, interactive=False, total_actions=1
+        message_action, require_approval=False, total_actions=1
     )
 
     # Assert: the second return value should be the user's typed message
@@ -80,7 +80,7 @@ def test_confirm_and_dispatch_returns_empty_for_non_message_action(executor):
 
     # Act: dispatch the READ action
     action_log, second_value = executor.confirm_and_dispatch(
-        read_action, interactive=False, total_actions=1
+        read_action, require_approval=False, total_actions=1
     )
 
     # Assert: the second return value should be empty string (reason)

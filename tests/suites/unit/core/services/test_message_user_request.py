@@ -63,7 +63,7 @@ class TestMessageActionUserRequest:
         orchestrator._action_executor.reset_file_hashes.return_value = None
 
         action_log, should_halt = orchestrator._handle_action_in_loop(
-            msg_action, plan, interactive=False, halt_execution=False
+            msg_action, plan, require_approval=False, halt_execution=False
         )
 
         assert "user_request" not in plan.metadata, (
@@ -113,7 +113,7 @@ class TestMessageActionUserRequest:
         orchestrator._action_executor.reset_file_hashes.return_value = None
 
         orchestrator._handle_action_in_loop(
-            create_action, plan, interactive=False, halt_execution=False
+            create_action, plan, require_approval=False, halt_execution=False
         )
 
         assert plan.metadata.get("user_request") == "User approved via m key", (
@@ -161,7 +161,7 @@ class TestMessageActionUserRequest:
         orchestrator._action_executor.reset_file_hashes.return_value = None
 
         orchestrator._handle_action_in_loop(
-            execute_action, plan, interactive=False, halt_execution=False
+            execute_action, plan, require_approval=False, halt_execution=False
         )
 
         assert "user_request" not in plan.metadata, (

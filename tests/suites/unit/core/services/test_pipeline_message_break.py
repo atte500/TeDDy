@@ -77,7 +77,7 @@ class TestPipelineMessageBreak:
 
         action_log, captured = executor.confirm_and_dispatch(
             action,
-            interactive=False,
+            require_approval=False,
             total_actions=1,
             pipeline=True,
         )
@@ -105,7 +105,7 @@ class TestPipelineMessageBreak:
 
         action_log, captured = executor.confirm_and_dispatch(
             action,
-            interactive=False,
+            require_approval=False,
             total_actions=1,
             pipeline=False,
         )
@@ -131,7 +131,7 @@ class TestPipelineMessageBreak:
         # Call without pipeline argument -> defaults to False
         action_log, captured = executor.confirm_and_dispatch(
             action,
-            interactive=False,
+            require_approval=False,
             total_actions=1,
         )
 

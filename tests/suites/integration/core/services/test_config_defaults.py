@@ -46,7 +46,7 @@ def test_execute_action_uses_hardcoded_timeout_fallback_when_config_is_missing(
     original_execute.return_value = {"stdout": "hello", "return_code": 0}
 
     # Act
-    report = orchestrator_no_config.execute(plan=plan, interactive=False)
+    report = orchestrator_no_config.execute(plan=plan, require_approval=False)
 
     # Assert
     assert report.run_summary.status == RunStatus.SUCCESS
@@ -90,7 +90,7 @@ def test_edit_action_uses_hardcoded_similarity_fallback_when_config_is_missing(
     )
 
     # Act
-    report = orchestrator_no_config.execute(plan=plan, interactive=False)
+    report = orchestrator_no_config.execute(plan=plan, require_approval=False)
 
     # Assert
     assert report.run_summary.status == RunStatus.SUCCESS

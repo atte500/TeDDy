@@ -32,7 +32,7 @@ def test_execute_with_failing_action(
     mock_action_dispatcher.dispatch_and_execute.return_value = failing_log
 
     # Act
-    report = orchestrator.execute(plan=plan, interactive=False)
+    report = orchestrator.execute(plan=plan, require_approval=False)
 
     # Assert
     assert report.run_summary.status == RunStatus.FAILURE
@@ -80,7 +80,7 @@ def test_execute_auto_skips_after_failure(env, mock_action_dispatcher):
     mock_action_dispatcher.dispatch_and_execute.side_effect = [failing_log, success_log]
 
     # Act
-    report = orchestrator.execute(plan=plan, interactive=False)
+    report = orchestrator.execute(plan=plan, require_approval=False)
 
     # Assert
     expected_action_count = 2
@@ -140,7 +140,7 @@ def test_execute_continues_on_failure_if_allow_failure_is_true(
     mock_action_dispatcher.dispatch_and_execute.side_effect = [failing_log, success_log]
 
     # Act
-    report = orchestrator.execute(plan=plan, interactive=False)
+    report = orchestrator.execute(plan=plan, require_approval=False)
 
     # Assert
     expected_action_count = 2
@@ -175,7 +175,7 @@ def test_execute_happy_path_non_interactive(
     mock_action_dispatcher.dispatch_and_execute.return_value = action_log1
 
     # Act
-    report = orchestrator.execute(plan=plan, interactive=False)
+    report = orchestrator.execute(plan=plan, require_approval=False)
 
     # Assert
     assert report.run_summary.status == RunStatus.SUCCESS
@@ -218,7 +218,7 @@ def test_aborted_plan_preserves_manually_executed_logs(env, mock_plan_reviewer):
     mock_plan_reviewer.review.side_effect = mock_review_side_effect
 
     # Act
-    report = orchestrator.execute(plan=plan, interactive=True)
+    report = orchestrator.execute(plan=plan, require_approval=True)
 
     # Assert
     assert len(report.action_logs) == 2
@@ -255,7 +255,7 @@ def test_execute_with_single_message_bypasses_reviewer(
     mock_action_dispatcher.dispatch_and_execute.return_value = success_log
 
     # Act
-    orchestrator.execute(plan=plan, interactive=True)
+    orchestrator.execute(plan=plan, require_approval=True)
 
     # Assert
     # Verify reviewer.review (TUI) was NOT called

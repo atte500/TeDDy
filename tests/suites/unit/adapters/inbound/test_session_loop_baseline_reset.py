@@ -73,7 +73,7 @@ def _run_loop(monkeypatch, loop_guard, report) -> None:
     _orchestrate_session_loop(
         container=container,
         session_name="test-session",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
     )
 
@@ -96,7 +96,7 @@ def test_loop_re_anchors_baseline_before_the_limit_check(monkeypatch):
     def _reset(turn_count, cumulative_cost):  # noqa: ARG001
         events.append("reset")
 
-    def _check(turn_count, cumulative_cost, interactive):  # noqa: ARG001
+    def _check(turn_count, cumulative_cost, require_approval):  # noqa: ARG001
         events.append("check")
         return (True, None)
 

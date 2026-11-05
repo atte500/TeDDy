@@ -46,7 +46,7 @@ def test_handle_new_session_pipeline_no_message_raises_exit(capsys) -> None:
             container=mock_container,
             name="test_session",
             agent="assistant",
-            interactive=False,
+            require_approval=False,
             no_copy=False,
             message=None,
             pipeline=True,
@@ -126,7 +126,7 @@ def test_orchestrate_session_loop_pipeline_breaks_on_message(monkeypatch) -> Non
     _orchestrate_session_loop(
         container=mock_container,
         session_name="test_session",
-        interactive=False,
+        require_approval=False,
         no_copy=False,
         pipeline=True,
     )
@@ -167,7 +167,7 @@ def test_orchestrate_session_loop_pipeline_no_message_continues(monkeypatch) -> 
     _orchestrate_session_loop(
         container=mock_container,
         session_name="test_session",
-        interactive=False,
+        require_approval=False,
         no_copy=False,
         pipeline=True,
     )
@@ -207,7 +207,7 @@ def test_orchestrate_session_loop_non_pipeline_ignores_message(monkeypatch) -> N
     _orchestrate_session_loop(
         container=mock_container,
         session_name="test_session",
-        interactive=False,
+        require_approval=False,
         no_copy=False,
         pipeline=False,  # Not pipeline mode
     )
@@ -243,7 +243,7 @@ def test_handle_new_session_pipeline_empty_message_raises_exit(
             container=mock_container,
             name="test_session",
             agent="assistant",
-            interactive=False,
+            require_approval=False,
             no_copy=False,
             message=blank_message,
             pipeline=True,

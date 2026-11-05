@@ -145,7 +145,7 @@ class TestPendingPlanCommunicationResume:
         result = manager.resume(
             session_name="say-ask",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message=REPLY,
         )
 
@@ -190,7 +190,7 @@ class TestPendingPlanCommunicationResume:
         result = manager.resume(
             session_name="say-ask",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
         )
 
         # Assert: unchanged pre-existing behavior (no consumption, no prompt).

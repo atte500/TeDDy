@@ -133,7 +133,7 @@ class TestQCancelMessageTerminalOutput:
             orchestrator.execute(
                 plan=plan,
                 plan_path=fake_plan_path,
-                interactive=False,
+                require_approval=False,
             )
 
         # _handle_aborted_session should have been called (it's a real method,
@@ -175,7 +175,7 @@ class TestQCancelMessageTerminalOutput:
             report = orchestrator.execute(
                 plan=plan,
                 plan_path=fake_plan_path,
-                interactive=False,
+                require_approval=False,
             )
 
         assert report is not None, "Report should not be None"

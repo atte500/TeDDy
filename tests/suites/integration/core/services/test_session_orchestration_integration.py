@@ -578,7 +578,7 @@ def test_history_log_contains_planning_output(tmp_path, monkeypatch, env):
     # before trigger_new_plan, so all planning output should be captured.
     actual_name, report = orchestrator.resume(
         session_name=session_name,
-        interactive=False,
+        require_approval=False,
     )
 
     # After resume, the session should have completed turn 01
@@ -681,7 +681,7 @@ def test_context_gathered_exactly_once_per_turn(tmp_path, monkeypatch, env):
     # Act: one resume turn (EMPTY state -> planning -> execution).
     actual_name, report = orchestrator.resume(
         session_name=session_name,
-        interactive=False,
+        require_approval=False,
     )
 
     # Assert

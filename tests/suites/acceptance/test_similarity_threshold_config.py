@@ -35,7 +35,7 @@ def test_respects_global_similarity_threshold(tmp_path, monkeypatch):
     )
 
     # 5. Execute - should pass because 0.84 > 0.8
-    result = adapter.run_execute_with_plan(plan, interactive=False)
+    result = adapter.run_execute_with_plan(plan, require_approval=False)
 
     assert "Overall Status:** SUCCESS" in result.stdout
     assert "Similarity Score:** 0.84" in result.stdout
@@ -67,7 +67,7 @@ def test_fallback_to_default_threshold(tmp_path, monkeypatch):
     )
 
     # 4. Execute - should fail because 0.82 < 0.95
-    result = adapter.run_execute_with_plan(plan, interactive=False)
+    result = adapter.run_execute_with_plan(plan, require_approval=False)
 
     assert "Validation Failed" in result.stdout
     assert "Similarity Threshold:** 0.95" in result.stdout

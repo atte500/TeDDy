@@ -144,7 +144,7 @@ def test_empty_message_termination_notice_is_one_yellow_stderr_line(monkeypatch)
     # Act
     orchestrator.execute(
         plan_path=".teddy/sessions/test/01/plan.md",
-        interactive=False,
+        require_approval=False,
     )
 
     # Assert

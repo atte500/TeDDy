@@ -86,7 +86,7 @@ class TestUserRequestAppendSpacing:
         manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message=MESSAGE,
         )
 
@@ -110,7 +110,7 @@ class TestUserRequestAppendSpacing:
         manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message=MESSAGE,
         )
 
@@ -143,7 +143,7 @@ class TestUserRequestFenceBounding:
         manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message=MESSAGE,
         )
 
@@ -168,7 +168,7 @@ class TestUserRequestFenceBounding:
         manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message=degenerate_message,
         )
 

@@ -209,7 +209,7 @@ def handle_validation_failure(
 def execute_valid_plan(
     container: Container,
     plan: Plan,
-    interactive_mode: bool,
+    require_approval: bool,
     plan_meta: Optional[dict] = None,
 ) -> ExecutionReport:
     """Executes a plan that has already been parsed and validated."""
@@ -220,7 +220,7 @@ def execute_valid_plan(
     meta = plan_meta or {}
     execution_report = orchestrator.execute(
         plan=plan,
-        interactive=interactive_mode,
+        require_approval=require_approval,
         plan_path=meta.get("plan_path"),
         plan_content=meta.get("plan_content"),
     )

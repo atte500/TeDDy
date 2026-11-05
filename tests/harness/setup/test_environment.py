@@ -259,7 +259,7 @@ class TestEnvironment(RealAdapterMixin):
 
         max_turns = int(os.getenv("TEDDY_MAX_TURNS", "1"))
 
-        def _side_effect(turn_count, cost, interactive):
+        def _side_effect(turn_count, cost, require_approval):
             if turn_count < max_turns:
                 return True, None
             return False, "Test guardrail limit reached."

@@ -79,7 +79,7 @@ def test_quit_listener_lifecycle_wraps_the_turn_loop():
     _orchestrate_session_loop(
         container=container,
         session_name="test-session",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
     )
 
@@ -106,7 +106,7 @@ def test_quit_listener_is_started_before_the_turn_loop_runs():
     _orchestrate_session_loop(
         container=container,
         session_name="test-session",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
     )
 
@@ -129,7 +129,7 @@ def test_quit_listener_is_stopped_when_the_turn_loop_is_interrupted():
     _orchestrate_session_loop(
         container=container,
         session_name="test-session",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
     )
 

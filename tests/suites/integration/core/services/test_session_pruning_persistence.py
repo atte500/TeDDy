@@ -77,7 +77,7 @@ def test_pruning_persistence_in_interactive_execution(container, tmp_path):
     plan_path.write_text(builder.build(), encoding="utf-8")
 
     # Act
-    orchestrator.execute(plan_path=str(plan_path), interactive=True)
+    orchestrator.execute(plan_path=str(plan_path), require_approval=True)
 
     # Assert
     next_turn_context = (session_dir / "02" / "turn.context").read_text()
@@ -186,7 +186,7 @@ def test_deduplication_prevents_aggressive_pruning(container, tmp_path):
     plan_path.write_text(builder.build(), encoding="utf-8")
 
     # Act
-    orchestrator.execute(plan_path=str(plan_path), interactive=False)
+    orchestrator.execute(plan_path=str(plan_path), require_approval=False)
 
     # Assert
     next_turn_context = (session_dir / "02" / "turn.context").read_text()

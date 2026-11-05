@@ -90,7 +90,7 @@ class TestLifecyclePrintsInitialRequest:
         lifecycle.resume(
             "test",
             mock_orchestrator,
-            interactive=False,
+            require_approval=False,
         )
 
         # Assert: _print_initial_request should have been called once
@@ -130,7 +130,7 @@ class TestLifecyclePrintsInitialRequest:
         lifecycle._handle_planning_and_execution(
             turn_dir="/root/session/turns/02",
             orchestrator=mock_orchestrator,
-            interactive=False,
+            require_approval=False,
         )
 
         # Assert: _print_initial_request should NOT have been called for turn 02+

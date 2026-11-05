@@ -26,7 +26,7 @@ def test_execute_handles_valid_plan_successfully(env):
     )
 
     # Act
-    report = orchestrator.execute(plan_content=plan_content, interactive=False)
+    report = orchestrator.execute(plan_content=plan_content, require_approval=False)
 
     # Assert
     assert report.run_summary.status == RunStatus.SUCCESS

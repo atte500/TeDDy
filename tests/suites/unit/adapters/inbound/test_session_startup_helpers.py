@@ -59,7 +59,7 @@ def test_both_handlers_route_startup_through_shared_helpers(env, monkeypatch):
         container=env.container,
         name=None,
         agent="developer",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
         message="hi",
     )
@@ -97,7 +97,7 @@ def test_start_routes_startup_failure_through_shared_error_handler(env, monkeypa
         container=env.container,
         name=None,
         agent="pathfinder",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
         message="hi",
     )

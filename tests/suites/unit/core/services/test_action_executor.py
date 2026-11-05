@@ -82,7 +82,7 @@ def test_edit_fails_if_file_modified_externally(fs, container):
 
     # Act 1: dispatch first edit (interactive=False)
     log1, _ = executor.confirm_and_dispatch(
-        first_edit, interactive=False, total_actions=2
+        first_edit, require_approval=False, total_actions=2
     )
     assert log1.status == ActionStatus.SUCCESS
 
@@ -98,7 +98,7 @@ def test_edit_fails_if_file_modified_externally(fs, container):
 
     # Act 2: dispatch second edit
     log2, _ = executor.confirm_and_dispatch(
-        second_edit, interactive=False, total_actions=2
+        second_edit, require_approval=False, total_actions=2
     )
 
     # Assert: second edit must return FAILURE due to hash mismatch

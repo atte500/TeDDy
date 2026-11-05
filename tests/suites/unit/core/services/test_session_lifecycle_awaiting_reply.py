@@ -148,7 +148,7 @@ class TestAwaitingReplyStateMachine:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
             message=REPLY,
         )
 
@@ -190,7 +190,7 @@ class TestAwaitingReplyStateMachine:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
         )
 
         # Assert: mirrors the abort flow — prompt for the reply, then plan.
@@ -215,7 +215,7 @@ class TestAwaitingReplyStateMachine:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
         )
 
         # Assert: empty reply = terminate (abort-flow idiom). The session
@@ -234,7 +234,7 @@ class TestAwaitingReplyStateMachine:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
         )
 
         # Assert: clean exit with guidance; nothing consumed or executed.
@@ -257,7 +257,7 @@ class TestAwaitingReplyStateMachine:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
             message="",
         )
 
@@ -286,13 +286,13 @@ class TestAwaitingReplyStateMachine:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
         )
 
         # Assert: the plan is re-executed in place (pre-existing contract).
         orchestrator.execute.assert_called_once_with(
             plan_path=f"{AWAITING_TURN}/plan.md",
-            interactive=False,
+            require_approval=False,
             project_context=None,
             pipeline=False,
         )
@@ -321,7 +321,7 @@ class TestCompleteTurnMessageResume:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message="new request",
         )
 
@@ -364,7 +364,7 @@ class TestCompleteTurnUserRequestAppend:
         manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message="new request",
         )
 
@@ -408,7 +408,7 @@ class TestCompleteTurnUserRequestAppend:
         manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message="new request",
         )
 
@@ -438,7 +438,7 @@ class TestCompleteTurnUserRequestAppend:
         manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message=message,
         )
 
@@ -466,7 +466,7 @@ class TestCompleteTurnUserRequestAppend:
         manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
         )
 
         # Assert: the existing report is left untouched.

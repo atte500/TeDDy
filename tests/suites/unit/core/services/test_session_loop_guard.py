@@ -24,7 +24,7 @@ def test_production_guard_always_continues():
 
     # Act / Assert
     assert guard.should_continue(
-        turn_count=1, cumulative_cost=0.0, interactive=True
+        turn_count=1, cumulative_cost=0.0, require_approval=True
     ) == (True, None)
 
 
@@ -65,7 +65,7 @@ def test_production_guard_stops_on_max_turns_non_interactive():
     # Act / Assert
     # delta = 5 (>= limit 5) -> STOP
     should_continue, reason = guard.should_continue(
-        turn_count=6, cumulative_cost=0.0, interactive=False
+        turn_count=6, cumulative_cost=0.0, require_approval=False
     )
     assert should_continue is False
     assert reason is not None
@@ -77,7 +77,7 @@ def test_production_guard_stops_on_max_turns_non_interactive():
     assert "5/5" in reason
     # delta = 4 (< limit 5) -> CONTINUE
     assert guard.should_continue(
-        turn_count=5, cumulative_cost=0.0, interactive=False
+        turn_count=5, cumulative_cost=0.0, require_approval=False
     ) == (True, None)
 
 
@@ -99,7 +99,7 @@ def test_production_guard_stops_on_max_cost_non_interactive():
     # Act / Assert
     # delta = 1.50 (>= limit 1.50) -> STOP
     should_continue, reason = guard.should_continue(
-        turn_count=1, cumulative_cost=2.50, interactive=False
+        turn_count=1, cumulative_cost=2.50, require_approval=False
     )
     assert should_continue is False
     assert reason is not None
@@ -111,7 +111,7 @@ def test_production_guard_stops_on_max_cost_non_interactive():
     assert "$1.50/$1.50" in reason
     # delta = 1.49 (< limit 1.50) -> CONTINUE
     assert guard.should_continue(
-        turn_count=1, cumulative_cost=2.49, interactive=False
+        turn_count=1, cumulative_cost=2.49, require_approval=False
     ) == (True, None)
 
 
@@ -136,7 +136,7 @@ def test_production_guard_reason_includes_config_key_and_path():
 
     # Act – delta = 1 (>= limit 1) -> STOP
     should_continue, reason = guard.should_continue(
-        turn_count=2, cumulative_cost=0.0, interactive=False
+        turn_count=2, cumulative_cost=0.0, require_approval=False
     )
 
     # Assert – delta = 1 (>= limit 1) -> STOP and name the renamed config key.
@@ -168,5 +168,5 @@ def test_production_guard_ignores_limits_in_interactive_mode():
     # Act / Assert
     # Limits reached but interactive -> CONTINUE
     assert guard.should_continue(
-        turn_count=100, cumulative_cost=100.0, interactive=True
+        turn_count=100, cumulative_cost=100.0, require_approval=True
     ) == (True, None)

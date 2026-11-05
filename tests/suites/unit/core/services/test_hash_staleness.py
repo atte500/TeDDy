@@ -83,7 +83,7 @@ class TestHashStalenessCrossTurn:
 
         # Simulate Turn 1: an EDIT action stores the hash
         log1, _ = executor.confirm_and_dispatch(
-            action, interactive=False, total_actions=1
+            action, require_approval=False, total_actions=1
         )
         assert log1.status == ActionStatus.SUCCESS
         assert "/test/file.txt" in executor._file_hashes
@@ -99,7 +99,7 @@ class TestHashStalenessCrossTurn:
         # Turn 2: new EDIT on same file. Without stale hash, pre-check is skipped,
         # action proceeds to dispatch_and_execute and succeeds.
         log2, _ = executor.confirm_and_dispatch(
-            action, interactive=False, total_actions=1
+            action, require_approval=False, total_actions=1
         )
         assert log2.status == ActionStatus.SUCCESS
 
@@ -118,7 +118,7 @@ class TestHashStalenessCrossTurn:
 
         # First EDIT succeeds
         log1, _ = executor.confirm_and_dispatch(
-            action, interactive=False, total_actions=2
+            action, require_approval=False, total_actions=2
         )
         assert log1.status == ActionStatus.SUCCESS
 
@@ -128,7 +128,7 @@ class TestHashStalenessCrossTurn:
 
         # Second EDIT should fail because pre-check catches the change
         log2, _ = executor.confirm_and_dispatch(
-            action, interactive=False, total_actions=2
+            action, require_approval=False, total_actions=2
         )
         assert log2.status == ActionStatus.FAILURE
         assert "content modified" in str(log2.details)

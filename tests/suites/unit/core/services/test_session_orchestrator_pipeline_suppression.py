@@ -140,7 +140,7 @@ class TestPipelineMessageSuppression:
         result = h.orchestrator.execute(
             plan_content=MarkdownPlanBuilder("Message turn").build(),
             plan_path=PLAN_PATH,
-            interactive=False,
+            require_approval=False,
             pipeline=True,
         )
 
@@ -167,7 +167,7 @@ class TestPipelineMessageSuppression:
         h.orchestrator.execute(
             plan_content=MarkdownPlanBuilder("Message turn").build(),
             plan_path=PLAN_PATH,
-            interactive=False,
+            require_approval=False,
             pipeline=True,
         )
 
@@ -195,7 +195,7 @@ class TestPipelineMessageSuppression:
         h.orchestrator.execute(
             plan_content=MarkdownPlanBuilder("Action turn").build(),
             plan_path=PLAN_PATH,
-            interactive=False,
+            require_approval=False,
             pipeline=True,
         )
 
@@ -216,7 +216,7 @@ class TestPipelineMessageSuppression:
         h.orchestrator.execute(
             plan_content=MarkdownPlanBuilder("Message turn").build(),
             plan_path=PLAN_PATH,
-            interactive=False,
+            require_approval=False,
             pipeline=False,
         )
 

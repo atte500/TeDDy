@@ -39,5 +39,5 @@ class TestMockUnpackingSafety:
             lifecycle._handle_planning_and_execution(
                 turn_dir="/root/session/turns/02",
                 orchestrator=mock_orchestrator,
-                interactive=False,
+                require_approval=False,
             )

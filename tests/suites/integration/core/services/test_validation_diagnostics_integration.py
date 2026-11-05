@@ -62,7 +62,7 @@ This paragraph is NOT a REPLACE heading.
     orchestrator = integration_container.resolve(IRunPlanUseCase)
 
     with pytest.raises(InvalidPlanError) as excinfo:
-        orchestrator.execute(plan_content=plan_content, interactive=False)
+        orchestrator.execute(plan_content=plan_content, require_approval=False)
 
     error_msg = str(excinfo.value)
     assert "Missing REPLACE block after FIND block" in error_msg
@@ -110,7 +110,7 @@ new
 ```
 """
     orchestrator = integration_container.resolve(IRunPlanUseCase)
-    report = orchestrator.execute(plan_content=plan_content, interactive=False)
+    report = orchestrator.execute(plan_content=plan_content, require_approval=False)
 
     assert report.run_summary.status == RunStatus.VALIDATION_FAILED
     full_errors = "\n".join(report.validation_result or [])
@@ -139,6 +139,6 @@ Rationale with 5 backticks.
     orchestrator = integration_container.resolve(IRunPlanUseCase)
 
     with pytest.raises(InvalidPlanError) as excinfo:
-        orchestrator.execute(plan_content=plan_content, interactive=False)
+        orchestrator.execute(plan_content=plan_content, require_approval=False)
 
     assert "Code Block (5 backticks)" in str(excinfo.value)

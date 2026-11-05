@@ -15,7 +15,7 @@ def test_cli_interactive_prompt_formatting(tmp_path, monkeypatch):
         .build()
     )
 
-    result = adapter.run_execute_with_plan(plan, input="y\n", interactive=True)
+    result = adapter.run_execute_with_plan(plan, input="y\n", require_approval=True)
 
     assert result.exit_code == 0
     output = result.stdout + result.stderr
@@ -115,7 +115,7 @@ def test_config_check_message_is_localized_to_start_command(tmp_path, monkeypatc
         .add_execute("echo 'hello'", description="Test")
         .build()
     )
-    result_execute = adapter.run_execute_with_plan(plan, interactive=False)
+    result_execute = adapter.run_execute_with_plan(plan, require_approval=False)
     assert "Checking configurations..." not in result_execute.stderr
 
     # 3. Verify message is NOT present in 'context'

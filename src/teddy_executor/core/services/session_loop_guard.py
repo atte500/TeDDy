@@ -71,9 +71,9 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
         )
 
     def should_continue(
-        self, turn_count: int, cumulative_cost: float, interactive: bool
+        self, turn_count: int, cumulative_cost: float, require_approval: bool
     ) -> tuple[bool, Optional[str]]:
-        if interactive:
+        if require_approval:
             return True, None
 
         if not bool(self._read_config("enabled", True)):

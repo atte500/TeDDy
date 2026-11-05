@@ -38,7 +38,7 @@ def test_orchestrator_delegates_to_reviewer_in_interactive_mode(
     mock_action_dispatcher.dispatch_and_execute.return_value = success_log
 
     # Act
-    orchestrator.execute(plan=plan, interactive=True)
+    orchestrator.execute(plan=plan, require_approval=True)
 
     # Assert
     mock_plan_reviewer.review_action.assert_called_once_with(
@@ -90,12 +90,12 @@ def test_orchestrator_falls_back_to_legacy_interaction_if_no_reviewer(
     plan = Plan(title="Test Plan", rationale="Test", actions=[action1])
 
     # Act
-    orchestrator.execute(plan=plan, interactive=True)
+    orchestrator.execute(plan=plan, require_approval=True)
 
     # Assert
     mock_executor.confirm_and_dispatch.assert_called_once_with(
         action1,
-        interactive=True,
+        require_approval=True,
         total_actions=1,
         agent_name=None,
         is_session=False,
@@ -123,7 +123,7 @@ def test_execute_interactive_and_skipped(
     mock_plan_reviewer.review_action.return_value = (False, "")
 
     # Act
-    report = orchestrator.execute(plan=plan, interactive=True)
+    report = orchestrator.execute(plan=plan, require_approval=True)
 
     # Assert
     # A plan where all actions are skipped should have an overall status of SKIPPED.
@@ -161,7 +161,7 @@ def test_execute_with_mixed_success_and_skipped_is_success(
     mock_action_dispatcher.dispatch_and_execute.return_value = success_log
 
     # Act
-    report = orchestrator.execute(plan=plan, interactive=True)
+    report = orchestrator.execute(plan=plan, require_approval=True)
 
     # Assert
     expected_action_count = 2
@@ -201,7 +201,7 @@ def test_execute_interactive_and_approved(
     mock_plan_reviewer.review_action.return_value = (True, "")
 
     # Act
-    report = orchestrator.execute(plan=plan, interactive=True)
+    report = orchestrator.execute(plan=plan, require_approval=True)
 
     # Assert
     assert report.run_summary.status == RunStatus.SUCCESS

@@ -37,7 +37,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
     def _perform_interactive_review(
         self,
         plan: Plan,
-        interactive: bool,
+        require_approval: bool,
         project_context: Optional[Any] = None,
     ) -> Plan | None:
         """Allows the user to review and modify the plan before execution."""
@@ -46,8 +46,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         if plan.is_communication_turn():
             return plan
 
-        # We only call the bulk review (TUI) if interactive is True AND a reviewer is present.
-        if interactive and self._plan_reviewer:
+        # We only call the bulk review (TUI) if require_approval is True AND a
+        # reviewer is present.
+        if require_approval and self._plan_reviewer:
             reviewed_plan = self._plan_reviewer.review(
                 plan, project_context=project_context
             )
@@ -58,7 +59,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         return plan
 
     def _process_plan_actions(
-        self, plan: Plan, interactive: bool, pipeline: bool = False
+        self, plan: Plan, require_approval: bool, pipeline: bool = False
     ) -> list[ActionLog]:
         """Iterates through actions and dispatches them."""
         # Reset file hashes at the start of each plan execution to prevent
@@ -90,7 +91,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                     )
                     continue
                 action_log, should_halt = self._handle_action_in_loop(
-                    action, plan, interactive, halt_execution, pipeline
+                    action, plan, require_approval, halt_execution, pipeline
                 )
                 action_logs.append(action_log)
                 if should_halt:
@@ -119,7 +120,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         self,
         action: ActionData,
         plan: Plan,
-        interactive: bool,
+        require_approval: bool,
         halt_execution: bool,
         pipeline: bool = False,
     ) -> tuple[ActionLog, bool]:
@@ -150,7 +151,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
 
         try:
             action_log, captured_message = self._dispatch_single_action(
-                action, plan, interactive, pipeline
+                action, plan, require_approval, pipeline
             )
         except Exception as e:
             action_log = self._action_executor.handle_failed_action(action, str(e))
@@ -169,7 +170,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         return action_log, should_halt
 
     def _dispatch_single_action(
-        self, action: Any, plan: Plan, interactive: bool, pipeline: bool = False
+        self, action: Any, plan: Plan, require_approval: bool, pipeline: bool = False
     ) -> tuple[ActionLog, str]:
         """Handles the review and dispatch of a single action."""
         agent_name = plan.metadata.get("Agent") or plan.metadata.get("agent")
@@ -181,7 +182,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         # Single communication actions bypass approval for fluid conversation.
         is_communication_action = plan.is_communication_turn()
 
-        if interactive and self._plan_reviewer and not is_communication_action:
+        if require_approval and self._plan_reviewer and not is_communication_action:
             should_dispatch, captured_message = self._plan_reviewer.review_action(
                 action, len(plan.actions), agent_name=agent_name
             )
@@ -198,7 +199,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             # Reviewer (TUI) handled approval, execute immediately skipping isolation.
             action_log, dispatch_message = self._action_executor.confirm_and_dispatch(
                 action,
-                interactive=False,
+                require_approval=False,
                 total_actions=len(plan.actions),
                 agent_name=agent_name,
                 is_session=plan.is_session,
@@ -210,7 +211,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         # Fallback to ActionExecutor interaction if no reviewer is present.
         return self._action_executor.confirm_and_dispatch(
             action,
-            interactive=interactive,
+            require_approval=require_approval,
             total_actions=len(plan.actions),
             agent_name=agent_name,
             is_session=plan.is_session,
@@ -289,7 +290,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         plan: Optional[Plan] = None,
         plan_content: Optional[str] = None,
         plan_path: Optional[str] = None,
-        interactive: bool = True,
+        require_approval: bool = True,
         message: Optional[str] = None,
         project_context: Optional[Any] = None,
         pipeline: bool = False,
@@ -313,13 +314,13 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 )
 
             reviewed_plan = self._perform_interactive_review(
-                plan, interactive, project_context=project_context
+                plan, require_approval, project_context=project_context
             )
             if reviewed_plan is None:
                 return self._handle_aborted_execution(plan, start_time, message)
 
             action_logs = self._process_plan_actions(
-                reviewed_plan, interactive, pipeline
+                reviewed_plan, require_approval, pipeline
             )
             return self._report_assembler.assemble(
                 ReportAssemblyData(
@@ -344,7 +345,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
     def resume(
         self,
         session_name: str,
-        interactive: bool = True,
+        require_approval: bool = True,
         project_context: Optional[Any] = None,
     ) -> tuple[str, Optional[ExecutionReport]]:
         """Stateless orchestrator does not support session resumption."""

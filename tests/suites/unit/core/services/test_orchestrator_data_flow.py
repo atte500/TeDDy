@@ -30,7 +30,7 @@ def test_orchestrator_populates_report_metadata(orchestrator, mock_action_dispat
     )
 
     # Execute
-    report = orchestrator.execute(plan, interactive=False)
+    report = orchestrator.execute(plan, require_approval=False)
 
     # Assert metadata flow
     assert report.plan_title == "Test Plan Title"

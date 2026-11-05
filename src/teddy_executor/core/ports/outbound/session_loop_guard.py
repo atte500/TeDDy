@@ -8,7 +8,7 @@ class ISessionLoopGuard(Protocol):
     """
 
     def should_continue(
-        self, turn_count: int, cumulative_cost: float, interactive: bool
+        self, turn_count: int, cumulative_cost: float, require_approval: bool
     ) -> tuple[bool, Optional[str]]:
         """
         Returns (True, None) if the loop should continue to the next turn.

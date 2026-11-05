@@ -17,7 +17,7 @@ def test_interactive_execution_accept_all(tmp_path, monkeypatch):
     )
 
     # y for CREATE, y for EXECUTE
-    report = adapter.execute_plan(plan, user_input="y\ny\n", interactive=True)
+    report = adapter.execute_plan(plan, user_input="y\ny\n", require_approval=True)
 
     assert report.action_was_successful(0) is True
     assert report.action_was_successful(1) is True
@@ -39,7 +39,7 @@ def test_interactive_execution_skip_one(tmp_path, monkeypatch):
     )
 
     # y for CREATE, n for EXECUTE (then empty reason)
-    report = adapter.execute_plan(plan, user_input="y\nn\n\n", interactive=True)
+    report = adapter.execute_plan(plan, user_input="y\nn\n\n", require_approval=True)
 
     assert report.action_was_successful(0) is True
     assert report.action_logs[1].status == "SKIPPED"
@@ -61,7 +61,7 @@ def test_interactive_skip_with_reason(tmp_path, monkeypatch):
     )
 
     # n for CREATE (no reason prompt expected in streamlined UI)
-    report = adapter.execute_plan(plan, user_input="n\n", interactive=True)
+    report = adapter.execute_plan(plan, user_input="n\n", require_approval=True)
 
     assert report.action_logs[0].status == "SKIPPED"
     # The default reason prefix remains, but specific reason is now empty

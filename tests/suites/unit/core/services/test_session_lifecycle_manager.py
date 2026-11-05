@@ -130,7 +130,7 @@ def test_resume_returns_tuple_with_session_name_and_report(manager):
     result = manager.resume(
         session_name="my-session",
         orchestrator=mock_orchestrator,
-        interactive=False,
+        require_approval=False,
         pipeline=False,
     )
 
@@ -170,7 +170,7 @@ def test_resume_accepts_injected_message_and_preserves_flow(manager):
     result = manager.resume(
         session_name="my-session",
         orchestrator=mock_orchestrator,
-        interactive=False,
+        require_approval=False,
         pipeline=False,
         message="reply",
     )
@@ -219,7 +219,9 @@ class TestInitialRequestOrdering:
 
         manager._session_planner.trigger_new_plan.return_value = ("session-name", None)
 
-        manager._handle_planning_and_execution(turn_dir, mock_orch, interactive=False)
+        manager._handle_planning_and_execution(
+            turn_dir, mock_orch, require_approval=False
+        )
 
         # Assert: _print_initial_request was called once with correct args
         mock_print.assert_called_once()
@@ -276,7 +278,9 @@ class TestTeeTiming:
 
         manager._session_planner.trigger_new_plan.side_effect = _record_and_return_tuple
 
-        manager._handle_planning_and_execution(turn_dir, mock_orch, interactive=False)
+        manager._handle_planning_and_execution(
+            turn_dir, mock_orch, require_approval=False
+        )
 
         # tee_enter must come before trigger_new_plan
         assert call_log.index("tee_enter") < call_log.index("trigger_new_plan"), (
@@ -316,7 +320,9 @@ class TestTeeTiming:
         manager._session_planner.trigger_new_plan.side_effect = (
             _capture_tee_and_return_tuple
         )
-        manager._handle_planning_and_execution(turn_dir, mock_orch, interactive=False)
+        manager._handle_planning_and_execution(
+            turn_dir, mock_orch, require_approval=False
+        )
 
         # During planning, tee_active should be True
         assert captured_active[0] is True, (
@@ -344,7 +350,7 @@ class TestTeeTiming:
         manager._session_planner.trigger_new_plan.return_value = ("CANCELLED", None)
 
         result = manager._handle_planning_and_execution(
-            turn_dir, mock_orch, interactive=False
+            turn_dir, mock_orch, require_approval=False
         )
 
         assert result == (
@@ -389,7 +395,9 @@ class TestContextThreading:
         mock_orch.execute.return_value = None
 
         # Act
-        manager._handle_planning_and_execution(turn_dir, mock_orch, interactive=False)
+        manager._handle_planning_and_execution(
+            turn_dir, mock_orch, require_approval=False
+        )
 
         # Assert
         kwargs = mock_orch.execute.call_args.kwargs

@@ -94,7 +94,7 @@ class TestEmptyStateBlankMessage:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message=blank,
         )
 
@@ -113,7 +113,7 @@ class TestEmptyStateBlankMessage:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message="",
         )
 
@@ -133,7 +133,7 @@ class TestEmptyStateBlankMessage:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
             message=blank,
         )
 
@@ -158,7 +158,7 @@ class TestEmptyStateBlankMessage:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
             message=blank,
         )
 
@@ -185,7 +185,7 @@ class TestCompleteTurnBlankMessage:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message=blank,
         )
 
@@ -204,7 +204,7 @@ class TestCompleteTurnBlankMessage:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message="",
         )
 
@@ -225,7 +225,7 @@ class TestCompleteTurnBlankMessage:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
             message=blank,
         )
 
@@ -251,7 +251,7 @@ class TestCompleteTurnBlankMessage:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
             message=blank,
         )
 
@@ -273,7 +273,7 @@ class TestNonBlankMessagesUnchanged:
         manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message=None,
         )
 
@@ -289,7 +289,7 @@ class TestNonBlankMessagesUnchanged:
         manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message="Real instruction",
         )
 

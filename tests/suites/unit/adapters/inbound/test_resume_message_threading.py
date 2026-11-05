@@ -115,7 +115,7 @@ class TestResumeMessageThreading:
         handle_resume_session(
             container=h.container,
             path="test-session",
-            interactive=False,
+            require_approval=False,
             no_copy=True,
             message="reply",
         )
@@ -123,7 +123,7 @@ class TestResumeMessageThreading:
         # Assert
         h.orchestrator.resume.assert_called_once_with(
             session_name="test-session",
-            interactive=False,
+            require_approval=False,
             pipeline=False,
             message="reply",
         )
@@ -136,7 +136,7 @@ class TestResumeMessageThreading:
         handle_resume_session(
             container=h.container,
             path="test-session",
-            interactive=False,
+            require_approval=False,
             no_copy=True,
         )
 
@@ -175,7 +175,7 @@ class TestResumeMessageThreading:
         handle_resume_session(
             container=h.container,
             path="test-session",
-            interactive=False,
+            require_approval=False,
             no_copy=True,
             message="reply",
         )
@@ -198,7 +198,7 @@ class TestResumePipelineThreading:
         handle_resume_session(
             container=h.container,
             path="test-session",
-            interactive=False,
+            require_approval=False,
             no_copy=True,
             pipeline=True,
         )
@@ -208,7 +208,7 @@ class TestResumePipelineThreading:
         # mirroring the established --message/-m threading precedent.
         h.orchestrator.resume.assert_called_once_with(
             session_name="test-session",
-            interactive=False,
+            require_approval=False,
             pipeline=True,
             message=None,
         )
@@ -236,7 +236,7 @@ class TestResumeBlankMessageThreading:
         handle_resume_session(
             container=h.container,
             path="test-session",
-            interactive=True,
+            require_approval=True,
             no_copy=True,
             message=blank,
         )
@@ -245,7 +245,7 @@ class TestResumeBlankMessageThreading:
         # so the lifecycle manager can resolve it to an interactive prompt.
         h.orchestrator.resume.assert_called_once_with(
             session_name="test-session",
-            interactive=True,
+            require_approval=True,
             pipeline=False,
             message=blank,
         )

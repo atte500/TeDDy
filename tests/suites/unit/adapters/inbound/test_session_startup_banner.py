@@ -62,7 +62,7 @@ def test_start_banner_session_line_has_no_leading_blank(env, monkeypatch, capsys
         container=env.container,
         name=None,
         agent="pathfinder",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
         message="hi",
     )

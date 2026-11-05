@@ -17,7 +17,7 @@ class IRunPlanUseCase(ABC):
         plan: Optional[Plan] = None,
         plan_content: Optional[str] = None,
         plan_path: Optional[str] = None,
-        interactive: bool = True,
+        require_approval: bool = True,
         message: Optional[str] = None,
         project_context: Optional["ProjectContext"] = None,
         pipeline: bool = False,
@@ -29,18 +29,18 @@ class IRunPlanUseCase(ABC):
             plan: An already parsed Plan object.
             plan_content: Raw Markdown content of a plan.
             plan_path: Path to a plan file on disk.
-            interactive: A flag to enable/disable step-by-step user approval.
+            require_approval: A flag to enable/disable step-by-step user approval.
             message: Optional user instruction to include in the report.
             project_context: Optional context metadata for display and auto-pruning.
         """
-        _ = (plan, plan_content, plan_path, interactive, message, project_context)
+        _ = (plan, plan_content, plan_path, require_approval, message, project_context)
         raise NotImplementedError
 
     @abstractmethod
     def resume(
         self,
         session_name: str,
-        interactive: bool = True,
+        require_approval: bool = True,
         project_context: Optional["ProjectContext"] = None,
     ) -> tuple[str, Optional[ExecutionReport]]:
         """
@@ -54,8 +54,8 @@ class IRunPlanUseCase(ABC):
 
         Args:
             session_name: The name of the session to resume.
-            interactive: Whether to run in interactive mode.
+            require_approval: Whether each action requires user approval.
             project_context: Optional context for the run.
         """
-        _ = (session_name, interactive, project_context)
+        _ = (session_name, require_approval, project_context)
         raise NotImplementedError

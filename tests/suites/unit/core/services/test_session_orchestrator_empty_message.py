@@ -66,7 +66,7 @@ class TestEmptyMessageTermination:
         result = orchestrator.execute(
             message="",
             plan_path=plan_path,
-            interactive=False,
+            require_approval=False,
         )
 
         # Assert: termination signal (None) returned

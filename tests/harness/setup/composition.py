@@ -142,7 +142,7 @@ def container(monkeypatch):
 
     class TestSessionLoopGuard(ISessionLoopGuard):
         def should_continue(
-            self, turn_count: int, cumulative_cost: float, interactive: bool
+            self, turn_count: int, cumulative_cost: float, require_approval: bool
         ) -> tuple[bool, str | None]:
             import os
 

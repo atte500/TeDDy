@@ -79,7 +79,7 @@ def test_resume_agent_override_is_shown_in_banner(monkeypatch, capsys):
     handlers.handle_resume_session(
         container=container,
         path="test-session",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
         agent="prototyper",
     )
@@ -103,7 +103,7 @@ def test_resume_without_override_shows_stored_agent(monkeypatch, capsys):
     handlers.handle_resume_session(
         container=container,
         path="test-session",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
     )
 

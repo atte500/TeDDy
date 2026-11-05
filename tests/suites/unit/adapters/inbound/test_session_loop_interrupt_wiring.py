@@ -74,7 +74,7 @@ def test_session_loop_catches_keyboard_interrupt_with_termination_notice(capsys)
     _orchestrate_session_loop(
         container=container,
         session_name="test-session",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
     )
 
@@ -100,7 +100,7 @@ def test_session_loop_names_the_quit_key_when_recorded(capsys):
     _orchestrate_session_loop(
         container=container,
         session_name="test-session",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
     )
 
@@ -138,7 +138,7 @@ def test_handler_installed_during_the_turn_loop(monkeypatch):
     _orchestrate_session_loop(
         container=container,
         session_name="test-session",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
     )
 
@@ -166,7 +166,7 @@ def test_previous_sigint_disposition_restored_after_the_loop(monkeypatch):
         _orchestrate_session_loop(
             container=container,
             session_name="test-session",
-            interactive=False,
+            require_approval=False,
             no_copy=True,
         )
 

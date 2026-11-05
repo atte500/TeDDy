@@ -54,7 +54,7 @@ def test_edit_action_shows_prompt_and_details(tmp_path, monkeypatch):
     )
 
     # Run interactively and check stdout/stderr for the prompt
-    result = adapter.run_execute_with_plan(plan, input="y\n", interactive=True)
+    result = adapter.run_execute_with_plan(plan, input="y\n", require_approval=True)
 
     assert result.exit_code == 0
     # Combined output should contain action details
@@ -73,7 +73,7 @@ def test_create_action_shows_prompt_and_details(tmp_path, monkeypatch):
     content = "New file content"
     plan = MarkdownPlanBuilder("Test Plan").add_create("new.txt", content).build()
 
-    result = adapter.run_execute_with_plan(plan, input="y\n", interactive=True)
+    result = adapter.run_execute_with_plan(plan, input="y\n", require_approval=True)
 
     assert result.exit_code == 0
     output = result.stdout + result.stderr

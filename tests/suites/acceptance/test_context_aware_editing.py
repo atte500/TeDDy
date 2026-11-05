@@ -49,7 +49,7 @@ def test_tui_context_aware_editing_marks_action_as_modified(env):
 
         # 6. Execute modified plan through orchestrator
         orchestrator = env.get_service(ExecutionOrchestrator)
-        report = orchestrator.execute(modified_plan, interactive=False)
+        report = orchestrator.execute(modified_plan, require_approval=False)
 
         # 7. Assert: File created with modified content
         assert (env.workspace / "new_file.py").read_text() == "print('modified')"

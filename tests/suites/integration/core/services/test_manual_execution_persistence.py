@@ -44,7 +44,7 @@ def test_orchestrator_skips_manually_executed_actions():
     plan = Plan(title="Test", rationale="Test", actions=[action])
 
     # Execute
-    report = orchestrator.execute(plan=plan, interactive=False)
+    report = orchestrator.execute(plan=plan, require_approval=False)
 
     # Verify
     assert len(report.action_logs) == 1
@@ -89,7 +89,7 @@ def test_orchestrator_halts_on_manual_failure():
         )
     )
 
-    report = orchestrator.execute(plan=plan, interactive=False)
+    report = orchestrator.execute(plan=plan, require_approval=False)
 
     expected_action_count = 2
     assert len(report.action_logs) == expected_action_count
@@ -142,7 +142,7 @@ def test_manually_executed_action_logs_on_submit(caplog):
     orchestrator = _build_orchestrator()
 
     with caplog.at_level(logging.INFO):
-        report = orchestrator.execute(plan=plan, interactive=False)
+        report = orchestrator.execute(plan=plan, require_approval=False)
 
     assert report.action_logs[0] == action.action_log
     messages = [record.message for record in caplog.records]
@@ -158,7 +158,7 @@ def test_manually_executed_message_action_stays_silent(caplog):
 
     with caplog.at_level(logging.INFO):
         orchestrator._handle_action_in_loop(
-            action, plan, interactive=False, halt_execution=False
+            action, plan, require_approval=False, halt_execution=False
         )
 
     messages = [record.message for record in caplog.records]

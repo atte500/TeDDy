@@ -33,7 +33,7 @@ def test_execute_no_yolo_flag_is_accepted_and_runs_interactively(
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 
     result = adapter.run_execute_with_plan(
-        _create_plan(), input="y\n", interactive=True, extra_args=[flag]
+        _create_plan(), input="y\n", require_approval=True, extra_args=[flag]
     )
 
     assert result.exit_code == 0
@@ -59,7 +59,9 @@ def test_execute_without_flag_uses_yolo_default_true(tmp_path, monkeypatch):
         True if key == "yolo_default" else default
     )
 
-    result = adapter.run_execute_with_plan(_create_plan(), input="", interactive=True)
+    result = adapter.run_execute_with_plan(
+        _create_plan(), input="", require_approval=True
+    )
 
     assert result.exit_code == 0
     output = result.stdout + result.stderr

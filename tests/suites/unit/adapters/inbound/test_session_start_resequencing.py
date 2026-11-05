@@ -100,7 +100,7 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
         container=container,
         name=None,
         agent="pathfinder",
-        interactive=True,
+        require_approval=True,
         no_copy=False,
         message=None,
     )
@@ -175,7 +175,7 @@ def test_handle_new_session_prompts_even_when_non_interactive():
         container=container,
         name=None,
         agent="pathfinder",
-        interactive=False,
+        require_approval=False,
         no_copy=False,
         message=None,
     )
@@ -223,7 +223,7 @@ def test_handle_new_session_raises_eof_error_on_empty_prompt_response_in_non_int
             container=container,
             name=None,
             agent="pathfinder",
-            interactive=False,
+            require_approval=False,
             no_copy=False,
             message=None,
         )
@@ -291,7 +291,7 @@ def test_handle_new_session_prompts_when_message_is_blank(blank_message, monkeyp
         container=container,
         name=None,
         agent="pathfinder",
-        interactive=True,
+        require_approval=True,
         no_copy=False,
         message=blank_message,
     )

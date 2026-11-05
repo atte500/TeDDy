@@ -395,7 +395,7 @@ def test_handle_new_session_starts_background_check_thread(monkeypatch):
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
-        lambda container, session_name, interactive, no_copy, **kwargs: None,
+        lambda container, session_name, require_approval, no_copy, **kwargs: None,
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._echo_config_success",
@@ -420,7 +420,7 @@ def test_handle_new_session_starts_background_check_thread(monkeypatch):
         container=mock_container,
         name="test_session",
         agent="test_agent",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
         message="Test",
         additional_context=None,
@@ -498,7 +498,7 @@ def test_handle_resume_session_starts_background_check_thread(monkeypatch):
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
-        lambda container, session_name, interactive, no_copy, **kwargs: None,
+        lambda container, session_name, require_approval, no_copy, **kwargs: None,
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._sync_and_display_session_meta",
@@ -518,7 +518,7 @@ def test_handle_resume_session_starts_background_check_thread(monkeypatch):
     handle_resume_session(
         container=mock_container,
         path=None,
-        interactive=False,
+        require_approval=False,
         no_copy=True,
         model=None,
     )
@@ -582,7 +582,7 @@ def test_resume_handler_calls_set_session_agent_when_agent_provided(monkeypatch)
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._orchestrate_session_loop",
-        lambda container, session_name, interactive, no_copy, **kwargs: None,
+        lambda container, session_name, require_approval, no_copy, **kwargs: None,
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._sync_and_display_session_meta",
@@ -613,7 +613,7 @@ def test_resume_handler_calls_set_session_agent_when_agent_provided(monkeypatch)
     handle_resume_session(
         container=mock_container,
         agent="developer",
-        interactive=True,
+        require_approval=True,
         setup_editor=False,
         setup_api_key=False,
     )
@@ -656,7 +656,7 @@ def test_handle_new_session_invokes_pull_workspace_on_start(monkeypatch):
         container=mock_container,
         name="pull-session",
         agent="developer",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
         message="Test pull",
     )
@@ -695,7 +695,7 @@ def test_handle_resume_session_never_invokes_pull_workspace_on_start(monkeypatch
     handlers.handle_resume_session(
         container=mock_container,
         path=None,
-        interactive=False,
+        require_approval=False,
         no_copy=True,
     )
 

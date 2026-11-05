@@ -57,14 +57,14 @@ class CliTestAdapter:
         plan_content: str,
         cwd: Optional[Path] = None,
         input: Optional[str] = None,
-        interactive: bool = False,
+        require_approval: bool = False,
         extra_args: Optional[List[str]] = None,
     ) -> Result:
         """
         Executes a plan via the '--plan-content' bypass and returns the Result.
         """
         args = ["execute", "--no-copy", "--plan-content", plan_content]
-        if not interactive:
+        if not require_approval:
             args.append("--yolo")
         if extra_args:
             args.extend(extra_args)
@@ -82,7 +82,7 @@ class CliTestAdapter:
         self,
         path: Optional[str] = None,
         no_copy: bool = True,
-        interactive: bool = True,
+        require_approval: bool = True,
         input: Optional[str] = None,
         extra_args: Optional[List[str]] = None,
     ) -> Result:
@@ -92,7 +92,7 @@ class CliTestAdapter:
             args.append(path)
         if no_copy:
             args.append("--no-copy")
-        if not interactive:
+        if not require_approval:
             args.append("--yolo")
         if extra_args:
             args.extend(extra_args)
@@ -102,7 +102,7 @@ class CliTestAdapter:
         self,
         plan_content: str,
         user_input: Optional[str] = None,
-        interactive: bool = False,
+        require_approval: bool = False,
         extra_args: Optional[List[str]] = None,
     ) -> ReportParser:
         """
@@ -111,7 +111,7 @@ class CliTestAdapter:
         result = self.run_execute_with_plan(
             plan_content,
             input=user_input,
-            interactive=interactive,
+            require_approval=require_approval,
             extra_args=extra_args,
         )
 

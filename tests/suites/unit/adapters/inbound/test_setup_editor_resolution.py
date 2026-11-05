@@ -3,7 +3,7 @@
 The Wiring deliverable computes the one-time editor-setup signal at the CLI
 boundary as::
 
-    setup_editor = system_env.isatty() and not pipeline and (interactive or message is None)
+    setup_editor = system_env.isatty() and not pipeline and (require_approval or message is None)
 
 The happy-path flip (a yolo session without ``-m`` on a TTY still runs the
 editor setup) is proven end-to-end by the Acceptance Tracer Bullet. Per Rule 11
@@ -20,11 +20,11 @@ from teddy_executor.core.ports.outbound import ISystemEnvironment
 
 
 @pytest.mark.parametrize(
-    "interactive, message, pipeline, isatty, expected",
+    "require_approval, message, pipeline, isatty, expected",
     [
-        # start (interactive, the opening prompt will fire) on a TTY -> run.
+        # start (approval required, the opening prompt will fire) on a TTY -> run.
         (True, None, False, True, True),
-        # start -m (interactive approval loop) on a TTY -> run.
+        # start -m (approval loop active) on a TTY -> run.
         (True, "x", False, True, True),
         # yolo without -m on a TTY (still blocks on the opening prompt) -> run (FIX).
         (False, None, False, True, True),
@@ -38,14 +38,14 @@ from teddy_executor.core.ports.outbound import ISystemEnvironment
     ],
 )
 def test_resolve_setup_editor_decision_table(
-    env, interactive, message, pipeline, isatty, expected
+    env, require_approval, message, pipeline, isatty, expected
 ):
     env.with_tty(isatty)
 
     system_env = env.get_service(ISystemEnvironment)
     result = _resolve_setup_editor(
         system_env,
-        interactive=interactive,
+        require_approval=require_approval,
         message=message,
         pipeline=pipeline,
     )

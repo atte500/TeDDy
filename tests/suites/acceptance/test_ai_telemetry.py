@@ -132,7 +132,7 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
     # In Discovery Protocol, we don't pass -m to resume
     result = adapter.run_resume(
         ".teddy/sessions/20260417_120000-turn",
-        interactive=False,
+        require_approval=False,
         extra_args=["-y"],
     )
 

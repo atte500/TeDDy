@@ -137,9 +137,9 @@ def _arrange_resumed_turn_report(manager, present: bool) -> None:
 class TestPendingPlanNonCommunicationResume:
     """An injected reply on a pending ACTION turn must be honored (seeded)."""
 
-    @pytest.mark.parametrize("interactive", [True, False])
+    @pytest.mark.parametrize("require_approval", [True, False])
     def test_injected_reply_seeds_plan_and_executes_parsed_plan(
-        self, container, interactive: bool
+        self, container, require_approval: bool
     ) -> None:
         # Arrange: a normal pending plan (single EXECUTE action), NO awaiting_reply.
         plan = _action_plan()
@@ -151,7 +151,7 @@ class TestPendingPlanNonCommunicationResume:
         result = manager.resume(
             session_name="follow-up",
             orchestrator=orchestrator,
-            interactive=interactive,
+            require_approval=require_approval,
             message=REPLY,
         )
 
@@ -182,7 +182,7 @@ class TestPendingPlanNonCommunicationResume:
         result = manager.resume(
             session_name="follow-up",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
         )
 
         # Assert: unchanged pre-existing behavior (bare re-execute, no seed).
@@ -206,7 +206,7 @@ class TestPendingPlanNonCommunicationResume:
         result = manager.resume(
             session_name="follow-up",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
             message=REPLY,
         )
 
@@ -243,7 +243,7 @@ class TestPendingPlanNonCommunicationResume:
         result = manager.resume(
             session_name="follow-up",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
             message=REPLY,
         )
 
@@ -267,7 +267,7 @@ class TestPendingPlanNonCommunicationResume:
         result = manager.resume(
             session_name="follow-up",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
         )
 
         # Assert: the bare re-execute path records nothing and promotes nothing.

@@ -141,7 +141,7 @@ class TestResumeMessageBeforeFirstPlan:
         manager.resume(
             session_name=SESSION_NAME,
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
             message=MESSAGE,
         )
 
@@ -198,7 +198,7 @@ class TestResumeMessageMidSessionPreserved:
         manager.resume(
             session_name=SESSION_NAME,
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
             message=MESSAGE,
         )
 
@@ -216,7 +216,7 @@ class TestResumeMessageMidSessionPreserved:
         manager.resume(
             session_name=SESSION_NAME,
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
         )
 
         # Control: a bare resume must not promote the predecessor turn.

@@ -79,22 +79,24 @@ def _resolve_agent(agent: Optional[str], pipeline: bool) -> str:
 
 def _resolve_setup_editor(
     system_env: ISystemEnvironment,
-    interactive: bool,
+    require_approval: bool,
     message: Optional[str],
     pipeline: bool,
 ) -> bool:
     """Resolve whether the one-time editor setup should run (Slice 00-26).
 
     The editor gate keys on "will the session actually read the terminal"
-    rather than on the approval (``interactive``) flag: setup runs only when a
+    rather than on the approval (``require_approval``) flag: setup runs only when a
     terminal is attached (``system_env.isatty``), the run is not a pipeline,
-    and the session will either enter the approval loop (``interactive``) or
+    and the session will either enter the approval loop (``require_approval``) or
     block on the opening-message prompt (``message is None``). This lets a yolo
     run without ``-m`` configure its editor once, while fully-specified batch
     runs (``-y -m``), pipeline runs, and non-TTY (CI/piped) runs stay
     prompt-free.
     """
-    return system_env.isatty() and not pipeline and (interactive or message is None)
+    return (
+        system_env.isatty() and not pipeline and (require_approval or message is None)
+    )
 
 
 def _resolve_setup_api_key(
@@ -105,7 +107,7 @@ def _resolve_setup_api_key(
 
     Unlike the optional editor, the LLM API key is REQUIRED, so its gate is
     deliberately WIDER: setup runs whenever a terminal is attached and the run
-    is not a pipeline. There is intentionally no ``interactive``/``-m`` clause --
+    is not a pipeline. There is intentionally no ``require_approval``/``-m`` clause --
     a fully-specified batch run (``-y -m``) on a TTY still prompts, because the
     session cannot proceed without a key. Pipeline runs remain the clean
     automation path (they hard-error by design).
@@ -279,15 +281,18 @@ def start(  # noqa: PLR0913
 
     additional_context = normalize_context_values(context)
 
-    interactive = not (_resolve_yolo(yolo, config_service) or pipeline)
+    require_approval = not (_resolve_yolo(yolo, config_service) or pipeline)
     system_env = container.resolve(ISystemEnvironment)
     handle_new_session(
         container=container,
         name=name,
         agent=_resolve_agent(agent, pipeline),
-        interactive=interactive,
+        require_approval=require_approval,
         setup_editor=_resolve_setup_editor(
-            system_env, interactive=interactive, message=message, pipeline=pipeline
+            system_env,
+            require_approval=require_approval,
+            message=message,
+            pipeline=pipeline,
         ),
         setup_api_key=_resolve_setup_api_key(system_env, pipeline=pipeline),
         no_copy=no_copy,
@@ -567,14 +572,17 @@ def resume(  # noqa: PLR0913
     _ensure_project_initialized(container)
     config_service = _resolve_config_or_exit(container)
 
-    interactive = not (_resolve_yolo(yolo, config_service) or pipeline)
+    require_approval = not (_resolve_yolo(yolo, config_service) or pipeline)
     system_env = container.resolve(ISystemEnvironment)
     handle_resume_session(
         container=container,
         path=path,
-        interactive=interactive,
+        require_approval=require_approval,
         setup_editor=_resolve_setup_editor(
-            system_env, interactive=interactive, message=message, pipeline=pipeline
+            system_env,
+            require_approval=require_approval,
+            message=message,
+            pipeline=pipeline,
         ),
         setup_api_key=_resolve_setup_api_key(system_env, pipeline=pipeline),
         no_copy=no_copy,
@@ -625,7 +633,6 @@ def execute(  # noqa: PLR0913
     container = get_container()
     _ensure_project_initialized(container)
     config_service = container.resolve(IConfigService)
-    interactive_mode = not _resolve_yolo(yolo, config_service)
 
     try:
         final_plan_content = get_plan_content(plan_content, plan_file)
@@ -634,7 +641,7 @@ def execute(  # noqa: PLR0913
         report = orchestrator.execute(
             plan_content=final_plan_content,
             plan_path=str(plan_file) if plan_file else None,
-            interactive=interactive_mode,
+            require_approval=not _resolve_yolo(yolo, config_service),
             message=message,
         )
 

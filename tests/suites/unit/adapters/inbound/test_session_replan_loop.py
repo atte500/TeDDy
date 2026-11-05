@@ -116,7 +116,7 @@ def test_handle_new_session_loops_multiple_turns_when_non_interactive():
         container=container,
         name=None,
         agent="pathfinder",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
         message="Do multiple turns",
     )
@@ -192,7 +192,7 @@ def test_handle_resume_session_loops_multiple_turns_when_non_interactive():
     handle_resume_session(
         container=container,
         path="my-session",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
     )
 
@@ -279,7 +279,7 @@ def test_termination_message_printed_when_guard_stops(capsys):
     _orchestrate_session_loop(
         container=container,
         session_name="test-session",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
     )
 
@@ -345,7 +345,7 @@ def test_guard_reason_split_with_leading_newline(capsys):
     _orchestrate_session_loop(
         container=container,
         session_name="test-session",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
     )
 

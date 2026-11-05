@@ -122,7 +122,7 @@ class TestInterruptDrain:
         plan = Plan(title="Interrupted Plan", rationale="test", actions=actions)
 
         # Act
-        h.orchestrator.execute(plan=plan, interactive=False)
+        h.orchestrator.execute(plan=plan, require_approval=False)
 
         # Assert: only the in-flight action was dispatched; the drain
         # skipped the remaining actions with the interrupt reason, and the
@@ -162,7 +162,7 @@ class TestInterruptDrain:
         plan = Plan(title="Mid-Plan Interrupt", rationale="test", actions=actions)
 
         # Act
-        h.orchestrator.execute(plan=plan, interactive=False)
+        h.orchestrator.execute(plan=plan, require_approval=False)
 
         # Assert: the two in-flight actions dispatched and logged; the
         # drain skipped only the action AFTER the flag was set.
@@ -199,7 +199,7 @@ class TestInterruptDrain:
         plan = Plan(title="Uninterrupted Plan", rationale="test", actions=actions)
 
         # Act
-        h.orchestrator.execute(plan=plan, interactive=False)
+        h.orchestrator.execute(plan=plan, require_approval=False)
 
         # Assert: every action dispatched; no skips; the assembler
         # received the dispatched logs by identity, all SUCCESS.

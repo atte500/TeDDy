@@ -40,7 +40,7 @@ async def test_execution_report_shows_user_modified_fields(env):
 
     orchestrator = env.container.resolve(IRunPlanUseCase)
 
-    report = orchestrator.execute(plan_content=plan_content, interactive=True)
+    report = orchestrator.execute(plan_content=plan_content, require_approval=True)
 
     # 4. Verify the report object
     assert report.action_logs[0].modified is True

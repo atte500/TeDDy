@@ -147,7 +147,7 @@ class TestPipelineNoMessageStopAgain:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
             pipeline=True,
             message=None,
         )

@@ -115,7 +115,7 @@ class TestResumeClearsActualModel:
             handle_resume_session(
                 container=container,
                 path="test-session",
-                interactive=False,
+                require_approval=False,
                 no_copy=True,
                 model="new-model",
             )
@@ -174,7 +174,7 @@ class TestResumeClearsActualModel:
             handle_resume_session(
                 container=container,
                 path="test-session",
-                interactive=False,
+                require_approval=False,
                 no_copy=True,
                 model=None,
             )

@@ -34,7 +34,7 @@ async def test_execute_mid_plan_failure_produces_report(real_env, monkeypatch):
     )
 
     # 3. Execute the plan (non-interactive)
-    report = adapter.execute_plan(plan_markdown, interactive=False)
+    report = adapter.execute_plan(plan_markdown, require_approval=False)
 
     # 4. Assertions
     # ReportParser provides access to the final status via summary and action logs

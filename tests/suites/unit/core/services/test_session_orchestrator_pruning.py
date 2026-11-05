@@ -358,7 +358,7 @@ def test_execute_programmatic_harvest_when_non_interactive(
     )
 
     # Act
-    orchestrator.execute(plan_path=plan_path, interactive=False)
+    orchestrator.execute(plan_path=plan_path, require_approval=False)
 
     # Assert
     assert plan.metadata.get("pruned_context") == "unselected.py"
@@ -399,7 +399,7 @@ def test_execute_programmatic_harvest_clean_pop_when_none_pruned(
     )
 
     # Act
-    orchestrator.execute(plan_path=plan_path, interactive=False)
+    orchestrator.execute(plan_path=plan_path, require_approval=False)
 
     # Assert
     assert "pruned_context" not in plan.metadata

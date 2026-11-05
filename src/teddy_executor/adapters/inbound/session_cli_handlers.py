@@ -546,7 +546,7 @@ def _is_communication_turn(report: Any) -> bool:
 def _orchestrate_session_loop(  # noqa: PLR0913
     container: Container,
     session_name: str,
-    interactive: bool,
+    require_approval: bool,
     no_copy: bool,
     pipeline: bool = False,
     message: Optional[str] = None,
@@ -595,7 +595,7 @@ def _orchestrate_session_loop(  # noqa: PLR0913
             turn_count += 1
             session_name, report = orchestrator.resume(
                 session_name=session_name,
-                interactive=interactive,
+                require_approval=require_approval,
                 pipeline=pipeline,
                 message=message,
             )
@@ -634,7 +634,7 @@ def _orchestrate_session_loop(  # noqa: PLR0913
                 loop_guard.reset_baseline(turn_count, cumulative_cost)
 
             should_continue, guard_reason = loop_guard.should_continue(
-                turn_count, cumulative_cost, interactive
+                turn_count, cumulative_cost, require_approval
             )
             if not should_continue:
                 _emit_guard_termination(guard_reason)
@@ -799,7 +799,7 @@ def handle_new_session(  # noqa: PLR0913
     container: Container,
     name: Optional[str],
     agent: str,
-    interactive: bool = True,
+    require_approval: bool = True,
     no_copy: bool = False,
     message: Optional[str] = None,
     pipeline: bool = False,
@@ -864,7 +864,7 @@ def handle_new_session(  # noqa: PLR0913
         _orchestrate_session_loop(
             container=container,
             session_name=Path(session_dir).name,
-            interactive=interactive,
+            require_approval=require_approval,
             no_copy=no_copy,
             pipeline=pipeline,
             max_turns=max_turns,
@@ -1487,7 +1487,7 @@ def _sync_and_display_session_meta(
 def handle_resume_session(  # noqa: PLR0913
     container: Container,
     path: Optional[str] = None,
-    interactive: bool = True,
+    require_approval: bool = True,
     no_copy: bool = False,
     model: Optional[str] = None,
     agent: Optional[str] = None,
@@ -1532,7 +1532,7 @@ def handle_resume_session(  # noqa: PLR0913
         _orchestrate_session_loop(
             container=container,
             session_name=session_name,
-            interactive=interactive,
+            require_approval=require_approval,
             no_copy=no_copy,
             message=message,
             pipeline=pipeline,

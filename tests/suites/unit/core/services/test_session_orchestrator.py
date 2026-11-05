@@ -159,7 +159,7 @@ def test_session_orchestrator_passes_status_to_pruning_service(  # noqa: PLR0913
     orchestrator._context_service.get_context.return_value = MagicMock()
 
     # Act
-    orchestrator.execute(plan_path="path/to/01/plan.md", interactive=True)
+    orchestrator.execute(plan_path="path/to/01/plan.md", require_approval=True)
 
     # Assert
     orchestrator._pruning_service.prune.assert_called_once_with(
@@ -194,7 +194,7 @@ def test_session_orchestrator_resolves_context_when_non_interactive(
     orchestrator._context_service.get_context.return_value = MagicMock()
 
     # Act
-    orchestrator.execute(plan_path="path/to/01/plan.md", interactive=False)
+    orchestrator.execute(plan_path="path/to/01/plan.md", require_approval=False)
 
     # Assert
     orchestrator._context_service.get_context.assert_called_once()
@@ -243,7 +243,7 @@ def test_execute_regather_branch_is_fallback_only_never_hits_provided_context(
     # Act
     orchestrator.execute(
         plan_path="path/to/01/plan.md",
-        interactive=True,
+        require_approval=True,
         project_context=provided_context,
     )
 
@@ -353,7 +353,7 @@ def test_session_orchestrator_harvests_context_in_interactive_mode(  # noqa: PLR
     orchestrator._pruning_service.prune.side_effect = lambda ctx, **kwargs: ctx
 
     # Act
-    orchestrator.execute(plan_path="path/to/01/plan.md", interactive=True)
+    orchestrator.execute(plan_path="path/to/01/plan.md", require_approval=True)
 
     # Assert
     assert mock_plan.metadata.get("pruned_context") == "pruned.txt"
@@ -739,7 +739,7 @@ class TestConsoleVisibilityWiring:
             plan_content="plan content",
             plan_path=plan_path,
             message=message,
-            interactive=True,
+            require_approval=True,
         )
 
         # _print_initial_request: no longer called from orchestrator (lifecycle manager handles it)

@@ -71,7 +71,7 @@ def test_session_loop_exits_after_an_interrupt_drain(monkeypatch):
     _orchestrate_session_loop(
         container=container,
         session_name="test-session",
-        interactive=False,
+        require_approval=False,
         no_copy=True,
     )
 

@@ -163,7 +163,7 @@ def test_reply_finalizes_awaiting_turn_then_plans_next_turn(manager) -> None:
     result = manager.resume(
         session_name="feature",
         orchestrator=orchestrator,
-        interactive=False,
+        require_approval=False,
         message=REPLY,
     )
 
@@ -224,7 +224,7 @@ def test_finalized_report_renders_user_reply_not_agent_message(container) -> Non
     manager.resume(
         session_name="feature",
         orchestrator=orchestrator,
-        interactive=False,
+        require_approval=False,
         message=REPLY,
     )
 
@@ -260,7 +260,7 @@ def test_synthesis_routes_through_report_assembler(container) -> None:
     result = manager.resume(
         session_name="feature",
         orchestrator=orchestrator,
-        interactive=False,
+        require_approval=False,
         message=REPLY,
     )
 

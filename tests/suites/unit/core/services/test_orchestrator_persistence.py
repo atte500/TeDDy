@@ -44,7 +44,7 @@ def test_execute_persists_manual_plan_content_to_temp_file():
     plan_content = "# Test Plan\n## Rationale\n..."
 
     # Act
-    orchestrator.execute(plan_content=plan_content, interactive=False)
+    orchestrator.execute(plan_content=plan_content, require_approval=False)
 
     # Assert
     # We expect the orchestrator to have written the content to a file

@@ -118,7 +118,7 @@ class ActionExecutor:
     def confirm_and_dispatch(  # noqa: PLR0913, C901
         self,
         action,
-        interactive: bool,
+        require_approval: bool,
         total_actions: int,
         agent_name: Optional[str] = None,
         is_session: bool = False,
@@ -136,7 +136,8 @@ class ActionExecutor:
 
         # Pipeline mode short-circuit: produce synthetic ActionLog without dispatching,
         # preventing the blocking ask_question call (which reads stdin).
-        # Only fires when pipeline=True (not in YOLO mode which also sets interactive=False).
+        # Only fires when pipeline=True (not in YOLO mode which also sets
+        # require_approval=False).
         if is_communication and pipeline:
             content = action.params.get("content", action.params.get("prompt", ""))
             log_params = action.params.copy()
@@ -150,7 +151,7 @@ class ActionExecutor:
             )
             return (action_log, "")
 
-        if interactive and not is_communication:
+        if require_approval and not is_communication:
             should_dispatch, reason = self._get_interactive_confirmation(action)
 
         if not should_dispatch:

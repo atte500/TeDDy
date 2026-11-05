@@ -60,7 +60,7 @@ class SessionLifecycleManager:
         self,
         session_name: str,
         orchestrator: IRunPlanUseCase,
-        interactive: bool = True,
+        require_approval: bool = True,
         project_context: Optional[Any] = None,
         pipeline: bool = False,
         message: Optional[str] = None,
@@ -88,7 +88,7 @@ class SessionLifecycleManager:
                     turn_meta,
                     session_name,
                     orchestrator,
-                    interactive,
+                    require_approval,
                     project_context=project_context,
                     pipeline=pipeline,
                     message=message,
@@ -99,14 +99,14 @@ class SessionLifecycleManager:
                 report = orchestrator.execute(
                     plan=plan,
                     plan_path=plan_path,
-                    interactive=interactive,
+                    require_approval=require_approval,
                     project_context=project_context,
                     pipeline=pipeline,
                 )
             else:
                 report = orchestrator.execute(
                     plan_path=plan_path,
-                    interactive=interactive,
+                    require_approval=require_approval,
                     project_context=project_context,
                     pipeline=pipeline,
                 )
@@ -119,7 +119,7 @@ class SessionLifecycleManager:
                 state,
                 turn_path,
                 orchestrator,
-                interactive,
+                require_approval,
                 project_context,
                 pipeline,
                 message,
@@ -133,7 +133,7 @@ class SessionLifecycleManager:
         state: SessionState,
         turn_path: str,
         orchestrator: IRunPlanUseCase,
-        interactive: bool,
+        require_approval: bool,
         project_context: Optional[Any],
         pipeline: bool,
         message: Optional[str],
@@ -158,7 +158,7 @@ class SessionLifecycleManager:
             return self._handle_planning_and_execution(
                 turn_path,
                 orchestrator,
-                interactive,
+                require_approval,
                 project_context=project_context,
                 pipeline=pipeline,
                 message=message,
@@ -171,7 +171,7 @@ class SessionLifecycleManager:
         return self._handle_planning_and_execution(
             next_turn_dir,
             orchestrator,
-            interactive,
+            require_approval,
             project_context=project_context,
             message=message,
         )
@@ -180,10 +180,10 @@ class SessionLifecycleManager:
         """Reports whether a human is reachable to answer a prompt.
 
         User presence means a terminal is attached to stdin and the run is not
-        a pipeline. It is deliberately NOT the action-approval ``interactive``
+        a pipeline. It is deliberately NOT the action-approval ``require_approval``
         flag, which is False whenever ``yolo_default`` is set even though a
         human is sitting at the terminal. Action approval keeps reading
-        ``interactive``; only prompt decisions read this. A pipeline run never
+        ``require_approval``; only prompt decisions read this. A pipeline run never
         prompts, so it needs no terminal port at all.
         """
         if pipeline:
@@ -353,7 +353,7 @@ class SessionLifecycleManager:
         turn_meta: dict[str, Any],
         session_name: str,
         orchestrator: IRunPlanUseCase,
-        interactive: bool,
+        require_approval: bool,
         project_context: Optional[Any] = None,
         pipeline: bool = False,
         message: Optional[str] = None,
@@ -417,7 +417,7 @@ class SessionLifecycleManager:
         return self._handle_planning_and_execution(
             next_turn_dir,
             orchestrator,
-            interactive,
+            require_approval,
             project_context=project_context,
             pipeline=pipeline,
             message=reply,
@@ -513,7 +513,7 @@ class SessionLifecycleManager:
         self,
         turn_dir: str,
         orchestrator: IRunPlanUseCase,
-        interactive: bool,
+        require_approval: bool,
         project_context: Optional[Any] = None,
         pipeline: bool = False,
         message: Optional[str] = None,
@@ -575,7 +575,7 @@ class SessionLifecycleManager:
             _, actual_turn_path = self._session_service.get_session_state(new_name)
             report = orchestrator.execute(
                 plan_path=f"{actual_turn_path}/plan.md",
-                interactive=interactive,
+                require_approval=require_approval,
                 project_context=(
                     gathered_context
                     if gathered_context is not None

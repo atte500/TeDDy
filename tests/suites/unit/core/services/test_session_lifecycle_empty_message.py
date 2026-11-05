@@ -91,7 +91,7 @@ class TestEmptyStateMessageResume:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=True,
+            require_approval=True,
             message=MESSAGE,
         )
 
@@ -127,7 +127,7 @@ class TestEmptyStateMessageResume:
         result = manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
-            interactive=False,
+            require_approval=False,
             message=MESSAGE,
         )
 

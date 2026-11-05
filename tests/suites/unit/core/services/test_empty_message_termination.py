@@ -118,7 +118,7 @@ class TestBug15EmptyMessageTermination:
 
         result = orchestrator.execute(
             plan_path=".teddy/sessions/test/01/plan.md",
-            interactive=False,
+            require_approval=False,
         )
 
         # Assert: session terminates (None)
@@ -200,7 +200,7 @@ class TestBug15EmptyMessageTermination:
 
         result = orchestrator.execute(
             plan_path=".teddy/sessions/test/01/plan.md",
-            interactive=False,
+            require_approval=False,
         )
 
         # Assert: session continues (non-None)
