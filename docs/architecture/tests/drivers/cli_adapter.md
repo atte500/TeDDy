@@ -40,16 +40,16 @@ None — this is a test harness component.
 - **Preconditions:** `args` is a list of CLI arguments.
 - **Postconditions:** Runs the command in `cwd` or the default directory and returns the `Result` with ANSI-free `stdout`.
 
-### `run_execute_with_plan(plan_content, cwd=None, input=None, interactive=False, extra_args=None) -> Result`
-- **Postconditions:** Runs `execute --no-copy --plan-content <plan_content>`, appending `--yolo` when `interactive` is `False` and any `extra_args` after it.
+### `run_execute_with_plan(plan_content, cwd=None, input=None, require_approval=False, extra_args=None) -> Result`
+- **Postconditions:** Runs `execute --no-copy --plan-content <plan_content>`, appending `--yolo` when `require_approval` is `False` and any `extra_args` after it.
 
 ### `run_start(args, input=None) -> Result`
 - **Postconditions:** Runs the `start` command with the supplied arguments.
 
-### `run_resume(path=None, no_copy=True, interactive=True, input=None, extra_args=None) -> Result`
+### `run_resume(path=None, no_copy=True, require_approval=True, input=None, extra_args=None) -> Result`
 - **Postconditions:** Runs the `resume` command with the supplied path and flags.
 
-### `execute_plan(plan_content, user_input=None, interactive=False, extra_args=None) -> ReportParser`
+### `execute_plan(plan_content, user_input=None, require_approval=False, extra_args=None) -> ReportParser`
 - **Postconditions:** Runs the plan, re-raises any exception that is not a `SystemExit` or `click.exceptions.Exit`, and returns a `ReportParser` over the combined stdout and stderr.
 
 ### `run_command(args, input=None) -> Result`

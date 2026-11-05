@@ -17,7 +17,7 @@ Implements the `IRunPlanUseCase` inbound port. It runs a parsed `Plan` atomicall
 - [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Reads plan files and writes temporary plans.
 - [`IExecutionReportAssembler`](../ports/outbound/execution_report_assembler.md): Builds the final report.
 - [`IUserInteractor`](../ports/outbound/user_interactor.md): Displays messages.
-- [`IPlanReviewer`](../ports/inbound/plan_reviewer.md): Optional interactive review.
+- [`IPlanReviewer`](../ports/inbound/plan_reviewer.md): Optional batch plan review.
 - [`InterruptGuard`](/src/teddy_executor/core/utils/interrupt_guard.py): Optional two-phase Ctrl+C drain.
 
 ## Class Invariants
@@ -41,12 +41,12 @@ None declared directly — the service consumes the concrete services and ports 
 
 ## Operations
 
-### `execute(plan=None, plan_content=None, plan_path=None, interactive=True, message=None, project_context=None, pipeline=False) -> ExecutionReport`
+### `execute(plan=None, plan_content=None, plan_path=None, require_approval=True, message=None, project_context=None, pipeline=False) -> ExecutionReport`
 - **Preconditions:** Exactly one of `plan`, `plan_content`, or `plan_path` supplies the plan.
-- **Postconditions:** Returns the assembled `ExecutionReport`. The method resolves the plan, validates it, performs the interactive review, dispatches the actions, and assembles the report. A user abort returns an `ABORTED` report.
+- **Postconditions:** Returns the assembled `ExecutionReport`. The method resolves the plan, validates it, performs the batch plan review, dispatches the actions, and assembles the report. A user abort returns an `ABORTED` report.
 - **Exceptions:** `InvalidPlanError` when validation fails; `ValueError` when no plan source is provided.
 
-### `resume(session_name, interactive=True, project_context=None) -> tuple[str, Optional[ExecutionReport]]`
+### `resume(session_name, require_approval=True, project_context=None) -> tuple[str, Optional[ExecutionReport]]`
 - **Preconditions:** None.
 - **Postconditions:** None — session resumption is not supported by this service.
 - **Exceptions:** `NotImplementedError` always.

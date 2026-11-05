@@ -25,27 +25,27 @@ Rename the internal action-approval signal from `interactive` to `require_approv
 > As a maintainer, I want the approval flag's name to state its meaning so I never read it as terminal presence again.
 
 ```gherkin
-Given no automatic-approval flag and no pipeline mode
+Given no `-y/--yolo` flag and no pipeline mode
 When a plan executes
-Then each action requires confirmation before it runs
+Then the plan is presented in the reviewer before any action runs
 ```
 
 ```gherkin
 Given `-y` or `yolo_default: true`
 When a plan executes
-Then no action requires confirmation
+Then the plan review is skipped and every action runs
 ```
 
 ```gherkin
 Given `--pipeline`
 When a plan executes
-Then no action requires confirmation
+Then the plan review is skipped and every action runs
 ```
 
 ```gherkin
 Given `-n/--no-yolo` while `yolo_default: true`
 When a plan executes
-Then each action requires confirmation
+Then the plan is presented in the reviewer
 ```
 
 ```gherkin
@@ -69,13 +69,13 @@ Then the blank-message prompt appears
 2. `[MIGRATE]` Core services — `SessionOrchestrator`, `SessionLifecycleManager`, `ExecutionOrchestrator`, `ActionExecutor`, `ProductionSessionLoopGuard` / `ISessionLoopGuard`, and `IPlanReviewer` rename the parameter and their internal reads.
 3. `[MIGRATE]` Inbound adapters — `__main__.py` (three derivation sites), `session_cli_handlers.py` (three handler signatures), and `cli_helpers.py` adopt the new name, and the `execute` path drops the `interactive_mode` alias.
 4. `[MIGRATE]` Tests — identifier substitution across the affected modules; no assertion changes.
-5. `[MIGRATE]` User-facing text — the README flag table and usage examples, the three typer `--no-yolo` descriptions, and the `config.yaml` comment are reworded so `-n` reads as requiring per-action confirmation and `-y` as auto-approving actions. The user-facing flag names `-y/--yolo` and `-n/--no-yolo` do not change.
+5. `[MIGRATE]` User-facing text — the README flag table and usage examples, the three typer `--no-yolo` descriptions, and the `config.yaml` comment are reworded so `-n` reads as reviewing the plan first and `-y` as skipping the review (yolo run). The user-facing flag names `-y/--yolo` and `-n/--no-yolo` do not change.
 6. `[MIGRATE]` `docs/architecture/ARCHITECTURE.md` — the Action Approval entry names `require_approval` and records `interactive` as the former name that invited the conflation.
 7. `[PRUNE]` `interactive_mode` — the duplicate local name in the `execute` handler is removed.
 
 ## Deliverables
 - [x] **Migration** - Rename the approval keyword and variable from `interactive` to `require_approval` across ports, core services, inbound adapters, and every in-repo test call site in one atomic commit, inlining the redundant `interactive_mode` alias in the `execute` handler. Preserve polarity and parameter order; touch no assertion; leave the suite green after the commit.
-- [ ] **Cleanup** - Rewrite the user-facing strings (README usage and flag table, the three `--no-yolo` help strings, `config.yaml` comments) and the `ARCHITECTURE.md` glossary entry so approval is never described as "interactive".
+- [x] **Cleanup** - Rewrite the user-facing strings (README usage and flag table, the three `--no-yolo` help strings, `config.yaml` comments) and the `ARCHITECTURE.md` glossary entry so approval is never described as "interactive".
 
 ## Implementation Notes
 - 2026-11-05: Key Unknown resolved by inspection. No persisted contract uses `interactive`; the rename is confined to code and prose.
@@ -86,20 +86,28 @@ Then the blank-message prompt appears
 - 2026-11-05: Inlined the `execute` handler's redundant `interactive_mode` alias; the call site now reads `require_approval=not _resolve_yolo(yolo, config_service)`.
 - 2026-11-05: A multi-line `@pytest.mark.parametrize("interactive, message, ...")` argname in `test_setup_editor_resolution.py` escaped the single-line grep and surfaced as a collection error only at `make test`. Corrected before the commit; the suite is green at 2251 passed, 5 skipped.
 - 2026-11-05: Staging the renamed test modules surfaced 13 pre-existing lint violations unrelated to the rename (TID251, F841, PLR0913). Added narrow `per-file-ignores` entries in `pyproject.toml`, matching the existing precedent, to unblock the commit; remediation stays scheduled in Milestone 5.
+- 2026-11-05: Approval UX confirmed as one batch plan review, not a per-action prompt. `IPlanReviewer` resolves unconditionally (`registries/reviewer.py:37`), `ExecutionOrchestrator._perform_interactive_review` calls `review(plan)` once, and `TextualPlanReviewer.review_action` is a no-op returning `(True, "")`. The per-action `IUserInteractor.confirm_action` prompt is unreachable from the CLI. The first Cleanup wording ("requires confirmation before each action") was corrected accordingly.
+- 2026-11-05: Settled vocabulary: "plan review" for the batch TUI step, "yolo run" for a run that skips it, "pipeline run" for `--pipeline`. The three `--yolo/--no-yolo` help blocks now read "Skip the plan review and execute all actions. --no-yolo / -n reviews the plan first (default)." and the max-turns/max-cost help reads "for a yolo run".
+- 2026-11-05: The README usage examples, the environment and optional-flags tables, the CI paragraph, the `config.yaml` `yolo_default`/`guardrails` comments, and the ARCHITECTURE glossary were rewritten. Table rows were re-padded to their original line length so columns stay aligned.
+- 2026-11-05: Glossary term renamed **Action Approval** -> **Plan Approval**, with a sentence stating that the TUI reviewer presents the whole plan once and no per-action prompt follows. The historical clause recording `interactive` as the former name is retained as a deliberate history note, not a stale current name.
+- 2026-11-05: As-Built signature corrections landed across `run_plan_use_case.md`, `execution_orchestrator.md`, `session_orchestrator.md`, `session_loop_guard.md`, the outbound `session_loop_guard.md` port doc, `tests/drivers/cli_adapter.md`, and the `ProductionSessionLoopGuard` docstring; all now spell `require_approval`. The CLI invariant is renamed to `pipeline_skips_review`.
+- 2026-11-05: Slice Scenario and Verification rewritten to describe the batch review. Suite green at 2251 passed, 5 skipped after every string-only pass.
+- 2026-11-05: Out of scope, pre-existing spec drift noted for later reconciliation: `docs/project/specs/manual-cli-workflow.md` still describes an "Action-by-Action Approval Loop" for `teddy execute` without `-y`, which the batch reviewer supersedes.
+- 2026-11-05: The stale-reference sweep caught four `interactive=` tokens left in test comments and docstrings (one in `test_action_executor.py`, one in `test_orchestrator_interaction.py`, two in `test_pipeline_message_break.py`). The tokenizer skipped them because they are STRING/comment content, so they were fixed by hand. Test prose such as "interactive mode" was intentionally left alone: the slice scope is user-facing wording plus provably stale identifiers.
 
 ## Verification
-1. **Interactive approval:**
+1. **Plan review (default):**
    Run `teddy start -a assistant -m "list the files in this repository"`.
-   Confirm TeDDy asks for confirmation before the shell action runs.
-2. **Auto-approval:**
+   Confirm the TUI plan reviewer opens on the plan before any action runs.
+2. **Yolo run:**
    Run `teddy start -y -a assistant -m "list the files in this repository"`.
-   Confirm the action runs with no confirmation prompt.
-3. **Forced approval:**
+   Confirm no plan reviewer opens and the action runs.
+3. **Forced review:**
    With `yolo_default: true` in `.teddy/config.yaml`, run `teddy start -n -a assistant -m "list the files in this repository"`.
-   Confirm the confirmation prompt appears.
+   Confirm the TUI plan reviewer opens on the plan.
 4. **Resume prompt preserved:**
    With `yolo_default: true`, run `teddy resume -m ""` at a terminal.
    Confirm the blank-message prompt appears.
 5. **Help wording:**
    Run `teddy start --help` and `teddy resume --help`.
-   Confirm `-n/--no-yolo` reads as requiring per-action confirmation and no flag description says "interactive mode".
+   Confirm `-n/--no-yolo` reads as reviewing the plan first and no flag description says "interactive mode".

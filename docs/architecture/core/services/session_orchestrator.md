@@ -45,12 +45,12 @@ Implements the `IRunPlanUseCase` inbound port as a decorator-style service that 
 
 ## Operations
 
-### `execute(plan=None, plan_content=None, plan_path=None, interactive=True, message=None, project_context=None, pipeline=False) -> ExecutionReport`
+### `execute(plan=None, plan_content=None, plan_path=None, require_approval=True, message=None, project_context=None, pipeline=False) -> ExecutionReport`
 - **Preconditions:** At most one of `plan`, `plan_content`, or `plan_path` supplies the plan; an empty `message` signals termination.
 - **Postconditions:** Returns the `ExecutionReport` for the turn. In session mode it harvests pruned context, persists `report.md`, and finalizes the turn. A pipeline turn ending with a non-empty MESSAGE sets `awaiting_reply` and skips finalization. An empty communication reply returns `None` and prints a termination notice.
 - **Exceptions:** Propagates a parse error when not in session mode; a session-mode parse error triggers a replan instead.
 
-### `resume(session_name, interactive=True, project_context=None, pipeline=False, message=None)`
+### `resume(session_name, require_approval=True, project_context=None, pipeline=False, message=None)`
 - **Preconditions:** `session_name` identifies an existing session.
 - **Postconditions:** Delegates to `SessionLifecycleManager.resume`, which runs the session state machine.
 

@@ -24,7 +24,7 @@ The primary inbound (driving) adapter. It parses user commands with `Typer`, res
 ## Class Invariants
 - `single_source_agent_resolution`: The effective agent is resolved only through `_resolve_agent(agent, pipeline)`; the flag is declared deferred so "passed" and "omitted" are distinguishable.
 - `single_source_yolo_resolution`: The tri-state `--yolo/--no-yolo` flag resolves only through `_resolve_yolo(yolo, config_service)`, which falls back to `yolo_default` when unset.
-- `pipeline_is_non_interactive`: A `--pipeline` run forces non-interactive mode and defaults to the `assistant` agent.
+- `pipeline_skips_review`: A `--pipeline` run skips the plan review and defaults to the `assistant` agent.
 - `resume_agent_is_explicit`: `resume` is excluded from the pipeline agent default so it never silently switches an existing session's agent.
 - `shared_startup_preamble`: `start` and `resume` run one shared preamble helper so their startup sequence cannot drift.
 - `start_only_workspace_maintenance`: The shared preamble runs the workspace health checks and the workspace fast-forward only when `start` enables maintenance and never for `resume`.

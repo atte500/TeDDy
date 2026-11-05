@@ -66,7 +66,7 @@ class TestPipelineMessageBreak:
     """Tests for pipeline MESSAGE guard in ActionExecutor.confirm_and_dispatch()."""
 
     def test_pipeline_mode_short_circuits_message(self, action_executor):
-        """With pipeline=True and interactive=False, MESSAGE should produce
+        """With pipeline=True and require_approval=False, MESSAGE should produce
         synthetic ActionLog and NOT call ask_question."""
         executor, mock_interactor = action_executor
         action = ActionData(
@@ -94,7 +94,7 @@ class TestPipelineMessageBreak:
         assert captured == ""
 
     def test_yolo_mode_dispatches_message(self, action_executor):
-        """With pipeline=False and interactive=False (YOLO), MESSAGE should
+        """With pipeline=False and require_approval=False (YOLO), MESSAGE should
         dispatch normally and call ask_question."""
         executor, mock_interactor = action_executor
         action = ActionData(

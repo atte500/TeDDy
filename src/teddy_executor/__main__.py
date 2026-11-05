@@ -215,17 +215,17 @@ OPT_PIPELINE = typer.Option(
     False,
     "--pipeline",
     "-p",
-    help="Pipeline mode: auto-approve all actions, requires -m, exits after first ## Message.",
+    help="Pipeline mode: skip the plan review, requires -m, exits after first ## Message.",
 )
 OPT_MAX_TURNS = typer.Option(
     None,
     "--max-turns",
-    help="Maximum turns for a non-interactive run (overrides config).",
+    help="Maximum turns for a yolo run (overrides config).",
 )
 OPT_MAX_COST = typer.Option(
     None,
     "--max-cost",
-    help="Maximum session cost in dollars for a non-interactive run.",
+    help="Maximum session cost in dollars for a yolo run.",
 )
 
 
@@ -246,8 +246,8 @@ def start(  # noqa: PLR0913
         "--yolo/--no-yolo",
         "-y/-n",
         help=(
-            "Auto-approve all actions (non-interactive). "
-            "--no-yolo / -n forces interactive mode."
+            "Skip the plan review and execute all actions. "
+            "--no-yolo / -n reviews the plan first (default)."
         ),
     ),
     pipeline: bool = OPT_PIPELINE,
@@ -536,8 +536,8 @@ def resume(  # noqa: PLR0913
         "--yolo/--no-yolo",
         "-y/-n",
         help=(
-            "Auto-approve all actions (non-interactive). "
-            "--no-yolo / -n forces interactive mode."
+            "Skip the plan review and execute all actions. "
+            "--no-yolo / -n reviews the plan first (default)."
         ),
     ),
     no_copy: bool = OPT_NO_COPY,
@@ -605,8 +605,8 @@ def execute(  # noqa: PLR0913
         "--yolo/--no-yolo",
         "-y/-n",
         help=(
-            "Auto-approve all actions (non-interactive). "
-            "--no-yolo / -n forces interactive mode."
+            "Skip the plan review and execute all actions. "
+            "--no-yolo / -n reviews the plan first (default)."
         ),
     ),
     no_copy: bool = OPT_NO_COPY,

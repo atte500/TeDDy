@@ -3,7 +3,7 @@
 - **Source:** [`src/teddy_executor/core/ports/outbound/session_loop_guard.py`](/src/teddy_executor/core/ports/outbound/session_loop_guard.py)
 
 ## Purpose
-Defines the outbound port that gates the session execution loop. It stops runaway sessions by enforcing turn-count and cost limits in non-interactive runs.
+Defines the outbound port that gates the session execution loop. It stops runaway sessions by enforcing turn-count and cost limits in yolo and pipeline runs.
 
 ## Consumers
 - [CLI Adapter](../../../adapters/inbound/cli.md): Calls `should_continue` in the session loop to decide whether to advance to the next turn.
@@ -26,7 +26,7 @@ None — this is an outbound (driven) port.
 
 ## Operations
 
-### `should_continue(turn_count, cumulative_cost, interactive) -> tuple[bool, Optional[str]]`
+### `should_continue(turn_count, cumulative_cost, require_approval) -> tuple[bool, Optional[str]]`
 - **Preconditions:** `turn_count` and `cumulative_cost` are measured as deltas from the process-start baseline.
 - **Postconditions:** Returns `(True, None)` when the loop may continue, or `(False, reason)` when a guardrail limit is hit.
 

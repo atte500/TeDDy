@@ -186,8 +186,8 @@ TeDDy checks the following process environment variables at startup and during a
 | `TEDDY_LLM_API_KEY`      | The LLM API key. The bundled `config.yaml` default references it as `llm.api_key: "${TEDDY_LLM_API_KEY}"`. A shell value wins over the `.teddy/.env` value. |
 | `EDITOR`                 | Fallback editor command when `editor` is unset in `.teddy/config.yaml`.                                                                                     |
 | `TEDDY_DIFF_TOOL`        | Overrides the auto-detected diff viewer.                                                                                                                    |
-| `TEDDY_MAX_TURNS`        | Overrides the maximum number of turns for a non-interactive run.                                                                                            |
-| `TEDDY_MAX_SESSION_COST` | Overrides the maximum session cost in dollars for a non-interactive run.                                                                                    |
+| `TEDDY_MAX_TURNS`        | Overrides the maximum number of turns for a yolo run.                                                                                                       |
+| `TEDDY_MAX_SESSION_COST` | Overrides the maximum session cost in dollars for a yolo run.                                                                                               |
 
 TeDDy also interpolates any `${VAR}` or `${VAR:-default}` token in `.teddy/config.yaml` against `.teddy/.env` layered under the process environment, so you can reference your own secrets from config values.
 
@@ -195,7 +195,7 @@ TeDDy also interpolates any `${VAR}` or `${VAR:-default}` token in `.teddy/confi
 
 TeDDy is safe to run in non-interactive environments. When stdin is not a terminal, TeDDy skips the API-key and editor setup prompts automatically, so no command blocks waiting for input.
 
-To run TeDDy in a pipeline, set `TEDDY_LLM_API_KEY` in the environment and pass `--pipeline` (`-p`), which auto-approves actions, requires `-m`, exits after the first message turn, and defaults to the `assistant` agent.
+To run TeDDy in a pipeline, set `TEDDY_LLM_API_KEY` in the environment and pass `--pipeline` (`-p`), which skips the plan review, requires `-m`, exits after the first message turn, and defaults to the `assistant` agent.
 
 ```bash
 TEDDY_LLM_API_KEY="$OPENROUTER_API_KEY" teddy start --pipeline -m "do the thing"
@@ -208,10 +208,10 @@ TEDDY_LLM_API_KEY="$OPENROUTER_API_KEY" teddy start --pipeline -m "do the thing"
 ### Starting and Resuming Sessions
 
 ```bash
-# Start an interactive session (defaults to Pathfinder)
+# Start a session (opens the plan reviewer before executing)
 teddy start
 
-# Start with automatic action approval (non-interactive)
+# Skip the plan review and run every action (yolo run)
 teddy start -y
 
 # Start with a specific agent and prompt
@@ -249,11 +249,11 @@ teddy resume -m ""
 | `--message`                | `-m`  | Initial instruction to pass directly to the agent.                                                                                            |
 | `--agent`                  | `-a`  | Select agent persona (`pathfinder`, `architect`, `developer`, `debugger`, `assistant`). Default: `pathfinder` (`assistant` in pipeline mode). |
 | `--context`                | `-c`  | Supply additional context files or directories. Repeatable (`-c a.py -c b.md`) or comma-separated (`-c "a.py,b.md"`).                         |
-| `--pipeline`               | `-p`  | Pipeline mode. Auto-approves actions, requires `-m`, exits immediately after the first message turn, and defaults to the `assistant` agent.   |
-| `--yolo`                   | `-y`  | Auto-approve all actions. To make this default, set `yolo_default: true` in `.teddy/config.yaml`.                                             |
-| `--no-yolo`                | `-n`  | Force interactive mode for a single run.                                                                                                      |
-| <nobr>`--max-turns`</nobr> |       | Maximum turns for a non-interactive run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`.                                            |
-| <nobr>`--max-cost`</nobr>  |       | Maximum session cost in dollars for a non-interactive run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`.                   |
+| `--pipeline`               | `-p`  | Pipeline mode. Skips the plan review, requires `-m`, exits immediately after the first message turn, and defaults to the `assistant` agent.   |
+| `--yolo`                   | `-y`  | Skip the plan review and execute all actions. To make this the default, set `yolo_default: true` in `.teddy/config.yaml`.                     |
+| `--no-yolo`                | `-n`  | Review the plan in the TUI before executing (default).                                                                                        |
+| <nobr>`--max-turns`</nobr> |       | Maximum turns for a yolo run. Overrides `guardrails.max_turns` in `.teddy/config.yaml`.                                                       |
+| <nobr>`--max-cost`</nobr>  |       | Maximum session cost in dollars for a yolo run. Overrides `guardrails.max_session_cost` in `.teddy/config.yaml`.                              |
 | `--model`                  |       | Override the default configured model.                                                                                                        |
 
 ### Using TeDDy's Prompts & Templates in Other Harnesses
@@ -311,7 +311,7 @@ teddy context -c review.context
 | Subcommand   | Description                                                                                                                              |
 | :----------- | :--------------------------------------------------------------------------------------------------------------------------------------- |
 | `init`       | Initialize workspace with defaults. Pass `prompts`, `config`, or `templates` to overwrite specific assets.                               |
-| `start`      | Start an interactive agent session.                                                                                                      |
+| `start`      | Start an agent session.                                                                                                                  |
 | `resume`     | Resume an existing session.                                                                                                              |
 | `update`     | Check for updates and display upgrade instructions.                                                                                      |
 | `execute`    | Execute a Markdown plan (reads from clipboard if no path is provided).                                                                   |

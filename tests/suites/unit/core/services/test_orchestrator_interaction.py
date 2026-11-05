@@ -52,7 +52,7 @@ def test_orchestrator_falls_back_to_legacy_interaction_if_no_reviewer(
     """
     Given interactive mode is enabled but NO plan reviewer is present
     When the orchestrator processes actions
-    Then it should call confirm_and_dispatch with interactive=True
+    Then it should call confirm_and_dispatch with require_approval=True
     """
     # Arrange
     # Manually instantiate orchestrator WITHOUT a reviewer

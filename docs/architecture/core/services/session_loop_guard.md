@@ -3,7 +3,7 @@
 - **Source:** [`src/teddy_executor/core/services/session_loop_guard.py`](/src/teddy_executor/core/services/session_loop_guard.py)
 
 ## Purpose
-Implements the `ISessionLoopGuard` outbound port. It stops runaway non-interactive sessions by enforcing turn-count and cost limits relative to a baseline injected at construction.
+Implements the `ISessionLoopGuard` outbound port. It stops runaway yolo and pipeline sessions by enforcing turn-count and cost limits relative to a baseline injected at construction.
 
 ## Consumers
 - [CLI Adapter](../../adapters/inbound/cli.md): Calls `should_continue` in the session loop to decide whether to advance to the next turn.
@@ -14,7 +14,7 @@ Implements the `ISessionLoopGuard` outbound port. It stops runaway non-interacti
 
 ## Class Invariants
 - `injected_baseline`: The turn-count and cost baselines are injected at construction; every later call is measured as a delta from them.
-- `interactive_always_continues`: An interactive session always returns `(True, None)`.
+- `approval_always_continues`: A run that requires approval always returns `(True, None)`.
 - `failure_propagation`: Configuration errors propagate and are never swallowed.
 
 ## Inbound Ports
@@ -29,9 +29,9 @@ None — this is a concrete implementation of an outbound port.
 
 ## Operations
 
-### `should_continue(turn_count, cumulative_cost, interactive) -> tuple[bool, Optional[str]]`
+### `should_continue(turn_count, cumulative_cost, require_approval) -> tuple[bool, Optional[str]]`
 - **Preconditions:** `turn_count` and `cumulative_cost` are measured as deltas from the process-start baseline.
-- **Postconditions:** Returns `(True, None)` when interactive mode is active, when the guardrail is disabled, or when both deltas are under their limits. Returns `(False, reason)` naming the exceeded limit and the config file to edit.
+- **Postconditions:** Returns `(True, None)` when approval is required, when the guardrail is disabled, or when both deltas are under their limits. Returns `(False, reason)` naming the exceeded limit and the config file to edit.
 
 ### `reset_baseline(turn_count, cumulative_cost) -> None`
 - **Preconditions:** The caller has just completed a human-approved message turn.

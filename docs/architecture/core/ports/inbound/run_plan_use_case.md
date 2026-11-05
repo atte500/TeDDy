@@ -26,10 +26,10 @@ None — the port declares no injected dependencies.
 
 ## Operations
 
-### `execute(plan=None, plan_content=None, plan_path=None, interactive=True, message=None, project_context=None, pipeline=False) -> ExecutionReport`
+### `execute(plan=None, plan_content=None, plan_path=None, require_approval=True, message=None, project_context=None, pipeline=False) -> ExecutionReport`
 - **Preconditions:** Exactly one of `plan`, `plan_content`, or `plan_path` supplies the plan.
 - **Postconditions:** Returns the `ExecutionReport` for the run.
 
-### `resume(session_name, interactive=True, project_context=None) -> tuple[str, Optional[ExecutionReport]]`
+### `resume(session_name, require_approval=True, project_context=None) -> tuple[str, Optional[ExecutionReport]]`
 - **Preconditions:** `session_name` identifies an existing session.
 - **Postconditions:** Returns `(actual_session_name, report)`. The turn may execute under a renamed session, though a session keeps one folder for its lifetime.
