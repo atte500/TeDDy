@@ -351,6 +351,9 @@ def _register_orchestration(container: punq.Container) -> None:
     from teddy_executor.core.ports.outbound.execution_report_assembler import (
         IExecutionReportAssembler,
     )
+    from teddy_executor.core.ports.outbound.system_environment import (
+        ISystemEnvironment,
+    )
 
     container.register(
         SessionPorts,
@@ -364,6 +367,7 @@ def _register_orchestration(container: punq.Container) -> None:
             plan_parser=container.resolve(IPlanParser),
             time_service=container.resolve(ITimeService),
             report_assembler=container.resolve(IExecutionReportAssembler),
+            system_environment=container.resolve(ISystemEnvironment),
         ),
         scope=punq.Scope.transient,
     )

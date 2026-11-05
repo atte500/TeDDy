@@ -9,7 +9,8 @@ session-manager port), the interrupted turn is FINALIZED (the standard
 message-turn report is synthesized from its plan via the injected plan
 parser and time service and written through finalize_turn), and
 planning receives the user's reply — injected via `resume -m` or
-prompted interactively (mirroring the abort flow). Non-awaiting turns
+prompted when a human is reachable (mirroring the abort flow; the
+action-approval flag does not govern the prompt). Non-awaiting turns
 keep the exact existing resume behavior.
 """
 
@@ -31,6 +32,7 @@ from teddy_executor.core.ports.outbound.session_manager import (
     ISessionManager,
     SessionState,
 )
+from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.ports.outbound.time_service import ITimeService
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.services.execution_report_assembler import (
@@ -73,6 +75,8 @@ def manager(container):
         ],
     )
     time_service = cast(ITimeService, Mock(spec=ITimeService))
+    system_environment = register_mock(container, ISystemEnvironment)
+    system_environment.isatty.return_value = False
     ports = SessionPorts(
         session_service=register_mock(container, ISessionManager),
         file_system_manager=register_mock(container, IFileSystemManager),
@@ -83,6 +87,7 @@ def manager(container):
         plan_parser=plan_parser,
         time_service=time_service,
         report_assembler=ExecutionReportAssembler(),
+        system_environment=system_environment,
     )
     return SessionLifecycleManager(ports=ports)
 
@@ -178,6 +183,7 @@ class TestAwaitingReplyStateMachine:
         _arrange_awaiting_reply(manager)
         _arrange_finalization_surface(manager)
         manager._user_interactor.ask_question.return_value = "my prompted reply"
+        manager._system_environment.isatty.return_value = True
         orchestrator = _orchestrator_with_report()
 
         # Act
@@ -202,6 +208,7 @@ class TestAwaitingReplyStateMachine:
         # Arrange
         _arrange_awaiting_reply(manager)
         manager._user_interactor.ask_question.return_value = ""
+        manager._system_environment.isatty.return_value = True
         orchestrator = _orchestrator_with_report()
 
         # Act
@@ -218,10 +225,8 @@ class TestAwaitingReplyStateMachine:
         manager._session_service.transition_to_next_turn.assert_not_called()
         manager._session_service.save_turn_meta.assert_not_called()
 
-    def test_non_interactive_without_message_exits_cleanly_with_guidance(
-        self, manager
-    ) -> None:
-        # Arrange
+    def test_without_terminal_exits_cleanly_with_guidance(self, manager) -> None:
+        # Arrange: no terminal attached, so nobody can answer the prompt.
         _arrange_awaiting_reply(manager)
         orchestrator = _orchestrator_with_report()
 
@@ -239,6 +244,29 @@ class TestAwaitingReplyStateMachine:
         manager._session_service.transition_to_next_turn.assert_not_called()
         manager._session_planner.trigger_new_plan.assert_not_called()
         manager._session_service.save_turn_meta.assert_not_called()
+
+    def test_yolo_prompts_for_reply_when_a_terminal_is_attached(self, manager) -> None:
+        # Arrange: action approval off (yolo), but a human is at the terminal.
+        _arrange_awaiting_reply(manager)
+        _arrange_finalization_surface(manager)
+        manager._user_interactor.ask_question.return_value = "my reply"
+        manager._system_environment.isatty.return_value = True
+        orchestrator = _orchestrator_with_report()
+
+        # Act
+        result = manager.resume(
+            session_name="feature",
+            orchestrator=orchestrator,
+            interactive=False,
+            message="",
+        )
+
+        # Assert: the reply prompt fires and the prompted reply reaches planning.
+        manager._user_interactor.ask_question.assert_called_once()
+        manager._session_planner.trigger_new_plan.assert_called_once_with(
+            NEXT_TURN, message="my reply"
+        )
+        assert result[0] == "feature"
 
     def test_pending_plan_without_flag_still_reexecutes_existing_behavior(
         self, manager

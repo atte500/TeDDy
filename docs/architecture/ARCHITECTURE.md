@@ -32,6 +32,8 @@ The canonical domain vocabulary for TeDDy. All documentation, component names, t
 - **Turn Context (`turn.context`):** The dynamic working set of file paths scoped strictly to the current turn, updated forward-looking by `READ` actions.
 - **Action:** A single atomic operation within a plan (`CREATE`, `EDIT`, `EXECUTE`, `READ`, `RESEARCH`).
 - **Communicating Turn:** A turn that outputs a `## Message` instead of an `## Action Plan`, used for approval gates, user questions, or handoffs.
+- **Action Approval (`interactive`):** The run-level decision whether each action needs per-action confirmation, derived solely from `--yolo`/`yolo_default`/`--pipeline`. It answers "may this run act without asking?", never "is a human reachable?"
+- **User Presence:** Whether a human can answer a prompt right now: a terminal is attached to stdin (`ISystemEnvironment.isatty()`) and the run is not a pipeline. Every prompt decision (blank `-m` on resume, awaiting-reply reply) MUST gate on User Presence. Action Approval MUST NOT gate a prompt, and User Presence MUST NOT gate action approval.
 - **Candidate:** A window of consecutive file lines seeded by the matcher's heuristic tiers and scored against a FIND block; the ambiguity count is the number of refined candidates at or above the similarity threshold.
 
 ---

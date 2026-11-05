@@ -101,6 +101,9 @@ Affected components, migrated in non-breaking steps.
 - `SessionOrchestrator.execute` empty-message termination is left unchanged and remains pinned by `tests/suites/unit/core/services/test_session_orchestrator_empty_message.py`.
 - Full suite green after the change: 2139 passed, 5 skipped via `make test`.
 
+### Gate correction - user presence, not action approval
+- The Core note above gated the blank-message prompt on the action-approval flag (`interactive`), so `yolo_default: true` suppressed the very prompt this slice delivers: a yolo run with a terminal attached was read as "no interactive session". [Bug 79](/docs/project/debugging/79-blank-resume-message-no-prompt.md) corrected the gate at both resume prompt sites to **User Presence** (`not pipeline and ISystemEnvironment.isatty()`), defined in the `ARCHITECTURE.md` Ubiquitous Language section. The Edge Cases entry "Non-interactive resume with empty `-m`" therefore now means no terminal is attached, never `-y`.
+
 ## Verification
 1. **Interactive start with empty `-m`:**
    Run `teddy start -m ""` in a terminal.

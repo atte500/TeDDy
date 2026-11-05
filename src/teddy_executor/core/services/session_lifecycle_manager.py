@@ -53,6 +53,7 @@ class SessionLifecycleManager:
         self._plan_parser = ports.plan_parser
         self._time_service = ports.time_service
         self._report_assembler = ports.report_assembler
+        self._system_environment = ports.system_environment
         self.tee_active = False
 
     def resume(  # noqa: PLR0913
@@ -139,13 +140,13 @@ class SessionLifecycleManager:
     ) -> tuple[str, Optional[ExecutionReport]]:
         """Drive resume for an EMPTY or COMPLETE_TURN session ready to plan.
 
-        A present-but-blank message is resolved first (interactive prompt, empty
-        reply terminates; non-interactive normalizes to absent). An EMPTY turn
-        appends the message to the initial request or the previous report, then
-        plans in place. A COMPLETE_TURN turn appends a ``## User Request``
-        section, transitions to the next turn, then plans.
+        A present-but-blank message is resolved first (prompted when a human is
+        reachable, an empty reply terminates; otherwise it normalizes to
+        absent). An EMPTY turn appends the message to the initial request or the
+        previous report, then plans in place. A COMPLETE_TURN turn appends a
+        ``## User Request`` section, transitions to the next turn, then plans.
         """
-        message, terminated = self._resolve_blank_message(message, interactive)
+        message, terminated = self._resolve_blank_message(message, pipeline)
         if terminated:
             return (session_name, None)
         if state == SessionState.EMPTY:
@@ -175,20 +176,37 @@ class SessionLifecycleManager:
             message=message,
         )
 
+    def _can_prompt_user(self, pipeline: bool) -> bool:
+        """Reports whether a human is reachable to answer a prompt.
+
+        User presence means a terminal is attached to stdin and the run is not
+        a pipeline. It is deliberately NOT the action-approval ``interactive``
+        flag, which is False whenever ``yolo_default`` is set even though a
+        human is sitting at the terminal. Action approval keeps reading
+        ``interactive``; only prompt decisions read this. A pipeline run never
+        prompts, so it needs no terminal port at all.
+        """
+        if pipeline:
+            return False
+        assert self._system_environment is not None, (
+            "SessionPorts.system_environment must be injected to prompt the user."
+        )
+        return self._system_environment.isatty()
+
     def _resolve_blank_message(
-        self, message: Optional[str], interactive: bool
+        self, message: Optional[str], pipeline: bool
     ) -> tuple[Optional[str], bool]:
         """Resolve a present-but-blank message in the EMPTY/COMPLETE_TURN branches.
 
-        A blank ``-m`` must not seed a turn with no real instruction. When the
-        run is interactive, the user is prompted for the next instruction and an
-        empty reply terminates the session (abort idiom, reported by ``True``).
-        A non-interactive run cannot block, so the message normalizes to absent.
-        A present-and-non-blank or absent message is returned unchanged.
+        A blank ``-m`` must not seed a turn with no real instruction. When a
+        human is reachable, the user is prompted for the next instruction and
+        an empty reply terminates the session (abort idiom, reported by
+        ``True``). Otherwise there is nobody to ask, so the message normalizes
+        to absent. A present-and-non-blank or absent message passes through.
         """
         if message is None or message.strip():
             return message, False
-        if not interactive:
+        if not self._can_prompt_user(pipeline):
             return None, False
         reply = self._user_interactor.ask_question(_NEXT_INSTRUCTION_PROMPT)
         if not reply or not reply.strip():
@@ -350,7 +368,7 @@ class SessionLifecycleManager:
         cleared on consumption via load-modify-save.
         """
         reply = message
-        if not reply and interactive:
+        if not reply and self._can_prompt_user(pipeline):
             reply = self._user_interactor.ask_question(
                 "The agent is awaiting your reply. How do you want to proceed?"
             )

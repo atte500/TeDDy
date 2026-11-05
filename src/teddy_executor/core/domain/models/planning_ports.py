@@ -12,6 +12,9 @@ if TYPE_CHECKING:
     from teddy_executor.core.ports.outbound.execution_report_assembler import (
         IExecutionReportAssembler,
     )
+    from teddy_executor.core.ports.outbound.system_environment import (
+        ISystemEnvironment,
+    )
     from teddy_executor.core.services.session_planner import SessionPlanner
     from teddy_executor.core.services.session_replanner import SessionReplanner
 
@@ -49,3 +52,4 @@ class SessionPorts:
     plan_parser: Optional[IPlanParser] = None
     time_service: Optional[ITimeService] = None
     report_assembler: Optional[IExecutionReportAssembler] = None
+    system_environment: Optional[ISystemEnvironment] = None
