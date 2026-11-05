@@ -132,13 +132,14 @@ class InitService(IInitUseCase):
         """Formats the shared copy-result status string.
 
         Single-sources the "unchanged" / "updated (N files)" / "overwritten (N
-        files)" vocabulary shared by the config, prompts, and templates copy
-        routines.
+        file(s) modified)" vocabulary shared by the config, prompts, and
+        templates copy routines. The ``file(s)`` form keeps the singular count
+        grammatical, because an overwrite can change exactly one file.
         """
         if count == 0:
             return "unchanged"
         if overwrite:
-            return f"overwritten ({count} files)"
+            return f"overwritten ({count} file(s) modified)"
         return f"updated ({count} files)"
 
     @staticmethod
@@ -272,7 +273,8 @@ class InitService(IInitUseCase):
                 If False, only write missing files.
 
         Returns:
-            A status string: "unchanged", "updated (N files)", or "overwritten (N files)".
+            A status string: "unchanged", "updated (N files)", or
+            "overwritten (N file(s) modified)".
         """
         return self._copy_bundled_files(
             dest_dir=".teddy",
@@ -293,7 +295,8 @@ class InitService(IInitUseCase):
             overwrite: If True, always overwrite existing files. If False, only write missing ones.
 
         Returns:
-            A status string: "unchanged", "updated (N files)", or "overwritten (N files)".
+            A status string: "unchanged", "updated (N files)", or
+            "overwritten (N file(s) modified)".
         """
         return self._copy_bundled_files(
             dest_dir=".teddy/prompts",
@@ -311,7 +314,8 @@ class InitService(IInitUseCase):
                 If False (default), only write missing files.
 
         Returns:
-            A status string: "unchanged", "updated (N files)", or "overwritten (N files)".
+            A status string: "unchanged", "updated (N files)", or
+            "overwritten (N file(s) modified)".
         """
         return self._copy_bundled_files(
             dest_dir="docs/templates",
@@ -350,7 +354,8 @@ class InitService(IInitUseCase):
                        If False (default), only write missing files.
 
         Returns:
-            A human-readable status string (e.g., "Prompts overwritten (6 files).").
+            A human-readable status string (e.g.,
+            "Prompts overwritten (6 file(s) modified).").
         """
         status = self._init_prompts(overwrite=overwrite)
         return f"Prompts {status}."
@@ -369,7 +374,8 @@ class InitService(IInitUseCase):
                        written only when missing in either case.
 
         Returns:
-            A human-readable status string (e.g., "Configuration files overwritten (3 files).").
+            A human-readable status string (e.g.,
+            "Configuration files overwritten (3 file(s) modified).").
         """
         status = self._init_config_dir(overwrite=overwrite)
         return f"Configuration files {status}."

@@ -76,7 +76,7 @@ class TestInitCliRegression:
                 result = runner.invoke(app, ["init", "prompts"])
                 assert result.exit_code == 0, f"Non-zero exit: {result.stderr}"
                 # The subcommand output should contain "Prompts overwritten"
-                assert "Prompts overwritten (6 files)." in result.stdout
+                assert "Prompts overwritten (6 file(s) modified)." in result.stdout
                 # There should be no "Prompts: unchanged." (either from callback summary
                 # or the subcommand). The callback should skip when subcommand active.
                 assert "Prompts: unchanged." not in result.stdout, (
