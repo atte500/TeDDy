@@ -127,71 +127,6 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
     )
 
 
-def test_handle_new_session_prompts_even_when_non_interactive():
-    # Arrange
-    container = Container()
-    mock_session_manager = Mock(spec=ISessionManager)
-    mock_user_interactor = Mock(spec=IUserInteractor)
-    mock_orchestrator = Mock(spec=IRunPlanUseCase)
-    mock_llm_client = Mock(spec=ILlmClient)
-    mock_config_service = Mock(spec=IConfigService)
-    mock_loop_guard = create_autospec(ISessionLoopGuard)
-    mock_prompt_manager = Mock(spec=IPromptManager)
-
-    init_mock = Mock(spec=IInitUseCase)
-    init_mock.check_drift.return_value = DriftReport()
-    container.register(IInitUseCase, instance=init_mock)
-    container.register(IPromptManager, instance=mock_prompt_manager)
-    container.register(ISessionManager, instance=mock_session_manager)
-    container.register(IUserInteractor, instance=mock_user_interactor)
-    container.register(IRunPlanUseCase, instance=mock_orchestrator)
-    container.register(ILlmClient, instance=mock_llm_client)
-    container.register(IConfigService, instance=mock_config_service)
-    container.register(ISessionLoopGuard, instance=mock_loop_guard)
-
-    # The wired session loop resolves InterruptGuard at the boundary —
-    # register a real guard (monotonic clock; the shared mock_config_service
-    # is unconfigured).
-    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
-
-    container.register(
-        InterruptGuard,
-        instance=InterruptGuard(monotonic=time.monotonic),
-    )
-    from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
-    from teddy_executor.adapters.outbound.terminal_quit_key_listener import (
-        TerminalQuitKeyListener,
-    )
-
-    container.register(IQuitKeyListener, instance=TerminalQuitKeyListener())
-
-    mock_llm_client.validate_config.return_value = []
-    mock_user_interactor.ask_question.return_value = "Do something non-interactive"
-    mock_session_manager.create_session.return_value = ".teddy/sessions/something"
-    mock_orchestrator.resume.return_value = ("session_name", None)
-
-    # Act
-    handle_new_session(
-        container=container,
-        name=None,
-        agent="pathfinder",
-        require_approval=False,
-        no_copy=False,
-        message=None,
-    )
-
-    # Assert
-    mock_user_interactor.ask_question.assert_called_once_with("What are we working on?")
-    mock_session_manager.create_session.assert_called_once_with(
-        SessionOptions(
-            name="something-non-interactive",
-            agent_name="pathfinder",
-            initial_request="Do something non-interactive",
-            additional_context=[],
-        )
-    )
-
-
 def test_handle_new_session_raises_eof_error_on_empty_prompt_response_in_non_interactive():
     import pytest
     import typer
@@ -268,6 +203,15 @@ def test_handle_new_session_prompts_when_message_is_blank(blank_message, monkeyp
     )
 
     container.register(IQuitKeyListener, instance=TerminalQuitKeyListener())
+
+    # A blank `-m` normalizes to absent, so the presence gate decides whether
+    # the opening prompt fires. A truthy isatty double keeps the prompt path
+    # reachable, matching the terminal-attached case this test exercises.
+    from teddy_executor.core.ports.outbound.system_environment import (
+        ISystemEnvironment,
+    )
+
+    container.register(ISystemEnvironment, instance=Mock(spec=ISystemEnvironment))
 
     # Keep the background fetch and health checks out of the test.
     monkeypatch.setattr(

@@ -1,5 +1,5 @@
 # Slice: Prompt Gating Hardening
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** [00-17 Require Approval Rename](/docs/project/slices/00-17-require-approval-rename.md)
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -96,7 +96,7 @@ Then it prompts for the next instruction and records the reply even though the p
 
 ## Deliverables
 - [x] **Wiring** - Reproduce the non-TTY `teddy start` behaviour with a probe under `spikes/debug/prompt-gating-hardening/` and record the observed outcome before changing the handler. Measured: see `FINDINGS.md` beside the probes.
-- [ ] **Core** - Gate the start opening prompt on user presence, leaving the terminal path unchanged.
+- [x] **Core** - Gate the start opening prompt on user presence, leaving the terminal path unchanged.
 - [ ] **Adapter** - Route the ask loop's terminal check through the system-environment port.
 - [ ] **Core** - Pass `pipeline` through the COMPLETE_TURN delegation so pipeline resumes never prompt.
 - [ ] **Core** - Resolve a blank `-m` on the non-awaiting PENDING_PLAN branch through `_resolve_blank_message`, seed the reply into `plan.metadata["user_request"]`, and run the pending plan as its first execution. Keep the bare path when no terminal is attached, terminate on an empty reply, and keep the awaiting-reply prompt for flagged turns; a prompted reply on a MESSAGE-only pending plan takes the non-blank consume-as-reply path.
@@ -112,6 +112,10 @@ Then it prompts for the next instruction and records the reply even though the p
 - 2026-11-05: Two ordering constraints for the Core deliverable. The awaiting-reply short-circuit stays first so flagged turns keep their own prompt. A MESSAGE-only pending plan without the flag is only classified once a reply exists, so a prompted reply must take the same consume-as-reply path a non-blank `-m` takes.
 - 2026-11-05: The README's "Pass an empty message to be prompted instead" needs no edit once this slice lands; the pending branch honours it.
 - 2026-11-05: Terminology settled: the pending plan was aborted before execution, so running it is its first execution. "Re-execution" is retired.
+- 2026-11-06: Start presence gate shipped. `handle_new_session` resolves `ISystemEnvironment` and consults `isatty()` before the opening prompt; with no terminal attached it raises the existing `EOFError` no-input message instead of entering the ask loop. The terminal path is byte-identical: a truthy `isatty` still calls `ask_question("What are we working on?")` and seeds the session with the answer.
+- 2026-11-06: Coverage lives in `tests/suites/unit/adapters/inbound/test_session_start_presence_gate.py` (no terminal → exit; terminal → prompt and seed; explicit `-m` → presence never consulted). The resequencing suite migrated its blank-message cases to a truthy presence port, and its obsolete "even when non-interactive" test was deleted because the new module covers that branch.
+- 2026-11-06: Integration surfaced 13 acceptance tests that drove `teddy start` with piped stdin and no `-m`, relying on the retired unconditional prompt. They were Local Flaws: `__main__` derives `setup_api_key=isatty() and not pipeline` from the same presence port, so a fake TTY also arms the required-key preflight, and the harness's blank `llm.api_key` would have consumed the piped input at the key prompt. The harness now supplies a default `llm.api_key` (single-sourced with `mock_config`), which short-circuits `_ensure_api_key_configured` at its first line, and each failing test chains `.with_tty(True)` before driving the CLI.
+- 2026-11-06: Integration gate green: migrated modules 29 passed, full suite 2253 passed, 5 skipped.
 
 ## Verification
 1. **Non-TTY start:**

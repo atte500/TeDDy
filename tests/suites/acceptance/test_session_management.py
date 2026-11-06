@@ -182,6 +182,7 @@ def test_teddy_start_with_explicit_name(tmp_path: Path, monkeypatch):
         .with_real_shell()
         .with_real_interactor()
     )
+    env.with_tty(True)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_project(tmp_path)
 
@@ -244,6 +245,7 @@ def test_teddy_start_prompts_for_message_in_non_interactive_yes(
         .with_real_shell()
         .with_real_interactor()
     )
+    env.with_tty(True)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_project(tmp_path)
 

@@ -1,5 +1,6 @@
 from pathlib import Path
-from unittest.mock import MagicMock
+from types import SimpleNamespace
+
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.setup.test_environment import TestEnvironment
@@ -7,11 +8,14 @@ from teddy_executor.core.ports.outbound import ILlmClient
 
 
 def mock_response(content):
-    res = MagicMock()
-    res.choices = [MagicMock()]
-    res.choices[0].message.content = content
-    res.model = "gpt-4"
-    return res
+    """A canned LLM completion response with real attribute semantics."""
+    return SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content=content))],
+        model="gpt-4",
+        usage=SimpleNamespace(
+            prompt_tokens=100, completion_tokens=50, total_tokens=150
+        ),
+    )
 
 
 def setup_project(tmp_path: Path):
@@ -35,6 +39,7 @@ def test_planning_visibility_includes_turn_id(tmp_path: Path, monkeypatch):
         .with_real_shell()
         .with_real_interactor()
     )
+    env.with_tty(True)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_project(tmp_path)
 

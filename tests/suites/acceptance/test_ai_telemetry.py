@@ -98,6 +98,7 @@ def test_telemetry_persistence_across_turns(tmp_path, monkeypatch):
     mock_interactor.ask_question.side_effect = ["yes", ""]
     mock_interactor.display_message.side_effect = lambda m: print(m, file=sys.stdout)
 
+    env.with_tty(True)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_telemetry_env(tmp_path)
 

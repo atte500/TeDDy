@@ -33,6 +33,7 @@ def setup_robust_env(tmp_path):
 def test_resume_auto_detects_latest_session(tmp_path, monkeypatch):
     """Scenario: 'resume' without args picks the most recent session."""
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    env.with_tty(True)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_robust_env(tmp_path)
 
@@ -63,6 +64,7 @@ def test_resume_auto_detects_latest_session(tmp_path, monkeypatch):
 def test_resume_with_session_path(tmp_path, monkeypatch):
     """Scenario: 'resume' works with an explicit session path."""
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    env.with_tty(True)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_robust_env(tmp_path)
 
@@ -88,6 +90,7 @@ def test_resume_with_session_path(tmp_path, monkeypatch):
 def test_resume_with_turn_path(tmp_path, monkeypatch):
     """Scenario: 'resume' resolves session name from a turn path."""
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    env.with_tty(True)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_robust_env(tmp_path)
 
@@ -114,6 +117,7 @@ def test_start_enters_continuous_loop(tmp_path, monkeypatch):
     """Scenario: 'start' enters a continuous loop after the first turn."""
     monkeypatch.setenv("TEDDY_MAX_TURNS", "2")
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    env.with_tty(True)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_robust_env(tmp_path)
 
@@ -146,6 +150,7 @@ def test_start_enters_continuous_loop(tmp_path, monkeypatch):
 def test_resume_with_file_path(tmp_path, monkeypatch):
     """Scenario: 'resume' resolves session name from a file path inside a turn."""
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    env.with_tty(True)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_robust_env(tmp_path)
 
@@ -172,6 +177,7 @@ def test_resume_with_file_path(tmp_path, monkeypatch):
 def test_resume_by_slug_resolves_timestamped_session(tmp_path, monkeypatch):
     """Scenario: 'resume' accepts a bare slug instead of the full folder name."""
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    env.with_tty(True)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_robust_env(tmp_path)
 

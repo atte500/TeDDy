@@ -13,6 +13,7 @@ from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUs
 from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
+from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.domain.models.session import SessionOptions
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
@@ -842,9 +843,13 @@ def handle_new_session(  # noqa: PLR0913
         session_manager: ISessionManager = container.resolve(ISessionManager)
         user_interactor: IUserInteractor = container.resolve(IUserInteractor)
 
-        # 2. Resolve message first if missing
+        # 2. Resolve message first if missing. Without a terminal nobody can
+        # answer the opening prompt, so the run falls through to the existing
+        # no-input termination instead of entering the ask loop.
         if message is None:
-            message = user_interactor.ask_question("What are we working on?")
+            system_env: ISystemEnvironment = container.resolve(ISystemEnvironment)
+            if system_env.isatty():
+                message = user_interactor.ask_question("What are we working on?")
             if not message:
                 raise EOFError("No terminal input provided for initial message.")
 

@@ -32,6 +32,7 @@ def setup_init_env(tmp_path):
 def test_teddy_start_triggers_planning(tmp_path, monkeypatch):
     """Scenario: 'start' triggers planning immediately and accepts goal."""
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    env.with_tty(True)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_init_env(tmp_path)
 

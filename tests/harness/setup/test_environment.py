@@ -233,6 +233,11 @@ class TestEnvironment(RealAdapterMixin):
         def _get_setting(key: str, default: Any = None) -> Any:
             if key == "editor":
                 return "disabled"
+            if key == "llm.api_key":
+                # A configured key keeps the required-key preflight inert once a
+                # test opts into a TTY via with_tty(True); otherwise the
+                # interactive key prompt would consume the test's piped input.
+                return "sk-test-key"  # pragma: allowlist secret
             return default
 
         mock.get_setting.side_effect = _get_setting

@@ -133,6 +133,7 @@ def test_resume_m_on_completed_turn_appends_user_request(tmp_path, monkeypatch):
     exactly like a normal user request.
     """
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    env.with_tty(True)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_robust_env(tmp_path)
 
@@ -429,6 +430,7 @@ def test_resume_m_echoes_user_message_before_planning(tmp_path, monkeypatch):
     And the echo appears BEFORE the new turn's planning/execution.
     """
     env = TestEnvironment(monkeypatch, tmp_path).setup().with_real_interactor()
+    env.with_tty(True)
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_robust_env(tmp_path)
 
