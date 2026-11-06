@@ -78,10 +78,24 @@ class SessionLifecycleManager:
         if state == SessionState.PENDING_PLAN:
             turn_meta = self._session_service.load_turn_meta(turn_path)
             plan_path = f"{turn_path}/plan.md"
-            # Parse the pending plan ONCE (WITH its path) and reuse it for
-            # BOTH the communication decision and the reply seed, so
-            # plan.md is never parsed twice on the resume path.
+            # Parse the pending plan WITH its path when a reply is injected and
+            # reuse the result for both the communication decision and the seed.
             plan = self._parse_pending_plan(turn_path, plan_path, message)
+            if not self._should_consume_awaiting_reply(turn_meta, plan):
+                # A present-but-blank `-m` asks the human for the next
+                # instruction when one is reachable; absent and non-blank
+                # messages pass through unchanged. The awaiting-reply
+                # short-circuit above stays first, so flagged turns keep their
+                # own prompt and never reach this resolution.
+                was_blank = message is None or not message.strip()
+                message, terminated = self._resolve_blank_message(message, pipeline)
+                if terminated:
+                    return (session_name, None)
+                if was_blank and message and plan is None:
+                    # The prompt produced a reply: parse once more so a
+                    # MESSAGE-only turn is classified and the seed reaches the
+                    # plan. A non-blank unparseable message is never re-parsed.
+                    plan = self._parse_pending_plan(turn_path, plan_path, message)
             if self._should_consume_awaiting_reply(turn_meta, plan):
                 return self._consume_awaiting_reply(
                     turn_path,

@@ -35,6 +35,7 @@ from teddy_executor.core.ports.outbound.session_manager import (
     ISessionManager,
     SessionState,
 )
+from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.ports.outbound.time_service import ITimeService
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.services.execution_report_assembler import (
@@ -85,6 +86,8 @@ def _build_manager(container, plan: Plan) -> SessionLifecycleManager:
     time_service.now_utc.return_value = datetime(
         2026, 10, 2, 15, 23, 31, tzinfo=timezone.utc
     )
+    system_environment = register_mock(container, ISystemEnvironment)
+    system_environment.isatty.return_value = False
     ports = SessionPorts(
         session_service=register_mock(container, ISessionManager),
         file_system_manager=register_mock(container, IFileSystemManager),
@@ -95,6 +98,7 @@ def _build_manager(container, plan: Plan) -> SessionLifecycleManager:
         plan_parser=plan_parser,
         time_service=time_service,
         report_assembler=ExecutionReportAssembler(),
+        system_environment=system_environment,
     )
     return SessionLifecycleManager(ports=ports)
 
@@ -200,4 +204,38 @@ class TestPendingPlanCommunicationResume:
         manager._session_service.transition_to_next_turn.assert_not_called()
         manager._session_planner.trigger_new_plan.assert_not_called()
         manager._user_interactor.ask_question.assert_not_called()
+        assert result[0] == "say-ask"
+
+    def test_blank_message_at_terminal_consumes_the_prompted_reply(
+        self, container
+    ) -> None:
+        # Arrange: pending MESSAGE turn WITHOUT awaiting_reply, blank -m,
+        # terminal attached so the branch asks for the next instruction.
+        manager = _build_manager(container, _communication_plan())
+        _arrange_pending_communication_turn(manager)
+        manager._system_environment.isatty.return_value = True
+        manager._user_interactor.ask_question.return_value = REPLY
+        orchestrator = _orchestrator_with_report()
+
+        # Act
+        result = manager.resume(
+            session_name="say-ask",
+            orchestrator=orchestrator,
+            require_approval=True,
+            message="",
+        )
+
+        # Assert: the prompted reply is consumed as the turn's reply, on the
+        # same path a non-blank -m takes.
+        manager._user_interactor.ask_question.assert_called_once_with(
+            "What would you like to do next?"
+        )
+        manager._session_planner.trigger_new_plan.assert_called_once_with(
+            TURN04, message=REPLY
+        )
+        written_path = str(manager._file_system_manager.write_file.call_args.args[0])
+        assert written_path.endswith("03/report.md"), written_path
+        executed_plan = orchestrator.execute.call_args.kwargs["plan_path"]
+        assert TURN04 in executed_plan
+        assert TURN03 not in executed_plan
         assert result[0] == "say-ask"
