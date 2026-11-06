@@ -151,25 +151,29 @@
 {% set action_type = log.action_type.upper() %}
 {% set params = log.params or {} %}
 {% set target = '' %}
+{% set file_path_bullet = '' %}
+{% set full_path = params.get('File Path') or params.get('file_path') or params.get('Resource') or params.get('resource') or params.get('path') or '' %}
 
 {# Determine Header Target #}
 {% if action_type in ['EXECUTE', 'RESEARCH'] %}
   {% set subject = params.get('description') or params.get('Description') %}
   {% if subject %}
     {% set target = subject %}
-  {% else %}
-    {% set target = '' %}
   {% endif %}
 {% elif action_type in ['CREATE', 'EDIT', 'READ'] %}
-  {% set full_path = params.get('File Path') or params.get('file_path') or params.get('Resource') or params.get('resource') or params.get('path') or '' %}
-  {% if full_path %}
-    {% set target = '`' ~ full_path ~ '`' %}
-  {% else %}
-    {% set target = '' %}
+  {# URL resources keep the full URL as the subject. Nested paths shorten to the
+     basename and carry the full path in a body bullet; a root-level path needs no
+     bullet because it would repeat the headline. #}
+  {% if full_path and (full_path.startswith('http:') or full_path.startswith('https:')) %}
+    {% set target = full_path %}
+  {% elif full_path and '/' in full_path %}
+    {% set target = full_path | basename %}
+    {% set file_path_bullet = '- **File Path:** `' ~ full_path ~ '`' %}
+  {% elif full_path %}
+    {% set target = full_path %}
   {% endif %}
 {% else %}
   {# Fallback link-form header for unrecognized action types; MESSAGE is partitioned out upstream, and CREATE/EDIT/READ/EXECUTE/RESEARCH render their plain forms above. #}
-  {% set full_path = params.get('File Path') or params.get('file_path') or params.get('Resource') or params.get('resource') or params.get('path') or '' %}
   {% if full_path.startswith('http:') or full_path.startswith('https:') %}
     {% set target = '[' ~ full_path ~ '](' ~ full_path ~ ')' %}
   {% else %}
@@ -194,6 +198,9 @@
 {{ render_action_summary(log) }}
 {% if action_type == 'READ' and log in report_ns.resource_logs %}
 - **Note:** Up-to-date contents are provided under `Resource Contents`.
+{% endif %}
+{% if file_path_bullet %}
+{{ file_path_bullet }}
 {% endif %}
 {# Params Rendering - Flattened #}
 {% if action_type == 'EXECUTE' %}

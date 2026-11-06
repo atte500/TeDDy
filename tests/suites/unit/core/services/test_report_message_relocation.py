@@ -62,7 +62,7 @@ def test_mixed_report_renders_action_log_and_user_reply() -> None:
     output = _format(action, _message("reply here"))
 
     assert "## Action Log" in output
-    assert "### `CREATE`: `x.py`" in output
+    assert "### `CREATE`: x.py" in output
     assert "## User Reply" in output
     assert "reply here" in output
 

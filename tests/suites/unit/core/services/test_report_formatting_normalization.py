@@ -26,7 +26,7 @@ def _format(*logs: ActionLog, failed_resources=None) -> str:
     return MarkdownReportFormatter().format(report)
 
 
-def test_create_renders_backticked_relative_path_and_no_file_path_bullet() -> None:
+def test_create_renders_basename_headline_and_full_path_bullet() -> None:
     output = _format(
         ActionLog(
             status=ActionStatus.SUCCESS,
@@ -35,12 +35,12 @@ def test_create_renders_backticked_relative_path_and_no_file_path_bullet() -> No
         )
     )
 
-    assert "### `CREATE`: `src/new_module.py`" in output
-    assert "- **File Path:**" not in output
+    assert "### `CREATE`: new_module.py" in output
+    assert "- **File Path:** `src/new_module.py`" in output
     assert "- **Description:** Create it" in output
 
 
-def test_read_renders_backticked_path() -> None:
+def test_read_renders_basename_headline_and_full_path_bullet() -> None:
     output = _format(
         ActionLog(
             status=ActionStatus.SUCCESS,
@@ -50,7 +50,8 @@ def test_read_renders_backticked_path() -> None:
         )
     )
 
-    assert "### `READ`: `docs/spec.md`" in output
+    assert "### `READ`: spec.md" in output
+    assert "- **File Path:** `docs/spec.md`" in output
 
 
 def test_create_without_path_renders_bare_header() -> None:
@@ -100,7 +101,7 @@ def test_research_renders_plain_subject() -> None:
     assert "### `RESEARCH`: Find docs" in output
 
 
-def test_url_resource_renders_backticked() -> None:
+def test_url_resource_renders_full_url_without_file_path_bullet() -> None:
     output = _format(
         ActionLog(
             status=ActionStatus.SUCCESS,
@@ -110,7 +111,22 @@ def test_url_resource_renders_backticked() -> None:
         )
     )
 
-    assert "### `READ`: `https://example.com/x`" in output
+    assert "### `READ`: https://example.com/x" in output
+    assert "- **File Path:**" not in output
+
+
+def test_root_level_path_renders_basename_without_file_path_bullet() -> None:
+    output = _format(
+        ActionLog(
+            status=ActionStatus.SUCCESS,
+            action_type="READ",
+            params={"Resource": "README.md"},
+            details={"content": "hello"},
+        )
+    )
+
+    assert "### `READ`: README.md" in output
+    assert "- **File Path:**" not in output
 
 
 def test_single_resource_contents_section_when_both_sources_populated() -> None:

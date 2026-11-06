@@ -35,4 +35,4 @@ def test_report_renders_modified_tag_for_actions(container):
     output = formatter.format(report)
 
     # Assert
-    assert "### `EDIT` (modified): `test.py`" in output
+    assert "### `EDIT` (modified): test.py" in output

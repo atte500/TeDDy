@@ -26,7 +26,7 @@ def test_format_action_log_success():
     formatted = format_action_log(log)
 
     assert "- **Overall Status:** SUCCESS" in formatted
-    assert "### `CREATE`: `test.txt`" in formatted
+    assert "### `CREATE`: test.txt" in formatted
     assert "- **Status:** SUCCESS" in formatted
     assert "- **Details:** `File created successfully.`" in formatted
 

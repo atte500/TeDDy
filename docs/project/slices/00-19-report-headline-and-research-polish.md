@@ -1,5 +1,5 @@
 # Slice: Report Action Headline And RESEARCH Rendering Polish
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** N/A
 - **Specs:** N/A (the report-format spec delegates the concrete render format to the Jinja template; no permanent invariant changes)
@@ -118,7 +118,7 @@ No unresolved unknowns. Throwaway probes confirmed the parser round-trip on the 
 3. `[CONTRACT]` The `- **Command:**` block becomes conditional on modification or failure, the File Path bullet becomes the canonical carrier of the full path in the report body, and the RESEARCH query label becomes `SERP for "<query>"`.
 
 ## Deliverables
-- [ ] **Core** - File-action headlines: render the basename of the resolved full path as a plain headline subject, add the backticked `- **File Path:**` bullet only when the path carries a directory component, preserve the modified tag, and keep the full URL for URL resources. Migrate the report assertions that pin the old backticked full-path headline in the same change set so `make test` stays green.
+- [x] **Core** - File-action headlines: render the basename of the resolved full path as a plain headline subject, add the backticked `- **File Path:**` bullet only when the path carries a directory component, preserve the modified tag, and keep the full URL for URL resources. Migrate the report assertions that pin the old backticked full-path headline in the same change set so `make test` stays green.
 - [ ] **Core** - EXECUTE command gating: render the command block only when the command was user-modified or the action did not succeed. Migrate the assertions that expect the block for an unmodified success in the same change set.
 - [ ] **Core** - RESEARCH rendering: render `#### SERP for "<query>"` with the query verbatim in quotes, render the no-results note, omit empty result bullets, and gate the reworded hint on at least one result. Keep the `- **Description:**` label and add no metadata enrichment. Migrate the research assertions in the same change set and pin the new behaviors with unit coverage.
 
@@ -129,6 +129,8 @@ No unresolved unknowns. Throwaway probes confirmed the parser round-trip on the 
 - The command gate keeps the audit trail intact: a deviation the reviewer introduced stays visible, and a failure keeps the executed command; only an unmodified success omits it, and in both workflows the plan remains available to the next turn.
 - The hint reads `*Hint: Use READ on a result URL to fetch the page contents.*` and renders only when at least one query returned a result. It names READ's purpose because the SERP carries snippets only; the agent fetches full page content through READ.
 - The `- **Description:**` label stays even though the value is the engine's SERP snippet: the user confirmed the current label, and the domain DTO already documents the field as "The SERP snippet". Page-meta enrichment (fetching `meta description` per result) is out of scope and would be its own slice on `WebSearcherAdapter`.
+
+- **Deliverable 1 (file-action headlines) landed:** `execution_report.md.j2` resolves `full_path` once at the top of the action loop, keeps the full URL as the subject for `http:` and `https:` resources, shortens a nested path through the registered `os.path.basename` filter while emitting the backticked `- **File Path:**` bullet, and leaves a root-level path bare with no bullet. Assertions migrated in six modules, with new root-level and URL coverage added to `test_report_formatting_normalization.py`. `ReportParser` needed no change: the body bullet overrides the basename headline subject, so a READ consumer still reads the full resource from `File Path`.
 
 ## Verification
 1. **File-action headlines:**

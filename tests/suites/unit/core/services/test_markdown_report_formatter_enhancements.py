@@ -143,4 +143,4 @@ def test_formatter_hides_resource_contents_in_session_mode():
     assert "## Resource Contents" not in output_session
     assert "print('hello')" not in output_session
     # The action log entry should still exist
-    assert "### `READ`: `test.py`" in output_session
+    assert "### `READ`: test.py" in output_session
