@@ -44,5 +44,5 @@ None — the service is consumed directly by `SessionOrchestrator`.
 - **Global budget:** When the selected Turn-scope token total exceeds `auto_pruning.turn_context_threshold`, the largest Turn-scope files are deselected first.
 
 ### Sparing rules
-- **User-request turns:** A report containing `- **User Request:**` is spared from every heuristic.
+- **User-request turns:** A report containing the `## User Request` heading is spared from every heuristic.
 - **Successful message turns:** A plan containing `## Message` combined with a `SUCCESS` report is spared.

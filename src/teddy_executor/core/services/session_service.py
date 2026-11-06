@@ -331,7 +331,7 @@ class SessionService(ISessionManager):
         """Checks if the current turn should be preserved in session.context.
 
         Returns True if the turn is a 'message turn' (plan contains ## Message)
-        or a 'user-request turn' (report contains - **User Request:**).
+        or a 'user-request turn' (report contains the ## User Request heading).
         """
         # Check plan.md for ## Message
         plan_path = (cur_dir / "plan.md").as_posix()
@@ -340,7 +340,7 @@ class SessionService(ISessionManager):
             if re.search(r"^## Message", content, re.MULTILINE):
                 return True
 
-        # Check report.md for - **User Request:**
+        # Check report.md for the ## User Request heading
         report_path = (cur_dir / "report.md").as_posix()
         if self._file_system_manager.path_exists(report_path):
             content = self._file_system_manager.read_file(report_path)
