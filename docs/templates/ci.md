@@ -123,10 +123,17 @@ jobs:
         run: |
           {runner} pre-commit run mypy --all-files --hook-stage manual
 
-      - name: "Security Audit (bandit & pip-audit)"
+      # pre-commit accepts a single hook id per `run` invocation, so each hook
+      # gets its own step to keep the granular, per-check reporting.
+      - name: "Security Audit (bandit)"
         if: success() || failure()
         run: |
-          {runner} pre-commit run bandit pip-audit --all-files --hook-stage manual
+          {runner} pre-commit run bandit --all-files --hook-stage manual
+
+      - name: "Security Audit (pip-audit)"
+        if: success() || failure()
+        run: |
+          {runner} pre-commit run pip-audit --all-files --hook-stage manual
 ```
 
 ## Debug Workflow (Remote Probing Protocol)
