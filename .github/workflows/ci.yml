@@ -88,19 +88,52 @@ jobs:
 
     # Granular quality checks: each runs with `if: success() || failure()`
     # so every check executes and reports findings even if an earlier step failed.
+    # Every hook gets its own step: `pre-commit run` accepts a single hook id,
+    # and a dedicated step names the failing hook directly in the run view.
     - name: "Secrets Check (detect-secrets)"
       if: success() || failure()
       run: |
         uv run pre-commit run detect-secrets --all-files
 
-    - name: "File Hygiene (whitespace, formatting markers, JSON/TOML/YAML)"
+    - name: "File Hygiene (trailing whitespace)"
       if: success() || failure()
       run: |
-        status=0
-        for hook in trailing-whitespace end-of-file-fixer check-toml check-yaml check-json check-added-large-files check-case-conflict check-merge-conflict; do
-          uv run pre-commit run "$hook" --all-files || status=1
-        done
-        exit $status
+        uv run pre-commit run trailing-whitespace --all-files
+
+    - name: "File Hygiene (end of files)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run end-of-file-fixer --all-files
+
+    - name: "File Hygiene (TOML)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run check-toml --all-files
+
+    - name: "File Hygiene (YAML)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run check-yaml --all-files
+
+    - name: "File Hygiene (JSON)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run check-json --all-files
+
+    - name: "File Hygiene (large files)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run check-added-large-files --all-files
+
+    - name: "File Hygiene (case conflicts)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run check-case-conflict --all-files
+
+    - name: "File Hygiene (merge conflicts)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run check-merge-conflict --all-files
 
     - name: "Formatter (ruff format)"
       if: success() || failure()
@@ -117,23 +150,40 @@ jobs:
       run: |
         uv run pre-commit run mypy --all-files --hook-stage manual
 
-    - name: "Security Audit (bandit & pip-audit)"
+    - name: "Security Audit (bandit)"
       if: success() || failure()
       run: |
-        status=0
-        for hook in bandit pip-audit; do
-          uv run pre-commit run "$hook" --all-files --hook-stage manual || status=1
-        done
-        exit $status
+        uv run pre-commit run bandit --all-files --hook-stage manual
 
-    - name: "Structural Checks (DI boundaries, UTF-8, test isolation)"
+    - name: "Security Audit (pip-audit)"
       if: success() || failure()
       run: |
-        status=0
-        for hook in check-core-di-boundary check-explicit-utf8 no-hardcoded-tmp-paths no-unguarded-posix-patches no-unisolated-raw-cli-invoke; do
-          uv run pre-commit run "$hook" --all-files --hook-stage manual || status=1
-        done
-        exit $status
+        uv run pre-commit run pip-audit --all-files --hook-stage manual
+
+    - name: "Structural Check (DI boundary)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run check-core-di-boundary --all-files --hook-stage manual
+
+    - name: "Structural Check (explicit UTF-8)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run check-explicit-utf8 --all-files --hook-stage manual
+
+    - name: "Structural Check (no hardcoded /tmp)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run no-hardcoded-tmp-paths --all-files --hook-stage manual
+
+    - name: "Structural Check (POSIX-only patches)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run no-unguarded-posix-patches --all-files --hook-stage manual
+
+    - name: "Structural Check (raw CLI invoke)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run no-unisolated-raw-cli-invoke --all-files --hook-stage manual
 
     - name: "Verify Test Pyramid"
       if: success() || failure()
