@@ -17,7 +17,7 @@ The primary inbound (driving) adapter. It parses user commands with `Typer`, res
 - [`ISessionLoopGuard`](../../core/ports/outbound/session_loop_guard.md): Gates the session loop.
 - [`IConfigService`](../../core/ports/outbound/config_service.md): Reads and persists settings during `init`, `start`, and `resume`.
 - [`IMarkdownReportFormatter`](../../core/ports/outbound/markdown_report_formatter.md): Renders the execution report.
-- [`ISystemEnvironment`](../../core/ports/outbound/system_environment.md): Reports TTY status for the setup gates.
+- [`ISystemEnvironment`](../../core/ports/outbound/system_environment.md): Reports TTY status for the setup gates and the `start` opening-prompt presence gate.
 - `IPromptManager`: Serves the `get-prompt` command. It has no standalone port document.
 - `InterruptGuard` and `IQuitKeyListener`: Manage session-loop interrupt handling.
 
@@ -31,6 +31,7 @@ The primary inbound (driving) adapter. It parses user commands with `Typer`, res
 - `start_only_workspace_banner`: The workspace banner lines and the separator blank print only on `start`; `resume` leaves them off so its first line is `Checking configurations...` with no orphan leading blank.
 - `boundary_owns_interrupt_lifecycle`: The session loop boundary installs and restores the SIGINT handler and pairs the quit-key listener lifecycle with it.
 - `setup_gates_are_tty_gated`: The API-key and editor prompts run only when a terminal is attached.
+- `opening_prompt_requires_presence`: The `start` opening prompt runs only when `ISystemEnvironment.isatty()` reports a terminal; without one it exits with the no-input message instead of entering the ask loop.
 - `shared_context_normalization`: `start` and `context` normalize the repeatable, comma-separated `-c/--context` option through one helper in `cli_helpers.py`.
 
 ## Inbound Ports
@@ -48,8 +49,8 @@ None declared directly — the adapter resolves use cases and services from the 
 
 ### `start(NAME, --agent, --context, --model, --yolo/--no-yolo, --message, --pipeline)`
 - **Preconditions:** In pipeline mode, `--message` is required.
-- **Postconditions:** Creates a session, runs the shared startup preamble, triggers planning, and enters the session loop. An auto-named session is renamed to a slug of the first plan's H1 title.
-- **Exceptions:** Exits with code 1 and the `Pipeline mode requires an initial message via -m/--message.` error when pipeline mode is invoked without `-m`.
+- **Postconditions:** Creates a session, runs the shared startup preamble, triggers planning, and enters the session loop. An auto-named session is renamed to a slug of the first plan's H1 title. When `-m` is absent and a terminal is attached, the opening prompt asks `What are we working on?` and seeds the session with the answer.
+- **Exceptions:** Exits with code 1 and the `Pipeline mode requires an initial message via -m/--message.` error when pipeline mode is invoked without `-m`. Exits with code 1 and the `No terminal input provided for initial message.` error when `-m` is absent and no terminal is attached.
 
 ### `resume([PATH|SLUG], --agent, --message, --pipeline)`
 - **Preconditions:** The target session exists.

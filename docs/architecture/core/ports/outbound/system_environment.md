@@ -7,7 +7,9 @@ Defines the outbound port for host operating-system interactions: locating comma
 
 ## Consumers
 - [`ConsoleTooling`](../../../adapters/outbound/console_tooling.md): Discovers editors and diff viewers on `PATH`.
-- [`ConsoleInteractor`](../../../adapters/outbound/console_interactor.md): Launches the editor and diff tools.
+- [`ConsoleInteractor`](../../../adapters/outbound/console_interactor.md): Launches the editor and diff tools; its `ConsoleAskLoop` resolves prompt presence through `isatty()`.
+- [CLI Adapter](../../../adapters/inbound/cli.md): Gates the `start` opening prompt and the setup prompts on `isatty()`.
+- `SessionLifecycleManager` (`teddy_executor.core.services.session_lifecycle_manager`): Gates the resume blank-message and awaiting-reply prompts on `isatty()`.
 
 ## Dependencies
 None — this port declares no injected dependencies.
@@ -48,4 +50,4 @@ None — this is an outbound (driven) port.
 
 ### `isatty() -> bool`
 - **Preconditions:** None.
-- **Postconditions:** Returns whether a terminal is attached to stdin.
+- **Postconditions:** Returns whether a terminal is attached to stdin. It is the single presence source for every prompt gate — the CLI setup gates and opening prompt, the lifecycle manager's resume prompts, and the ask loop — which additionally guards the read capability with `sys.stdin.isatty()`.

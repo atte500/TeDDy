@@ -127,7 +127,7 @@ def test_handle_new_session_prompts_for_message_before_creating_dir():
     )
 
 
-def test_handle_new_session_raises_eof_error_on_empty_prompt_response_in_non_interactive():
+def test_handle_new_session_raises_eof_error_on_empty_prompt_response_at_terminal():
     import pytest
     import typer
 
@@ -148,8 +148,16 @@ def test_handle_new_session_raises_eof_error_on_empty_prompt_response_in_non_int
     container.register(ILlmClient, instance=mock_llm_client)
     container.register(IConfigService, instance=mock_config_service)
 
+    # A terminal is attached, so the opening prompt is reachable; an empty
+    # answer must drive the handler's EOFError guard rather than a swallowed
+    # missing-port error.
+    from teddy_executor.core.ports.outbound.system_environment import (
+        ISystemEnvironment,
+    )
+
+    container.register(ISystemEnvironment, instance=Mock(spec=ISystemEnvironment))
+
     mock_llm_client.validate_config.return_value = []
-    # Simulate EOF / Empty response from closed stdin
     mock_user_interactor.ask_question.return_value = ""
 
     # Act & Assert
@@ -164,6 +172,7 @@ def test_handle_new_session_raises_eof_error_on_empty_prompt_response_in_non_int
         )
 
     assert excinfo.value.exit_code == 1
+    mock_user_interactor.ask_question.assert_called_once_with("What are we working on?")
     mock_session_manager.create_session.assert_not_called()
 
 

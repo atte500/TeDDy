@@ -52,7 +52,7 @@ Implements the `IRunPlanUseCase` inbound port as a decorator-style service that 
 
 ### `resume(session_name, require_approval=True, project_context=None, pipeline=False, message=None)`
 - **Preconditions:** `session_name` identifies an existing session.
-- **Postconditions:** Delegates to `SessionLifecycleManager.resume`, which runs the session state machine.
+- **Postconditions:** Delegates to `SessionLifecycleManager.resume`, which runs the session state machine. The lifecycle manager owns the presence-gated resume prompts: a blank `-m` on a READY/COMPLETE turn and on a non-awaiting `PENDING_PLAN` turn resolves through `_resolve_blank_message`, and `pipeline` is forwarded through the COMPLETE_TURN delegation so pipeline resumes never prompt.
 
 ### Module helpers
 The module single-sources terminal rendering for session turns. `_print_initial_request` prints the initial user request and falls back to `initial_request.md`. `_print_header_bar` prints the plan status emoji and title. `_print_user_message` prints the user reply resolved from the direct message, `plan.metadata["user_request"]`, or the MESSAGE action log. `_print_message_from_teddy` prints the agent MESSAGE under the shared cyan framing, shared with the `resume -p` stop-again path.

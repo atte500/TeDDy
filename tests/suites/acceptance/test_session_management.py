@@ -272,7 +272,8 @@ def test_teddy_start_prompts_for_message_in_non_interactive_yes(
 def test_teddy_start_aborts_on_empty_message_in_non_interactive_yes(
     tmp_path: Path, monkeypatch
 ):
-    """Scenario: 'start' with -y and no -m raises EOFError/aborts if input is empty or closed."""
+    """Scenario: 'start' with -y and no -m, on a pipe, exits with a message
+    instead of waiting for input (no opening prompt fires)."""
     (
         TestEnvironment(monkeypatch, tmp_path)
         .setup()
@@ -282,10 +283,12 @@ def test_teddy_start_aborts_on_empty_message_in_non_interactive_yes(
     adapter = CliTestAdapter(monkeypatch, tmp_path)
     setup_project(tmp_path)
 
-    # Empty input should cause an abort
     result = adapter.run_cli_command(["start", "-y"], input="")
 
     assert result.exit_code != 0
+    combined = result.stdout + getattr(result, "stderr", "")
+    assert "No terminal input provided for initial message." in combined
+    assert "What are we working on?" not in combined
 
 
 def test_teddy_non_interactive_auto_pruning_and_physical_removal(

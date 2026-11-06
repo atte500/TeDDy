@@ -348,16 +348,20 @@ class TestCompleteTurnMessageResume:
         manager._session_planner.trigger_new_plan.return_value = ("feature", None)
         orchestrator = _orchestrator_with_report()
 
+        manager._system_environment.isatty.return_value = True
+
         # Act
         manager.resume(
             session_name="feature",
             orchestrator=orchestrator,
             require_approval=True,
             pipeline=True,
-            message="new request",
+            message="",
         )
 
-        # Assert: the pipeline flag survives the COMPLETE_TURN delegation.
+        # Assert: a blank -m on a pipeline resume never prompts, and the flag
+        # still survives the COMPLETE_TURN delegation.
+        manager._user_interactor.ask_question.assert_not_called()
         assert orchestrator.execute.call_args.kwargs["pipeline"] is True
 
 

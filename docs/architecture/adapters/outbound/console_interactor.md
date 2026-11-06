@@ -15,7 +15,7 @@ Implements the `IUserInteractor` outbound port for the terminal. It renders prom
 - [`ISystemEnvironment`](../../core/ports/outbound/system_environment.md): Resolves commands, reads environment variables, launches editors, and manages preview temp files.
 - [`IConfigService`](../../core/ports/outbound/config_service.md): Reads the `editor` and `diff_flags` settings.
 - **`ConsoleToolingHelper`** (`teddy_executor.adapters.outbound.console_tooling`): Discovers the editor and the diff-viewer command.
-- **`ConsoleAskLoop`** (`teddy_executor.adapters.outbound.console_interactor_ask_loop`): Runs the interactive ask loop with the editor fallback. It classifies editors through the shared `core.utils.editor_names` helper, so a launcher wrapper such as `nvim.CMD` takes the synchronous suspend path.
+- **`ConsoleAskLoop`** (`teddy_executor.adapters.outbound.console_interactor_ask_loop`): Runs the interactive ask loop with the editor fallback. It classifies editors through the shared `core.utils.editor_names` helper, so a launcher wrapper such as `nvim.CMD` takes the synchronous suspend path. It receives `ISystemEnvironment` and resolves presence through the port.
 - **`console_interactor_helpers`** (`teddy_executor.adapters.outbound.console_interactor_helpers`): Provides the handoff prompt, the preview-file setup, and the terminal-restore helper.
 
 ## Class Invariants
@@ -23,6 +23,7 @@ Implements the `IUserInteractor` outbound port for the terminal. It renders prom
 - `preview_cleanup`: Temporary preview files are deleted in a `finally` block after confirmation.
 - `terminal_restore`: The adapter restores the cooked terminal mode before each interaction block and after an external editor exits.
 - `stderr_only`: Prompts and messages write to `stderr`, so `stdout` stays reserved for report output.
+- `ask_loop_presence_source`: `ConsoleAskLoop._is_tty()` returns the injected `ISystemEnvironment.isatty()` answer guarded by `sys.stdin.isatty()`. The port is the authoritative presence source, so the loop and the lifecycle manager agree; the stdin check guards the read capability because prompt_toolkit and `termios` cannot drive a pipe.
 
 ## Inbound Ports
 None — this is an outbound (driven) adapter.
