@@ -33,6 +33,7 @@ Extract shared constants and helpers into their canonical modules; consolidate b
 - **Contract-violating session doubles:** `test_session_replan_loop.py`, `test_session_start_resequencing.py`, and `test_resume_message_threading.py` build their own containers and register a bare `Mock(spec=IInitUseCase)` whose `check_drift()` returns a dynamic Mock (no `__len__`). Extract a shared pre-configured session-container / ports fixture so doubles stay contract-faithful.
 - **Silent error swallowing (Failure Transparency):** broad `except` blocks without logging across `cli_helpers.py`, `local_file_system_adapter.py`, `shell_adapter.py`, `web_scraper_adapter.py`, `yaml_config_adapter.py`, `action_executor.py`, `context_service.py`, `session_pruning_service.py`, `session_repository.py`, `update_checker.py`, and `io.py`. Narrow the type or add debug-level logging; keep legitimate "safe to ignore" comments.
 - **Unused action-param threshold path:** `resolve_similarity_threshold` in `validation_rules/helpers.py` reads an action parameter named `edit.similarity_threshold` that no caller sets, because the global config lookup already supplies the threshold. Confirm no plan producer emits that parameter, then delete the dead branch.
+- **`SessionLifecycleManager` component design doc:** `SessionLifecycleManager` owns the presence-gated resume prompts (`_can_prompt_user`, `_resolve_blank_message`) and the pipeline pass-through across the COMPLETE_TURN delegation, but has no component design document. Its four consumer docs — the CLI adapter, `SessionOrchestrator`, `ConsoleInteractor`, and `ISystemEnvironment` — each reference its behaviour with no contract page to link to, so the presence gates are documented only from the outside. Add `docs/architecture/core/services/session_lifecycle_manager.md` following the component-design template (purpose, consumers, dependencies, class invariants, port contracts, operations) and link it from the Component Map in `docs/architecture/ARCHITECTURE.md`.
 
 ## Slices
 
@@ -48,3 +49,4 @@ High-level checklist of implementation steps. Each entry follows the format `{{M
 > 7. Shared MRP resource-root helper + shared session-container/ports fixture.
 > 8. TUI diff-routing predicate single-sourcing.
 > 9. Failure-Transparency sweep — broad `except` logging/narrowing.
+> 10. `SessionLifecycleManager` component design doc (`docs/architecture/core/services/session_lifecycle_manager.md`), linked from the Component Map.
