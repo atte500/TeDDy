@@ -13,6 +13,8 @@ from teddy_executor.core.services.markdown_report_formatter import (
 )
 from tests.harness.observers.report_parser import ReportParser
 
+RESEARCH_HINT = "*Hint: Use READ on a result URL to fetch the page contents.*"
+
 
 def _get_report(action_logs=None, status=RunStatus.SUCCESS, validation_result=None):
     return ExecutionReport(
@@ -246,7 +248,7 @@ def test_formats_research_action_with_results():
 
     output = formatter.format(report)
 
-    assert '#### Query: "q"' in output
+    assert '#### SERP for "q"' in output
     assert "1. `H`" in output
     assert "   - **Title:** T" in output
     assert "   - **Description:** B" in output
@@ -265,20 +267,86 @@ def test_formats_validation_failed_report():
     assert "E2" in output
 
 
-def test_formats_research_action_with_content_removed():
-    """Verify RESEARCH action result rendering no longer includes code blocks."""
+def test_research_query_without_results_renders_no_results_note():
+    """An empty query renders the no-results note and suppresses the hint."""
     formatter = MarkdownReportFormatter()
-    results: WebSearchResults = {
+    results = {"query_results": [{"query": "empty", "results": []}]}
+    report = _get_report(
+        [
+            ActionLog(
+                status=ActionStatus.SUCCESS,
+                action_type="RESEARCH",
+                params={"Description": "Res"},
+                details=results,
+            )
+        ]
+    )
+
+    output = formatter.format(report)
+
+    assert '#### SERP for "empty"' in output
+    assert "*(No results returned.)*" in output
+    assert RESEARCH_HINT not in output
+
+
+def test_research_query_missing_results_key_renders_no_results_note():
+    """A query entry without a results key renders the no-results note."""
+    formatter = MarkdownReportFormatter()
+    results = {"query_results": [{"query": "missing"}]}
+    report = _get_report(
+        [
+            ActionLog(
+                status=ActionStatus.SUCCESS,
+                action_type="RESEARCH",
+                params={"Description": "Res"},
+                details=results,
+            )
+        ]
+    )
+
+    output = formatter.format(report)
+
+    assert '#### SERP for "missing"' in output
+    assert "*(No results returned.)*" in output
+
+
+def test_research_partial_results_render_hint_when_any_query_has_results():
+    """A result in any query keeps the hint visible even if another query is empty."""
+    formatter = MarkdownReportFormatter()
+    results = {
+        "query_results": [
+            {"query": "a", "results": []},
+            {
+                "query": "b",
+                "results": [{"title": "T", "href": "H", "description": "B"}],
+            },
+        ]
+    }
+    report = _get_report(
+        [
+            ActionLog(
+                status=ActionStatus.SUCCESS,
+                action_type="RESEARCH",
+                params={"Description": "Res"},
+                details=results,
+            )
+        ]
+    )
+
+    output = formatter.format(report)
+
+    assert "*(No results returned.)*" in output
+    assert RESEARCH_HINT in output
+
+
+def test_research_empty_title_and_description_bullets_are_omitted():
+    """A result with empty title and description keeps only its link."""
+    formatter = MarkdownReportFormatter()
+    results = {
         "query_results": [
             {
                 "query": "q",
-                "results": [
-                    {
-                        "title": "T",
-                        "href": "H",
-                        "description": "B",
-                    }
-                ],
+                "results": [{"title": "", "href": "H", "description": ""}],
             }
         ]
     }
@@ -295,10 +363,7 @@ def test_formats_research_action_with_content_removed():
 
     output = formatter.format(report)
 
-    assert '#### Query: "q"' in output
     assert "1. `H`" in output
-    assert "   - **Title:** T" in output
-    assert "   - **Description:** B" in output
-    assert "```description" not in output
-    assert "```Content" not in output
-    assert "```Snippet" not in output
+    assert "- **Title:**" not in output
+    assert "- **Description:**" not in output
+    assert RESEARCH_HINT in output

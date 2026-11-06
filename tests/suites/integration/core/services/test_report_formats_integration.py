@@ -113,9 +113,9 @@ def test_research_report_includes_hint_and_hides_raw_details(tmp_path, monkeypat
     )
 
     assert result.exit_code == 0
-    # Verify Hint is present (including backticks from template)
+    # Verify the reworded hint renders when at least one result exists
     assert (
-        "**Hint:** NOW you MUST use READ on the most promising results" in result.stdout
+        "*Hint: Use READ on a result URL to fetch the page contents.*" in result.stdout
     )
     # Verify snippets are rendered
     assert "A cute bear." in result.stdout

@@ -262,17 +262,31 @@
 {% endif %}
 
 {% if action_type == 'RESEARCH' and log.details and log.details is mapping and log.details.get('query_results') %}
+{# Track whether any query returned a result so the hint reflects the whole action. #}
+{% set research_ns = namespace(has_results=false) %}
 {% for qr in log.details.get('query_results', []) %}
 
-#### Query: "{{ qr['query'] }}"
-{% for sr in qr['results'] %}
+#### SERP for "{{ qr['query'] }}"
+{% set query_results = qr.get('results') or [] %}
+{% if query_results %}
+{% set research_ns.has_results = true %}
+{% for sr in query_results %}
 {{ loop.index }}. `{{ sr['href'] }}`
+{% if sr.get('title') %}
    - **Title:** {{ sr['title'] }}
+{% endif %}
+{% if sr.get('description') %}
    - **Description:** {{ sr['description'] }}
+{% endif %}
 {% endfor %}
+{% else %}
+*(No results returned.)*
+{% endif %}
 {% endfor %}
 
-_**Hint:** NOW you MUST use READ on the most promising results_
+{% if research_ns.has_results %}
+*Hint: Use READ on a result URL to fetch the page contents.*
+{% endif %}
 {% endif %}
 
 {% if log in report_ns.inline_logs %}
