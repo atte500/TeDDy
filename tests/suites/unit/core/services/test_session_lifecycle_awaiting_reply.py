@@ -332,6 +332,34 @@ class TestCompleteTurnMessageResume:
         )
         assert result[0] == "feature"
 
+    def test_pipeline_resume_forwards_pipeline_to_execution(self, manager) -> None:
+        """A pipeline resume must not drop the flag when delegating.
+
+        The COMPLETE_TURN branch omitted ``pipeline=pipeline``, so the callee
+        took its ``False`` default downstream and a pipeline resume could reach
+        a prompt. The flag must reach ``execute`` unchanged.
+        """
+        # Arrange
+        manager._session_service.get_session_state.side_effect = [
+            (SessionState.COMPLETE_TURN, AWAITING_TURN),
+            (SessionState.PENDING_PLAN, NEXT_TURN),
+        ]
+        manager._session_service.transition_to_next_turn.return_value = NEXT_TURN
+        manager._session_planner.trigger_new_plan.return_value = ("feature", None)
+        orchestrator = _orchestrator_with_report()
+
+        # Act
+        manager.resume(
+            session_name="feature",
+            orchestrator=orchestrator,
+            require_approval=True,
+            pipeline=True,
+            message="new request",
+        )
+
+        # Assert: the pipeline flag survives the COMPLETE_TURN delegation.
+        assert orchestrator.execute.call_args.kwargs["pipeline"] is True
+
 
 class TestCompleteTurnUserRequestAppend:
     """COMPLETE_TURN + -m appends a smart-fenced `## User Request` section.

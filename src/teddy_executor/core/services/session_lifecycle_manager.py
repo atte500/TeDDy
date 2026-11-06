@@ -173,6 +173,7 @@ class SessionLifecycleManager:
             orchestrator,
             require_approval,
             project_context=project_context,
+            pipeline=pipeline,
             message=message,
         )
 
