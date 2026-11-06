@@ -100,9 +100,9 @@ These files live in `docs/templates/` and are created or refreshed by `teddy ini
     - **Audit Quality Gate Bypasses in Git History:** Check Git history for any `--no-verify` commits and verify the bypasses are still justified or can be resolved.
     - **Re-homed Debt Reconciliation:** The quality-gate, reliability, and specific-defect items formerly parked in the retired `## Technical Debt` section are now scheduled as Vertical Slices in the milestone document (`docs/project/milestones/05-quality-gate-debt-reconciliation.md`). Cross-cutting duplication/consolidation items are scheduled in Milestone 6.
     - **Reconcile Pre-existing Non-blocking Quality Checks:** The CI `Quality Checks` job (`continue-on-error: true`) fails the same nine steps on `main` independent of any change (detect-secrets, file hygiene, ruff, mypy, bandit/pip-audit, structural, test pyramid, file length, jscpd). Drive the job green by reconciling each check. A full-slice audit on 2026-10-28 re-measured the baseline, so the earlier per-fix triage notes are superseded:
-        - **Structural:** all five `.githooks/check_*.py` scripts pass, so this check is already green.
+        - **Structural:** all five `.githooks/check_*.py` scripts pass when invoked directly; the CI step previously failed only because it passed several hook IDs to a single `pre-commit run` call, which accepts one hook. The step now loops per hook, so the report reflects the checks themselves.
         - **Test pyramid:** 156 acceptance tests exceed 140 integration tests, so the rule is still violated.
-        - **File length:** 54 tracked Python files exceed the 300-line gate, far beyond the four named in the Technical Specifications.
+        - **File length:** 58 tracked Python files exceed the 300-line gate, far beyond the four named in the Technical Specifications.
         - **Ruff:** 72 findings, dominated by 60 `TID251` bare-mock violations, alongside 7 `F841`, 3 `PLR0913`, 1 `PLR0915`, and 1 `F401`.
         - **Mypy:** 8 errors across 6 files, and the previously named errors no longer reproduce.
         - **Inline suppressions:** 126 across `src/` and `tests/`, split into 72 `noqa` and 54 `type: ignore`.

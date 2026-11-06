@@ -96,7 +96,11 @@ jobs:
     - name: "File Hygiene (whitespace, formatting markers, JSON/TOML/YAML)"
       if: success() || failure()
       run: |
-        uv run pre-commit run trailing-whitespace end-of-file-fixer check-toml check-yaml check-json check-added-large-files check-case-conflict check-merge-conflict --all-files
+        status=0
+        for hook in trailing-whitespace end-of-file-fixer check-toml check-yaml check-json check-added-large-files check-case-conflict check-merge-conflict; do
+          uv run pre-commit run "$hook" --all-files || status=1
+        done
+        exit $status
 
     - name: "Formatter (ruff format)"
       if: success() || failure()
@@ -116,12 +120,20 @@ jobs:
     - name: "Security Audit (bandit & pip-audit)"
       if: success() || failure()
       run: |
-        uv run pre-commit run bandit pip-audit --all-files --hook-stage manual
+        status=0
+        for hook in bandit pip-audit; do
+          uv run pre-commit run "$hook" --all-files --hook-stage manual || status=1
+        done
+        exit $status
 
     - name: "Structural Checks (DI boundaries, UTF-8, test isolation)"
       if: success() || failure()
       run: |
-        uv run pre-commit run check-core-di-boundary check-explicit-utf8 no-hardcoded-tmp-paths no-unguarded-posix-patches no-unisolated-raw-cli-invoke --all-files --hook-stage manual
+        status=0
+        for hook in check-core-di-boundary check-explicit-utf8 no-hardcoded-tmp-paths no-unguarded-posix-patches no-unisolated-raw-cli-invoke; do
+          uv run pre-commit run "$hook" --all-files --hook-stage manual || status=1
+        done
+        exit $status
 
     - name: "Verify Test Pyramid"
       if: success() || failure()
