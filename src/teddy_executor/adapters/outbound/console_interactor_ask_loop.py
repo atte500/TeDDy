@@ -52,11 +52,9 @@ class ConsoleAskLoop:
     def _is_tty(self) -> bool:
         """Report whether an interactive terminal prompt can be driven here.
 
-        Presence is authoritative from the injected port, so the loop answers
-        the same question as the lifecycle manager. The stdin check guards the
-        read capability rather than adding a second presence source:
-        prompt_toolkit and ``termios`` need stdin itself to be a terminal, so a
-        piped run always takes the ``input()`` path.
+        The injected port is the authoritative presence source, so the loop and
+        the lifecycle manager agree. The stdin check guards the read
+        capability, as prompt_toolkit and ``termios`` cannot drive a pipe.
         """
         return self._system_env.isatty() and sys.stdin.isatty()
 
@@ -232,7 +230,6 @@ class ConsoleAskLoop:
             with open(temp_path, "r", encoding="utf-8") as f:
                 content = f.read()
             content = self._strip_escape_sequences(content)
-            marker = "<!-- Please enter your response above this line. -->"
             if marker in content:
                 content = content.split(marker)[0].strip()
 
