@@ -20,17 +20,25 @@ from teddy_executor.adapters.outbound.console_interactor_ask_loop import (
     ConsoleAskLoop,
 )
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
-from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
+
+
+class FakeSystemEnvironment:
+    """Presence double reporting a terminal, as the ``tty`` fixtures assume."""
+
+    def isatty(self) -> bool:
+        return True
 
 
 def _make_loop() -> ConsoleAskLoop:
     """Build a loop for ``_pt_prompt``-only tests.
 
-    ``_pt_prompt`` consults NEITHER constructor dependency, so typed sentinels
-    satisfy the constructor without pulling in unrelated fakes or mocks.
+    Presence comes from the injected port, whose double reports a terminal; the
+    ``tty``/``non_tty`` fixtures drive the stdin capability half of the branch.
+    The tooling dependency is never consulted, so a typed sentinel keeps
+    unrelated fakes out of the test.
     """
     return ConsoleAskLoop(
-        cast(ISystemEnvironment, None),
+        FakeSystemEnvironment(),
         cast(ConsoleToolingHelper, None),
     )
 

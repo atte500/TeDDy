@@ -36,6 +36,10 @@ class _TempFileSystemEnv:
     def delete_file(self, path):
         self.deleted.append(path)
 
+    def isatty(self) -> bool:
+        """Report no terminal so the stdin flush stays inert in a unit test."""
+        return False
+
 
 class _EditorTooling:
     """Minimal tooling fake that returns a fixed editor command."""

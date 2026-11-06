@@ -50,8 +50,15 @@ class ConsoleAskLoop:
         self._active_editor_path: Optional[str] = None
 
     def _is_tty(self) -> bool:
-        """Check if stdin is a real TTY (vs pipe/test runner)."""
-        return sys.stdin.isatty()
+        """Report whether an interactive terminal prompt can be driven here.
+
+        Presence is authoritative from the injected port, so the loop answers
+        the same question as the lifecycle manager. The stdin check guards the
+        read capability rather than adding a second presence source:
+        prompt_toolkit and ``termios`` need stdin itself to be a terminal, so a
+        piped run always takes the ``input()`` path.
+        """
+        return self._system_env.isatty() and sys.stdin.isatty()
 
     def _flush_stdin(self) -> None:
         """Flush stale escape sequences from the TTY input buffer.
