@@ -30,8 +30,9 @@ Dependency contracts this component requires injected:
 - **`PortName`**: Signature and operations consumed.
 
 ## Data Contracts
-Data transfer objects, schemas, payloads, or immutable models managed or exchanged by this component:
+Data transfer objects, schemas, payloads, or custom domain exceptions (inheriting from the project root base exception) managed or exchanged by this component:
 - **`DtoOrPayloadName`**: Structure, fields, types, and constraints.
+- **`DomainErrorName`**: Specific error type, payload attributes, and base class hierarchy (inheriting from the project root base exception).
 
 ## Operations
 Public method specifications. Avoid pseudocode; specify signatures, preconditions, postconditions, and error modes:
@@ -39,4 +40,6 @@ Public method specifications. Avoid pseudocode; specify signatures, precondition
 ### `method_name(args) -> ReturnType`
 - **Preconditions:** What must hold before calling (validated via guard clauses or runtime assertions).
 - **Postconditions:** What is guaranteed upon successful return.
-- **Exceptions:** Specific exceptions raised when preconditions or operations fail (never generic or swallowed errors).
+- **Exceptions:**
+  - `DomainErrorName`: Trigger condition for domain-specific failure.
+  - `TranslatedErrorName`: Downstream dependency failure mapped to an internal exception to prevent leaky abstractions.

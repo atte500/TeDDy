@@ -64,22 +64,26 @@ None — this is an outbound (driven) port.
 ### `rename_session(old_name, new_name) -> str`
 - **Preconditions:** `old_name` exists.
 - **Postconditions:** Renames the session directory and returns the new path.
-- **Exceptions:** `ValueError` when `new_name` already exists.
+- **Exceptions:**
+  - `ValueError`: Target `new_name` already exists.
 
 ### `get_latest_session_name() -> str`
 - **Preconditions:** None.
 - **Postconditions:** Returns the most recently modified session name.
-- **Exceptions:** `ValueError` when no sessions exist.
+- **Exceptions:**
+  - `ValueError`: No sessions exist in the workspace.
 
 ### `resolve_session_from_path(path) -> str`
 - **Preconditions:** `path` is within a session.
 - **Postconditions:** Returns the session name for the given session root, turn directory, or file.
-- **Exceptions:** `ValueError` when `path` is not inside a session.
+- **Exceptions:**
+  - `ValueError`: Specified `path` does not reside inside a session directory.
 
 ### `resolve_session_from_slug(slug) -> str`
 - **Preconditions:** At least one session exists.
 - **Postconditions:** Returns the session matching the timestamp-stripped slug (exact, case-insensitive; latest wins).
-- **Exceptions:** `ValueError` when no session matches the slug.
+- **Exceptions:**
+  - `ValueError`: No existing session matches the provided slug.
 
 ### `to_root_relative(turn_dir, filename) -> str`
 - **Preconditions:** None.

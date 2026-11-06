@@ -29,4 +29,5 @@ None — the port declares no injected dependencies.
 ### `parse(plan_content, plan_path=None) -> Plan`
 - **Preconditions:** `plan_content` is a non-empty string.
 - **Postconditions:** Returns a valid `Plan`.
-- **Exceptions:** `InvalidPlanError` when the content is malformed for the parser's format.
+- **Exceptions:**
+  - `InvalidPlanError`: Content is malformed for the parser format.

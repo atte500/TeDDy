@@ -22,10 +22,12 @@ None — this is an outbound (driven) port.
 
 ## Data Contracts
 - **`WebSearchResults`** (`TypedDict`): `query_results: List[QueryResult]`, each carrying `query` and a list of `SearchResult` items (`title`, `href`, `description`).
+- **`WebSearchError`** (`Exception`): Domain exception raised when search execution fails.
 
 ## Operations
 
 ### `search(queries) -> WebSearchResults`
 - **Preconditions:** `queries` is a non-empty list of query strings.
 - **Postconditions:** Returns aggregated results for every query.
-- **Exceptions:** Raises a web-search error when the search fails.
+- **Exceptions:**
+  - `WebSearchError`: Downstream search provider failure or unrecoverable search error.

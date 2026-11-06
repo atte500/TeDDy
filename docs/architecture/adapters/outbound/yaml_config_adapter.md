@@ -41,6 +41,7 @@ None — this is an outbound (driven) adapter.
 - **`.env` file:** A sibling of the config file, written with quoted values through `dotenv.set_key`.
 - **Interpolation forms:** `${VAR}` (empty string when unresolved), `${VAR:-default}` (fallback value), and `$$` (literal `$`).
 - **Typed schema:** The adapter builds an `AppConfig` from the interpolated merged mapping at construction, so an uncoercible or out-of-range declared value raises `ConfigurationError` at load. Every `llm.*` key bypasses the typed schema and reads from the live mapping.
+- **`ConfigurationError`** (`teddy_executor.core.domain.models.exceptions`): Raised on uncoercible config values or post-load duplicate keys.
 
 ## Operations
 
@@ -52,7 +53,10 @@ None — this is an outbound (driven) adapter.
 ### `set_setting(key, value) -> None`
 - **Preconditions:** `key` is a non-empty string.
 - **Postconditions:** Rewrites only the target value token, preserving comments and ordering, rebuilds the merged cache from disk, and refreshes the typed view. An exact top-level dotted key wins over a nested key. Dot-notation creates intermediate mappings.
-- **Exceptions:** `OSError` when the file is unwritable; `yaml.YAMLError` when serialization fails; `ConfigurationError` when the file gained a duplicate key after the adapter loaded it.
+- **Exceptions:**
+  - `OSError`: File is unwritable.
+  - `yaml.YAMLError`: Serialization fails.
+  - `ConfigurationError`: File gained a duplicate key after initial adapter load.
 
 ### `get_config_path() -> str`
 - **Postconditions:** Returns the configured path to the user config file.
@@ -60,4 +64,5 @@ None — this is an outbound (driven) adapter.
 ### `set_env_variable(name, value) -> None`
 - **Preconditions:** `name` is a non-empty environment-variable name.
 - **Postconditions:** Persists the secret to the sibling `.env` file and leaves `os.environ` untouched.
-- **Exceptions:** `OSError` when the `.env` file is unwritable.
+- **Exceptions:**
+  - `OSError`: Sibling `.env` file is unwritable.

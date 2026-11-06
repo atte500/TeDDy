@@ -41,12 +41,14 @@ None — this is a concrete implementation of an outbound port.
 ### `fetch_system_prompt(agent_name, turn_path) -> str`
 - **Preconditions:** `agent_name` is a non-empty string; `turn_path` is the current turn directory.
 - **Postconditions:** Returns the session-root prompt verbatim when it exists. Otherwise resolves the agent content from `.teddy/prompts/` and returns the assembled prompt. Returns an empty string when no agent prompt resolves.
-- **Exceptions:** `FileNotFoundError` when `MRP.md` must be appended but is missing.
+- **Exceptions:**
+  - `FileNotFoundError`: Required `MRP.md` protocol prompt is missing when composition is required.
 
 ### `compose_system_prompt(agent_name) -> Optional[str]`
 - **Preconditions:** `agent_name` is a non-empty string.
 - **Postconditions:** Returns the assembled prompt from the canonical `.teddy/prompts/` source without a turn path, or `None` when no content resolves.
-- **Exceptions:** `FileNotFoundError` when `MRP.md` must be appended but is missing.
+- **Exceptions:**
+  - `FileNotFoundError`: Required `MRP.md` protocol prompt is missing when composition is required.
 
 ### `resolve_message(user_message, turn_path) -> Optional[str]`
 - **Preconditions:** `turn_path` is the current turn directory.

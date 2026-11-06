@@ -24,10 +24,14 @@ None — the port requires no injected dependencies.
 ## Data Contracts
 - **`EditPair`** (`TypedDict`, `total=False`): `find: str`, `replace: str`, `match_all: bool`.
 - **Return tuple:** `tuple[str, list[float]]` — the transformed string and the per-edit similarity scores.
+- **`SearchTextNotFoundError`** (`ValueError`): Raised when no candidate meets the similarity threshold.
+- **`MultipleMatchesFoundError`** (`Exception`): Raised when multiple candidates match ambiguously.
 
 ## Operations
 
 ### `simulate_edits(content, edits, threshold=DEFAULT_SIMILARITY_THRESHOLD, match_all=False) -> tuple[str, list[float]]`
 - **Preconditions:** `content` is a string and each `edits` entry carries a `find` block.
 - **Postconditions:** Returns the transformed string and the list of similarity scores, applying every pair in sequence.
-- **Exceptions:** `ValueError` when a `find` block is not found or matches ambiguously.
+- **Exceptions:**
+  - `SearchTextNotFoundError`: Target `find` block does not meet the similarity threshold.
+  - `MultipleMatchesFoundError`: Target `find` block matches multiple candidates ambiguously.

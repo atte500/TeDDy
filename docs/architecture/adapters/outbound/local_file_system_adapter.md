@@ -33,6 +33,9 @@ None — this is an outbound (driven) adapter.
 - **`EditPair`** (`TypedDict`): `find: str`, `replace: str`, `match_all: bool`.
 - **`edit_file` return:** `list[float]` — the per-edit similarity scores.
 - **`read_files_in_vault` return:** `dict[str, str | None]`, where `None` marks a missing file.
+- **`FileAlreadyExistsError`** (`teddy_executor.core.domain.models.exceptions`): Raised on file collision when overwrite is unset.
+- **`SearchTextNotFoundError`** (`teddy_executor.core.domain.models.exceptions`): Propagated from simulator on missing edit find block.
+- **`MultipleMatchesFoundError`** (`teddy_executor.core.domain.models.exceptions`): Propagated from simulator on ambiguous edit match.
 - **Configuration key:** `max_read_lines` sets the default read cap (`1000`).
 
 ## Operations
@@ -40,12 +43,15 @@ None — this is an outbound (driven) adapter.
 ### `create_file(path, content, overwrite=False) -> None`
 - **Preconditions:** `path` resolves inside the project root.
 - **Postconditions:** Creates the file and its parent directories, writing the content verbatim with LF preserved.
-- **Exceptions:** `FileAlreadyExistsError` when the file exists and `overwrite` is unset; `OSError` on any other I/O failure.
+- **Exceptions:**
+  - `FileAlreadyExistsError`: File exists and `overwrite` is unset.
+  - `OSError`: Underlying filesystem I/O failure.
 
 ### `read_file(path) -> str` and `read_raw_file(path) -> str`
 - **Preconditions:** `path` resolves inside the project root.
 - **Postconditions:** `read_file` returns head-truncated content; `read_raw_file` returns the full content.
-- **Exceptions:** `FileNotFoundError` when no file exists at `path`.
+- **Exceptions:**
+  - `FileNotFoundError`: No file exists at `path`.
 
 ### `write_file(path, content) -> None`
 - **Postconditions:** Upserts the file with LF-verbatim content.
@@ -53,7 +59,9 @@ None — this is an outbound (driven) adapter.
 ### `edit_file(path, edits, similarity_threshold=DEFAULT_SIMILARITY_THRESHOLD, match_all=False) -> list[float]`
 - **Preconditions:** The file exists and each edit carries a `find` block.
 - **Postconditions:** Rewrites the file through the injected `IEditSimulator`, writes the simulated content verbatim, and returns the similarity scores.
-- **Exceptions:** Propagates the simulator's `SearchTextNotFoundError` and `MultipleMatchesFoundError`.
+- **Exceptions:**
+  - `SearchTextNotFoundError`: Propagated from `IEditSimulator` when find block fails threshold.
+  - `MultipleMatchesFoundError`: Propagated from `IEditSimulator` on ambiguous candidate matches.
 
 ### `read_files_in_vault(paths) -> dict[str, str | None]`
 - **Postconditions:** Returns the full content per path, or `None` for a missing file.

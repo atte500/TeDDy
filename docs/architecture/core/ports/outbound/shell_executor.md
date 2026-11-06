@@ -29,4 +29,5 @@ None — this is an outbound (driven) port.
 ### `execute(command, cwd=None, env=None, timeout=None, background=False, max_lines=None) -> ShellOutput`
 - **Preconditions:** `command` is a non-empty string; `cwd`, when given, is a project-relative path.
 - **Postconditions:** Returns a `ShellOutput`; blocks until completion unless `background` is `True`, in which case it returns immediately after launching.
-- **Exceptions:** `ValueError` when `cwd` is absolute or escapes the project directory.
+- **Exceptions:**
+  - `ValueError`: Parameter `cwd` is absolute or escapes the project directory.

@@ -35,6 +35,9 @@ None — this is an outbound (driven) port.
 - **`edits` parameter** (`edit_file`): a list of `{"find": str, "replace": str}` blocks.
 - **`edit_file` return:** a list of per-edit similarity scores.
 - **`read_files_in_vault` return:** a mapping of path to content, with `None` for missing files.
+- **`FileAlreadyExistsError`** (`FileExistsError`): Raised on file collision when overwrite is disabled.
+- **`SearchTextNotFoundError`** (`ValueError`): Raised when an edit find block cannot be matched.
+- **`MultipleMatchesFoundError`** (`Exception`): Raised when an edit find block matches ambiguously.
 
 ## Operations
 
@@ -61,7 +64,8 @@ None — this is an outbound (driven) port.
 ### `create_directory_exclusive(path) -> bool`
 - **Preconditions:** None.
 - **Postconditions:** Atomically creates `path`; returns `True` when this call created it and `False` when it already existed.
-- **Exceptions:** Re-raises any error other than `FileExistsError` (Failure Transparency).
+- **Exceptions:**
+  - `OSError`: Underlying filesystem creation failure other than `FileExistsError` (Failure Transparency).
 
 ### `write_file(path, content) -> None`
 - **Preconditions:** None.
@@ -70,27 +74,34 @@ None — this is an outbound (driven) port.
 ### `create_file(path, content, overwrite=False) -> None`
 - **Preconditions:** None.
 - **Postconditions:** Creates `path` with `content`; overwrites when `overwrite` is `True`.
-- **Exceptions:** `FileExistsError` when the file exists and `overwrite` is `False`.
+- **Exceptions:**
+  - `FileExistsError`: File exists and `overwrite` is `False`.
 
 ### `read_file(path) -> str`
 - **Preconditions:** `path` exists.
 - **Postconditions:** Returns the file content, subject to the `read.max_lines` cap.
-- **Exceptions:** `FileNotFoundError` when no file exists at `path`.
+- **Exceptions:**
+  - `FileNotFoundError`: No file exists at `path`.
 
 ### `read_raw_file(path) -> str`
 - **Preconditions:** `path` exists.
 - **Postconditions:** Returns the full, uncapped file content.
-- **Exceptions:** `FileNotFoundError` when no file exists at `path`.
+- **Exceptions:**
+  - `FileNotFoundError`: No file exists at `path`.
 
 ### `remove_file(path) -> None`
 - **Preconditions:** `path` exists.
 - **Postconditions:** Deletes the file.
-- **Exceptions:** `FileNotFoundError` when no file exists at `path`.
+- **Exceptions:**
+  - `FileNotFoundError`: No file exists at `path`.
 
 ### `edit_file(path, edits, similarity_threshold=0.95, match_all=False) -> list[float]`
 - **Preconditions:** `path` exists; `similarity_threshold` is between 0.0 and 1.0.
 - **Postconditions:** Applies each FIND/REPLACE block and returns the per-edit similarity scores.
-- **Exceptions:** `FileNotFoundError` when `path` is missing; `SearchTextNotFoundError` when no match meets the threshold; `MultipleMatchesFoundError` on an ambiguous tie.
+- **Exceptions:**
+  - `FileNotFoundError`: Missing file at `path`.
+  - `SearchTextNotFoundError`: Target find block does not meet the similarity threshold.
+  - `MultipleMatchesFoundError`: Ambiguous candidate match or tie at or above threshold.
 
 ### `get_context_paths() -> list[str]`
 - **Preconditions:** None.
@@ -115,4 +126,5 @@ None — this is an outbound (driven) port.
 ### `open_file_for_append(path) -> TextIO`
 - **Preconditions:** None.
 - **Postconditions:** Returns a writable handle opened in append mode, creating parent directories as needed.
-- **Exceptions:** `IOError` when the file cannot be opened.
+- **Exceptions:**
+  - `IOError`: File handle cannot be opened or created.

@@ -42,20 +42,26 @@ None declared directly — the service consumes the ports bundled in `PlanningPo
 - **`PlanningPorts`** (`teddy_executor.core.domain.models.planning_ports`): The injected DTO bundling context, LLM, file system, config, prompts, user interactor, and session manager.
 - **`ProjectContext`** (`teddy_executor.core.domain.models.project_context`): The gathered context returned to the caller.
 - **Return tuple:** `(plan_path, turn_cost, project_context)`.
+- **`ConfigurationError`** (`teddy_executor.core.domain.models.exceptions`): Raised when request strictly exceeds the model context window budget.
 
 ## Operations
 
 ### `generate_plan(user_message, turn_dir, context_files=None) -> tuple[str, float, ProjectContext]`
 - **Preconditions:** `turn_dir` exists; the agent prompt file exists in the turn directory.
 - **Postconditions:** Writes `plan.md` and `input.md`, updates `meta.yaml` telemetry (including `cost_recorded` when the adapter marked the response), and returns the plan path, the turn cost, and the gathered `ProjectContext`. The blocking network phase runs on the interruptible daemon worker, so the calling thread waits on a future instead of a raw socket read.
-- **Exceptions:** `ConfigurationError` when configuration is invalid or the request exceeds the context window; `FileNotFoundError` when the system prompt is missing; `KeyboardInterrupt` when the user quits while the wait is pending.
+- **Exceptions:**
+  - `ConfigurationError`: Configuration is invalid or request exceeds context window budget.
+  - `FileNotFoundError`: System prompt file is missing in turn directory.
+  - `KeyboardInterrupt`: User quits while the planning wait is pending.
 
 ### `_run_planning_phase(messages, model, meta) -> tuple[Any, int, str, float]`
 - **Preconditions:** `messages` holds the assembled system and context messages; `model` is the resolved model; `meta` carries the turn telemetry.
 - **Postconditions:** Hydrates through `get_context_window`, counts tokens, displays telemetry, checks the context budget, and performs the generation with retry, all on a daemon worker. Returns the response, the token count, the plan content, and the turn cost.
-- **Exceptions:** `ConfigurationError` when the request exceeds the context window; every worker failure is forwarded to the waiter unchanged.
+- **Exceptions:**
+  - `ConfigurationError`: Assembled request token count exceeds the context window.
 
 ### `_check_context_budget(token_count, model) -> None`
 - **Preconditions:** `token_count` is the assembled request token count; `model` is the resolved model.
 - **Postconditions:** Returns normally when the context window is unknown or the request fits; the guardrail never calls the LLM.
-- **Exceptions:** `ConfigurationError` when the window is positive and the request strictly exceeds it.
+- **Exceptions:**
+  - `ConfigurationError`: Token count strictly exceeds positive context window limit.

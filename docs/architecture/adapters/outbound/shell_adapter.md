@@ -39,7 +39,8 @@ None — this is an outbound (driven) adapter.
 ### `execute(command, cwd=None, env=None, timeout=None, background=False, max_lines=None) -> ShellOutput`
 - **Preconditions:** `command` is a non-empty string; a relative `cwd` resolves inside the project root.
 - **Postconditions:** Returns a `ShellOutput`. In background mode it launches a detached process and returns its PID immediately. In synchronous mode it blocks until the child exits, the guard fires, or the timeout elapses. A non-zero exit carries the parsed `FAILED_COMMAND` marker when present, and an interactive-prompt failure is replaced with the standard detection message.
-- **Exceptions:** `ValueError` when a relative `cwd` escapes the project root.
+- **Exceptions:**
+  - `ValueError`: Relative `cwd` escapes the project root.
 
 ### Internal helpers
 `_validate_cwd` resolves and containment-checks the working directory. `_await_process` polls the guard between slices or blocks once. `_handle_timeout` kills the process group, tail-truncates the captured partial output to the effective line cap, and returns exit code `124`. `_decode_stream` converts each captured stream to text without raising. `_process_execution_results` sanitizes, truncates, and maps the raw output. `_detect_interactive_prompt` scans both streams for interactive-input patterns.

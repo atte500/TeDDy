@@ -53,7 +53,8 @@ None — the service implements an outbound port and is consumed through `ISessi
 ### `rename_session(old_name, new_name) -> str`
 - **Preconditions:** `old_name` exists.
 - **Postconditions:** Renames the session directory and returns the new path.
-- **Exceptions:** `ValueError` when `new_name` already exists.
+- **Exceptions:**
+  - `ValueError`: Target `new_name` already exists.
 
 ### `load_turn_meta(turn_dir) -> dict` and `save_turn_meta(turn_dir, data) -> None`
 - **Preconditions:** None, and `turn_dir` exists respectively.

@@ -31,10 +31,14 @@ None — the simulator declares no injected dependencies.
 - **`EditPair`** (`TypedDict`, `total=False`): `find: str`, `replace: str`, `match_all: bool`.
 - **`MatchResult`** (`EditMatcher`): `match: str`, `score: float`, `is_ambiguous: bool`, `offset: int`, `runner_up: float`, `candidate_count: int`; the simulator consumes every field.
 - **Return tuple:** `tuple[str, list[float]]` — the transformed string and the per-edit similarity scores.
+- **`SearchTextNotFoundError`** (`ValueError`): Raised when no candidate meets the similarity threshold.
+- **`MultipleMatchesFoundError`** (`Exception`): Raised on an ambiguous tie or competing candidate at or above threshold, carrying the exact candidate count.
 
 ## Operations
 
 ### `simulate_edits(content, edits, threshold=DEFAULT_SIMILARITY_THRESHOLD, match_all=False) -> tuple[str, list[float]]`
 - **Preconditions:** `content` is a string; each `edits` entry carries a `find` block.
 - **Postconditions:** Returns the transformed string and the list of similarity scores, applying every pair in sequence. A per-edit `match_all` overrides the global flag.
-- **Exceptions:** `SearchTextNotFoundError` when no match meets the threshold; `MultipleMatchesFoundError` on an ambiguous match, whether a tie or a fuzzy winner with a second candidate at or above the threshold.
+- **Exceptions:**
+  - `SearchTextNotFoundError`: No match meets the similarity threshold.
+  - `MultipleMatchesFoundError`: Ambiguous match occurs due to a tie or a second candidate scoring at or above threshold.

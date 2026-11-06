@@ -45,7 +45,8 @@ None — this is a test harness component.
 ### `get_service(service_type) -> Any`
 - **Preconditions:** `setup` has run.
 - **Postconditions:** Resolves the service from the test container.
-- **Exceptions:** `RuntimeError` when `setup` has not run.
+- **Exceptions:**
+  - `RuntimeError`: Raised when `setup` has not run prior to resolving services.
 
 ### `with_tty(value=True) -> TestEnvironment`
 - **Postconditions:** Sets the `ISystemEnvironment` double's `isatty()` return value and returns `self`.

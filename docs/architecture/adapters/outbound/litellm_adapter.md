@@ -36,13 +36,17 @@ None — this is an outbound (driven) adapter.
 - **`messages`** (`List[Dict[str, str]]`): The chat-completion payload.
 - **`llm.*` config keys:** The entire `llm` section passes through to `litellm.completion()`. The adapter reads `llm.model`, `llm.api_key`, `llm.max_retries` (default 3), and `llm.timeout` (default 300 seconds).
 - **Model registry cache:** JSON at `.teddy/.model_registry_cache.json`, payload `{"version": 1, "fetched_at_epoch": <int>, "models": [...]}`, with a 7-day TTL.
+- **`LlmApiError`** (`teddy_executor.core.ports.outbound.llm_client`): Raised after retry exhaustion on downstream provider failure.
+- **`ConfigurationError`** (`teddy_executor.core.domain.models.exceptions`): Raised for invalid configuration, missing keys, or authentication errors.
 
 ## Operations
 
 ### `get_completion(messages, model=None, **kwargs) -> Any`
 - **Preconditions:** The config carries a model and, when the provider requires one, an API key.
 - **Postconditions:** Returns the provider completion object. The first call validates the config once; later calls skip validation.
-- **Exceptions:** `ConfigurationError` for a missing model, a missing required key, or an auth failure; `LlmApiError` after retry exhaustion.
+- **Exceptions:**
+  - `ConfigurationError`: Model missing, required API key missing, or authentication failure detected.
+  - `LlmApiError`: Downstream API provider failure persisting after retries are exhausted.
 
 ### `get_token_count(messages, model=None) -> int`
 - **Postconditions:** Returns the token count from `litellm.token_counter`.

@@ -39,4 +39,5 @@ None — the factory is a concrete service consumed through the `IActionFactory`
 ### `create_action(action_type, params=None) -> IAction`
 - **Preconditions:** `action_type` is a known verb.
 - **Postconditions:** Returns an `IAction` whose `execute` calls the mapped adapter method. A remote READ binds `IWebScraper.get_content`; a line-range READ binds `IFileSystemManager.read_raw_file`; a local READ binds `IFileSystemManager.read_file`.
-- **Exceptions:** `ValueError` when the action type is unknown.
+- **Exceptions:**
+  - `ValueError`: Unknown or unmapped action verb provided.

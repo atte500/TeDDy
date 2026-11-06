@@ -38,15 +38,19 @@ None declared directly — the service consumes the concrete services and ports 
 - **`OrchestratorPorts`** (`teddy_executor.core.domain.models.orchestrator_ports`): The injected DTO bundling the parser, validator, action executor, file system, report assembler, user interactor, optional reviewer, and optional interrupt guard.
 - **`Plan`** and **`ExecutionReport`** (`teddy_executor.core.domain.models`): The executed object and its result.
 - **`ReportAssemblyData`** (`teddy_executor.core.domain.models.report_assembly_data`): The input DTO for report assembly.
+- **`InvalidPlanError`** (`teddy_executor.core.ports.inbound.plan_parser`): Raised when pre-flight plan validation fails.
 
 ## Operations
 
 ### `execute(plan=None, plan_content=None, plan_path=None, require_approval=True, message=None, project_context=None, pipeline=False) -> ExecutionReport`
 - **Preconditions:** Exactly one of `plan`, `plan_content`, or `plan_path` supplies the plan.
 - **Postconditions:** Returns the assembled `ExecutionReport`. The method resolves the plan, validates it, performs the batch plan review, dispatches the actions, and assembles the report. A user abort returns an `ABORTED` report.
-- **Exceptions:** `InvalidPlanError` when validation fails; `ValueError` when no plan source is provided.
+- **Exceptions:**
+  - `InvalidPlanError`: Plan pre-flight validation fails.
+  - `ValueError`: No plan source (`plan`, `plan_content`, or `plan_path`) provided.
 
 ### `resume(session_name, require_approval=True, project_context=None) -> tuple[str, Optional[ExecutionReport]]`
 - **Preconditions:** None.
 - **Postconditions:** None — session resumption is not supported by this service.
-- **Exceptions:** `NotImplementedError` always.
+- **Exceptions:**
+  - `NotImplementedError`: Session resumption is unsupported by this service.

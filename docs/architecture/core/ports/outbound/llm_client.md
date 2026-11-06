@@ -30,7 +30,8 @@ None — this is an outbound (driven) port.
 ### `get_completion(messages, model=None, **kwargs) -> Any`
 - **Preconditions:** `messages` follows the chat-completion format.
 - **Postconditions:** Returns the provider completion object.
-- **Exceptions:** `LlmApiError` when the API call fails.
+- **Exceptions:**
+  - `LlmApiError`: Remote provider failure, rate limit, timeout, or malformed response.
 
 ### `get_token_count(messages, model=None) -> int`
 - **Preconditions:** `messages` follows the chat-completion format.

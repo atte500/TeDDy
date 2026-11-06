@@ -54,7 +54,7 @@ Follow these phases and steps in order to systematically deliver verified progre
 
    If the current deliverable is Adapter, implement the real infrastructure integration, replacing temporary harness doubles where appropriate while keeping all suites green.
 
-   Enforce Contract Enforcement (DbC): contracts require active runtime checks via native assertions (`assert condition, "Message"`). Do not use custom exceptions or raises for contract assertions so they can be optimized via `python -O`. State explicitly which contract condition failed.
+   Enforce Contract Enforcement (DbC): contracts require active runtime checks via native assertions (`assert condition, "Message"`). Do not use custom exceptions or raises for contract checks so they can be optimized via `python -O`. State explicitly which contract condition failed. When introducing domain or boundary exceptions, inherit from the project root base exception rather than bare `Exception` or generic built-in types.
 3. **Refactor:**
    Implement local, file-scoped refactors directly; append slice-scoped refactors to the Vertical Slice deliverables.
 
@@ -109,7 +109,7 @@ Follow these phases and steps in order to systematically deliver verified progre
 2. **Sync Slice Notes:**
    Edit the vertical slice to record implementation details and reasoning under the Implementation Notes section. If this section does not exist, create it at the end of the file.
 3. **Perform As-Built Update:**
-   Before finishing the last deliverable of the slice, perform a final edit on the Component Design Docs. Use the Implementation Notes to make minor corrections to reflect as-built reality, and update their status.
+   Before finishing the last deliverable of the slice, perform a final edit on the Component Design Docs for all components listed in the slice's `Impact` section.
 4. **Stale Reference Check:**
    If this is the last deliverable, run `git grep` for deleted or renamed components and resolve stale references in documentation and comments.
 5. **Delivery Gate:**
