@@ -5,8 +5,9 @@ from unittest.mock import Mock
 
 from teddy_executor.core.domain.models.shell_output import ShellOutput
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
-from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
+from tests.harness.observers.report_parser import ReportParser
+from tests.harness.setup.test_environment import TestEnvironment
 
 
 def test_parser_resilience_handles_both_artifacts(tmp_path, monkeypatch):
@@ -63,10 +64,14 @@ def test_parser_resilience_handles_both_artifacts(tmp_path, monkeypatch):
         f"CLI should exit with 0 (SUCCESS). Got stdout:\n{result.stdout}"
     )
 
-    output = result.stdout + result.stderr
-    # Verify the overall report indicates success
-    assert "SUCCESS" in output, f"Expected 'SUCCESS' in output. Got:\n{output}"
-    # Verify the command executed
-    assert "echo success" in output, (
-        f"Expected command 'echo success' in output. Got:\n{output}"
+    # The report omits the command block for an unmodified success, so the
+    # echoed stdout is the surviving proof that the parsed action executed.
+    parser = ReportParser(result.stdout)
+    assert parser.action_logs, f"Expected one parsed action. Got:\n{result.stdout}"
+
+    action_log = parser.action_logs[0]
+    assert action_log.type == "EXECUTE"
+    assert action_log.status == "SUCCESS"
+    assert action_log.details.get("stdout") == "success", (
+        f"Expected the echoed stdout in the report. Got:\n{result.stdout}"
     )

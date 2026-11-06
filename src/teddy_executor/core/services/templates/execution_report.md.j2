@@ -219,8 +219,12 @@
 - **Allow Failure:** `{{ allow_failure | lower }}`
   {% endif %}
 
+  {# The command diverges from the plan only when the reviewer edited it. An
+     unmodified success would merely restate the plan, which both workflows
+     still carry; an edited or failed command stays visible for the audit trail. #}
   {% set cmd = params.get('command') or params.get('cmd') %}
-  {% if cmd %}
+  {% set command_diverged = 'command' in (log.modified_fields or []) or log_status != 'SUCCESS' %}
+  {% if cmd and command_diverged %}
 
 - **Command:** {% if '\n' in cmd %}
 {{ '\n' }}{{ cmd | embed_fence('shell') }}

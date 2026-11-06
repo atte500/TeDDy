@@ -42,6 +42,7 @@ def test_string_details_render_between_status_and_command() -> None:
             action_type="EXECUTE",
             params={"command": "ls -la", "expected_outcome": "list files"},
             details="User deselected this action in the plan reviewer.",
+            modified_fields=["command"],
         )
     )
 

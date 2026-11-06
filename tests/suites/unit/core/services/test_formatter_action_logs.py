@@ -88,7 +88,7 @@ def test_formats_action_status_inline():
 
 
 def test_formats_multiline_execute_command_correctly():
-    """Verify multiline command rendering in EXECUTE."""
+    """Verify multiline command rendering for a reviewer-modified EXECUTE."""
     formatter = MarkdownReportFormatter()
     cmd = "git add .\ngit commit"
     report = _get_report(
@@ -97,6 +97,7 @@ def test_formats_multiline_execute_command_correctly():
                 status=ActionStatus.SUCCESS,
                 action_type="EXECUTE",
                 params={"command": cmd, "expected_outcome": "OK"},
+                modified_fields=["command"],
             )
         ]
     )
@@ -104,6 +105,101 @@ def test_formats_multiline_execute_command_correctly():
     output = formatter.format(report)
 
     assert f"- **Command:**\n```shell\n{cmd}\n```" in output
+
+
+def test_unmodified_successful_execute_omits_command_block():
+    """A successful EXECUTE whose command matches the plan omits the command block."""
+    formatter = MarkdownReportFormatter()
+    report = _get_report(
+        [
+            ActionLog(
+                status=ActionStatus.SUCCESS,
+                action_type="EXECUTE",
+                params={"command": "echo hi", "expected_outcome": "prints hi"},
+            )
+        ]
+    )
+
+    output = formatter.format(report)
+
+    assert "- **Command:**" not in output
+    assert "- **Expected Outcome:** prints hi" in output
+
+
+def test_modified_execute_renders_inline_command_block():
+    """A reviewer-edited command stays visible so the deviation remains auditable."""
+    formatter = MarkdownReportFormatter()
+    report = _get_report(
+        [
+            ActionLog(
+                status=ActionStatus.SUCCESS,
+                action_type="EXECUTE",
+                params={"command": "echo hi"},
+                modified_fields=["command"],
+            )
+        ]
+    )
+
+    output = formatter.format(report)
+
+    assert "- **Command:** `echo hi`" in output
+
+
+def test_failed_execute_renders_inline_command_block():
+    """A failed EXECUTE keeps the executed command for diagnosis."""
+    formatter = MarkdownReportFormatter()
+    report = _get_report(
+        [
+            ActionLog(
+                status=ActionStatus.FAILURE,
+                action_type="EXECUTE",
+                params={"command": "exit 1"},
+                details={"return_code": 1},
+            )
+        ]
+    )
+
+    output = formatter.format(report)
+
+    assert "- **Command:** `exit 1`" in output
+
+
+def test_failed_multiline_execute_renders_fenced_command_block():
+    """A failed multiline command keeps the fenced form."""
+    formatter = MarkdownReportFormatter()
+    cmd = "git add .\ngit commit"
+    report = _get_report(
+        [
+            ActionLog(
+                status=ActionStatus.FAILURE,
+                action_type="EXECUTE",
+                params={"command": cmd},
+                details={"return_code": 1},
+            )
+        ]
+    )
+
+    output = formatter.format(report)
+
+    assert f"- **Command:**\n```shell\n{cmd}\n```" in output
+
+
+def test_failed_execute_without_command_renders_no_command_block():
+    """A missing command parameter never renders a command block, even on failure."""
+    formatter = MarkdownReportFormatter()
+    report = _get_report(
+        [
+            ActionLog(
+                status=ActionStatus.FAILURE,
+                action_type="EXECUTE",
+                params={"expected_outcome": "nothing to run"},
+            )
+        ]
+    )
+
+    output = formatter.format(report)
+
+    assert "- **Command:**" not in output
 
 
 def test_formats_failed_execute_action_details():
