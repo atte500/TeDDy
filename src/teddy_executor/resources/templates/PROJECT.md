@@ -19,7 +19,7 @@ Defines the high-level artifact lifecycle and conventions for project management
 ## Tooling
 The project `Makefile` is the canonical automation interface. Build targets are decomposed into modular fragments under `make/*.mk` (see [docs/templates/makefile.md](docs/templates/makefile.md)). Standard targets include `make test` (full test suite execution via the project runner), `make commit MSG="<type>(<scope>): <desc>"` (run pre-commit hooks, stage auto-fixes, and commit), `make push` (fast rebase and push to remote), `make ci-watch` (remote CI workflow monitoring and regression attribution), `make probe REASON="<reason>"` (Remote Probing Protocol for isolated CI diagnostics), and `make logs RUN=<id> [STEP="<name>"]` (extract sanitized CI failure logs).
 
-When a repetitive task or multi-step command sequence arises, agents must not run long ad-hoc shell commands. Add a dedicated target to the appropriate `make/*.mk` fragment and document its usage and flags in this section.
+When a repetitive task or multi-step command sequence arises, agents must not run long ad-hoc shell commands. Add a dedicated target to the appropriate `make/*.mk` fragment, place any supporting non-Make script in `scripts/` (subject to all quality gates) rather than `spikes/` or `tests/`, and document its usage and flags in this section.
 
 ## Releases
 The project release lifecycle:
