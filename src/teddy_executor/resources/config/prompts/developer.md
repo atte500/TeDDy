@@ -140,6 +140,8 @@ Follow these phases and steps in order to systematically deliver verified progre
      append Refactor or Cleanup deliverables to the active Vertical Slice and execute them through the delivery cycle before completing the slice.
    - **Systemic or out-of-scope:**
      plan entries into the roadmap in `docs/project/PROJECT.md` for subsequent slices.
+   - **Rule Ratchet:**
+     when recurring anti-patterns or boundary leaks appear (e.g., banned mocks, silent `except` blocks, adapter imports in core), always add the deterministic lint or structural rule directly (as an in-slice `Env` deliverable). Only schedule follow-up work in `docs/project/PROJECT.md` if the new check surfaces significant pre-existing refactoring work.
 2. **Slice Completion:**
    Confirm that all Acceptance, Integration, and Unit tests pass via `make test`.
    EDIT the slice to set Status to Completed, mark the matching milestone slice item as `[x]`, and check off all slice deliverables. If all slices in the active milestone are marked `[x]`, EDIT the milestone document to set Status to Completed. EDIT the Roadmap in `docs/project/PROJECT.md` to mark the milestone as `[COMPLETED]`. Run `make commit` to record completion. Proceed to the Conclusion phase.

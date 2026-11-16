@@ -123,6 +123,11 @@ jobs:
         run: |
           {runner} pre-commit run mypy --all-files --hook-stage manual
 
+      - name: "Structural Check (Architecture & Boundaries)"
+        if: success() || failure()
+        run: |
+          {runner} pre-commit run check-architecture-boundaries --all-files --hook-stage manual
+
       # pre-commit accepts a single hook id per `run` invocation, so each hook
       # gets its own step to keep the granular, per-check reporting.
       - name: "Security Audit (bandit)"

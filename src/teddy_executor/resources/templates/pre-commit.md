@@ -61,6 +61,16 @@ repos:
         types: [python]
         require_serial: true
 
+  # ── Repository-wide structural checks (CI-only manual stage) ──
+  - repo: local
+    hooks:
+      - id: check-architecture-boundaries
+        name: Architecture Boundary Check
+        entry: uv run python .githooks/check_architecture_boundaries.py
+        language: system
+        types: [python]
+        stages: [manual]
+
   # ── Post-commit test gate (unskippable) ──
   - repo: local
     hooks:
@@ -73,7 +83,7 @@ repos:
         pass_filenames: false
 ```
 
-**Local vs CI scope:** keep only fast auto-fixers (`ruff --fix`, `ruff format`, `trailing-whitespace`, `end-of-file-fixer`), `detect-secrets`, and `check-merge-conflict` locally. Noisy, false-positive-prone static analysis (`mypy`, `bandit`, `pip-audit`, and repository-wide structural checkers) belongs in CI, where it runs non-blocking — the real friction is hook false positives forcing inline suppressions, not blocking. See the Quality-Gate Bypass Policy for the config-level-vs-inline bypass rule.
+**Local vs CI scope:** keep only fast auto-fixers (`ruff --fix`, `ruff format`, `trailing-whitespace`, `end-of-file-fixer`), `detect-secrets`, `check-merge-conflict`, and zero-false-positive anti-pattern lints (e.g. Ruff `TID251` banned-API rules for forbidden test mocks or raw adapter-only libraries) locally. Noisy, false-positive-prone static analysis (`mypy`, `bandit`, `pip-audit`) and repository-wide architectural boundary checkers belong in CI's `manual` stage, where they run non-blocking — the real friction is hook false positives forcing inline suppressions, not blocking. See the Quality-Gate Bypass Policy for the config-level-vs-inline bypass rule.
 
 **Tip:** Pin exact `rev` tags so every teammate runs identical checks.
 

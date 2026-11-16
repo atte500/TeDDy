@@ -19,7 +19,7 @@ Defines the high-level artifact lifecycle and conventions for project management
 ## Tooling
 The project `Makefile` is the canonical automation interface. Build targets are decomposed into modular fragments under `make/*.mk` (see [docs/templates/makefile.md](docs/templates/makefile.md)). Standard targets include `make test` (full test suite execution via the project runner), `make commit MSG="<type>(<scope>): <desc>"` (run pre-commit hooks, stage auto-fixes, and commit), `make push` (fast rebase and push to remote), `make ci-watch` (remote CI workflow monitoring and regression attribution), `make probe REASON="<reason>"` (Remote Probing Protocol for isolated CI diagnostics), and `make logs RUN=<id> [STEP="<name>"]` (extract sanitized CI failure logs).
 
-When a repetitive task or multi-step command sequence arises, agents must not run long ad-hoc shell commands. Add a dedicated target to the appropriate `make/*.mk` fragment and document its usage and flags in this section.
+When a repetitive task or multi-step command sequence arises, agents must not run long ad-hoc shell commands. Add a dedicated target to the appropriate `make/*.mk` fragment, place any supporting non-Make script in `scripts/` (subject to all quality gates) rather than `spikes/` or `tests/`, and document its usage and flags in this section.
 
 ## Releases
 The project release lifecycle:
@@ -75,5 +75,5 @@ A living list of upcoming Milestones and their high-level features.
     - **Runtime Standards:** Set up packaging, dependency management, and project boilerplate using current idiomatic standards for the target language and runtime.
     - **Project Readme:** Create a minimal `README.md` focused strictly on the end-user entry point: product overview, prerequisites, and installation/usage instructions.
     - **Tooling Entry Points:** Configure the test runner (`pytest`) exposed via `make test`, along with standard `Makefile` targets (`make commit`, `make push`, `make ci-watch`, `make probe`). Configure project `.gitignore` keeping `spikes/` tracked.
-    - **Local Quality Gates:** Install Pre-commit with fast local hooks (formatters, secret detection, merge conflict checks) and the unskippable post-commit test gate (`.githooks/post-commit.py`) that runs `make test` and reverts on failure.
-    - **Continuous Integration:** Set up parallel GitHub Actions jobs: 1) Blocking OS matrix test suite. 2) Non-blocking quality checks. Configure `.github/workflows/debug.yml` for the Remote Probing Protocol.
+    - **Local Quality Gates:** Install Pre-commit with fast local hooks (formatters, banned-pattern lint rules, secret detection, merge conflict checks) and the unskippable post-commit test gate (`.githooks/post-commit.py`) that runs `make test` and reverts on failure.
+    - **Continuous Integration:** Set up parallel GitHub Actions jobs: 1) Blocking OS matrix test suite. 2) Non-blocking quality checks (including architectural boundary and structural checks). Configure `.github/workflows/debug.yml` for the Remote Probing Protocol.
