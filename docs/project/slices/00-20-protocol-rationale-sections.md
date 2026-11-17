@@ -58,7 +58,7 @@ Resolved during discovery:
 
 ## Deliverables
 - [x] **Interface** - Lock the MRP rationale contract and extend `ALLOWED_RATIONALE_SECTIONS` additively. Landed in `f6126669` (four-section contract, additive allowlist, exact-list test) and consolidated in `e6631ed9` and `012e2f17`.
-- [ ] **Harness** - Update `MarkdownPlanBuilder` to emit Summary, Expectation, Progress, and Notes.
+- [x] **Harness** - Update `MarkdownPlanBuilder` to emit Summary, Expectation, Progress, and Notes. Landed with its two default-binding test modules in one commit.
 - [ ] **Migration** - Update `plan-format.md`, `debugger.md`, the stale README sentence about synthesis/justification/expected outcomes, and every test fixture that pins the old rationale titles. Reconcile `plan-format.md`'s *Code Block Nesting* section with the MRP's tilde-and-backtick nesting rule.
 - [ ] **Cleanup** - Remove obsolete `Expected Outcome` rationale references and keep legacy reviewer titles intentionally.
 
@@ -67,6 +67,7 @@ Resolved during discovery:
 - `Summary` synthesizes the entire session story, not just the previous turn.
 - Keep `Synthesis`, `Justification`, and `State Dashboard` in the reviewer allowlist so resumed sessions still render stored plans.
 - The MRP action catalogs show the boolean toggles as `[true|false]` placeholders by an explicit product decision, while `plan-format.md` still states the emitted value MUST be enclosed in backticks. Reconcile the wording or confirm the placeholders are notation-only when aligning the spec.
+- The Harness flip moved as one commit with the two modules that bind the builder's default: `MarkdownPlanBuilder` now emits `### Summary`, `### Expectation`, `### Progress`, and `### Notes`, and `test_plan_builder.py` plus `test_tui_rationale_parsing.py` follow it. The mixed-format acceptance case now injects its own legacy-plus-protocol rationale through `with_rationale` instead of post-processing the default, so it still pins mixed-heading parsing without binding the builder. Because `Expected Outcome` is not an allowlist title, a stored legacy rationale renders that section's content inside the preceding node rather than dropping it.
 
 ## Verification
 1. **Protocol wording:**

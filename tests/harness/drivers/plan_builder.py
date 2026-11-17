@@ -215,22 +215,20 @@ class MarkdownPlanBuilder:
         else:
             rationale_content = dedent(
                 """\
-                1. Synthesis
+                ### Summary
                 This is a test plan.
 
-                2. Justification
-                This plan is for testing purposes.
-
-                3. Expected Outcome
+                ### Expectation
                 The test should pass.
 
-                4. State Dashboard
+                ### Progress
                 **Vertical Slice:** `docs/slices/test.md`
                 **Development Workflow:**
                 - [ ] Phase 1
                 **Active Phase Details:**
                 *   **Test**
-                **Architectural Notes:**
+
+                ### Notes
                 - None"""
             )
 
