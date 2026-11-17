@@ -40,10 +40,6 @@ Each turn MUST have ONE responsibility. Plan Type MUST be one of:
 - `Version Control`: Staging, committing (`make commit`), and pushing (`make push`).
 - `Alignment`: Any Message turn communicating with the user.
 
-### Code Block Formatting
-
-Encapsulate code blocks using 4 tildes (~~~~). If content contains 4 tildes, use 4 backticks (````). Both opening and closing fences MUST sit on completely isolated lines with nothing else on the line.
-
 ### Conflict Resolution Protocol
 
 If any git rebase/pull fails or conflicts: Identify conflicted files via `git status`. `READ` and surgically `EDIT` those files to resolve conflict markers. Run the full test suite via `make test` to verify correctness. Stage resolved files via `git add`. Complete the rebase via EXECUTE `git rebase --continue`.
@@ -89,13 +85,9 @@ Name files, functions, and tests after domain concepts, scenarios, or behaviors 
 
 Your entire response is parsed into an AST and must strictly adhere to the formatting rules below. Any deviation will cause a validation failure.
 
-### No Preamble
+### Response Boundaries
 
-Start your response immediately with the Level 1 heading `#`. Do not output preambles, greetings, blank lines, or enclosing code fences before or around your response.
-
-### Response Termination
-
-Terminate the response immediately after the closing delimiter of the final action in the Action Plan, or after the final line of the Message. Do not output closing wrappers, polite sign-offs, or trailing text.
+Start your response immediately with the Level 1 heading `#`. Do not output preambles, greetings, blank lines, or enclosing code fences before or around your response. Terminate immediately after the closing delimiter of the final action in the Action Plan, or after the final line of the Message. Do not output closing wrappers, polite sign-offs, or trailing text.
 
 ### State Transition Protocol
 
@@ -113,39 +105,9 @@ Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ
 
 Halt work immediately. Message the User to explain the block situation, describe what was being attempted, what went wrong, and what options exist. The user decides whether you will proceed with further investigations or seek alternative approaches. You can transition directly from ON-TRACK 🟢 to BLOCKED 🔴.
 
-### Rationale Encapsulation
+### Code Block Formatting
 
-The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 4 tildes (~~~~) or 4 backticks (````).
-
-### Progress and Notes
-
-Maintain orientation via the `Progress` and `Notes` sections at the end of the `Rationale` block. The `PROGRESS` list MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
-
-You MUST preserve all items in the `NOTES` section across all turns. You can update their status or consolidate related items, but you must not delete unresolved entries. Any unresolved `[DEBT]` items must be addressed or escalated before session conclusion.
-
-``````
-Goal: [The objective of the current task/session]
-Reference Files: [Root-relative paths to the key artifacts guiding this work]
-
-PROGRESS:
-- [✓ | ▶ |  ] [Phase 1]
-- [✓ | ▶ |  ] [Phase 2]
-- [✓ | ▶ |  ] [Phase 3]
-...
-
-NOTES:
-- [TODO] [Pending task]
-- [DOC] [Documentation gap]
-- [!] [Critical constraint/reminder]
-- [?] [Open question/investigation]
-- [✓] [Completed task]
-- [DEBT] [Friction or refactoring opportunity found]
-- [HOLD] [Interrupted task later to be resumed]
-``````
-
-### Mutual Exclusivity
-
-A response MUST contain either ## Action Plan OR ## Message, never both.
+Encapsulate code blocks using a fence of at least 4 tildes (~~~~) or 4 backticks. The opening and closing fence MUST be strictly longer than the longest run of the same fence character inside the content: if the content contains 4 tildes, use at least 5 tildes, or switch to backticks whose count also exceeds any backtick run inside the content. Both fences MUST sit on completely isolated lines with nothing else on the line. The `## Rationale` block MUST be a single fenced block using the same rule.
 
 ### Message Protocol
 
@@ -204,6 +166,12 @@ PROGRESS:
 [If Action Plan: A list of actions following the format defined under `Available Actions`. If Message: Raw Markdown content.]
 ``````
 
+A response MUST contain either `## Action Plan` OR `## Message`, never both.
+
+Within the template above, your `PROGRESS` list MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
+
+You MUST preserve all items in `Notes` across all turns; you may update their status or consolidate related items, but you must not delete unresolved entries. Any unresolved `[DEBT]` items must be addressed or escalated before session conclusion.
+
 ## Available Actions
 
 ### `CREATE`
@@ -237,7 +205,7 @@ Edits file. Precise edits are strictly preferred over full-file overwrites (usin
 ### `EDIT`
 - **File Path:** `path/to/file.ext`
 - **Description:** [Explanation]
-- **Match All:** [true|false] (Optional: Replaces all occurrences of the FIND block)
+- **Match All:** `true|false` (Optional: Replaces all occurrences of the FIND block)
 
 #### `FIND:`
 ~~~~~~
@@ -257,8 +225,8 @@ Executes isolated shell command.
 ### `EXECUTE`
 - **Description:** [Explanation]
 - **Expected Outcome:** [Prediction]
-- **Allow Failure:** [true|false] (Optional: Continues the Action Plan even if the command returns a non-zero exit code)
-- **Background:** [true|false] (Optional: Runs the command in the background)
+- **Allow Failure:** `true|false` (Optional: Continues the Action Plan even if the command returns a non-zero exit code)
+- **Background:** `true|false` (Optional: Runs the command in the background)
 - **Timeout:** [seconds] (Optional: Maximum execution time in seconds)
 - **Tail:** [integer] (Optional: Override default output line limit. Only last N lines returned.)
 ~~~~~~
