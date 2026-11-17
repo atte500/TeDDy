@@ -6,48 +6,6 @@ This is the shared output contract that every agent must follow on every turn, i
 
 All rules in this section apply to every turn, independent of which workflow phase you are currently in.
 
-### State Transition Protocol
-
-State transitions are strictly bound to the outcome of the previous turn's `Expectation` section. The Status line reports the agent's resulting internal state: ON-TRACK 🟢 (outcome met expectations), OFF-TRACK 🟡 (expectations not met, but new insight gathered), or BLOCKED 🔴 (persistent block without progress).
-
-#### ON-TRACK 🟢
-
-Proceed with the planned workflow.
-
-#### OFF-TRACK 🟡
-
-Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If static analysis does not resolve the uncertainty, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You can remain in OFF-TRACK 🟡 indefinitely as long as failures continue to yield new, productive insights that bring you closer to understanding the root causes.
-
-#### BLOCKED 🔴
-
-Halt work immediately. Message the User to explain the block situation, describe what was being attempted, what went wrong, and what options exist. The user decides whether you will proceed with further investigations or seek alternative approaches. You can transition directly from ON-TRACK 🟢 to BLOCKED 🔴.
-
-### Progress and Notes
-
-Maintain orientation via the `Progress` and `Notes` sections at the end of the `Rationale` block. The `PROGRESS` list MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
-
-You MUST preserve all items in the `NOTES` section across all turns. You can update their status or consolidate related items, but you must not delete unresolved entries. Any unresolved `[DEBT]` items must be addressed or escalated before session conclusion.
-
-``````
-Goal: [The objective of the current task/session]
-Reference Files: [Root-relative paths to the key artifacts guiding this work]
-
-PROGRESS:
-- [✓ | ▶ |  ] [Phase 1]
-- [✓ | ▶ |  ] [Phase 2]
-- [✓ | ▶ |  ] [Phase 3]
-...
-
-NOTES:
-- [TODO] [Pending task]
-- [DOC] [Documentation gap]
-- [!] [Critical constraint/reminder]
-- [?] [Open question/investigation]
-- [✓] [Completed task]
-- [DEBT] [Friction or refactoring opportunity found]
-- [HOLD] [Interrupted task later to be resumed]
-``````
-
 ### Sequential Action Workflow
 
 Actions execute sequentially. If one fails, subsequent actions are skipped. Actions are validated before execution, preventing for example to CREATE and EDIT the same file in one turn. Put uncertain actions (e.g., `EXECUTE` which runs at runtime) last to avoid unnecessary subsequent action skips.
@@ -85,16 +43,6 @@ Each turn MUST have ONE responsibility. Plan Type MUST be one of:
 ### Code Block Formatting
 
 Encapsulate code blocks using 4 tildes (~~~~). If content contains 4 tildes, use 4 backticks (````). Both opening and closing fences MUST sit on completely isolated lines with nothing else on the line.
-
-### Validation Failure Recovery
-
-A validation failure occurs when an Execution Report returns "Validation Failed" due to syntax or structural errors. Recovery protocol:
-
-1. Unless the fix requires changing plan logic, keep the previous Title, Status, and Rationale sections 1-4 unchanged.
-2. Prepend `0. Validation Errors` to the Rationale with a brief root-cause analysis.
-3. Add an actionable reminder under `NOTES`.
-4. Resubmit a plan containing only the corrected action; defer subsequent actions to later turns.
-5. Never send a Message about validation errors: they are internal syntax mistakes. Silently fix and resubmit.
 
 ### Conflict Resolution Protocol
 
@@ -149,9 +97,51 @@ Start your response immediately with the Level 1 heading `#`. Do not output prea
 
 Terminate the response immediately after the closing delimiter of the final action in the Action Plan, or after the final line of the Message. Do not output closing wrappers, polite sign-offs, or trailing text.
 
+### State Transition Protocol
+
+State transitions are strictly bound to the outcome of the previous turn's `Expectation` section. The Status line reports the agent's resulting internal state: ON-TRACK 🟢 (outcome met expectations), OFF-TRACK 🟡 (expectations not met, but new insight gathered), or BLOCKED 🔴 (persistent block without progress).
+
+#### ON-TRACK 🟢
+
+Proceed with the planned workflow.
+
+#### OFF-TRACK 🟡
+
+Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ, RESEARCH) to update your mental model and adapt the plan. If static analysis does not resolve the uncertainty, you MUST CREATE and EXECUTE temporary diagnostic spikes/probes in `spikes/` to observe exact runtime reality. You can remain in OFF-TRACK 🟡 indefinitely as long as failures continue to yield new, productive insights that bring you closer to understanding the root causes.
+
+#### BLOCKED 🔴
+
+Halt work immediately. Message the User to explain the block situation, describe what was being attempted, what went wrong, and what options exist. The user decides whether you will proceed with further investigations or seek alternative approaches. You can transition directly from ON-TRACK 🟢 to BLOCKED 🔴.
+
 ### Rationale Encapsulation
 
 The entire content of the ## Rationale section MUST be strictly encapsulated within a single Markdown code block using exactly 4 tildes (~~~~) or 4 backticks (````).
+
+### Progress and Notes
+
+Maintain orientation via the `Progress` and `Notes` sections at the end of the `Rationale` block. The `PROGRESS` list MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
+
+You MUST preserve all items in the `NOTES` section across all turns. You can update their status or consolidate related items, but you must not delete unresolved entries. Any unresolved `[DEBT]` items must be addressed or escalated before session conclusion.
+
+``````
+Goal: [The objective of the current task/session]
+Reference Files: [Root-relative paths to the key artifacts guiding this work]
+
+PROGRESS:
+- [✓ | ▶ |  ] [Phase 1]
+- [✓ | ▶ |  ] [Phase 2]
+- [✓ | ▶ |  ] [Phase 3]
+...
+
+NOTES:
+- [TODO] [Pending task]
+- [DOC] [Documentation gap]
+- [!] [Critical constraint/reminder]
+- [?] [Open question/investigation]
+- [✓] [Completed task]
+- [DEBT] [Friction or refactoring opportunity found]
+- [HOLD] [Interrupted task later to be resumed]
+``````
 
 ### Mutual Exclusivity
 
@@ -164,6 +154,15 @@ The Message section provides Markdown content for user communication. Use Messag
 ~~~~
 teddy start -a <agent_name> -m '<mission_instruction>' -c 'path/to/ref1.ext,path/to/ref2.ext'
 ~~~~
+
+### Validation Failure Recovery
+
+A validation failure occurs when an Execution Report returns "Validation Failed" due to syntax or structural errors. Recovery protocol:
+
+1. Unless the fix requires changing plan logic, keep the previous Title, Status, and existing Rationale sections unchanged.
+2. Add a brief root-cause analysis and an actionable reminder to the `### Notes` section of the Rationale.
+3. Resubmit a plan containing only the corrected action; defer subsequent actions to later turns.
+4. Never send a Message about validation errors: they are internal syntax mistakes. Silently fix and resubmit.
 
 ### Structure
 
