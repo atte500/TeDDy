@@ -287,7 +287,7 @@ def test_teddy_start_aborts_on_empty_message_in_non_interactive_yes(
 
     assert result.exit_code != 0
     combined = result.stdout + getattr(result, "stderr", "")
-    assert "No terminal input provided for initial message." in combined
+    assert "Session not started (no initial message)." in combined
     assert "What are we working on?" not in combined
 
 

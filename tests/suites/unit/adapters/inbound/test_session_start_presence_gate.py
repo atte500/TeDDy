@@ -81,9 +81,9 @@ def test_start_without_terminal_exits_without_prompting(capsys):
     user_interactor.ask_question.assert_not_called()
     session_manager.create_session.assert_not_called()
     captured = capsys.readouterr()
-    assert "No terminal input provided for initial message." in (
-        captured.out + captured.err
-    )
+    combined = captured.out + captured.err
+    assert "Session not started (no initial message)." in combined
+    assert "Error:" not in combined
 
 
 def test_start_with_terminal_prompts_and_seeds_session():

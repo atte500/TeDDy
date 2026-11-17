@@ -464,8 +464,19 @@ def _handle_startup_error(container: Container, error: Exception) -> None:
     """Print a startup error and exit with code 1 (shared by both entry points).
 
     A ``ConfigurationError`` additionally prints the configuration path hint.
+    An ``EOFError`` is the "no terminal to answer the opening prompt" outcome
+    rather than a defect, so it renders as the yellow not-started notice that
+    matches the session termination notices instead of an ``Error:`` line.
     """
     from teddy_executor.core.domain.models.exceptions import ConfigurationError
+
+    if isinstance(error, EOFError):
+        typer.secho(
+            "Session not started (no initial message).",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+        raise typer.Exit(code=1)
 
     if isinstance(error, ConfigurationError):
         config_service = container.resolve(IConfigService)

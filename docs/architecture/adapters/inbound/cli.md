@@ -50,7 +50,7 @@ None declared directly — the adapter resolves use cases and services from the 
 ### `start(NAME, --agent, --context, --model, --yolo/--no-yolo, --message, --pipeline)`
 - **Preconditions:** In pipeline mode, `--message` is required.
 - **Postconditions:** Creates a session, runs the shared startup preamble, triggers planning, and enters the session loop. An auto-named session is renamed to a slug of the first plan's H1 title. When `-m` is absent and a terminal is attached, the opening prompt asks `What are we working on?` and seeds the session with the answer.
-- **Exceptions:** Exits with code 1 and the `Pipeline mode requires an initial message via -m/--message.` error when pipeline mode is invoked without `-m`. Exits with code 1 and the `No terminal input provided for initial message.` error when `-m` is absent and no terminal is attached.
+- **Exceptions:** Exits with code 1 and the `Pipeline mode requires an initial message via -m/--message.` error when pipeline mode is invoked without `-m`. Exits with code 1 and the yellow `Session not started (no initial message).` notice when `-m` is absent and no terminal is attached.
 
 ### `resume([PATH|SLUG], --agent, --message, --pipeline)`
 - **Preconditions:** The target session exists.
