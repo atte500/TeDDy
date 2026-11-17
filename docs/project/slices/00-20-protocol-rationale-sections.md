@@ -1,5 +1,5 @@
 # Slice: Rationale Section Consolidation
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** N/A
 - **Specs:** [Plan Format](/docs/project/specs/plan-format.md), [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -12,7 +12,7 @@ Deliver a four-section rationale contract — `Summary`, `Expectation`, `Progres
 
 ## Context
 - `MarkdownPlanParser`: carries the rationale as one opaque string. No parser or domain-model change is required.
-- `ALLOWED_RATIONALE_SECTIONS`: gates node creation in `textual_plan_reviewer_helpers.py`. A title outside the list is appended to the previous node's content.
+- `ALLOWED_RATIONALE_SECTIONS` (defined in `textual_plan_reviewer_logic.py`): gates node creation in `handle_mount_logic` (`textual_plan_reviewer_helpers.py`). A title outside the list is appended to the previous node's content.
 - `MarkdownPlanBuilder`: emits the old `1. Synthesis` through `4. State Dashboard` default, so the shared harness must move with the protocol.
 - `plan-format.md`: pins the rationale shape and still teaches `Expected Outcome` plus the deprecated `PROMPT`/`INVOKE` actions in its comprehensive example.
 - `debugger.md`: names a workflow step `Synthesis Presentation`; it must become `Summary Presentation` so one concept keeps one word.
@@ -74,6 +74,7 @@ Resolved during discovery:
 - Cleanup migrated the residual `scripts/demo/` carriers. The three plan fixtures were rewritten semantically, not mechanically: the old `Justification` prose now sits under `Summary`, the old `Expectation` prose under `Expectation`, and the `State Dashboard` goal block under `Progress`, so each section still teaches its concept. `drive.py`'s four navigation comments were renamed in one pass. No product code or test changed; `scripts/demo/` has zero coverage, so the suite stayed green at 2274 passed / 5 skipped and the vocabulary audit confirms the only surviving legacy tokens are the reviewer allowlist and the two protected test modules.
 - The `Expected Outcome` half of Cleanup was a no-op by design: the token audit shows every surviving occurrence is the `EXECUTE` action parameter, which the slice explicitly protects. The reviewer allowlist deliberately keeps `Synthesis`, `Justification`, and `State Dashboard` so resumed sessions still render stored plans.
 - Staging `scripts/demo/drive.py` surfaced two pre-existing lint findings: `C901` (`main` complexity 11 > 9) and `PLR0915` (99 statements > 40). The file is a single linear pexpect recording script with no test coverage, so splitting `main()` risks a timing regression the suite cannot catch. It is scoped off through a `[tool.ruff.lint.per-file-ignores]` entry with a reason comment rather than a file-wide or inline bypass; remediation stays with the Milestone 5 quality-gate work.
+- Slice completion audited at `ab0d15d2`. No skeleton response or hardcoded stub was introduced: the four-section vocabulary reaches the reviewer through `ALLOWED_RATIONALE_SECTIONS` and the migrated `MRP.md`, both of which derive from the locked contract. `src/` carries no legacy rationale token outside that allowlist, and the reviewer component doc already describes the dual-format rationale parser without enumerating section names, so no as-built edit was required. `make test` stayed green at 2274 passed / 5 skipped.
 
 ## Verification
 1. **Protocol wording:**
