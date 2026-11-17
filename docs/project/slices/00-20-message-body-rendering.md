@@ -1,5 +1,5 @@
 # Slice: Formatted Message Body Rendering
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** None
 - **Specs:** [interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
