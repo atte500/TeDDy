@@ -105,10 +105,10 @@ def main() -> None:
     send_and_step("\x1b[B", 0.6)  # Viewer sees full Rationale rendered in right pane
 
     # Step through Rationale sections briskly
-    send_and_step("\x1b[B", 0.35)  # Synthesis
-    send_and_step("\x1b[B", 0.35)  # Justification
+    send_and_step("\x1b[B", 0.35)  # Summary
     send_and_step("\x1b[B", 0.35)  # Expectation
-    send_and_step("\x1b[B", 0.4)  # State Dashboard
+    send_and_step("\x1b[B", 0.35)  # Progress
+    send_and_step("\x1b[B", 0.4)  # Notes
 
     # Navigate down to Action Plan root
     send_and_step("\x1b[B", 0.3)

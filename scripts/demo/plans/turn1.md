@@ -5,21 +5,22 @@
 
 ## Rationale
 ~~~~~~
-1. Synthesis
-The project has no greeting module yet. We scaffold the module and its test, following Test-Driven Development.
+### Summary
+The project has no greeting module yet. Following Test-Driven Development, we scaffold the module and a failing test first, then the smallest implementation that satisfies it.
 
-2. Justification
-A failing test comes first, then the smallest implementation that satisfies it, keeping the feedback loop short.
+### Expectation
+src/greeting.py and tests/test_greeting.py will exist and the scaffolded test will pass. The next plan extends the helper.
 
-3. Expectation
-src/greeting.py and tests/test_greeting.py will exist. The next plan extends the helper.
-
-4. State Dashboard
+### Progress
 Goal: Build a greeting helper.
+Reference Files: N/A
 
-PHASES:
+PROGRESS:
 - [▶] Scaffold module and test
 - [ ] Extend the helper
+
+### Notes
+- [TODO] Extend the helper in the next plan.
 ~~~~~~
 
 ## Action Plan

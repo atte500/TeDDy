@@ -5,21 +5,22 @@
 
 ## Rationale
 ~~~~~~
-1. Synthesis
-The greeting module exists. We add a farewell helper alongside greet.
+### Summary
+The greeting module exists from the previous turn. We add a farewell helper alongside greet; a sibling function keeps the change small and testable, consistent with iterative delivery.
 
-2. Justification
-A sibling function keeps the change small and testable, consistent with iterative delivery.
-
-3. Expectation
+### Expectation
 src/greeting.py gains a farewell function. The next plan wraps up the session.
 
-4. State Dashboard
+### Progress
 Goal: Build a greeting helper.
+Reference Files: N/A
 
-PHASES:
+PROGRESS:
 - [✓] Scaffold module and test
 - [▶] Extend the helper
+
+### Notes
+- [TODO] Wrap up the session in the next plan.
 ~~~~~~
 
 ## Action Plan

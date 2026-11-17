@@ -5,22 +5,23 @@
 
 ## Rationale
 ~~~~~~
-1. Synthesis
-The greeting helper is scaffolded and extended.
+### Summary
+The greeting helper is scaffolded and extended across the previous turns. The work is complete, so the correct next step is to hand back to the user with a summary.
 
-2. Justification
-The work is complete, so the correct next step is to hand back to the user with a summary.
-
-3. Expectation
+### Expectation
 The session ends with a summary message.
 
-4. State Dashboard
+### Progress
 Goal: Build a greeting helper.
+Reference Files: N/A
 
-PHASES:
+PROGRESS:
 - [✓] Scaffold module and test
 - [✓] Extend the helper
 - [▶] Wrap up
+
+### Notes
+- Session complete; no open items.
 ~~~~~~
 
 ## Message
