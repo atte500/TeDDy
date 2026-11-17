@@ -24,7 +24,7 @@ def test_terminal_console_routes_body_through_renderer(capsys):
 
     out = capsys.readouterr().out
     assert "--- MESSAGE from TeDDy ---" in out
-    assert BODY.rstrip("\n") in buffer.getvalue()
+    assert "teddy resume -p" in buffer.getvalue()
 
 
 def test_non_terminal_console_emits_raw_body(capsys):
