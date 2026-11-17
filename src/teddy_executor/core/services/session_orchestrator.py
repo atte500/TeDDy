@@ -17,6 +17,11 @@ from teddy_executor.core.services.session_replanner import SessionReplanner
 from teddy_executor.core.utils.io import Tee as _Tee
 from teddy_executor.core.utils.session_notices import format_termination_notice
 from teddy_executor.core.utils.terminal import emit_user_message
+from teddy_executor.core.utils.message_renderer import (
+    inline_code_theme,
+    render_message_body,
+)
+from rich.console import Console
 import typer
 
 logger = logging.getLogger(__name__)
@@ -100,7 +105,7 @@ def _print_header_bar(plan: Any, is_session: bool) -> None:
         typer.secho(" ".join(parts))
 
 
-def _print_message_from_teddy(content: str) -> None:
+def _print_message_from_teddy(content: str, console: Optional[Console] = None) -> None:
     """Print the agent's MESSAGE under the shared TeDDy framing.
 
     Renders a blank separator, the CYAN `--- MESSAGE from TeDDy ---`
@@ -109,10 +114,20 @@ def _print_message_from_teddy(content: str) -> None:
     (`SessionOrchestrator.execute`) and the `resume -p` stop-again
     re-print (`SessionLifecycleManager._consume_awaiting_reply`), so the
     two presentations stay byte-identical (Bug 54 / defect 4a).
+
+    On a terminal the body is rendered for display; otherwise the raw
+    Markdown is emitted unchanged so pipeline and redirected output stay
+    byte-identical. ``console`` is an injection seam for tests, because the
+    CLI runs under a non-TTY capture and cannot exercise the formatted path
+    through the real entry point.
     """
     typer.secho("")
     typer.secho("--- MESSAGE from TeDDy ---", fg=typer.colors.CYAN)
-    typer.secho(content)
+    active = console if console is not None else Console(theme=inline_code_theme())
+    if active.is_terminal:
+        render_message_body(content, active)
+    else:
+        typer.secho(content)
 
 
 def _print_user_message(
