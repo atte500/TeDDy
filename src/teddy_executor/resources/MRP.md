@@ -8,7 +8,7 @@ All rules in this section apply to every turn, independent of which workflow pha
 
 ### State Transition Protocol
 
-State transitions are strictly bound to the outcome of the previous turn's Expectation. The Status line reports the agent's resulting internal state: ON-TRACK 🟢 (outcome met expectations), OFF-TRACK 🟡 (expectations not met, but new insight gathered), or BLOCKED 🔴 (persistent block without progress).
+State transitions are strictly bound to the outcome of the previous turn's `Expectation` section. The Status line reports the agent's resulting internal state: ON-TRACK 🟢 (outcome met expectations), OFF-TRACK 🟡 (expectations not met, but new insight gathered), or BLOCKED 🔴 (persistent block without progress).
 
 #### ON-TRACK 🟢
 
@@ -22,9 +22,11 @@ Halt the main workflow. You MUST prioritize information gathering (EXECUTE, READ
 
 Halt work immediately. Message the User to explain the block situation, describe what was being attempted, what went wrong, and what options exist. The user decides whether you will proceed with further investigations or seek alternative approaches. You can transition directly from ON-TRACK 🟢 to BLOCKED 🔴.
 
-### State Dashboard
+### Progress and Notes
 
-Maintain orientation via the State Dashboard placed at the end of the `Rationale` block. You MUST preserve all items in the `NOTES` section across all turns. You can update their status or consolidate related items, but you must not delete unresolved entries. Any unresolved `[DEBT]` items must be addressed or escalated before session conclusion. The `PROGRESS` list MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
+Maintain orientation via the `Progress` and `Notes` sections at the end of the `Rationale` block. The `PROGRESS` list MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
+
+You MUST preserve all items in the `NOTES` section across all turns. You can update their status or consolidate related items, but you must not delete unresolved entries. Any unresolved `[DEBT]` items must be addressed or escalated before session conclusion.
 
 ``````
 Goal: [The objective of the current task/session]
@@ -90,7 +92,7 @@ A validation failure occurs when an Execution Report returns "Validation Failed"
 
 1. Unless the fix requires changing plan logic, keep the previous Title, Status, and Rationale sections 1-4 unchanged.
 2. Prepend `0. Validation Errors` to the Rationale with a brief root-cause analysis.
-3. Add an actionable reminder under `NOTES` in your State Dashboard.
+3. Add an actionable reminder under `NOTES`.
 4. Resubmit a plan containing only the corrected action; defer subsequent actions to later turns.
 5. Never send a Message about validation errors: they are internal syntax mistakes. Silently fix and resubmit.
 
@@ -115,7 +117,7 @@ Before creating or modifying CI workflows, pre-commit hooks, or the `Makefile`, 
 Applies to all user-facing Messages and turn titles:
 
 1. Unique Titles: Each turn title must reflect its distinct task. Never repeat titles across consecutive turns; transition to BLOCKED 🔴 if looping without progress.
-2. Ingest Directives: When the user messages, immediately log tasks as `[TODO]` and constraints as `[!]` under `NOTES` in your State Dashboard.
+2. Ingest Directives: When the user messages, immediately log tasks as `[TODO]` and constraints as `[!]` under `NOTES`.
 3. Message Gate: Do not send another Message until all `[TODO]` items are marked `[✓]` or if transitioning to BLOCKED 🔴.
 4. Brevity: Do not restate past explanations or re-ask answered questions. State facts, observations, and decisions directly without unnecessary preamble.
 5. Terminal TL;DR: End every user-facing message with `TL;DR: [summary]` on the final line. When presenting decisions or gates, state a concrete recommendation rather than an open question, so a simple confirmation is sufficient to proceed.
@@ -173,20 +175,30 @@ teddy start -a <agent_name> -m '<mission_instruction>' -c 'path/to/ref1.ext,path
 
 ## Rationale
 ~~~~~~
-0. Validation Errors
-[Root cause analysis: Only include if recovering from a validation failure. Pinpoint the exact formatting or logic error. Leave other rationale sections unchanged unless the plan itself requires modification.]
+### Summary
+[The whole story so far: what the session has established, what the previous turn's outcome means, and why this plan is the next logical step. This is not a recap of only the last turn; it carries the complete context a reader needs to follow the current decision.]
 
-1. Synthesis
-[Rubber Ducking: Talk through the previous turn's outcome. Interpret the results, trace the logic of what that outcome implies, and reason aloud about the next logical step.]
-
-2. Justification
-[Contextualize the current plan: Briefly summarize what has been accomplished so far, explain exactly what the current step is doing, and outline the immediate path forward to achieve the overall goal. This section must provide complete context for a reader jumping into the middle of the workflow.]
-
-3. Expectation
+### Expectation
 [Observable outcome: State the single, specific, falsifiable result you expect from this action plan. Explain what this outcome will prove regarding your current state or hypothesis, and how it will dictate the subsequent step.]
 
-4. State Dashboard
-[Insert State Dashboard from agent-specific workflow sections here]
+### Progress
+Goal: [The objective of the current task/session]
+Reference Files: [Root-relative paths to the key artifacts guiding this work]
+
+PROGRESS:
+- [✓ | ▶ |  ] [Phase 1]
+- [✓ | ▶ |  ] [Phase 2]
+- [✓ | ▶ |  ] [Phase 3]
+...
+
+### Notes
+- [TODO] [Pending task]
+- [DOC] [Documentation gap]
+- [!] [Critical constraint/reminder]
+- [?] [Open question/investigation]
+- [✓] [Completed task]
+- [DEBT] [Friction or refactoring opportunity found]
+- [HOLD] [Interrupted task later to be resumed]
 ~~~~~~
 
 ## [Action Plan | Message]
@@ -282,24 +294,22 @@ Complete example of the required response format.
 
 ## Rationale
 ~~~~~~
-1. Synthesis
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+### Summary
+The session has established the protocol shape and the current plan is the next logical step. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
 
-2. Justification
-Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-3. Expectation
+### Expectation
 Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
 
-4. State Dashboard
+### Progress
 Goal: Lorem ipsum dolor sit amet.
+Reference Files: `docs/project/PROJECT.md`
 
 PROGRESS:
 - [✓] Lorem
 - [▶] Ipsum
 - [ ] Dolor
 
-NOTES:
+### Notes
 - [TODO] Consectetur adipiscing elit.
 - [!] Sed do eiusmod tempor incididunt.
 ~~~~~~

@@ -18,9 +18,13 @@ if TYPE_CHECKING:
 
 
 ALLOWED_RATIONALE_SECTIONS = [
+    "Summary",
+    "Expectation",
+    "Progress",
+    "Notes",
+    # Legacy names keep rationales stored in resumed sessions renderable.
     "Synthesis",
     "Justification",
-    "Expectation",
     "State Dashboard",
 ]
 
