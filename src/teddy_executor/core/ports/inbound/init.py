@@ -31,7 +31,7 @@ class IInitUseCase(ABC):
 
         Returns:
             A human-readable status string (e.g.,
-            "Prompts overwritten (6 file(s) modified).").
+            "Prompts overwritten (6 files modified).").
         """
         pass
 
@@ -47,7 +47,7 @@ class IInitUseCase(ABC):
 
         Returns:
             A human-readable status string (e.g.,
-            "Configuration files overwritten (4 file(s) modified).").
+            "Configuration files overwritten (4 files modified).").
         """
         pass
 

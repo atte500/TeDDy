@@ -131,16 +131,17 @@ class InitService(IInitUseCase):
     def _format_init_status(count: int, overwrite: bool) -> str:
         """Formats the shared copy-result status string.
 
-        Single-sources the "unchanged" / "updated (N files)" / "overwritten (N
-        file(s) modified)" vocabulary shared by the config, prompts, and
-        templates copy routines. The ``file(s)`` form keeps the singular count
-        grammatical, because an overwrite can change exactly one file.
+        Single-sources the "unchanged" / "updated (N files)" /
+        "overwritten (N files modified)" vocabulary shared by the config,
+        prompts, and templates copy routines. The noun is singular only when
+        exactly one file changed, so every count reads grammatically.
         """
         if count == 0:
             return "unchanged"
+        noun = "file" if count == 1 else "files"
         if overwrite:
-            return f"overwritten ({count} file(s) modified)"
-        return f"updated ({count} files)"
+            return f"overwritten ({count} {noun} modified)"
+        return f"updated ({count} {noun})"
 
     @staticmethod
     def _stem_key(filename: str) -> str:
@@ -274,7 +275,7 @@ class InitService(IInitUseCase):
 
         Returns:
             A status string: "unchanged", "updated (N files)", or
-            "overwritten (N file(s) modified)".
+            "overwritten (N files modified)".
         """
         return self._copy_bundled_files(
             dest_dir=".teddy",
@@ -296,7 +297,7 @@ class InitService(IInitUseCase):
 
         Returns:
             A status string: "unchanged", "updated (N files)", or
-            "overwritten (N file(s) modified)".
+            "overwritten (N files modified)".
         """
         return self._copy_bundled_files(
             dest_dir=".teddy/prompts",
@@ -315,7 +316,7 @@ class InitService(IInitUseCase):
 
         Returns:
             A status string: "unchanged", "updated (N files)", or
-            "overwritten (N file(s) modified)".
+            "overwritten (N files modified)".
         """
         return self._copy_bundled_files(
             dest_dir="docs/templates",
@@ -355,7 +356,7 @@ class InitService(IInitUseCase):
 
         Returns:
             A human-readable status string (e.g.,
-            "Prompts overwritten (6 file(s) modified).").
+            "Prompts overwritten (6 files modified).").
         """
         status = self._init_prompts(overwrite=overwrite)
         return f"Prompts {status}."
@@ -375,7 +376,7 @@ class InitService(IInitUseCase):
 
         Returns:
             A human-readable status string (e.g.,
-            "Configuration files overwritten (3 file(s) modified).").
+            "Configuration files overwritten (3 files modified).").
         """
         status = self._init_config_dir(overwrite=overwrite)
         return f"Configuration files {status}."

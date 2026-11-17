@@ -174,7 +174,7 @@ def test_ensure_prompts_initialized_overwrite_true(service, mock_fs):
 
     result = service.ensure_prompts_initialized(overwrite=True)
     assert mock_fs.write_file.call_count == 6
-    assert result == "Prompts overwritten (6 file(s) modified)."
+    assert result == "Prompts overwritten (6 files modified)."
 
 
 def test_ensure_prompts_initialized_overwrite_skips_unchanged_prompts(service, mock_fs):
@@ -209,11 +209,11 @@ def test_ensure_prompts_initialized_overwrite_counts_only_changed_prompts(
     assert written == [
         f".teddy/prompts/{name}" for name in PROMPT_FILES if name in edited
     ]
-    assert result == "Prompts overwritten (2 file(s) modified)."
+    assert result == "Prompts overwritten (2 files modified)."
 
 
 def test_ensure_prompts_initialized_reports_single_changed_prompt(service, mock_fs):
-    """Exactly one changed prompt reports the plural-safe singular form."""
+    """Exactly one changed prompt reports the singular form."""
     edited = "pathfinder.md"
 
     def mock_read(p: str) -> str:
@@ -227,7 +227,7 @@ def test_ensure_prompts_initialized_reports_single_changed_prompt(service, mock_
 
     result = service.ensure_prompts_initialized(overwrite=True)
 
-    assert result == "Prompts overwritten (1 file(s) modified)."
+    assert result == "Prompts overwritten (1 file modified)."
 
 
 def test_ensure_prompts_initialized_overwrite_false(service, mock_fs):
@@ -362,7 +362,7 @@ def test_ensure_config_initialized_overwrite_true(service, mock_fs):
         ".teddy/init.context",
     }
     assert ".teddy/.env" not in written_paths
-    assert result == "Configuration files overwritten (3 file(s) modified)."
+    assert result == "Configuration files overwritten (3 files modified)."
 
 
 def test_ensure_config_initialized_overwrite_false(service, mock_fs):
@@ -520,7 +520,7 @@ def test_init_templates_overwrite_true_replaces(templates_service, mock_fs):
     result = templates_service._init_templates(overwrite=True)
 
     assert mock_fs.write_file.call_count == len(_TEMPLATE_FILES)
-    assert result == f"overwritten ({len(_TEMPLATE_FILES)} file(s) modified)"
+    assert result == f"overwritten ({len(_TEMPLATE_FILES)} files modified)"
 
 
 def test_init_templates_overwrite_true_counts_only_changed_templates(
@@ -544,13 +544,13 @@ def test_init_templates_overwrite_true_counts_only_changed_templates(
     assert written == [
         f"docs/templates/{name}" for name in _TEMPLATE_FILES if name in edited
     ]
-    assert result == "overwritten (2 file(s) modified)"
+    assert result == "overwritten (2 files modified)"
 
 
 def test_init_templates_overwrite_reports_single_changed_file(
     templates_service, mock_fs
 ):
-    """Exactly one changed template reports the plural-safe singular form."""
+    """Exactly one changed template reports the singular form."""
     edited = "milestone.md"
 
     def mock_read(p: str) -> str:
@@ -564,7 +564,7 @@ def test_init_templates_overwrite_reports_single_changed_file(
 
     result = templates_service.ensure_templates_initialized(overwrite=True)
 
-    assert result == "Templates overwritten (1 file(s) modified)."
+    assert result == "Templates overwritten (1 file modified)."
 
 
 def test_init_templates_missing_resource_no_op(templates_service, mock_fs):
