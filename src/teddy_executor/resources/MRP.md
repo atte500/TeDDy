@@ -128,14 +128,14 @@ A validation failure occurs when an Execution Report returns "Validation Failed"
 
 ### Structure
 
-``````markdown
+````markdown
 # [Descriptive Goal-Oriented Title]
 - **Agent:** {Agent Name}
 - **Plan Type:** [Name]
 - **Status:** [ON-TRACK 🟢 | OFF-TRACK 🟡 | BLOCKED 🔴]
 
 ## Rationale
-~~~~~~
+~~~~
 ### Summary
 [The whole story so far: what the session has established, what the previous turn's outcome means, and why this plan is the next logical step. This is not a recap of only the last turn; it carries the complete context a reader needs to follow the current decision.]
 
@@ -160,11 +160,11 @@ PROGRESS:
 - [✓] [Completed task]
 - [DEBT] [Friction or refactoring opportunity found]
 - [HOLD] [Interrupted task later to be resumed]
-~~~~~~
+~~~~
 
 ## [Action Plan | Message]
 [If Action Plan: A list of actions following the format defined under `Available Actions`. If Message: Raw Markdown content.]
-``````
+````
 
 A response MUST contain either `## Action Plan` OR `## Message`, never both.
 
@@ -178,89 +178,89 @@ You MUST preserve all items in `Notes` across all turns; you may update their st
 
 Creates a new file. By default won't work on existing files (use EDIT instead).
 
-``````markdown
+````markdown
 ### `CREATE`
 - **File Path:** `path/to/new_file.ext`
 - **Description:** [Explanation]
-~~~~~~
+~~~~
 [Content]
-~~~~~~
-``````
+~~~~
+````
 
 ### `READ`
 
 Reads local file or remote URL.
 
-``````markdown
+````markdown
 ### `READ`
 - **Resource:** `path/to/file.ext` or `https://example.com/api`
 - **Description:** [Explanation]
-``````
+````
 
 ### `EDIT`
 
 Edits file. Precise edits are strictly preferred over full-file overwrites (using multiple surgical pairs). `FIND` MUST match target content exactly.
 
-``````markdown
+````markdown
 ### `EDIT`
 - **File Path:** `path/to/file.ext`
 - **Description:** [Explanation]
-- **Match All:** `true|false` (Optional: Replaces all occurrences of the FIND block)
+- **Match All:** [true|false] (Optional: Replaces all occurrences of the FIND block)
 
 #### `FIND:`
-~~~~~~
+~~~~
 [Exact snippet to replace]
-~~~~~~
+~~~~
 #### `REPLACE:`
-~~~~~~
+~~~~
 [New content]
-~~~~~~
-``````
+~~~~
+````
 
 ### `EXECUTE`
 
 Executes isolated shell command.
 
-``````markdown
+````markdown
 ### `EXECUTE`
 - **Description:** [Explanation]
 - **Expected Outcome:** [Prediction]
-- **Allow Failure:** `true|false` (Optional: Continues the Action Plan even if the command returns a non-zero exit code)
-- **Background:** `true|false` (Optional: Runs the command in the background)
+- **Allow Failure:** [true|false] (Optional: Continues the Action Plan even if the command returns a non-zero exit code)
+- **Background:** [true|false] (Optional: Runs the command in the background)
 - **Timeout:** [seconds] (Optional: Maximum execution time in seconds)
 - **Tail:** [integer] (Optional: Override default output line limit. Only last N lines returned.)
-~~~~~~
+~~~~
 [Command]
-~~~~~~
-``````
+~~~~
+````
 
 ### `RESEARCH`
 
 Performs multiple, distinct web searches. The results will contain the URL, Page Title, and description. URLs need to be READ to get the full content.
 
-``````markdown
+````markdown
 ### `RESEARCH`
 - **Description:** [Explanation]
-~~~~~~
+~~~~
 [Search Query 1]
-~~~~~~
-~~~~~~
+~~~~
+~~~~
 [Search Query 2]
-~~~~~~
-``````
+~~~~
+````
 
 ## Example
 
 Complete example of the required response format.
 
-``````markdown
+````markdown
 # Lorem Ipsum Dolor Sit Amet
 - **Agent:** {Agent Name}
 - **Plan Type:** Implementation
 - **Status:** ON-TRACK 🟢
 
 ## Rationale
-~~~~~~
+~~~~
 ### Summary
 The session has established the protocol shape and the current plan is the next logical step. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
 
@@ -279,21 +279,21 @@ PROGRESS:
 ### Notes
 - [TODO] Consectetur adipiscing elit.
 - [!] Sed do eiusmod tempor incididunt.
-~~~~~~
+~~~~
 
 ## Action Plan
 
 ### `CREATE`
 - **File Path:** `path/to/lorem.ext`
 - **Description:** Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-~~~~~~
+~~~~
 lorem ipsum dolor sit amet
-~~~~~~
+~~~~
 
 ### `EXECUTE`
 - **Description:** Ut enim ad minim veniam, quis nostrud exercitation.
 - **Expected Outcome:** Ullamco laboris nisi ut aliquip ex ea commodo.
-~~~~~~
+~~~~
 echo "lorem ipsum"
-~~~~~~
-``````
+~~~~
+````

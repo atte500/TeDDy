@@ -16,7 +16,13 @@ Deliver a four-section rationale contract — `Summary`, `Expectation`, `Progres
 - `MarkdownPlanBuilder`: emits the old `1. Synthesis` through `4. State Dashboard` default, so the shared harness must move with the protocol.
 - `plan-format.md`: pins the rationale shape and still teaches `Expected Outcome` plus the deprecated `PROMPT`/`INVOKE` actions in its comprehensive example.
 - `debugger.md`: names a workflow step `Synthesis Presentation`; it must become `Summary Presentation` so one concept keeps one word.
-- The MRP wording is already updated in this slice. The remaining work synchronizes the spec, harness, reviewer allowlist, prompt vocabulary, and tests.
+- Exact drift inventory, re-derived across the tree: `plan-format.md` lines 67 and 72–81 (the rationale format) plus 235–244 (the comprehensive example, which also teaches the deprecated `PROMPT`/`INVOKE`); `debugger.md:78` (`Synthesis Presentation`); `README.md:84` (the "synthesis, justification, and expected outcomes" sentence); and `tests/harness/drivers/plan_builder.py` lines 218–227 (the default rationale). Twelve test modules carry the old titles: `test_tui_instruction_bridge.py`, `test_tui_rationale_parsing.py`, `test_tui_rationale_scrolling.py`, `test_resilient_edit_matching_integration.py`, `test_validation_diagnostics_integration.py`, `test_rationale_filtering.py`, `test_section_filtering.py`, `test_markdown_plan_parser_session.py`, `test_normalize_h1.py`, `test_parser_create_overwrite.py`, `test_parser_path_retention.py`, and `test_plan_builder.py`.
+- `test_section_filtering.py` asserts the legacy allowlist names on purpose, so it is not drift: leave its `Synthesis`, `Justification`, and `State Dashboard` entries in place. `test_rationale_filtering.py` exercises legacy-section rendering, so keep a legacy case and add the new titles beside it rather than replacing them.
+- `interactive-session-workflow.md` carries no rationale section names and needs no change.
+- `plan-format.md`'s `Expected Outcome` mentions at lines 174 and 189 are the `EXECUTE` parameter covered elsewhere in the spec, not rationale vocabulary; leave them untouched.
+- The MRP wording is already updated in this slice. The remaining work synchronizes the spec, harness, prompt vocabulary, tests, and the stale README sentence.
+- The MRP `## Response Format` was consolidated while this slice was open: `No Preamble` and `Response Termination` merged into `Response Boundaries`; `Rationale Encapsulation` absorbed into a single `Code Block Formatting` whose nesting rule wins over the old "exactly 4" wording; `Progress and Notes` deleted in favor of the `### Structure` template; and the Action Plan/Message exclusivity rule moved beneath that template.
+- `plan-format.md`'s *Code Block Nesting* section still speaks only of backticks and pins a fence strictly greater than the longest backtick run, while the MRP now admits tilde fences under the same nesting rule. The two must agree before the spec can be called aligned.
 
 ## Scenarios
 > As a plan reviewer, I want the rationale tree to expose Summary, Expectation, Progress, and Notes as separate nodes so that I can move through the whole story without scrolling a single blob.
@@ -46,20 +52,21 @@ Resolved during discovery:
 1. `[EXTEND]` `MRP.md` — Replace Synthesis/Justification/Expectation/State Dashboard with Summary/Expectation/Progress/Notes and define Summary as the whole session story.
 2. `[EXTEND]` `ALLOWED_RATIONALE_SECTIONS` — Add the four new titles while retaining the legacy titles for resumed plans.
 3. `[MIGRATE]` `MarkdownPlanBuilder` and affected tests — Move fixtures and assertions to the new default rationale.
-4. `[MIGRATE]` `plan-format.md` — Align the rationale format and replace the stale deprecated example actions.
+4. `[MIGRATE]` `plan-format.md` — Align the rationale format, replace the stale deprecated example actions, and reconcile *Code Block Nesting* with the MRP's tilde-and-backtick rule.
 5. `[MIGRATE]` `debugger.md` — Rename `Synthesis Presentation` to `Summary Presentation`.
 6. `[PRUNE]` Obsolete `Expected Outcome` rationale references — Remove the duplicate section name after migration. The legacy reviewer titles are retained deliberately, so they are not pruned.
 
 ## Deliverables
-- [ ] **Interface** - Lock the MRP rationale contract and extend `ALLOWED_RATIONALE_SECTIONS` additively.
+- [x] **Interface** - Lock the MRP rationale contract and extend `ALLOWED_RATIONALE_SECTIONS` additively. Landed in `f6126669` (four-section contract, additive allowlist, exact-list test) and consolidated in `e6631ed9` and `012e2f17`.
 - [ ] **Harness** - Update `MarkdownPlanBuilder` to emit Summary, Expectation, Progress, and Notes.
-- [ ] **Migration** - Update `plan-format.md`, `debugger.md`, and every test fixture that pins the old rationale titles.
+- [ ] **Migration** - Update `plan-format.md`, `debugger.md`, the stale README sentence about synthesis/justification/expected outcomes, and every test fixture that pins the old rationale titles. Reconcile `plan-format.md`'s *Code Block Nesting* section with the MRP's tilde-and-backtick nesting rule.
 - [ ] **Cleanup** - Remove obsolete `Expected Outcome` rationale references and keep legacy reviewer titles intentionally.
 
 ## Implementation Notes
-- The protocol text, spec, allowlist, harness, prompt rename, and affected tests MUST land in one atomic commit. An unrecognized first section is dropped because `current_node` starts as `None`, so an MRP-only change blanks the Rationale pane.
+- The protocol text, the allowlist extension, and the exact-list test landed together in `f6126669`, so the atomic-commit constraint is discharged for those files. An unrecognized first section is dropped because `current_node` starts as `None`, so `MRP.md` must never be changed in a way that removes a title the allowlist accepts. The remaining spec, harness, fixture, prompt, and README changes may move in TDD-sized steps as long as `make test` stays green.
 - `Summary` synthesizes the entire session story, not just the previous turn.
 - Keep `Synthesis`, `Justification`, and `State Dashboard` in the reviewer allowlist so resumed sessions still render stored plans.
+- The MRP action catalogs show the boolean toggles as `[true|false]` placeholders by an explicit product decision, while `plan-format.md` still states the emitted value MUST be enclosed in backticks. Reconcile the wording or confirm the placeholders are notation-only when aligning the spec.
 
 ## Verification
 1. **Protocol wording:**
