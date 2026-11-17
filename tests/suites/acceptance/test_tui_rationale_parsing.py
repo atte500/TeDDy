@@ -41,16 +41,18 @@ async def test_tui_parses_default_rationale_sections(env):
 
 
 @pytest.mark.anyio
-async def test_tui_parses_mixed_rationale_sections(env):
+async def test_tui_only_accepts_markdown_headings(env):
     """
-    Verify that the TUI parses a rationale mixing legacy and protocol headings.
+    Verify only ### headings create nodes: a numeric marker is body text, and an
+    unrecognized ### section merges into the previous node.
     """
-    # GIVEN a plan whose rationale mixes a legacy numeric heading with ### headings
-    builder = MarkdownPlanBuilder("Mixed Rationale Test")
+    # GIVEN a rationale that uses a numeric marker and an unrecognized ### heading
+    builder = MarkdownPlanBuilder("Marker Contract Test")
     builder.add_execute("ls")
     builder.with_rationale(
-        "1. Synthesis\nLegacy section content.\n\n"
-        "### Expectation\nThe test should pass."
+        "1. Synthesis\nA numeric marker is not a heading.\n\n"
+        "### Summary\nThe summary.\n\n"
+        "### Extra Details\nMerged into the summary node."
     )
     plan_content = builder.build()
 
@@ -69,5 +71,7 @@ async def test_tui_parses_mixed_rationale_sections(env):
         rat_root = tree.root.children[0]
         titles = [child.label.plain for child in rat_root.children]
 
-        assert "Synthesis" in titles, f"Expected 'Synthesis' in {titles}"
-        assert "Expectation" in titles, f"Expected 'Expectation' in {titles}"
+        assert titles == ["Summary"], f"Only ### headings create nodes, got {titles}"
+        summary_node = rat_root.children[0]
+        assert "The summary." in summary_node.data["content"]
+        assert "Merged into the summary node." in summary_node.data["content"]

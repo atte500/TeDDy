@@ -15,7 +15,6 @@ src/greeting.py gains a farewell function. The next plan wraps up the session.
 Goal: Build a greeting helper.
 Reference Files: N/A
 
-PROGRESS:
 - [✓] Scaffold module and test
 - [▶] Extend the helper
 

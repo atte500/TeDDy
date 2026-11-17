@@ -14,7 +14,7 @@ Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It p
 
 ## Class Invariants
 - `stdin_ownership`: While the app runs, the reviewer claims `stdin_owned()` so the session quit-key listener backs off and the TUI's own `q` binding stays authoritative.
-- `rationale_dual_format`: The rationale parser accepts both Markdown headings (`### Section`) and numeric markers (`1. Section`), splitting on `\n(?=### |\d+\.\s+)` and stripping the marker from the displayed title.
+- `rationale_heading_only`: Only a `### Section` heading starts a rationale node, and only `Summary`, `Expectation`, `Progress`, or `Notes` is accepted as a title. The tree splits on `\n(?=### )` and strips the `### ` marker; any other content, including a numeric `1. Section` marker, merges into the preceding node.
 - `log_is_read_only`: Viewing an action log bypasses the apply-changes confirmation prompt.
 - `mutable_plan_models`: The `Plan` and `ActionData` models are unfrozen so the reviewer can update them in memory.
 

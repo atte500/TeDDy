@@ -76,13 +76,13 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     [The single, specific, falsifiable outcome expected from this action plan, what it will prove, and how it dictates the next step.]
 
     ### Progress
-    [The goal, reference files, and the phase PROGRESS list for the current task.]
+    [The goal, reference files, and the phase checklist for the current task.]
 
     ### Notes
     [TODO items, documentation gaps, constraints, open questions, and other tracked notes.]
     ````
     `````
--   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption and agent self-correction. The outer fence for the `Rationale` block must follow the **Code Block Nesting** rule.
+-   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption and agent self-correction. Only the four `###` headings above delimit sections; any other heading or marker, including a numeric `1. Section`, is body text and merges into the preceding section. The outer fence for the `Rationale` block must follow the **Code Block Nesting** rule.
 
 ### Action Blocks
 
@@ -242,7 +242,6 @@ The research should yield patterns for release management roles, letting me draf
 Goal: Define and get approval for a new "Finisher" agent.
 Reference Files: N/A
 
-PROGRESS:
 - [✓] Phase A: Problem Space (Why)
 - [▶] Phase B: Solution Space (What)
 - [ ] Phase C: Implementation Space (How)

@@ -17,7 +17,7 @@ Deliver a four-section rationale contract — `Summary`, `Expectation`, `Progres
 - `plan-format.md`: pins the rationale shape and still teaches `Expected Outcome` plus the deprecated `PROMPT`/`INVOKE` actions in its comprehensive example.
 - `debugger.md`: names a workflow step `Synthesis Presentation`; it must become `Summary Presentation` so one concept keeps one word.
 - Exact drift inventory, re-derived across the tree: `plan-format.md` lines 67 and 72–81 (the rationale format) plus 235–244 (the comprehensive example, which also teaches the deprecated `PROMPT`/`INVOKE`); `debugger.md:78` (`Synthesis Presentation`); `README.md:84` (the "synthesis, justification, and expected outcomes" sentence); and `tests/harness/drivers/plan_builder.py` lines 218–227 (the default rationale). Twelve test modules carry the old titles: `test_tui_instruction_bridge.py`, `test_tui_rationale_parsing.py`, `test_tui_rationale_scrolling.py`, `test_resilient_edit_matching_integration.py`, `test_validation_diagnostics_integration.py`, `test_rationale_filtering.py`, `test_section_filtering.py`, `test_markdown_plan_parser_session.py`, `test_normalize_h1.py`, `test_parser_create_overwrite.py`, `test_parser_path_retention.py`, and `test_plan_builder.py`.
-- `test_section_filtering.py` asserts the legacy allowlist names on purpose, so it is not drift: leave its `Synthesis`, `Justification`, and `State Dashboard` entries in place. `test_rationale_filtering.py` exercises legacy-section rendering, so keep a legacy case and add the new titles beside it rather than replacing them.
+- `test_section_filtering.py` asserted the legacy allowlist names on purpose at discovery, so it was not drift then, and `test_rationale_filtering.py` exercised legacy-section rendering. A later direct user order narrowed the allowlist to the four protocol sections and dropped numeric-marker parsing, superseding both (see Implementation Notes).
 - `interactive-session-workflow.md` carries no rationale section names and needs no change.
 - `plan-format.md`'s `Expected Outcome` mentions at lines 174 and 189 are the `EXECUTE` parameter covered elsewhere in the spec, not rationale vocabulary; leave them untouched.
 - The MRP wording is already updated in this slice. The remaining work synchronizes the spec, harness, prompt vocabulary, tests, and the stale README sentence.
@@ -35,7 +35,7 @@ And each node contains only its own section content
 ```
 
 ## Edge Cases
-- **Legacy rationale**: If a resumed session stores `Synthesis`, `Justification`, or `State Dashboard`, then those titles still create nodes, because the allowlist keeps the legacy names alongside the new ones.
+- **Legacy rationale**: If a resumed session stores `Synthesis`, `Justification`, or `State Dashboard`, those titles no longer create nodes; each legacy section's content is appended to the preceding accepted section, and a leading legacy section is dropped.
 - **Unknown heading**: If a rationale contains an unrecognized `###` title after a recognized section, then its content remains appended to the previous node, preserving the current fallback behavior.
 - **Missing expectation**: If a plan omits `Expectation`, then the Status binding loses its anchor, so the protocol test must fail the slice.
 - **Summary scope**: If `Summary` only recaps the previous turn, then the section violates the protocol requirement to carry the whole session story.
@@ -75,6 +75,7 @@ Resolved during discovery:
 - The `Expected Outcome` half of Cleanup was a no-op by design: the token audit shows every surviving occurrence is the `EXECUTE` action parameter, which the slice explicitly protects. The reviewer allowlist deliberately keeps `Synthesis`, `Justification`, and `State Dashboard` so resumed sessions still render stored plans.
 - Staging `scripts/demo/drive.py` surfaced two pre-existing lint findings: `C901` (`main` complexity 11 > 9) and `PLR0915` (99 statements > 40). The file is a single linear pexpect recording script with no test coverage, so splitting `main()` risks a timing regression the suite cannot catch. It is scoped off through a `[tool.ruff.lint.per-file-ignores]` entry with a reason comment rather than a file-wide or inline bypass; remediation stays with the Milestone 5 quality-gate work.
 - Slice completion audited at `ab0d15d2`. No skeleton response or hardcoded stub was introduced: the four-section vocabulary reaches the reviewer through `ALLOWED_RATIONALE_SECTIONS` and the migrated `MRP.md`, both of which derive from the locked contract. `src/` carries no legacy rationale token outside that allowlist, and the reviewer component doc already describes the dual-format rationale parser without enumerating section names, so no as-built edit was required. `make test` stayed green at 2274 passed / 5 skipped.
+- The allowlist and the parser were later narrowed on direct user order, superseding the legacy-retention decision recorded above. `ALLOWED_RATIONALE_SECTIONS` now holds only `Summary`, `Expectation`, `Progress`, and `Notes`; `handle_mount_logic` splits on `\n(?=### )` and strips only the `### ` marker, so a numeric `1. Section` marker is body text that merges into the preceding node. The nested `PROGRESS:` label was removed from `MRP.md`, `plan-format.md`, and the three demo plans, and `plan-format.md` now states that only the four `###` headings delimit sections. The reviewer invariant `rationale_dual_format` became `rationale_heading_only`, the numeric-marker module `test_rationale_filtering.py` was deleted as obsolete, and `test_tui_parses_mixed_rationale_sections` became `test_tui_only_accepts_markdown_headings`. `make test` stayed green at 2273 passed / 5 skipped, one test fewer because of the deletion.
 
 ## Verification
 1. **Protocol wording:**
@@ -87,4 +88,4 @@ Resolved during discovery:
 3. **Legacy rendering:**
    Resume a session whose stored plan uses `Synthesis`, `Justification`, `Expectation`, and `State Dashboard`.
    Open the Rationale tree.
-   Confirm the legacy sections still render.
+   Confirm no legacy node appears: the leading `Synthesis` section is dropped, and each later legacy section's content is appended to the preceding accepted node.

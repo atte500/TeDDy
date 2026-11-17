@@ -146,7 +146,6 @@ A validation failure occurs when an Execution Report returns "Validation Failed"
 Goal: [The objective of the current task/session]
 Reference Files: [Root-relative paths to the key artifacts guiding this work]
 
-PROGRESS:
 - [✓ | ▶ |  ] [Phase 1]
 - [✓ | ▶ |  ] [Phase 2]
 - [✓ | ▶ |  ] [Phase 3]
@@ -168,7 +167,7 @@ PROGRESS:
 
 A response MUST contain either `## Action Plan` OR `## Message`, never both.
 
-Within the template above, your `PROGRESS` list MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
+Within the template above, the phase checklist under `### Progress` MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
 
 You MUST preserve all items in `Notes` across all turns; you may update their status or consolidate related items, but you must not delete unresolved entries. Any unresolved `[DEBT]` items must be addressed or escalated before session conclusion.
 
@@ -271,7 +270,6 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
 Goal: Lorem ipsum dolor sit amet.
 Reference Files: `docs/project/PROJECT.md`
 
-PROGRESS:
 - [✓] Lorem
 - [▶] Ipsum
 - [ ] Dolor

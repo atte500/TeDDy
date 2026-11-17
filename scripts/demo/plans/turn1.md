@@ -15,7 +15,6 @@ src/greeting.py and tests/test_greeting.py will exist and the scaffolded test wi
 Goal: Build a greeting helper.
 Reference Files: N/A
 
-PROGRESS:
 - [▶] Scaffold module and test
 - [ ] Extend the helper
 

@@ -22,10 +22,6 @@ ALLOWED_RATIONALE_SECTIONS = [
     "Expectation",
     "Progress",
     "Notes",
-    # Legacy names keep rationales stored in resumed sessions renderable.
-    "Synthesis",
-    "Justification",
-    "State Dashboard",
 ]
 
 # Tree Node Identifiers

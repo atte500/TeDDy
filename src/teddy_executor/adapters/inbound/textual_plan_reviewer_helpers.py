@@ -210,15 +210,16 @@ def handle_mount_logic(app: Any, update_detail_fn: Any) -> None:
 
     rat_root = tree.root.add("[bold]Rationale[/]", data=RATIONALE_ROOT, expand=True)
 
-    # Split on '### ' OR '1. ' (numeric lists at start of line)
-    sections = re.split(r"\n(?=### |\d+\.\s+)", "\n" + app.plan.rationale)
+    # Only Markdown `### ` headings define rationale sections. Any other line,
+    # including a numeric marker, stays body text and merges into the prior node.
+    sections = re.split(r"\n(?=### )", "\n" + app.plan.rationale)
     current_node = None
     for section in sections:
         section = section.strip()
         if not section:
             continue
         lines = section.split("\n")
-        title = re.sub(r"^(?:###\s*|\d+\.\s*)+", "", lines[0]).strip()
+        title = re.sub(r"^###\s*", "", lines[0]).strip()
         if title in ALLOWED_RATIONALE_SECTIONS:
             content = "\n".join(lines[1:]).strip()
             current_node = rat_root.add_leaf(

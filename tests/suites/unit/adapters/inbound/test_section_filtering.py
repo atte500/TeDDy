@@ -10,8 +10,5 @@ def test_allowed_rationale_sections_contract():
         "Expectation",
         "Progress",
         "Notes",
-        "Synthesis",
-        "Justification",
-        "State Dashboard",
     ]
     assert ALLOWED_RATIONALE_SECTIONS == expected
