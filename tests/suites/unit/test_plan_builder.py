@@ -102,11 +102,10 @@ def test_plan_builder_basic():
         The test should pass.
 
         ### Progress
-        **Vertical Slice:** `docs/slices/test.md`
-        **Development Workflow:**
+        Goal: Complete the test plan.
+        Reference Files: N/A
+
         - [ ] Phase 1
-        **Active Phase Details:**
-        *   **Test**
 
         ### Notes
         - None
@@ -161,11 +160,10 @@ def test_plan_builder_create_plan_with_edit_action():
         The test should pass.
 
         ### Progress
-        **Vertical Slice:** `docs/slices/test.md`
-        **Development Workflow:**
+        Goal: Complete the test plan.
+        Reference Files: N/A
+
         - [ ] Phase 1
-        **Active Phase Details:**
-        *   **Test**
 
         ### Notes
         - None
