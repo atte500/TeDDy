@@ -39,6 +39,7 @@ dependencies = [
     "urllib3>=2.7.0,<3",
     "tld>=0.10,<1.0",
     "prompt-toolkit>=3.0.53",
+    "rich>=15.0.0,<16",
 ]
 [project.scripts]
 teddy = "teddy_executor.__main__:app"

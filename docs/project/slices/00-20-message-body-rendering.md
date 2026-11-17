@@ -1,5 +1,5 @@
 # Slice: Formatted Message Body Rendering
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** None
 - **Specs:** [interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
@@ -27,6 +27,8 @@ Key findings from static code reading and the prototype.
 - Three further rich behaviours are documented rather than overridden. `ImageItem` hoists an image to the start of its paragraph with an emoji prefix, so `before ![alt](url) after` renders with the words intact but out of order. `Heading` centres a level-1 heading across the console width. A GFM task list keeps its `[ ]` / `[x]` checkbox as literal text.
 - Test blast radius is three modules asserting on captured non-TTY output: `test_session_orchestrator.py`, `test_session_lifecycle_pipeline_stop_again.py`, and `test_pipeline_message_and_resume_flow.py`. A TTY gate keeps all three green without rewrites.
 - Prototype evidence: `render_live.py --only syntax-fenced` prints the accepted treatment; long lines (181-character json, 183-character sql, 155-character handoff) were verified unbroken with no leading space at widths 60, 80, and 100. `probe_bracket_tokens.py` rendered a bracket-token matrix through every candidate path and pinned which forms survive, which are silently consumed, and which are treated by Markdown as reference definitions. `probe_tilde_fences.py` compared delimiter strategies across five tilde bodies and pinned verbatim re-emission as the only strategy that preserves fence count, delimiter character, and content. `probe_theme_and_edges.py` measured the inline-code override at ANSI level with a self-tested SGR parser and compared five code themes on an indented block; `show_markdown_spec.py` rendered a comprehensive Markdown sample through the accepted treatment and probed 22 constructs for whether they render or leak a raw marker.
+
+- Dim delimiter legibility, measured with `probe_dim_legibility.py` under rich 15.0.0: a dim delimiter line emits SGR `2` under `truecolor`, `256`, and `standard` (16-colour). `NO_COLOR=1` and an explicit `no_color=True` console strip foreground and background only, because rich routes the no-colour path through `Segment.remove_color`, which maps each style through `Style.without_color`, so the faint attribute survives and the delimiters keep their literal backticks. `TERM=dumb` resolves `color_system=None` and emits no SGR at all, leaving full-contrast plain backticks. The delimiter text carries the boundary in every configuration; dim is an affordance that degrades to plain text, never to invisibility.
 
 ## Scenarios
 
@@ -89,7 +91,7 @@ Then the reprint renders identically to the pipeline-start print
 
 ## Key Unknowns
 
-- [ ] [Functional] Dim-delimiter legibility: Whether `style="dim"` reads as a boundary on a 16-colour or `NO_COLOR` terminal. Design Sensitivity: if illegible → the delimiter style changes to plain or bold in one place, with no contract or wiring change.
+- [x] [Functional] Dim-delimiter legibility: Whether `style="dim"` reads as a boundary on a 16-colour or `NO_COLOR` terminal. Resolved 2026-11-17 by `probe_dim_legibility.py` under rich 15.0.0. A 16-colour terminal receives SGR `2`; a `NO_COLOR` terminal loses foreground and background but keeps the faint attribute; `TERM=dumb` drops all styling and leaves plain backticks. The delimiter text carries the boundary in every case, so `style="dim"` stays and the "illegible" branch is unreachable.
 
 ## Impact
 
@@ -100,13 +102,15 @@ Then the reprint renders identically to the pipeline-start print
 
 ## Deliverables
 
-- [ ] **Env** - Declare `rich` in the `pyproject.toml` dependency list, so the renderer imports a direct dependency rather than a transitive one.
+- [x] **Env** - Declare `rich` in the `pyproject.toml` dependency list, so the renderer imports a direct dependency rather than a transitive one.
 - [ ] **Interface** - Add a frozen `MessageSegment` dataclass (`kind`, `info`, `content`, `opening`, `closing`) and `split_fenced_segments(body)` to `core/utils/markdown.py`, reusing `_FENCE_RE` and the fence-character and length rules already encoded in `strip_trailing_open_fence`. `opening` and `closing` carry the raw delimiter lines verbatim, so tilde fences, indented fences, and longer closing runs survive; `closing` is empty for an unclosed final block.
 - [ ] **Wiring** - Build one `Console(theme=inline_code_theme())` in `_print_message_from_teddy`, keep the blank echo and cyan header untouched, and route the body through the renderer when `console.is_terminal` is true; otherwise emit `typer.secho(content)` exactly as today. The theme keeps `inherit=True` (the `Theme` default), or rich drops every other Markdown style.
 - [ ] **Core** - Implement `render_message_body(body, console)` in `core/utils/message_renderer.py`: prose through `Markdown` at terminal width; each fence through a dim `Text` carrying the segment's own `opening` line, `Syntax(content, info or "text", word_wrap=False, padding=(0, 0), background_color="default")`, and the segment's own `closing` line when it exists, each printed with `console.print(..., width=max(console.width, longest_line))` and separated from the surrounding prose by a blank line. Delimiters are never synthesized, so a tilde block stays a tilde block. Export `inline_code_theme()` from the same module: derive rich's default `markdown.code` style, drop `bgcolor`, keep colour, bold, dim, italic, underline, and strike, and return a `Theme` built from it so inline code loses the fill and keeps its weight.
 
 ## Implementation Notes
-None yet.
+
+### Env
+Declared `rich>=15.0.0,<16` in `pyproject.toml` and refreshed `uv.lock`, which now lists `rich` under `teddy-cli`'s direct dependencies. The bound pins the 15.x line because both `Theme`'s `inherit` default and the no-colour behaviour were measured against rich 15.0.0; a major bump could change either. `uv lock --check` reports the lock current and the resolved version is still 15.0.0, so the declaration changed no resolution. `make test`: 2273 passed, 5 skipped.
 
 ## Verification
 
