@@ -22,6 +22,10 @@ A core principle of this format is that it must reliably handle nested code bloc
 -   **The Rule (Primary Defense):** A fenced code block may use either backticks or tildes, but its fence **must** be strictly longer than the longest run of the *same* fence character found anywhere inside the content. This mirrors the shared Markdown Response Protocol's rule and is the primary defense against parsing errors.
 -   **System Support (Validation & Self-Correction):** To guarantee robustness, the system includes a pre-flight validation check that is **run automatically** by the `teddy execute` command. Before any plan is presented to the user for approval, the system first ensures it is well-formed and parsable. If parsing fails (e.g., due to an ambiguous code fence), it triggers the **Automated Re-plan Loop** which instructs the AI to correct its own formatting error. See the [Plan Validation & Automated Re-planning](/docs/project/specs/interactive-session-workflow.md#8-plan-validation--automated-re-planning) section for full details.
 
+#### One Plan Per Response
+
+A response carries exactly one plan document. It holds exactly one Level 1 (`#`) heading and exactly one of `## Action Plan` or `## Message`. A second plan document in the same response is forbidden, whether it repeats the title, restates the rationale, or offers an alternative set of actions after the first plan ends. Work that follows a completed plan belongs to the next turn; when a turn must weigh alternatives instead of acting, it returns a single `## Message` describing them.
+
 A plan is a single Markdown file with the following top-level structure:
 
 ```markdown
@@ -214,7 +218,7 @@ Used when the agent needs to talk to the user, hand off to another agent, or sig
 - Everything following the `## Message` header is treated as raw Markdown content for the recipient (the User).
 - **Reference Files:** Included as standard Markdown links within the body of the message (e.g., `[report.md](/path/to/report.md)`).
 - **Handoffs:** To hand off to another agent, the message should include the specific CLI instruction for the user to start a new session (e.g., `teddy start -a developer ...`).
-- **Mutual Exclusivity:** A plan cannot contain both `## Action Plan` and `## Message`.
+-   **Mutual Exclusivity:** A plan cannot contain both `## Action Plan` and `## Message`. Together with the one-plan-per-response rule, a response therefore carries exactly one of the two sections.
 
 #### [Deprecated] `PRUNE`, `PROMPT`, `INVOKE`, `RETURN`
 

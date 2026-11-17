@@ -87,7 +87,7 @@ Your entire response is parsed into an AST and must strictly adhere to the forma
 
 ### Response Boundaries
 
-Start your response immediately with the Level 1 heading `#`. Do not output preambles, greetings, blank lines, or enclosing code fences before or around your response. Terminate immediately after the closing delimiter of the final action in the Action Plan, or after the final line of the Message. Do not output closing wrappers, polite sign-offs, or trailing text.
+Start your response immediately with the Level 1 heading `#` and carry exactly one plan document: exactly one Level 1 heading and exactly one of `## Action Plan` or `## Message`. Do not output preambles, greetings, blank lines, or enclosing code fences before or around your response, and never emit a second plan document. Terminate immediately after the closing delimiter of the final action in the Action Plan, or after the final line of the Message. Do not output closing wrappers, polite sign-offs, or trailing text.
 
 ### State Transition Protocol
 
