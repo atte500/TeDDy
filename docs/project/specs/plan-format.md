@@ -51,6 +51,16 @@ To ensure links work correctly in local previews (like VSCode) while referencing
     -   **Example:** `[docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md)`
     -   **Behavior:** This specific structure ensures that the link text is displayed cleanly while the link itself resolves correctly from the project root in the previewer.
 
+### Parameter Values
+
+Metadata values are read from rendered Markdown, not from the raw source line. The renderer removes inline-code backticks and emphasis markers before extraction, so `- **Overwrite:** true`, `- **Overwrite:** `true``, and `- **Overwrite:** **true**` all reach the parser as the string `true`. No scrubbing pass is involved: the parser never strips backticks itself.
+
+One deliberate exception and two coercion rules follow from that.
+
+-   **Never emphasise a path.** For path-valued keys (`File Path`, `Resource`, `Source`, `Destination`, `Path`) the parser re-emits emphasis as underscores, because a file name may legitimately contain them (`__main__.py`). A bolded `**README.md**` therefore arrives as `__README.md__`, which is not the file. Write paths plainly, as an inline code span, or as a root-relative link; all three resolve to the path itself.
+-   **Spell booleans as `true` or `false`.** Boolean parameters accept any capitalisation of `true` and treat every other value as `false`. `yes`, `1`, and `TRUE!` all read as false.
+-   **Numeric parameters read a leading number.** `Timeout: 30 seconds` reads as `30`. A value with no leading number falls back to the configured default.
+
 ### Core Component Blocks
 
 #### Plan Header
@@ -164,7 +174,7 @@ For all actions, the parser must ignore and clean up unforeseen codeblocks or th
     ``````
 -   **Parsing Rules:**
     1.  Extract `File Path`, `Description`, and the optional `Match All` (boolean `true`/`false`) from the metadata list.
-    2.  The parser looks for sequential pairs of `#### `FIND:`` and `#### `REPLACE:`` headings. The keywords **must** be enclosed in backticks. The content for each is the fenced code block that immediately follows the heading.
+    2.  The parser looks for sequential pairs of `#### `FIND:`` and `#### `REPLACE:`` headings. The backticks are conventional: the parser matches on the rendered heading text, so the colon matters and the backticks do not. The content for each is the fenced code block that immediately follows the heading.
     3.  **Surgical Changes:** An `EDIT` action must contain at least one `FIND`/`REPLACE` pair. Full-file overwrites are strictly forbidden.
     4.  **Multi-Instance Replacement:** If `Match All: true` is specified, the system will replace *all* occurrences of the `FIND` block within the target file that meet the similarity threshold.
 
@@ -186,9 +196,9 @@ For all actions, the parser must ignore and clean up unforeseen codeblocks or th
 -   **Parsing Rules & Behavior:**
     1.  **Chaining Allowed:** The code block may contain multiple commands linked by shell operators (`&&`, `||`, `;`, `|`, `&`).
     2.  **Directives Allowed:** Environment preparation commands like `cd` or `export` are allowed directly in the command block.
-    3.  **Failure Control:** The `Allow Failure` parameter (boolean `true`/`false`) determines if execution continues after a non-zero exit code. It defaults to `false`. The value MUST be enclosed in backticks.
+    3.  **Failure Control:** The `Allow Failure` parameter (boolean `true`/`false`) determines if execution continues after a non-zero exit code. It defaults to `false`.
     4.  **Stateless Execution:** Each `EXECUTE` action runs in an isolated environment. Directory or environment changes do not persist between separate `EXECUTE` blocks.
-    5.  **Background Execution:** The optional `Background` parameter (boolean `true`/`false`) allows a command to run asynchronously. The CLI will immediately return success with the new Process ID (PID) so the AI can manage the lifecycle in later turns. The value MUST be enclosed in backticks.
+    5.  **Background Execution:** The optional `Background` parameter (boolean `true`/`false`) allows a command to run asynchronously. The CLI will immediately return success with the new Process ID (PID) so the AI can manage the lifecycle in later turns.
     6.  **Timeout Override:** The optional `Timeout` parameter (integer) overrides the global default execution timeout (in seconds) for commands that are intentionally slow but require synchronous output capture.
     7.  **Parameter Extraction:** The parser extracts `Description`, `Expected Outcome`, `Allow Failure` (optional), `Background` (optional), and `Timeout` (optional) from the metadata list.
 
@@ -212,6 +222,54 @@ For all actions, the parser must ignore and clean up unforeseen codeblocks or th
     2.  The parser iterates through every fenced code block.
     3.  Each block is split into individual lines. Each non-empty line (stripped of leading/trailing whitespace) is treated as a separate, individual query.
 
+#### `MOVE`
+
+-   **Purpose:** Moves or renames a file or directory, and rewrites every live context manifest that referenced the old path.
+-   **System Behavior:** A successful `MOVE` replaces the source path with the destination path in the live `turn.context` and `session.context`, so the next turn's context payload resolves the new location. Archived session directories are immutable history and are never rewritten.
+-   **Format:**
+
+    `````markdown
+    ### `MOVE`
+    - **Source:** [docs/notes/old-spec.md](/docs/notes/old-spec.md)
+    - **Destination:** [docs/specs/spec.md](/docs/specs/spec.md)
+    - **Description:** Promote the draft spec to its final location.
+    `````
+
+-   **Parameters:**
+    -   `Source`: The root-relative path that must already exist.
+    -   `Destination`: The root-relative target path that must not yet exist.
+    -   `Description`: A short summary of the action.
+-   **Parsing Rules:**
+    1.  Extract `Source`, `Destination`, and `Description` from the metadata list. Each path accepts a plain path or a root-relative link `[text](/destination)`.
+    2.  The action carries no content code block. A `MOVE` never rewrites bytes; only the path changes.
+    3.  Both paths pass the shared path-safety rule: no absolute paths and no `..` traversal.
+    4.  A `MOVE` applies to files and directories alike. Renaming is a `MOVE` whose destination shares the source's parent directory.
+    5.  Missing parent directories of `Destination` are created, matching the `CREATE` behaviour.
+
+#### `DELETE`
+
+-   **Purpose:** Deletes a file or directory, and removes every live context manifest reference to it.
+-   **System Behavior:** A successful `DELETE` removes the path from the live `turn.context` and `session.context`. For a directory, every manifest entry beneath that prefix is removed as well. Archived session directories are immutable history and are never rewritten.
+-   **Format:**
+
+    `````markdown
+    ### `DELETE`
+    - **Path:** [docs/notes/obsolete.md](/docs/notes/obsolete.md)
+    - **Recursive:** `true`
+    - **Description:** Remove the retired notes.
+    `````
+
+-   **Parameters:**
+    -   `Path`: The root-relative path that must already exist.
+    -   `Recursive` (Optional): Required to delete a directory that is not empty. Defaults to `false`.
+    -   `Description`: A short summary of the action.
+-   **Parsing Rules:**
+    1.  Extract `Path`, the optional `Recursive` flag, and `Description` from the metadata list. `Path` accepts a plain path or a root-relative link `[text](/destination)`.
+    2.  Omit `Recursive` to accept the default of `false`.
+    3.  The action carries no content code block.
+    4.  The path passes the shared path-safety rule: no absolute paths and no `..` traversal.
+    5.  A `DELETE` applies to files and directories alike.
+
 #### `## Message` (Communicating Turns)
 
 Used when the agent needs to talk to the user, hand off to another agent, or signal completion.
@@ -223,6 +281,12 @@ Used when the agent needs to talk to the user, hand off to another agent, or sig
 #### [Deprecated] `PRUNE`, `PROMPT`, `INVOKE`, `RETURN`
 
 These actions are deprecated. `PRUNE` has been removed to simplify context management. `PROMPT`, `INVOKE`, and `RETURN` are replaced by the structural `## Message` section.
+
+#### Deliberate Exclusions
+
+A capability does not earn an action type merely because a shell command can express it.
+
+-   **`GREP`.** Searching file contents stays an `EXECUTE` action running `git grep`. Three costs outweigh the convenience. Registration is not local: a new action type must be added to the `ActionType` enum, the parser dispatch map, the factory's Markdown-to-internal map and its port map, the validator registry, the report template, and this document, and a single omission fails either pre-flight or rendering. `git grep` searches only tracked files, so a file created earlier in the same plan is invisible unless `--untracked` is passed. And `git grep` exits `1` when nothing matches, which the dispatcher maps to `FAILURE` and halts the remaining actions, so a zero-match-tolerant search must declare `Allow Failure: true` or append `|| true`. Matched file paths reach the next turn's context through a follow-up `READ`.
 
 ### Comprehensive Example Plan
 

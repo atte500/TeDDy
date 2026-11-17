@@ -86,6 +86,20 @@ These checks validate the *content* of an action against the current state of th
 -   **[✓] Local file must exist:** If the resource is a local file path (e.g., `[path/to/file.md](/path/to/file.md)`), that file must exist on the file system. (Note: URLs are not validated at this stage).
 -   **[ ] Context Redundancy:** (Relaxed) Validation will NOT fail if the file is already in context; the `READ` will simply be treated as a redundant request (no-op).
 
+##### `MOVE`
+
+-   **[✓] `Source` and `Destination` must be specified:** The metadata block must contain both keys.
+-   **[✓] Source must exist:** The source path must exist on the file system.
+-   **[✓] Destination must not exist:** Validation fails if the destination path already exists. Unlike `CREATE`, `MOVE` carries no `Overwrite` escape hatch, because replacing a destination silently discards work.
+-   **[✓] Paths must be safe:** Neither value may be absolute or contain `..`.
+
+##### `DELETE`
+
+-   **[✓] `Path` must be specified:** The metadata block must contain `Path`.
+-   **[✓] Target must exist:** The path must exist on the file system.
+-   **[✓] Path must be safe:** The value may not be absolute or contain `..`.
+-   **[✓] `Recursive` is optional:** Defaults to `false`. If present, the value MUST be `true` or `false`. Deleting a directory that is not empty without `Recursive: true` fails validation.
+
 ##### `PRUNE`
 -   **[✓] `Resource` or `File Path` must be specified:** The metadata block must contain a `Resource` or `File Path`.
 -   **[✓] Strict Local Only:** If `File Path` is used, the value MUST NOT be a URL (starts with `http://` or `https://`).

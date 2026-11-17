@@ -18,8 +18,8 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
 - **Poka-Yoke:** MOVE/DELETE MUST update context manifest files automatically. Validation MUST fail if MOVE destination path already exists.
 
 ## Technical Specifications
-- **MOVE Action:** Takes `source` and `destination` paths. Validates source exists and destination does not. Updates context manifest: renames path references in `.context` files to reflect the new location. Supports files and directories (renaming).
-- **DELETE Action:** Takes a `path`. Validates path exists. Updates context manifest: removes path references from `.context` files. Supports files and directories.
+- **MOVE Action:** Takes `Source` and `Destination` paths. Validates source exists and destination does not, and creates missing destination parents. Rewrites the live `turn.context` and `session.context` so the old path becomes the new one; archived session directories stay immutable. Supports files and directories, where renaming is a `MOVE` within the same parent. Contract: [plan-format.md](/docs/project/specs/plan-format.md) and [plan-format-validation.md](/docs/project/specs/plan-format-validation.md).
+- **DELETE Action:** Takes `Path` plus an optional `Recursive` flag, required for a directory that is not empty. Validates path exists. Removes the path, and for a directory every entry beneath its prefix, from the live `turn.context` and `session.context`; archived session directories stay immutable. Supports files and directories. The parser must coerce `Recursive` to a boolean the way `CREATE` coerces `Overwrite`, so `Recursive: false` is falsy rather than a truthy non-empty string.
 - **TUI Changes:**
     - Alt+Up/Down: Section navigation with scroll-at-bottom behavior and sub-section awareness.
     - `e` key: Context-sensitive actions (open context file, open file, agent switch).
