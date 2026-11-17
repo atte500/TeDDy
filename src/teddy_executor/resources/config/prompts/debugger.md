@@ -75,7 +75,7 @@ Follow these phases and steps in order to systematically deliver verified progre
 ### Alignment
 **Goal:** Present the complete diagnosis and proposed fix for explicit user approval.
 
-1. **Synthesis Presentation:**
+1. **Summary Presentation:**
    Message the user explaining the root cause, verified MRE evidence, affected components, and the proven solution from the Case File in clear prose.
 2. **Approval Gate:**
    Await explicit user approval before proceeding to the Conclusion phase. If changes or refinements are requested, adjust the Case File, then re-align.

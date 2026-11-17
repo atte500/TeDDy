@@ -9,7 +9,7 @@ async def test_tui_swaps_to_markdown_view_for_rationale(env):
     # Given a plan with a rationale section
     plan_content = (
         MarkdownPlanBuilder("Test Plan")
-        .with_rationale("1. Synthesis\nThe logic is sound.")
+        .with_rationale("### Summary\nThe logic is sound.")
         .add_create("file.txt", "content")
         .build()
     )
@@ -32,7 +32,7 @@ async def test_tui_swaps_to_markdown_view_for_rationale(env):
         driver.app.query_one("#left-pane").focus()
         await pilot.pause()
 
-        # 1. Move from Rationale root (expanded by default) to first child (Synthesis)
+        # 1. Move from Rationale root (expanded by default) to first child (Summary)
         await pilot.press("down")
         await pilot.pause()
 

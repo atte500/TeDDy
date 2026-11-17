@@ -10,13 +10,13 @@ def test_parse_create_action_extracts_overwrite_parameter():
 
 ## Rationale
 ```text
-### 1. Synthesis
+### Summary
 Test.
-### 2. Justification
+### Expectation
 Test.
-### 3. Expected Outcome
+### Progress
 Test.
-### 4. State Dashboard
+### Notes
 Test.
 ```
 

@@ -36,13 +36,13 @@ def test_missing_replace_block_trace_placement_integration(
 
 ## Rationale
 ```text
-### 1. Synthesis
+### Summary
 Test.
-### 2. Justification
+### Expectation
 Test.
-### 3. Expected Outcome
+### Progress
 Test.
-### 4. State Dashboard
+### Notes
 Test.
 ```
 
@@ -84,13 +84,13 @@ def test_multiple_find_matches_hint_integration(integration_container, tmp_path:
 
 ## Rationale
 ```text
-### 1. Synthesis
+### Summary
 Test.
-### 2. Justification
+### Expectation
 Test.
-### 3. Expected Outcome
+### Progress
 Test.
-### 4. State Dashboard
+### Notes
 Test.
 ```
 
@@ -129,7 +129,7 @@ def test_code_fence_backtick_count_in_trace_integration(integration_container):
 
 ## Rationale
 `````text
-### 1. Synthesis
+### Summary
 Rationale with 5 backticks.
 `````
 

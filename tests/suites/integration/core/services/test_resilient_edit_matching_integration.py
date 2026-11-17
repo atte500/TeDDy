@@ -27,13 +27,13 @@ def test_fuzzy_edit_success_with_diff_in_report(tmp_path, monkeypatch):
 
         ## Rationale
         ```text
-        ### 1. Synthesis
+        ### Summary
         Previous turn was successful.
-        ### 2. Justification
+        ### Expectation
         The user wants to update the greeting.
-        ### 3. Expected Outcome
+        ### Progress
         The greeting will be 'hello universe'.
-        ### 4. State Dashboard
+        ### Notes
         - Task: Update greeting
         ```
 
@@ -88,13 +88,13 @@ def test_edit_custom_threshold_fail(tmp_path, monkeypatch):
 
         ## Rationale
         ```text
-        ### 1. Synthesis
+        ### Summary
         Previous turn was successful.
-        ### 2. Justification
+        ### Expectation
         The user wants to update the greeting with a high precision requirement.
-        ### 3. Expected Outcome
+        ### Progress
         The greeting will be updated or fail if precision is not met.
-        ### 4. State Dashboard
+        ### Notes
         - Task: Update greeting
         ```
 
@@ -145,13 +145,13 @@ def test_edit_ambiguity_tie_fail(tmp_path, monkeypatch):
 
         ## Rationale
         ```text
-        ### 1. Synthesis
+        ### Summary
         Previous turn was successful.
-        ### 2. Justification
+        ### Expectation
         The user wants an ambiguous update.
-        ### 3. Expected Outcome
+        ### Progress
         The update should fail due to ambiguity.
-        ### 4. State Dashboard
+        ### Notes
         - Task: Ambiguous update
         ```
 

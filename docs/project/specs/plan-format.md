@@ -18,8 +18,8 @@ This format is designed to be a perfectly readable Markdown document first, and 
 
 A core principle of this format is that it must reliably handle nested code blocks, which is a common source of errors in LLM-generated Markdown.
 
--   **The Problem:** If a code block's content contains a sequence of backticks (e.g., ` ``` `) that is the same length as the enclosing fence, the Markdown becomes invalid and cannot be parsed correctly.
--   **The Rule (Primary Defense):** When creating a fenced code block, the fence **must** use a number of backticks that is strictly greater than the longest sequence of backticks found anywhere inside the content. This instruction is the primary defense against parsing errors.
+-   **The Problem:** If a code block's content contains a run of the same fence character (backticks or tildes) that is at least as long as the enclosing fence, the Markdown becomes invalid and cannot be parsed correctly.
+-   **The Rule (Primary Defense):** A fenced code block may use either backticks or tildes, but its fence **must** be strictly longer than the longest run of the *same* fence character found anywhere inside the content. This mirrors the shared Markdown Response Protocol's rule and is the primary defense against parsing errors.
 -   **System Support (Validation & Self-Correction):** To guarantee robustness, the system includes a pre-flight validation check that is **run automatically** by the `teddy execute` command. Before any plan is presented to the user for approval, the system first ensures it is well-formed and parsable. If parsing fails (e.g., due to an ambiguous code fence), it triggers the **Automated Re-plan Loop** which instructs the AI to correct its own formatting error. See the [Plan Validation & Automated Re-planning](/docs/project/specs/interactive-session-workflow.md#8-plan-validation--automated-re-planning) section for full details.
 
 A plan is a single Markdown file with the following top-level structure:
@@ -64,22 +64,22 @@ To ensure links work correctly in local previews (like VSCode) while referencing
 #### Rationale
 
 -   **Purpose:** Contains the agent's reasoning, state, and thought process. It acts as a **cognitive forcing function** to ensure every plan is grounded, deliberate, and strategic.
--   **Format:** The `Rationale` block is a plain text code block that **must** contain four distinct sections, each with a `###` heading, in the following order: `### 1. Synthesis`, `### 2. Justification`, `### 3. Expected Outcome`, and `4. State Dashboard`.
+-   **Format:** The `Rationale` block is a plain text code block that **must** contain four distinct sections, each with a `###` heading, in the following order: `### Summary`, `### Expectation`, `### Progress`, and `### Notes`.
 
     `````markdown
     ## Rationale
     ````text
-    ### 1. Synthesis
-    [A review of the previous turn's outcome and what it means for the mission.]
+    ### Summary
+    [The whole session story: what the session has established, what the previous turn's outcome means, and why this plan is the next logical step.]
 
-    ### 2. Justification
-    [A direct narrative that synthesizes the current situation and explains how the proposed plan is the next logical step according to all applicable principles of the agent's core methodology.]
+    ### Expectation
+    [The single, specific, falsifiable outcome expected from this action plan, what it will prove, and how it dictates the next step.]
 
-    ### 3. Expected Outcome
-    [A clear statement of what will happen in both success and failure scenarios, including the `Plan Type` of the subsequent plan.]
+    ### Progress
+    [The goal, reference files, and the phase PROGRESS list for the current task.]
 
-    ### 4. State Dashboard
-    [The agent's complete, multi-step workflow status (e.g., Pathfinder's Log).]
+    ### Notes
+    [TODO items, documentation gaps, constraints, open questions, and other tracked notes.]
     ````
     `````
 -   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption and agent self-correction. The outer fence for the `Rationale` block must follow the **Code Block Nesting** rule.
@@ -232,21 +232,25 @@ The following is a complete, realistic example of a plan file from start to fini
 
 ## Rationale
 ````
-1. Synthesis
+### Summary
 The user has requested a new "Finisher" agent role, but the exact responsibilities are undefined. This requires a discovery process before implementation.
 
-2. Justification
-This plan adheres to the Pathfinder "Why -> What -> How" workflow. The problem is understood ("Why"), but the solution is not. Therefore, the next logical step is to explore the Solution Space ("What") by gathering external information to inform a proposal.
+### Expectation
+The research should yield patterns for release management roles, letting me draft a milestone brief and propose next steps. If the research is inconclusive, I will report back and propose a brainstorming session with the user.
 
-3. Expected Outcome
-The research is expected to yield patterns for release management roles, allowing me to draft a brief. The next plan will be a `Synthesis` plan. If the research yields no clear patterns, the next plan will be a `PROMPT` plan to propose a brainstorming session with the user.
+### Progress
+Goal: Define and get approval for a new "Finisher" agent.
+Reference Files: N/A
 
-4. State Dashboard
-- Overall Goal: Define and get approval for a new "Finisher" agent.
-- Phase A: Problem Space (Why): Approved
-- Phase B: Solution Space (What): In Progress
-- Phase C: Implementation Space (How): Not Started
-- Phase D: Handoff (Who): Not Started
+PROGRESS:
+- [✓] Phase A: Problem Space (Why)
+- [▶] Phase B: Solution Space (What)
+- [ ] Phase C: Implementation Space (How)
+- [ ] Phase D: Handoff (Who)
+
+### Notes
+- [TODO] Draft the milestone brief from the research findings.
+- [TODO] Propose the milestone to the user for approval.
 ````
 
 ## Action Plan
@@ -297,16 +301,4 @@ To streamline the end-of-task workflow by automating final code/documentation cl
 </handoff_targets>
 ````
 
----
-
-### `PROMPT`
-I have created a draft milestone at `docs/project/milestones/01-finisher-agent.md` and will now begin my research. I will report back with my findings and a more detailed proposal for the milestone.
-
-Does this initial direction meet with your approval?
-
----
-
-### `INVOKE`
-- **Agent:** Architect
-- **Description:** Handoff to Architect to begin implementation of the approved milestone.
 `````

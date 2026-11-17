@@ -74,7 +74,7 @@ class TestParserIntegration:
             "\n"
             "## Rationale\n"
             "~~~~~~\n"
-            "1. Synthesis\n"
+            "1. Summary\n"
             "just testing\n"
             "~~~~~~\n"
             "\n"
@@ -102,7 +102,7 @@ class TestParserIntegration:
             "\n"
             "## Rationale\n"
             "~~~~~~\n"
-            "1. Synthesis\n"
+            "1. Summary\n"
             "just testing\n"
             "~~~~~~\n"
             "\n"
@@ -137,7 +137,7 @@ class TestParserIntegration:
             "\n"
             "## Rationale\n"
             "~~~~~~\n"
-            "1. Synthesis\n"
+            "1. Summary\n"
             "just testing\n"
             "~~~~~~\n"
             "\n"
@@ -177,7 +177,7 @@ class TestParserIntegration:
             "\n"
             "## Rationale\n"
             "~~~~~~\n"
-            "1. Synthesis\n"
+            "1. Summary\n"
             "just testing\n"
             "~~~~~~\n"
             "\n"
@@ -193,7 +193,7 @@ class TestParserIntegration:
         plan_file.write_text(original, encoding="utf-8")
 
         # Parse with plan_path set
-        plan = parser.parse(original, plan_path=str(plan_file))
+        parser.parse(original, plan_path=str(plan_file))
 
         # File should remain the same (no write needed because content is already correct)
         after = plan_file.read_text(encoding="utf-8")

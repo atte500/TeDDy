@@ -24,13 +24,13 @@ def test_execution_report_includes_user_request_from_metadata(
 
 ## Rationale
 ````text
-### 1. Synthesis
+### Summary
 Test.
-### 2. Justification
+### Expectation
 Test.
-### 3. Expected Outcome
+### Progress
 Test.
-### 4. State Dashboard
+### Notes
 Test.
 ````
 
@@ -71,13 +71,13 @@ def test_tui_instruction_bridge_m_binding_captures_message(
 
 ## Rationale
 ````text
-### 1. Synthesis
+### Summary
 Test.
-### 2. Justification
+### Expectation
 Test.
-### 3. Expected Outcome
+### Progress
 Test.
-### 4. State Dashboard
+### Notes
 Test.
 ````
 

@@ -10,7 +10,7 @@ def test_parser_sets_is_session_true_for_session_paths():
 
 ## Rationale
 ```text
-Synthesis
+Summary
 ```
 
 ## Action Plan
@@ -31,7 +31,7 @@ def test_parser_sets_is_session_false_for_non_session_paths():
 
 ## Rationale
 ```text
-Synthesis
+Summary
 ```
 
 ## Action Plan
@@ -52,7 +52,7 @@ def test_parser_defaults_to_not_session_when_path_missing():
 
 ## Rationale
 ```text
-Synthesis
+Summary
 ```
 
 ## Action Plan

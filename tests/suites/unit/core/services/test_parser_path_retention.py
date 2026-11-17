@@ -10,13 +10,13 @@ def test_parser_retains_plan_path():
 
 ## Rationale
 ```text
-### 1. Synthesis
+### Summary
 Test
-### 2. Justification
+### Expectation
 Test
-### 3. Expected Outcome
+### Progress
 Test
-### 4. State Dashboard
+### Notes
 Test
 ```
 
