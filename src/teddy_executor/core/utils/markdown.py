@@ -1,5 +1,7 @@
 import os
 import re
+from dataclasses import dataclass
+from typing import Literal
 
 
 def get_language_from_path(path: str) -> str:
@@ -125,6 +127,94 @@ def strip_trailing_open_fence(content: str) -> str:
     # The content ends inside an open block: strip the dangling opening fence.
     del lines[open_index]
     return "\n".join(lines)
+
+
+SegmentKind = Literal["prose", "fence"]
+
+
+@dataclass(frozen=True)
+class MessageSegment:
+    """One renderable slice of a Message body.
+
+    ``kind`` is ``"prose"`` or ``"fence"``. A fence segment carries its own raw
+    ``opening`` and ``closing`` delimiter lines, so tilde fences, indented
+    fences, and longer closing runs survive re-emission byte-for-byte.
+    ``closing`` is empty when the body ends inside an open fence.
+    """
+
+    kind: SegmentKind
+    info: str = ""
+    content: str = ""
+    opening: str = ""
+    closing: str = ""
+
+
+def _closing_fence_index(lines: list[str], start: int, opening_run: str) -> int | None:
+    """Return the index of the line closing ``opening_run``, or None if unclosed.
+
+    A closing fence repeats the opening character, runs at least as long, and
+    carries no info string, so a line starting with a backtick run inside a
+    tilde block stays content.
+    """
+    for index in range(start, len(lines)):
+        candidate = _FENCE_RE.match(lines[index])
+        if candidate is None:
+            continue
+        run = candidate.group(1)
+        if run[0] != opening_run[0] or len(run) < len(opening_run):
+            continue
+        if candidate.group(2).strip():
+            continue
+        return index
+    return None
+
+
+def _flush_prose(segments: list[MessageSegment], prose: list[str]) -> None:
+    """Append the accumulated prose run, dropping whitespace-only runs."""
+    if any(line.strip() for line in prose):
+        segments.append(MessageSegment(kind="prose", content="\n".join(prose)))
+    prose.clear()
+
+
+def split_fenced_segments(body: str) -> list[MessageSegment]:
+    """Split a Markdown body into prose runs and fenced blocks.
+
+    Fences are read with the same grammar `strip_trailing_open_fence` uses: up
+    to three leading spaces, a run of three or more backticks or tildes, and an
+    optional info string. A closing fence must repeat the opening character, run
+    at least as long, and carry no info string, so a line starting with a
+    backtick run inside a tilde block stays content.
+
+    Whitespace-only prose runs are dropped: the renderer owns the spacing around
+    a fence, so a blank line between two blocks carries no information.
+    """
+    lines = body.split("\n")
+    segments: list[MessageSegment] = []
+    prose: list[str] = []
+    index = 0
+
+    while index < len(lines):
+        match = _FENCE_RE.match(lines[index])
+        if match is None:
+            prose.append(lines[index])
+            index += 1
+            continue
+        _flush_prose(segments, prose)
+        closing_index = _closing_fence_index(lines, index + 1, match.group(1))
+        end = closing_index if closing_index is not None else len(lines)
+        segments.append(
+            MessageSegment(
+                kind="fence",
+                info=match.group(2).strip(),
+                content="\n".join(lines[index + 1 : end]),
+                opening=lines[index],
+                closing=lines[end] if closing_index is not None else "",
+            )
+        )
+        index = end + 1
+
+    _flush_prose(segments, prose)
+    return segments
 
 
 def embed_in_fence(content: str, lang: str) -> str:
