@@ -84,10 +84,10 @@ The system uses a top-level `.teddy/` directory to store all persistent data. Se
 
 When `PromptManager` resolves an agent prompt (used by `teddy get-prompt`, `teddy start`, and `teddy resume`), it constructs the prompt through the following deterministic pipeline:
 
-1. **Session Root Check:** If `<session>/<agent>.md` already exists (a customized session prompt), it is loaded directly without modification.
-2. **Agent Content Resolution:** Otherwise, the prompt is resolved from `.teddy/prompts/<agent>.md` (falling back to bundled package defaults).
+1. **Session Root Check:** Within a session, if `<session>/<agent>.md` already exists (a customized session prompt), it is loaded directly without modification. The `get-prompt` path has no session root and starts at step 2.
+2. **Agent Content Resolution:** Otherwise, the prompt is resolved from `.teddy/prompts/<agent>.md`, the canonical user-editable source seeded by `teddy init`. There is no bundled fallback at resolution time: when no prompt file resolves, the composed prompt is empty and no MRP block is appended.
 3. **Agent Name Source:** The agent name is read from the prompt's own `# {AgentName}` H1; no header line is injected.
-4. **Base Protocol Injection (`MRP.md`):** If the resolved prompt does not already contain a `<response_format>` tag, the non-overridable Markdown Response Protocol (`MRP.md`) is appended to the prompt, separated by a Markdown horizontal rule (`---`) padded by a blank line above and below.
+4. **Base Protocol Injection (`MRP.md`):** If the resolved prompt does not already contain a `<response_format>` tag, the bundled Markdown Response Protocol (`MRP.md`) is appended to the prompt, separated by a Markdown horizontal rule (`---`) padded by a blank line above and below. `MRP.md` is a package resource that is never copied into `.teddy/prompts/`, so its content cannot be edited in place; its injection is conditional, so a customized prompt that carries its own `<response_format>` — or a session-root prompt, which is returned verbatim — is delivered without the shared protocol.
 
 ### Context Management
 
