@@ -30,7 +30,7 @@ Dependency contracts this component requires injected:
 - **`PortName`**: Signature and operations consumed.
 
 ## Data Contracts
-Data transfer objects, schemas, payloads, or custom domain exceptions (inheriting from the project root base exception) managed or exchanged by this component:
+Data transfer objects, schemas, payloads, or custom domain exceptions (inheriting from the project root base exception) managed or exchanged by this component. Model discrete states and constrained values as enumerations, unions, or value objects rather than boolean flags or raw primitives:
 - **`DtoOrPayloadName`**: Structure, fields, types, and constraints.
 - **`DomainErrorName`**: Specific error type, payload attributes, and base class hierarchy (inheriting from the project root base exception).
 

@@ -30,7 +30,7 @@ Follow these phases and steps in order to systematically deliver verified progre
    Tests must run fast, deterministically, and hermetically without network access or sleep calls. Use isolated temporary directories for filesystem access, and use in-memory fakes or synchronous drivers instead of timers or remote resources.
 
    Map the current deliverable type to its verification strategy:
-   1. Interface (Unit, `tests/suites/unit/`): Define port signatures, protocols, DTOs, and schemas. Write contract and validation tests. Expand shared contracts additively without breaking existing callers.
+   1. Interface (Unit, `tests/suites/unit/`): Define port signatures, protocols, DTOs, and schemas, modeling discrete states and constrained values as enumerations, unions, or value objects rather than boolean flags or raw primitives. Write contract and validation tests. Expand shared contracts additively without breaking existing callers.
    2. Harness (Unit / Integration): Build or update shared test infrastructure (drivers, observers, in-memory fakes, fixtures). Write Unit tests for pure in-memory fakes; write Integration tests if doubles interact with the filesystem, subprocesses, or databases.
    3. Wiring (Acceptance, `tests/suites/acceptance/`): Establish the End-to-End Skeleton Wiring Tracer Bullet using the defined interfaces and harness doubles. Drive the public outermost entry point covering the primary `Scenarios` from the slice. Initial implementation returns hardcoded skeleton values or DTO instances to prove boundary connectivity. Do not write acceptance tests for combinatorial edge cases here.
    4. Core (Unit, `tests/suites/unit/`): Isolated domain logic covering granular `Edge Cases` and business invariants.
@@ -40,7 +40,7 @@ Follow these phases and steps in order to systematically deliver verified progre
    8. Cleanup: Pruning shared seams, deprecated methods, dead code, or temporary shims once callers have migrated. Do not write new tests; delete superseded tests and confirm the remaining suite passes.
    9. Env (Declarative / Tooling): For purely declarative files (Makefile, CI workflows, hooks, .gitignore), do not write test scripts. The Red step executes the command directly to observe failure or absence; the Green step applies the declarative change and confirms success.
 
-   For deliverables requiring tests (Wiring, Interface, Harness, Core, Adapter), create or locate the appropriate test file. Set up the test function using the Test Harness (Setup: Fixtures and Arrange, Driver: Act, Observer: Assert). Use parameterized tests for data permutations.
+   For deliverables requiring tests (Wiring, Interface, Harness, Core, Adapter), create or locate the appropriate test file. Set up the test function using the Test Harness (Setup: Fixtures and Arrange, Driver: Act, Observer: Assert). Use parameterized tests for data permutations and invariant-shaped checks (roundtrip parsing, serialization, arithmetic, state transitions), deriving the cases from the slice's `Edge Cases`.
 
    Enforce Test Double Integrity (Ban Global Patching): global `mock.patch` and bare `MagicMock` are strictly forbidden; inject all test doubles via Constructor Injection. Use In-Memory Fakes for internal state (databases, caches). Use strictly bound mocks (such as `register_mock` or `autospec=True`) ONLY for un-fakeable external side-effects (APIs, SMTP) to prevent signature drift.
 

@@ -1,8 +1,9 @@
 """
 Standard Root Conftest
-This file acts as the entry point for the TeDDy Test Harness. By using a
-standard conftest.py instead of a pyproject.toml plugin, we ensure that
-pytest-cov starts tracking coverage BEFORE our core modules are imported.
+Entry point for the TeDDy Test Harness. Re-exports the composition fixtures so
+every suite discovers them, and installs the session-wide safety nets: the CI
+timeout budget, UTF-8 file I/O, the HTTPServer loopback pin, the live-network
+lockdown, the filesystem pollution guard, and the global-state isolation resets.
 """
 
 import functools

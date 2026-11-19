@@ -55,7 +55,6 @@ dev = [
     "types-requests>=2.32.4.20250913,<3",
     "pytest-timeout>=2.4.0,<3",
     "pyfakefs>=6.1.1,<7",
-    "pytest-cov>=7.0.0,<8",
     "types-pyyaml>=6.0.12.20250915,<7",
     "pytest-xdist>=3.8.0,<4",
 ]
@@ -166,15 +165,4 @@ addopts = [
     "worksteal",
     "--import-mode=importlib",
     "--timeout=5",
-]
-filterwarnings = [
-    "ignore:No data was collected:coverage.exceptions.CoverageWarning",
-]
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "if sys.platform != .win32.:",
-    "if sys.platform == .win32.:",
-    "if os.getenv(.TEDDY_DEBUG.):",
 ]
