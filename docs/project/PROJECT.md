@@ -120,6 +120,9 @@ These files live in `docs/templates/` and are created or refreshed by `teddy ini
     - **Fix Pre-existing Exhaustive-Tier EDIT Latency:** The Tier 4 exhaustive matcher fallback runs a full difflib ratio per seeded window, costing 462–1827 ms on 400–1600-line files. Independent of slice 00-16's ambiguity work; scheduled as item 26 in the milestone document.
     - **Fix Pre-existing Preflight Acceptance Flake:** `test_handle_new_session_halts_on_preflight_failure_before_prompt` failed once across ~2201 tests and is green on every re-run. Scheduled as item 25 in the milestone document.
 
+    - **Enforce an `assert` Scope Rule:** `[tool.bandit] skips = ["B101"]` disables the assert check repository-wide, so a contract assertion (correctly strippable under `python -O`) is indistinguishable from an input-validation assertion guarding untrusted plan content, which would silently vanish. Reserve `assert` for contract positions and require an explicit `raise` of a `TeddyError` subclass for untrusted-input validation; scope the `B101` skip to contract-assert sites.
+    - **Add an Action-Type Registration Matrix Test:** Registering an action type requires parallel edits in six sites, and omitting one fails pre-flight with "Unknown action type" or renders an unlabelled log entry. One parameterized test iterating every `ActionType` against every registration point guards Milestone 4's MOVE/DELETE delivery; it becomes redundant once Milestone 6's single-source collapse lands.
+
 ### Milestone 6: Cross-Cutting Consolidation [PLANNED]
 - **Core Goal:** Eliminate duplicated literals, helpers, and test doubles that must be kept in manual lockstep; consolidate split test organization; and perform a bounded Failure-Transparency sweep. Every item was formerly parked in the retired `## Technical Debt` section and is now scheduled as an explicit requirement in `docs/project/milestones/06-cross-cutting-consolidation.md`.
 - **Specs:** TBD
