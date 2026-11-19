@@ -84,10 +84,10 @@ One deliberate exception and two coercion rules follow from that.
     ## Rationale
     ````text
     ### Summary
-    [The whole session story: what the session has established, what the previous turn's outcome means, and why this plan is the next logical step.]
+    [The whole story so far: what the session has established, what the previous turn's outcome means, and why this plan is the next logical step. Reason aloud to get there: interpret the previous turn's result, trace what it implies, and derive why this plan follows, instead of only restating the outcome. This section carries the complete context a reader needs to follow the current decision, not a recap of only the last turn.]
 
     ### Expectation
-    [The single, specific, falsifiable outcome expected from this action plan, what it will prove, and how it dictates the next step.]
+    [Observable outcome: State the single, specific, falsifiable result you expect from this action plan, and what it will prove about your current state or hypothesis. Then state how that outcome dictates the subsequent step: what you will do if it holds, and what you will do if it does not.]
 
     ### Progress
     [The goal, reference files, and the phase checklist for the current task.]
