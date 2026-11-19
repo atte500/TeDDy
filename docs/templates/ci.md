@@ -19,14 +19,17 @@ A check earns a merge veto only when it is deterministic (the verdict is reprodu
 - **Blocking:** If this job fails, the CI pipeline is marked as failed.
 
 ### Job 2: Blocking Static Analysis
-- Runs on a single OS (ubuntu-latest): type and lint verdicts rarely depend on the OS, so a matrix here triples cost without adding signal on deterministic checks.
+- Executes across the same OS matrix as the test suite, because static verdicts are not OS-neutral: a type checker surfaces platform-conditional attribute errors (a `msvcrt` member that exists only on Windows), and the structural checkers guard POSIX-only patches that only the Windows leg exercises.
 - Runs deterministic, diff-actionable checks, each in its own step with `if: success() || failure()` so every check reports even when an earlier one fails: formatters, linters, secret scanners, security audits, type checkers, and structural checkers.
 - Scopes the heavy checks (type checkers, security/dependency scanners, structural checkers) to the non-default `manual` stage so they never slow down the local pre-commit loop.
 - Excludes sandboxes (`spikes/`) and third-party dependencies.
-- **Blocking:** Configured with `continue-on-error: false`. A failure fails the pipeline.
+- Sets `fail-fast: false` so each OS leg reports its own verdict instead of cancelling its siblings, and `defaults.run.shell: bash` so the checks run identically on Windows.
+- **Blocking:** Configured with `continue-on-error: false`. A failure on any OS leg fails the pipeline.
 
 ### Job 3: Advisory Quality Metrics
 - Runs aggregate, repository-wide checks that no single commit can satisfy without unrelated refactoring: test-pyramid ratios, file-length caps, and duplication thresholds.
+- Executes across the same OS matrix so a platform-specific path or line-ending difference cannot hide behind a single-runner verdict. These checks carry no merge veto, so a matrix here costs runner minutes without risking a blocked merge.
+- Sets `fail-fast: false` and `defaults.run.shell: bash` for the same reasons as Job 2.
 - **Advisory:** Configured with `continue-on-error: true`. Findings surface as triage items, not merge blockers; a ratchet that fails only when a metric worsens is an acceptable upgrade.
 
 ```shell
@@ -88,12 +91,22 @@ jobs:
       - name: Run Tests
         run: {runner} pytest
 
-  # Job 2: Blocking static analysis (deterministic checks, single OS).
+  # Jobs 2 and 3 share the test suite's OS matrix: a type checker surfaces
+  # platform-conditional attribute errors, and the structural hooks guard
+  # POSIX-only patches that only the Windows leg exercises.
+  # Job 2: Blocking static analysis (deterministic checks, OS matrix).
   static-analysis:
-    name: Static Analysis
-    runs-on: ubuntu-latest
+    name: Static Analysis (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     continue-on-error: false
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -148,11 +161,19 @@ jobs:
         run: |
           {runner} pre-commit run pip-audit --all-files --hook-stage manual
 
-  # Job 3: Advisory quality metrics (aggregate checks, non-blocking).
+  # Job 3: Advisory quality metrics (aggregate checks, non-blocking, OS matrix).
   quality-metrics:
-    name: Quality Metrics
-    runs-on: ubuntu-latest
+    name: Quality Metrics (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     continue-on-error: true
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
