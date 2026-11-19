@@ -6,7 +6,9 @@ This template documents how to set up Continuous Integration and the Debug Workf
 
 ## CI Pipeline
 
-The CI pipeline consists of two parallel jobs:
+The CI pipeline consists of three parallel jobs. Two are merge gates; one is advisory.
+
+A check earns a merge veto only when it is deterministic (the verdict is reproducible locally) and diff-actionable (the author can fix it within the commit that triggered it). Deterministic static analysis meets that bar for a project that starts at zero debt. Aggregate, repository-wide metrics do not: no single commit can satisfy a test-pyramid ratio, a file-length cap, or a duplication threshold without unrelated refactoring.
 
 ### Job 1: Blocking OS Matrix Test Suite
 - Runs on each push and pull request.
@@ -16,16 +18,21 @@ The CI pipeline consists of two parallel jobs:
 - Carries a wall-clock cap (`timeout-minutes`) so a hung test cannot occupy a runner indefinitely.
 - **Blocking:** If this job fails, the CI pipeline is marked as failed.
 
-### Job 2: Non-Blocking Quality Checks
-- Runs granular quality checks in separate steps with `if: success() || failure()`, ensuring that all checks execute and report their outcomes even if an earlier check fails.
-- Scopes heavy checks (type checkers, security/dependency scanners, structural checkers) to the non-default `manual` stage so they never slow down the local pre-commit loop.
+### Job 2: Blocking Static Analysis
+- Runs on a single OS (ubuntu-latest): type and lint verdicts rarely depend on the OS, so a matrix here triples cost without adding signal on deterministic checks.
+- Runs deterministic, diff-actionable checks, each in its own step with `if: success() || failure()` so every check reports even when an earlier one fails: formatters, linters, secret scanners, security audits, type checkers, and structural checkers.
+- Scopes the heavy checks (type checkers, security/dependency scanners, structural checkers) to the non-default `manual` stage so they never slow down the local pre-commit loop.
 - Excludes sandboxes (`spikes/`) and third-party dependencies.
-- **Non-Blocking:** Configured with `continue-on-error: true` so quality failures do not block the pipeline.
+- **Blocking:** Configured with `continue-on-error: false`. A failure fails the pipeline.
+
+### Job 3: Advisory Quality Metrics
+- Runs aggregate, repository-wide checks that no single commit can satisfy without unrelated refactoring: test-pyramid ratios, file-length caps, and duplication thresholds.
+- **Advisory:** Configured with `continue-on-error: true`. Findings surface as triage items, not merge blockers; a ratchet that fails only when a metric worsens is an acceptable upgrade.
 
 ```shell
 # Fast hooks (default stage)
 {runner} pre-commit run --all-files
-# Heavy hooks (CI-only manual stage)
+# Heavy hooks (CI-only manual stage, run by the blocking static-analysis job)
 {runner} pre-commit run --all-files --hook-stage manual
 ```
 
@@ -81,11 +88,12 @@ jobs:
       - name: Run Tests
         run: {runner} pytest
 
-  # Job 2: Non-blocking quality checks (continue-on-error).
-  quality-checks:
-    name: Quality Checks
+  # Job 2: Blocking static analysis (deterministic checks, single OS).
+  static-analysis:
+    name: Static Analysis
     runs-on: ubuntu-latest
-    continue-on-error: true
+    timeout-minutes: 10
+    continue-on-error: false
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -102,7 +110,7 @@ jobs:
         run: {runner} sync --frozen
 
       # Each check runs with `if: success() || failure()` so all checks run
-      # even if an earlier check fails.
+      # even if an earlier check fails. Every deterministic check blocks merge.
       - name: "Secrets Check (detect-secrets)"
         if: success() || failure()
         run: |
@@ -139,6 +147,46 @@ jobs:
         if: success() || failure()
         run: |
           {runner} pre-commit run pip-audit --all-files --hook-stage manual
+
+  # Job 3: Advisory quality metrics (aggregate checks, non-blocking).
+  quality-metrics:
+    name: Quality Metrics
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Set up Node.js (for jscpd)
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.3.2
+
+      - name: Install dependencies
+        run: {runner} sync --frozen
+
+      - name: "Verify Test Pyramid"
+        if: success() || failure()
+        run: |
+          {runner} python scripts/verify_test_pyramid.py
+
+      - name: "Check Python File Length (Max 300 Lines)"
+        if: success() || failure()
+        run: |
+          find src tests -name "*.py" | xargs wc -l | awk '$1 > 300 && $2 != "total" {print "File " $2 " is too long (" $1 " lines)."; exit 1}'
+
+      - name: "Detect Code Duplication (jscpd)"
+        if: success() || failure()
+        run: |
+          npx jscpd --min-tokens 25 --threshold 0 --ignore "**/.venv/**,**/ports/**,**/prompts/**,**/spikes/**"
 ```
 
 ## Debug Workflow (Remote Probing Protocol)

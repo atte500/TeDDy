@@ -5,11 +5,15 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+import pytest
+
+from teddy_executor.core.services.init_service import _TEMPLATE_FILES
+
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _MAKEFILE = _PROJECT_ROOT / "Makefile"
-_PROJECT_TEMPLATE = _PROJECT_ROOT / "docs" / "templates" / "makefile.md"
-_BUNDLED_TEMPLATE = (
-    _PROJECT_ROOT / "src" / "teddy_executor" / "resources" / "templates" / "makefile.md"
+_TEMPLATE_DIR = _PROJECT_ROOT / "docs" / "templates"
+_BUNDLED_TEMPLATE_DIR = (
+    _PROJECT_ROOT / "src" / "teddy_executor" / "resources" / "templates"
 )
 _PROBE_MK = _PROJECT_ROOT / "make" / "probe.mk"
 
@@ -20,9 +24,12 @@ def test_makefile_stays_ascii_only() -> None:
     assert text.isascii(), "Makefile text must stay ASCII"
 
 
-def test_template_copies_are_byte_identical() -> None:
-    """Ensures documentation template and bundled resource template stay in lockstep."""
-    assert _PROJECT_TEMPLATE.read_bytes() == _BUNDLED_TEMPLATE.read_bytes()
+@pytest.mark.parametrize("template_name", _TEMPLATE_FILES)
+def test_template_copies_are_byte_identical(template_name: str) -> None:
+    """Ensures every documentation template and its bundled copy stay in lockstep."""
+    project_copy = _TEMPLATE_DIR / template_name
+    bundled_copy = _BUNDLED_TEMPLATE_DIR / template_name
+    assert project_copy.read_bytes() == bundled_copy.read_bytes()
 
 
 def test_make_help_executes_successfully() -> None:

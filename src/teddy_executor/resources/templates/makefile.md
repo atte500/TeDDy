@@ -215,7 +215,7 @@ push:
 
 `make ci-watch` discovers **every** CI run for the target commit (`HEAD` by default, or `COMMIT=<sha>`), waits for and reports each workflow with its jobs. The target depends on `_preflight`, so a missing `gh`, `awk`, or Git Bash shell fails once with an actionable message. Before polling, it rejects an unknown `COMMIT` and a commit that no remote branch contains, because no run can exist for an un-pushed commit. Every blocking verdict prints to stdout for the log and repeats its reason on stderr. It answers ONE question: **did this commit turn a BLOCKING gate red?** Only push-triggered workflows are attributed; a downstream workflow that registers from a `workflow_run` event is not a regression in this commit. Only include and configure this target if a remote CI pipeline is configured or planned for the project.
 
-The pushed RUN's own conclusion is authoritative: it already folds in `continue-on-error`, so a **non-blocking** job (e.g. the CI `Quality Checks` job) can NEVER block the session — it is reported as a triage item instead. Only when the run-level conclusion is `failure` does attribution run, comparing the pushed run's failing-JOB set against the base run's:
+The pushed RUN's own conclusion is authoritative: it already folds in `continue-on-error`, so a **non-blocking** job (e.g. the CI `Quality Metrics` job) can NEVER block the session — it is reported as a triage item instead. Only when the run-level conclusion is `failure` does attribution run, comparing the pushed run's failing-JOB set against the base run's:
 
 - **base green/absent/job-less → new red** = your regression → **exit non-zero** (fix before concluding).
 - **base red → new red (subset of the base's failing jobs)** = pre-existing → **report and exit 0** (do not wait, do not duplicate the fix).
@@ -410,7 +410,7 @@ logs: _preflight
 ## Implementation Notes
 
 - This project uses `uv run` as its designated runner.
-- Local pre-commit hooks include only fast auto-fixers (`ruff`) + `detect-secrets` + `check-merge-conflict`; heavier checks (`mypy`, `bandit`, `pip-audit`, and the structural checkers) run non-blocking in CI (see [pre-commit.md](./pre-commit.md)).
+- Local pre-commit hooks include only fast auto-fixers (`ruff`) + `detect-secrets` + `check-merge-conflict`; heavier checks (`mypy`, `bandit`, `pip-audit`, and the structural checkers) run in the blocking static-analysis CI job (see [pre-commit.md](./pre-commit.md)).
 - Post-commit hook lives at `.githooks/post-commit.py` and runs the full `uv run pytest` suite.
 - Ensure `gh` (GitHub CLI) is authenticated for `make push`, the Remote Probing Protocol, and CI Log Extraction.
 - The `make logs` target abstracts the Debugger's CI-log extraction (Phase 1, Step 2). See [CI Log Extraction](#ci-log-extraction).

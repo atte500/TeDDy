@@ -83,7 +83,7 @@ repos:
         pass_filenames: false
 ```
 
-**Local vs CI scope:** keep only fast auto-fixers (`ruff --fix`, `ruff format`, `trailing-whitespace`, `end-of-file-fixer`), `detect-secrets`, `check-merge-conflict`, and zero-false-positive anti-pattern lints (e.g. Ruff `TID251` banned-API rules for forbidden test mocks or raw adapter-only libraries) locally. Noisy, false-positive-prone static analysis (`mypy`, `bandit`, `pip-audit`) and repository-wide architectural boundary checkers belong in CI's `manual` stage, where they run non-blocking — the real friction is hook false positives forcing inline suppressions, not blocking. See the Quality-Gate Bypass Policy for the config-level-vs-inline bypass rule.
+**Local vs CI scope:** keep only fast auto-fixers (`ruff --fix`, `ruff format`, `trailing-whitespace`, `end-of-file-fixer`), `detect-secrets`, `check-merge-conflict`, and zero-false-positive anti-pattern lints (e.g. Ruff `TID251` banned-API rules for forbidden test mocks or raw adapter-only libraries) locally. Noisy static analysis (`mypy`, `bandit`, `pip-audit`) and repository-wide architectural boundary checkers belong in CI's `manual` stage, run by the blocking static-analysis job — keeping them out of the local hook loop avoids the real friction, which is hook false positives forcing inline suppressions, not blocking at merge time. See the Quality-Gate Bypass Policy for the config-level-vs-inline bypass rule.
 
 **Tip:** Pin exact `rev` tags so every teammate runs identical checks.
 
