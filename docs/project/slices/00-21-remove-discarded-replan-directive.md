@@ -1,5 +1,5 @@
 # Slice: Delete the Discarded Replan Correction Directive
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** None
 - **Specs:** N/A
@@ -68,10 +68,19 @@ None. Case File 80 resolved every unknown: MRE 01 pinned the directive's absence
 
 ## Deliverables
 
-- [ ] **Core** - Pin the replan delegation contract and remove the discarded directive: add one regression test proving `trigger_replan_turn(dir)` forwards `user_message=None, turn_dir=dir`, delete `_build_feedback_message`, reduce `trigger_replan_turn` to `next_turn_dir`, drop the three dead arguments at `session_lifecycle_manager.py:640`, and update the preserved MRE's production invocation so the equivalence harness runs against the shipped signature.
+- [x] **Core** - Pin the replan delegation contract and remove the discarded directive: add one regression test proving `trigger_replan_turn(dir)` forwards `user_message=None, turn_dir=dir`, delete `_build_feedback_message`, reduce `trigger_replan_turn` to `next_turn_dir`, drop the three dead arguments at `session_lifecycle_manager.py:640`, and update the preserved MRE's production invocation so the equivalence harness runs against the shipped signature.
 
 ## Implementation Notes
-Pending implementation.
+### Core
+Red: appended `RecordingPlanningService` and `TestTriggerReplanTurnDelegation` to `test_session_replanner.py`. Against the unreduced signature the new case failed with `TypeError: SessionReplanner.trigger_replan_turn() missing 2 required positional arguments: 'errors' and 'original_content'` (1 failed, 5 passed); `validation_ast` carries a `None` default, so only two arguments were required.
+
+Green: deleted `_build_feedback_message`, reduced `trigger_replan_turn` to `next_turn_dir` forwarding `generate_plan(user_message=None, turn_dir=next_turn_dir)`, dropped the three dead arguments from the call at `session_lifecycle_manager.py:640`, and repointed MRE 03's `invoke_production` at the reduced signature so the preserved harness runs against shipped code. The focused module reported 6 passed; the preserved MRE re-ran to `MRE PASS` with `requests identical: True`, `file writes identical: True`, `turn metadata identical: True`, and `feedback text in production request: False`.
+
+`trigger_replan` keeps its own `errors`, `original_plan_content`, and `validation_ast` parameters because `build_failure_report` consumes them; only the internal `trigger_replan_turn` call lost three arguments. `original_plan_content` is now unused inside `trigger_replan`, recorded as debt rather than removed, because deletion would touch the three `session_orchestrator.py` callers outside this slice.
+
+`ruff format` folded the forwarded call onto one 88-column line. `make test`: 2303 passed, 5 skipped, one more than the 2302 baseline and matching the new regression test.
+
+MREs 01 and 02 stay frozen as pre-change evidence; only MRE 03 is kept runnable, which is why only its `invoke_production` was repointed. No component design doc exists for `SessionReplanner` or `SessionLifecycleManager`; `session_orchestrator.md` names `build_failure_report` only and remains accurate, so no component doc edit was required.
 
 ## Verification
 
@@ -85,7 +94,7 @@ Pending implementation.
 
 3. **Contract pin:**
    Open `tests/suites/unit/core/services/test_session_replanner.py`.
-   Verify exactly one case drives `SessionReplanner(SessionReplanner(...)).trigger_replan_turn("session/02")` through a recording planning service and asserts the single recorded call carries `user_message=None` and `turn_dir="session/02"`.
+   Verify exactly one case builds `SessionReplanner` with a recording planning service beside `DummyFileSystemManager`, drives it through a single `trigger_replan_turn("session/02")` call, and asserts the recorded calls equal `[(None, "session/02")]`.
 
 4. **Live replan:**
    Start a session and let a turn reply with a structurally invalid plan, for example two Level 1 headings.

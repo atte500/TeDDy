@@ -101,12 +101,7 @@ def build_case(replanner_cls, invoke):
 
 
 def invoke_production(replanner) -> None:
-    replanner.trigger_replan_turn(
-        next_turn_dir="session/02",
-        errors=[VALIDATION_ERROR],
-        original_content=FAULTY_PLAN,
-        validation_ast="# Faulty AST",
-    )
+    replanner.trigger_replan_turn("session/02")
 
 
 def invoke_replica(replanner) -> None:

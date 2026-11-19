@@ -637,9 +637,7 @@ class SessionLifecycleManager:
             plan_path, report, is_validation_failure=True, plan=plan
         )
 
-        self._replanner.trigger_replan_turn(
-            next_turn_dir, errors, original_plan_content, validation_ast=validation_ast
-        )
+        self._replanner.trigger_replan_turn(next_turn_dir)
         return report
 
     def finalize_turn(

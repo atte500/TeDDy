@@ -95,3 +95,38 @@ class TestGatherFailedResourcesIsSession:
         errors = [FakeError("/nonexistent")]
         resources = replanner.gather_failed_resources(errors, is_session=False)
         assert resources == {}
+
+
+class RecordingPlanningService:
+    """Records each generate_plan call and returns an empty plan result."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str | None, str]] = []
+
+    def generate_plan(
+        self, user_message: str | None, turn_dir: str
+    ) -> tuple[str, float, ProjectContext]:
+        self.calls.append((user_message, turn_dir))
+        return (
+            "",
+            0.0,
+            ProjectContext(header="", content="", scoped_paths={}, git_status=""),
+        )
+
+
+class TestTriggerReplanTurnDelegation:
+    """Pins the replan delegation contract."""
+
+    def test_forwards_no_user_message_and_turn_dir(self) -> None:
+        """trigger_replan_turn must ask the planning service for a plan in the
+        next turn directory with no separate user message, because the failed
+        turn's report and plan already carry the correction context."""
+        planning_service = RecordingPlanningService()
+        replanner = SessionReplanner(
+            file_system_manager=DummyFileSystemManager(),
+            planning_service=planning_service,
+        )
+
+        replanner.trigger_replan_turn("session/02")
+
+        assert planning_service.calls == [(None, "session/02")]

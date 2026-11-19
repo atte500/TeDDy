@@ -47,39 +47,9 @@ class SessionReplanner:
             is_session=is_session,
         )
 
-    def trigger_replan_turn(
-        self,
-        next_turn_dir: str,
-        errors: list[str],
-        original_content: str,
-        validation_ast: str | None = None,
-    ) -> None:
-        """Generates the feedback message and triggers the planning phase."""
-        feedback = self._build_feedback_message(
-            errors, original_content, validation_ast
-        )
-        self._planning_service.generate_plan(
-            user_message=feedback, turn_dir=next_turn_dir
-        )
-
-    def _build_feedback_message(
-        self, errors: list[str], original_content: str, validation_ast: str | None
-    ) -> str:
-        """Constructs the feedback message for the AI."""
-        error_msgs = [e.strip() for e in errors]
-        ast_section = f"\n{validation_ast}\n" if validation_ast else ""
-
-        return (
-            "The previous plan failed validation. Please review the errors and "
-            "the original plan, then generate a corrected version.\n\n"
-            "## Validation Errors:\n"
-            + "\n\n---\n\n".join(error_msgs)
-            + "\n"
-            + ast_section
-            + "\n"
-            f"## Original Faulty Plan:\n"
-            f"````````````markdown\n{original_content}\n````````````"
-        )
+    def trigger_replan_turn(self, next_turn_dir: str) -> None:
+        """Requests a corrected plan in the next turn directory."""
+        self._planning_service.generate_plan(user_message=None, turn_dir=next_turn_dir)
 
     def gather_failed_resources(
         self, errors: list, is_session: bool = False

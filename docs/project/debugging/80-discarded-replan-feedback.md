@@ -1,7 +1,7 @@
 # Bug: Discarded Replan Correction Directive
-- **Status:** Unresolved
+- **Status:** Resolved
 - **Milestone:** N/A
-- **Vertical Slice:** N/A
+- **Vertical Slice:** [00-21: Delete the Discarded Replan Correction Directive](/docs/project/slices/00-21-remove-discarded-replan-directive.md)
 - **Specs:** N/A
 
 ## Symptoms
@@ -65,7 +65,7 @@ Verified on the current checkout:
 
 Chosen resolution (user decision: delete): remove `_build_feedback_message`, reduce `trigger_replan_turn` to `next_turn_dir`, and call `generate_plan(user_message=None, turn_dir=next_turn_dir)`. `## Validation Recovery` in the carried failure report remains the instruction.
 
-The deletion is proven behavior-preserving in the sandbox replica `spikes/debug/replan-feedback-visibility/replica_session_replanner.py` by `03-replan-deletion-equivalence-mre.py`: identical requests, file writes, and metadata. It was **not** applied to `src/` because the clean change touches two production files (`session_replanner.py` and `session_lifecycle_manager.py`), exceeding the Debugger's direct-resolution scope; implementation is handed off to the Developer.
+The deletion was proven behavior-preserving in the sandbox replica `spikes/debug/replan-feedback-visibility/replica_session_replanner.py` by `03-replan-deletion-equivalence-mre.py`: identical requests, file writes, and metadata. The clean change touched two production files, exceeding the Debugger's direct-resolution scope, so implementation was handed off to the Developer as slice [00-21](/docs/project/slices/00-21-remove-discarded-replan-directive.md) and delivered on 2026-11-19: `_build_feedback_message` is deleted, `trigger_replan_turn` takes only `next_turn_dir`, and the call at `session_lifecycle_manager.py:640` passes only that directory. One regression test pins the forwarded planning call as `generate_plan(user_message=None, turn_dir=next_turn_dir)`. Re-run against the shipped signature, MRE 03 still reported identical requests, file writes, and turn metadata with no feedback text in the production request, and `make test` passed 2303 with 5 skipped.
 
 ### Affected Components
 - `src/teddy_executor/core/services/session_replanner.py`: delete `_build_feedback_message`; reduce `trigger_replan_turn` to `next_turn_dir`, forwarding `user_message=None`. Keep `build_failure_report` and `gather_failed_resources` unchanged.
