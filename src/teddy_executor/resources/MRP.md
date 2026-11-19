@@ -137,7 +137,7 @@ A validation failure occurs when an Execution Report returns "Validation Failed"
 ## Rationale
 ~~~~
 ### Summary
-[The whole story so far: what the session has established, what the previous turn's outcome means, and why this plan is the next logical step. Reason aloud to get there: interpret the previous turn's result, trace what it implies, and derive why this plan follows, instead of only restating the outcome. This section carries the complete context a reader needs to follow the current decision, not a recap of only the last turn.]
+[The whole story so far: what the session has established, what the previous turn's outcome means, and why this plan is the next logical step. Reason aloud to get there: interpret the previous turn's result, trace what it implies, and derive why this plan follows. This section carries the complete context a reader needs to follow the current plan.]
 
 ### Expectation
 [Observable outcome: State the single, specific, falsifiable result you expect from this action plan, and what it will prove about your current state or hypothesis. Then state how that outcome dictates the subsequent step: what you will do if it holds, and what you will do if it does not.]
