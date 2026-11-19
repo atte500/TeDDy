@@ -1,5 +1,5 @@
 # Slice: Delete the Discarded Replan Correction Directive
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** None
 - **Specs:** N/A
