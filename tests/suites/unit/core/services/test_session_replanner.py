@@ -16,12 +16,16 @@ class DummyFileSystemManager:
         return ""
 
 
-class DummyPlanningService:
-    """Test double for planning service that does nothing."""
+class RecordingPlanningService:
+    """Records each generate_plan call and returns an empty plan result."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str | None, str]] = []
 
     def generate_plan(
-        self, user_message: str, turn_dir: str
+        self, user_message: str | None, turn_dir: str
     ) -> tuple[str, float, ProjectContext]:
+        self.calls.append((user_message, turn_dir))
         return (
             "",
             0.0,
@@ -33,7 +37,7 @@ class DummyPlanningService:
 def replanner() -> SessionReplanner:
     return SessionReplanner(
         file_system_manager=DummyFileSystemManager(),
-        planning_service=DummyPlanningService(),
+        planning_service=RecordingPlanningService(),
     )
 
 
@@ -95,23 +99,6 @@ class TestGatherFailedResourcesIsSession:
         errors = [FakeError("/nonexistent")]
         resources = replanner.gather_failed_resources(errors, is_session=False)
         assert resources == {}
-
-
-class RecordingPlanningService:
-    """Records each generate_plan call and returns an empty plan result."""
-
-    def __init__(self) -> None:
-        self.calls: list[tuple[str | None, str]] = []
-
-    def generate_plan(
-        self, user_message: str | None, turn_dir: str
-    ) -> tuple[str, float, ProjectContext]:
-        self.calls.append((user_message, turn_dir))
-        return (
-            "",
-            0.0,
-            ProjectContext(header="", content="", scoped_paths={}, git_status=""),
-        )
 
 
 class TestTriggerReplanTurnDelegation:

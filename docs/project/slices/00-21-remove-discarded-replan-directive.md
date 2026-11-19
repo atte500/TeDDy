@@ -69,6 +69,7 @@ None. Case File 80 resolved every unknown: MRE 01 pinned the directive's absence
 ## Deliverables
 
 - [x] **Core** - Pin the replan delegation contract and remove the discarded directive: add one regression test proving `trigger_replan_turn(dir)` forwards `user_message=None, turn_dir=dir`, delete `_build_feedback_message`, reduce `trigger_replan_turn` to `next_turn_dir`, drop the three dead arguments at `session_lifecycle_manager.py:640`, and update the preserved MRE's production invocation so the equivalence harness runs against the shipped signature.
+- [x] **Refactor** - Consolidate the duplicated planning-service fakes in `test_session_replanner.py`: delete `DummyPlanningService` and build the `replanner` fixture from `RecordingPlanningService`, so the module carries one fake whose `user_message` annotation admits `None`. No new tests; the existing six cases stay green.
 
 ## Implementation Notes
 ### Core
@@ -76,11 +77,16 @@ Red: appended `RecordingPlanningService` and `TestTriggerReplanTurnDelegation` t
 
 Green: deleted `_build_feedback_message`, reduced `trigger_replan_turn` to `next_turn_dir` forwarding `generate_plan(user_message=None, turn_dir=next_turn_dir)`, dropped the three dead arguments from the call at `session_lifecycle_manager.py:640`, and repointed MRE 03's `invoke_production` at the reduced signature so the preserved harness runs against shipped code. The focused module reported 6 passed; the preserved MRE re-ran to `MRE PASS` with `requests identical: True`, `file writes identical: True`, `turn metadata identical: True`, and `feedback text in production request: False`.
 
-`trigger_replan` keeps its own `errors`, `original_plan_content`, and `validation_ast` parameters because `build_failure_report` consumes them; only the internal `trigger_replan_turn` call lost three arguments. `original_plan_content` is now unused inside `trigger_replan`, recorded as debt rather than removed, because deletion would touch the three `session_orchestrator.py` callers outside this slice.
+`trigger_replan` keeps its own `errors`, `original_plan_content`, and `validation_ast` parameters because `build_failure_report` consumes them; only the internal `trigger_replan_turn` call lost three arguments. `original_plan_content` is now unused inside `trigger_replan`, recorded as debt rather than removed, because deletion would touch the `trigger_replan` call sites in `session_orchestrator.py`, outside this slice.
 
 `ruff format` folded the forwarded call onto one 88-column line. `make test`: 2303 passed, 5 skipped, one more than the 2302 baseline and matching the new regression test.
 
 MREs 01 and 02 stay frozen as pre-change evidence; only MRE 03 is kept runnable, which is why only its `invoke_production` was repointed. No component design doc exists for `SessionReplanner` or `SessionLifecycleManager`; `session_orchestrator.md` names `build_failure_report` only and remains accurate, so no component doc edit was required.
+
+### Refactor
+Consolidated the two planning-service fakes in `test_session_replanner.py`. `DummyPlanningService` was inert: the `replanner` fixture feeds five nodes and none of them calls `generate_plan`, while its body duplicated `RecordingPlanningService` byte for byte apart from the recording append and a narrower `user_message: str` annotation. The module now defines `RecordingPlanningService` once, above the fixture, annotated `user_message: str | None` so the fake admits the `None` the shipped method forwards; both the fixture and `TestTriggerReplanTurnDelegation` build from it. No test was added or removed: the focused module reports the same 6 passed and `make test` reports 2303 passed / 5 skipped. `ruff check` is clean on the module and `DummyPlanningService` no longer appears anywhere.
+
+The `original_plan_content` debt left behind by the Core deliverable is recorded out of slice, per the workflow's roadmap rule, as a Milestone 6 requirement bullet in `docs/project/PROJECT.md` and anticipated slice 17 in `docs/project/milestones/06-cross-cutting-consolidation.md`, because removing the parameter touches the `trigger_replan` call sites in `session_orchestrator.py`.
 
 ## Verification
 
