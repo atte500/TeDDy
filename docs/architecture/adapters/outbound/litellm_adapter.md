@@ -34,16 +34,16 @@ None — this is an outbound (driven) adapter.
 
 ## Data Contracts
 - **`messages`** (`List[Dict[str, str]]`): The chat-completion payload.
-- **`llm.*` config keys:** The entire `llm` section passes through to `litellm.completion()`. The adapter reads `llm.model`, `llm.api_key`, `llm.max_retries` (default 3), and `llm.timeout` (default 300 seconds).
+- **`llm.*` config keys:** The entire `llm` section passes through to `litellm.completion()`. The adapter reads `llm.model`, `llm.api_key`, `llm.max_retries` (default 3), and `llm.timeout` (default 300 seconds). A per-persona `llm_overrides` mapping layers over that block.
 - **Model registry cache:** JSON at `.teddy/.model_registry_cache.json`, payload `{"version": 1, "fetched_at_epoch": <int>, "models": [...]}`, with a 7-day TTL.
 - **`LlmApiError`** (`teddy_executor.core.ports.outbound.llm_client`): Raised after retry exhaustion on downstream provider failure.
 - **`ConfigurationError`** (`teddy_executor.core.domain.models.exceptions`): Raised for invalid configuration, missing keys, or authentication errors.
 
 ## Operations
 
-### `get_completion(messages, model=None, **kwargs) -> Any`
+### `get_completion(messages, model=None, llm_overrides=None, **kwargs) -> Any`
 - **Preconditions:** The config carries a model and, when the provider requires one, an API key.
-- **Postconditions:** Returns the provider completion object. The first call validates the config once; later calls skip validation.
+- **Postconditions:** Returns the provider completion object. The first call validates the config once; later calls skip validation. The `llm_overrides` overlay layers between the global `llm` block and the per-call `model`.
 - **Exceptions:**
   - `ConfigurationError`: Model missing, required API key missing, or authentication failure detected.
   - `LlmApiError`: Downstream API provider failure persisting after retries are exhausted.
@@ -78,6 +78,9 @@ None — this is an outbound (driven) adapter.
 
 ### BYOK cost accounting
 OpenRouter reports two figures on a response. `usage.cost` is what OpenRouter charges for the request; under BYOK that is a fee of 5% of list price, waived while the monthly free allowance lasts, so it is frequently `0.0`. `usage.cost_details.upstream_inference_cost` is what the user's own provider actually billed. litellm mirrors `usage.cost` into `_hidden_params` but preserves `usage.cost_details` verbatim on the response, so the adapter reads the upstream field directly: a positive value wins, with any reported fee added on top. OpenRouter reports `0` or `null` for the upstream field on non-BYOK requests, so those keep the fee as their authoritative figure.
+
+### Parameter merge precedence
+`_prepare_completion_params` layers four sources, lowest first: runtime `**kwargs`, the global `llm` block, the per-persona `llm_overrides`, then the per-call `model`. The overlay merge is a one-level `dict.update`, so a mapping-valued key such as `extra_headers` replaces the global value wholesale. The blank-`api_key` drop and the default-timeout arm run after the overlay merge, so a blank persona `api_key` still replaces the global value and is then dropped to the provider default. An absent overlay leaves the merged parameters byte-identical to the pre-overlay path.
 
 ### Retry and authentication handling
 The retry loop attempts `llm.max_retries` times with exponential backoff (`0.5 * 2**attempt`). `_is_auth_error` detects an auth failure by message hint or by the `litellm.AuthenticationError` type, so a wrong or expired key fails on the first attempt with no backoff.

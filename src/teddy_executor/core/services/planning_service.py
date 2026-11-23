@@ -95,6 +95,7 @@ class PlanningService(IPlanningUseCase):
             system_prompt_tokens=system_token_count,
             cache_dir=session_root,
             session_root=session_root,
+            model=model,
         )
 
         # Context is purely project state (including initial_request.md via session.context).
@@ -156,7 +157,9 @@ class PlanningService(IPlanningUseCase):
             self._llm_client.get_context_window(model=model)
 
         token_count = int(
-            self._safe_float(self._llm_client.get_token_count(messages=messages))
+            self._safe_float(
+                self._llm_client.get_token_count(messages=messages, model=model)
+            )
         )
 
         if self._user_interactor:
@@ -208,17 +211,14 @@ class PlanningService(IPlanningUseCase):
 
         return response, plan_content, turn_cost
 
-    # Class-level cache to ensure remote preflight is performed exactly once per process.
-    # This eliminates the 10s timeout lag on subsequent turns in a session.
-    _PREFLIGHT_DONE = False
-
-    @classmethod
-    def reset_preflight(cls) -> None:
-        """Resets the preflight cache (used primarily for testing)."""
-        cls._PREFLIGHT_DONE = False
-
     def _run_preflight_check(self) -> None:
-        """Ensures system is configured before attempting generation."""
+        """Ensures system is configured before attempting generation.
+
+        Validation runs on every turn, so a persona switched mid-session is
+        always checked against the active configuration. There is deliberately
+        no process-wide preflight cache: a cache keyed on nothing would only
+        suppress re-validating a different persona, and the local check is cheap.
+        """
         from teddy_executor.core.domain.models.exceptions import ConfigurationError
 
         # Perform local validation only. Remote connectivity is checked lazily
@@ -226,12 +226,9 @@ class PlanningService(IPlanningUseCase):
         # and eliminates redundant remote lag for sessions.
         errors = self._llm_client.validate_config(include_remote=False)
 
-        if not errors:
-            PlanningService._PREFLIGHT_DONE = True
-            return
-
-        error_msg = f"Configuration Error: {', '.join(errors)}"
-        raise ConfigurationError(error_msg)
+        if errors:
+            error_msg = f"Configuration Error: {', '.join(errors)}"
+            raise ConfigurationError(error_msg)
 
     def _extract_plan_content(self, response: Any) -> str:
         """Robustly extracts content from the LLM response object."""

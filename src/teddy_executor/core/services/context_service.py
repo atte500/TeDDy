@@ -55,6 +55,7 @@ class ContextService(IGetContextUseCase):
         current_turn: Optional[str] = None,
         system_prompt_tokens: int = 0,
         session_root: Optional[str] = None,
+        model: Optional[str] = None,
     ) -> ProjectContext:
         """
         Gathers all project context information by orchestrating its dependencies.
@@ -113,7 +114,7 @@ class ContextService(IGetContextUseCase):
             repo_tree, scoped_paths, file_contents, git_status, session_root
         )
         content_tokens = (
-            self._llm_client.get_text_token_count(content) if include_tokens else 0
+            self._count_text_tokens(content, model) if include_tokens else 0
         )
 
         return ProjectContext(
@@ -122,7 +123,7 @@ class ContextService(IGetContextUseCase):
             scoped_paths=scoped_paths,
             git_status=git_status,
             items=self._collect_items(
-                scoped_paths, file_contents, git_status, include_tokens
+                scoped_paths, file_contents, git_status, include_tokens, model
             ),
             agent_name=agent_name,
             total_window=total_window,
@@ -277,6 +278,7 @@ class ContextService(IGetContextUseCase):
         file_contents: Dict[str, Optional[str]],
         git_status: Optional[str],
         include_tokens: bool,
+        model: Optional[str] = None,
     ) -> List[ContextItem]:
         """
         Orchestrates the assembly of ContextItem metadata DTOs.
@@ -284,7 +286,7 @@ class ContextService(IGetContextUseCase):
         """
         parsed_status = self._parse_git_status(git_status)
         path_to_tokens = self._get_path_to_tokens(
-            scoped_paths, file_contents, include_tokens
+            scoped_paths, file_contents, include_tokens, model
         )
 
         # Deduplication map: path -> ContextItem
@@ -308,11 +310,23 @@ class ContextService(IGetContextUseCase):
 
         return list(items_map.values())
 
+    def _count_text_tokens(self, text: str, model: Optional[str]) -> int:
+        """Count tokens with the effective model, preserving the no-model shape.
+
+        A caller without an effective model issues the same single-argument call
+        as before, so existing call-argument assertions and side-effect fakes
+        that accept only the text stay valid.
+        """
+        if model:
+            return self._llm_client.get_text_token_count(text, model=model)
+        return self._llm_client.get_text_token_count(text)
+
     def _get_path_to_tokens(
         self,
         scoped_paths: Dict[str, List[str]],
         file_contents: Dict[str, Optional[str]],
         include_tokens: bool,
+        model: Optional[str] = None,
     ) -> Dict[str, int]:
         """Calculates token counts for all unique files in parallel."""
         if not include_tokens:
@@ -326,7 +340,7 @@ class ContextService(IGetContextUseCase):
 
         def get_count(path: str) -> tuple[str, int]:
             content = file_contents.get(path) or ""
-            return path, self._llm_client.get_text_token_count(content)
+            return path, self._count_text_tokens(content, model)
 
         # Parallelize to handle large repositories without stalling the UI.
         # We use a ThreadPoolExecutor as token counting is often offloaded or involves latency.

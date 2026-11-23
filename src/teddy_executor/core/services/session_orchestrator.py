@@ -4,6 +4,10 @@ from dataclasses import is_dataclass, replace
 from pathlib import Path
 from typing import Any, Optional, cast
 
+from teddy_executor.core.domain.models.config_schema import (
+    resolve_agent_llm_overrides,
+    resolve_effective_model,
+)
 from teddy_executor.core.domain.models.execution_report import (
     ExecutionReport,
 )
@@ -453,7 +457,21 @@ class SessionOrchestrator(IRunPlanUseCase):
                 else "Unknown"
             )
         )
-        total_window = self._llm_client.get_context_window()
+        # Resolve the effective model exactly as the planner does: the turn's
+        # explicit ``model_override``, then the persona entry, then ``llm.model``.
+        # The carried ``model`` key is display data and never a resolution input.
+        turn_dir = str(Path(plan_path).parent)
+        turn_meta = self._session_service.load_turn_meta(turn_dir)
+        llm_overrides = resolve_agent_llm_overrides(
+            self._config_service.get_setting("agents", {}), agent_name
+        )
+        model = resolve_effective_model(
+            turn_meta.get("model_override"),
+            llm_overrides.get("model"),
+            self._config_service.get_setting("llm.model"),
+        )
+
+        total_window = self._llm_client.get_context_window(model=model)
 
         cache_dir = str(Path(plan_path).parent.parent)
         # Compute system prompt token count BEFORE context construction so the
@@ -461,7 +479,6 @@ class SessionOrchestrator(IRunPlanUseCase):
         system_prompt = self._prompt_manager.fetch_system_prompt(
             agent_name, Path(plan_path).parent
         )
-        model = str(self._config_service.get_setting("llm.model") or "")
         try:
             system_token_count = self._llm_client.get_text_token_count(
                 system_prompt, model=model
@@ -476,6 +493,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             cache_dir=cache_dir,
             system_prompt_tokens=system_token_count,
             session_root=cache_dir,
+            model=model,
         )
 
         if is_dataclass(project_context) and agent_name != getattr(

@@ -23,6 +23,7 @@ Implements the `ISessionManager` outbound port. It manages the on-disk lifecycle
 - `single_folder_lifetime`: A session keeps one folder for its lifetime; a turn may rename it once.
 - `exclusive_root_claim`: Session roots are claimed atomically, so concurrent creators never merge ledgers.
 - `primitive_serialization`: All metadata is cast to primitive types before serialization.
+- `model_override_is_the_resolution_input`: An explicit `--model` writes `model_override` at session creation and is carried across turns; `model` records the per-turn effective value and is never a resolution input.
 - `robust_context_read`: A missing or unreadable `turn.context` is treated as empty.
 
 ## Inbound Ports
@@ -40,7 +41,7 @@ None — the service implements an outbound port and is consumed through `ISessi
 
 ### `create_session(options) -> str`
 - **Preconditions:** `options` is a valid `SessionOptions`.
-- **Postconditions:** Atomically claims a session root, bootstraps Turn 1, seeds `session.context`, writes the composed system prompt, and returns the claimed root path.
+- **Postconditions:** Atomically claims a session root, bootstraps Turn 1, seeds `session.context`, writes the composed system prompt, records an explicit `options.model` as `model_override`, and returns the claimed root path.
 
 ### `get_session_state(session_name) -> tuple[SessionState, str]`
 - **Preconditions:** The session exists.
@@ -48,7 +49,7 @@ None — the service implements an outbound port and is consumed through `ISessi
 
 ### `transition_to_next_turn(plan_path, execution_report=None, turn_cost=0.0, is_validation_failure=False, pruned_paths=None) -> str`
 - **Preconditions:** `plan_path` points to the current turn's plan.
-- **Postconditions:** Creates the next turn directory within the same session, prunes and re-seeds context, persists cumulative cost, and returns the next directory path.
+- **Postconditions:** Creates the next turn directory within the same session, prunes and re-seeds context, persists cumulative cost, carries `model_override`/`model`/`actual_model`/`provider` forward, and returns the next directory path.
 
 ### `rename_session(old_name, new_name) -> str`
 - **Preconditions:** `old_name` exists.

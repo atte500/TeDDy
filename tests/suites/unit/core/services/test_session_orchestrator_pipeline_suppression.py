@@ -182,7 +182,10 @@ class TestPipelineMessageSuppression:
                 "awaiting_reply": True,
             },
         )
-        h.session_service.load_turn_meta.assert_called_once_with(TURN_DIR)
+        # The fallback context path also loads the turn meta to resolve the
+        # effective model, so the load is no longer a single call; the saved
+        # merge above is the real contract under test.
+        h.session_service.load_turn_meta.assert_any_call(TURN_DIR)
 
     def test_pipeline_turn_without_message_still_finalizes(self) -> None:
         # Arrange

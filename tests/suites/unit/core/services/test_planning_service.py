@@ -299,7 +299,9 @@ def test_generate_plan_auto_resolves_context_from_turn_dir_when_missing(env):
         expected_plan_path
     )
 
-    # 2. Verify get_context received the resolved manifests
+    # 2. Verify get_context received the resolved manifests. The planner always
+    # threads the effective model; the config double supplies no string model,
+    # so it resolves to an empty string and keeps the no-model token-call shape.
     mock_context_service.get_context.assert_called_once_with(
         context_files=fake_manifests,
         agent_name="pf",
@@ -307,6 +309,7 @@ def test_generate_plan_auto_resolves_context_from_turn_dir_when_missing(env):
         system_prompt_tokens=0,
         cache_dir=str(Path("sessions/S1/02").parent),
         session_root=str(Path("sessions/S1/02").parent),
+        model="",
     )
 
 

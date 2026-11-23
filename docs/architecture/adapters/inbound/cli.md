@@ -35,6 +35,7 @@ The primary inbound (driving) adapter. It parses user commands with `Typer`, res
 - `shared_context_normalization`: `start` and `context` normalize the repeatable, comma-separated `-c/--context` option through one helper in `cli_helpers.py`.
 - `update_resolves_read_only`: `teddy update` resolves `IConfigService` read-only and never calls `_ensure_project_initialized`, so a check cannot scaffold `.teddy/`; an absent or empty `update.index_url` falls back to the official endpoint.
 - `update_source_resolves_before_spawn`: `_start_background_update_check(container)` resolves `update.index_url` before the daemon thread starts, so the thread receives a fixed URL and never touches the container.
+- `explicit_flag_only_in_meta`: Only an explicit `--model` writes turn metadata, and it records `model_override`.
 
 ## Inbound Ports
 None — this is a driving adapter; it consumes inbound ports but exposes none.
@@ -54,9 +55,9 @@ None declared directly — the adapter resolves use cases and services from the 
 - **Postconditions:** Creates a session, runs the shared startup preamble, triggers planning, and enters the session loop. An auto-named session is renamed to a slug of the first plan's H1 title. When `-m` is absent and a terminal is attached, the opening prompt asks `What are we working on?` and seeds the session with the answer.
 - **Exceptions:** Exits with code 1 and the `Pipeline mode requires an initial message via -m/--message.` error when pipeline mode is invoked without `-m`. Exits with code 1 and the yellow `Session not started (no initial message).` notice when `-m` is absent and no terminal is attached.
 
-### `resume([PATH|SLUG], --agent, --message, --pipeline)`
+### `resume([PATH|SLUG], --agent, --model, --message, --pipeline)`
 - **Preconditions:** The target session exists.
-- **Postconditions:** Resolves the session path-first then by slug, runs the shared preamble, and resumes the turn loop. `--message` injects the user's reply or next request without interactive prompting.
+- **Postconditions:** Resolves the session path-first then by slug, runs the shared preamble, and resumes the turn loop. `--message` injects the user's reply or next request without interactive prompting. A `--model` flag is recorded as `model_override` on the latest turn so every later turn uses it; a resume without the flag never writes a configuration-derived model, so a switched persona re-resolves.
 - **Exceptions:** `ValueError` when neither path nor slug resolution finds a session.
 
 ### `init()`

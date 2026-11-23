@@ -217,3 +217,54 @@ class TestResumeMetadataUpdate:
             )
         finally:
             handlers._orchestrate_session_loop = original_loop
+
+    def test_resume_without_flag_does_not_stamp_the_config_model(self):
+        """A resume without --model leaves the per-turn model untouched.
+
+        The persona model recorded as the per-turn effective value must not be
+        overwritten by a configuration-derived model, because resolution reads
+        ``model_override`` and the persona re-resolves every turn.
+        """
+        from teddy_executor.adapters.inbound.session_cli_handlers import (
+            handle_resume_session,
+        )
+
+        container = self._create_mock_container()
+        mocks = container._mocks
+        repo: MagicMock = mocks["repo"]
+        mocks["config"].get_setting.side_effect = lambda key, default=None: {
+            "llm.model": "gpt-4o",
+            "agents": {},
+            "llm.api_key": "sk-test",  # pragma: allowlist secret
+        }.get(key, default)
+        repo.load_meta.return_value = {
+            "model": "persona/model",
+            "agent_name": "developer",
+            "cumulative_cost": 0.0,
+        }
+        mocks[
+            "session_manager"
+        ].get_latest_turn.return_value = (
+            ".teddy/sessions/20250101_120000-test-session/01"
+        )
+        mocks[
+            "session_manager"
+        ].resolve_session_from_path.return_value = "20250101_120000-test-session"
+
+        from teddy_executor.adapters.inbound import session_cli_handlers as handlers
+
+        original_loop = handlers._orchestrate_session_loop
+        handlers._orchestrate_session_loop = MagicMock()
+
+        try:
+            handle_resume_session(
+                container=container,
+                path="test-session",
+                require_approval=False,
+                no_copy=True,
+                model=None,
+            )
+
+            repo.save_meta.assert_not_called()
+        finally:
+            handlers._orchestrate_session_loop = original_loop

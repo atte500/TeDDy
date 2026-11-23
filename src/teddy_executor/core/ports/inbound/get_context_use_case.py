@@ -8,7 +8,7 @@ class IGetContextUseCase(Protocol):
     This defines the contract for the primary entry point for gathering project context.
     """
 
-    def get_context(  # noqa: PLR0913 - inbound-port seam; additive keyword
+    def get_context(  # noqa: PLR0913 - inbound-port seam; additive keywords
         self,
         context_files: Optional[Dict[str, Sequence[str]]] = None,
         include_tokens: bool = True,
@@ -18,6 +18,7 @@ class IGetContextUseCase(Protocol):
         current_turn: Optional[str] = None,
         system_prompt_tokens: int = 0,
         session_root: Optional[str] = None,
+        model: Optional[str] = None,
     ) -> ProjectContext:
         """
         Gathers all project context information.
@@ -28,6 +29,8 @@ class IGetContextUseCase(Protocol):
             system_prompt_tokens: Token count of the system prompt (pre-computed).
             session_root: Optional root of the rendering session, used to gate
                 session-history classification.
+            model: Optional effective model used for token counting. Omitted,
+                the provider's configured model is used.
 
         Returns:
             ProjectContext: A data object containing the aggregated context.

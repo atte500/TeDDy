@@ -20,7 +20,7 @@ Implements the `IRunPlanUseCase` inbound port as a decorator-style service that 
 - [SessionLifecycleManager](/src/teddy_executor/core/services/session_lifecycle_manager.py): Owns the resume funnel, the tee guard, finalization, and replan triggers.
 - [SessionReplanner](/src/teddy_executor/core/services/session_replanner.py): Builds failure reports for non-session runs.
 - [`ContextService`](./context_service.md): Gathers context when the turn arrives without one.
-- [`IConfigService`](../ports/outbound/config_service.md): Supplies the configured model name.
+- [`IConfigService`](../ports/outbound/config_service.md): Supplies the `agents` block and the configured model for the fallback context path.
 - [`ILlmClient`](../ports/outbound/llm_client.md): Reports the context window and token counts.
 - [`PromptManager`](./prompt_manager.md): Resolves the system prompt for token counting.
 - [`SessionPruningService`](./session_pruning_service.md): Optional. Prunes context items before harvesting.
@@ -31,6 +31,7 @@ Implements the `IRunPlanUseCase` inbound port as a decorator-style service that 
 - `single_gather_per_turn`: A provided `project_context` is forwarded as-is; the in-execute re-gather runs only when `project_context is None`. That fallback gather passes its session-directory cache path as `session_root`, so the partition gates on the session being rendered.
 - `harvest_before_validation`: Pruned paths are recorded before validation so they persist across a replan.
 - `history_log_never_at_root`: The tee path is redirected under `.tmp/` when it would resolve to the project root.
+- `fallback_model_precedence`: `_gather_fallback_context` resolves the effective model exactly as the planner does (`model_override`, then the persona entry, then `llm.model`) and threads it into the context window, the system-prompt token count, and the context gathering. The carried `model` key is display data only.
 
 ## Inbound Ports
 - **`IRunPlanUseCase`**: Exposes `execute(...)` and `resume(...)`.

@@ -27,6 +27,7 @@ Implements the `IGetContextUseCase` inbound port. It orchestrates the outbound p
 - `falsy_scope_map_triggers_defaults`: A falsy `context_files` value falls back to the `.teddy/*.context` glob. A supplied scope map resolves exactly the scopes it names, with no glob fallback.
 - `single_git_status_call`: `get_git_status` runs once per turn. Its value feeds the fenced Git Status body, the `ProjectContext.git_status` field, and the badge parser.
 - `plan_cap_truncate_first`: `plan.md` content is capped at `plan.max_lines` in the `file_contents` map before both `_format_content` (the embed) and `_get_path_to_tokens` (the token count), so the embedded window and the pruning `token_count` both reflect the capped length. Only paths ending in `plan.md` are capped; other files and not-found entries pass through unchanged.
+- `effective_model_token_count`: Every `get_text_token_count` call counts with the caller-supplied effective model when one is present; an omitted model keeps the single-argument no-model call shape, so existing callers stay valid.
 
 ## Inbound Ports
 - **`IGetContextUseCase`**: Exposes the single `get_context(...)` operation.
@@ -41,7 +42,7 @@ Implements the `IGetContextUseCase` inbound port. It orchestrates the outbound p
 
 ## Operations
 
-### `get_context(context_files=None, include_tokens=True, agent_name="Unknown", total_window=0, cache_dir=None, current_turn=None, system_prompt_tokens=0, session_root=None) -> ProjectContext`
+### `get_context(context_files=None, include_tokens=True, agent_name="Unknown", total_window=0, cache_dir=None, current_turn=None, system_prompt_tokens=0, session_root=None, model=None) -> ProjectContext`
 - **Preconditions:** None.
-- **Postconditions:** Returns a `ProjectContext` carrying the header, content, scoped paths, Git status, and per-file items. Each scope expands `.context` manifests, directories, and URLs before deduplication. The Project Structure section names both tree limits once in an italic subtitle between the heading and the fence. Remote URLs are fetched in parallel and cached when `cache_dir` is set. Any `plan.md` content is capped at `plan.max_lines` before both embedding and token counting, so the embedded plan and its item `token_count` track the cap while the on-disk file stays full. Session history is recognized only under the supplied `session_root`, and that same root reaches `_format_session_history`, so a file read from another session renders as resource content.
+- **Postconditions:** Returns a `ProjectContext` carrying the header, content, scoped paths, Git status, and per-file items. Each scope expands `.context` manifests, directories, and URLs before deduplication. The Project Structure section names both tree limits once in an italic subtitle between the heading and the fence. Remote URLs are fetched in parallel and cached when `cache_dir` is set. Any `plan.md` content is capped at `plan.max_lines` before both embedding and token counting, so the embedded plan and its item `token_count` track the cap while the on-disk file stays full. Session history is recognized only under the supplied `session_root`, and that same root reaches `_format_session_history`, so a file read from another session renders as resource content. Every token count (the assembled content and each file) runs against `model` when supplied; an omitted model keeps the provider's configured model.
 - **Exceptions:** None declared; per-URL fetch failures are recorded as missing content.

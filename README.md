@@ -206,6 +206,19 @@ Each subcommand rewrites only the files whose content differs from the bundled d
 
 The first execution of `teddy start` runs an interactive setup to configure your API key and preferred editor. For deeper customization, edit `.teddy/config.yaml`. All `llm.*` settings pass directly through to [LiteLLM](https://docs.litellm.ai/docs/completion/input), allowing you to route to cloud providers or local endpoints (Ollama, llama.cpp, or any OpenAI-compatible server via `api_base`). The config file also lets you adjust your external editor, command execution timeouts, diff similarity thresholds, and automated context pruning budgets.
 
+To route one agent persona to its own model while `llm.*` stays the shared default, add an `agents` block. The effective model resolves from the `--model` flag first, then `agents.<persona>.model`, then `llm.model`, and every key the persona omits still falls back to the global `llm` block. `--model` replaces only the `model` key, so a persona-level `api_key` or `api_base` still applies. The merge is one level deep: a mapping-valued key such as `extra_headers` replaces the global value wholesale rather than merging key by key. An empty or whitespace-only persona model falls back to `llm.model`, and persona names match case-insensitively.
+
+```yaml
+llm:
+  model: "openai/gpt-4o"
+  timeout: 300
+agents:
+  architect:
+    model: "anthropic/claude-sonnet-4-5"
+```
+
+The API-key setup prompt reads only the global `llm.api_key`, so a persona-level `api_key` does not suppress it: when `llm.api_key` is empty the prompt still fires, and validation then reports against the merged key.
+
 ### Environment Variables
 
 TeDDy checks the following process environment variables at startup and during a session.

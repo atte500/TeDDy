@@ -142,3 +142,17 @@ def test_fresh_turn_telemetry_shows_the_effective_persona_model(env):
 
     displayed = [call.args[0] for call in ui.display_message.call_args_list]
     assert any("• Model:" in line and "persona/model" in line for line in displayed)
+
+
+def test_effective_model_reaches_the_token_count(env):
+    """Token counting runs against the effective persona model, not the global one."""
+    service, llm, _ui = _build(
+        env,
+        agents={"architect": {"model": "persona/model"}},
+        global_model="global/model",
+        meta={},
+    )
+
+    service.generate_plan(user_message="x", turn_dir="01", context_files={})
+
+    assert llm.get_token_count.call_args.kwargs.get("model") == "persona/model"

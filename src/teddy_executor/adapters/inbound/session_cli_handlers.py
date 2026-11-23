@@ -1495,16 +1495,13 @@ def _sync_and_display_session_meta(
     model: Optional[str] = None,
     agent: Optional[str] = None,
 ) -> None:
-    """Reads latest turn meta.yaml, syncs config overrides, and clears actual_model.
+    """Reads latest turn meta.yaml, applies the resume --model override, and clears actual_model.
 
     The identity banner reflects the EFFECTIVE agent: the ``-a/--agent`` override
     when one was passed, otherwise the session's persisted ``agent_name``.
     """
-    from teddy_executor.core.ports.outbound.config_service import IConfigService
-
     session_manager = container.resolve(ISessionManager)
     repository: ISessionRepository = container.resolve(ISessionRepository)
-    config_service: IConfigService = container.resolve(IConfigService)
 
     latest_turn_path = session_manager.get_latest_turn(session_name)
     meta = repository.load_meta(latest_turn_path)
@@ -1518,14 +1515,13 @@ def _sync_and_display_session_meta(
 
     _echo_config_success(container, agent=agent or meta.get("agent_name"), model=model)
 
-    # Sync latest turn's meta.yaml with current config model/overrides
-    config_model = config_service.get_setting("llm.model", "unknown")
+    # Only an explicit --model writes metadata. A configuration-derived model
+    # must never be stamped into the per-turn record: resolution reads
+    # ``model_override`` and the persona re-resolves every turn, so a stamped
+    # ``model`` would mask the persona in the telemetry display line.
     if model:
         meta["model"] = model
         meta["model_override"] = model
-        changed = True
-    elif config_model != "unknown" and meta.get("model") != config_model:
-        meta["model"] = config_model
         changed = True
     if changed:
         repository.save_meta(f"{latest_turn_path}/meta.yaml", meta)

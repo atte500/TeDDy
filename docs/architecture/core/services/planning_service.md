@@ -15,7 +15,8 @@ Implements the `IPlanningUseCase` inbound port. It gathers project context, reso
 - [`IGetContextUseCase`](../ports/inbound/get_context_use_case.md): Gathers the project context payload.
 - [`ILlmClient`](../ports/outbound/llm_client.md): Requests completions, token counts, and costs.
 - [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Writes `input.md` and `plan.md`.
-- [`IConfigService`](../ports/outbound/config_service.md): Resolves model and retry settings.
+- [`IConfigService`](../ports/outbound/config_service.md): Resolves the `agents` block, model, and retry settings.
+- [`resolve_agent_llm_overrides` and `resolve_effective_model`](../domain/config_schema.md): Resolve the persona overlay and the effective model by the pinned precedence.
 - [`IPromptManager`](/src/teddy_executor/core/ports/outbound/prompt_manager.py): Resolves the agent prompt and persists telemetry.
 - [`IUserInteractor`](../ports/outbound/user_interactor.md): Displays telemetry and retry notices.
 - [`ISessionManager`](../ports/outbound/session_manager.md): Resolves session and turn context manifests.
@@ -28,7 +29,9 @@ Implements the `IPlanningUseCase` inbound port. It gathers project context, reso
 - `recorded_cost_signal`: `generate_plan` persists `meta["cost_recorded"]=True` when the adapter marked the response (`_teddy_cost_recorded is True`), so a later turn shows the accumulated figure even for an unpriced model.
 - `display_gate`: `_display_telemetry` shows the accumulated cost when `context_window > 0 and (pricing_supported or cost_recorded)`. Keying on the explicit recorded-cost flag — never `cost > 0` — keeps a recorded free-model `0.0` visible as `$0.0000` while a genuinely unpriced model stays `$???`.
 - `primitive_serialization`: All metadata is cast to primitive types before serialization.
-- `preflight_once`: The local preflight check runs once per process via a class-level flag.
+- `preflight_every_turn`: The local preflight check runs on every turn, so a persona switched mid-session is always validated. There is deliberately no process-wide cache.
+- `effective_model_precedence`: The effective model resolves from `meta["model_override"]`, then the persona entry, then `llm.model`, through `resolve_effective_model`. The carried `meta["model"]` is display data only and never a resolution input.
+- `model_threaded_everywhere`: The single resolved model feeds the completion, the cost lookup, the budget check, telemetry, the token count, and the gathered context.
 - `budget_guard`: A request that strictly exceeds the model context window raises before the LLM call.
 - `interruptible_planning_phase`: The hydration, token-count, telemetry, budget, and completion calls run on a daemon worker, so the calling thread waits on a future that a quit can interrupt.
 
@@ -48,14 +51,14 @@ None declared directly — the service consumes the ports bundled in `PlanningPo
 
 ### `generate_plan(user_message, turn_dir, context_files=None) -> tuple[str, float, ProjectContext]`
 - **Preconditions:** `turn_dir` exists; the agent prompt file exists in the turn directory.
-- **Postconditions:** Writes `plan.md` and `input.md`, updates `meta.yaml` telemetry (including `cost_recorded` when the adapter marked the response), and returns the plan path, the turn cost, and the gathered `ProjectContext`. The gather receives a `session_root` derived once from `Path(turn_dir).parent` — the same expression supplies `cache_dir` — so the DTO carries the rendering session's root. The blocking network phase runs on the interruptible daemon worker, so the calling thread waits on a future instead of a raw socket read.
+- **Postconditions:** Resolves the persona overlay and the effective model once, threads that model into the token count, the context gathering, the completion, the cost lookup, the budget check, and telemetry, writes `plan.md` and `input.md`, updates `meta.yaml` telemetry (including `cost_recorded` when the adapter marked the response), and returns the plan path, the turn cost, and the gathered `ProjectContext`. The gather receives a `session_root` derived once from `Path(turn_dir).parent` — the same expression supplies `cache_dir` — so the DTO carries the rendering session's root. The blocking network phase runs on the interruptible daemon worker, so the calling thread waits on a future instead of a raw socket read.
 - **Exceptions:**
   - `ConfigurationError`: Configuration is invalid or request exceeds context window budget.
   - `FileNotFoundError`: System prompt file is missing in turn directory.
   - `KeyboardInterrupt`: User quits while the planning wait is pending.
 
-### `_run_planning_phase(messages, model, meta) -> tuple[Any, int, str, float]`
-- **Preconditions:** `messages` holds the assembled system and context messages; `model` is the resolved model; `meta` carries the turn telemetry.
+### `_run_planning_phase(messages, model, meta, llm_overrides=None) -> tuple[Any, int, str, float]`
+- **Preconditions:** `messages` holds the assembled system and context messages; `model` is the resolved effective model; `meta` carries the turn telemetry; `llm_overrides` is the persona overlay (empty or `None` for a project without an `agents` block).
 - **Postconditions:** Hydrates through `get_context_window`, counts tokens, displays telemetry, checks the context budget, and performs the generation with retry, all on a daemon worker. Returns the response, the token count, the plan content, and the turn cost.
 - **Exceptions:**
   - `ConfigurationError`: Assembled request token count exceeds the context window.
