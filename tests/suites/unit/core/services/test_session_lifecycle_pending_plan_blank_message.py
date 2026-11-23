@@ -38,7 +38,7 @@ from teddy_executor.core.services.session_lifecycle_manager import (
 )
 from teddy_executor.core.services.session_planner import SessionPlanner
 from teddy_executor.core.services.session_replanner import SessionReplanner
-from tests.harness.setup.mocking import register_mock
+from tests.harness.setup.mocking import path_exists_marker_absent, register_mock
 
 SESSION = "feature"
 TURN05 = ".teddy/sessions/feature/05"
@@ -72,9 +72,11 @@ def manager(container):
     system_environment.isatty.return_value = False
     time_service = register_mock(container, ITimeService)
     time_service.now_utc.return_value = datetime(2026, 11, 6, tzinfo=timezone.utc)
+    file_system_manager = register_mock(container, IFileSystemManager)
+    file_system_manager.path_exists.side_effect = path_exists_marker_absent()
     ports = SessionPorts(
         session_service=register_mock(container, ISessionManager),
-        file_system_manager=register_mock(container, IFileSystemManager),
+        file_system_manager=file_system_manager,
         report_formatter=register_mock(container, IMarkdownReportFormatter),
         user_interactor=register_mock(container, IUserInteractor),
         session_planner=register_mock(container, SessionPlanner),

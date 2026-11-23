@@ -56,7 +56,7 @@ from teddy_executor.core.services.session_lifecycle_manager import (
 )
 from teddy_executor.core.services.session_planner import SessionPlanner
 from teddy_executor.core.services.session_replanner import SessionReplanner
-from tests.harness.setup.mocking import register_mock
+from tests.harness.setup.mocking import path_exists_marker_absent, register_mock
 
 TURN03 = ".teddy/sessions/20261002_152331-follow-up/03"
 REPLY = "next instruction"
@@ -96,9 +96,11 @@ def _build_manager(container, plan: Plan) -> SessionLifecycleManager:
     time_service.now_utc.return_value = datetime(
         2026, 10, 2, 15, 23, 31, tzinfo=timezone.utc
     )
+    file_system_manager = register_mock(container, IFileSystemManager)
+    file_system_manager.path_exists.side_effect = path_exists_marker_absent()
     ports = SessionPorts(
         session_service=register_mock(container, ISessionManager),
-        file_system_manager=register_mock(container, IFileSystemManager),
+        file_system_manager=file_system_manager,
         report_formatter=register_mock(container, IMarkdownReportFormatter),
         user_interactor=register_mock(container, IUserInteractor),
         session_planner=register_mock(container, SessionPlanner),
@@ -127,7 +129,9 @@ def _arrange_pending_action_turn(manager) -> None:
 
 def _arrange_resumed_turn_report(manager, present: bool) -> None:
     """The structural replan's report either exists or does not after execute."""
-    manager._file_system_manager.path_exists.return_value = present
+    manager._file_system_manager.path_exists.side_effect = path_exists_marker_absent(
+        default=present
+    )
     manager._file_system_manager.read_file.return_value = VALIDATION_REPORT
     manager._session_service.to_root_relative.side_effect = lambda turn_dir, filename: (
         f"{Path(turn_dir).as_posix()}/{filename}"
