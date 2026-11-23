@@ -592,6 +592,12 @@ def test_resume_handler_calls_set_session_agent_when_agent_provided(monkeypatch)
         "teddy_executor.adapters.inbound.session_cli_handlers._resolve_session_name",
         lambda container, path=None: "test-session",
     )
+    # The startup daemon resolves IConfigService before spawning the thread;
+    # stub it so the ISessionManager mock is never asked for get_setting().
+    monkeypatch.setattr(
+        "teddy_executor.adapters.inbound.session_cli_handlers._start_background_update_check",
+        lambda *args, **kwargs: None,
+    )
     # The update-notification helper resolves IConfigService; stub it so the
     # session-manager mock (spec'd to ISessionManager) is never asked for
     # get_setting(), keeping this wiring test focused on set_session_agent.

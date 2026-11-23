@@ -29,7 +29,7 @@ def _stub_handler_collaborators(env, monkeypatch, record):
     env.mock_port(IUserInteractor)
     env.mock_port(IInitUseCase)
 
-    def record_background():
+    def record_background(*args, **kwargs):
         record.setdefault("background", []).append(None)
 
     def record_preamble(container, **kwargs):
@@ -85,7 +85,7 @@ def test_start_routes_startup_failure_through_shared_error_handler(env, monkeypa
     def boom(*args, **kwargs):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(handlers, "_start_background_update_check", lambda: [])
+    monkeypatch.setattr(handlers, "_start_background_update_check", lambda *a, **k: [])
     monkeypatch.setattr(handlers, "_run_startup_preamble", boom)
     monkeypatch.setattr(
         handlers,

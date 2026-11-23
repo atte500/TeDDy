@@ -400,12 +400,19 @@ def update(
         fetch_latest_version,
         compare_versions,
         is_prerelease,
-        PYPI_URL,
+        resolve_index_url,
     )
+
+    # The check resolves configuration read-only: it never anchors or
+    # initializes a project, so a missing `.teddy/config.yaml` falls back to
+    # the bundled defaults and the official endpoint.
+    container = get_container()
+    config_service = _resolve_config_or_exit(container)
+    index_url = resolve_index_url(config_service.get_setting("update.index_url"))
 
     # Dev pre-releases are published to PyPI (see .github/workflows/publish.yml),
     # so --experimental only widens the check to include prereleases.
-    latest = fetch_latest_version(PYPI_URL, stable_only=not experimental)
+    latest = fetch_latest_version(index_url, stable_only=not experimental)
 
     if latest is None:
         typer.echo("Could not check for updates: network error.")

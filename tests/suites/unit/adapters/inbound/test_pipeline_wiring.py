@@ -230,7 +230,9 @@ def test_handle_new_session_pipeline_empty_message_raises_exit(
 
     # Keep the background fetch, health checks, and pull out of the test so
     # the pre-fix path never spawns a subprocess.
-    monkeypatch.setattr(handlers, "_start_background_update_check", lambda: None)
+    monkeypatch.setattr(
+        handlers, "_start_background_update_check", lambda *a, **k: None
+    )
     monkeypatch.setattr(handlers, "_run_health_checks", lambda *a, **k: None)
     monkeypatch.setattr(handlers, "_pull_workspace_on_start", lambda *a, **k: None)
 

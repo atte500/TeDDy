@@ -77,7 +77,7 @@ And the existing upgrade hint naming `teddy-cli` is printed
 
 ## Deliverables
 - [x] **Interface** — Declare the key: a frozen `UpdateConfig(index_url: str = "")` dataclass, its `_FieldSpec` row, the `AppConfig.update` field, and the `construct_app_config` group argument; a commented `update:` group in the bundled `config.yaml`. Add `resolve_index_url(configured: Optional[str]) -> str` to `update_checker` (strip whitespace; `None` or empty → `PYPI_URL`).
-- [ ] **Wiring** — Acceptance tracer bullet: with a config carrying `update.index_url`, `teddy update` queries that endpoint (assert the URL reaching `fetch_latest_version`), and `_start_background_update_check(container)` passes the same resolved URL into the daemon thread. The default configuration keeps reaching `PYPI_URL` at both sites.
+- [x] **Wiring** — Acceptance tracer bullet: with a config carrying `update.index_url`, `teddy update` queries that endpoint (assert the URL reaching `fetch_latest_version`), and `_start_background_update_check(container)` passes the same resolved URL into the daemon thread. The default configuration keeps reaching `PYPI_URL` at both sites.
 - [ ] **Migration** — Update the tests whose assumptions shift: `test_experimental_wiring.py` gets an explicit empty `update.index_url` so its literal-URL assertion no longer depends on the developer's `.teddy/config.yaml`; `test_session_cli_handlers.py` adjusts its daemon-thread argument assertions to the new helper signature.
 - [ ] **Cleanup** — Documentation lockstep: add the `update.index_url` row to `config_service.md`, document source resolution in `update_checker.md`, and add a README section covering the three install shapes (git URL, private index, static `version.json`), the `teddy-cli` distribution-name requirement, and the fact that `teddy update` compares against the configured source while `checks.update: false` silences only the startup notice.
 
@@ -96,6 +96,15 @@ And the existing upgrade hint naming `teddy-cli` is printed
 - Red, schema: five failures — three `AttributeError: 'AppConfig' object has no attribute 'update'` and two `DID NOT RAISE ConfigurationError`, with all 38 pre-existing schema tests still passing.
 - Red, resolver: four failures, each `ImportError: cannot import name 'resolve_index_url'`.
 - Green: the three touched unit suites reported `75 passed`; the full unfiltered suite reported `2321 passed, 5 skipped`.
+
+**Wiring (delivered).**
+- `tests/suites/acceptance/test_update_source_wiring.py` drives both entry points through an explicitly injected container: `IConfigService` is a `YamlConfigAdapter` rooted at a `tmp_path` workspace, so neither case reads the developer's live `.teddy/config.yaml`. Three cases cover the tracer bullet — a configured source reaches `fetch_latest_version` from `teddy update`, an absent config keeps `PYPI_URL`, and `_start_background_update_check(container)` spawns the daemon with the cache path first and the resolved URL second.
+- `__main__.update` resolves the registered adapter read-only and never calls `_ensure_project_initialized`, so a check cannot scaffold `.teddy/`. An absent or empty config falls back through the schema default to the bundled defaults and thus `PYPI_URL`.
+- `_start_background_update_check(container)` resolves `IConfigService` and `resolve_index_url` before the thread spawns, so the daemon never touches the container and the URL is fixed at session start.
+- Red evidence: the two new cases failed for the intended reasons — `calls == [PYPI_URL]` instead of the configured URL, and `TypeError: _start_background_update_check() takes 0 positional arguments but 1 was given` — while the default-source case passed.
+- The helper's new `container` parameter broke pre-existing doubles: one test whose container is spec'd to `ISessionManager` reached `config_service.get_setting` on that mock, and six tests stubbed the helper with zero-argument lambdas. Repairs stub the helper in the former and widen the doubles to `lambda *args, **kwargs` in the latter, leaving every assertion's intent intact.
+- Green: the targeted run reported `42 passed`; the full unfiltered suite reported `2324 passed, 5 skipped`.
+- Carried into Migration: the two daemon-thread tracking tests in `test_session_cli_handlers.py` resolve a bare `Mock()` for `IConfigService`, so pinning the second thread argument as `PYPI_URL` requires their mock's `get_setting("update.index_url")` to return `None` or `""`. Left unpinned here rather than asserted against a stringified mock.
 
 ## Verification
 1. **Custom source in `teddy update`:**

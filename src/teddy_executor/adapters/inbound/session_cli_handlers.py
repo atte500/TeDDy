@@ -35,6 +35,7 @@ from teddy_executor.core.services.update_checker import (
     get_current_version,
     is_prerelease,
     read_update_cache,
+    resolve_index_url,
 )
 
 
@@ -406,17 +407,21 @@ def _update_cache_path() -> Path:
     return find_project_root() / ".teddy" / ".update_cache.json"
 
 
-def _start_background_update_check() -> None:
+def _start_background_update_check(container: Container) -> None:
     """Start the daemon version fetch that fills the cache for the next run.
 
-    The fetch never blocks startup and never prints. The startup preamble emits
-    the notice from the cache this fetch leaves behind.
+    The fetch never blocks startup and never prints. The configured source
+    resolves before the thread spawns, so the daemon never touches the
+    container. The startup preamble emits the notice from the cache this fetch
+    leaves behind.
     """
     import threading
 
+    config_service = container.resolve(IConfigService)
+    index_url = resolve_index_url(config_service.get_setting("update.index_url"))
     thread = threading.Thread(
         target=background_check,
-        args=(_update_cache_path(),),
+        args=(_update_cache_path(), index_url),
         daemon=True,
     )
     thread.start()
@@ -823,7 +828,7 @@ def handle_new_session(  # noqa: PLR0913
     max_cost: Optional[float] = None,
 ):
     """Logic for the 'start' command."""
-    _start_background_update_check()
+    _start_background_update_check(container)
 
     try:
         # 0. An empty or whitespace-only -m means the flag was omitted: the
@@ -1529,7 +1534,7 @@ def handle_resume_session(  # noqa: PLR0913
     max_cost: Optional[float] = None,
 ):
     """Logic for the 'resume' command."""
-    _start_background_update_check()
+    _start_background_update_check(container)
 
     try:
         # 1. Shared startup preamble (preflight only; workspace repairs are start-only)

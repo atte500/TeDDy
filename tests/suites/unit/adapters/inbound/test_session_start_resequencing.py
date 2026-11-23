@@ -225,7 +225,7 @@ def test_handle_new_session_prompts_when_message_is_blank(blank_message, monkeyp
     # Keep the background fetch and health checks out of the test.
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._start_background_update_check",
-        lambda: None,
+        lambda *args, **kwargs: None,
     )
     monkeypatch.setattr(
         "teddy_executor.adapters.inbound.session_cli_handlers._run_health_checks",
