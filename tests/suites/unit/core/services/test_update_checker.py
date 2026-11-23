@@ -347,3 +347,39 @@ class TestBackgroundCheck:
 
         cache_path = temp_cache_dir / ".update_cache.json"
         background_check(cache_path)
+
+
+class TestResolveIndexUrl:
+    """Tests for the resolve_index_url pure function."""
+
+    def test_none_resolves_to_the_official_endpoint(self):
+        from teddy_executor.core.services.update_checker import (
+            PYPI_URL,
+            resolve_index_url,
+        )
+
+        assert resolve_index_url(None) == PYPI_URL
+
+    def test_empty_resolves_to_the_official_endpoint(self):
+        from teddy_executor.core.services.update_checker import (
+            PYPI_URL,
+            resolve_index_url,
+        )
+
+        assert resolve_index_url("") == PYPI_URL
+
+    def test_whitespace_only_resolves_to_the_official_endpoint(self):
+        from teddy_executor.core.services.update_checker import (
+            PYPI_URL,
+            resolve_index_url,
+        )
+
+        assert resolve_index_url("   \t ") == PYPI_URL
+
+    def test_configured_value_is_stripped_and_kept(self):
+        from teddy_executor.core.services.update_checker import resolve_index_url
+
+        assert (
+            resolve_index_url("  https://example.test/pypi/teddy-cli/json  ")
+            == "https://example.test/pypi/teddy-cli/json"
+        )

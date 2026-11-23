@@ -1,5 +1,5 @@
 # Slice: Configurable Update Source
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** None
 - **Specs:** None
@@ -66,7 +66,7 @@ And the existing upgrade hint naming `teddy-cli` is printed
 - **No project root**: If `teddy update` runs where neither the CWD nor an ancestor holds a `.teddy` directory, then no user config is merged and the official source is used.
 
 ## Key Unknowns
-- [ ] [Technical] Git-install upgrade semantics: it is unverified whether `uv tool upgrade teddy-cli` advances a tool installed from `git+https://...`. Design Sensitivity: README wording only — instruct a reinstall from the git URL instead of asserting `uv tool upgrade` covers that case. No code, contract, or test impact.
+- [x] [Technical] Git-install upgrade semantics: resolved as README wording only. The official uv tools documentation states that tool upgrades "will retain the settings provided when installing the tool" and "will respect the version constraints provided when installing the tool", and the `uv tool upgrade` CLI reference repeats it for install-time settings. Neither page names a git URL, so the git case is covered by the general rule but not spelled out. The README therefore instructs a reinstall from the git URL instead of asserting `uv tool upgrade` advances a git install. No code, contract, or test impact.
 
 ## Impact
 1. `[EXTEND]` `config_schema.UpdateConfig` / `AppConfig.update` / `_SCHEMA_FIELDS` — a new declared key `update.index_url` defaulting to `""`; existing keys and consumers untouched.
@@ -76,13 +76,26 @@ And the existing upgrade hint naming `teddy-cli` is printed
 5. `[PRUNE]` The literal `PYPI_URL` argument in the `teddy update` call and the argument-less `background_check(cache_path)` call — removed once both entry points resolve the source.
 
 ## Deliverables
-- [ ] **Interface** — Declare the key: a frozen `UpdateConfig(index_url: str = "")` dataclass, its `_FieldSpec` row, the `AppConfig.update` field, and the `construct_app_config` group argument; a commented `update:` group in the bundled `config.yaml`. Add `resolve_index_url(configured: Optional[str]) -> str` to `update_checker` (strip whitespace; `None` or empty → `PYPI_URL`).
+- [x] **Interface** — Declare the key: a frozen `UpdateConfig(index_url: str = "")` dataclass, its `_FieldSpec` row, the `AppConfig.update` field, and the `construct_app_config` group argument; a commented `update:` group in the bundled `config.yaml`. Add `resolve_index_url(configured: Optional[str]) -> str` to `update_checker` (strip whitespace; `None` or empty → `PYPI_URL`).
 - [ ] **Wiring** — Acceptance tracer bullet: with a config carrying `update.index_url`, `teddy update` queries that endpoint (assert the URL reaching `fetch_latest_version`), and `_start_background_update_check(container)` passes the same resolved URL into the daemon thread. The default configuration keeps reaching `PYPI_URL` at both sites.
 - [ ] **Migration** — Update the tests whose assumptions shift: `test_experimental_wiring.py` gets an explicit empty `update.index_url` so its literal-URL assertion no longer depends on the developer's `.teddy/config.yaml`; `test_session_cli_handlers.py` adjusts its daemon-thread argument assertions to the new helper signature.
 - [ ] **Cleanup** — Documentation lockstep: add the `update.index_url` row to `config_service.md`, document source resolution in `update_checker.md`, and add a README section covering the three install shapes (git URL, private index, static `version.json`), the `teddy-cli` distribution-name requirement, and the fact that `teddy update` compares against the configured source while `checks.update: false` silences only the startup notice.
 
 ## Implementation Notes
-None yet.
+
+**Interface (delivered).**
+- `update.index_url` is a declared key with default `""`: `UpdateConfig(index_url: str = "")`, `_FieldSpec("update.index_url", "update", "index_url", str)`, `AppConfig.update`, and the `construct_app_config` group argument. Because construction already treats `""` as "unset", an absent or empty value resolves the schema default and no second fallback appeared inside the schema.
+- The `update.index_url` row in `config_service.md` shipped in this same commit: the parity test derives documented keys from the single `- **Configuration keys:**` bullet and drops tokens containing `*`, so a schema-only change would have left a documented-but-undeclared key unreachable and a docs-only change would have failed the same assertion in the opposite direction.
+- `resolve_index_url(configured)` owns the `PYPI_URL` fallback exactly once: `None`, `""`, and whitespace-only all resolve the official endpoint, and any other value is stripped. The `None` branch keeps the helper total for a config service that returns no value at all.
+- Non-string rejection needed no new code: `_coerce_str` raises `ConfigurationError` naming `update.index_url`, which the bundled `config.yaml` comment now documents alongside the key.
+- The bundled `config.yaml` carries the group commented out. A live block would leave the resolved default identical, but the comment documents the knob without inviting an accidental edit, and the bundled-config toggle test only inspects the `checks` mapping so the block is inert either way.
+- The resolver tests import inside each test body, matching `test_update_checker.py`'s existing style for every public function.
+- Logger hoist: one module-level `logger` replaced three function-local `logging` imports, and `background_check` no longer shadows the module-level name.
+
+**Red / Green evidence.**
+- Red, schema: five failures — three `AttributeError: 'AppConfig' object has no attribute 'update'` and two `DID NOT RAISE ConfigurationError`, with all 38 pre-existing schema tests still passing.
+- Red, resolver: four failures, each `ImportError: cannot import name 'resolve_index_url'`.
+- Green: the three touched unit suites reported `75 passed`; the full unfiltered suite reported `2321 passed, 5 skipped`.
 
 ## Verification
 1. **Custom source in `teddy update`:**

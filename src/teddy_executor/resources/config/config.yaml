@@ -32,6 +32,9 @@ checks:
   templates: true                   # Warn when local docs/templates/ differ from bundled defaults.
   update: true                      # Warn when a newer TeDDy release is available on PyPI.
 
+# update:
+#   index_url: ""                   # Override the PyPI JSON endpoint for the update check (a fork's index or a static version.json); empty uses official PyPI.
+
 yolo_default: false                 # When true, skips the plan review by default; overridden per-command by -n / --no-yolo.
 
 guardrails:                         # Limits for yolo runs (--yolo) and pipeline runs. Counters reset on 'teddy resume' and on message turns if message_reset: true.

@@ -191,6 +191,37 @@ def test_single_capacity_is_accepted(group, key):
     assert getattr(getattr(config, group), key) == 1
 
 
+# --- Update source ---
+
+
+def test_default_update_source_is_empty():
+    """The schema default leaves the update source unset, meaning official PyPI."""
+    assert DEFAULT_APP_CONFIG.update.index_url == ""
+
+
+def test_nested_update_source_overrides_the_default():
+    """A nested override replaces the update source."""
+    config = construct_app_config(
+        {"update": {"index_url": "https://example.test/pypi/teddy-cli/json"}}
+    )
+
+    assert config.update.index_url == "https://example.test/pypi/teddy-cli/json"
+
+
+def test_empty_update_source_falls_back_to_the_default():
+    """An empty value resolves the schema default, matching every other key."""
+    config = construct_app_config({"update": {"index_url": ""}})
+
+    assert config.update.index_url == ""
+
+
+@pytest.mark.parametrize("value", [42, ["https://example.test/pypi/json"]])
+def test_non_string_update_source_raises_naming_the_key(value):
+    """A number or list stops construction, naming the update key."""
+    with pytest.raises(ConfigurationError, match="update\\.index_url"):
+        construct_app_config({"update": {"index_url": value}})
+
+
 # --- Documentation / schema drift closure ---
 
 _DOC_PATH = (

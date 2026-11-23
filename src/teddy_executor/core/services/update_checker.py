@@ -8,6 +8,7 @@ functions use stdlib only (plus the
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
@@ -15,6 +16,8 @@ from packaging.version import Version
 
 if TYPE_CHECKING:
     import ssl
+
+logger = logging.getLogger(__name__)
 
 # --- Constants ---
 
@@ -52,6 +55,18 @@ def _create_ssl_context() -> ssl.SSLContext:
 
 
 # --- Public API ---
+
+
+def resolve_index_url(configured: Optional[str]) -> str:
+    """Resolve the configured update source, falling back to the official endpoint.
+
+    ``None``, an empty string, or a whitespace-only value means "unset", so the
+    official ``PYPI_URL`` is returned. Any other value is stripped of
+    surrounding whitespace, because a stray space would otherwise make
+    ``urllib`` fail with no visible cause.
+    """
+    stripped = (configured or "").strip()
+    return stripped or PYPI_URL
 
 
 def get_current_version() -> str:
@@ -118,9 +133,6 @@ def fetch_latest_version(
             highest = max(valid_versions)
             return str(highest)
     except (urllib.error.URLError, OSError, json.JSONDecodeError, KeyError) as e:
-        import logging
-
-        logger = logging.getLogger(__name__)
         logger.debug("fetch_latest_version failed: %s", e)
         return None
 
@@ -196,9 +208,6 @@ def write_update_cache(cache_path: Path, latest_version: str) -> None:
         )
         tmp_path.rename(cache_path)
     except OSError as e:
-        import logging
-
-        logger = logging.getLogger(__name__)
         logger.debug("Failed to write update cache: %s", e)
         if tmp_path.exists():
             tmp_path.unlink()
@@ -211,12 +220,9 @@ def background_check(cache_path: Path, index_url: str = PYPI_URL) -> None:
     and writes it to cache. Every error is swallowed and logged at debug
     level, so a late cache write can never fail the owning process.
     """
-    import logging
-
     try:
         latest = fetch_latest_version(index_url)
         if latest is not None:
             write_update_cache(cache_path, latest)
     except Exception as e:
-        logger = logging.getLogger(__name__)
         logger.debug("background_check failed: %s", e)

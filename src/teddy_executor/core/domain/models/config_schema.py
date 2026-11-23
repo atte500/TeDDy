@@ -66,6 +66,11 @@ class ChecksConfig:
 
 
 @dataclass(frozen=True)
+class UpdateConfig:
+    index_url: str = ""
+
+
+@dataclass(frozen=True)
 class AutoPruningConfig:
     enabled: bool = True
     turn_context_threshold: int = 50000
@@ -93,6 +98,7 @@ class AppConfig:
     context: ContextConfig = field(default_factory=ContextConfig)
     research: ResearchConfig = field(default_factory=ResearchConfig)
     checks: ChecksConfig = field(default_factory=ChecksConfig)
+    update: UpdateConfig = field(default_factory=UpdateConfig)
     auto_pruning: AutoPruningConfig = field(default_factory=AutoPruningConfig)
     guardrails: GuardrailsConfig = field(default_factory=GuardrailsConfig)
     editor: str = ""
@@ -224,6 +230,7 @@ _SCHEMA_FIELDS: tuple[_FieldSpec, ...] = (
     _FieldSpec("checks.prompts", "checks", "prompts", bool),
     _FieldSpec("checks.templates", "checks", "templates", bool),
     _FieldSpec("checks.update", "checks", "update", bool),
+    _FieldSpec("update.index_url", "update", "index_url", str),
     _FieldSpec("auto_pruning.enabled", "auto_pruning", "enabled", bool),
     _FieldSpec(
         "auto_pruning.turn_context_threshold",
@@ -360,6 +367,7 @@ def construct_app_config(merged: Mapping[str, Any]) -> AppConfig:
         context=ContextConfig(**group_overrides.get("context", {})),
         research=ResearchConfig(**group_overrides.get("research", {})),
         checks=ChecksConfig(**group_overrides.get("checks", {})),
+        update=UpdateConfig(**group_overrides.get("update", {})),
         auto_pruning=AutoPruningConfig(**group_overrides.get("auto_pruning", {})),
         guardrails=GuardrailsConfig(**group_overrides.get("guardrails", {})),
         **top_level_overrides,
