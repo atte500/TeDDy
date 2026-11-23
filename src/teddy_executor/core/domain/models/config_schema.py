@@ -309,6 +309,22 @@ def resolve_agent_llm_overrides(agents_block: Any, persona: str) -> dict[str, An
     return overlay
 
 
+def resolve_effective_model(
+    override: Any, persona_model: Any, global_model: Any
+) -> str:
+    """Resolve the effective model by the slice precedence.
+
+    The explicit ``--model`` flag override wins, then the persona entry, then the
+    global ``llm.model``. A blank or non-string candidate is skipped so an empty
+    identifier never propagates to the provider. When every candidate is blank
+    the resolver returns an empty string.
+    """
+    for candidate in (override, persona_model, global_model):
+        if isinstance(candidate, str) and candidate.strip():
+            return candidate
+    return ""
+
+
 def _validate_agents_block(merged: Mapping[str, Any]) -> None:
     """Reject an unusable ``agents`` block at load time.
 

@@ -171,3 +171,49 @@ class TestResumeMetadataUpdate:
             repo.save_meta.assert_not_called()
         finally:
             handlers._orchestrate_session_loop = original_loop
+
+    def test_resume_with_model_override_records_model_override(self):
+        """A resume --model records model_override as the resolution input."""
+        from teddy_executor.adapters.inbound.session_cli_handlers import (
+            handle_resume_session,
+        )
+
+        container = self._create_mock_container()
+        mocks = container._mocks
+        repo: MagicMock = mocks["repo"]
+        repo.load_meta.return_value = {
+            "model": "old-model",
+            "agent_name": "developer",
+            "cumulative_cost": 0.05,
+        }
+        mocks[
+            "session_manager"
+        ].get_latest_turn.return_value = (
+            ".teddy/sessions/20250101_120000-test-session/01"
+        )
+        mocks[
+            "session_manager"
+        ].resolve_session_from_path.return_value = "20250101_120000-test-session"
+
+        from teddy_executor.adapters.inbound import session_cli_handlers as handlers
+
+        original_loop = handlers._orchestrate_session_loop
+        handlers._orchestrate_session_loop = MagicMock()
+
+        try:
+            handle_resume_session(
+                container=container,
+                path="test-session",
+                require_approval=False,
+                no_copy=True,
+                model="new-model",
+            )
+
+            call_args = repo.save_meta.call_args
+            saved_data = call_args[0][1] if len(call_args[0]) > 1 else call_args[1]
+            assert saved_data.get("model_override") == "new-model", (
+                f"Expected model_override 'new-model' but got "
+                f"{saved_data.get('model_override')}"
+            )
+        finally:
+            handlers._orchestrate_session_loop = original_loop

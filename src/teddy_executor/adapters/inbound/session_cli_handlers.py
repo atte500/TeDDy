@@ -16,6 +16,7 @@ from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.domain.models.config_schema import (
     resolve_agent_llm_overrides,
+    resolve_effective_model,
 )
 from teddy_executor.core.domain.models.session import SessionOptions
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
@@ -911,17 +912,19 @@ def _echo_config_success(
                ``agents.<persona>.model`` wins over ``llm.model``.
     """
     config_service = container.resolve(IConfigService)
-    if model:
-        resolved_model = model
-    else:
-        resolved_model = config_service.get_setting("llm.model", "unknown")
-        if agent:
-            # Report the same effective model the planner resolves, so the
-            # persona's configured model is visible before the first turn.
-            overlay = resolve_agent_llm_overrides(
-                config_service.get_setting("agents", {}), agent
-            )
-            resolved_model = overlay.get("model") or resolved_model
+    persona_model = None
+    if agent:
+        # Report the same effective model the planner resolves, so the
+        # persona's configured model is visible before the first turn.
+        overlay = resolve_agent_llm_overrides(
+            config_service.get_setting("agents", {}), agent
+        )
+        persona_model = overlay.get("model")
+    # One resolver owns the flag > persona > llm.model order for the banner too,
+    # so the display can never drift from the model the planner uses.
+    resolved_model = resolve_effective_model(
+        model, persona_model, config_service.get_setting("llm.model", "unknown")
+    )
     identity_lines: list[str] = []
     if agent:
         identity_lines.append(f"Agent: {canonical_agent_name(agent)}")
@@ -1519,6 +1522,7 @@ def _sync_and_display_session_meta(
     config_model = config_service.get_setting("llm.model", "unknown")
     if model:
         meta["model"] = model
+        meta["model_override"] = model
         changed = True
     elif config_model != "unknown" and meta.get("model") != config_model:
         meta["model"] = config_model

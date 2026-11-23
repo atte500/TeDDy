@@ -1,7 +1,10 @@
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 from teddy_executor.core.domain.models import ProjectContext
-from teddy_executor.core.domain.models.config_schema import resolve_agent_llm_overrides
+from teddy_executor.core.domain.models.config_schema import (
+    resolve_agent_llm_overrides,
+    resolve_effective_model,
+)
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.utils.interruptible_call import run_interruptible
 
@@ -68,13 +71,14 @@ class PlanningService(IPlanningUseCase):
             self._config_service.get_setting("agents", {}), agent_name
         )
 
-        # Compute system prompt token count BEFORE context construction so the
-        # ProjectContext DTO is born with correct data (no post-hoc patching needed).
-        model = str(
-            meta.get("model")
-            or llm_overrides.get("model")
-            or self._config_service.get_setting("llm.model")
-            or ""
+        # The explicit ``--model`` flag (carried as ``model_override``) wins,
+        # then the persona entry, then the global default. The carried ``model``
+        # key is display data only and never a resolution input, so a persona
+        # switched on resume re-resolves every turn.
+        model = resolve_effective_model(
+            meta.get("model_override"),
+            llm_overrides.get("model"),
+            self._config_service.get_setting("llm.model"),
         )
         try:
             system_token_count = self._llm_client.get_text_token_count(
@@ -156,7 +160,7 @@ class PlanningService(IPlanningUseCase):
         )
 
         if self._user_interactor:
-            self._display_telemetry(meta, token_count)
+            self._display_telemetry(meta, token_count, model)
 
         self._check_context_budget(token_count, model)
 
@@ -235,11 +239,23 @@ class PlanningService(IPlanningUseCase):
             return getattr(response.choices[0].message, "content", "") or ""
         return ""
 
-    def _display_telemetry(self, meta: Dict[str, Any], token_count: int) -> None:
-        """Displays real-time telemetry about the upcoming LLM call."""
+    def _display_telemetry(
+        self,
+        meta: Dict[str, Any],
+        token_count: int,
+        effective_model: Optional[str] = None,
+    ) -> None:
+        """Displays real-time telemetry about the upcoming LLM call.
+
+        The served ``actual_model`` wins for an already-answered turn, then the
+        carried ``model`` (display data), then the freshly resolved effective
+        model. The ordering keeps a fresh turn's banner on the effective model
+        without disturbing an existing display value.
+        """
         model = str(
             meta.get("actual_model")
             or meta.get("model")
+            or effective_model
             or self._config_service.get_setting("llm.model")
             or "unknown"
         )

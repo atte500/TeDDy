@@ -145,3 +145,46 @@ def test_next_turn_meta_keeps_overrides_and_drops_the_api_key(
     assert persisted["provider"] == "openrouter"
     assert persisted["parent_turn_id"] == "01"
     assert "api_key" not in persisted
+
+
+# --- model_override metadata separation (Core deliverable) ---
+
+
+def test_initialize_meta_records_model_override_for_explicit_flag(service):
+    """A ``--model`` flag seeds ``model_override`` as the resolution input."""
+    from teddy_executor.core.domain.models.session import SessionOptions
+
+    meta = service._initialize_meta_data(
+        SessionOptions(name="s", agent_name="developer", model="flag/model")
+    )
+
+    assert meta["model_override"] == "flag/model"
+
+
+def test_initialize_meta_omits_model_override_without_flag(service):
+    """A session without an explicit flag carries no ``model_override``."""
+    from teddy_executor.core.domain.models.session import SessionOptions
+
+    meta = service._initialize_meta_data(
+        SessionOptions(name="s", agent_name="developer")
+    )
+
+    assert "model_override" not in meta
+
+
+def test_next_turn_meta_carries_model_override(service, turn_repository):
+    """The explicit override is carried so every turn of the session uses it."""
+    current_meta = {
+        "turn_id": "01",
+        "agent_name": "developer",
+        "cumulative_cost": 0.0,
+        "model": "persona/model",
+        "model_override": "flag/model",
+        "actual_model": "served-model",
+    }
+
+    service._persist_next_meta(TURN_DIR, "02", current_meta, 0.0)
+
+    persisted = turn_repository.load_meta(TURN_DIR)
+    assert persisted["model_override"] == "flag/model"
+    assert persisted["model"] == "persona/model"

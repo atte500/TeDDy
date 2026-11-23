@@ -137,6 +137,9 @@ class SessionService(ISessionManager):
         }
         if options.model:
             meta_data["model"] = options.model
+            # The explicit flag is the only resolution input; ``model`` records
+            # the per-turn effective value for display.
+            meta_data["model_override"] = options.model
         return meta_data
 
     def _resolve_agent_prompt(self, agent_name: str) -> tuple[str, str]:
@@ -484,7 +487,7 @@ class SessionService(ISessionManager):
         }
 
         # Carry over LLM overrides and actual_model for display continuity
-        for key in ["model", "actual_model", "provider"]:
+        for key in ["model", "model_override", "actual_model", "provider"]:
             if key in current_meta:
                 meta[key] = current_meta[key]
 
