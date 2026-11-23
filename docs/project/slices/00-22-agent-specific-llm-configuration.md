@@ -1,5 +1,5 @@
 # Slice: Agent-Specific LLM Configuration
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** None (ad-hoc slice)
 - **Depends On:** None
 - **Specs:** None (ad-hoc slice)
