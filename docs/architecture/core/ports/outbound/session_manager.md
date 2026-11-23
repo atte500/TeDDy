@@ -26,6 +26,7 @@ None — this is an outbound (driven) port.
 
 ## Data Contracts
 - **`SessionState`** (str Enum): `EMPTY`, `PENDING_PLAN`, `COMPLETE_TURN`.
+- **`EXECUTION_STARTED_MARKER`** (str constant, `"execution.started"`): The turn-scoped filename written into a session turn directory when execution begins; the resume gate reads it to tell a mid-execution kill from a never-dispatched turn.
 
 ## Operations
 

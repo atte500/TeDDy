@@ -1,6 +1,7 @@
 import logging
 from contextlib import ExitStack
 from datetime import datetime
+from pathlib import Path
 
 from typing import Any, Optional
 
@@ -14,6 +15,7 @@ from teddy_executor.core.domain.models import (
 )
 from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+from teddy_executor.core.ports.outbound.session_manager import EXECUTION_STARTED_MARKER
 from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
 from teddy_executor.core.utils.interrupt_guard import INTERRUPT_REASON
 
@@ -285,6 +287,21 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             report, run_summary=replace(report.run_summary, status=RunStatus.ABORTED)
         )
 
+    def _write_execution_started_marker(
+        self, plan: Plan, plan_path: Optional[str]
+    ) -> None:
+        """Records durably that this session turn began executing.
+
+        Written after pre-flight validation and plan review but before the first
+        dispatch, so a turn killed mid-execution is distinguishable from a
+        never-dispatched one. Only session turns are marked: a stateless run
+        leaves no turn directory to recover.
+        """
+        marker_source = plan.plan_path or plan_path
+        assert marker_source, "A session plan must carry a plan path."
+        marker_path = (Path(marker_source).parent / EXECUTION_STARTED_MARKER).as_posix()
+        self._file_system_manager.write_file(marker_path, "")
+
     def execute(  # noqa: PLR0913
         self,
         plan: Optional[Plan] = None,
@@ -318,6 +335,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             )
             if reviewed_plan is None:
                 return self._handle_aborted_execution(plan, start_time, message)
+
+            if reviewed_plan.is_session:
+                self._write_execution_started_marker(reviewed_plan, plan_path)
 
             action_logs = self._process_plan_actions(
                 reviewed_plan, require_approval, pipeline

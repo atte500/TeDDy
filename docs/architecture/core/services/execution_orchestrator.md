@@ -26,6 +26,7 @@ Implements the `IRunPlanUseCase` inbound port. It runs a parsed `Plan` atomicall
 - `halt_on_failure`: A `FAILURE` action without `allow_failure` halts the remaining actions.
 - `communication_turn_bypass`: A communication turn bypasses the reviewer and step-by-step confirmation.
 - `interrupt_drain`: When the interrupt guard is set, every remaining action is skipped with the interrupt reason and the loop exits normally.
+- `session_marker`: A session turn writes an empty `execution.started` marker into its turn directory after validation and review succeed and immediately before the first dispatch; a stateless run and an aborted review write none.
 - `temp_plan_cleanup`: A generated temporary plan file is removed in a `finally` block.
 
 ## Inbound Ports
@@ -44,7 +45,7 @@ None declared directly — the service consumes the concrete services and ports 
 
 ### `execute(plan=None, plan_content=None, plan_path=None, require_approval=True, message=None, project_context=None, pipeline=False) -> ExecutionReport`
 - **Preconditions:** Exactly one of `plan`, `plan_content`, or `plan_path` supplies the plan.
-- **Postconditions:** Returns the assembled `ExecutionReport`. The method resolves the plan, validates it, performs the batch plan review, dispatches the actions, and assembles the report. A user abort returns an `ABORTED` report.
+- **Postconditions:** Returns the assembled `ExecutionReport`. The method resolves the plan, validates it, performs the batch plan review, then — for a session plan — writes an empty `execution.started` marker into the turn directory immediately before the first dispatch, dispatches the actions, and assembles the report. A user abort returns an `ABORTED` report and writes no marker, and a plan that fails pre-flight validation raises before any marker write.
 - **Exceptions:**
   - `InvalidPlanError`: Plan pre-flight validation fails.
   - `ValueError`: No plan source (`plan`, `plan_content`, or `plan_path`) provided.
