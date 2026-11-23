@@ -1,7 +1,7 @@
 # Bug: Trouble Resuming Session Without Explicit Guidance After Container Kill
 - **Status:** Resolved
 - **Milestone:** TBD
-- **Vertical Slice:** TBD
+- **Vertical Slice:** [00-22-execution-started-marker.md](/docs/project/slices/00-22-execution-started-marker.md), [00-23-pending-plan-path-pins.md](/docs/project/slices/00-23-pending-plan-path-pins.md), [00-24-interrupted-turn-recovery.md](/docs/project/slices/00-24-interrupted-turn-recovery.md)
 - **Specs:** None
 
 ## Symptoms
