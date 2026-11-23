@@ -43,6 +43,7 @@ class ProjectContext:
         agent_name: Name of the active agent.
         system_prompt_tokens: Token count of the system prompt.
         total_window: Total context window for the model.
+        session_root: Optional root of the session the context was assembled for.
     """
 
     header: str
@@ -54,3 +55,4 @@ class ProjectContext:
     system_prompt_tokens: int = 0
     content_tokens: int = 0
     total_window: int = 0
+    session_root: Optional[str] = None

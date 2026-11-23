@@ -1,5 +1,5 @@
 # Slice: Session-Root-Gated Context Partition
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** N/A (ad-hoc fix for [Bug 82](../debugging/82-session-scope-read-other-session.md))
 - **Depends On:** None
 - **Specs:** None pinned
@@ -82,12 +82,21 @@ None open. Every question the case file raised is resolved and re-verified again
 `is_session_file_path` is deliberately kept coarse and public: it remains the "under a `sessions/` segment" test that the gate layers on.
 
 ## Deliverables
-- [ ] **Interface** - `is_own_session_path` plus the optional `session_root` parameters in `core/utils/markdown.py`; `session_root` on `IGetContextUseCase.get_context` and on `ProjectContext`. Unit tests pin the predicate: own path, foreign path, workspace path with a `sessions/` segment, `None` root legacy behavior, form mismatch, trailing separator, continuation-name collision, and an absolute path whose earlier directory is also named `sessions`.
+- [x] **Interface** - `is_own_session_path` plus the optional `session_root` parameters in `core/utils/markdown.py`; `session_root` on `IGetContextUseCase.get_context` and on `ProjectContext`. Unit tests pin the predicate: own path, foreign path, workspace path with a `sessions/` segment, `None` root legacy behavior, form mismatch, trailing separator, continuation-name collision, and an absolute path whose earlier directory is also named `sessions`.
 - [ ] **Core** - `ContextService.get_context` threads `session_root` into `_format_content`, partitions on `is_own_session_path`, and carries the root on the DTO. Regression unit test in `tests/suites/unit/core/services/test_context_service.py` supplies an own-history path and a foreign-session path together with a root and asserts own history stays under `## Session History` while the foreign path renders under `## Resource Contents`.
 - [ ] **Migration** - the three production call sites pass their root (and the CLI passes `None` outside a session); the TUI helpers consume `project_context.session_root` for the exclusion, History grouping, labels, and token split; extend the MRE with a mode that passes the session root to the loaded module so it doubles as a post-fix check; update caller tests additively.
 - [ ] **Refactor** - consolidate the path normalization and session-segment extraction shared by the four predicates into one private helper in `core/utils/markdown.py`, and route `ContextService` through the shared predicate only. No new tests; the full suite stays green.
 
 ## Implementation Notes
+
+### Interface deliverable
+- Added `_session_directory_name` and `is_own_session_path` to `src/teddy_executor/core/utils/markdown.py`. `is_own_session_path` guards on the coarse `is_session_file_path`, then compares the root's final path component against the candidate path's segments. With no root supplied it returns the coarse result unchanged, so the legacy partition stays byte-identical.
+- Widened `get_session_history_display_name` and `is_session_history_path` with an optional `session_root`. The gate runs first: when a root is supplied and the path is foreign, the display name is `None` and the path is not history. With no root the two helpers behave exactly as before.
+- Added the defaulted `session_root: Optional[str] = None` keyword to `IGetContextUseCase.get_context` and the defaulted `session_root` field to `ProjectContext`. Neither change alters an existing caller or a direct DTO construction.
+- Gate decision verified by test: whole-segment matching of the session directory name handles absolute-vs-relative roots, a trailing separator, a `./` prefix, an earlier `sessions/` directory in an absolute path, and exact (never prefix) continuation-name matching.
+- Regression pin: `tests/suites/unit/core/utils/test_markdown_utils.py::test_session_root_gate_separates_own_history_from_foreign_paths`.
+- Deferred: `is_session_file_path` still performs a raw `"sessions/" in path` substring test with no backslash normalization; folding the shared normalizer is scheduled under the Refactor deliverable.
+- The widened port declaration carries `# noqa: PLR0913 - inbound-port seam; additive keyword`. The eight-keyword surface is the shared inbound seam, and collapsing it into a parameter object would break the roughly forty callers the additive default exists to protect; the implementation already carries the same bypass. A `per-file-ignores` entry would suppress the rule far beyond this one finding.
 
 ## Verification
 1. **Post-fix rendering of a foreign read:**

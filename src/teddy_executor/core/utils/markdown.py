@@ -229,10 +229,38 @@ def embed_in_fence(content: str, lang: str) -> str:
     return f"{fence}{lang}\n{sanitized}\n{fence}"
 
 
-def get_session_history_display_name(path: str) -> str | None:
+def _session_directory_name(session_root: str) -> str:
+    """Return the final path component of a session root (its directory name)."""
+    cleaned = session_root.replace("\\", "/").rstrip("/")
+    return cleaned.rsplit("/", 1)[-1]
+
+
+def is_own_session_path(path: str, session_root: str | None) -> bool:
+    """
+    Determines whether ``path`` belongs to the session at ``session_root``.
+
+    Falls back to the coarse ``is_session_file_path`` test when no root is
+    supplied, so legacy callers keep their session-agnostic partition.
+    """
+    if not is_session_file_path(path):
+        return False
+    if not session_root:
+        return True
+    session_name = _session_directory_name(session_root)
+    segments = path.replace("\\", "/").lstrip("./").split("/")
+    return session_name in segments
+
+
+def get_session_history_display_name(
+    path: str, session_root: str | None = None
+) -> str | None:
     """
     Returns human-readable display name if it's a recognized session history file.
+
+    When ``session_root`` is supplied, a path outside that session is not history.
     """
+    if session_root and not is_own_session_path(path, session_root):
+        return None
     clean_path = path.lstrip("./")
     if "initial_request.md" in clean_path:
         return "Initial Request"
@@ -252,11 +280,11 @@ def is_session_file_path(path: str) -> bool:
     return "sessions/" in path.lstrip("./")
 
 
-def is_session_history_path(path: str) -> bool:
+def is_session_history_path(path: str, session_root: str | None = None) -> bool:
     """
-    Determines if a path is a session history file.
+    Determines if a path is a session history file for ``session_root``.
     """
-    return get_session_history_display_name(path) is not None
+    return get_session_history_display_name(path, session_root) is not None
 
 
 def get_session_history_sort_key(path: str) -> tuple[int, int]:

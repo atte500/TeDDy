@@ -118,6 +118,51 @@ def test_session_history_helpers(container):
     assert get_session_history_sort_key("src/main.py") == (999999, 999999)
 
 
+def test_session_root_gate_separates_own_history_from_foreign_paths():
+    """The root gate admits own history and rejects foreign or workspace paths."""
+    from teddy_executor.core.utils.markdown import (
+        get_session_history_display_name,
+        is_own_session_path,
+        is_session_history_path,
+    )
+
+    root = ".teddy/sessions/20260521_100000-my-session"
+    own_plan = f"{root}/01/plan.md"
+    foreign_report = ".teddy/sessions/20260521_120000-other-session/03/report.md"
+
+    assert is_own_session_path(own_plan, root) is True
+    assert is_own_session_path(foreign_report, root) is False
+    assert is_own_session_path("src/sessions/handler.py", root) is False
+
+    # Without a root the coarse legacy partition is preserved exactly.
+    assert is_own_session_path(own_plan, None) is True
+    assert is_own_session_path(foreign_report, None) is True
+    assert is_own_session_path("src/sessions/handler.py", None) is True
+    assert is_own_session_path("README.md", None) is False
+
+    # Matching is by whole segment, so path forms and an earlier
+    # `sessions/` directory do not change classification.
+    absolute_root = f"/repo/{root}"
+    assert is_own_session_path(own_plan, absolute_root) is True
+    assert is_own_session_path(own_plan, f"{root}/") is True
+    assert is_own_session_path(own_plan, f"./{root}") is True
+    earlier_sessions = f"/home/user/sessions/repo/{root}/01/plan.md"
+    assert is_own_session_path(earlier_sessions, root) is True
+
+    # Continuation names match only as a complete session segment.
+    base_session = ".teddy/sessions/20260521_100000-feat-x/01/plan.md"
+    continuation = ".teddy/sessions/20260521_100000-feat-x-2"
+    assert is_own_session_path(base_session, continuation) is False
+
+    # The display-name and history-path predicates share the same gate.
+    assert get_session_history_display_name(own_plan, root) == "Turn 1: Plan"
+    assert get_session_history_display_name(foreign_report, root) is None
+    assert is_session_history_path(own_plan, root) is True
+    assert is_session_history_path(foreign_report, root) is False
+    assert get_session_history_display_name(foreign_report) == "Turn 3: Report"
+    assert is_session_history_path(foreign_report) is True
+
+
 # ---------------------------------------------------------------------------
 # strip_trailing_open_fence: preserve/collapse matrix
 # ---------------------------------------------------------------------------
