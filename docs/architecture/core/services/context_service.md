@@ -16,13 +16,14 @@ Implements the `IGetContextUseCase` inbound port. It orchestrates the outbound p
 - [`ILlmClient`](../ports/outbound/llm_client.md): Counts tokens for the assembled content.
 - [`IWebScraper`](../ports/outbound/web_scraper.md): Fetches remote URL content.
 - [`IConfigService`](../ports/outbound/config_service.md): Optional handle that resolves `plan.max_lines` for the plan-content cap; a `None` handle falls back to the schema default (5000).
-- **`core.utils.markdown` helpers**: Provide fence embedding and session-history naming.
+- **`core.utils.markdown` helpers**: Provide fence embedding, session-history naming, and the shared `is_own_session_path` / `is_session_history_path` root gate.
 
 ## Class Invariants
 - `session_scoped_cache`: Web content is cached in `<session_root>/.web_cache.json` for the session only; no TTL is applied.
 - `atomic_cache_write`: The cache is written to a temporary file and renamed with `Path.replace`.
 - `failures_not_cached`: A failed fetch is recorded as `None` for the run but never written to the cache.
 - `scope_dedup_priority`: A path present in several scopes keeps the non-`Turn` scope.
+- `own_session_history_only`: `_format_content` routes a path to `## Session History` only when `is_own_session_path` admits it under the rendering `session_root`; a path from another session, or a workspace path that merely contains a `sessions/` segment, renders under `## Resource Contents` instead of vanishing from both sections. A `None` root keeps the legacy session-agnostic partition.
 - `falsy_scope_map_triggers_defaults`: A falsy `context_files` value falls back to the `.teddy/*.context` glob. A supplied scope map resolves exactly the scopes it names, with no glob fallback.
 - `single_git_status_call`: `get_git_status` runs once per turn. Its value feeds the fenced Git Status body, the `ProjectContext.git_status` field, and the badge parser.
 - `plan_cap_truncate_first`: `plan.md` content is capped at `plan.max_lines` in the `file_contents` map before both `_format_content` (the embed) and `_get_path_to_tokens` (the token count), so the embedded window and the pruning `token_count` both reflect the capped length. Only paths ending in `plan.md` are capped; other files and not-found entries pass through unchanged.
@@ -40,7 +41,7 @@ Implements the `IGetContextUseCase` inbound port. It orchestrates the outbound p
 
 ## Operations
 
-### `get_context(context_files=None, include_tokens=True, agent_name="Unknown", total_window=0, cache_dir=None, current_turn=None, system_prompt_tokens=0) -> ProjectContext`
+### `get_context(context_files=None, include_tokens=True, agent_name="Unknown", total_window=0, cache_dir=None, current_turn=None, system_prompt_tokens=0, session_root=None) -> ProjectContext`
 - **Preconditions:** None.
-- **Postconditions:** Returns a `ProjectContext` carrying the header, content, scoped paths, Git status, and per-file items. Each scope expands `.context` manifests, directories, and URLs before deduplication. The Project Structure section names both tree limits once in an italic subtitle between the heading and the fence. Remote URLs are fetched in parallel and cached when `cache_dir` is set. Any `plan.md` content is capped at `plan.max_lines` before both embedding and token counting, so the embedded plan and its item `token_count` track the cap while the on-disk file stays full.
+- **Postconditions:** Returns a `ProjectContext` carrying the header, content, scoped paths, Git status, and per-file items. Each scope expands `.context` manifests, directories, and URLs before deduplication. The Project Structure section names both tree limits once in an italic subtitle between the heading and the fence. Remote URLs are fetched in parallel and cached when `cache_dir` is set. Any `plan.md` content is capped at `plan.max_lines` before both embedding and token counting, so the embedded plan and its item `token_count` track the cap while the on-disk file stays full. Session history is recognized only under the supplied `session_root`, and that same root reaches `_format_session_history`, so a file read from another session renders as resource content.
 - **Exceptions:** None declared; per-URL fetch failures are recorded as missing content.

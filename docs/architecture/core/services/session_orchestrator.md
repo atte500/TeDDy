@@ -28,7 +28,7 @@ Implements the `IRunPlanUseCase` inbound port as a decorator-style service that 
 ## Class Invariants
 - `tee_single_install`: The orchestrator installs the history-log tee only when `SessionLifecycleManager.tee_active` is `False`, so planning output is captured once.
 - `mandatory_prune`: `prune()` runs on every session turn, on whichever context is present, and strictly before `_harvest_context`.
-- `single_gather_per_turn`: A provided `project_context` is forwarded as-is; the in-execute re-gather runs only when `project_context is None`.
+- `single_gather_per_turn`: A provided `project_context` is forwarded as-is; the in-execute re-gather runs only when `project_context is None`. That fallback gather passes its session-directory cache path as `session_root`, so the partition gates on the session being rendered.
 - `harvest_before_validation`: Pruned paths are recorded before validation so they persist across a replan.
 - `history_log_never_at_root`: The tee path is redirected under `.tmp/` when it would resolve to the project root.
 

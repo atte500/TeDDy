@@ -229,10 +229,14 @@ def embed_in_fence(content: str, lang: str) -> str:
     return f"{fence}{lang}\n{sanitized}\n{fence}"
 
 
+def _normalize_session_path(path: str) -> str:
+    """Normalize a path to POSIX slashes with any leading './' removed."""
+    return path.replace("\\", "/").lstrip("./")
+
+
 def _session_directory_name(session_root: str) -> str:
     """Return the final path component of a session root (its directory name)."""
-    cleaned = session_root.replace("\\", "/").rstrip("/")
-    return cleaned.rsplit("/", 1)[-1]
+    return _normalize_session_path(session_root).rstrip("/").rsplit("/", 1)[-1]
 
 
 def is_own_session_path(path: str, session_root: str | None) -> bool:
@@ -247,8 +251,7 @@ def is_own_session_path(path: str, session_root: str | None) -> bool:
     if not session_root:
         return True
     session_name = _session_directory_name(session_root)
-    segments = path.replace("\\", "/").lstrip("./").split("/")
-    return session_name in segments
+    return session_name in _normalize_session_path(path).split("/")
 
 
 def get_session_history_display_name(
@@ -261,7 +264,7 @@ def get_session_history_display_name(
     """
     if session_root and not is_own_session_path(path, session_root):
         return None
-    clean_path = path.lstrip("./")
+    clean_path = _normalize_session_path(path)
     if "initial_request.md" in clean_path:
         return "Initial Request"
     plan_match = re.search(r"sessions/[^/]+/(\d+)/plan.md$", clean_path)
@@ -276,8 +279,10 @@ def get_session_history_display_name(
 def is_session_file_path(path: str) -> bool:
     """
     Determines if a path is inside .teddy/sessions/.
+
+    Normalizes backslashes first, so a Windows-style path is recognized too.
     """
-    return "sessions/" in path.lstrip("./")
+    return "sessions/" in _normalize_session_path(path)
 
 
 def is_session_history_path(path: str, session_root: str | None = None) -> bool:
@@ -291,7 +296,7 @@ def get_session_history_sort_key(path: str) -> tuple[int, int]:
     """
     Sort key for chronological session history: (turn_number, sub_order).
     """
-    clean_path = path.lstrip("./")
+    clean_path = _normalize_session_path(path)
     if "initial_request.md" in clean_path:
         return (0, 0)
     plan_match = re.search(r"sessions/[^/]+/(\d+)/plan.md$", clean_path)

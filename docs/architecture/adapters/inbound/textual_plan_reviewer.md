@@ -16,6 +16,7 @@ Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It p
 - `stdin_ownership`: While the app runs, the reviewer claims `stdin_owned()` so the session quit-key listener backs off and the TUI's own `q` binding stays authoritative.
 - `rationale_heading_only`: Only a `### Section` heading starts a rationale node, and only `Summary`, `Expectation`, `Progress`, or `Notes` is accepted as a title. The tree splits on `\n(?=### )` and strips the `### ` marker; any other content, including a numeric `1. Section` marker, merges into the preceding node.
 - `log_is_read_only`: Viewing an action log bypasses the apply-changes confirmation prompt.
+- `session_root_grouped_context`: The context pane groups reads by the DTO's `session_root`. Only paths under that root become History; a foreign session's read keeps the scope group it arrived in, because the exclusion uses `is_own_session_path` rather than the coarse "under `sessions/`" test, and its label falls back to the raw path. A `None` root keeps the legacy grouping.
 - `mutable_plan_models`: The `Plan` and `ActionData` models are unfrozen so the reviewer can update them in memory.
 
 ## Inbound Ports
@@ -32,7 +33,7 @@ Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It p
 
 ### `review(plan, project_context=None) -> Optional[Plan]`
 - **Preconditions:** `plan` is a valid `Plan`.
-- **Postconditions:** Returns the plan carrying the user's selections and edits, or `None` when the user cancels. The dual-pane layout shows a 65% action tree and a 35% parameter detail pane. Selecting the Context root shows an aggregate token breakdown: the `System` line sums the system-prompt and system-info tokens, and the `Total Context` line divides content plus system-prompt tokens by the model window.
+- **Postconditions:** Returns the plan carrying the user's selections and edits, or `None` when the user cancels. The dual-pane layout shows a 65% action tree and a 35% parameter detail pane. Selecting the Context root shows an aggregate token breakdown: the `System` line sums the system-prompt and system-info tokens, and the `Total Context` line divides content plus system-prompt tokens by the model window. The History group lists only this session's own turns, and the Session/Turn/History token split applies the same root gate.
 
 ### `review_action(action, total_actions, agent_name=None) -> tuple[bool, str]`
 - **Postconditions:** Returns `(should_execute, captured_message)` for sequential review.

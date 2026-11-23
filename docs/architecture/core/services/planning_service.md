@@ -48,7 +48,7 @@ None declared directly — the service consumes the ports bundled in `PlanningPo
 
 ### `generate_plan(user_message, turn_dir, context_files=None) -> tuple[str, float, ProjectContext]`
 - **Preconditions:** `turn_dir` exists; the agent prompt file exists in the turn directory.
-- **Postconditions:** Writes `plan.md` and `input.md`, updates `meta.yaml` telemetry (including `cost_recorded` when the adapter marked the response), and returns the plan path, the turn cost, and the gathered `ProjectContext`. The blocking network phase runs on the interruptible daemon worker, so the calling thread waits on a future instead of a raw socket read.
+- **Postconditions:** Writes `plan.md` and `input.md`, updates `meta.yaml` telemetry (including `cost_recorded` when the adapter marked the response), and returns the plan path, the turn cost, and the gathered `ProjectContext`. The gather receives a `session_root` derived once from `Path(turn_dir).parent` — the same expression supplies `cache_dir` — so the DTO carries the rendering session's root. The blocking network phase runs on the interruptible daemon worker, so the calling thread waits on a future instead of a raw socket read.
 - **Exceptions:**
   - `ConfigurationError`: Configuration is invalid or request exceeds context window budget.
   - `FileNotFoundError`: System prompt file is missing in turn directory.

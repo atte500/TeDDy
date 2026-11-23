@@ -7,6 +7,7 @@ from teddy_executor.core.utils.markdown import (
     embed_in_fence,
     get_language_from_path,
     is_own_session_path,
+    is_session_history_path,
     get_session_history_display_name,
     get_session_history_sort_key,
 )
@@ -428,7 +429,7 @@ class ContextService(IGetContextUseCase):
 
         # Prepend Session History section first (after header's System Information)
         session_history_parts = self._format_session_history(
-            session_paths, file_contents
+            session_paths, file_contents, session_root
         )
         if session_history_parts:
             content_parts = session_history_parts + content_parts
@@ -518,13 +519,14 @@ class ContextService(IGetContextUseCase):
         self,
         session_paths: List[str],
         file_contents: Dict[str, Optional[str]],
+        session_root: Optional[str] = None,
     ) -> List[str]:
         """Formats the session history section."""
         if not session_paths:
             return []
 
         recognized_session_paths = [
-            p for p in session_paths if get_session_history_display_name(p) is not None
+            p for p in session_paths if is_session_history_path(p, session_root)
         ]
         if not recognized_session_paths:
             return []
@@ -532,7 +534,7 @@ class ContextService(IGetContextUseCase):
         recognized_session_paths.sort(key=get_session_history_sort_key)
         parts = ["\n## Session History"]
         for path in recognized_session_paths:
-            disp_name = get_session_history_display_name(path)
+            disp_name = get_session_history_display_name(path, session_root)
             content = file_contents.get(path) or ""
             content_str = content.strip()
             lang = get_language_from_path(path)

@@ -19,7 +19,7 @@ None — this is a passive data structure.
 
 ## Class Invariants
 - `mutable_dataclasses`: `ProjectContext` and `ContextItem` are standard (non-frozen) dataclasses; `ContextItem.selected` is mutated by the reviewer to reflect per-turn selection.
-- `field_defaults`: `selected` defaults to `True`; `agent_name` defaults to `"Unknown"`; the integer token counters default to `0`.
+- `field_defaults`: `selected` defaults to `True`; `agent_name` defaults to `"Unknown"`; the integer token counters default to `0`; `session_root` defaults to `None`.
 
 ## Inbound Ports
 None — this is a passive data structure.
@@ -29,8 +29,9 @@ None — this is a passive data structure.
 
 ## Data Contracts
 - **`ContextItem`** (dataclass): `path: str`, `token_count: int`, `git_status: str`, `scope: str`, `selected: bool = True`, `auto_prune_reason: Optional[str] = None`.
-- **`ProjectContext`** (dataclass): `header: str`, `content: str`, `scoped_paths: Dict[str, List[str]] = {}`, `git_status: Optional[str] = None`, `items: List[ContextItem] = []`, `agent_name: str = "Unknown"`, `system_prompt_tokens: int = 0`, `content_tokens: int = 0`, `total_window: int = 0`.
+- **`ProjectContext`** (dataclass): `header: str`, `content: str`, `scoped_paths: Dict[str, List[str]] = {}`, `git_status: Optional[str] = None`, `items: List[ContextItem] = []`, `agent_name: str = "Unknown"`, `system_prompt_tokens: int = 0`, `content_tokens: int = 0`, `total_window: int = 0`, `session_root: Optional[str] = None`.
 - **`git_status` field:** Holds the `git status --porcelain -b` output. It drives the fenced Markdown body and the item badge parser.
+- **`session_root` field:** Names the session the context was assembled for, when one is in scope. `ContextService` sets it, and the TUI reads it to gate its Session/Turn/History grouping on the same discriminator the service used; `None` selects the session-agnostic legacy grouping.
 
 ## Operations
 None — this component holds data only.
