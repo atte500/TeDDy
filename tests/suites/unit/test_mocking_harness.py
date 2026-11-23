@@ -12,7 +12,11 @@ reappear.
 
 import pytest
 
-from tests.harness.setup.mocking import POSIXPathMock, to_posix_path
+from tests.harness.setup.mocking import (
+    POSIXPathMock,
+    path_exists_marker_absent,
+    to_posix_path,
+)
 
 
 class TestToPosixPath:
@@ -63,3 +67,35 @@ class TestPathMatchingConsumers:
             baseline if to_posix_path(name) == to_posix_path(baseline) else None
         )
         assert mock.which(r"C:\Users\runneradmin/bin/myeditor") == baseline
+
+
+class TestPathExistsMarkerAbsent:
+    """The pending-turn ``path_exists`` double reports the marker absent.
+
+    A never-dispatched pending turn records no ``execution.started`` marker, so
+    the resume gate must read it absent while every other turn path keeps the
+    suite's own answer. The factory single-sources the marker filename from the
+    port, so a rename cannot leave this double matching a stale literal.
+    """
+
+    def test_marker_reads_absent_while_other_paths_forward_present(self) -> None:
+        path_exists = path_exists_marker_absent(default=True)
+
+        assert path_exists(".teddy/sessions/feature/05/execution.started") is False
+        assert path_exists(".teddy/sessions/feature/05/report.md") is True
+
+    def test_marker_reads_absent_while_other_paths_forward_absent(self) -> None:
+        path_exists = path_exists_marker_absent(default=False)
+
+        assert path_exists(".teddy/sessions/feature/05/execution.started") is False
+        assert path_exists(".teddy/sessions/feature/05/report.md") is False
+
+    def test_marker_path_matches_through_posix_normalization(self) -> None:
+        path_exists = path_exists_marker_absent(default=True)
+
+        assert path_exists(r".teddy\sessions\feature\05\execution.started") is False
+
+    def test_bare_marker_filename_reads_absent(self) -> None:
+        path_exists = path_exists_marker_absent(default=True)
+
+        assert path_exists("execution.started") is False

@@ -1,5 +1,10 @@
+from collections.abc import Callable
 from typing import Any, TypeVar
 from unittest.mock import MagicMock, _Call  # noqa: TID251
+
+from teddy_executor.core.ports.outbound.session_manager import (
+    EXECUTION_STARTED_MARKER,
+)
 
 T = TypeVar("T")
 
@@ -100,6 +105,27 @@ def register_mock(container: Any, port_type: Any) -> Any:
     mock = POSIXPathMock(spec=port_type)
     container.register(port_type, instance=mock)
     return mock
+
+
+def path_exists_marker_absent(default: bool = True) -> Callable[[str], bool]:
+    """Build a ``path_exists`` side effect that reports the execution marker absent.
+
+    A pending turn that never dispatched records no ``execution.started``
+    marker, so the resume gate must read it absent while every other turn path
+    keeps the suite's own answer. ``default`` is forwarded for every path that
+    is not the marker. The incoming path is normalized through
+    ``to_posix_path`` before its basename is compared against the
+    ``EXECUTION_STARTED_MARKER`` literal, so a Windows slash difference cannot
+    flip the answer.
+    """
+
+    def path_exists(path: str) -> bool:
+        filename = to_posix_path(path).rsplit("/", 1)[-1]
+        if filename == EXECUTION_STARTED_MARKER:
+            return False
+        return default
+
+    return path_exists
 
 
 def apply_tree_generator_defaults(mock: Any) -> None:
