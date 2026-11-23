@@ -11,7 +11,7 @@ Defines the outbound port for retrieving and persisting application configuratio
 - [`SessionLoopGuard`](../../services/session_loop_guard.md): Reads the turn and cost guardrail limits.
 - [`SessionPruningService`](../../services/session_pruning_service.md): Reads the `auto_pruning.*` settings.
 - [`SessionService`](../../services/session_service.md): Reads session and provider settings.
-- [CLI Adapter](../../../adapters/inbound/cli.md): Reads and persists settings during `init`, `start`, and `resume`.
+- [CLI Adapter](../../../adapters/inbound/cli.md): Reads and persists settings during `init`, `start`, and `resume`, and reads `update.index_url` read-only during `update`.
 
 ## Dependencies
 None — this port declares no injected dependencies.

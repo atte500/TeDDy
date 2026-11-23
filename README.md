@@ -159,6 +159,35 @@ uv tool install teddy-cli --pre --force
 > [!WARNING]
 > Experimental versions are published as PEP 440 dev pre-releases on PyPI and may include breaking changes or unstable features.
 
+### Installing From a Fork or Private Index
+
+TeDDy can run from a fork or a private package index, and the update check can follow the same source. Because the version check reads the installed `teddy-cli` distribution metadata, every install shape must keep the distribution name `teddy-cli` — a git install, a local wheel, and a private index all do. Only a public PyPI upload under a different name would need a second knob.
+
+Install from a git URL:
+
+```bash
+uv tool install git+https://github.com/<you>/teddy
+```
+
+Install from a private index:
+
+```bash
+uv tool install teddy-cli --default-index https://packages.example.com/simple
+```
+
+Then point the update check at your own source by setting `update.index_url` in `.teddy/config.yaml`:
+
+```yaml
+update:
+  index_url: "https://packages.example.com/pypi/teddy-cli/json"
+```
+
+The source only needs to be PyPI-JSON-shaped. A static `version.json` served from your fork's repository works too, as long as it carries `{"info": {"version": "x.y.z"}}`. That `info.version` fallback ignores `--experimental`, so a static source reports the same version with or without the flag.
+
+`uv tool upgrade teddy-cli` re-resolves the upgrade from the index recorded in its install receipt, so a fork installed from a private index upgrades in place. A git install upgrades by reinstalling from the same git URL.
+
+`teddy update` reads `.teddy/config.yaml` from the current directory, so run it from the project root. The `checks.update: false` toggle silences the startup notice only; the background fetch still runs, and `teddy update` always compares against the configured source.
+
 ### Initialize
 
 ```bash

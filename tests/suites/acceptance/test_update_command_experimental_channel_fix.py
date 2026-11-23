@@ -39,11 +39,6 @@ def test_prerelease_current_with_newer_stable_shows_force_install(monkeypatch):
         "teddy_executor.core.services.update_checker.is_prerelease",
         lambda v: v == "0.1.5.dev646",
     )
-    monkeypatch.setattr(
-        "teddy_executor.__main__._ensure_project_initialized",
-        lambda container: None,
-    )
-
     result = runner.invoke(app, ["update"])
 
     # Must show the force-install command (not upgrade)

@@ -28,11 +28,6 @@ def test_update_command_does_not_read_auto_update_config(monkeypatch):
         "teddy_executor.core.services.update_checker.compare_versions",
         lambda current, latest: True,
     )
-    monkeypatch.setattr(
-        "teddy_executor.__main__._ensure_project_initialized",
-        lambda container: None,
-    )
-
     runner = CliRunner()
     result = runner.invoke(app, ["update"])
 

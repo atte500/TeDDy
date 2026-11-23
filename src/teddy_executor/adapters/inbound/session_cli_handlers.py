@@ -805,9 +805,6 @@ def _display_update_notification(container: Container, cache_path: Path) -> list
             )
             return ["checks.update"]
     except Exception:
-        import logging
-
-        logger = logging.getLogger(__name__)
         logger.debug("Failed to display update notification", exc_info=True)
     return []
 

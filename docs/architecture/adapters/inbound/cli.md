@@ -15,7 +15,7 @@ The primary inbound (driving) adapter. It parses user commands with `Typer`, res
 - [`IPlanValidator`](../../core/ports/inbound/plan_validator.md): Drives validation in the manual `execute` flow.
 - [`ISessionManager`](../../core/ports/outbound/session_manager.md): Resolves and renames sessions.
 - [`ISessionLoopGuard`](../../core/ports/outbound/session_loop_guard.md): Gates the session loop.
-- [`IConfigService`](../../core/ports/outbound/config_service.md): Reads and persists settings during `init`, `start`, and `resume`.
+- [`IConfigService`](../../core/ports/outbound/config_service.md): Reads and persists settings during `init`, `start`, and `resume`, and reads `update.index_url` read-only during `update`.
 - [`IMarkdownReportFormatter`](../../core/ports/outbound/markdown_report_formatter.md): Renders the execution report.
 - [`ISystemEnvironment`](../../core/ports/outbound/system_environment.md): Reports TTY status for the setup gates and the `start` opening-prompt presence gate.
 - `IPromptManager`: Serves the `get-prompt` command. It has no standalone port document.
@@ -33,6 +33,8 @@ The primary inbound (driving) adapter. It parses user commands with `Typer`, res
 - `setup_gates_are_tty_gated`: The API-key and editor prompts run only when a terminal is attached.
 - `opening_prompt_requires_presence`: The `start` opening prompt runs only when `ISystemEnvironment.isatty()` reports a terminal; without one it exits with the no-input message instead of entering the ask loop.
 - `shared_context_normalization`: `start` and `context` normalize the repeatable, comma-separated `-c/--context` option through one helper in `cli_helpers.py`.
+- `update_resolves_read_only`: `teddy update` resolves `IConfigService` read-only and never calls `_ensure_project_initialized`, so a check cannot scaffold `.teddy/`; an absent or empty `update.index_url` falls back to the official endpoint.
+- `update_source_resolves_before_spawn`: `_start_background_update_check(container)` resolves `update.index_url` before the daemon thread starts, so the thread receives a fixed URL and never touches the container.
 
 ## Inbound Ports
 None — this is a driving adapter; it consumes inbound ports but exposes none.
@@ -42,7 +44,7 @@ None declared directly — the adapter resolves use cases and services from the 
 
 ## Data Contracts
 - **Commands:** `start`, `resume`, `init`, `execute`, `context`, `get-prompt`, `update`.
-- **Flags:** `--agent`/`-a`, `--context`/`-c`, `--model`, `--yolo`/`-y`, `--no-yolo`/`-n`, `--message`/`-m`, `--pipeline`/`-p`, `--only`, `--no-copy`.
+- **Flags:** `--agent`/`-a`, `--context`/`-c`, `--model`, `--yolo`/`-y`, `--no-yolo`/`-n`, `--message`/`-m`, `--pipeline`/`-p`, `--only`, `--no-copy`, `--experimental`.
 - **Exit codes:** `0` on success; `1` on a startup error or a pipeline run missing `-m`; non-zero when any executed action fails.
 
 ## Operations
@@ -75,10 +77,15 @@ None declared directly — the adapter resolves use cases and services from the 
 - **Postconditions:** Prints the composed system prompt (agent content, separator, MRP base prompt).
 - **Exceptions:** Prints an error to `stderr` and exits with code 1 when the prompt is unknown.
 
+### `update(--experimental)`
+- **Preconditions:** None — the command resolves configuration but never anchors or initializes a project.
+- **Postconditions:** Resolves `update.index_url` through `IConfigService` read-only, fetches the latest version from the resolved source via `fetch_latest_version`, and prints either the upgrade hint or an already-latest line. `--experimental` widens the query to pre-releases (`stable_only=False`). Notification only: it never upgrades.
+- **Exceptions:** Exits with code 1 and the configuration path hint when the config is invalid, through the same `ConfigurationError` path as other commands.
+
 ### Startup preamble helpers
 `_run_health_checks`, `_run_cli_preflight_check`, `_start_background_update_check`, `_run_startup_preamble`, and `_handle_startup_error` implement the fixed startup sequence: the start-only workspace health checks and banner, the `Checking configurations...` line, drift and update notifications, the shared disable-footer, and the `Agent:`/`Model:` identity block.
 
-`_run_startup_preamble` gates the workspace health checks and the fast-forward behind `workspace_maintenance`, which `start` enables and `resume` leaves off. It also forwards `verbose_workspace` to `_run_health_checks`, so `start` prints its two workspace green lines, its separator blank, and its fast-forward line while `resume` runs neither the repairs nor their banner. `Checking configurations...` is therefore the first line on `resume`, with no orphan leading blank. The editor validation preflight discovers and persists an editor when the session will read the terminal.
+`_run_startup_preamble` gates the workspace health checks and the fast-forward behind `workspace_maintenance`, which `start` enables and `resume` leaves off. It also forwards `verbose_workspace` to `_run_health_checks`, so `start` prints its two workspace green lines, its separator blank, and its fast-forward line while `resume` runs neither the repairs nor their banner. `Checking configurations...` is therefore the first line on `resume`, with no orphan leading blank. The editor validation preflight discovers and persists an editor when the session will read the terminal. `_start_background_update_check(container)` resolves `update.index_url` before the daemon thread spawns, so the thread receives a fixed URL and never touches the container.
 
 ### Context gathering helpers
 `handle_context_gathering` in `session_cli_handlers.py` passes the session root into `get_context`. `detect_session_root()` is a sibling of `detect_session_context()` that shares its three-file gate: it returns `Path.cwd().parent` inside a session and `None` outside, where the session-agnostic partition applies. The scope map `detect_session_context()` returns cannot be reused, because `--only`/`-c` override it.
