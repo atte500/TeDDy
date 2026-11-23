@@ -328,10 +328,12 @@ def resolve_effective_model(
 def _validate_agents_block(merged: Mapping[str, Any]) -> None:
     """Reject an unusable ``agents`` block at load time.
 
-    A non-mapping block, a non-mapping persona entry, and two persona keys that
-    differ only in case each raise a ``ConfigurationError`` naming the offending
-    key. The duplicate case fails because case-insensitive matching would
-    otherwise make the winning entry depend on YAML key order.
+    A non-mapping block, a non-empty non-mapping persona entry, and two persona
+    keys that differ only in case each raise a ``ConfigurationError`` naming the
+    offending key. An empty persona entry is accepted as a declared persona
+    without overrides, mirroring the tolerated empty block. The duplicate case
+    fails because case-insensitive matching would otherwise make the winning
+    entry depend on YAML key order.
     """
     if _AGENTS_GROUP not in merged:
         return
@@ -357,6 +359,9 @@ def _validate_agents_block(merged: Mapping[str, Any]) -> None:
                 f"{persona!r} more than once when ignoring case. Keep one spelling."
             )
         seen.add(folded)
+        if entry is None:
+            # A bare persona key declares the persona with no overrides.
+            continue
         if not isinstance(entry, Mapping):
             raise ConfigurationError(
                 f"Configuration key '{_AGENTS_GROUP}.{persona}' expected a mapping "

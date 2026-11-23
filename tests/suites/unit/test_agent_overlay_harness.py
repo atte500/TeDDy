@@ -76,3 +76,23 @@ def test_malformed_agents_block_fails_at_load(tmp_path):
     """The real adapter rejects a scalar ``agents`` block through the schema."""
     with pytest.raises(ConfigurationError, match="agents"):
         _write_config(tmp_path, 'agents: "architect"\n')
+
+
+def test_empty_persona_entry_loads_as_a_declared_persona(tmp_path):
+    """A bare persona key declares the persona with no overrides."""
+    adapter = _write_config(tmp_path, "agents:\n  architect:\n")
+
+    assert adapter.get_setting("llm.timeout") == 300
+
+
+def test_scalar_persona_entry_still_fails_at_load(tmp_path):
+    """A non-empty non-mapping persona entry still fails naming the persona."""
+    with pytest.raises(ConfigurationError, match="agents.architect"):
+        _write_config(tmp_path, 'agents:\n  architect: "claude"\n')
+
+
+def test_bundled_defaults_load_under_a_minimal_user_config(tmp_path):
+    """The shipped bundled config validates with no persona overrides set."""
+    adapter = _write_config(tmp_path, "yolo_default: false\n")
+
+    assert adapter.get_setting("llm.timeout") == 300

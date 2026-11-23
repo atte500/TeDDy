@@ -75,14 +75,17 @@ llm:
 #   api_base: "http://localhost:8080/v1"
 #   api_key: "dummy-key-custom-endpoints"
 
-# Per-persona LLM overrides (optional). Each entry layers over the global `llm`
-# block for that agent: the model resolves from --model, then agents.<persona>.model,
-# then llm.model, and any key the persona omits still falls back to the global block.
-# Matching is case-insensitive. --model replaces only the model key. The merge is
-# one level deep, so a mapping-valued key such as extra_headers replaces the global
-# value wholesale.
-# agents:
-#   architect:
-#     model: "anthropic/claude-sonnet-4-5"
-#   pathfinder:
-#     model: "openrouter/~deepseek/deepseek-flash-latest"
+# Per-persona LLM overrides (optional).
+agents:
+  architect:
+#     model: "provider/model-name"
+  assistant:
+#     model: "provider/model-name"
+  debugger:
+#     model: "provider/model-name"
+  developer:
+#     model: "provider/model-name"
+  pathfinder:
+#     model: "provider/model-name"
+  prototyper:
+#     model: "provider/model-name"

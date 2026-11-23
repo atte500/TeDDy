@@ -19,7 +19,7 @@ Declares the typed view of every fixed configuration key, builds that view from 
 - `exact_flat_first`: A flat dotted key outranks the nested path, mirroring `get_setting`.
 - `typed_coercion`: A declared value coerces to its declared type, and an uncoercible value raises `ConfigurationError` naming the key.
 - `forward_compatible_unknowns`: An undeclared top-level group is ignored so future keys stay valid.
-- `raising_agents_seam`: `construct_app_config` shape-validates the `agents` block at load; the two resolvers stay total at runtime and never raise.
+- `raising_agents_seam`: `construct_app_config` shape-validates the `agents` block at load, where an empty persona entry counts as a declared persona with no overrides; the two resolvers stay total at runtime and never raise.
 
 ## Inbound Ports
 None — this is an internal domain module, not a port.
@@ -37,7 +37,7 @@ None — the module is pure and declares no injected dependencies.
 - **Preconditions:** `merged` is the merged bundled-plus-user configuration mapping.
 - **Postconditions:** Returns the typed view. Each declared key resolves exact-flat-first then nested, coerces to its declared type, falls back to its default when absent or empty, and rejects an out-of-range value. A valid `agents` block is validated and leaves the typed view at its defaults.
 - **Exceptions:**
-  - `ConfigurationError`: An uncoercible value, an out-of-range value, a non-mapping `agents` block, a non-mapping persona entry, or two persona keys differing only in case.
+  - `ConfigurationError`: An uncoercible value, an out-of-range value, a non-mapping `agents` block, a non-empty non-mapping persona entry, or two persona keys differing only in case.
 
 ### `resolve_agent_llm_overrides(agents_block, persona) -> dict`
 - **Preconditions:** None; the input may be malformed.
