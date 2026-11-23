@@ -109,7 +109,7 @@ Follow these phases and steps in order to systematically deliver verified progre
 2. **Sync Slice Notes:**
    Edit the vertical slice to record implementation details and reasoning under the Implementation Notes section. If this section does not exist, create it at the end of the file.
 3. **Perform As-Built Update:**
-   Before finishing the last deliverable of the slice, perform a final edit on the Component Design Docs for all components listed in the slice's `Impact` section.
+   Before finishing the last deliverable of the slice, perform a final edit on the Component Design Docs for all components listed in the slice's `Impact` section. If a component has no design doc yet, create one following the component design template and path conventions, set its Status to `Implemented`, and link it from the Component Map in `docs/architecture/ARCHITECTURE.md`.
 4. **Stale Reference Check:**
    If this is the last deliverable, run `git grep` for deleted or renamed components and resolve stale references in documentation and comments.
 5. **Delivery Gate:**

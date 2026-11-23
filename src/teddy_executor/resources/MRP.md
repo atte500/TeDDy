@@ -122,7 +122,7 @@ teddy start -a <agent_name> -m '<mission_instruction>' -c 'path/to/ref1.ext,path
 A validation failure occurs when an Execution Report returns "Validation Failed" due to syntax or structural errors. Recovery protocol:
 
 1. Unless the fix requires changing plan logic, keep the previous Title, Status, and existing Rationale sections unchanged.
-2. Add a brief root-cause analysis and an actionable reminder to the `### Notes` section of the Rationale.
+2. Add an actionable reminder to the `### Notes` section of the Rationale.
 3. Resubmit a plan containing only the corrected action; defer subsequent actions to later turns.
 4. Never send a Message about validation errors: they are internal syntax mistakes. Silently fix and resubmit.
 
