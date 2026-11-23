@@ -15,6 +15,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(SPIKE_DIR))
 
 USE_REPLICA = "--replica" in sys.argv
+USE_FIXED = "--fixed" in sys.argv
 if USE_REPLICA:
     from replica_context_service import ContextService
 else:
@@ -110,9 +111,9 @@ def locate_section(content: str, marker: str) -> str:
 
 def main() -> int:
     service = build_service()
-    # The fixed caller knows which session it is rendering for; the current
-    # production contract has no way to express that, so it passes nothing.
-    call_kwargs = {"session_root": CURRENT_SESSION} if USE_REPLICA else {}
+    # A rooted caller knows which session it is rendering for; the unfixed
+    # production run passes nothing and keeps the legacy partition.
+    call_kwargs = {"session_root": CURRENT_SESSION} if USE_REPLICA or USE_FIXED else {}
     result = service.get_context(
         context_files={
             "Session": [
@@ -132,7 +133,12 @@ def main() -> int:
     content = result.content
     foreign_section = locate_section(content, FOREIGN_MARKER)
     own_section = locate_section(content, OWN_MARKER)
-    implementation = "replica" if USE_REPLICA else "production"
+    if USE_REPLICA:
+        implementation = "replica"
+    elif USE_FIXED:
+        implementation = "fixed"
+    else:
+        implementation = "production"
 
     print("=== RENDERED CONTENT ===")
     print(content)

@@ -109,6 +109,13 @@ async def test_reviewer_app_renders_session_history_under_dedicated_node(env):
                 selected=True,
             ),
             ContextItem(
+                path=".teddy/sessions/20260521_120000-other-session/03/report.md",
+                token_count=900,
+                scope="Turn",
+                git_status=" ",
+                selected=True,
+            ),
+            ContextItem(
                 path="src/main.py",
                 token_count=2500,
                 scope="Turn",
@@ -119,6 +126,7 @@ async def test_reviewer_app_renders_session_history_under_dedicated_node(env):
         agent_name="Developer",
         system_prompt_tokens=1000,
         total_window=32000,
+        session_root=".teddy/sessions/20260521_134944-test-session",
     )
     plan = Plan(
         title="Session History Test",
@@ -168,17 +176,21 @@ async def test_reviewer_app_renders_session_history_under_dedicated_node(env):
         assert len(session_leaves) == 1
         assert "(None)" in session_leaves[0]
 
-        # 2. Generic Turn folder should only contain main.py
-        assert len(turn_leaves) == 1
-        assert "src/main.py" in turn_leaves[0]
-        assert "plan.md" not in turn_leaves[0]
-        assert "report.md" not in turn_leaves[0]
+        # 2. The Turn folder holds main.py and the foreign-session read; this
+        # session's own history files never render in their scope group.
+        assert len(turn_leaves) == 2
+        assert any("src/main.py" in label for label in turn_leaves)
+        assert any("report.md" in label for label in turn_leaves)
+        assert not any("01/plan.md" in label for label in turn_leaves)
+        assert not any("01/report.md" in label for label in turn_leaves)
 
-        # 3. History folder should be present and contain files chronologically with pretty names
+        # 3. History lists only this session's own turns, chronologically. The
+        # foreign read is a resource, not history, so "Turn 3: Report" is absent.
         assert len(history_leaves) == 3
         assert "Initial Request" in history_leaves[0]
         assert "Turn 1: Plan" in history_leaves[1]
         assert "Turn 1: Report" in history_leaves[2]
+        assert not any("Turn 3: Report" in label for label in history_leaves)
 
 
 @pytest.mark.anyio

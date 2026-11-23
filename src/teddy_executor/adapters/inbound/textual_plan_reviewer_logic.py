@@ -184,7 +184,8 @@ def refresh_node_logic(app: ReviewerApp, node: Any) -> None:
     if isinstance(node.data, ActionData):
         node.label = format_node_label(node.data)
     elif isinstance(node.data, ContextItem):
-        node.label = format_context_item_label(node.data)
+        session_root = app.project_context.session_root if app.project_context else None
+        node.label = format_context_item_label(node.data, session_root)
 
 
 def on_mount_logic(app: Any) -> None:

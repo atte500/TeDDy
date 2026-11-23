@@ -77,18 +77,22 @@ def populate_context_detail(app: "ReviewerApp", pane: Any, data: Any) -> None:
                 f"{(app.project_context.system_prompt_tokens + system_info_tokens) / 1000.0:.1f}k",
             )
         )
+        session_root = app.project_context.session_root
         session_tokens = sum(
             i.token_count
             for i in selected_items
-            if i.scope == "Session" and not is_session_history_path(i.path)
+            if i.scope == "Session"
+            and not is_session_history_path(i.path, session_root)
         )
         turn_tokens = sum(
             i.token_count
             for i in selected_items
-            if i.scope == "Turn" and not is_session_history_path(i.path)
+            if i.scope == "Turn" and not is_session_history_path(i.path, session_root)
         )
         history_tokens = sum(
-            i.token_count for i in selected_items if is_session_history_path(i.path)
+            i.token_count
+            for i in selected_items
+            if is_session_history_path(i.path, session_root)
         )
 
         pane.append(DetailItem("• Session", f"{session_tokens / 1000.0:.1f}k"))
@@ -99,7 +103,9 @@ def populate_context_detail(app: "ReviewerApp", pane: Any, data: Any) -> None:
 # Editor helpers moved to textual_plan_reviewer_editor.py
 
 
-def format_context_item_label(item: "ContextItem") -> str:
+def format_context_item_label(
+    item: "ContextItem", session_root: str | None = None
+) -> str:
     """Format a context item label according to UI standards."""
     status_colors = {
         "M": "yellow",
@@ -119,7 +125,7 @@ def format_context_item_label(item: "ContextItem") -> str:
 
     from teddy_executor.core.utils.markdown import get_session_history_display_name
 
-    disp_name = get_session_history_display_name(item.path)
+    disp_name = get_session_history_display_name(item.path, session_root)
     display_path = disp_name if disp_name else item.path
 
     if not item.selected:
@@ -139,11 +145,12 @@ def build_context_section(app: "ReviewerApp", tree: Any) -> Any:
         HISTORY_LABEL,
     )
     from teddy_executor.core.utils.markdown import (
-        is_session_file_path,
+        is_own_session_path,
         is_session_history_path,
         get_session_history_sort_key,
     )
 
+    session_root = app.project_context.session_root
     con_root = tree.root.add("[bold]Context[/]", data=CONTEXT_ROOT, expand=False)
     con_root.add_leaf("[#888888 italic]System:[/]", data=SYSTEM_LABEL)
     token_str = f" [#888888]{app.project_context.system_prompt_tokens / 1000.0:.1f}k[/]"
@@ -161,21 +168,25 @@ def build_context_section(app: "ReviewerApp", tree: Any) -> Any:
         con_root.add_leaf(f"[#888888 italic]{scope}:[/]", data=label)
         count = 0
         for item in app.project_context.items:
-            if item.scope == scope and not is_session_file_path(item.path):
-                con_root.add_leaf(format_context_item_label(item), data=item)
+            if item.scope == scope and not is_own_session_path(item.path, session_root):
+                con_root.add_leaf(
+                    format_context_item_label(item, session_root), data=item
+                )
                 count += 1
         if count == 0:
             con_root.add_leaf("  [#888888](None)[/]", data=label)
 
     # Chronological history turns
     history_items = [
-        item for item in app.project_context.items if is_session_history_path(item.path)
+        item
+        for item in app.project_context.items
+        if is_session_history_path(item.path, session_root)
     ]
     if history_items:
         con_root.add_leaf("[#888888 italic]History:[/]", data=HISTORY_LABEL)
         history_items.sort(key=lambda x: get_session_history_sort_key(x.path))
         for item in history_items:
-            con_root.add_leaf(format_context_item_label(item), data=item)
+            con_root.add_leaf(format_context_item_label(item, session_root), data=item)
 
     return con_root
 

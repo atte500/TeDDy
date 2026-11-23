@@ -72,12 +72,14 @@ class PlanningService(IPlanningUseCase):
         except Exception:
             system_token_count = 0
 
+        session_root = str(Path(turn_dir).parent)
         context = self._context_service.get_context(
             context_files=resolved_context_files,
             agent_name=agent_name,
             current_turn=Path(turn_dir).name,
             system_prompt_tokens=system_token_count,
-            cache_dir=str(Path(turn_dir).parent),
+            cache_dir=session_root,
+            session_root=session_root,
         )
 
         # Context is purely project state (including initial_request.md via session.context).

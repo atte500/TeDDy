@@ -306,6 +306,7 @@ def test_generate_plan_auto_resolves_context_from_turn_dir_when_missing(env):
         current_turn="02",
         system_prompt_tokens=0,
         cache_dir=str(Path("sessions/S1/02").parent),
+        session_root=str(Path("sessions/S1/02").parent),
     )
 
 

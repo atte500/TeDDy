@@ -1401,6 +1401,18 @@ def detect_session_context() -> Optional[Dict[str, Sequence[str]]]:
     return None
 
 
+def detect_session_root() -> Optional[str]:
+    """Resolves the current session's root, or None outside a session.
+
+    Derives from `detect_session_context` so the three-file session gate lives
+    in one place. The scope map that function returns must not be reused as a
+    path source, because `--only` and `-c` override it.
+    """
+    if detect_session_context() is None:
+        return None
+    return str(Path.cwd().parent)
+
+
 def _default_context_paths(container: Container) -> list[str]:
     """Resolves the default `.teddy/*.context` entries outside a session."""
     file_system_manager = container.resolve(IFileSystemManager)
@@ -1436,7 +1448,9 @@ def handle_context_gathering(
 
     # Performance: Formatting context for Markdown doesn't use tokens, so we skip them.
     context_result = context_service.get_context(
-        context_files=context_files, include_tokens=False
+        context_files=context_files,
+        include_tokens=False,
+        session_root=detect_session_root(),
     )
     formatted_context = format_project_context(context_result)
     echo_and_copy(formatted_context, no_copy=no_copy)

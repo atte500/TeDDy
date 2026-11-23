@@ -475,6 +475,7 @@ class SessionOrchestrator(IRunPlanUseCase):
             total_window=total_window,
             cache_dir=cache_dir,
             system_prompt_tokens=system_token_count,
+            session_root=cache_dir,
         )
 
         if is_dataclass(project_context) and agent_name != getattr(
