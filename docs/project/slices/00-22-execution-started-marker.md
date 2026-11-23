@@ -1,5 +1,5 @@
 # Slice: Write the Execution-Started Marker Before Dispatch
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** None
 - **Specs:** N/A
@@ -45,11 +45,12 @@ None. The insertion point, guard, and path derivation are established by inspect
 4. `[PRUNE]` none.
 
 ## Deliverables
-- [ ] **Interface** - Add `EXECUTION_STARTED_MARKER` to `core/ports/outbound/session_manager.py` and pin its value in a unit test.
+- [x] **Interface** - Add `EXECUTION_STARTED_MARKER` to `core/ports/outbound/session_manager.py` and pin its value in a unit test.
 - [ ] **Core** - Write the marker in `ExecutionOrchestrator.execute` after the review-abort branch and before `_process_plan_actions`, guarded on `reviewed_plan.is_session`. Unit tests cover: session plan writes the marker before the first dispatch; non-session plan writes none; aborted review writes none; pre-flight rejection writes none.
 
 ## Implementation Notes
-Populated during implementation.
+- **Interface (single-source the marker filename):** `EXECUTION_STARTED_MARKER = "execution.started"` lives in `core/ports/outbound/session_manager.py` beside `SessionState`, so the writer, the resume gate, and the tests share one literal instead of repeating the string. Pinned by `tests/suites/unit/core/ports/test_execution_started_marker.py`, which imports the public port module rather than a private symbol. The constant is behavior-neutral today because no production code reads it; the marker is first written by the pending Core deliverable.
+- **Core (pending):** write `{turn_dir}/execution.started` in `ExecutionOrchestrator.execute` after the review-abort branch and before `_process_plan_actions`, guarded on `reviewed_plan.is_session`.
 
 ## Verification
 1. **Marker written for a session turn:**

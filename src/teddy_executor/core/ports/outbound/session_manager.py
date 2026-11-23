@@ -5,6 +5,11 @@ from teddy_executor.core.domain.models import ExecutionReport
 from teddy_executor.core.domain.models.session import SessionOptions
 
 
+# Marks a session turn that began executing; its presence distinguishes a
+# hard-killed mid-execution turn from a never-dispatched pending turn.
+EXECUTION_STARTED_MARKER = "execution.started"
+
+
 class SessionState(Enum):
     """Represents the current state of a session based on its latest turn."""
 
