@@ -92,7 +92,7 @@ None. The pass-through shape mirrors the existing `llm` block, which is already 
 ## Deliverables
 
 - [x] **Interface** - Add `llm_overrides` to `ILlmClient.get_completion` with a `None` default so existing callers and fakes stay valid. Add `resolve_agent_llm_overrides(agents_block, persona)` to `config_schema.py` returning the persona's partial block or an empty mapping. Add `agents` to `_KNOWN_TOP_LEVEL` and validate its mapping shape from `construct_app_config`, raising `ConfigurationError` for a non-mapping block, a non-mapping persona entry, or case-folded duplicate keys.
-- [ ] **Harness** - Teach the auto-specced LLM mock registration and any in-memory config double to accept `llm_overrides`, so harness doubles stay bound to the port contract.
+- [x] **Harness** - Teach the auto-specced LLM mock registration and any in-memory config double to accept `llm_overrides`, so harness doubles stay bound to the port contract.
 - [ ] **Wiring** - Connect the CLI entry points end to end: a session start with `-a` picks the persona's model, the startup banner and preflight report that same effective model, and the completion receives both the overlay and the effective model.
 - [ ] **Core** - Implement the precedence and fallbacks: override first, then the persona entry, then `llm.model`; a blank persona model falls back rather than propagating; persona matching is case-insensitive. Separate the metadata semantics so `model_override` is the only resolution input while `model` records the per-turn effective value.
 - [ ] **Adapter** - Merge `llm_overrides` into the completion parameters between the global `llm` block and the per-call model, preserving the blank-`api_key` drop and the provider-default behaviour.
@@ -107,6 +107,12 @@ None. The pass-through shape mirrors the existing `llm` block, which is already 
 - `agents` joined `_KNOWN_TOP_LEVEL`, so the group no longer debug-logs as unknown. Nothing else reads that set, and `agents` never enters the typed view, so `construct_app_config` returns `DEFAULT_APP_CONFIG` unchanged when only `agents` is configured.
 - The harness needs no edit for the port contract: doubles are registered as `POSIXPathMock(spec=ILlmClient)`, which derives the accepted parameters from the port, so `llm_overrides` is already part of every spec-bound double.
 - `LiteLLMAdapter.get_completion` still accepts only `(messages, model, **kwargs)`, so an overlay passed by keyword would land in `**kwargs` and be forwarded to `litellm.completion` as an unknown parameter. No caller passes it yet, and closing that path is the Adapter deliverable.
+
+### Harness
+- No double needed editing: the shared LLM double is a `POSIXPathMock(spec=ILlmClient)`, so it accepts and records `llm_overrides` by construction, and `mock_config` stays a `POSIXPathMock(spec=IConfigService)` driven per test.
+- No in-memory config fake exists to extend. `tests/harness/setup/bundled_config.py` is only a bundled-YAML loader, so the persona-capable config path is the real `YamlConfigAdapter`. An undeclared `agents.<persona>` block resolves through its live nested walk (`get_setting` falls through after the declared-key and `llm.` checks), and `construct_app_config` shape-validates it at load.
+- `tests/suites/unit/test_agent_overlay_harness.py` pins both seams the Wiring and Core cycles lean on: the spec-bound double records an overlay passed by keyword, the real adapter walks a persona block, the persona block coexists with the global `llm` defaults, and a scalar `agents` block raises `ConfigurationError` at load.
+- `scripts/demo/fake_llm.py` is an OpenAI-compatible HTTP server, not an `ILlmClient`, so it carries no overlay handling.
 
 ## Verification
 1. **Persona model selected:**
