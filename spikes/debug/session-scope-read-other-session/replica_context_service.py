@@ -1,0 +1,552 @@
+import concurrent.futures
+import json
+from pathlib import Path
+from typing import Dict, List, Optional, Sequence
+from teddy_executor.core.domain.models import ProjectContext, ContextItem
+from teddy_executor.core.utils.markdown import (
+    embed_in_fence,
+    get_language_from_path,
+    is_session_file_path,
+    get_session_history_display_name,
+    get_session_history_sort_key,
+)
+from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
+from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
+from teddy_executor.core.ports.outbound.environment_inspector import (
+    IEnvironmentInspector,
+)
+from teddy_executor.core.ports.outbound.llm_client import ILlmClient
+from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
+from teddy_executor.core.ports.outbound.config_service import IConfigService
+from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
+from teddy_executor.core.utils.string import truncate_lines
+
+
+class ContextService(IGetContextUseCase):
+    """
+    Application service for orchestrating the gathering of project context.
+    """
+
+    def __init__(  # noqa: PLR0913 - injects the port set plus optional handles
+        self,
+        file_system_manager: IFileSystemManager,
+        repo_tree_generator: IRepoTreeGenerator,
+        environment_inspector: IEnvironmentInspector,
+        llm_client: ILlmClient,
+        web_scraper: IWebScraper,
+        config_service: Optional[IConfigService] = None,
+    ):
+        self._file_system_manager = file_system_manager
+        self._repo_tree_generator = repo_tree_generator
+        self._environment_inspector = environment_inspector
+        self._llm_client = llm_client
+        self._web_scraper = web_scraper
+        self._config_service = config_service
+
+    def get_context(  # noqa: PLR0913
+        self,
+        context_files: Optional[Dict[str, Sequence[str]]] = None,
+        include_tokens: bool = True,
+        agent_name: str = "Unknown",
+        total_window: int = 0,
+        cache_dir: Optional[str] = None,
+        current_turn: Optional[str] = None,
+        system_prompt_tokens: int = 0,
+        session_root: Optional[str] = None,
+    ) -> ProjectContext:
+        """
+        Gathers all project context information by orchestrating its dependencies.
+        """
+        system_info = self._environment_inspector.get_environment_info()
+        git_status = self._environment_inspector.get_git_status()
+        repo_tree = self._repo_tree_generator.generate_tree()
+
+        scoped_paths, all_resolved_paths = self._resolve_scoped_paths(context_files)
+
+        local_paths = [p for p in all_resolved_paths if not self._is_url(p)]
+        urls = [p for p in all_resolved_paths if self._is_url(p)]
+
+        file_contents = self._file_system_manager.read_files_in_vault(local_paths)
+        # Truncate-first: cap plan.md content before both the embed and the
+        # token count, so pruning budgets track real window impact.
+        file_contents = self._cap_plan_contents(file_contents)
+
+        # Fetch remote content with session-level caching (parallelized)
+        if urls:
+            web_cache = self._load_web_cache(cache_dir)
+            # Partition: already cached vs. fresh
+            cached_urls = [url for url in urls if url in web_cache]
+            uncached_urls = [url for url in urls if url not in web_cache]
+
+            # Fill cached entries immediately
+            for url in cached_urls:
+                file_contents[url] = web_cache[url]
+
+            # Fetch uncached URLs in parallel
+            if uncached_urls:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                    future_to_url = {
+                        executor.submit(
+                            self._fetch_and_cache_url, url, web_cache, cache_dir
+                        ): url
+                        for url in uncached_urls
+                    }
+                    for future in concurrent.futures.as_completed(future_to_url):
+                        url = future_to_url[future]
+                        try:
+                            content = future.result()
+                            file_contents[url] = content
+                        except Exception:
+                            file_contents[url] = None
+
+            # Normalize empty-string sentinels to None for downstream formatting
+            for url in urls:
+                stored = file_contents.get(url)
+                if stored == "":
+                    file_contents[url] = None
+        else:
+            web_cache = {}
+
+        content = self._format_content(
+            repo_tree, scoped_paths, file_contents, git_status, session_root
+        )
+        content_tokens = (
+            self._llm_client.get_text_token_count(content) if include_tokens else 0
+        )
+
+        return ProjectContext(
+            header=self._format_header(system_info, current_turn),
+            content=content,
+            scoped_paths=scoped_paths,
+            git_status=git_status,
+            items=self._collect_items(
+                scoped_paths, file_contents, git_status, include_tokens
+            ),
+            agent_name=agent_name,
+            total_window=total_window,
+            system_prompt_tokens=system_prompt_tokens,
+            content_tokens=content_tokens,
+        )
+
+    def _cap_plan_contents(
+        self, file_contents: Dict[str, Optional[str]]
+    ) -> Dict[str, Optional[str]]:
+        """Cap ``plan.md`` content at ``plan.max_lines`` before embedding/counting.
+
+        Truncate-first: the embedded window and the pruning token counts both
+        read this same map, so capping here makes ``token_count`` track the
+        capped length. Only ``plan.md`` files are capped; a not-found entry
+        (``None``) passes through unchanged.
+        """
+        max_lines = self._resolve_plan_max_lines()
+        for path, content in file_contents.items():
+            if content is not None and path.endswith("plan.md"):
+                file_contents[path] = self._cap_plan_content(content, max_lines)
+        return file_contents
+
+    def _cap_plan_content(self, content: str, max_lines: int) -> str:
+        """Head-truncate a plan with a hint-less ``[Showing first N of M lines.]`` notice."""
+        if not content or max_lines <= 0:
+            return content
+        total_lines = len(content.splitlines())
+        if total_lines <= max_lines:
+            return content
+        hint = f"[Showing first {max_lines} of {total_lines} lines.]"
+        return truncate_lines(content, max_lines=max_lines, direction="head", hint=hint)
+
+    def _resolve_plan_max_lines(self) -> int:
+        """Resolve the plan context cap, falling back to the schema default."""
+        default = DEFAULT_APP_CONFIG.plan.max_lines
+        if self._config_service is None:
+            return default
+        value = self._config_service.get_setting("plan.max_lines", default)
+        return value if value is not None else default
+
+    def _resolve_scoped_paths(
+        self, context_files: Optional[Dict[str, Sequence[str]]]
+    ) -> tuple[Dict[str, List[str]], List[str]]:
+        """Resolves raw context files into scoped and deduplicated absolute paths."""
+        if not context_files:
+            raw_paths = self._file_system_manager.get_context_paths()
+            # Systemic Fix: Ensure default paths are also expanded recursively
+            all_paths = self._resolve_files_to_paths(raw_paths)
+            return {"Default": all_paths}, all_paths
+
+        # Backward compatibility: handle list of files
+        if isinstance(context_files, list):
+            context_files = {"Default": context_files}
+
+        scoped_paths: Dict[str, List[str]] = {}
+        all_resolved_paths: List[str] = []
+
+        for scope, files in context_files.items():
+            paths = self._resolve_files_to_paths(files)
+            scoped_paths[scope] = paths
+            for p in paths:
+                if p not in all_resolved_paths:
+                    all_resolved_paths.append(p)
+
+        return scoped_paths, all_resolved_paths
+
+    def _resolve_files_to_paths(self, files: Sequence[str]) -> List[str]:
+        """
+        Nuanced Resolution: Distinguishes manifests (.context) from targets.
+        Detects and expands directories recursively.
+        Preserves original order while deduplicating results.
+        """
+        paths: List[str] = []
+        processed_manifests: set[str] = set()
+
+        for f in files:
+            self._resolve_recursive(f, paths, processed_manifests)
+
+        return paths
+
+    def _resolve_recursive(
+        self, f: str, paths: List[str], processed_manifests: set[str]
+    ) -> None:
+        """Helper to resolve a single path recursively."""
+        if self._is_url(f):
+            if f not in paths:
+                paths.append(f)
+        elif self._is_manifest(f):
+            self._expand_manifest(f, paths, processed_manifests)
+        elif self._file_system_manager.is_dir(f):
+            self._expand_directory(f, paths)
+        elif f not in paths:
+            paths.append(f)
+
+    def _expand_manifest(
+        self, f: str, paths: List[str], processed_manifests: set[str]
+    ) -> None:
+        """Expands a manifest and recursively resolves its contents."""
+        if f in processed_manifests:
+            return
+        processed_manifests.add(f)
+
+        # Expansion of manifests can return multiple paths
+        resolved = self._file_system_manager.resolve_paths_from_files([f])
+        for r in resolved:
+            self._resolve_recursive(r, paths, processed_manifests)
+
+    def _expand_directory(self, f: str, paths: List[str]) -> None:
+        """Expands a directory and adds its contents to the path list."""
+        resolved = self._file_system_manager.list_directory_recursive(f)
+        for r in resolved:
+            if r not in paths:
+                paths.append(r)
+
+    def _is_manifest(self, file_path: str) -> bool:
+        """Determines if a file path refers to a .context manifest."""
+        return (
+            file_path.endswith(".context")
+            or file_path.endswith("/context")
+            or file_path == "context"
+        )
+
+    def _is_url(self, path: str) -> bool:
+        """Determines if a path is a remote URL."""
+        return path.startswith("http://") or path.startswith("https://")
+
+    def _fetch_and_cache_url(
+        self, url: str, web_cache: Dict[str, str], cache_dir: Optional[str]
+    ) -> str:
+        """Fetch a single URL, cache the result, and save atomically.
+
+        On failure, caches an empty string sentinel and re-raises so the
+        caller can decide how to handle the error.
+        """
+        try:
+            content = self._web_scraper.get_content(url, truncate=False)
+            web_cache[url] = content
+            if cache_dir:
+                self._save_web_cache(cache_dir, web_cache)
+            return content
+        except Exception:
+            web_cache[url] = ""
+            if cache_dir:
+                self._save_web_cache(cache_dir, web_cache)
+            raise
+
+    def _collect_items(
+        self,
+        scoped_paths: Dict[str, List[str]],
+        file_contents: Dict[str, Optional[str]],
+        git_status: Optional[str],
+        include_tokens: bool,
+    ) -> List[ContextItem]:
+        """
+        Orchestrates the assembly of ContextItem metadata DTOs.
+        Deduplicates by path, prioritizing non-Turn scopes (e.g. Session).
+        """
+        parsed_status = self._parse_git_status(git_status)
+        path_to_tokens = self._get_path_to_tokens(
+            scoped_paths, file_contents, include_tokens
+        )
+
+        # Deduplication map: path -> ContextItem
+        items_map: Dict[str, ContextItem] = {}
+
+        for scope, paths in scoped_paths.items():
+            for path in paths:
+                # Priority logic: Set if new path, or if we can upgrade a "Turn" scope to something else.
+                is_new = path not in items_map
+                can_upgrade = (
+                    not is_new and items_map[path].scope == "Turn" and scope != "Turn"
+                )
+
+                if is_new or can_upgrade:
+                    items_map[path] = ContextItem(
+                        path=path,
+                        token_count=path_to_tokens.get(path, 0),
+                        git_status=parsed_status.get(path, ""),
+                        scope=scope,
+                    )
+
+        return list(items_map.values())
+
+    def _get_path_to_tokens(
+        self,
+        scoped_paths: Dict[str, List[str]],
+        file_contents: Dict[str, Optional[str]],
+        include_tokens: bool,
+    ) -> Dict[str, int]:
+        """Calculates token counts for all unique files in parallel."""
+        if not include_tokens:
+            return {}
+
+        unique_paths = list(set().union(*scoped_paths.values()))
+        if not unique_paths:
+            return {}
+
+        token_counts = {}
+
+        def get_count(path: str) -> tuple[str, int]:
+            content = file_contents.get(path) or ""
+            return path, self._llm_client.get_text_token_count(content)
+
+        # Parallelize to handle large repositories without stalling the UI.
+        # We use a ThreadPoolExecutor as token counting is often offloaded or involves latency.
+        # Disable parallelization in tests to avoid pyfakefs deadlocks.
+        import os
+
+        max_workers = 10 if not os.environ.get("TEDDY_TESTING") else 1
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_path = {
+                executor.submit(get_count, path): path for path in unique_paths
+            }
+            for future in concurrent.futures.as_completed(future_to_path):
+                path, count = future.result()
+                token_counts[path] = count
+
+        return token_counts
+
+    def _parse_git_status(self, git_status: Optional[str]) -> Dict[str, str]:
+        """Parses porcelain git status output into a map of path -> status code."""
+        if not git_status:
+            return {}
+
+        # Minimum length for "XY path" format
+        min_line_length = 4
+        status_map = {}
+        for line in git_status.splitlines():
+            # The porcelain branch header carries no file status.
+            if line.startswith("##"):
+                continue
+            if len(line) >= min_line_length:
+                code = line[:2].strip()
+                path = line[3:].strip()
+
+                # A rename line reads "old -> new"; key the badge by the new path.
+                if " -> " in path:
+                    path = path.split(" -> ", 1)[1]
+
+                # Guideline: Map ?? to U (Untracked)
+                if code == "??":
+                    code = "U"
+
+                status_map[path] = code
+
+        return status_map
+
+    def _format_header(
+        self, system_info: Dict[str, str], current_turn: Optional[str] = None
+    ) -> str:
+        """Formats the header section of the context report."""
+        header_parts = [
+            "# Project Context",
+            "\n## System Information",
+            f"- **Current Date:** {system_info.get('current_date', 'N/A')}",
+            f"- **Current Time:** {system_info.get('current_time', 'N/A')}",
+            f"- **CWD:** {system_info.get('cwd', 'N/A')}",
+            f"- **OS:** {system_info.get('os_name', 'N/A')} {system_info.get('os_version', 'N/A')}".strip(),
+            f"- **Shell:** {system_info.get('shell', 'N/A')}",
+            f"- **Current Turn:** {current_turn or 'N/A'}",
+        ]
+        return "\n".join(header_parts)
+
+    def _format_content(
+        self,
+        repo_tree: str,
+        scoped_paths: Dict[str, List[str]],
+        file_contents: Dict[str, Optional[str]],
+        git_status: Optional[str] = None,
+        session_root: Optional[str] = None,
+    ) -> str:
+        """Formats the main content section of the context report."""
+        # Gather all unique paths
+        all_paths: List[str] = []
+        for paths in scoped_paths.values():
+            for p in paths:
+                if p not in all_paths:
+                    all_paths.append(p)
+
+        # Partition this session's own artifacts from ordinary resources. A path
+        # from another session root is a resource the agent read, not our history.
+        session_paths = [
+            p for p in all_paths if self._is_own_session_path(p, session_root)
+        ]
+        workspace_paths = [p for p in all_paths if p not in session_paths]
+
+        git_status_body = (
+            embed_in_fence(git_status, "")
+            if isinstance(git_status, str) and git_status
+            else ""
+        )
+        content_parts = [
+            "\n## Git Status",
+            git_status_body,
+            "\n## Project Structure",
+            self._format_tree_subtitle(),
+            f"```\n{repo_tree}\n```",
+        ]
+
+        # Format workspace files under ## Resource Contents
+        content_parts.extend(
+            self._format_workspace_contents(workspace_paths, file_contents)
+        )
+
+        # Prepend Session History section first (after header's System Information)
+        session_history_parts = self._format_session_history(
+            session_paths, file_contents
+        )
+        if session_history_parts:
+            content_parts = session_history_parts + content_parts
+
+        return "\n".join(content_parts)
+
+    def _is_own_session_path(self, path: str, session_root: Optional[str]) -> bool:
+        """Determines whether ``path`` lives under this session's own root."""
+        if not is_session_file_path(path):
+            return False
+        if session_root is None:
+            return True
+        clean_root = session_root.lstrip("./").rstrip("/")
+        clean_path = path.lstrip("./")
+        return clean_path == clean_root or clean_path.startswith(clean_root + "/")
+
+    def _format_tree_subtitle(self) -> str:
+        """State both tree limits once, so the compact notices stay meaningful."""
+        return (
+            f"*Tree capped at depth {self._repo_tree_generator.max_depth} "
+            f"and {self._repo_tree_generator.max_children} entries per subdirectory: "
+            "truncated directories show entry counts only.*"
+        )
+
+    def _format_workspace_contents(
+        self,
+        workspace_paths: List[str],
+        file_contents: Dict[str, Optional[str]],
+    ) -> List[str]:
+        """Formats the workspace contents section."""
+        if not workspace_paths:
+            return []
+
+        parts = ["\n## Resource Contents"]
+        for path in workspace_paths:
+            parts.append("\n---")
+            if self._is_url(path):
+                parts.append(f"### [{path}]({path})")
+            else:
+                parts.append(f"### [{path}](/{path})")
+            content = file_contents.get(path)
+            if content is not None:
+                lang = get_language_from_path(path)
+                parts.append(embed_in_fence(content, lang))
+            else:
+                parts.append("```\n--- FILE NOT FOUND ---\n```")
+        return parts
+
+    CACHE_FILENAME = ".web_cache.json"
+
+    def _load_web_cache(self, cache_dir: Optional[str]) -> Dict[str, str]:
+        """Load the web content cache from disk.
+
+        Returns an empty dict if:
+        - cache_dir is None (caching disabled)
+        - Cache file does not exist
+        - Cache file contains invalid JSON
+        - Cache file contains non-dict structure
+        - Cache file contains non-string values
+        """
+        if not cache_dir:
+            return {}
+        cache_path = Path(cache_dir) / self.CACHE_FILENAME
+        if not cache_path.exists():
+            return {}
+        try:
+            raw = cache_path.read_text(encoding="utf-8")
+            parsed = json.loads(raw)
+            if not isinstance(parsed, dict):
+                return {}
+            # Validate all values are strings
+            for k, v in parsed.items():
+                if not isinstance(k, str) or not isinstance(v, str):
+                    return {}
+            return parsed
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+            return {}
+
+    def _save_web_cache(self, cache_dir: str, cache: Dict[str, str]) -> None:
+        """Write the cache to disk atomically.
+
+        Creates cache_dir if it does not exist.
+        Writes to a .tmp file first, then atomically renames to .web_cache.json
+        using Path.replace(). This prevents partial writes from corrupting
+        the cache if the process crashes mid-write.
+        """
+        cache_dir_path = Path(cache_dir)
+        cache_dir_path.mkdir(parents=True, exist_ok=True)
+        target = cache_dir_path / self.CACHE_FILENAME
+        tmp = cache_dir_path / f"{self.CACHE_FILENAME}.tmp"
+        tmp.write_text(
+            json.dumps(cache, ensure_ascii=False), encoding="utf-8", newline=""
+        )
+        tmp.replace(target)
+
+    def _format_session_history(
+        self,
+        session_paths: List[str],
+        file_contents: Dict[str, Optional[str]],
+    ) -> List[str]:
+        """Formats the session history section."""
+        if not session_paths:
+            return []
+
+        recognized_session_paths = [
+            p for p in session_paths if get_session_history_display_name(p) is not None
+        ]
+        if not recognized_session_paths:
+            return []
+
+        recognized_session_paths.sort(key=get_session_history_sort_key)
+        parts = ["\n## Session History"]
+        for path in recognized_session_paths:
+            disp_name = get_session_history_display_name(path)
+            content = file_contents.get(path) or ""
+            content_str = content.strip()
+            lang = get_language_from_path(path)
+            parts.append(f"\n### {disp_name}")
+            parts.append(embed_in_fence(content_str, lang))
+        return parts
