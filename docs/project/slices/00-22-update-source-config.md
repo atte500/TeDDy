@@ -1,5 +1,5 @@
 # Slice: Configurable Update Source
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc)
 - **Depends On:** None
 - **Specs:** None
