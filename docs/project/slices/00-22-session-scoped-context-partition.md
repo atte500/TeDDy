@@ -1,5 +1,5 @@
 # Slice: Session-Root-Gated Context Partition
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** N/A (ad-hoc fix for [Bug 82](../debugging/82-session-scope-read-other-session.md))
 - **Depends On:** None
 - **Specs:** None pinned
@@ -129,6 +129,26 @@ None open. Every question the case file raised is resolved and re-verified again
 - `get_session_history_sort_key` still takes no root: the gated partition has already excluded foreign paths from its input, so ordering within own history does not depend on the root.
 - No behaviour changed beyond those two deltas: the three targeted modules re-ran at `46 passed`, the unscoped suite at `2314 passed, 5 skipped` — the same counts as the Migration delivery — and `ruff check` reported `All checks passed!`.
 - As-built pass: `context_service.md`, `get_context_use_case.md`, `project_context.md`, `textual_plan_reviewer.md`, `planning_service.md`, `session_orchestrator.md`, and `cli.md` now document the `session_root` seam; `ARCHITECTURE.md` defines Session Root in the ubiquitous language. No component was renamed or deleted, so the stale-reference sweep found nothing to prune.
+
+### Completion audit
+
+The Verification audit ran clean. The stub sweep over the touched production
+modules found no skeleton responses or hardcoded stand-ins; the only
+`placeholder` matches are `_persist_local_placeholder_key`'s API-key
+placeholder, which is production behavior. Every predicate caller is
+accounted for: `is_session_file_path` is reached externally only through
+`is_own_session_path`, `get_session_history_sort_key` from `ContextService`
+and the TUI, and `_format_session_history` only from `_format_content`.
+`detect_session_root` reuses `detect_session_context`'s three-file gate by
+delegation. The four test layers that pin this fix drive distinct paths — the
+predicate unit test, the `ContextService` partition test, the TUI grouping
+test, and the caller kwarg assertions in the planning and orchestrator
+suites — so no coverage is redundant. No deterministic lint rule is
+warranted: the case file records the defect as a single-site information gap,
+which the behavioural regression test pins more precisely than a structural
+check could. The slice carries `Milestone: N/A`, and no milestone document or
+`PROJECT.md` roadmap entry references it, so the milestone-item and roadmap
+edits are explicit no-ops rather than invented entries.
 
 ## Verification
 1. **Post-fix rendering of a foreign read:**
