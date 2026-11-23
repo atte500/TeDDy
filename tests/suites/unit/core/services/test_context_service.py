@@ -420,6 +420,80 @@ def test_get_context_separates_and_formats_session_history(
     assert ".teddy/sessions/" not in history_block
 
 
+def test_get_context_renders_foreign_session_read_as_resource_content(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+):
+    """
+    Scenario: A file read from another session is a resource, not our history.
+
+    Only paths under the rendering session's root belong under
+    '## Session History'; a foreign session path read into the turn renders
+    under '## Resource Contents', and so does a workspace path that merely
+    contains a `sessions/` directory. Neither is labelled as our own turn.
+    """
+    own_root = ".teddy/sessions/20260521_100000-my-session"
+    foreign_root = ".teddy/sessions/20260521_120000-other-session"
+    own_plan = f"{own_root}/01/plan.md"
+    own_report = f"{own_root}/01/report.md"
+    foreign_report = f"{foreign_root}/03/report.md"
+
+    mock_file_contents = {
+        own_plan: "OWN_PLAN_CONTENT",
+        own_report: "OWN_REPORT_CONTENT",
+        foreign_report: "FOREIGN_REPORT_CONTENT",
+        "src/sessions/handler.py": "HANDLER_CONTENT",
+        "src/main.py": "print('hello')",
+    }
+
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = ""
+    mock_tree_gen.generate_tree.return_value = "src/main.py"
+    mock_fs.is_dir.return_value = False
+    mock_fs.read_files_in_vault.return_value = mock_file_contents
+
+    # Act
+    result = service.get_context(
+        context_files={
+            "Session": [own_plan],
+            "Turn": [
+                own_report,
+                foreign_report,
+                "src/sessions/handler.py",
+                "src/main.py",
+            ],
+        },
+        session_root=own_root,
+    )
+
+    # Assert
+    content = result.content
+    assert content.index("## Session History") < content.index("## Resource Contents")
+    history_block = content.split("## Session History")[1].split(
+        "## Resource Contents"
+    )[0]
+    resource_block = content.split("## Resource Contents")[1]
+
+    assert "OWN_PLAN_CONTENT" in history_block
+    assert "OWN_REPORT_CONTENT" in history_block
+    assert "FOREIGN_REPORT_CONTENT" not in history_block
+    assert "### Turn 3: Report" not in history_block
+
+    assert "OWN_PLAN_CONTENT" not in resource_block
+    assert "OWN_REPORT_CONTENT" not in resource_block
+    assert "FOREIGN_REPORT_CONTENT" in resource_block
+    # A workspace path that merely sits under a `sessions/` directory is a
+    # resource too: under the old shape-only split it vanished from both
+    # sections, which is the sibling defect the root gate hardens.
+    assert "HANDLER_CONTENT" in resource_block
+    assert "HANDLER_CONTENT" not in history_block
+    assert "### [src/main.py]" in resource_block
+
+    assert result.session_root == own_root
+
+
 def test_get_context_omits_session_history_if_none_present(
     service: IGetContextUseCase,
     mock_fs,

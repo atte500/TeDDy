@@ -6,7 +6,7 @@ from teddy_executor.core.domain.models import ProjectContext, ContextItem
 from teddy_executor.core.utils.markdown import (
     embed_in_fence,
     get_language_from_path,
-    is_session_file_path,
+    is_own_session_path,
     get_session_history_display_name,
     get_session_history_sort_key,
 )
@@ -53,6 +53,7 @@ class ContextService(IGetContextUseCase):
         cache_dir: Optional[str] = None,
         current_turn: Optional[str] = None,
         system_prompt_tokens: int = 0,
+        session_root: Optional[str] = None,
     ) -> ProjectContext:
         """
         Gathers all project context information by orchestrating its dependencies.
@@ -108,7 +109,7 @@ class ContextService(IGetContextUseCase):
             web_cache = {}
 
         content = self._format_content(
-            repo_tree, scoped_paths, file_contents, git_status
+            repo_tree, scoped_paths, file_contents, git_status, session_root
         )
         content_tokens = (
             self._llm_client.get_text_token_count(content) if include_tokens else 0
@@ -126,6 +127,7 @@ class ContextService(IGetContextUseCase):
             total_window=total_window,
             system_prompt_tokens=system_prompt_tokens,
             content_tokens=content_tokens,
+            session_root=session_root,
         )
 
     def _cap_plan_contents(
@@ -391,6 +393,7 @@ class ContextService(IGetContextUseCase):
         scoped_paths: Dict[str, List[str]],
         file_contents: Dict[str, Optional[str]],
         git_status: Optional[str] = None,
+        session_root: Optional[str] = None,
     ) -> str:
         """Formats the main content section of the context report."""
         # Gather all unique paths
@@ -400,9 +403,10 @@ class ContextService(IGetContextUseCase):
                 if p not in all_paths:
                     all_paths.append(p)
 
-        # Partition standard workspace files and session files
-        workspace_paths = [p for p in all_paths if not is_session_file_path(p)]
-        session_paths = [p for p in all_paths if is_session_file_path(p)]
+        # Partition this session's own artifacts from ordinary resources. A path
+        # read from another session is a resource, not our own history.
+        session_paths = [p for p in all_paths if is_own_session_path(p, session_root)]
+        workspace_paths = [p for p in all_paths if p not in session_paths]
 
         git_status_body = (
             embed_in_fence(git_status, "")

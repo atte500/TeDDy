@@ -83,7 +83,7 @@ None open. Every question the case file raised is resolved and re-verified again
 
 ## Deliverables
 - [x] **Interface** - `is_own_session_path` plus the optional `session_root` parameters in `core/utils/markdown.py`; `session_root` on `IGetContextUseCase.get_context` and on `ProjectContext`. Unit tests pin the predicate: own path, foreign path, workspace path with a `sessions/` segment, `None` root legacy behavior, form mismatch, trailing separator, continuation-name collision, and an absolute path whose earlier directory is also named `sessions`.
-- [ ] **Core** - `ContextService.get_context` threads `session_root` into `_format_content`, partitions on `is_own_session_path`, and carries the root on the DTO. Regression unit test in `tests/suites/unit/core/services/test_context_service.py` supplies an own-history path and a foreign-session path together with a root and asserts own history stays under `## Session History` while the foreign path renders under `## Resource Contents`.
+- [x] **Core** - `ContextService.get_context` threads `session_root` into `_format_content`, partitions on `is_own_session_path`, and carries the root on the DTO. Regression unit test in `tests/suites/unit/core/services/test_context_service.py` supplies an own-history path and a foreign-session path together with a root and asserts own history stays under `## Session History` while the foreign path renders under `## Resource Contents`.
 - [ ] **Migration** - the three production call sites pass their root (and the CLI passes `None` outside a session); the TUI helpers consume `project_context.session_root` for the exclusion, History grouping, labels, and token split; extend the MRE with a mode that passes the session root to the loaded module so it doubles as a post-fix check; update caller tests additively.
 - [ ] **Refactor** - consolidate the path normalization and session-segment extraction shared by the four predicates into one private helper in `core/utils/markdown.py`, and route `ContextService` through the shared predicate only. No new tests; the full suite stays green.
 
@@ -97,6 +97,14 @@ None open. Every question the case file raised is resolved and re-verified again
 - Regression pin: `tests/suites/unit/core/utils/test_markdown_utils.py::test_session_root_gate_separates_own_history_from_foreign_paths`.
 - Deferred: `is_session_file_path` still performs a raw `"sessions/" in path` substring test with no backslash normalization; folding the shared normalizer is scheduled under the Refactor deliverable.
 - The widened port declaration carries `# noqa: PLR0913 - inbound-port seam; additive keyword`. The eight-keyword surface is the shared inbound seam, and collapsing it into a parameter object would break the roughly forty callers the additive default exists to protect; the implementation already carries the same bypass. A `per-file-ignores` entry would suppress the rule far beyond this one finding.
+
+### Core deliverable
+- `ContextService.get_context` accepts `session_root`, forwards it to `_format_content`, and stamps it on the returned `ProjectContext`. `_format_content` grew to five non-`self` parameters, exactly at the `PLR0913` floor, so no bypass was needed.
+- `_format_content` partitions with `is_own_session_path(p, session_root)`; the workspace bucket is the complement of the session bucket, so a foreign session path and a workspace path carrying a `sessions/` segment both fall through to `## Resource Contents` instead of being dropped from both sections.
+- Swapped the now-unused `is_session_file_path` import for `is_own_session_path`; a grep confirmed the coarse predicate had only its import plus the two former partition lines, so nothing was orphaned.
+- `_format_session_history` was left unchanged: the gated partition already excludes foreign paths from its input, so its display-name filter remains correct.
+- Regression pin: `tests/suites/unit/core/services/test_context_service.py::test_get_context_renders_foreign_session_read_as_resource_content`, covering own `plan.md`/`report.md` under `## Session History`, the foreign `03/report.md` under `## Resource Contents`, the workspace `src/sessions/handler.py` under `## Resource Contents`, and the resolved root on the DTO.
+- Deferred to the Migration deliverable: the three production call sites and the TUI helpers still pass no root, so they keep the byte-identical legacy partition through the `None` default.
 
 ## Verification
 1. **Post-fix rendering of a foreign read:**
