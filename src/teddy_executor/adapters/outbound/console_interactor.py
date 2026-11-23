@@ -14,6 +14,10 @@ from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
+from teddy_executor.core.utils.message_renderer import (
+    inline_code_theme,
+    render_message_body,
+)
 from teddy_executor.core.utils.stdin_ownership import stdin_owned
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
 from teddy_executor.adapters.outbound.console_interactor_ask_loop import (
@@ -30,11 +34,20 @@ logger = logging.getLogger(__name__)
 
 
 class ConsoleInteractorAdapter(IUserInteractor):
-    def __init__(self, system_env: ISystemEnvironment, config_service: IConfigService):
+    def __init__(
+        self,
+        system_env: ISystemEnvironment,
+        config_service: IConfigService,
+        console: Optional[Console] = None,
+    ):
         self._system_env = system_env
         self._config_service = config_service
         self._tooling = ConsoleToolingHelper(system_env, config_service)
-        self._console = Console(stderr=True)
+        self._console = (
+            console
+            if console is not None
+            else Console(theme=inline_code_theme(), stderr=True)
+        )
         self._ask_loop = ConsoleAskLoop(self._system_env, self._tooling)
 
     def _restore_terminal(self):
@@ -83,7 +96,10 @@ class ConsoleInteractorAdapter(IUserInteractor):
         display_name = agent_name if agent_name else "TeDDy"
         header = f"\n--- MESSAGE from {display_name} ---"
         typer.secho(header, fg=typer.colors.CYAN, err=True)
-        typer.echo(prompt, err=True)
+        if self._console.is_terminal:
+            render_message_body(prompt, self._console)
+        else:
+            typer.echo(prompt, err=True)
 
         if resources:
             typer.echo("\n▶ Reference Files:", err=True)

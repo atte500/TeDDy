@@ -1,0 +1,2 @@
+# Probe captures written by running the MRE under a pty or a pipe.
+*.txt

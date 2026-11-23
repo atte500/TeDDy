@@ -7,6 +7,7 @@ Renders a communicating turn's Message body to a terminal console: prose through
 
 ## Consumers
 - [SessionOrchestrator](../services/session_orchestrator.md): Calls `render_message_body` and `inline_code_theme` from `_print_message_from_teddy` when the output console is a terminal.
+- [ConsoleInteractorAdapter](../../adapters/outbound/console_interactor.md): Calls `render_message_body` and `inline_code_theme` from `_display_ask_header` when the interactive ask console is a terminal.
 
 ## Dependencies
 - [`split_fenced_segments` and `MessageSegment`](/src/teddy_executor/core/utils/markdown.py): Splits the body into prose and fenced segments that carry their own delimiter lines verbatim.

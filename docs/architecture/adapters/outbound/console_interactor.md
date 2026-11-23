@@ -46,7 +46,7 @@ None — this is an outbound (driven) adapter.
 - **Postconditions:** Returns the editor content. Returns the `TEDDY_TEST_MOCK_EDITOR_OUTPUT` value when that variable is set.
 
 ### `ask_question(prompt, resources=None, agent_name=None) -> str`
-- **Postconditions:** Prints a cyan `--- MESSAGE from {agent_name} ---` header, the prompt, and any reference files, then returns the response from `ConsoleAskLoop`. Defaults the name to `TeDDy` when `agent_name` is absent. A terminal reply that abandons an opened editor draft deletes the draft file and clears the pending state.
+- **Postconditions:** Prints a cyan `--- MESSAGE from {agent_name} ---` header, the prompt, and any reference files, then returns the response from `ConsoleAskLoop`. On a terminal the prompt body is rendered through `render_message_body`; off-terminal it is echoed raw, so pipeline and redirected output stay byte-identical. Defaults the name to `TeDDy` when `agent_name` is absent. A terminal reply that abandons an opened editor draft deletes the draft file and clears the pending state.
 
 ### `display_message(message) -> None`
 - **Postconditions:** Prints the message to the rich console bound to `stderr`.
@@ -67,4 +67,4 @@ None — this is an outbound (driven) adapter.
 - **Postconditions:** Prints the handoff details and returns `(True, "")` on an empty response, or `(False, reason)` on a non-empty response.
 
 ### Internal helpers
-`_display_ask_header` prints the ask header and reference files. `_launch_editor_synchronous` opens the editor on a temporary file and returns its content. `_handle_external_preview` writes the preview files and launches the diff command in the background.
+`_display_ask_header` prints the ask header and reference files, rendering the body through `render_message_body` when the console is a terminal. `_launch_editor_synchronous` opens the editor on a temporary file and returns its content. `_handle_external_preview` writes the preview files and launches the diff command in the background.
