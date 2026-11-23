@@ -8,15 +8,39 @@ PyPI (see .github/workflows/publish.yml), so --experimental must check PyPI
 import json
 import urllib.request
 
+import punq
 from typer.testing import CliRunner
 
 from teddy_executor.__main__ import app
+from teddy_executor.adapters.outbound.yaml_config_adapter import YamlConfigAdapter
+from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.services.update_checker import PYPI_URL
 from tests.harness.setup.fake_http_response import FakeHTTPResponse
 
 
-def test_experimental_flag_uses_pypi_url(monkeypatch):
+def _isolate_default_update_source(monkeypatch, tmp_path):
+    """Point ``teddy update`` at an explicitly empty update source.
+
+    Without this, the command resolves the developer's live
+    ``.teddy/config.yaml``, so a fork that sets ``update.index_url`` would make
+    the literal-URL assertion below depend on local state instead of the
+    default.
+    """
+    teddy_dir = tmp_path / ".teddy"
+    teddy_dir.mkdir()
+    config_path = teddy_dir / "config.yaml"
+    config_path.write_text('update:\n  index_url: ""\n', encoding="utf-8")
+    container = punq.Container()
+    container.register(
+        IConfigService,
+        factory=lambda: YamlConfigAdapter(config_path=str(config_path)),
+    )
+    monkeypatch.setattr("teddy_executor.__main__.get_container", lambda: container)
+
+
+def test_experimental_flag_uses_pypi_url(monkeypatch, tmp_path):
     """Wiring: --experimental checks PyPI, not the retired TestPyPI index."""
+    _isolate_default_update_source(monkeypatch, tmp_path)
     fetch_calls = []
 
     def tracking_fetch_latest_version(index_url=None, **kwargs):
