@@ -14,6 +14,9 @@ from teddy_executor.core.ports.inbound.init import IInitUseCase
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import ISessionManager
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
+from teddy_executor.core.domain.models.config_schema import (
+    resolve_agent_llm_overrides,
+)
 from teddy_executor.core.domain.models.session import SessionOptions
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
@@ -904,13 +907,21 @@ def _echo_config_success(
         container: The DI container with resolved services.
         agent: Optional agent name to display.
         model: Optional model override from CLI. If provided, this takes
-               precedence over the config file value.
+               precedence over the config file value. When omitted, a configured
+               ``agents.<persona>.model`` wins over ``llm.model``.
     """
     config_service = container.resolve(IConfigService)
     if model:
         resolved_model = model
     else:
         resolved_model = config_service.get_setting("llm.model", "unknown")
+        if agent:
+            # Report the same effective model the planner resolves, so the
+            # persona's configured model is visible before the first turn.
+            overlay = resolve_agent_llm_overrides(
+                config_service.get_setting("agents", {}), agent
+            )
+            resolved_model = overlay.get("model") or resolved_model
     identity_lines: list[str] = []
     if agent:
         identity_lines.append(f"Agent: {canonical_agent_name(agent)}")

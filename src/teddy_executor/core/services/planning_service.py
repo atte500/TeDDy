@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 from teddy_executor.core.domain.models import ProjectContext
+from teddy_executor.core.domain.models.config_schema import resolve_agent_llm_overrides
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.utils.interruptible_call import run_interruptible
 
@@ -60,10 +61,20 @@ class PlanningService(IPlanningUseCase):
 
         system_prompt = self._prompt_manager.fetch_system_prompt(agent_name, turn_path)
 
+        # One resolution feeds both the effective model and the completion
+        # overlay, so the two can never disagree. An absent persona block yields
+        # an empty overlay, leaving the global ``llm`` path unchanged.
+        llm_overrides = resolve_agent_llm_overrides(
+            self._config_service.get_setting("agents", {}), agent_name
+        )
+
         # Compute system prompt token count BEFORE context construction so the
         # ProjectContext DTO is born with correct data (no post-hoc patching needed).
         model = str(
-            meta.get("model") or self._config_service.get_setting("llm.model") or ""
+            meta.get("model")
+            or llm_overrides.get("model")
+            or self._config_service.get_setting("llm.model")
+            or ""
         )
         try:
             system_token_count = self._llm_client.get_text_token_count(
@@ -97,7 +108,7 @@ class PlanningService(IPlanningUseCase):
         )
 
         response, token_count, plan_content, turn_cost = run_interruptible(
-            lambda: self._run_planning_phase(messages, model, meta)
+            lambda: self._run_planning_phase(messages, model, meta, llm_overrides)
         )
 
         # Persist the explicit recorded-cost signal (Option B): a real price was
@@ -126,6 +137,7 @@ class PlanningService(IPlanningUseCase):
         messages: list[Dict[str, str]],
         model: str,
         meta: Dict[str, Any],
+        llm_overrides: Optional[Dict[str, Any]] = None,
     ) -> tuple[Any, int, str, float]:
         """Perform every blocking planning call on the interruptible worker.
 
@@ -151,6 +163,7 @@ class PlanningService(IPlanningUseCase):
         response, plan_content, turn_cost = self._perform_generation_with_retry(
             messages,
             model=model,
+            llm_overrides=llm_overrides,
         )
         return response, token_count, plan_content, turn_cost
 
@@ -158,6 +171,7 @@ class PlanningService(IPlanningUseCase):
         self,
         messages: list[Dict[str, str]],
         model: str,
+        llm_overrides: Optional[Dict[str, Any]] = None,
     ) -> tuple[Any, str, float]:
         """Implements retry loop for empty LLM content."""
         max_retries_val = self._config_service.get_setting("llm.max_retries")
@@ -167,7 +181,13 @@ class PlanningService(IPlanningUseCase):
         turn_cost = 0.0
 
         for attempt in range(max_retries):
-            response = self._llm_client.get_completion(messages=messages, model=model)
+            # The overlay key is added only when the persona configures one, so a
+            # project without an ``agents`` block issues the same call shape as
+            # before this feature existed.
+            completion_kwargs: Dict[str, Any] = {"messages": messages, "model": model}
+            if llm_overrides:
+                completion_kwargs["llm_overrides"] = llm_overrides
+            response = self._llm_client.get_completion(**completion_kwargs)
             plan_content = self._extract_plan_content(response)
             attempt_cost = self._llm_client.get_completion_cost(
                 response, model_override=model
