@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import TYPE_CHECKING, Any, cast
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
@@ -24,6 +25,10 @@ ALLOWED_RATIONALE_SECTIONS = [
     "Notes",
 ]
 
+# Label for the whole-block node shown when a rationale carries none of the
+# allowed section headings.
+RATIONALE_FALLBACK_TITLE = "Raw"
+
 # Tree Node Identifiers
 CONTEXT_ROOT = "CONTEXT_ROOT"
 SYSTEM_LABEL = "SYSTEM_LABEL"
@@ -35,6 +40,46 @@ ACTION_PLAN_ROOT = "ACTION_PLAN_ROOT"
 
 
 # Summary logic moved to textual_plan_reviewer_helpers.py
+
+
+def recognized_rationale_sections(rationale: str) -> list[tuple[str, str]]:
+    """Splits a rationale into its recognized `###` sections.
+
+    Only a `### ` heading whose title is in ``ALLOWED_RATIONALE_SECTIONS`` opens
+    a section. Any other chunk, including a numeric `1. Section` marker, merges
+    into the preceding section as body text; text before the first recognized
+    heading is dropped. A rationale with no recognized heading yields an empty
+    list, which the caller turns into a single ``Raw`` block.
+    """
+    titles: list[str] = []
+    contents: list[str] = []
+    for chunk in re.split(r"\n(?=### )", "\n" + rationale):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        lines = chunk.split("\n")
+        title = re.sub(r"^###\s*", "", lines[0]).strip()
+        if title in ALLOWED_RATIONALE_SECTIONS:
+            titles.append(title)
+            contents.append("\n".join(lines[1:]).strip())
+        elif contents:
+            contents[-1] += "\n\n" + chunk
+    return list(zip(titles, contents))
+
+
+def rationale_entries(rationale: str) -> list[tuple[str, str]]:
+    """Returns the rationale tree entries, falling back to one raw block.
+
+    A rationale written before the section contract carries none of the
+    recognized headings, so it yields no sections. Render it as a single
+    ``Raw`` entry instead of losing it, so stored plans and resumed sessions
+    stay reviewable. A blank rationale yields no entry at all.
+    """
+    sections = recognized_rationale_sections(rationale)
+    if sections:
+        return sections
+    raw = rationale.strip()
+    return [(RATIONALE_FALLBACK_TITLE, raw)] if raw else []
 
 
 def on_tree_node_highlighted(app: "ReviewerApp", event: Any) -> None:
@@ -62,10 +107,11 @@ def _update_detail_view(app: ReviewerApp, data: Any):
     if not pane.is_attached:
         return
 
+    rationale = _rationale_content(data)
     if _is_context_data(data):
         _update_context_detail(app, switcher, pane, data)
-    elif _is_rationale_section(data):
-        _update_rationale_detail(app, switcher, data)
+    elif rationale is not None:
+        _update_rationale_detail(app, switcher, rationale)
     else:
         _update_action_detail(app, switcher, pane, data)
 
@@ -81,9 +127,15 @@ def _is_context_data(data: Any) -> bool:
     )
 
 
-def _is_rationale_section(data: Any) -> bool:
-    """Check if data is a rationale section dict."""
-    return isinstance(data, dict) and data.get("type") == "RATIONALE_SECTION"
+def _rationale_content(data: Any) -> str | None:
+    """Returns the rationale Markdown a section node renders, or ``None``.
+
+    The whole-block fallback is itself a section node, so every node that
+    carries rationale content uses the same dict shape.
+    """
+    if isinstance(data, dict) and data.get("type") == "RATIONALE_SECTION":
+        return str(data["content"])
+    return None
 
 
 def _update_context_detail(app: ReviewerApp, switcher: Any, pane: Any, data: Any):
@@ -97,12 +149,12 @@ def _update_context_detail(app: ReviewerApp, switcher: Any, pane: Any, data: Any
     populate_context_detail(app, pane, data)
 
 
-def _update_rationale_detail(app: ReviewerApp, switcher: Any, data: dict[str, Any]):
-    """Render details for a rationale section."""
+def _update_rationale_detail(app: ReviewerApp, switcher: Any, content: str):
+    """Render rationale Markdown in the detail pane."""
     from textual.widgets import Markdown
 
     switcher.current = "rationale-view"
-    app.query_one("#rationale-content", Markdown).update(data["content"])
+    app.query_one("#rationale-content", Markdown).update(content)
 
 
 def _update_action_detail(app: ReviewerApp, switcher: Any, pane: Any, data: Any):

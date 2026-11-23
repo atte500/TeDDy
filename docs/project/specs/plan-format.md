@@ -96,7 +96,7 @@ One deliberate exception and two coercion rules follow from that.
     [TODO items, documentation gaps, constraints, open questions, and other tracked notes.]
     ````
     `````
--   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption and agent self-correction. Only the four `###` headings above delimit sections; any other heading or marker, including a numeric `1. Section`, is body text and merges into the preceding section. The outer fence for the `Rationale` block must follow the **Code Block Nesting** rule.
+-   **Parsing Rules:** The content is the raw text within the fenced code block and is primarily for human consumption and agent self-correction. Only the four `###` headings above delimit sections; any other heading or marker, including a numeric `1. Section`, is body text and merges into the preceding section. A rationale that carries none of the four headings, such as one written before this contract, is not discarded: the plan reviewer renders its entire raw content as a single `Raw` node styled quieter than the protocol sections, keeping older plans and resumed sessions reviewable. The outer fence for the `Rationale` block must follow the **Code Block Nesting** rule.
 
 ### Action Blocks
 

@@ -14,7 +14,7 @@ Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It p
 
 ## Class Invariants
 - `stdin_ownership`: While the app runs, the reviewer claims `stdin_owned()` so the session quit-key listener backs off and the TUI's own `q` binding stays authoritative.
-- `rationale_heading_only`: Only a `### Section` heading starts a rationale node, and only `Summary`, `Expectation`, `Progress`, or `Notes` is accepted as a title. The tree splits on `\n(?=### )` and strips the `### ` marker; any other content, including a numeric `1. Section` marker, merges into the preceding node.
+- `rationale_heading_only`: Only a `### Section` heading starts a rationale node, and only `Summary`, `Expectation`, `Progress`, or `Notes` is accepted as a title. The tree splits on `\n(?=### )` and strips the `### ` marker; any other content, including a numeric `1. Section` marker, merges into the preceding node. A rationale with no recognized heading at all, such as one written before the section contract, renders as a single `Raw` node holding its entire content and styled quieter than the protocol sections, instead of rendering nothing.
 - `log_is_read_only`: Viewing an action log bypasses the apply-changes confirmation prompt.
 - `session_root_grouped_context`: The context pane groups reads by the DTO's `session_root`. Only paths under that root become History; a foreign session's read keeps the scope group it arrived in, because the exclusion uses `is_own_session_path` rather than the coarse "under `sessions/`" test, and its label falls back to the raw path. A `None` root keeps the legacy grouping.
 - `mutable_plan_models`: The `Plan` and `ActionData` models are unfrozen so the reviewer can update them in memory.

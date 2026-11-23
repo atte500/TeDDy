@@ -1,4 +1,5 @@
 import pytest
+from textual.widgets import ContentSwitcher
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import ActionTree
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
@@ -75,3 +76,49 @@ async def test_tui_only_accepts_markdown_headings(env):
         summary_node = rat_root.children[0]
         assert "The summary." in summary_node.data["content"]
         assert "Merged into the summary node." in summary_node.data["content"]
+
+
+@pytest.mark.anyio
+async def test_tui_renders_sectionless_rationale_as_raw_node(env):
+    """
+    Verify a rationale carrying none of the four headings becomes one `Raw`
+    node holding the whole content, and that selecting it shows that content.
+    """
+    # GIVEN a legacy rationale with no recognized ### heading
+    builder = MarkdownPlanBuilder("Legacy Rationale Test")
+    builder.add_execute("ls")
+    builder.with_rationale(
+        "1. Synthesis\nThe parser builds one plan per turn.\n\n"
+        "2. Justification\nOne model call keeps the audit trail tight."
+    )
+    plan_content = builder.build()
+
+    parser = MarkdownPlanParser()
+    plan = parser.parse(plan_content)
+
+    app = ReviewerApp(
+        plan=plan,
+        system_env=env.get_service(ISystemEnvironment),
+        console_tooling=env.mock_port(ConsoleToolingHelper),
+        action_dispatcher=env.mock_port(ActionDispatcher),
+    )
+
+    # WHEN we open the plan reviewer on a sectionless rationale
+    async with app.run_test() as pilot:
+        # The rationale root is selected at mount, but its detail refresh is
+        # deferred until after the first refresh, so wait for it before reading
+        # the tree.
+        await pilot.pause()
+        tree = app.query_one(ActionTree)
+        rat_root = tree.root.children[0]
+
+        # THEN the root exposes a single Raw node carrying the whole rationale
+        assert [child.label.plain for child in rat_root.children] == ["Raw"]
+        content = rat_root.children[0].data["content"]
+        assert "1. Synthesis" in content
+        assert "One model call keeps the audit trail tight." in content
+
+        # AND selecting that node renders its content in the detail pane
+        tree.move_cursor(rat_root.children[0])
+        await pilot.pause()
+        assert app.query_one(ContentSwitcher).current == "rationale-view"

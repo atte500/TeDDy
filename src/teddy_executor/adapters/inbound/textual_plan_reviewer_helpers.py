@@ -216,29 +216,21 @@ def handle_mount_logic(app: Any, update_detail_fn: Any) -> None:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
         RATIONALE_ROOT,
         ACTION_PLAN_ROOT,
-        ALLOWED_RATIONALE_SECTIONS,
+        RATIONALE_FALLBACK_TITLE,
+        rationale_entries,
     )
 
     rat_root = tree.root.add("[bold]Rationale[/]", data=RATIONALE_ROOT, expand=True)
-
-    # Only Markdown `### ` headings define rationale sections. Any other line,
-    # including a numeric marker, stays body text and merges into the prior node.
-    sections = re.split(r"\n(?=### )", "\n" + app.plan.rationale)
-    current_node = None
-    for section in sections:
-        section = section.strip()
-        if not section:
-            continue
-        lines = section.split("\n")
-        title = re.sub(r"^###\s*", "", lines[0]).strip()
-        if title in ALLOWED_RATIONALE_SECTIONS:
-            content = "\n".join(lines[1:]).strip()
-            current_node = rat_root.add_leaf(
-                title,
-                data={"type": "RATIONALE_SECTION", "title": title, "content": content},
-            )
-        elif current_node:
-            current_node.data["content"] += "\n\n" + section
+    for title, content in rationale_entries(app.plan.rationale):
+        label = title
+        if title == RATIONALE_FALLBACK_TITLE:
+            # The whole-block fallback is secondary: keep it visually quieter so
+            # it does not read as one of the protocol sections.
+            label = f"[#888888 italic]{title}[/]"
+        rat_root.add_leaf(
+            label,
+            data={"type": "RATIONALE_SECTION", "title": title, "content": content},
+        )
 
     # 3. Action Plan Section
     act_root = tree.root.add("[bold]Action Plan[/]", data=ACTION_PLAN_ROOT, expand=True)
