@@ -15,6 +15,7 @@ import pytest
 from tests.harness.setup.mocking import (
     POSIXPathMock,
     path_exists_marker_absent,
+    path_exists_marker_present,
     to_posix_path,
 )
 
@@ -99,3 +100,35 @@ class TestPathExistsMarkerAbsent:
         path_exists = path_exists_marker_absent(default=True)
 
         assert path_exists("execution.started") is False
+
+
+class TestPathExistsMarkerPresent:
+    """The killed-turn ``path_exists`` double reports the marker present.
+
+    A turn killed mid-execution records ``execution.started``, so the resume
+    gate must read it present while every other turn path keeps the suite's own
+    answer. The factory single-sources the marker filename from the port, so a
+    rename cannot leave this double matching a stale literal.
+    """
+
+    def test_marker_reads_present_while_other_paths_forward_absent(self) -> None:
+        path_exists = path_exists_marker_present(default=False)
+
+        assert path_exists(".teddy/sessions/feature/05/execution.started") is True
+        assert path_exists(".teddy/sessions/feature/05/meta.yaml") is False
+
+    def test_marker_reads_present_while_other_paths_forward_present(self) -> None:
+        path_exists = path_exists_marker_present(default=True)
+
+        assert path_exists(".teddy/sessions/feature/05/execution.started") is True
+        assert path_exists(".teddy/sessions/feature/05/meta.yaml") is True
+
+    def test_marker_path_matches_through_posix_normalization(self) -> None:
+        path_exists = path_exists_marker_present(default=False)
+
+        assert path_exists(r".teddy\sessions\feature\05\execution.started") is True
+
+    def test_bare_marker_filename_reads_present(self) -> None:
+        path_exists = path_exists_marker_present(default=False)
+
+        assert path_exists("execution.started") is True

@@ -32,7 +32,6 @@ from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
 from teddy_executor.core.ports.outbound.session_manager import (
-    EXECUTION_STARTED_MARKER,
     ISessionManager,
     SessionState,
 )
@@ -47,7 +46,7 @@ from teddy_executor.core.services.session_lifecycle_manager import (
 )
 from teddy_executor.core.services.session_planner import SessionPlanner
 from teddy_executor.core.services.session_replanner import SessionReplanner
-from tests.harness.setup.mocking import register_mock, to_posix_path
+from tests.harness.setup.mocking import path_exists_marker_present, register_mock
 
 TURN03 = ".teddy/sessions/20261002_152331-say-ask/03"
 TURN04 = ".teddy/sessions/20261002_152331-say-ask/04"
@@ -242,11 +241,6 @@ class TestPendingPlanCommunicationResume:
         assert result[0] == "say-ask"
 
 
-def _marker_present(path: str) -> bool:
-    """``path_exists`` double for a killed turn: only the marker exists."""
-    return to_posix_path(path).rsplit("/", 1)[-1] == EXECUTION_STARTED_MARKER
-
-
 class TestMarkedCommunicationTurn:
     """A marked communication turn keeps re-dispatching to re-collect the reply."""
 
@@ -259,7 +253,9 @@ class TestMarkedCommunicationTurn:
         manager._session_service.load_turn_meta.return_value = {
             "agent_name": "assistant"
         }
-        manager._file_system_manager.path_exists.side_effect = _marker_present
+        manager._file_system_manager.path_exists.side_effect = (
+            path_exists_marker_present()
+        )
         orchestrator = _orchestrator_with_report()
 
         result = manager.resume(

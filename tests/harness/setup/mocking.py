@@ -107,22 +107,45 @@ def register_mock(container: Any, port_type: Any) -> Any:
     return mock
 
 
+def _is_execution_started_marker(path: str) -> bool:
+    """Report whether ``path`` names the turn-scoped execution-started marker.
+
+    The incoming path is normalized through ``to_posix_path`` before its
+    basename is compared against the ``EXECUTION_STARTED_MARKER`` literal, so a
+    Windows slash difference cannot flip the answer.
+    """
+    filename = to_posix_path(path).rsplit("/", 1)[-1]
+    return filename == EXECUTION_STARTED_MARKER
+
+
 def path_exists_marker_absent(default: bool = True) -> Callable[[str], bool]:
     """Build a ``path_exists`` side effect that reports the execution marker absent.
 
     A pending turn that never dispatched records no ``execution.started``
     marker, so the resume gate must read it absent while every other turn path
     keeps the suite's own answer. ``default`` is forwarded for every path that
-    is not the marker. The incoming path is normalized through
-    ``to_posix_path`` before its basename is compared against the
-    ``EXECUTION_STARTED_MARKER`` literal, so a Windows slash difference cannot
-    flip the answer.
+    is not the marker.
     """
 
     def path_exists(path: str) -> bool:
-        filename = to_posix_path(path).rsplit("/", 1)[-1]
-        if filename == EXECUTION_STARTED_MARKER:
+        if _is_execution_started_marker(path):
             return False
+        return default
+
+    return path_exists
+
+
+def path_exists_marker_present(default: bool = False) -> Callable[[str], bool]:
+    """Build a ``path_exists`` side effect that reports the execution marker present.
+
+    A turn killed mid-execution records ``execution.started``, so the resume
+    gate must read it present while every other turn path keeps the suite's own
+    answer. ``default`` is forwarded for every path that is not the marker.
+    """
+
+    def path_exists(path: str) -> bool:
+        if _is_execution_started_marker(path):
+            return True
         return default
 
     return path_exists

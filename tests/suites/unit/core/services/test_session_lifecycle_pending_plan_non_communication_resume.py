@@ -47,7 +47,6 @@ from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
 from teddy_executor.core.ports.outbound.session_manager import (
-    EXECUTION_STARTED_MARKER,
     ISessionManager,
     SessionState,
 )
@@ -63,8 +62,8 @@ from teddy_executor.core.services.session_planner import SessionPlanner
 from teddy_executor.core.services.session_replanner import SessionReplanner
 from tests.harness.setup.mocking import (
     path_exists_marker_absent,
+    path_exists_marker_present,
     register_mock,
-    to_posix_path,
 )
 
 TURN03 = ".teddy/sessions/20261002_152331-follow-up/03"
@@ -75,11 +74,6 @@ REPORT_PATH = f"{TURN03}/report.md"
 VALIDATION_REPORT = (
     "# Execution Report: Follow-up\n- **Overall Status:** Validation Failed\n"
 )
-
-
-def _marker_present(path: str) -> bool:
-    """``path_exists`` double for a killed turn: only the marker exists."""
-    return to_posix_path(path).rsplit("/", 1)[-1] == EXECUTION_STARTED_MARKER
 
 
 def _arrange_marked_interrupted_turn(manager) -> None:
@@ -93,7 +87,7 @@ def _arrange_marked_interrupted_turn(manager) -> None:
     manager._session_service.to_root_relative.side_effect = lambda turn_dir, filename: (
         f"{Path(turn_dir).as_posix()}/{filename}"
     )
-    manager._file_system_manager.path_exists.side_effect = _marker_present
+    manager._file_system_manager.path_exists.side_effect = path_exists_marker_present()
     manager._file_system_manager.read_raw_file.return_value = "# plan"
     manager._report_formatter.format.return_value = "# Execution Report\n"
     manager._session_planner.trigger_new_plan.return_value = ("follow-up", None)
@@ -381,7 +375,9 @@ class TestMarkedInterruptedTurnRecovery:
         manager = _build_manager(container, plan)
         manager._plan_parser.parse.side_effect = InvalidPlanError("bad plan")
         _arrange_pending_action_turn(manager)
-        manager._file_system_manager.path_exists.side_effect = _marker_present
+        manager._file_system_manager.path_exists.side_effect = (
+            path_exists_marker_present()
+        )
         orchestrator = _orchestrator_with_report()
 
         result = manager.resume(
