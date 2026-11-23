@@ -33,7 +33,11 @@ from unittest.mock import Mock, create_autospec
 
 import pytest
 
-from teddy_executor.core.domain.models.execution_report import ExecutionReport
+from teddy_executor.core.domain.models.execution_report import (
+    ActionStatus,
+    ExecutionReport,
+    RunStatus,
+)
 from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.domain.models.planning_ports import SessionPorts
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser, InvalidPlanError
@@ -43,6 +47,7 @@ from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
 from teddy_executor.core.ports.outbound.session_manager import (
+    EXECUTION_STARTED_MARKER,
     ISessionManager,
     SessionState,
 )
@@ -56,15 +61,42 @@ from teddy_executor.core.services.session_lifecycle_manager import (
 )
 from teddy_executor.core.services.session_planner import SessionPlanner
 from teddy_executor.core.services.session_replanner import SessionReplanner
-from tests.harness.setup.mocking import path_exists_marker_absent, register_mock
+from tests.harness.setup.mocking import (
+    path_exists_marker_absent,
+    register_mock,
+    to_posix_path,
+)
 
 TURN03 = ".teddy/sessions/20261002_152331-follow-up/03"
+TURN04 = ".teddy/sessions/20261002_152331-follow-up/04"
 REPLY = "next instruction"
 PLAN_PATH = f"{TURN03}/plan.md"
 REPORT_PATH = f"{TURN03}/report.md"
 VALIDATION_REPORT = (
     "# Execution Report: Follow-up\n- **Overall Status:** Validation Failed\n"
 )
+
+
+def _marker_present(path: str) -> bool:
+    """``path_exists`` double for a killed turn: only the marker exists."""
+    return to_posix_path(path).rsplit("/", 1)[-1] == EXECUTION_STARTED_MARKER
+
+
+def _arrange_marked_interrupted_turn(manager) -> None:
+    """A hard-killed turn: plan.md plus execution.started, no report.md."""
+    manager._session_service.get_session_state.side_effect = [
+        (SessionState.PENDING_PLAN, TURN03),
+        (SessionState.EMPTY, TURN04),
+    ]
+    manager._session_service.load_turn_meta.return_value = {"agent_name": "assistant"}
+    manager._session_service.transition_to_next_turn.return_value = TURN04
+    manager._session_service.to_root_relative.side_effect = lambda turn_dir, filename: (
+        f"{Path(turn_dir).as_posix()}/{filename}"
+    )
+    manager._file_system_manager.path_exists.side_effect = _marker_present
+    manager._file_system_manager.read_raw_file.return_value = "# plan"
+    manager._report_formatter.format.return_value = "# Execution Report\n"
+    manager._session_planner.trigger_new_plan.return_value = ("follow-up", None)
 
 
 def _action_plan() -> Plan:
@@ -279,4 +311,89 @@ class TestPendingPlanNonCommunicationResume:
         assert execute_kwargs.get("plan") is None
         manager._file_system_manager.write_file.assert_not_called()
         manager._session_service.preserve_turn_in_session_context.assert_not_called()
+        assert result[0] == "follow-up"
+
+
+class TestMarkedInterruptedTurnRecovery:
+    """A marked non-communication turn recovers instead of replaying."""
+
+    def test_marked_turn_without_reply_recovers_and_plans_next(self, container) -> None:
+        plan = _action_plan()
+        manager = _build_manager(container, plan)
+        _arrange_marked_interrupted_turn(manager)
+        orchestrator = _orchestrator_with_report()
+
+        result = manager.resume(
+            session_name="follow-up",
+            orchestrator=orchestrator,
+            require_approval=False,
+        )
+
+        # The abandoned plan is never handed to execute; the successor is.
+        orchestrator.execute.assert_called_once()
+        executed = orchestrator.execute.call_args.kwargs["plan_path"]
+        assert TURN04 in executed
+        assert TURN03 not in executed
+        # The killed turn is finalized with an INTERRUPTED report.
+        report = manager._report_formatter.format.call_args.args[0]
+        assert report.run_summary.status is RunStatus.INTERRUPTED
+        assert [log.status for log in report.action_logs] == [ActionStatus.INTERRUPTED]
+        assert report.user_request is None
+        transition = manager._session_service.transition_to_next_turn.call_args
+        assert transition.kwargs["plan_path"] == PLAN_PATH
+        # The successor is planned from scratch against the observed workspace.
+        manager._session_planner.trigger_new_plan.assert_called_once_with(
+            TURN04, message=None
+        )
+        assert result[0] == "follow-up"
+
+    def test_marked_turn_with_reply_records_user_request(self, container) -> None:
+        plan = _action_plan()
+        manager = _build_manager(container, plan)
+        _arrange_marked_interrupted_turn(manager)
+        orchestrator = _orchestrator_with_report()
+
+        result = manager.resume(
+            session_name="follow-up",
+            orchestrator=orchestrator,
+            require_approval=False,
+            message=REPLY,
+        )
+
+        # The reply seeds the successor; the abandoned plan is not replayed.
+        orchestrator.execute.assert_called_once()
+        executed = orchestrator.execute.call_args.kwargs["plan_path"]
+        assert TURN04 in executed
+        assert TURN03 not in executed
+        manager._session_planner.trigger_new_plan.assert_called_once_with(
+            TURN04, message=REPLY
+        )
+        # The reply is carried as the interrupted report's User Request.
+        report = manager._report_formatter.format.call_args.args[0]
+        assert report.run_summary.status is RunStatus.INTERRUPTED
+        assert report.user_request == REPLY
+        assert result[0] == "follow-up"
+
+    def test_marked_unparseable_plan_falls_through_to_reexecute(
+        self, container
+    ) -> None:
+        plan = _action_plan()
+        manager = _build_manager(container, plan)
+        manager._plan_parser.parse.side_effect = InvalidPlanError("bad plan")
+        _arrange_pending_action_turn(manager)
+        manager._file_system_manager.path_exists.side_effect = _marker_present
+        orchestrator = _orchestrator_with_report()
+
+        result = manager.resume(
+            session_name="follow-up",
+            orchestrator=orchestrator,
+            require_approval=False,
+        )
+
+        # The unparseable marked plan falls through to today's bare re-execute.
+        orchestrator.execute.assert_called_once()
+        assert orchestrator.execute.call_args.kwargs["plan_path"] == PLAN_PATH
+        manager._report_formatter.format.assert_not_called()
+        manager._session_service.transition_to_next_turn.assert_not_called()
+        manager._session_planner.trigger_new_plan.assert_not_called()
         assert result[0] == "follow-up"

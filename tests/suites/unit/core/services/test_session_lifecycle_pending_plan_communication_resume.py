@@ -32,6 +32,7 @@ from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
 from teddy_executor.core.ports.outbound.session_manager import (
+    EXECUTION_STARTED_MARKER,
     ISessionManager,
     SessionState,
 )
@@ -46,7 +47,7 @@ from teddy_executor.core.services.session_lifecycle_manager import (
 )
 from teddy_executor.core.services.session_planner import SessionPlanner
 from teddy_executor.core.services.session_replanner import SessionReplanner
-from tests.harness.setup.mocking import register_mock
+from tests.harness.setup.mocking import register_mock, to_posix_path
 
 TURN03 = ".teddy/sessions/20261002_152331-say-ask/03"
 TURN04 = ".teddy/sessions/20261002_152331-say-ask/04"
@@ -238,4 +239,39 @@ class TestPendingPlanCommunicationResume:
         executed_plan = orchestrator.execute.call_args.kwargs["plan_path"]
         assert TURN04 in executed_plan
         assert TURN03 not in executed_plan
+        assert result[0] == "say-ask"
+
+
+def _marker_present(path: str) -> bool:
+    """``path_exists`` double for a killed turn: only the marker exists."""
+    return to_posix_path(path).rsplit("/", 1)[-1] == EXECUTION_STARTED_MARKER
+
+
+class TestMarkedCommunicationTurn:
+    """A marked communication turn keeps re-dispatching to re-collect the reply."""
+
+    def test_marked_communication_turn_keeps_redispatch(self, container) -> None:
+        manager = _build_manager(container, _communication_plan())
+        manager._session_service.get_session_state.return_value = (
+            SessionState.PENDING_PLAN,
+            TURN03,
+        )
+        manager._session_service.load_turn_meta.return_value = {
+            "agent_name": "assistant"
+        }
+        manager._file_system_manager.path_exists.side_effect = _marker_present
+        orchestrator = _orchestrator_with_report()
+
+        result = manager.resume(
+            session_name="say-ask",
+            orchestrator=orchestrator,
+            require_approval=False,
+        )
+
+        # The communication guard excludes recovery: the plan re-dispatches.
+        orchestrator.execute.assert_called_once()
+        executed = orchestrator.execute.call_args.kwargs["plan_path"]
+        assert TURN03 in executed
+        manager._session_service.transition_to_next_turn.assert_not_called()
+        manager._session_planner.trigger_new_plan.assert_not_called()
         assert result[0] == "say-ask"

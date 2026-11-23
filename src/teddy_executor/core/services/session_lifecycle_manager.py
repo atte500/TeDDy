@@ -15,7 +15,10 @@ from typing import Sequence
 
 from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
 from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
-from teddy_executor.core.ports.outbound.session_manager import SessionState
+from teddy_executor.core.ports.outbound.session_manager import (
+    EXECUTION_STARTED_MARKER,
+    SessionState,
+)
 from teddy_executor.core.utils.io import Tee as _Tee
 from teddy_executor.core.utils.markdown import embed_in_fence
 
@@ -108,6 +111,18 @@ class SessionLifecycleManager:
                     message=message,
                     plan=plan,
                 )
+            interrupted_plan = self._marked_interrupted_plan(turn_path, plan, plan_path)
+            if interrupted_plan is not None:
+                return self._recover_interrupted_turn(
+                    turn_path,
+                    interrupted_plan,
+                    plan_path,
+                    orchestrator,
+                    require_approval,
+                    project_context=project_context,
+                    pipeline=pipeline,
+                    message=message,
+                )
             if plan is not None:
                 plan.metadata["user_request"] = message
                 report = orchestrator.execute(
@@ -140,6 +155,41 @@ class SessionLifecycleManager:
             )
 
         return (session_name, None)
+
+    def _marked_interrupted_plan(
+        self, turn_path: str, plan: Optional["Plan"], plan_path: str
+    ) -> Optional["Plan"]:
+        """Returns the abandoned plan when a hard-killed turn must be recovered.
+
+        A turn that began executing (``execution.started`` present) but never
+        finalized carries no report, so replaying its plan would re-apply
+        already-applied actions. Recovery applies only to a non-communication
+        plan: a MESSAGE-only turn keeps today's re-dispatch so the message
+        re-collects the reply. The plan is reused when the caller already
+        parsed it (``-m`` resume) and parsed here for classification on a bare
+        resume; an unparseable plan returns ``None`` so the caller falls
+        through to the established ``execute -> InvalidPlanError ->
+        trigger_replan`` funnel rather than swallowing the failure.
+        """
+        marker_path = (Path(plan_path).parent / EXECUTION_STARTED_MARKER).as_posix()
+        if not self._file_system_manager.path_exists(marker_path):
+            return None
+        interrupted_plan = plan
+        if interrupted_plan is None:
+            try:
+                interrupted_plan = self._parse_awaiting_plan(
+                    turn_path, plan_path=plan_path
+                )
+            except InvalidPlanError:
+                logger.debug(
+                    "Marked pending plan at %s is unparseable; falling back to "
+                    "the re-execute path.",
+                    plan_path,
+                )
+                return None
+        if interrupted_plan.is_communication_turn():
+            return None
+        return interrupted_plan
 
     def _resume_ready_turn(  # noqa: PLR0913  # threads the resume state-machine inputs
         self,
@@ -438,6 +488,38 @@ class SessionLifecycleManager:
             message=reply,
         )
 
+    def _recover_interrupted_turn(  # noqa: PLR0913  # resume state-machine inputs
+        self,
+        turn_path: str,
+        plan: "Plan",
+        plan_path: str,
+        orchestrator: IRunPlanUseCase,
+        require_approval: bool,
+        project_context: Optional[Any] = None,
+        pipeline: bool = False,
+        message: Optional[str] = None,
+    ) -> tuple[str, Optional[ExecutionReport]]:
+        """Finalizes a hard-killed turn as INTERRUPTED, then plans the next turn.
+
+        The abandoned plan is never re-executed: the synthesized INTERRUPTED
+        report finalizes the turn (writing ``report.md`` and creating the
+        successor), and planning then runs from scratch against the observed
+        workspace so the fresh plan sees the already-mutated files. A reply,
+        when present, is carried into the interrupted report's ``## User
+        Request`` and seeds the successor's planning -- the same tail shape
+        ``_consume_awaiting_reply`` uses.
+        """
+        report = self._synthesize_interrupted_report(plan, message=message)
+        next_turn_dir = self.finalize_turn(plan_path, report, plan=plan)
+        return self._handle_planning_and_execution(
+            next_turn_dir,
+            orchestrator,
+            require_approval,
+            project_context=project_context,
+            pipeline=pipeline,
+            message=message,
+        )
+
     def _parse_awaiting_plan(
         self, turn_path: str, plan_path: Optional[str] = None
     ) -> "Plan":
@@ -521,6 +603,55 @@ class SessionLifecycleManager:
                     )
                 ],
                 start_time=timestamp,
+            )
+        )
+
+    def _synthesize_interrupted_report(
+        self, plan: "Plan", message: Optional[str] = None
+    ) -> ExecutionReport:
+        """Synthesizes an INTERRUPTED report for a hard-killed session turn.
+
+        A hard kill runs no drain and writes no report, so the turn's outcome
+        is unobservable. Every planned action is therefore recorded as
+        INTERRUPTED with an explicit "outcome not recorded" note, so a reader
+        (and the preservation decision) can tell the turn was abandoned
+        mid-flight rather than completed. The injected ``message`` becomes the
+        report's ``## User Request`` so the resume reply is preserved on the
+        finalized turn; without one the turn follows normal action-turn
+        behavior.
+        """
+        assert self._time_service is not None, (
+            "SessionPorts.time_service must be injected to synthesize the "
+            "interrupted turn's report."
+        )
+        assert self._report_assembler is not None, (
+            "SessionPorts.report_assembler must be injected to synthesize the "
+            "interrupted turn's report."
+        )
+        action_logs = []
+        for action in plan.actions:
+            params = dict(action.params)
+            if action.description:
+                params["Description"] = action.description
+            action_logs.append(
+                ActionLog(
+                    status=ActionStatus.INTERRUPTED,
+                    action_type=str(getattr(action.type, "value", action.type)),
+                    params=params,
+                    details=(
+                        "Outcome not recorded: the running process was "
+                        "terminated ungracefully; this action may or may not "
+                        "have applied."
+                    ),
+                )
+            )
+        return self._report_assembler.assemble(
+            ReportAssemblyData(
+                plan=plan,
+                action_logs=action_logs,
+                start_time=self._time_service.now_utc(),
+                message=message,
+                is_session=True,
             )
         )
 

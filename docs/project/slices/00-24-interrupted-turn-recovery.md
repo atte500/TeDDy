@@ -1,5 +1,5 @@
 # Slice: Recover a Marked Interrupted Turn on Resume
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** [00-23-pending-plan-path-pins.md](/docs/project/slices/00-23-pending-plan-path-pins.md)
 - **Specs:** N/A
@@ -59,7 +59,7 @@ None. MRE-04 proves the synthesize, finalize, preserve, and next-turn-plan chain
 5. `[PRUNE]` none.
 
 ## Deliverables
-- [ ] **Core** - Implement `_synthesize_interrupted_report` and `_recover_interrupted_turn`, then wire the marker gate in `resume` using a local classification plan. Drive it with resume-level unit tests: marker present plus non-communication recovers (INTERRUPTED report, abandoned plan not re-executed, next-turn planning); marker present plus communication keeps re-dispatch; marker present plus unparseable falls through; marker absent stays unchanged.
+- [▶] **Core** - Implement `_synthesize_interrupted_report` and `_recover_interrupted_turn`, then wire the marker gate in `resume` using a local classification plan. Drive it with resume-level unit tests: marker present plus non-communication recovers (INTERRUPTED report, abandoned plan not re-executed, next-turn planning); marker present plus communication keeps re-dispatch; marker present plus unparseable falls through; marker absent stays unchanged.
 
 ## Implementation Notes
 The existing acceptance test `tests/suites/acceptance/test_pipeline_message_and_resume_flow.py:384-419` remains the end-to-end regression guard for the marker-absent path (Bug 60 in-place completion). The gate itself is unit-tested at the service boundary because constructing a killed workspace end-to-end would require a fake LLM and a real subprocess kill; MRE-04 covers the runtime chain.
