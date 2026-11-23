@@ -1,5 +1,5 @@
 # Slice: Agent-Specific LLM Configuration
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** None (ad-hoc slice)
 - **Depends On:** None
 - **Specs:** None (ad-hoc slice)
@@ -91,7 +91,7 @@ None. The pass-through shape mirrors the existing `llm` block, which is already 
 
 ## Deliverables
 
-- [ ] **Interface** - Add `llm_overrides` to `ILlmClient.get_completion` with a `None` default so existing callers and fakes stay valid. Add `resolve_agent_llm_overrides(agents_block, persona)` to `config_schema.py` returning the persona's partial block or an empty mapping. Add `agents` to `_KNOWN_TOP_LEVEL` and validate its mapping shape from `construct_app_config`, raising `ConfigurationError` for a non-mapping block, a non-mapping persona entry, or case-folded duplicate keys.
+- [x] **Interface** - Add `llm_overrides` to `ILlmClient.get_completion` with a `None` default so existing callers and fakes stay valid. Add `resolve_agent_llm_overrides(agents_block, persona)` to `config_schema.py` returning the persona's partial block or an empty mapping. Add `agents` to `_KNOWN_TOP_LEVEL` and validate its mapping shape from `construct_app_config`, raising `ConfigurationError` for a non-mapping block, a non-mapping persona entry, or case-folded duplicate keys.
 - [ ] **Harness** - Teach the auto-specced LLM mock registration and any in-memory config double to accept `llm_overrides`, so harness doubles stay bound to the port contract.
 - [ ] **Wiring** - Connect the CLI entry points end to end: a session start with `-a` picks the persona's model, the startup banner and preflight report that same effective model, and the completion receives both the overlay and the effective model.
 - [ ] **Core** - Implement the precedence and fallbacks: override first, then the persona entry, then `llm.model`; a blank persona model falls back rather than propagating; persona matching is case-insensitive. Separate the metadata semantics so `model_override` is the only resolution input while `model` records the per-turn effective value.
@@ -99,7 +99,14 @@ None. The pass-through shape mirrors the existing `llm` block, which is already 
 - [ ] **Migration** - Thread the effective model into the model-less token-count and context-window call sites in `PlanningService`, `ContextService`, and `SessionOrchestrator`. Stop the resume path from writing a configuration-derived model into turn metadata and write `model_override` for an explicit flag instead. Carry `model_override` through session creation and turn carry-over. Make the preflight cache persona-aware. Add a commented `agents:` example to the bundled `config.yaml` and document the precedence, the one-level merge rule, and the global-scope API-key prompt in the README.
 
 ## Implementation Notes
-None yet.
+
+### Interface
+- `ILlmClient.get_completion` gained `llm_overrides: Optional[Mapping[str, Any]] = None` between `model` and `**kwargs`. `model` stays third, so every existing positional caller is unaffected.
+- `resolve_agent_llm_overrides(agents_block, persona)` is total: a non-mapping block or a non-mapping persona entry returns an empty mapping, so runtime extraction never raises. It copies the matching entry into a new dict, because the merged config it reads from is lazily interpolated and must not be mutated. Persona matching uses `casefold()`, mirroring the prompt resolver. A blank `model` is deleted so an empty identifier never reaches the provider.
+- `construct_app_config` runs `_validate_agents_block` before the unknown-group logging pass, so load time is the raising seam. A non-mapping `agents` block, a non-mapping persona entry, and two persona keys differing only in case each raise `ConfigurationError` naming the offending key. The duplicate case fails because case-insensitive matching would otherwise let YAML key order decide the winner. A `None` block counts as absent, matching the adapter's merge treating `None` as a deletion.
+- `agents` joined `_KNOWN_TOP_LEVEL`, so the group no longer debug-logs as unknown. Nothing else reads that set, and `agents` never enters the typed view, so `construct_app_config` returns `DEFAULT_APP_CONFIG` unchanged when only `agents` is configured.
+- The harness needs no edit for the port contract: doubles are registered as `POSIXPathMock(spec=ILlmClient)`, which derives the accepted parameters from the port, so `llm_overrides` is already part of every spec-bound double.
+- `LiteLLMAdapter.get_completion` still accepts only `(messages, model, **kwargs)`, so an overlay passed by keyword would land in `**kwargs` and be forwarded to `litellm.completion` as an unknown parameter. No caller passes it yet, and closing that path is the Adapter deliverable.
 
 ## Verification
 1. **Persona model selected:**

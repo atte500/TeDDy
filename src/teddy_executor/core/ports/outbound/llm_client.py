@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 
 class LlmApiError(Exception):
@@ -18,6 +18,7 @@ class ILlmClient(ABC):
         self,
         messages: List[Dict[str, str]],
         model: Optional[str] = None,
+        llm_overrides: Optional[Mapping[str, Any]] = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -26,6 +27,8 @@ class ILlmClient(ABC):
         Args:
             messages: A list of message dictionaries (role/content).
             model: Optional identifier for the target model (overrides config).
+            llm_overrides: Optional per-persona overlay merged over the global
+                ``llm`` block, with ``model`` still applied last.
             **kwargs: Additional parameters for the LLM provider.
 
         Returns:

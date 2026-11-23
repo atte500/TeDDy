@@ -96,3 +96,13 @@ def test_llm_client_defines_get_text_token_count_signature():
     assert "text" in sig.parameters
     assert "model" in sig.parameters
     assert sig.return_annotation is int
+
+
+def test_llm_client_get_completion_accepts_llm_overrides():
+    """The completion port carries an optional per-call persona overlay."""
+    import inspect
+
+    sig = inspect.signature(ILlmClient.get_completion)
+
+    assert "llm_overrides" in sig.parameters
+    assert sig.parameters["llm_overrides"].default is None

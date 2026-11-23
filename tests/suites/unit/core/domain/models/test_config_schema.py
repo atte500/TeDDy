@@ -263,3 +263,48 @@ def test_every_documented_key_resolves_through_get_setting(tmp_path):
         assert adapter.get_setting(key) == read_declared_value(
             adapter.app_config, key
         ), key
+
+
+# --- Agent persona block shape validation ---
+
+
+def test_agents_block_is_a_known_top_level_group(caplog):
+    """A configured ``agents`` group is not logged as an unknown group."""
+    caplog.set_level("DEBUG")
+
+    construct_app_config({"agents": {"architect": {"model": "m"}}})
+
+    assert not any(
+        "Ignoring unknown configuration group 'agents'" in message
+        for message in caplog.messages
+    )
+
+
+def test_valid_agents_block_is_accepted():
+    """A well-formed persona block leaves the typed view at its defaults."""
+    assert (
+        construct_app_config({"agents": {"architect": {"model": "m"}}})
+        == DEFAULT_APP_CONFIG
+    )
+
+
+@pytest.mark.parametrize("value", ["architect", ["architect"], 5, True])
+def test_non_mapping_agents_block_raises(value):
+    """A scalar, sequence, or bool ``agents`` block fails naming the key."""
+    with pytest.raises(ConfigurationError, match="agents"):
+        construct_app_config({"agents": value})
+
+
+@pytest.mark.parametrize("value", ["claude", ["claude"], 5])
+def test_non_mapping_persona_entry_raises(value):
+    """A persona entry that is not a mapping fails naming the persona key."""
+    with pytest.raises(ConfigurationError, match="agents.architect"):
+        construct_app_config({"agents": {"architect": value}})
+
+
+def test_case_folded_duplicate_persona_keys_raise():
+    """Two persona keys differing only in case fail, because order would decide."""
+    with pytest.raises(ConfigurationError, match="agents"):
+        construct_app_config(
+            {"agents": {"Architect": {"model": "a"}, "architect": {"model": "b"}}}
+        )
