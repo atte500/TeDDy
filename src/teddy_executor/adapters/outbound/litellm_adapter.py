@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Mapping, Optional, Protocol
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.domain.models.exceptions import ConfigurationError
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient, LlmApiError
@@ -112,11 +112,17 @@ class LiteLLMAdapter(ILlmClient):
     # Request, retry, and hydration form one linear flow whose branching is
     # inherent to the provider protocol. Extracting it is outside this change.
     def get_completion(  # noqa: C901
-        self, messages: List[Dict[str, str]], model: Optional[str] = None, **kwargs: Any
+        self,
+        messages: List[Dict[str, str]],
+        model: Optional[str] = None,
+        llm_overrides: Optional[Mapping[str, Any]] = None,
+        **kwargs: Any,
     ) -> Any:
         """
         Sends a request to an LLM via litellm and returns the raw response object.
         Values in the 'llm' section of the config are passed directly to LiteLLM.
+        ``llm_overrides`` layers the active persona's settings over that block,
+        below the per-call ``model``.
         """
         litellm = self._get_litellm()
 
@@ -129,20 +135,9 @@ class LiteLLMAdapter(ILlmClient):
                         raise ConfigurationError(errors[0])
                     self._validated = True
 
-        final_params = self._prepare_completion_params(model, **kwargs)
-
-        # Lazy startup validation: check config on first call only
-        if not self._validated:
-            with self._init_lock:
-                if not self._validated:
-                    from teddy_executor.core.domain.models.exceptions import (
-                        ConfigurationError as _ConfigError,
-                    )
-
-                    errors = self.validate_config()
-                    if errors:
-                        raise _ConfigError(errors[0])
-                    self._validated = True
+        final_params = self._prepare_completion_params(
+            model, llm_overrides=llm_overrides, **kwargs
+        )
 
         max_attempts_val = final_params.get("max_retries")
         max_attempts = int(max_attempts_val) if max_attempts_val is not None else 3
@@ -167,15 +162,27 @@ class LiteLLMAdapter(ILlmClient):
         raise LlmApiError(f"LLM Completion failed: {final_msg}") from last_exception
 
     def _prepare_completion_params(
-        self, model: Optional[str] = None, **kwargs: Any
+        self,
+        model: Optional[str] = None,
+        llm_overrides: Optional[Mapping[str, Any]] = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
-        """Resolves and layers configuration for the completion request."""
+        """Resolves and layers configuration for the completion request.
+
+        Precedence, lowest first: runtime kwargs, the global ``llm`` block, the
+        persona overlay, then the per-call model. The overlay replaces a key's
+        complete value (one level deep), so a persona ``extra_headers`` mapping
+        supersedes the global one wholesale.
+        """
         from typing import cast
 
         params = {**kwargs}
 
         llm_config = cast(Dict[str, Any], self._config_service.get_setting("llm", {}))
         params.update(llm_config)
+
+        if llm_overrides:
+            params.update(llm_overrides)
 
         # Drop an empty/blank api_key so litellm applies the provider's own
         # default (e.g. a dummy key for keyless local models). Forwarding "" is

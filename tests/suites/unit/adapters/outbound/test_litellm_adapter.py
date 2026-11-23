@@ -546,3 +546,93 @@ def test_prepare_completion_params_does_not_transform_top_level_provider(mock_co
     assert params["provider"] == "baseten"
     # extra_body should not be created if not present in config
     assert "extra_body" not in params or params["extra_body"] is None
+
+
+# --- llm_overrides merge (Adapter deliverable) ---
+
+
+def test_prepare_completion_params_layers_overlay_between_global_and_model(
+    mock_config,
+):
+    """The overlay overrides the global block; the per-call model wins last.
+
+    Precedence, lowest first: runtime kwargs, the global ``llm`` block, the
+    persona overlay, then the per-call model. The overlay's own ``model`` is
+    superseded by the per-call model, and the overlay never survives as a
+    ``llm_overrides`` key in the merged parameters.
+    """
+    mock_config.get_setting.side_effect = lambda key, default=None: {
+        "llm": {"timeout": 120, "api_key": "sk-test-key"},  # pragma: allowlist secret
+        "llm.api_key": "sk-test-key",  # pragma: allowlist secret
+        "llm.model": "global/model",
+    }.get(key, default)
+    adapter = LiteLLMAdapter(mock_config)
+
+    params = adapter._prepare_completion_params(
+        model="persona/model",
+        llm_overrides={"timeout": 300, "model": "overlay/model"},
+    )
+
+    assert params["timeout"] == 300
+    assert params["model"] == "persona/model"
+    assert "llm_overrides" not in params
+
+
+def test_get_completion_expands_overlay_and_never_forwards_it(mock_config):
+    """The overlay's keys reach litellm; the ``llm_overrides`` key never does."""
+    mock_config.get_setting.side_effect = lambda key, default=None: {
+        "llm": {"timeout": 120},
+        "llm.api_key": "sk-test-key",  # pragma: allowlist secret
+        "llm.model": "global/model",
+    }.get(key, default)
+    adapter = LiteLLMAdapter(mock_config)
+
+    adapter.get_completion(
+        messages=[], model="persona/model", llm_overrides={"timeout": 300}
+    )
+
+    litellm.completion.assert_called_once()
+    actual_kwargs = litellm.completion.call_args.kwargs
+    assert "llm_overrides" not in actual_kwargs
+    assert actual_kwargs["timeout"] == 300
+
+
+def test_prepare_completion_params_overlay_mapping_replaces_global_wholesale(
+    mock_config,
+):
+    """A mapping-valued overlay key replaces the global value one level deep."""
+    mock_config.get_setting.side_effect = lambda key, default=None: {
+        "llm": {"extra_headers": {"A": "1", "B": "2"}},
+        "llm.api_key": "sk-test-key",  # pragma: allowlist secret
+        "llm.model": "global/model",
+    }.get(key, default)
+    adapter = LiteLLMAdapter(mock_config)
+
+    params = adapter._prepare_completion_params(
+        model="persona/model",
+        llm_overrides={"extra_headers": {"X": "9"}},
+    )
+
+    assert params["extra_headers"] == {"X": "9"}
+
+
+def test_prepare_completion_params_drops_a_blank_overlay_api_key(mock_config):
+    """A blank persona ``api_key`` replaces the global key and is then dropped.
+
+    Dropping a blank key restores the provider-default behaviour: litellm
+    applies its own key (e.g. a dummy key for a keyless local model) instead of
+    forwarding an unusable empty string.
+    """
+    mock_config.get_setting.side_effect = lambda key, default=None: {
+        "llm": {"api_key": "sk-global"},  # pragma: allowlist secret
+        "llm.api_key": "sk-global",  # pragma: allowlist secret
+        "llm.model": "global/model",
+    }.get(key, default)
+    adapter = LiteLLMAdapter(mock_config)
+
+    params = adapter._prepare_completion_params(
+        model="persona/model",
+        llm_overrides={"api_key": "   "},
+    )
+
+    assert "api_key" not in params
