@@ -117,12 +117,13 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     ````
     `````
 -   **Parameters:**
-    -   `File Path`: The root-relative path to the file.
+    -   `File Path`: The root-relative path to the file. Missing parent directories are created automatically.
     -   `Overwrite` (Optional): If `true`, allows replacing an existing file. Use with extreme caution.
     -   `Description`: A short summary of the action.
 -   **Parsing Rules:**
     1.  Extract `File Path`, `Overwrite`, and `Description` from the metadata list.
-    2.  The content for the new file is the entire content of the first fenced code block.
+    2.  The content for the new file is the entire content of the first fenced code block. The block is mandatory: a `CREATE` without it fails parsing before execution, while an empty block writes an empty file.
+    3.  The target is always a file. A trailing slash does not denote a directory: `CREATE docs/notes/` writes a file named `notes`, and naming an existing directory fails at execution.
 
 #### `READ`
 
@@ -285,6 +286,8 @@ These actions are deprecated. `PRUNE` has been removed to simplify context manag
 #### Deliberate Exclusions
 
 A capability does not earn an action type merely because a shell command can express it.
+
+-   **Empty directories.** `CREATE` writes files and has no directory form: a bare directory path carries no content, so the mandatory content block would have to become conditional. Directory creation stays an `EXECUTE` action running `mkdir -p`, and the parent directories missing from a `CREATE` path are already created automatically, so a nested file needs no preparation step.
 
 -   **`GREP`.** Searching file contents stays an `EXECUTE` action running `git grep`. Three costs outweigh the convenience. Registration is not local: a new action type must be added to the `ActionType` enum, the parser dispatch map, the factory's Markdown-to-internal map and its port map, the validator registry, the report template, and this document, and a single omission fails either pre-flight or rendering. `git grep` searches only tracked files, so a file created earlier in the same plan is invisible unless `--untracked` is passed. And `git grep` exits `1` when nothing matches, which the dispatcher maps to `FAILURE` and halts the remaining actions, so a zero-match-tolerant search must declare `Allow Failure: true` or append `|| true`. Matched file paths reach the next turn's context through a follow-up `READ`.
 

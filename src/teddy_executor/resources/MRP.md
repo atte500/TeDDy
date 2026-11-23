@@ -175,7 +175,7 @@ You MUST preserve all items in `Notes` across all turns; you may update their st
 
 ### `CREATE`
 
-Creates a new file. By default won't work on existing files (use EDIT instead).
+Creates a new file; never a directory. Missing parent directories are created automatically, so no preparation step is needed. To create a directory, use `EXECUTE` (`mkdir -p path`). By default won't work on existing files (use EDIT instead).
 
 ````markdown
 ### `CREATE`
