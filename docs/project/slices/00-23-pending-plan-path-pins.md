@@ -1,5 +1,5 @@
 # Slice: Pin Pending-Plan Path Doubles for the Marker Read
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Ad-hoc (no milestone)
 - **Depends On:** [00-22-execution-started-marker.md](/docs/project/slices/00-22-execution-started-marker.md)
 - **Specs:** N/A
