@@ -7,20 +7,20 @@
 Eliminate duplicated literals, helpers, and test doubles that currently live in more than one place and must be kept in manual lockstep. Each duplication is a latent drift bug: when one copy changes, the others silently diverge. This milestone single-sources every such concept so the codebase has one authoritative location per concern, consolidates split test organization, and performs a bounded Failure-Transparency sweep. Every item was previously parked in the retired `## Technical Debt` section of `docs/project/PROJECT.md`; with that holding pen removed, each is now scheduled here as an explicit requirement.
 
 ## Requirements
-- [ ] **Single-source Production Literals & Helpers:** Consolidate duplicated constants (encoding name, env-var name, editor sentinel, user request format, awaiting_reply key) and helpers (API key check, MESSAGE detection, preservation-arm decision).
-- [ ] **Align `## User Request` Rendering:** Align bare-fence format and sanitizer behavior between template and append paths.
-- [ ] **Provider Resolution behind `ILlmClient`:** Move litellm provider resolution behind a single `ILlmClient` method.
-- [ ] **Extract Shared Test Fakes:** Extract in-memory filesystem, termios, and ask-loop fakes into `tests/harness/setup/`.
-- [ ] **Consolidate Inbound Port Contract Directory:** Merge `tests/suites/unit/ports/inbound/` into `tests/suites/unit/core/ports/inbound/`.
-- [ ] **Failure-Transparency Sweep:** Narrow or add debug logging to broad `except` blocks across 12 named modules.
-- [ ] **Establish `TeddyError` Root Custom Exceptions:** Create `TeddyError` root class and re-parent all custom domain and boundary exceptions.
-- [ ] **Specialize Domain Exceptions for Overloaded `ValueError`s:** Introduce `SessionNotFoundError`, `WorkingDirectoryEscapeError`, and `UnknownActionError`.
-- [ ] **Reconcile Validation Error Naming:** Disambiguate `InvalidPlanError`, `PlanValidationError`, and rename `ValidationError` DTO to `ValidationFinding`.
-- [ ] **Translate `WebScrapeError` Boundary:** Wrap scraping/network exceptions and eliminate silent empty strings in `WebScraperAdapter`.
-- [ ] **Single-source Action-Type Registration Table:** Collapse multi-file action registration into a single source of truth.
-- [ ] **Migrate Project Tooling to `justfile` and `scripts/`:** Replace `Makefile` and `make/*.mk` with `justfile`, move `commit`, `ci-watch`, `logs`, and `probe` logic into Python helpers in `scripts/`, and add unit tests for `ci-watch` attribution logic.
+1. **Single-source Production Literals & Helpers:** Consolidate duplicated constants (encoding name, env-var name, editor sentinel, user request format, awaiting_reply key) and helpers (API key check, MESSAGE detection, preservation-arm decision).
+2. **Align `## User Request` Rendering:** Align bare-fence format and sanitizer behavior between template and append paths.
+3. **Provider Resolution behind `ILlmClient`:** Move litellm provider resolution behind a single `ILlmClient` method.
+4. **Extract Shared Test Fakes:** Extract in-memory filesystem, termios, and ask-loop fakes into `tests/harness/setup/`.
+5. **Consolidate Inbound Port Contract Directory:** Merge `tests/suites/unit/ports/inbound/` into `tests/suites/unit/core/ports/inbound/`.
+6. **Failure-Transparency Sweep:** Narrow or add debug logging to broad `except` blocks across 12 named modules.
+7. **Establish `TeddyError` Root Custom Exceptions:** Create `TeddyError` root class and re-parent all custom domain and boundary exceptions.
+8. **Specialize Domain Exceptions for Overloaded `ValueError`s:** Introduce `SessionNotFoundError`, `WorkingDirectoryEscapeError`, and `UnknownActionError`.
+9. **Reconcile Validation Error Naming:** Disambiguate `InvalidPlanError`, `PlanValidationError`, and rename `ValidationError` DTO to `ValidationFinding`.
+10. **Translate `WebScrapeError` Boundary:** Wrap scraping/network exceptions and eliminate silent empty strings in `WebScraperAdapter`.
+11. **Single-source Action-Type Registration Table:** Collapse multi-file action registration into a single source of truth.
+12. **Migrate Project Tooling to `justfile` and `scripts/`:** Replace `Makefile` and `make/*.mk` with `justfile`, move `commit`, `ci-watch`, `logs`, and `probe` logic into Python helpers in `scripts/`, and add unit tests for `ci-watch` attribution logic.
 
-## Guidelines
+## Constraints
 - **Test Harness Strategy:**
     - **Single-source proof:** For each extracted constant/helper, add or update a test that imports the canonical definition from both former consumer sites and asserts identity — so a future re-duplication fails loudly.
     - **Shared-fake adoption:** Migrate the bespoke fakes onto the shared harness fake and delete the local copies; the full suite MUST remain green.

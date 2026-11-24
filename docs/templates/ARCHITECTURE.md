@@ -39,32 +39,32 @@ Single source of truth for system structure, organized by architectural layer.
 ### Hexagonal Core
 Domain entities, value objects, ports, and orchestrating services.
 
-| Component         | Description                     | Contract                                     |
+| Component         | Description                     | Design Doc                                   |
 | ----------------- | ------------------------------- | -------------------------------------------- |
 | **ComponentName** | One-line responsibility summary | [Link to design doc](./path/to/component.md) |
 
 ### Inbound Adapters (Driving)
 Entry points initiating calls into the core (CLI, Web UI, API controllers, message consumers).
 
-| Component         | Description                     | Contract                                     |
+| Component         | Description                     | Design Doc                                   |
 | ----------------- | ------------------------------- | -------------------------------------------- |
 | **ComponentName** | One-line responsibility summary | [Link to design doc](./path/to/component.md) |
 
 ### Outbound Adapters (Driven)
 Infrastructure implementations fulfilling outbound port contracts (file system, database, external APIs, shell).
 
-| Component         | Description                     | Contract                                     |
+| Component         | Description                     | Design Doc                                   |
 | ----------------- | ------------------------------- | -------------------------------------------- |
 | **ComponentName** | One-line responsibility summary | [Link to design doc](./path/to/component.md) |
 
 ### Test Harness
 Test drivers, observers, shared fakes, and test setup fixtures.
 
-| Component         | Description                     | Contract                                     |
+| Component         | Description                     | Design Doc                                   |
 | ----------------- | ------------------------------- | -------------------------------------------- |
 | **ComponentName** | One-line responsibility summary | [Link to design doc](./path/to/component.md) |
 
-Each Contract column links to the Component Design Document or Interface definition.
+Each Design Doc column links to the Component Design Document or Interface definition.
 
 ## Key Architectural Decisions
 

@@ -7,19 +7,19 @@
 To clean up the codebase by eliminating unnecessary quality bypasses, removing dead code and redundant tests, and fixing pre-existing quality gate violations that block pre-commit and CI. This ensures the quality gates can run cleanly and the codebase is maintainable.
 
 ## Requirements
-- [x] **Fix Pre-existing C901 Complexity:** Refactored `MarkdownPlanParser.parse` into helper methods; `ruff check --select C901` passes.
-- [ ] **Audit Inline Quality Bypasses:** Remove unnecessary inline suppression comments (`# noqa`, `# type: ignore`) across `src/` and `tests/`.
-- [ ] **Remove Redundant Tests:** Audit acceptance and unit test overlap (including `teddy update` notification tests).
-- [ ] **Fix Pre-existing Mypy Errors:** Resolve confirmed type errors across `action_executor.py`, `console_interactor_ask_loop.py`, `session_cli_handlers.py`, and `session_lifecycle_manager.py`.
-- [ ] **Audit Quality Gate Bypasses in Git History:** Verify `--no-verify` commits in git log.
-- [ ] **Reconcile Failing Non-blocking Quality Checks:** Drive the 9 failing quality checks green (detect-secrets, hygiene, ruff, mypy, bandit/pip-audit, structural, test pyramid, file length, jscpd).
-- [ ] **Split CI Quality Job into Blocking Static Analysis Gate:** Implement 3-job CI architecture on OS matrix (`test-suite`, blocking `static-analysis`, advisory `quality-metrics`).
-- [ ] **Enforce `assert` Scope Rule:** Codify `assert` for contract positions only; require explicit `TeddyError` raise for untrusted plan input validation.
-- [ ] **Add Action-Type Registration Matrix Test:** Guard Milestone 4 MOVE/DELETE delivery across the 6 registration sites.
-- [ ] **Address Structural File-Length Debt:** Split files exceeding the 300-line gate (`session_orchestrator.py`, `yaml_config_adapter.py`, `edit_matcher.py`, `web_scraper_adapter.py`, `tests/conftest.py`, `config_schema.py`).
-- [ ] **Migrate LiteLLM Adapter Tests Off Global Module Patching:** Replace `monkeypatch.setattr` on the `litellm` module across 4 test modules with constructor-injected provider fakes, then add deterministic check banning module-level third-party patching.
+1. **Fix Pre-existing C901 Complexity:** Refactored `MarkdownPlanParser.parse` into helper methods; `ruff check --select C901` passes.
+2. **Audit Inline Quality Bypasses:** Remove unnecessary inline suppression comments (`# noqa`, `# type: ignore`) across `src/` and `tests/`.
+3. **Remove Redundant Tests:** Audit acceptance and unit test overlap (including `teddy update` notification tests).
+4. **Fix Pre-existing Mypy Errors:** Resolve confirmed type errors across `action_executor.py`, `console_interactor_ask_loop.py`, `session_cli_handlers.py`, and `session_lifecycle_manager.py`.
+5. **Audit Quality Gate Bypasses in Git History:** Verify `--no-verify` commits in git log.
+6. **Reconcile Failing Non-blocking Quality Checks:** Drive the 9 failing quality checks green (detect-secrets, hygiene, ruff, mypy, bandit/pip-audit, structural, test pyramid, file length, jscpd).
+7. **Split CI Quality Job into Blocking Static Analysis Gate:** Implement 3-job CI architecture on OS matrix (`test-suite`, blocking `static-analysis`, advisory `quality-metrics`).
+8. **Enforce `assert` Scope Rule:** Codify `assert` for contract positions only; require explicit `TeddyError` raise for untrusted plan input validation.
+9. **Add Action-Type Registration Matrix Test:** Guard Milestone 4 MOVE/DELETE delivery across the 6 registration sites.
+10. **Address Structural File-Length Debt:** Split files exceeding the 300-line gate (`session_orchestrator.py`, `yaml_config_adapter.py`, `edit_matcher.py`, `web_scraper_adapter.py`, `tests/conftest.py`, `config_schema.py`).
+11. **Migrate LiteLLM Adapter Tests Off Global Module Patching:** Replace `monkeypatch.setattr` on the `litellm` module across 4 test modules with constructor-injected provider fakes, then add deterministic check banning module-level third-party patching.
 
-## Guidelines
+## Constraints
 - **Test Harness Strategy:**
     - **Quality Bypass Audit:** Use `git grep` to find all inline suppression comments. Verify each is necessary or remove it.
     - **Dead Code Removal:** Remove `--console` CLI flag and all related code paths. Verify no regressions via full test suite.

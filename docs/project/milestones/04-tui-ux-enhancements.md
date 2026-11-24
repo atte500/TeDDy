@@ -7,21 +7,21 @@
 To provide a polished, intuitive interactive experience that gives users full visibility into session state and context, while adding foundational quality-of-life features like MOVE/DELETE actions and session interrupt.
 
 ## Requirements
-- [x] **Configurable Tree Depth:** Configurable `context.max_depth` setting in config schema and tree generator.
-- [x] **Session Interrupt Mechanism:** Graceful interrupt handling (`InterruptGuard`) for `q` and Ctrl+C.
-- [x] **Editor Basename Normalization:** Launcher-suffix stripping for Windows editor wrappers (`codium.CMD`, `nvim.CMD`) delivered by slice `04-01`.
-- [x] **Editor Diff Mapping:** Translation table for diff flags with `diff_flags` config override.
-- [ ] **Waiting Indicator (04-02):** Animated braille spinner during model generation via `IUserInteractor.begin_waiting`/`end_waiting`.
-- [ ] **MOVE and DELETE Actions:** File and directory `MOVE` and `DELETE` action types with live context manifest synchronization.
-- [ ] **Manual Execution Logging & Ordering:** Re-emit skipped actions (`notify_skipped_action`) and record manually executed actions (`x`) in real execution sequence order.
-- [ ] **Rationale Heading Parsing:** Reviewer opens a node for every `###` heading in rationale, falling back to `Raw` if none present.
-- [ ] **TUI Navigation Polishing:** Alt+Up/Down section jumping with sub-section awareness and scroll-at-bottom behavior.
-- [ ] **Context Interaction Enhancements:** Context `e` key actions to open context manifests, files, or agent switch menu.
-- [ ] **Right Panel Metadata Visibility:** Display model name, provider, and session cost rounded to nearest cent when Context root is selected.
-- [ ] **Tier 2 Editing:** Automatically open external editor for parameters that are multiline or >100 characters.
-- [ ] **Layout Padding Consistency:** Consistent padding across left and right TUI panels.
+1. **Configurable Tree Depth:** Configurable `context.max_depth` setting in config schema and tree generator.
+2. **Session Interrupt Mechanism:** Graceful interrupt handling (`InterruptGuard`) for `q` and Ctrl+C.
+3. **Editor Basename Normalization:** Launcher-suffix stripping for Windows editor wrappers (`codium.CMD`, `nvim.CMD`) delivered by slice `04-01`.
+4. **Editor Diff Mapping:** Translation table for diff flags with `diff_flags` config override.
+5. **Waiting Indicator (04-02):** Animated braille spinner during model generation via `IUserInteractor.begin_waiting`/`end_waiting`.
+6. **MOVE and DELETE Actions:** File and directory `MOVE` and `DELETE` action types with live context manifest synchronization.
+7. **Manual Execution Logging & Ordering:** Re-emit skipped actions (`notify_skipped_action`) and record manually executed actions (`x`) in real execution sequence order.
+8. **Rationale Heading Parsing:** Reviewer opens a node for every `###` heading in rationale, falling back to `Raw` if none present.
+9. **TUI Navigation Polishing:** Alt+Up/Down section jumping with sub-section awareness and scroll-at-bottom behavior.
+10. **Context Interaction Enhancements:** Context `e` key actions to open context manifests, files, or agent switch menu.
+11. **Right Panel Metadata Visibility:** Display model name, provider, and session cost rounded to nearest cent when Context root is selected.
+12. **Tier 2 Editing:** Automatically open external editor for parameters that are multiline or >100 characters.
+13. **Layout Padding Consistency:** Consistent padding across left and right TUI panels.
 
-## Guidelines
+## Constraints
 - **Waiting Indicator:** The port only opens and closes a waiting region; the console adapter owns the rendering. Nothing is rendered when stderr is not a terminal, so logs, redirects, and CI transcripts stay newline-delimited.
 - **Test Harness Strategy:**
     - **TUI Changes:** Use the existing TUI test driver (`TuiDriver`) for navigation and interaction tests. Use `FileSystemObserver` to verify context manifest updates for MOVE/DELETE.

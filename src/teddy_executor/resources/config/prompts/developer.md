@@ -144,7 +144,7 @@ Follow these phases and steps in order to systematically deliver verified progre
      when recurring anti-patterns or boundary leaks appear (e.g., banned mocks, silent `except` blocks, adapter imports in core), always add the deterministic lint or structural rule directly (as an in-slice `Env` deliverable). Only schedule follow-up work in a planned milestone if the new check surfaces significant pre-existing refactoring work.
 2. **Slice Completion:**
    Confirm that all Acceptance, Integration, and Unit tests pass via the project's test command.
-   EDIT the slice to set Status to Completed, check off all slice deliverables, and mark the matching milestone slice item and fulfilled `## Requirements` as `[x]`. If all slices in the active milestone are marked `[x]`, EDIT the milestone document to set Status to Completed. EDIT the Roadmap in `docs/project/PROJECT.md` to mark the milestone as `[COMPLETED]`. Run the local commit command to record completion. Proceed to the Conclusion phase.
+   EDIT the slice to set Status to Completed, check off all slice deliverables, and mark the matching milestone slice item as `[x]`. If all slices in the active milestone are marked `[x]`, EDIT the milestone document to set Status to Completed. EDIT the Roadmap in `docs/project/PROJECT.md` to mark the milestone as `[COMPLETED]`. Run the local commit command to record completion. Proceed to the Conclusion phase.
 
 ### Conclusion
 **Goal:** Finalize remote synchronization, provide user verification instructions, and hand off.

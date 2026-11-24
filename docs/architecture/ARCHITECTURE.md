@@ -51,7 +51,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 ### Hexagonal Core
 
-| Component                     | Description                                                                                                                                         | Contract                                                                         |
+| Component                     | Description                                                                                                                                         | Design Doc                                                                       |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | **ExecutionReport**           | A strongly-typed, immutable data structure representing the outcome of a plan execution.                                                            | [ExecutionReport](./core/domain/execution_report.md)                             |
 | **ShellOutput**               | A strictly-typed DTO representing the result of a shell command execution.                                                                          | [ShellOutput](./core/domain/shell_output.md)                                     |
@@ -101,14 +101,14 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 ### Inbound Adapters (Driving)
 
-| Component               | Description                                                                                                          | Contract                                                           |
+| Component               | Description                                                                                                          | Design Doc                                                         |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | **CLI Adapter**         | The primary inbound adapter that drives the application via the `Typer` CLI framework.                               | [CLI Adapter](./adapters/inbound/cli.md)                           |
 | **TextualPlanReviewer** | Implements `IPlanReviewer` using a dual-pane `Textual` TUI (ActionTree/ParameterDetail) for interactive plan review. | [TextualPlanReviewer](./adapters/inbound/textual_plan_reviewer.md) |
 
 ### Outbound Adapters (Driven)
 
-| Component                      | Description                                                                                                       | Contract                                                                          |
+| Component                      | Description                                                                                                       | Design Doc                                                                        |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | **ConsoleInteractor**          | Implements `IUserInteractor` for the console, providing diff previews for file operations.                        | [ConsoleInteractorAdapter](./adapters/outbound/console_interactor.md)             |
 | **ConsoleTooling**             | A utility for centralized discovery of editors and diff viewers, respecting configuration and system environment. | [ConsoleTooling](./adapters/outbound/console_tooling.md)                          |
@@ -125,7 +125,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 
 ### Test Harness
 
-| Component                        | Description                                                                                                                                | Contract                                               |
+| Component                        | Description                                                                                                                                | Design Doc                                             |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
 | **MarkdownPlanBuilder** (Driver) | A fluent DSL for constructing validated Markdown plans. MUST be used in tests to generate plan strings instead of hardcoding raw Markdown. | [MarkdownPlanBuilder](./tests/drivers/plan_builder.md) |
 | **ReportParser** (Observer)      | An "Inverse Adapter" that parses Markdown reports back into structured DTOs for assertions.                                                | [ReportParser](./tests/observers/report_parser.md)     |
