@@ -272,3 +272,13 @@ def mock_pyperclip(monkeypatch):
     )
     monkeypatch.setattr("pyperclip.copy", mock_copy)
     yield mock_copy
+
+
+@pytest.fixture
+def fake_llm_client(container):
+    from teddy_executor.core.ports.outbound import ILlmClient
+    from tests.harness.setup.fake_llm_client import FakeLlmClient
+
+    fake = FakeLlmClient()
+    container.register(ILlmClient, instance=fake)
+    return fake

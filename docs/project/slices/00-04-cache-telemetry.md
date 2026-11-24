@@ -70,7 +70,7 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 ## Deliverables
 
 - [x] **Interface** - Add the `TokenUsage` DTO, the additive `ILlmClient.get_token_usage` method, its `LiteLLMAdapter` implementation reusing the existing extraction, and the four new `meta.yaml` keys on the session-manager contract. One commit, because a port method without its only implementation leaves the suite red.
-- [ ] **Harness** - Add a fake `ILlmClient` usage stub that drives the cached-hit, zero-cache, and no-usage branches deterministically.
+- [x] **Harness** - Add a fake `ILlmClient` usage stub that drives the cached-hit, zero-cache, and no-usage branches deterministically.
 - [ ] **Wiring** - Thread the usage DTO from `PlanningService` into metadata persistence, writing zeros when the provider reports nothing and never emitting the suffix yet.
 - [ ] **Core** - Accumulate the cumulative prompt and cached counters in `SessionService`, derive the integer percentage, and append `(X% cached)` in `_display_telemetry` under the documented omission rules.
 - [ ] **Migration** - Update existing telemetry-output and meta-field assertions, and document the new keys in the session-manager component doc.
@@ -86,6 +86,12 @@ The adapter owns provider-shape parsing; the core sees only integers. Cumulative
 - The four meta keys are declared once as `TURN_USAGE_META_KEYS` in the session-manager port module and pinned by a contract test; the persistence and display work lands in Wiring and Core.
 - The DTO intentionally does not assert `cached_tokens <= prompt_tokens`: a provider may count sub-blocks, and clamping belongs to the display layer.
 - Environment repair: `.venv/bin/pytest` carried a shebang pointing at the former `TeDDy3` checkout; `uv sync --reinstall` regenerated the console scripts without moving `uv.lock`.
+
+### Harness delivered
+- `FakeLlmClient` (`tests/harness/setup/fake_llm_client.py`) is a hand-written in-memory `ILlmClient`, mirroring the `fake_pdf_extractor` precedent rather than a spec-bound mock. `get_token_usage` pops a scripted `TokenUsage` queue and drains to a zeroed `TokenUsage`, so the cached-hit, zero-cache, and no-usage branches are all driven deterministically; `enqueue_usage` appends to the queue and `usage_calls` records every response inspected.
+- `get_completion` returns a minimal well-formed response (`choices[0].message.content` and a fixed `.model`) so `PlanningService` can extract plan content and read the serving model without a live provider. The remaining port operations return neutral defaults.
+- The fixture is registered in `mocks.py`, re-exported through `composition.py`, and threaded into `tests/conftest.py`, so pytest discovers it globally. `mock_llm_client` stays a spec-bound mock; `FakeLlmClient` is the real in-memory double a Wiring test injects when it needs the actual usage branch.
+- Harness tests live at `tests/suites/unit/test_fake_llm_client_harness.py`, matching the `test_*_harness.py` convention: parameterized branch coverage, queue-drain behavior, completion usability, port conformance, and fixture registration.
 
 ## Verification
 1. **Persisted counters:**
