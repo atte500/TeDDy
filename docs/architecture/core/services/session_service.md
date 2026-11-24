@@ -25,6 +25,8 @@ Implements the `ISessionManager` outbound port. It manages the on-disk lifecycle
 - `primitive_serialization`: All metadata is cast to primitive types before serialization.
 - `model_override_is_the_resolution_input`: An explicit `--model` writes `model_override` at session creation and is carried across turns; `model` records the per-turn effective value and is never a resolution input.
 - `robust_context_read`: A missing or unreadable `turn.context` is treated as empty.
+- `usage_schema_seeded`: `_initialize_meta_data` seeds all four `TURN_USAGE_META_KEYS` to `0`, so turn 1 always carries the complete usage schema instead of a missing key.
+- `usage_accumulation`: `_persist_next_meta` accumulates each counter as the carried total plus this turn's own count, coercing each operand independently through the pure `_as_usage_count` helper, so a junk contribution counts as zero without resetting a valid running total.
 
 ## Inbound Ports
 None — the service implements an outbound port and is consumed through `ISessionManager`.
@@ -36,6 +38,7 @@ None — the service implements an outbound port and is consumed through `ISessi
 - **`SessionOptions`** (`teddy_executor.core.domain.models.session`): The session creation DTO.
 - **`SessionState`** (str Enum): `EMPTY`, `PENDING_PLAN`, `COMPLETE_TURN`.
 - **`ExecutionReport`** (`teddy_executor.core.domain.models`): Carried into `transition_to_next_turn`.
+- **`TURN_USAGE_META_KEYS`** (`teddy_executor.core.ports.outbound.session_manager`): The four usage counters seeded to `0` on turn 1 and accumulated on each transition.
 
 ## Operations
 
@@ -49,7 +52,7 @@ None — the service implements an outbound port and is consumed through `ISessi
 
 ### `transition_to_next_turn(plan_path, execution_report=None, turn_cost=0.0, is_validation_failure=False, pruned_paths=None) -> str`
 - **Preconditions:** `plan_path` points to the current turn's plan.
-- **Postconditions:** Creates the next turn directory within the same session, prunes and re-seeds context, persists cumulative cost, carries `model_override`/`model`/`actual_model`/`provider` forward, and returns the next directory path.
+- **Postconditions:** Creates the next turn directory within the same session, prunes and re-seeds context, persists cumulative cost and accumulates the cumulative usage counters, carries `model_override`/`model`/`actual_model`/`provider` forward, and returns the next directory path.
 
 ### `rename_session(old_name, new_name) -> str`
 - **Preconditions:** `old_name` exists.

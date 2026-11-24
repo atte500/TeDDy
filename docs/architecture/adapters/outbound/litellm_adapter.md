@@ -25,6 +25,7 @@ Implements the `ILlmClient` outbound port using the `litellm` library. It provid
 - `cost_never_raises`: `get_completion_cost` returns `0.0` on any failure and never raises.
 - `reported_cost_precedence`: `get_completion_cost` prefers the cost the response itself reports before any registry recompute, because it reflects the vendor that actually served the request. On an OpenRouter BYOK response the real spend is `usage.cost_details.upstream_inference_cost`, which outranks the waived `usage.cost` fee.
 - `recorded_cost_signal`: A real price (reported, or a successful recompute including a free-model `0.0`) sets `_teddy_cost_recorded=True` on the response; the recompute-failure fallback `0.0` is left unmarked.
+- `usage_int_only`: `get_token_usage` reads only genuine `int` values; a non-integer, an absent usage object, or an absent `prompt_tokens_details` block all read as `0` rather than a coerced guess.
 
 ## Inbound Ports
 None — this is an outbound (driven) adapter.
@@ -39,6 +40,7 @@ None — this is an outbound (driven) adapter.
 - **Model registry cache:** JSON at `.teddy/.model_registry_cache.json`, payload `{"version": 1, "fetched_at_epoch": <int>, "models": [...]}`, with a 7-day TTL.
 - **`LlmApiError`** (`teddy_executor.core.ports.outbound.llm_client`): Raised after retry exhaustion on downstream provider failure.
 - **`ConfigurationError`** (`teddy_executor.core.domain.models.exceptions`): Raised for invalid configuration, missing keys, or authentication errors.
+- **`TokenUsage`** (`teddy_executor.core.domain.models.token_usage`): Returned by `get_token_usage`; both counters are `int` and absent provider data reads as `0`.
 
 ## Operations
 
@@ -54,6 +56,10 @@ None — this is an outbound (driven) adapter.
 
 ### `get_text_token_count(text, model=None) -> int`
 - **Postconditions:** Returns the token count of a raw string through the cached `tiktoken` encoding. Returns `0` for empty text.
+
+### `get_token_usage(completion_response) -> TokenUsage`
+- **Postconditions:** Returns the provider's own `usage.prompt_tokens` and its `usage.prompt_tokens_details.cached_tokens`, read through the shared `_extract_usage_value` and `_extract_detail_value` readers that the cost-failure diagnostics already use. Both readers return a value only for a genuine `int`, so a string, a float, an absent usage object, or an absent detail block reads as `0`. The result is provider accounting, never the pre-call request estimate.
+- **Exceptions:** None — a response without usages yields a zeroed `TokenUsage` rather than raising.
 
 ### `get_completion_cost(completion_response, model_override=None) -> float`
 - **Postconditions:** Returns the USD cost, reading the response before any registry recompute in this order: a positive `usage.cost_details.upstream_inference_cost` (OpenRouter BYOK spend) plus any reported fee; then `_hidden_params["response_cost"]`; then the OpenRouter `additional_headers["llm_provider-x-litellm-response-cost"]` header. A non-dict holder, an absent/`None` value, or a non-finite value falls through to the next source. When no reported cost is present it recomputes via `litellm.completion_cost`. On a real price (reported, upstream, or a successful recompute, including a free-model `0.0`) it sets `_teddy_cost_recorded=True` on the response so the display can trust the figure; the recompute-failure fallback `0.0` is left unmarked.

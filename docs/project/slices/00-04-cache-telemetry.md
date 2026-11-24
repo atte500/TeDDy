@@ -13,7 +13,7 @@ Turn the provider's cache accounting into persisted, inspectable session data an
 ## Context
 - `LiteLLMAdapter._extract_detail_value(completion_response, "prompt_tokens_details", "cached_tokens")` already reads the provider's cached-token count, but only inside a cost-failure log path, so the value never leaves the adapter.
 - `PlanningService._run_planning_phase` holds the completion `response` next to `token_count` and `turn_cost`, and calls `self._prompt_manager.log_telemetry(token_count, turn_cost)`.
-- `PromptManager.update_turn_meta` writes `turn_cost` and `token_count` into `meta.yaml`. `token_count` is a `litellm.token_counter` estimate over the outgoing messages, not the provider's usage, and it feeds the context-budget display, so the two must not be conflated.
+- `PromptManager.update_meta` writes `turn_cost` and `token_count` into `meta.yaml`. `token_count` is a `litellm.token_counter` estimate over the outgoing messages, not the provider's usage, and it feeds the context-budget display, so the two must not be conflated.
 - `SessionService` accumulates `cumulative_cost` when it advances turn metadata, which is the pattern the new cumulative counters mirror.
 - `PlanningService._display_telemetry` renders the cost line and already distinguishes "no pricing information" (`$???`) from a legitimately free model via the `cost_recorded` flag.
 - Provider usage shape differs: caching providers report `usage.prompt_tokens` and `usage.prompt_tokens_details.cached_tokens`; non-caching providers omit the details object entirely.
@@ -63,7 +63,7 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 ## Impact
 1. `[NEW]` `TokenUsage` — typed DTO carrying `prompt_tokens` and `cached_tokens`.
 2. `[EXTEND]` `ILlmClient.get_token_usage` — additive port method over the opaque completion response the port already returns.
-3. `[EXTEND]` `PromptManager.log_telemetry` / `update_turn_meta` and the `ISessionManager` turn-metadata contract — four new integer fields.
+3. `[EXTEND]` `PromptManager.log_telemetry` / `update_meta` and the `ISessionManager` turn-metadata contract — four new integer fields.
 4. `[MIGRATE]` `PlanningService._display_telemetry` — appends the derived suffix under the omission rules.
 5. `[MIGRATE]` existing telemetry and meta-key assertions that enumerate the persisted field set.
 
@@ -73,7 +73,7 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 - [x] **Harness** - Add a fake `ILlmClient` usage stub that drives the cached-hit, zero-cache, and no-usage branches deterministically.
 - [x] **Wiring** - Thread the usage DTO from `PlanningService` into metadata persistence, writing zeros when the provider reports nothing and never emitting the suffix yet.
 - [x] **Core** - Accumulate the cumulative prompt and cached counters in `SessionService`, derive the integer percentage, and append `(X% cached)` in `_display_telemetry` under the documented omission rules.
-- [ ] **Migration** - Update existing telemetry-output and meta-field assertions, and document the new keys in the session-manager component doc.
+- [x] **Migration** - Update existing telemetry-output and meta-field assertions, and document the new keys in the session-manager component doc.
 
 ## Implementation Notes
 The adapter owns provider-shape parsing; the core sees only integers. Cumulative counters live beside `cumulative_cost` so the whole display renders from one meta object.
@@ -109,6 +109,11 @@ The adapter owns provider-shape parsing; the core sees only integers. Cumulative
 - `PlanningService._display_telemetry` hoists the dollar-figure gate into `show_cost` and appends ` (N% cached)` only when the cost is a rendered dollar figure, `cumulative_cost > 0`, the prompt denominator is positive, and the cached total is positive. `N = min(100, round(cached * 100 / prompt))`, so a provider counting sub-blocks clamps at 100%; `$???`, a recorded free-model `$0.0000`, a zero denominator, and an absent or zero cache all render suffix-free.
 - Because `_display_telemetry` runs pre-response over the turn's own meta, turn N renders the ratio accumulated from completed turns: turn 1 reads the seeded zeros and shows no suffix, and the suffix appears once the carried cumulative cache and the accumulated cost are both positive.
 - Test coverage: `test_cache_telemetry_display.py` drives the real `generate_plan` seam across the eight-case omission matrix, and five accumulation cases were appended to `test_session_service_turn_meta.py` (accumulate, first-turn seed, absent-usage carry, per-value coercion, seeded-zero schema). The display and accumulation halves were each observed Red then Green in separate cycles. Scenario 2's end-to-end two-turn chain is pinned at each link — Wiring persists per-turn usage, these units accumulate and render — and covered manually in the Verification steps.
+
+### Migration delivered
+- `test_cache_telemetry_wiring.py` extends its turn-1 meta assertion to the full four-key schema: the cumulative pair is present and integer-valued at zero, since accumulation only happens on a transition. That pins the CLI-boundary contract without duplicating the accumulation arithmetic or the display omission matrix, which stay owned by the two Core unit modules.
+- As-Built doc pass, applied because Migration is the slice's last deliverable: `token_usage.md` created, linked from the Component Map, and named in the Ubiquitous Language; `llm_client.md` and `litellm_adapter.md` gained `get_token_usage` plus the DTO; `prompt_manager.md` records the four persisted usage keys and the additive sixth `update_meta` parameter; `session_manager.md` names `TURN_USAGE_META_KEYS`; `session_service.md` records the seeding and accumulation invariants; `planning_service.md` records the cache-suffix gate and the estimate-versus-usage separation.
+- The stale `update_turn_meta` name inherited from the slice draft was corrected to `update_meta` in the Context and Impact sections, so the planning artifact names the shipped method.
 
 ## Verification
 1. **Persisted counters:**

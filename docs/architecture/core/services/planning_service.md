@@ -34,6 +34,8 @@ Implements the `IPlanningUseCase` inbound port. It gathers project context, reso
 - `model_threaded_everywhere`: The single resolved model feeds the completion, the cost lookup, the budget check, telemetry, the token count, and the gathered context.
 - `budget_guard`: A request that strictly exceeds the model context window raises before the LLM call.
 - `interruptible_planning_phase`: The hydration, token-count, telemetry, budget, and completion calls run on a daemon worker, so the calling thread waits on a future that a quit can interrupt.
+- `cache_suffix_gate`: `_display_telemetry` appends ` (N% cached)` only when the cost renders as a dollar figure, `cumulative_cost > 0`, the cumulative prompt denominator is positive, and the cumulative cached count is positive; `N = min(100, round(cached * 100 / prompt))`. `$???`, a recorded free-model `$0.0000`, a zero denominator, and an absent or zero cache all render suffix-free.
+- `estimate_versus_usage`: The pre-call `token_count` stays the request estimate that feeds the context-budget check; provider accounting arrives separately through `get_token_usage` as a `TokenUsage` and never overwrites the estimate.
 
 ## Inbound Ports
 - **`IPlanningUseCase`**: Exposes `generate_plan(...)`.
@@ -45,13 +47,14 @@ None declared directly — the service consumes the ports bundled in `PlanningPo
 - **`PlanningPorts`** (`teddy_executor.core.domain.models.planning_ports`): The injected DTO bundling context, LLM, file system, config, prompts, user interactor, and session manager.
 - **`ProjectContext`** (`teddy_executor.core.domain.models.project_context`): The gathered context returned to the caller.
 - **Return tuple:** `(plan_path, turn_cost, project_context)`.
+- **`TokenUsage`** (`teddy_executor.core.domain.models.token_usage`): The provider accounting read from the completion and persisted into `meta.yaml`; never the request estimate.
 - **`ConfigurationError`** (`teddy_executor.core.domain.models.exceptions`): Raised when request strictly exceeds the model context window budget.
 
 ## Operations
 
 ### `generate_plan(user_message, turn_dir, context_files=None) -> tuple[str, float, ProjectContext]`
 - **Preconditions:** `turn_dir` exists; the agent prompt file exists in the turn directory.
-- **Postconditions:** Resolves the persona overlay and the effective model once, threads that model into the token count, the context gathering, the completion, the cost lookup, the budget check, and telemetry, writes `plan.md` and `input.md`, updates `meta.yaml` telemetry (including `cost_recorded` when the adapter marked the response), and returns the plan path, the turn cost, and the gathered `ProjectContext`. The gather receives a `session_root` derived once from `Path(turn_dir).parent` — the same expression supplies `cache_dir` — so the DTO carries the rendering session's root. The blocking network phase runs on the interruptible daemon worker, so the calling thread waits on a future instead of a raw socket read.
+- **Postconditions:** Resolves the persona overlay and the effective model once, threads that model into the token count, the context gathering, the completion, the cost lookup, the budget check, and telemetry, writes `plan.md` and `input.md`, updates `meta.yaml` telemetry (including `cost_recorded` when the adapter marked the response), and returns the plan path, the turn cost, and the gathered `ProjectContext`. It also reads `get_token_usage(response)` off the same completion response the cost lookup inspects and threads the resulting `TokenUsage` into `update_meta`, so the turn's provider accounting persists beside its cost. The gather receives a `session_root` derived once from `Path(turn_dir).parent` — the same expression supplies `cache_dir` — so the DTO carries the rendering session's root. The blocking network phase runs on the interruptible daemon worker, so the calling thread waits on a future instead of a raw socket read.
 - **Exceptions:**
   - `ConfigurationError`: Configuration is invalid or request exceeds context window budget.
   - `FileNotFoundError`: System prompt file is missing in turn directory.

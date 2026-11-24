@@ -14,6 +14,7 @@ None — this port declares no injected dependencies.
 ## Class Invariants
 - `abstract_base_class`: The port is an `ABC`; implementations override every abstract operation.
 - `error_translation`: Every provider failure surfaces as `LlmApiError`, never a provider-specific exception.
+- `usage_zero_fill`: `get_token_usage` is concrete and returns a zeroed `TokenUsage`, so a client that cannot observe provider accounting inherits that default instead of reporting a guess.
 
 ## Inbound Ports
 None — this is an outbound (driven) port.
@@ -26,6 +27,7 @@ None — this is an outbound (driven) port.
 - **`ConfigurationError`** (`teddy_executor.core.domain.models.exceptions`): Raised for a rejected configuration value, including a truthy `stream` in the merged parameters.
 - **`messages`**: A list of `{"role": str, "content": str}` dictionaries in chat-completion format.
 - **`llm_overrides`**: An optional `Mapping[str, Any]` carrying the active persona's `llm` settings; `None` by default so every existing caller and fake stays valid.
+- **`TokenUsage`** (`teddy_executor.core.domain.models.token_usage`): The frozen DTO carrying the provider's `prompt_tokens` and `cached_tokens`, both `int` and both `0` when the provider reports nothing. Its `prompt_tokens` is the provider's own count, never the pre-call `get_token_count` estimate.
 
 ## Operations
 
@@ -43,6 +45,10 @@ None — this is an outbound (driven) port.
 ### `get_text_token_count(text, model=None) -> int`
 - **Preconditions:** None.
 - **Postconditions:** Returns the token count of a raw string.
+
+### `get_token_usage(completion_response) -> TokenUsage`
+- **Preconditions:** `completion_response` is a response from `get_completion`; the port keeps it opaque, so the DTO is the only shape crossing the boundary.
+- **Postconditions:** Returns the provider-reported usage, with any field the provider omits reading as `0`. A client that inherits the concrete default returns a zeroed `TokenUsage`.
 
 ### `get_completion_cost(completion_response, model_override=None) -> float`
 - **Preconditions:** `completion_response` is a response from `get_completion`.

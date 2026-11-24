@@ -42,5 +42,9 @@ def test_first_turn_persists_integer_usage_without_a_cache_suffix(
     assert meta["cached_tokens"] == expected_cached_tokens
     assert isinstance(meta["prompt_tokens"], int)
     assert isinstance(meta["cached_tokens"], int)
+    assert meta["cumulative_prompt_tokens"] == 0
+    assert meta["cumulative_cached_tokens"] == 0
+    assert isinstance(meta["cumulative_prompt_tokens"], int)
+    assert isinstance(meta["cumulative_cached_tokens"], int)
     assert "Session Cost" in result.stdout
     assert "% cached" not in result.stdout

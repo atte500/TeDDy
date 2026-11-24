@@ -25,6 +25,7 @@ Implements the `IPromptManager` outbound port. It resolves agent prompts, compos
 - `legacy_short_circuit`: A resolved prompt that already carries `<response_format>` is returned unchanged, without the MRP block.
 - `single_sourced_assembly`: Both composition entry points delegate to `_assemble_composed_prompt`, so the composed prompt cannot drift.
 - `mrp_fail_fast`: A missing `MRP.md` resource raises `FileNotFoundError` rather than returning a degraded prompt.
+- `usage_int_coercion`: `update_meta` coerces `prompt_tokens` and `cached_tokens` to `int` inside its numeric guard and defaults absent usage to a zeroed `TokenUsage`, so a provider that reports nothing persists `0` rather than a mock repr or a guess.
 
 ## Inbound Ports
 None — this is a concrete implementation of an outbound port.
@@ -33,7 +34,8 @@ None — this is a concrete implementation of an outbound port.
 - **`IPromptManager`**: The driven contract this service implements. The interface lives in `src/teddy_executor/core/ports/outbound/prompt_manager.py`.
 
 ## Data Contracts
-- **`meta.yaml` mapping**: `agent_name`, `turn_cost`, `token_count`, `model`, `actual_model`, `finish_reason`.
+- **`meta.yaml` mapping**: `agent_name`, `turn_cost`, `token_count`, `model`, `actual_model`, `finish_reason`, plus the provider usage counters `prompt_tokens` and `cached_tokens` (integers; absent provider data persists as `0`). The `cumulative_*` pair is added later by `SessionService` when it advances the turn.
+- **`TokenUsage`** (`teddy_executor.core.domain.models.token_usage`): The optional sixth argument of `update_meta`; absent means a zeroed `TokenUsage`.
 - **Return of `fetch_system_prompt`**: The composed system prompt string, or an empty string when no agent prompt resolves.
 
 ## Operations
@@ -54,6 +56,6 @@ None — this is a concrete implementation of an outbound port.
 - **Preconditions:** `turn_path` is the current turn directory.
 - **Postconditions:** Returns the user message, the turn-one `initial_request.md` content, or an empty string for a continuation signal. Returns `None` for empty interactive input.
 
-### `update_meta(meta, response, token_count, turn_cost, meta_file_path) -> None`
-- **Preconditions:** `meta` is a dictionary; `meta_file_path` is writable.
-- **Postconditions:** Records cost, token count, the configured model, the actual serving model, and the finish reason, then persists the scrubbed metadata.
+### `update_meta(meta, response, token_count, turn_cost, meta_file_path, token_usage=None) -> None`
+- **Preconditions:** `meta` is a dictionary; `meta_file_path` is writable; `token_usage` is a `TokenUsage` or `None`, where `None` means a zeroed one.
+- **Postconditions:** Records cost, token count, the provider's `prompt_tokens` and `cached_tokens`, the configured model, the actual serving model, and the finish reason, then persists the scrubbed metadata. The sixth parameter is additive and defaulted, so the five-argument call sites stay valid.

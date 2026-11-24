@@ -17,6 +17,7 @@ Defines the outbound port for the stateful lifecycle of a session: creating sess
 ## Class Invariants
 - `runtime_checkable`: The protocol supports `isinstance` checks.
 - `single_folder_lifetime`: A session keeps one folder for its lifetime; a turn may rename it once.
+- `usage_counter_contract`: Turn metadata always carries the four usage counters as integers; the first turn seeds them to `0` and each transition accumulates, so a whole-meta reader renders the cache ratio without a missing-key branch.
 
 ## Inbound Ports
 None — this is an outbound (driven) port.
@@ -27,6 +28,7 @@ None — this is an outbound (driven) port.
 ## Data Contracts
 - **`SessionState`** (str Enum): `EMPTY`, `PENDING_PLAN`, `COMPLETE_TURN`.
 - **`EXECUTION_STARTED_MARKER`** (str constant, `"execution.started"`): The turn-scoped filename written into a session turn directory when execution begins; the resume gate reads it to tell a mid-execution kill from a never-dispatched turn.
+- **`TURN_USAGE_META_KEYS`** (tuple constant): The four turn-metadata keys carrying provider cache accounting — `prompt_tokens`, `cached_tokens`, `cumulative_prompt_tokens`, `cumulative_cached_tokens`. Every value is an `int`, and absent provider data persists as `0`.
 
 ## Operations
 
@@ -56,7 +58,7 @@ None — this is an outbound (driven) port.
 
 ### `transition_to_next_turn(plan_path, execution_report=None, turn_cost=0.0, is_validation_failure=False, pruned_paths=None) -> str`
 - **Preconditions:** `plan_path` points to the current turn's plan.
-- **Postconditions:** Creates the next turn directory, propagates context and cost metadata, and returns its path.
+- **Postconditions:** Creates the next turn directory, propagates context, cost, and cumulative usage metadata, and returns its path.
 
 ### `resolve_context_paths(plan_path) -> dict[str, list[str]]`
 - **Preconditions:** `plan_path` exists.
