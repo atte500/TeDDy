@@ -1,6 +1,18 @@
 from typing import Optional
 
 
+class TeddyError(Exception):
+    """Root base exception for every project domain and boundary failure."""
+
+
+class PdfExtractionError(TeddyError):
+    """Raised when a PDF payload cannot be parsed into its text layer."""
+
+    def __init__(self, message: str, source: str):
+        super().__init__(message)
+        self.source = source
+
+
 class SearchTextNotFoundError(ValueError):
     """Exception for when search text is not found during an edit operation."""
 

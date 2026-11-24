@@ -10,6 +10,7 @@ if TYPE_CHECKING:
         IWebScraper,
         IWebSearcher,
         IConfigService,
+        IPdfExtractor,
     )
 
 
@@ -26,3 +27,4 @@ class ActionPorts:
     web_scraper: IWebScraper
     web_searcher: IWebSearcher
     config_service: Optional[IConfigService] = None
+    pdf_extractor: Optional[IPdfExtractor] = None

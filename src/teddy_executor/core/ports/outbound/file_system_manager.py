@@ -86,6 +86,18 @@ class IFileSystemManager(Protocol):
         """
         ...
 
+    def read_file_bytes(self, path: str) -> bytes:
+        """
+        Reads the raw bytes of a file at the specified path.
+
+        Unlike ``read_file``, this performs no text decoding or truncation, so
+        binary payloads (such as PDF documents) survive intact.
+
+        Raises:
+            FileNotFoundError: If no file exists at the specified path.
+        """
+        ...
+
     def remove_file(self, path: str) -> None:
         """
         Deletes a file from the file system.
