@@ -71,7 +71,7 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 
 - [x] **Interface** - Add the `TokenUsage` DTO, the additive `ILlmClient.get_token_usage` method, its `LiteLLMAdapter` implementation reusing the existing extraction, and the four new `meta.yaml` keys on the session-manager contract. One commit, because a port method without its only implementation leaves the suite red.
 - [x] **Harness** - Add a fake `ILlmClient` usage stub that drives the cached-hit, zero-cache, and no-usage branches deterministically.
-- [ ] **Wiring** - Thread the usage DTO from `PlanningService` into metadata persistence, writing zeros when the provider reports nothing and never emitting the suffix yet.
+- [x] **Wiring** - Thread the usage DTO from `PlanningService` into metadata persistence, writing zeros when the provider reports nothing and never emitting the suffix yet.
 - [ ] **Core** - Accumulate the cumulative prompt and cached counters in `SessionService`, derive the integer percentage, and append `(X% cached)` in `_display_telemetry` under the documented omission rules.
 - [ ] **Migration** - Update existing telemetry-output and meta-field assertions, and document the new keys in the session-manager component doc.
 
@@ -92,6 +92,16 @@ The adapter owns provider-shape parsing; the core sees only integers. Cumulative
 - `get_completion` returns a minimal well-formed response (`choices[0].message.content` and a fixed `.model`) so `PlanningService` can extract plan content and read the serving model without a live provider. The remaining port operations return neutral defaults.
 - The fixture is registered in `mocks.py`, re-exported through `composition.py`, and threaded into `tests/conftest.py`, so pytest discovers it globally. `mock_llm_client` stays a spec-bound mock; `FakeLlmClient` is the real in-memory double a Wiring test injects when it needs the actual usage branch.
 - Harness tests live at `tests/suites/unit/test_fake_llm_client_harness.py`, matching the `test_*_harness.py` convention: parameterized branch coverage, queue-drain behavior, completion usability, port conformance, and fixture registration.
+
+### Wiring delivered
+- `PlanningService.generate_plan` reads `self._llm_client.get_token_usage(response)` off the same completion response the cost lookup already inspected, then threads the DTO into metadata persistence through the additively extended `update_meta(..., token_usage=...)` keyword. Nothing else about the planning flow changed.
+- `IPromptManager.update_meta` gained a defaulted sixth parameter `token_usage: Optional[TokenUsage] = None`, so the five-argument call sites in `test_model_prefix_preservation.py` and the in-source caller stay valid. `PromptManager` is the sole production implementer, so the addition is non-breaking.
+- `PromptManager.update_meta` coerces `prompt_tokens`/`cached_tokens` to `int` inside its existing `try/except (TypeError, ValueError)` guard and defaults absent usage to a zeroed `TokenUsage`, so a provider that reports nothing persists `0` rather than a mock repr or a guess.
+- The two spec-bound LLM doubles — `TestEnvironment._apply_llm_defaults` and `mocks.py::mock_llm_client` — pin `get_token_usage` to a zeroed `TokenUsage`, so the real writer never receives a dynamic mock where an integer is expected even on suite paths that never touch usage.
+- No suffix is emitted yet: the Session Cost line is byte-identical to before, which the acceptance test's negative `% cached` assertion pins. `cumulative_prompt_tokens`/`cumulative_cached_tokens` accumulation and the `(N% cached)` suffix remain for the Core deliverable.
+- The acceptance test at `tests/suites/acceptance/test_cache_telemetry_wiring.py` drives `start -y -m` at the CLI boundary with a container-registered `FakeLlmClient` over the real filesystem, proving `1234/0` from a scripted usage and `0/0` from a drained queue land as integers in the real `meta.yaml` while the cost line carries no cache suffix.
+
+- The concrete `update_meta` carries a narrowly scoped `# noqa: PLR0913` with a reason comment: the sixth typed parameter is the deliberate additive seam, and a module-level `per-file-ignores` entry would blanket a 400-line module to silence one line.
 
 ## Verification
 1. **Persisted counters:**

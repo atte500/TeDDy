@@ -215,11 +215,14 @@ class TestEnvironment(RealAdapterMixin):
         mock.review_action.return_value = (True, "")
 
     def _apply_llm_defaults(self, mock: Any) -> None:
+        from teddy_executor.core.domain.models.token_usage import TokenUsage
+
         mock.validate_config.return_value = []
         mock.get_completion_cost.return_value = 0.0
         mock.get_token_count.return_value = 0
         mock.get_text_token_count.return_value = 0
         mock.get_context_window.return_value = 128000
+        mock.get_token_usage.return_value = TokenUsage()
 
     def _apply_config_defaults(self, mock: Any) -> None:
         mock.get_config_path.return_value = ".teddy/config.yaml"

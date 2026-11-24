@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from teddy_executor.core.domain.models.token_usage import TokenUsage
+
 
 class IPromptManager(ABC):
     """
@@ -60,6 +62,8 @@ class IPromptManager(ABC):
         _token_count: int,
         _turn_cost: float,
         _meta_file_path: str,
+        _token_usage: Optional[TokenUsage] = None,
     ) -> None:
-        """Updates and persists turn metadata."""
+        """Updates and persists turn metadata, including provider usage
+        accounting when the caller supplies it."""
         ...

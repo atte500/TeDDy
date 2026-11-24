@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 import yaml
 
+from teddy_executor.core.domain.models.token_usage import TokenUsage
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
@@ -208,20 +209,29 @@ class PromptManager(IPromptManager):
 
         return safe_float(turn_cost)
 
-    def update_meta(
+    # Six parameters: the fifth is the meta file path and the sixth the
+    # provider usage. Bundling them would break the five-argument call sites,
+    # so the arity is deliberate.
+    def update_meta(  # noqa: PLR0913
         self,
         meta: Dict[str, Any],
         response: Any,
         token_count: int,
         turn_cost: float,
         meta_file_path: str,
+        token_usage: Optional[TokenUsage] = None,
     ) -> None:
+        usage = token_usage if token_usage is not None else TokenUsage()
         try:
             meta["turn_cost"] = float(turn_cost)
             meta["token_count"] = int(token_count)
+            meta["prompt_tokens"] = int(usage.prompt_tokens)
+            meta["cached_tokens"] = int(usage.cached_tokens)
         except (TypeError, ValueError):
             meta["turn_cost"] = meta.get("turn_cost", 0.0)
             meta["token_count"] = meta.get("token_count", 0)
+            meta["prompt_tokens"] = meta.get("prompt_tokens", 0)
+            meta["cached_tokens"] = meta.get("cached_tokens", 0)
 
         # Preserve the user-configured model (with routing prefix) for routing.
         # Store the actual serving model separately for telemetry.

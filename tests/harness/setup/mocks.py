@@ -253,9 +253,12 @@ def mock_llm_client(container):
 
     mock.get_completion.return_value = mock_response
 
+    from teddy_executor.core.domain.models.token_usage import TokenUsage
+
     mock.get_token_count.return_value = 100
     mock.get_completion_cost.return_value = 0.01
     mock.get_context_window.return_value = 128000
+    mock.get_token_usage.return_value = TokenUsage()
 
     return mock
 

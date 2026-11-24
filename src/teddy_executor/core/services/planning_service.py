@@ -131,8 +131,16 @@ class PlanningService(IPlanningUseCase):
         # This prevents the bug where meta["model"] was missing on first turn (no --model flag)
         # and update_meta overwrote it with the bare actual model.
         meta.setdefault("model", model)
+        # Provider cache accounting is read from the response the cost lookup
+        # already inspected; an uninstrumented client reports zeros.
+        token_usage = self._llm_client.get_token_usage(response)
         self._prompt_manager.update_meta(
-            meta, response, token_count, turn_cost, meta_file_path
+            meta,
+            response,
+            token_count,
+            turn_cost,
+            meta_file_path,
+            token_usage=token_usage,
         )
 
         return plan_path, cost_val, context
