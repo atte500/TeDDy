@@ -34,7 +34,7 @@ None — this is an outbound (driven) adapter.
 
 ## Data Contracts
 - **`messages`** (`List[Dict[str, str]]`): The chat-completion payload.
-- **`llm.*` config keys:** The entire `llm` section passes through to `litellm.completion()`. The adapter reads `llm.model`, `llm.api_key`, `llm.max_retries` (default 3), and `llm.timeout` (default 300 seconds). A per-persona `llm_overrides` mapping layers over that block.
+- **`llm.*` config keys:** The `llm` section passes through to `litellm.completion()`, except `llm.stream`, which preflight rejects (see Proxy timeouts and the rejected `llm.stream`). The adapter reads `llm.model`, `llm.api_key`, `llm.max_retries` (default 3), and `llm.timeout` (default 300 seconds). A per-persona `llm_overrides` mapping layers over that block.
 - **Model registry cache:** JSON at `.teddy/.model_registry_cache.json`, payload `{"version": 1, "fetched_at_epoch": <int>, "models": [...]}`, with a 7-day TTL.
 - **`LlmApiError`** (`teddy_executor.core.ports.outbound.llm_client`): Raised after retry exhaustion on downstream provider failure.
 - **`ConfigurationError`** (`teddy_executor.core.domain.models.exceptions`): Raised for invalid configuration, missing keys, or authentication errors.
@@ -61,6 +61,7 @@ None — this is an outbound (driven) adapter.
 ### `validate_config(include_remote=False) -> List[str]`
 - **Postconditions:** Returns configuration error messages, where an empty list means valid.
 - **Postconditions:** Key-requiredness delegates to `litellm.validate_environment`, so keyless local models validate cleanly. A non-key requirement stays advisory.
+- **Postconditions:** A truthy `llm.stream` is always reported — a YAML boolean `true`, or the string `"true"` that `${VAR}` interpolation produces — because the rest of the `llm` block passes through verbatim and streaming would silently yield an empty plan. A missing API key and the flag are reported together rather than one masking the other.
 - **Postconditions:** When no earlier error exists and `llm.api_base` is unset, provider resolution runs under captured stdout. An unresolvable model then returns a paste-ready error naming `llm.model`.
 - **Postconditions:** When `include_remote` is `True`, a connectivity check runs with a 10-second timeout.
 
@@ -81,6 +82,18 @@ OpenRouter reports two figures on a response. `usage.cost` is what OpenRouter ch
 
 ### Parameter merge precedence
 `_prepare_completion_params` layers four sources, lowest first: runtime `**kwargs`, the global `llm` block, the per-persona `llm_overrides`, then the per-call `model`. The overlay merge is a one-level `dict.update`, so a mapping-valued key such as `extra_headers` replaces the global value wholesale. The blank-`api_key` drop and the default-timeout arm run after the overlay merge, so a blank persona `api_key` still replaces the global value and is then dropped to the provider default. An absent overlay leaves the merged parameters byte-identical to the pre-overlay path.
+
+### Proxy timeouts and the rejected `llm.stream`
+Every `llm.*` key except `stream` passes through to the completion call. `stream` is rejected at preflight because plan generation reads one complete, non-streamed response: a stream wrapper carries no `choices`, so the turn would burn its retries on an empty plan. It is also the wrong remedy for a timeout — it keeps the connection alive only once generation starts, leaves prompt evaluation and both proxy ceilings untouched, and still depends on the ingress settings that solve the problem outright.
+
+A long generation behind a reverse proxy dies on a hop's idle timer. Two ceilings sit in front of TeDDy's own:
+
+- **Cloudflare:** Error 524 fires when a proxied origin sends no response bytes within the Proxy Read Timeout, 125 seconds by default. Only the Enterprise plan can raise it, up to 6,000 seconds.
+- **nginx:** `proxy_read_timeout` defaults to 60 seconds and measures the gap between successive upstream reads; `proxy_buffering` defaults to `on`, which delays a streamed body. Raise the timeout to cover the whole generation and set `proxy_buffering off`.
+
+The zero-code route past the Cloudflare ceiling is a DNS-only (grey cloud) subdomain: it removes the edge from the request path and leaves nginx as the only timer. It requires a directly reachable origin, so it is unavailable behind CGNAT or behind a Cloudflare Tunnel that stays proxied.
+
+Both hops only buy time. `llm.timeout` defaults to 300 seconds and still kills a 30-minute generation client-side, so raise it alongside the proxies. Nothing client-side prevents the timeout: a heartbeat has no addressee, because both hops measure response-direction silence, and reconnecting restarts prompt evaluation from zero, because chat completions is stateless with no job handle to resume.
 
 ### Retry and authentication handling
 The retry loop attempts `llm.max_retries` times with exponential backoff (`0.5 * 2**attempt`). `_is_auth_error` detects an auth failure by message hint or by the `litellm.AuthenticationError` type, so a wrong or expired key fails on the first attempt with no backoff.
