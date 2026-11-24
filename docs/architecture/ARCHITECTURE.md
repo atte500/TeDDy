@@ -131,6 +131,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **TestEnvironment** (Setup)      | A harness that encapsulates DI isolation, environment patching, and workspace management.                                                  | [TestEnvironment](./tests/setup/test_environment.md)   |
 | **TestComposition (Fixtures)**   | A set of reusable pytest fixtures and globally mocked heavy dependencies (e.g., LiteLLM).                                                  | [TestComposition](./tests/setup/composition.md)        |
 | **EditScenarios** (Setup)        | A data-only module of canonical EDIT scenarios: composable builders and named content/FIND bundles shared by matcher and validator tests.  | [EditScenarios](./tests/setup/edit_scenarios.md)       |
+| **ContextScenarios** (Setup) | A data-only module of canonical context-payload scenarios: three paths driving the session-resources partition branches, a deterministic body per path, and a builder that always emits both session-mode scope keys. | [ContextScenarios](./tests/setup/context_scenarios.md) |
 
 ---
 
