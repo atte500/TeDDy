@@ -21,6 +21,7 @@ Implements the `ILlmClient` outbound port using the `litellm` library. It provid
 - `validated_flag`: `_validated` is guarded by `_init_lock`, so concurrent first calls validate exactly once.
 - `auth_not_retried`: Authentication errors are never retried; they surface immediately as `ConfigurationError`.
 - `error_translation`: Provider failures surface as `LlmApiError` or `ConfigurationError`, never as a raw provider exception.
+- `stream_rejected`: No completion request is issued with a truthy `stream`, whether it arrives in the global `llm` block, a persona overlay, or a runtime kwarg.
 - `cost_never_raises`: `get_completion_cost` returns `0.0` on any failure and never raises.
 - `reported_cost_precedence`: `get_completion_cost` prefers the cost the response itself reports before any registry recompute, because it reflects the vendor that actually served the request. On an OpenRouter BYOK response the real spend is `usage.cost_details.upstream_inference_cost`, which outranks the waived `usage.cost` fee.
 - `recorded_cost_signal`: A real price (reported, or a successful recompute including a free-model `0.0`) sets `_teddy_cost_recorded=True` on the response; the recompute-failure fallback `0.0` is left unmarked.
@@ -34,7 +35,7 @@ None — this is an outbound (driven) adapter.
 
 ## Data Contracts
 - **`messages`** (`List[Dict[str, str]]`): The chat-completion payload.
-- **`llm.*` config keys:** The `llm` section passes through to `litellm.completion()`, except `llm.stream`, which preflight rejects (see Proxy timeouts and the rejected `llm.stream`). The adapter reads `llm.model`, `llm.api_key`, `llm.max_retries` (default 3), and `llm.timeout` (default 300 seconds). A per-persona `llm_overrides` mapping layers over that block.
+- **`llm.*` config keys:** The `llm` section passes through to `litellm.completion()`, except `stream`, whether global or persona-level, which preflight and the parameter-merge point reject (see Proxy timeouts and the rejected `llm.stream`). The adapter reads `llm.model`, `llm.api_key`, `llm.max_retries` (default 3), and `llm.timeout` (default 300 seconds). A per-persona `llm_overrides` mapping layers over that block.
 - **Model registry cache:** JSON at `.teddy/.model_registry_cache.json`, payload `{"version": 1, "fetched_at_epoch": <int>, "models": [...]}`, with a 7-day TTL.
 - **`LlmApiError`** (`teddy_executor.core.ports.outbound.llm_client`): Raised after retry exhaustion on downstream provider failure.
 - **`ConfigurationError`** (`teddy_executor.core.domain.models.exceptions`): Raised for invalid configuration, missing keys, or authentication errors.
@@ -42,10 +43,10 @@ None — this is an outbound (driven) adapter.
 ## Operations
 
 ### `get_completion(messages, model=None, llm_overrides=None, **kwargs) -> Any`
-- **Preconditions:** The config carries a model and, when the provider requires one, an API key.
+- **Preconditions:** The config carries a model and, when the provider requires one, an API key. The merged parameters carry no truthy `stream`.
 - **Postconditions:** Returns the provider completion object. The first call validates the config once; later calls skip validation. The `llm_overrides` overlay layers between the global `llm` block and the per-call `model`.
 - **Exceptions:**
-  - `ConfigurationError`: Model missing, required API key missing, or authentication failure detected.
+  - `ConfigurationError`: Model missing, required API key missing, authentication failure detected, or a truthy `stream` in the merged parameters, whether global or persona-level.
   - `LlmApiError`: Downstream API provider failure persisting after retries are exhausted.
 
 ### `get_token_count(messages, model=None) -> int`
@@ -83,8 +84,10 @@ OpenRouter reports two figures on a response. `usage.cost` is what OpenRouter ch
 ### Parameter merge precedence
 `_prepare_completion_params` layers four sources, lowest first: runtime `**kwargs`, the global `llm` block, the per-persona `llm_overrides`, then the per-call `model`. The overlay merge is a one-level `dict.update`, so a mapping-valued key such as `extra_headers` replaces the global value wholesale. The blank-`api_key` drop and the default-timeout arm run after the overlay merge, so a blank persona `api_key` still replaces the global value and is then dropped to the provider default. An absent overlay leaves the merged parameters byte-identical to the pre-overlay path.
 
+After the merge, a truthy `stream` raises `ConfigurationError` with the same message preflight emits. That is the backstop: preflight reads only the global `llm.stream`, so a persona-level `stream` would otherwise reach the completion call and silently yield an empty plan.
+
 ### Proxy timeouts and the rejected `llm.stream`
-Every `llm.*` key except `stream` passes through to the completion call. `stream` is rejected at preflight because plan generation reads one complete, non-streamed response: a stream wrapper carries no `choices`, so the turn would burn its retries on an empty plan. It is also the wrong remedy for a timeout — it keeps the connection alive only once generation starts, leaves prompt evaluation and both proxy ceilings untouched, and still depends on the ingress settings that solve the problem outright.
+Every `llm.*` key except `stream` passes through to the completion call. `stream` is rejected in two places — preflight, which reads the global `llm.stream`, and the parameter-merge point, which catches a truthy `stream` from any layer including a persona overlay — because plan generation reads one complete, non-streamed response: a stream wrapper carries no `choices`, so the turn would burn its retries on an empty plan. It is also the wrong remedy for a timeout — it keeps the connection alive only once generation starts, leaves prompt evaluation and both proxy ceilings untouched, and still depends on the ingress settings that solve the problem outright.
 
 A long generation behind a reverse proxy dies on a hop's idle timer. Two ceilings sit in front of TeDDy's own:
 

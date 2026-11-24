@@ -23,15 +23,17 @@ None — this is an outbound (driven) port.
 
 ## Data Contracts
 - **`LlmApiError`** (`Exception`): Raised for any failure during an LLM API call.
+- **`ConfigurationError`** (`teddy_executor.core.domain.models.exceptions`): Raised for a rejected configuration value, including a truthy `stream` in the merged parameters.
 - **`messages`**: A list of `{"role": str, "content": str}` dictionaries in chat-completion format.
 - **`llm_overrides`**: An optional `Mapping[str, Any]` carrying the active persona's `llm` settings; `None` by default so every existing caller and fake stays valid.
 
 ## Operations
 
 ### `get_completion(messages, model=None, llm_overrides=None, **kwargs) -> Any`
-- **Preconditions:** `messages` follows the chat-completion format.
+- **Preconditions:** `messages` follows the chat-completion format. The merged parameters carry no truthy `stream`, because the port returns one complete, non-streamed response.
 - **Postconditions:** Returns the provider completion object. `llm_overrides` is an optional per-persona overlay merged over the global `llm` block, with the per-call `model` still applied last.
 - **Exceptions:**
+  - `ConfigurationError`: A rejected configuration value, including a truthy `stream` in the merged parameters.
   - `LlmApiError`: Remote provider failure, rate limit, timeout, or malformed response.
 
 ### `get_token_count(messages, model=None) -> int`
