@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+from teddy_executor.core.domain.models.exceptions import ConfigurationError
 from tests.harness.setup.litellm_doubles import FakeLitellmProvider
 
 _ABSENT = object()
@@ -66,3 +67,51 @@ def test_truthy_stream_is_reported_alongside_missing_api_key(mock_config):
 
     assert any("llm.stream" in error for error in errors), errors
     assert any("llm.api_key" in error for error in errors), errors
+
+
+@pytest.mark.parametrize("stream_value", [True, "true"])
+def test_truthy_stream_overlay_is_rejected_before_completion(
+    mock_config, mock_time_service, stream_value
+):
+    """A persona-level stream reaches the merge guard before any request.
+
+    ``get_completion`` is the boundary that receives the persona overlay, so a
+    truthy flag here proves the backstop fires after preflight and before
+    ``litellm.completion``. The provider double records every attempt, and the
+    injected time service keeps the absent-guard Red run free of real sleeps.
+    """
+    _configure(mock_config)
+    provider = FakeLitellmProvider()
+    adapter = LiteLLMAdapter(
+        config_service=mock_config,
+        time_service=mock_time_service,
+        _litellm_provider=provider,
+    )
+
+    with pytest.raises(ConfigurationError, match="llm.stream"):
+        adapter.get_completion(
+            messages=[{"role": "user", "content": "hi"}],
+            model="gpt-4o",
+            llm_overrides={"stream": stream_value},
+        )
+
+    assert provider.completion_calls == []
+
+
+@pytest.mark.parametrize("stream_value", [False, "false", _ABSENT])
+def test_prepare_completion_params_allows_falsy_stream_overlay(
+    mock_config, stream_value
+):
+    """A falsy or absent persona stream must not trigger the merge guard.
+
+    The merge point is asserted directly because the provider double fails
+    loudly on any completion; the property under test is that the guard stays
+    keyed on truthiness, not that a request succeeds.
+    """
+    _configure(mock_config)
+    adapter = _adapter(mock_config)
+    overlay = {} if stream_value is _ABSENT else {"stream": stream_value}
+
+    params = adapter._prepare_completion_params(model="gpt-4o", llm_overrides=overlay)
+
+    assert params["model"] == "gpt-4o"

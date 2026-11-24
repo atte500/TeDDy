@@ -8,6 +8,14 @@ from teddy_executor.core.ports.outbound.time_service import ITimeService
 
 logger = logging.getLogger(__name__)
 
+_STREAM_REJECTION_MESSAGE = (
+    "'llm.stream' must not be enabled: streaming is unsupported because "
+    "plan generation reads one complete, non-streamed response. Remove "
+    "'llm.stream' (or the persona-level 'stream' key under 'agents') and "
+    "raise the idle timeout at your proxy instead (see the LiteLLMAdapter "
+    "component doc for the Cloudflare and nginx recipe)."
+)
+
 
 class IOpenRouterHydrator(Protocol):
     """
@@ -183,6 +191,12 @@ class LiteLLMAdapter(ILlmClient):
 
         if llm_overrides:
             params.update(llm_overrides)
+
+        # Preflight only inspects the global ``llm.stream``, so a persona
+        # overlay or a runtime kwarg could reintroduce streaming. This is the
+        # single point where every layer is merged, so the backstop lives here.
+        if self._is_truthy_flag(params.get("stream")):
+            raise ConfigurationError(_STREAM_REJECTION_MESSAGE)
 
         # Drop an empty/blank api_key so litellm applies the provider's own
         # default (e.g. a dummy key for keyless local models). Forwarding "" is
@@ -553,13 +567,7 @@ class LiteLLMAdapter(ILlmClient):
         # on an empty plan. The message points at the proxy recipe because a
         # long generation is the usual reason the key gets set at all.
         if self._is_truthy_flag(self._config_service.get_setting("llm.stream")):
-            errors.append(
-                "'llm.stream' must not be enabled: streaming is unsupported "
-                "because plan generation reads one complete, non-streamed "
-                "response. Remove llm.stream and raise the idle timeout at your "
-                "proxy instead (see the LiteLLMAdapter component doc for the "
-                "Cloudflare and nginx recipe)."
-            )
+            errors.append(_STREAM_REJECTION_MESSAGE)
 
         # 3. Provider resolution: a bare model name cannot be routed, so the
         # failure surfaces at preflight with a paste-ready fix instead of at the
