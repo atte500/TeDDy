@@ -65,6 +65,16 @@ def mock_scraper(container):
 
 
 @pytest.fixture
+def fake_pdf_extractor(container):
+    from teddy_executor.core.ports.outbound import IPdfExtractor
+    from tests.harness.setup.fake_pdf_extractor import FakePdfExtractor
+
+    fake = FakePdfExtractor()
+    container.register(IPdfExtractor, instance=fake)
+    return fake
+
+
+@pytest.fixture
 def mock_searcher(container):
     from teddy_executor.core.ports.outbound import IWebSearcher
 

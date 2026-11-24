@@ -24,6 +24,7 @@ sys.modules["litellm"] = mock_litellm
 
 # Re-export mocks for standard fixtures
 from tests.harness.setup.mocks import (
+    fake_pdf_extractor as fake_pdf_extractor,
     mock_action_dispatcher as mock_action_dispatcher,
     mock_action_factory as mock_action_factory,
     mock_config as mock_config,

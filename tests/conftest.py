@@ -15,6 +15,7 @@ import pytest
 
 from tests.harness.setup.composition import (
     container,
+    fake_pdf_extractor,
     mock_config,
     mock_user_interactor,
     mock_fs,
@@ -94,6 +95,7 @@ def pytest_configure(config):
 # Exporting these fixtures makes them globally available to all test suites
 __all__ = [
     "container",
+    "fake_pdf_extractor",
     "mock_config",
     "mock_user_interactor",
     "mock_fs",
