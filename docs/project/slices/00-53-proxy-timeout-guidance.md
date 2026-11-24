@@ -68,7 +68,7 @@ None. The pass-through, the extraction path, and the preflight seam are establis
 
 ## Deliverables
 - [x] **Interface** — Extend `validate_config` with the `llm.stream` rejection and unit tests for boolean `true`, string `"true"`, `false`, `"false"`, and absent.
-- [ ] **Wiring** — Prove the preflight seam end to end: a `PlanningService`-level test asserting `ConfigurationError` is raised before any completion call and that no plan file is written.
+- [x] **Wiring** — Prove the preflight seam end to end: a `PlanningService`-level test asserting `ConfigurationError` is raised before any completion call and that no plan file is written.
 - [ ] **Migration** — Document streaming's rejection and the proxy recipe (the 125 second Cloudflare ceiling, the DNS-only route with its CGNAT and tunnel precondition, `proxy_read_timeout`, `proxy_buffering off`, and `llm.timeout`) in the parameter-merge section of `litellm_adapter.md`.
 - [ ] **Cleanup** — Confirm no remaining code path can hand `llm.stream` to the completion call, and that the component doc's parameter-merge section states the rejection.
 
@@ -77,6 +77,8 @@ None. The pass-through, the extraction path, and the preflight seam are establis
 
 - **Interface:** `validate_config` appends the `llm.stream` rejection before the `if not errors:` gates, so a missing API key and a truthy flag are reported together instead of the first fault masking the second. `_is_truthy_flag` normalizes the value: a string compares case-insensitively against `"true"`, because env interpolation yields the literal `"false"` and a bare `bool()` would read it as enabled; non-strings fall back to native truthiness. Covered by `tests/suites/unit/adapters/outbound/test_litellm_adapter_stream_guard.py`.
 - **Interface:** The two retry tests in `test_litellm_retries.py` built their config double with a blanket `get_setting.return_value = {"model": "gpt-4o"}`, so every key resolved to that dict and `llm.stream` came back truthy. They now use the shared `mock_config` fixture, which answers per key and leaves the flag absent.
+- **Wiring:** `test_preflight_rejects_truthy_stream_before_completion_or_plan_write` assembles `PlanningPorts` by hand with the real `LiteLLMAdapter` on the `llm` field and harness doubles for the other six ports, rather than overriding the container's `ILlmClient` registration: `punq` shadows a re-registered instance, so an override can silently fail to take effect. The test asserts the boundary three ways — the raise matched on `llm.stream`, `provider.completion_calls == []`, and `mock_fs.write_file` never called. The last one is stronger than the deliverable's wording: `_run_preflight_check()` runs before the `input.md` write, so an uncalled `write_file` proves neither turn artifact was produced, not merely `plan.md`.
+- **Wiring:** The litellm provider double moved out of the adapter test module into `tests/harness/setup/litellm_doubles.py` as `FakeLitellmProvider`, now recording every `completion` call and raising `AssertionError` if the request path is reached. Both the adapter unit tests and the service boundary test therefore share one fake, and the swap was verified behaviour-neutral (6 passes before and after).
 
 ## Verification
 1. **Loud rejection:**

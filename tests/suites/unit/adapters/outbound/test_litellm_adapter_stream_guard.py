@@ -12,24 +12,9 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
+from tests.harness.setup.litellm_doubles import FakeLitellmProvider
 
 _ABSENT = object()
-
-
-class _FakeLitellm:
-    """Provider double: a clean environment and a resolvable model."""
-
-    class AuthenticationError(Exception):
-        pass
-
-    def __init__(self, missing_keys: Optional[List[str]] = None) -> None:
-        self._missing_keys = missing_keys or []
-
-    def validate_environment(self, model: str) -> Dict[str, Any]:
-        return {"missing_keys": list(self._missing_keys)}
-
-    def get_llm_provider(self, model: str) -> Any:
-        return ("openai", model, None, None)
 
 
 def _configure(
@@ -49,7 +34,7 @@ def _adapter(
     mock_config: Any, missing_keys: Optional[List[str]] = None
 ) -> LiteLLMAdapter:
     return LiteLLMAdapter(
-        config_service=mock_config, _litellm_provider=_FakeLitellm(missing_keys)
+        config_service=mock_config, _litellm_provider=FakeLitellmProvider(missing_keys)
     )
 
 
