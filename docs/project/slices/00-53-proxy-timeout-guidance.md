@@ -24,12 +24,12 @@ A user running a local model behind Cloudflare or nginx loses a long generation 
 
 ## Scenarios
 
-> As a user whose long generation dies behind a proxy, I want the documented recipe so that I can fix my own ingress without reading source.
+> As a user whose long generation dies behind a proxy, I want the documented recipe so that I can fix my own ingress without tracing the adapter.
 
 ```gherkin
 Given a user running a local model behind Cloudflare and nginx
 When a long generation fails with 524 or 504
-Then the README configuration section names the ceiling, the DNS-only route, the nginx settings, and the llm.timeout caveat
+Then the LiteLLMAdapter component doc names the ceiling, the DNS-only route, the nginx settings, and the llm.timeout caveat
 And it states the precondition that rules the DNS-only route out behind CGNAT or a proxied tunnel
 ```
 
@@ -64,16 +64,16 @@ None. The pass-through, the extraction path, and the preflight seam are establis
 ## Impact
 1. `[EXTEND]` `LiteLLMAdapter.validate_config` — Append a message when `llm.stream` is truthy, accepting a YAML boolean or the `"true"`/`"false"` string env interpolation produces.
 2. `[MIGRATE]` `docs/architecture/adapters/outbound/litellm_adapter.md` — Record that streaming is rejected and why, and document the proxy recipe in the parameter-merge section.
-3. `[MIGRATE]` `README.md` — Add the proxy and `llm.timeout` recipe to the configuration section.
-4. `[PRUNE]` The silent empty-plan path — Once validation rejects the key, it can no longer reach the completion call.
+3. `[PRUNE]` The silent empty-plan path — Once validation rejects the key, it can no longer reach the completion call.
 
 ## Deliverables
 - [ ] **Interface** — Extend `validate_config` with the `llm.stream` rejection and unit tests for boolean `true`, string `"true"`, `false`, `"false"`, and absent.
 - [ ] **Wiring** — Prove the preflight seam end to end: a `PlanningService`-level test asserting `ConfigurationError` is raised before any completion call and that no plan file is written.
-- [ ] **Migration** — Document streaming's rejection and the proxy recipe (the 125 second Cloudflare ceiling, the DNS-only route with its CGNAT and tunnel precondition, `proxy_read_timeout`, `proxy_buffering off`, and `llm.timeout`) in `litellm_adapter.md` and the README configuration section.
+- [ ] **Migration** — Document streaming's rejection and the proxy recipe (the 125 second Cloudflare ceiling, the DNS-only route with its CGNAT and tunnel precondition, `proxy_read_timeout`, `proxy_buffering off`, and `llm.timeout`) in the parameter-merge section of `litellm_adapter.md`.
 - [ ] **Cleanup** — Confirm no remaining code path can hand `llm.stream` to the completion call, and that the component doc's parameter-merge section states the rejection.
 
 ## Implementation Notes
+- The proxy recipe lives only in the `LiteLLMAdapter` component doc. The user-facing README is deliberately left alone: a deployment-specific ingress recipe reads as bloat there and duplicates the adapter contract that already owns the `llm.*` pass-through.
 
 ## Verification
 1. **Loud rejection:**
@@ -83,5 +83,5 @@ None. The pass-through, the extraction path, and the preflight seam are establis
    Remove the key and run the same command.
    Confirm the turn proceeds normally.
 3. **Documentation completeness:**
-   Read the README configuration section and `litellm_adapter.md`.
-   Confirm both name the 125 second ceiling, the DNS-only route, the CGNAT and tunnel precondition, `proxy_read_timeout`, `proxy_buffering off`, and `llm.timeout`.
+   Read the parameter-merge section of `docs/architecture/adapters/outbound/litellm_adapter.md`.
+   Confirm it names the 125 second ceiling, the DNS-only route, the CGNAT and tunnel precondition, `proxy_read_timeout`, `proxy_buffering off`, and `llm.timeout`.
