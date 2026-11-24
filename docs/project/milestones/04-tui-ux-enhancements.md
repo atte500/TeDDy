@@ -6,8 +6,20 @@
 ## Goal
 To provide a polished, intuitive interactive experience that gives users full visibility into session state and context, while adding foundational quality-of-life features like MOVE/DELETE actions and session interrupt.
 
-## Solution
-Expand the TUI with improved navigation, context interactions, and metadata visibility. Add new action types (`MOVE`, `DELETE`) with context manifest awareness. Implement a session interrupt mechanism. Deprecate `--console` mode. Show an animated indicator while a model response is in flight.
+## Requirements
+- [x] **Configurable Tree Depth:** Configurable `context.max_depth` setting in config schema and tree generator.
+- [x] **Session Interrupt Mechanism:** Graceful interrupt handling (`InterruptGuard`) for `q` and Ctrl+C.
+- [x] **Editor Basename Normalization:** Launcher-suffix stripping for Windows editor wrappers (`codium.CMD`, `nvim.CMD`) delivered by slice `04-01`.
+- [x] **Editor Diff Mapping:** Translation table for diff flags with `diff_flags` config override.
+- [ ] **Waiting Indicator (04-02):** Animated braille spinner during model generation via `IUserInteractor.begin_waiting`/`end_waiting`.
+- [ ] **MOVE and DELETE Actions:** File and directory `MOVE` and `DELETE` action types with live context manifest synchronization.
+- [ ] **Manual Execution Logging & Ordering:** Re-emit skipped actions (`notify_skipped_action`) and record manually executed actions (`x`) in real execution sequence order.
+- [ ] **Rationale Heading Parsing:** Reviewer opens a node for every `###` heading in rationale, falling back to `Raw` if none present.
+- [ ] **TUI Navigation Polishing:** Alt+Up/Down section jumping with sub-section awareness and scroll-at-bottom behavior.
+- [ ] **Context Interaction Enhancements:** Context `e` key actions to open context manifests, files, or agent switch menu.
+- [ ] **Right Panel Metadata Visibility:** Display model name, provider, and session cost rounded to nearest cent when Context root is selected.
+- [ ] **Tier 2 Editing:** Automatically open external editor for parameters that are multiline or >100 characters.
+- [ ] **Layout Padding Consistency:** Consistent padding across left and right TUI panels.
 
 ## Guidelines
 - **Waiting Indicator:** The port only opens and closes a waiting region; the console adapter owns the rendering. Nothing is rendered when stderr is not a terminal, so logs, redirects, and CI transcripts stay newline-delimited.
@@ -17,8 +29,6 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
     - **Action Types:** Extend `ActionFactory` and `ActionValidator` tests for `MOVE` and `DELETE` validation rules.
     - **Session Interrupt:** Test via `ShellAdapter` signal handling or `ConsoleInteractor` ask-loop interaction.
 - **Poka-Yoke:** MOVE/DELETE MUST update context manifest files automatically. Validation MUST fail if MOVE destination path already exists.
-
-## Technical Specifications
 - **MOVE Action:** Takes `Source` and `Destination` paths. Validates source exists and destination does not, and creates missing destination parents. Rewrites the live `turn.context` and `session.context` so the old path becomes the new one; archived session directories stay immutable. Supports files and directories, where renaming is a `MOVE` within the same parent. Contract: [plan-format.md](/docs/project/specs/plan-format.md) and [plan-format-validation.md](/docs/project/specs/plan-format-validation.md).
 - **DELETE Action:** Takes `Path` plus an optional `Recursive` flag, required for a directory that is not empty. Validates path exists. Removes the path, and for a directory every entry beneath its prefix, from the live `turn.context` and `session.context`; archived session directories stay immutable. Supports files and directories. The parser must coerce `Recursive` to a boolean the way `CREATE` coerces `Overwrite`, so `Recursive: false` is falsy rather than a truthy non-empty string.
 - **TUI Changes:**

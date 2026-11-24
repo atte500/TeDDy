@@ -217,7 +217,7 @@ The Debugger uses a remote probing workflow to investigate platform-specific or 
 ### What it does
 1. Accepts a `reason` string via `workflow_dispatch`.
 2. Checks out the repository on a CI runner.
-3. Executes `spikes/debug/remote_probe.sh` (the probe script containing diagnostic logic).
+3. Executes `spikes/debug/probe.sh` (the probe script containing diagnostic logic).
 4. Captures output for retrieval via `gh run view --log`.
 
 ### How to create it
@@ -240,20 +240,20 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run Probe
         run: |
-          chmod +x spikes/debug/remote_probe.sh
-          ./spikes/debug/remote_probe.sh
+          chmod +x spikes/debug/probe.sh
+          ./spikes/debug/probe.sh
 ```
 
 ### How to use it
-1. Create a probe script at `spikes/debug/remote_probe.sh` containing diagnostic logic.
-2. Commit and push via: `make probe REASON="reason for probing"`
-3. The Makefile will: push the probe → trigger the workflow → wait for completion → retrieve logs.
+1. Create a probe script at `spikes/debug/probe.sh` containing diagnostic logic.
+2. Commit, push, and dispatch via your project's remote probe command (e.g., `just probe "reason for probing"`).
+3. The probe command will: push the probe → trigger the workflow → wait for completion → retrieve logs.
 
 ### Prerequisites
 - `gh` (GitHub CLI) must be authenticated.
 - A `.github/workflows/debug.yml` workflow must exist.
-- A probe script must exist at `spikes/debug/remote_probe.sh`.
+- A probe script must exist at `spikes/debug/probe.sh`.
 
 ## Reference
-- [Makefile Template](./makefile.md) for `make probe` command.
+- [Tooling Template](./tooling.md) for the remote probe command.
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)

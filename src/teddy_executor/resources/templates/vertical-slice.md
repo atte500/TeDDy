@@ -49,8 +49,8 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 **Mandatory De-risking Triggers (must include, but are not limited to):**
 1. Log any new or modified integration with an external system, library, API, or storage layer as `[Technical]`.
 2. Log any new or modified user interaction, CLI flags, terminal formatting, or interactive UX flow as `[Functional]`.
-3. Log any business rule, policy, or scope ambiguity as `[Domain]`.
-4. Log any `Scenarios` precondition or behavior gated on ambient runtime/environment state as `[Harness]`, proving how the test suite will deterministically drive and observe every branch.
+3. Log any ambiguity in a new or modified business rule, policy, or scope boundary not already settled in specs or user alignment as `[Domain]`.
+4. Log any new or modified `Scenarios` precondition or behavior gated on ambient runtime/environment state as `[Harness]`, proving how the test suite will deterministically drive and observe every branch.
 
 **Exclusion:** Do not log unknowns that can be verified by reading existing code, library docs, or the existing Test Harness; resolve and record those under `Context` instead.
 
@@ -78,7 +78,7 @@ Map affected components using non-breaking steps (extend -> migrate -> prune) to
 - **Refactor:** Improving code design without altering behavior. Requires no new tests; existing tests remain green.
 - **Cleanup:** Pruning shared seams, deprecated methods, dead code, and temporary shims once callers have migrated.
 
-**Order:** Order deliverables to keep all tests passing at every commit (`make test`). Include Env before Interface only when tooling or package prerequisites must exist for tests to run:
+**Order:** Order deliverables to keep all tests passing at every commit. Include Env before Interface only when tooling or package prerequisites must exist for tests to run:
 `(Env) -> Interface -> Harness -> Wiring -> Core -> Adapter -> Migration -> Refactor -> Cleanup`
 
 **Tests:** Do not specify individual tests in deliverables. Scenarios and Edge Cases must define test requirements.

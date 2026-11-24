@@ -6,8 +6,19 @@
 ## Goal
 Eliminate duplicated literals, helpers, and test doubles that currently live in more than one place and must be kept in manual lockstep. Each duplication is a latent drift bug: when one copy changes, the others silently diverge. This milestone single-sources every such concept so the codebase has one authoritative location per concern, consolidates split test organization, and performs a bounded Failure-Transparency sweep. Every item was previously parked in the retired `## Technical Debt` section of `docs/project/PROJECT.md`; with that holding pen removed, each is now scheduled here as an explicit requirement.
 
-## Solution
-Extract shared constants and helpers into their canonical modules; consolidate bespoke in-memory test fakes and harness boilerplate into `tests/harness/setup/`; consolidate the split inbound-port contract-test directory; single-source the TUI diff-routing decision; and sweep broad `except` blocks that swallow errors without logging. The work is strictly behavior-preserving and driven out with tests-first at the harness boundary.
+## Requirements
+- [ ] **Single-source Production Literals & Helpers:** Consolidate duplicated constants (encoding name, env-var name, editor sentinel, user request format, awaiting_reply key) and helpers (API key check, MESSAGE detection, preservation-arm decision).
+- [ ] **Align `## User Request` Rendering:** Align bare-fence format and sanitizer behavior between template and append paths.
+- [ ] **Provider Resolution behind `ILlmClient`:** Move litellm provider resolution behind a single `ILlmClient` method.
+- [ ] **Extract Shared Test Fakes:** Extract in-memory filesystem, termios, and ask-loop fakes into `tests/harness/setup/`.
+- [ ] **Consolidate Inbound Port Contract Directory:** Merge `tests/suites/unit/ports/inbound/` into `tests/suites/unit/core/ports/inbound/`.
+- [ ] **Failure-Transparency Sweep:** Narrow or add debug logging to broad `except` blocks across 12 named modules.
+- [ ] **Establish `TeddyError` Root Custom Exceptions:** Create `TeddyError` root class and re-parent all custom domain and boundary exceptions.
+- [ ] **Specialize Domain Exceptions for Overloaded `ValueError`s:** Introduce `SessionNotFoundError`, `WorkingDirectoryEscapeError`, and `UnknownActionError`.
+- [ ] **Reconcile Validation Error Naming:** Disambiguate `InvalidPlanError`, `PlanValidationError`, and rename `ValidationError` DTO to `ValidationFinding`.
+- [ ] **Translate `WebScrapeError` Boundary:** Wrap scraping/network exceptions and eliminate silent empty strings in `WebScraperAdapter`.
+- [ ] **Single-source Action-Type Registration Table:** Collapse multi-file action registration into a single source of truth.
+- [ ] **Migrate Project Tooling to `justfile` and `scripts/`:** Replace `Makefile` and `make/*.mk` with `justfile`, move `commit`, `ci-watch`, `logs`, and `probe` logic into Python helpers in `scripts/`, and add unit tests for `ci-watch` attribution logic.
 
 ## Guidelines
 - **Test Harness Strategy:**
@@ -17,10 +28,6 @@ Extract shared constants and helpers into their canonical modules; consolidate b
     - **Failure-Transparency sweep:** For each broad `except`, either narrow the caught exception type or add debug-level logging before swallowing; legitimate "safe to ignore" cases MUST keep their explicit comment.
 - **Poka-Yoke:** Prefer a shared harness fixture over per-suite duplication so the rule-of-three threshold can never be silently exceeded again.
 - **No New Behavior:** Every change MUST preserve existing runtime behavior and pass the full suite; this is a consolidation program, not a feature program. **Documented exception:** the `## User Request` bare-fence decision (slice 16) is an explicit product change requested on 2026-11-06, so it alters rendered report bytes and the assertions that pin them; every other item in this milestone stays behavior-preserving.
-
-## Technical Specifications
-
-**Format:** Link to Specification Documents in docs/project/specs/. Key contracts and data models can be summarized inline or referenced.
 
 - **Split inbound-port contract tests:** `test_run_plan_use_case_contract.py` lives in `tests/suites/unit/ports/inbound/` while every other `core.ports.inbound` contract test lives in `tests/suites/unit/core/ports/inbound/`. Consolidate into one canonical location.
 - **`InitService` manifest constant:** `_TEMPLATE_FILES` and `_PROMPT_FILES` are module-level constants, but the config manifest is an inline string literal inside `_init_config_dir`. Extract a symmetric `_CONFIG_FILES` module constant single-sourced with its consumer.
@@ -68,3 +75,4 @@ High-level checklist of implementation steps. Each entry follows the format `{{M
 > 15. Exception inheritance standardization and `ValidationError` DTO renaming to `ValidationFinding`.
 > 16. `## User Request` render alignment: drop the `text` language tag on both producers so the block renders as a bare fence matching `## User Reply`, then reconcile the post-render sanitizer so fenced content is treated identically on the template path and the append path.
 > 17. Remove the unused `original_plan_content` parameter from `SessionLifecycleManager.trigger_replan`, left behind by slice 00-21: the internal `trigger_replan_turn` call no longer passes it, so the parameter has no consumer, and every `trigger_replan` call site in `session_orchestrator.py` must stop supplying it in the same commit.
+> 18. Migrate project tooling from `Makefile` to `justfile` and `scripts/`: replace `Makefile` and `make/*.mk` with `justfile`, move `commit`, `ci-watch`, `logs`, and `probe` into Python scripts in `scripts/`, add unit tests for `ci-watch` attribution logic, and update docs and CI.

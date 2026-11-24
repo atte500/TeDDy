@@ -14,7 +14,7 @@ Follow these phases and steps in order to systematically deliver verified progre
 1. **Make Minimal Verifiable Progress:**
    Apply incremental edits, create necessary files, or run commands to make progress on the current task. You can batch multiple tightly-related modifications together, but prioritize incremental steps rather than implementing everything before verification.
 2. **Verify:**
-   After each round of progress, verify correctness immediately. Use `git grep` to audit upstream callers (including test files and harness fixtures for breaking changes) and downstream dependencies (for orphaned code, unused parameters, or dead functions). Run `make test` to confirm no regressions.
+   After each round of progress, verify correctness immediately. Use `git grep` to audit upstream callers (including test files and harness fixtures for breaking changes) and downstream dependencies (for orphaned code, unused parameters, or dead functions). Run the project's test command to confirm no regressions.
 3. **Iterate:**
    Assess whether the current task is complete. If more work is needed, return to Make Minimal Verifiable Progress. If the task is complete, advance to the Alignment phase.
 
@@ -32,6 +32,6 @@ Follow these phases and steps in order to systematically deliver verified progre
 1. **Cleanup:**
    Delete all local diagnostic scripts, temporary logs, and scratchpads. If recurring script, test, or tool detritus appears, do not just delete it manually: update `.gitignore` or configure the script to write outside tracked directories.
 2. **Commit and Push:**
-   Run `make commit`. If a remote is configured, run `make push`. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.
+   Run the project's local commit command. If a remote is configured, run the push command. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in a planned milestone.
 3. **Completion Notice:**
    Message the user to confirm the assignment is complete.

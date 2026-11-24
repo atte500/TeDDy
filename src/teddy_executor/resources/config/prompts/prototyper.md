@@ -48,6 +48,6 @@ Follow these phases and steps in order to systematically deliver verified progre
 1. **Cleanup:**
    Delete scratch files and unapproved probes, preserving only the approved prototype directory under `spikes/prototypes/{scope-slug}/`. If recurring script, test, or tool detritus appears, do not just delete it manually: update `.gitignore` or configure the script to write outside tracked directories.
 2. **Commit and Push:**
-   Run `make commit`. If a remote is configured, run `make push`. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.
+   Run the project's local commit command. If a remote is configured, run the push command. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in a planned milestone.
 3. **Handoff:**
    Message the user with a concise summary of the validated slice and component docs, providing the Developer handoff command with the finalized Vertical Slice and prototype folder as reference files.

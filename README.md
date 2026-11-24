@@ -126,7 +126,7 @@ TeDDy is built on the belief that you should own your software delivery lifecycl
 - **High-Level Governance Rules (`PROJECT.md` & `ARCHITECTURE.md`):** The simplest way to guide agents. Define product roadmaps, engineering principles, system laws, and component boundaries in living Markdown documents that agents read on every turn.
 - **Artifact Templates (`docs/templates/`):** Standardize the artifacts produced during development. Customize the Markdown templates for vertical slices, specifications, case files, and milestones to match your documentation standards.
 - **Agent Prompts (`.teddy/prompts/`):** To change the process itself, customize the agent prompts. Each agent's workflow is broken down into structured phases and individual steps, defined entirely in Markdown. You can tweak instructions, add domain-specific quality gates, or introduce brand-new agent personas to match how your team builds software. TeDDy composes each system prompt from the agent's instructions plus a shared response protocol it appends automatically. The composed prompt is saved in the session folder. You can also run `teddy get-prompt <agent>` to retrieve it without starting a session. A customized prompt that already includes `<response_format>` opts out of the shared protocol.
-- **Command Automation (`Makefile`):** Instead of hardcoding shell commands inside agent prompts, common development and verification operations are routed through the Makefile. When you need to change a flag, runner, or environment setup, you change it once in the Makefile instead of updating instructions across multiple agent prompts.
+- **Command Automation (`justfile`):** Common development and verification operations are routed through a `justfile` (or your preferred runner documented in `PROJECT.md`) instead of hardcoded in agent prompts. Change a flag or workflow once without updating prompts.
 - **Context Filtering (`.teddyignore`):** Control which files TeDDy scans during context generation and tree traversal. A `.teddyignore` file in the project root follows standard ignore syntax and takes precedence over `.gitignore`, allowing you to ignore extra paths or re-include git-ignored files using negation patterns.
 
 > [!TIP]
@@ -303,7 +303,7 @@ TeDDy's engineering philosophy is harness-agnostic. If your team uses Claude Cod
 
 1. **System Instructions:** Copy your desired agent workflow prompt from `.teddy/prompts/` (e.g. `developer.md` or `architect.md`) into your tool's custom instruction file (such as `CLAUDE.md` for Claude Code or `.cursorrules` for Cursor).
 2. **Artifact Standards:** Keep `docs/templates/` and `docs/project/` in your repository. The agent will read these templates to create vertical slices, milestone roadmaps, and architecture documents.
-3. **Execution Tooling:** Standardize commands through the project `Makefile`. When the agent runs `make test` or `make commit`, the host harness executes the command through its native terminal runner.
+3. **Execution Tooling:** Standardize commands through a `justfile` (or your preferred runner) documented in `docs/project/PROJECT.md`. The host harness executes those commands through its native terminal runner.
 
 ### Chat-Oriented Workflow (CHOP)
 

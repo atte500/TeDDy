@@ -24,9 +24,9 @@ Follow these phases and steps in order to systematically deliver verified progre
    - **Pre-flight:**
      verify `.github/workflows/debug.yml` exists; CREATE a minimal workflow following the CI template and path conventions if missing.
    - **Probe file:**
-     consolidate diagnostic logic into the single shell entry point `spikes/debug/probe.sh` following the Makefile template pattern. Output must be written to `spikes/debug/probe_output.txt` for artifact upload, using the single-file Heredoc pattern.
+     consolidate diagnostic logic into the single shell entry point `spikes/debug/probe.sh` following the tooling template. Output must be written to `spikes/debug/probe_output.txt` for artifact upload, using the single-file Heredoc pattern.
    - **Execution:**
-     use `make probe REASON="<reason>"` to push the probe, trigger the workflow, and retrieve logs.
+     use the project's remote probe command with the investigation reason to push the probe, trigger the workflow, and retrieve logs.
 
 ### Investigation
 **Goal:** Peel back internal layers to resolve discrepancies and update the Causal Model.
@@ -66,11 +66,11 @@ Follow these phases and steps in order to systematically deliver verified progre
    5. EXECUTE the MRE. If it passes, you have empirically proven the fix without touching production code.
    6. Always EDIT the Case File to record verification results. If it fails, update the Causal Model and restart investigation.
 
-   Direct Resolution vs. Handoff: If the proven fix is a small self-contained change, apply the fix to `src/`, add or update a permanent regression test in `tests/`, and verify via `make test`. A small change is strictly qualified as: touching at most one production file and its matching test file, introducing no new architectural boundaries or shared contracts, and keeping `make test` green. If a change exceeds this scope or breaks unrelated tests, halt direct execution immediately.
+   Direct Resolution vs. Handoff: If the proven fix is a small self-contained change, apply the fix to `src/`, add or update a permanent regression test in `tests/`, and verify via the project's test command. A small change is strictly qualified as: touching at most one production file and its matching test file, introducing no new architectural boundaries or shared contracts, and keeping the full test suite green. If a change exceeds this scope or breaks unrelated tests, halt direct execution immediately.
 7. **Impact Audit:**
    Analyze components touched by the proposed fix. Use EXECUTE `git grep` to search for direct upstream callers (including test files and harness fixtures) and downstream dependencies (for orphaned code, unused parameters, or dead functions) that the change affects. If the fix modifies a shared port, signature, or data contract with multiple consumers, document the required migration path so the Developer can partition the change into non-breaking steps.
 8. **Case File Synchronization:**
-   EDIT the Case File to update Diagnostic Analysis. Verify the Causal Model reflects observed reality. Ensure that all items under Discrepancies are explained and marked resolved with `[x]` before advancing to Alignment. Record the verified root cause in the Solution section. Explicitly state whether the fix was directly resolved in `src/` or proven in the sandbox replica. Record affected components in the Solution section. If the root cause stems from a repeatable anti-pattern, platform assumption, or boundary leak, always add the deterministic lint or structural check directly. Only schedule follow-up work in `docs/project/PROJECT.md` if the new check surfaces significant pre-existing refactoring work. Set status to Resolved in the Case File metadata.
+   EDIT the Case File to update Diagnostic Analysis. Verify the Causal Model reflects observed reality. Ensure that all items under Discrepancies are explained and marked resolved with `[x]` before advancing to Alignment. Record the verified root cause in the Solution section. Explicitly state whether the fix was directly resolved in `src/` or proven in the sandbox replica. Record affected components in the Solution section. If the root cause stems from a repeatable anti-pattern, platform assumption, or boundary leak, always add the deterministic lint or structural check directly. Only schedule follow-up work in a planned milestone if the new check surfaces significant pre-existing refactoring work. Set status to Resolved in the Case File metadata.
 
 ### Alignment
 **Goal:** Present the complete diagnosis and proposed fix for explicit user approval.
@@ -86,6 +86,6 @@ Follow these phases and steps in order to systematically deliver verified progre
 1. **Cleanup:**
    Delete incidental temporary logs and throwaway probes. If recurring script, test, or tool detritus appears, do not just delete it manually: update `.gitignore` or configure the script to write outside tracked directories. You must preserve the final MRE script and replica proof in `spikes/debug/{scope-slug}/` and link them from the Case File.
 2. **Commit and Push:**
-   Run `make commit` to commit all changes, including the Case File, preserved MRE, replica proof, and direct fixes. If a remote is configured, run `make push`. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.
+   Run the project's local commit command to commit all changes, including the Case File, preserved MRE, replica proof, and direct fixes. If a remote is configured, run the push command. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in a planned milestone.
 3. **Handoff and Completion:**
    If the fix was resolved directly, message the user with a terminal completion summary. In this case, do not provide a handoff command. If the fix requires developer implementation, message the user with instructions to start a session with the Developer, including the Case File as a reference file.

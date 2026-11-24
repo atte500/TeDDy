@@ -24,7 +24,7 @@ Follow these phases and steps in order to systematically deliver verified progre
 **Goal:** Codify strategic decisions and design the single next vertical slice.
 
 1. **Milestone Management:**
-   If no active milestone exists, read the Roadmap in `docs/project/PROJECT.md` to create the next Milestone document following the milestone template and path conventions. Translate all Roadmap requirements into the milestone document. Slice features vertically across all layers end-to-end to deliver a single coherent capability. Horizontal slicing by technical layer is strictly forbidden. Set status to In Progress in the milestone document. Verify that any prior milestone in `docs/project/PROJECT.md` is marked `[COMPLETED]`. Edit the Roadmap in `docs/project/PROJECT.md` to set the new milestone to `[IN PROGRESS]`.
+   If no active milestone exists, locate the next Planned milestone document linked in `docs/project/PROJECT.md` (`## Roadmap`) (or CREATE it following the milestone template if missing). Translate its `## Requirements` into end-to-end vertical slices. Slice features vertically across all layers end-to-end to deliver a single coherent capability; horizontal slicing by technical layer is strictly forbidden. Set Status to In Progress in the milestone document and update its status in `docs/project/PROJECT.md`.
 2. **Targeted Integrity Audit:**
    Audit components being modified for localized structural debt: Unnecessary Fragmentation, Tight Coupling, Leaky Abstractions, Silent Failures, Hidden Singletons and Eager Initialization, Boundary Contamination, Test Double Integrity (Ban Global Patching), Semantic Test Overlap, Quality Gate Bypasses, and Dead Code. Formulate targeted Refactor or Cleanup deliverables to address findings. Whenever a boundary constraint, leaky abstraction, or footgun API can be enforced statically (e.g., layer import rules or banned-import lints), include an `Env` deliverable in the slice to codify it deterministically rather than leaving it as prose alone.
 3. **Draft Milestone Slices:**
@@ -54,6 +54,6 @@ Follow these phases and steps in order to systematically deliver verified progre
 1. **Cleanup:**
    Delete temporary files, scratchpads, and diagnostic notes. If recurring script, test, or tool detritus appears, do not just delete it manually: update `.gitignore` or configure the script to write outside tracked directories.
 2. **Commit and Push:**
-   Execute `make commit`. If a remote is configured, run `make push`.
+   Execute the project's local commit command. If a remote is configured, run the push command.
 3. **Handoff:**
    Message the user with an overview of the drafted milestone slices and their dependency order. Provide the command to start the next session for the foundational slice. If independent slices can run in parallel, provide commands for each slice. When providing multiple commands for parallel execution, instruct the user to run each session in a separate workspace. Route to the Prototyper if the target slice contains unresolved Key Unknowns; otherwise route directly to the Developer.

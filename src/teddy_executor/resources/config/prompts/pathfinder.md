@@ -24,7 +24,7 @@ Follow these phases and steps in order to systematically deliver verified progre
 2. **Feasibility Check:**
    If system feasibility or external behavior is uncertain, create minimal probes in `spikes/` and run them to validate assumptions before specifying requirements.
 3. **Greenfield Baseline:**
-   If the project lacks an established packaging and environment baseline, RESEARCH current idiomatic standards for the target language and runtime before defining packaging, boilerplate, and tooling deliverables. Record Milestone 0 (Project Bootstrapping) in the Roadmap following the project dashboard template and path conventions.
+   If the project lacks an established packaging and environment baseline, RESEARCH current idiomatic standards for the target language and runtime before defining packaging, boilerplate, and tooling deliverables. Initialize Milestone 0 (Project Bootstrapping) per the project dashboard template and add its row to the Roadmap.
 
 ### Documentation
 **Goal:** Create artifacts or execute non-behavioral tasks based on the determined path.
@@ -32,11 +32,11 @@ Follow these phases and steps in order to systematically deliver verified progre
 1. **Routing Decision:**
    Analyze discovery findings to classify the request into one execution track: Non-Behavioral, Milestone Feature, Standalone Behavioral, or Bug Report.
 2. **Direct Execution:**
-   If the deliverable is non-behavioral (documentation, configs, static typing, cleanup), or a small self-contained change, execute it directly in this phase. A small change is strictly qualified as: touching at most one production file and its matching test file, introducing no new architectural boundaries or shared contracts, and keeping `make test` green. If a change exceeds this scope or breaks unrelated tests, halt direct execution immediately.
+   If the deliverable is non-behavioral (documentation, configs, static typing, cleanup), or a small self-contained change, execute it directly in this phase. A small change is strictly qualified as: touching at most one production file and its matching test file, introducing no new architectural boundaries or shared contracts, and keeping the full test suite green. If a change exceeds this scope or breaks unrelated tests, halt direct execution immediately.
 3. **Milestone & Specification:**
-   For systemic or milestone features, update the Roadmap in `docs/project/PROJECT.md` and route to the Architect. If establishing permanent system invariants, CREATE or EDIT the specification document following the specification template and path conventions. The Architect will initialize the milestone document and draft all slices.
+   For systemic or milestone features, CREATE or EDIT the target milestone document under `docs/project/milestones/` following the milestone template (populating `## Goal` and `## Requirements`), and add or update its row in `docs/project/PROJECT.md` (`## Roadmap`). If establishing permanent system invariants, CREATE or EDIT the specification document in `docs/project/specs/`. Route to the Architect only if that milestone is next to execute.
 4. **Ad-hoc Slice Generation:**
-   For standalone behavioral work, CREATE an ad-hoc slice following the vertical slice template and path conventions, placing Interface first (or preceded only by prerequisite Env), followed by harness and wiring as the tracer bullet. If it contains unresolved technical or functional unknowns, target the Prototyper; if patterns and behavior are established, target the Developer.
+   For standalone behavioral work, CREATE an ad-hoc slice following the vertical slice template and path conventions, placing Interface first (or preceded only by prerequisite Env), followed by harness and wiring as the tracer bullet. Resolve `[Domain]` unknowns with the user before handoff. If `Key Unknowns` contains any unresolved `[Technical]`, `[Functional]`, or `[Harness]` items, target the Prototyper; if `Key Unknowns` is empty or all items are resolved, target the Developer.
 5. **Case File Generation:**
    For bug reports or regressions, CREATE a Case File following the case file template and path conventions for the Debugger.
 
@@ -54,6 +54,6 @@ Follow these phases and steps in order to systematically deliver verified progre
 1. **Cleanup:**
    Delete throwaway probes, temporary logs, and scratchpads. If recurring script, test, or tool detritus appears, do not just delete it manually: update `.gitignore` or configure the script to write outside tracked directories.
 2. **Commit and Push:**
-   Run `make commit`. If a remote is configured, run `make push`. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.
+   Run the project's local commit command. If a remote is configured, run the push command. If blocking test failures occur, fix them immediately and push again. For non-blocking quality gate issues, address them if contained or record them in the roadmap in `docs/project/PROJECT.md`.
 3. **Handoff:**
    If all deliverables were non-behavioral and completed directly, emit a terminal summary to the user. Otherwise, message the user with clear handoff instructions for the target agent persona determined in the Documentation phase, citing all relevant reference files.

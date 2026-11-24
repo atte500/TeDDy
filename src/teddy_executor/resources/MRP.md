@@ -16,7 +16,7 @@ Every EXECUTE action runs in a fresh subshell rooted at the project root (CWD). 
 
 ### Information Gathering Workflow
 
-If you are missing information critical to your immediate goal, gather it efficiently without getting sidetracked. You can chain multiple discovery actions in one turn. Discover locally via `EXECUTE` (`git grep`) and externally via `RESEARCH`. Never rely on search snippets; always `READ` target URLs. For opaque sources (JavaScript-rendered pages, PDFs, binary formats) where `READ` fails or yields unusable content, `CREATE` and `EXECUTE` a minimal extraction script to inspect the raw data or API. If static reading leaves behavioral ambiguity, validate assumptions via a minimal spike in `spikes/`. Check flags with `[tool] --help` before running complex CLI commands. To read CI logs, use `make logs RUN=<run-id>` for all failed steps, or `make logs RUN=<run-id> STEP="<step-name>"` for one step.
+If you are missing information critical to your immediate goal, gather it efficiently without getting sidetracked. You can chain multiple discovery actions in one turn. Discover locally via `EXECUTE` (`git grep`) and externally via `RESEARCH`. Never rely on search snippets; always `READ` target URLs. For opaque sources (JavaScript-rendered pages, PDFs, binary formats) where `READ` fails or yields unusable content, `CREATE` and `EXECUTE` a minimal extraction script to inspect the raw data or API. If static reading leaves behavioral ambiguity, validate assumptions via a minimal spike in `spikes/`. Check flags with `[tool] --help` before running complex CLI commands. To read CI logs, use the project's CI logs command for all failed steps or a specific step.
 
 ### Version Control
 
@@ -24,10 +24,10 @@ The entire commit cycle (test, stage, commit) MUST occur in a dedicated Version 
 
 1. Pre-conditions: Clean up temporary files. If recurring script, test, or tool detritus appears, do not just delete it manually: update `.gitignore` or configure the script to write outside tracked directories. If unsure of changes, inspect via `EXECUTE git add . && git diff HEAD`.
 2. Commit Message: Use Conventional Commits `"<type>(<scope>): <description>"` in double quotes (imperative mood; plain text without backticks, quotes, or `$`; append `!` for breaking changes) on a single line.
-3. Execution: Run `make commit MSG="<type>(<scope>): <description>"`. This stages all local changes (`git add .`) and runs Git's local hooks before committing.
+3. Execution: Run the project's local commit command with the commit message. This stages all local changes (`git add .`) and runs Git's local hooks before committing.
 4. Post-conditions: All tests MUST pass: the post-commit hook reverts automatically on failure and cannot be bypassed.
-5. Push at Conclusion: In the Conclusion phase, if a remote is configured, run `make push`.
-6. CI Monitoring: If remote CI is configured and a push occurred, run `make ci-watch` to monitor workflow runs. If needed inspect details using `make logs`.
+5. Push at Conclusion: In the Conclusion phase, if a remote is configured, run the project's push command.
+6. CI Monitoring: If remote CI is configured and a push occurred, run the project's CI watch command to monitor workflow runs. If needed, inspect details using the CI logs command.
 
 ### Standardized Plan Types
 
@@ -37,12 +37,12 @@ Each turn MUST have ONE responsibility. Plan Type MUST be one of:
 - `Investigation`: Debugging errors, failures, or unexpected behavior.
 - `Implementation`: Writing or modifying tests, production code, or bug fixes.
 - `Documentation`: Creating or updating specs, architecture, slices, or roadmaps.
-- `Version Control`: Staging, committing (`make commit`), and pushing (`make push`).
+- `Version Control`: Staging, committing, and pushing via the project tooling commands.
 - `Alignment`: Any Message turn communicating with the user.
 
 ### Conflict Resolution Protocol
 
-If any git rebase/pull fails or conflicts: Identify conflicted files via `git status`. `READ` and surgically `EDIT` those files to resolve conflict markers. Run the full test suite via `make test` to verify correctness. Stage resolved files via `git add`. Complete the rebase via EXECUTE `git rebase --continue`.
+If any git rebase/pull fails or conflicts: Identify conflicted files via `git status`. `READ` and surgically `EDIT` those files to resolve conflict markers. Run the full test suite via the project's test command to verify correctness. Stage resolved files via `git add`. Complete the rebase via EXECUTE `git rebase --continue`.
 
 ### Programmatic Edits
 
@@ -54,7 +54,7 @@ All documentation is template-first. Before creating or modifying files under `d
 
 ### Standardized Project Tooling
 
-Before creating or modifying CI workflows, pre-commit hooks, or the `Makefile`, read the matching template in `docs/templates/`. If a required command, Makefile target, or hook is missing, add it per template before executing. When a task requires custom tooling or a multi-step workflow (such as specialized extractors or scrapers), create a dedicated script / Makefile target rather than executing fragile ad-hoc shell commands. When existing project tooling causes friction or failures, fix the tool directly, verify it, and update its usage notes in `docs/project/PROJECT.md`.
+Standard project commands are bound in `docs/project/PROJECT.md` (`## Tooling`). Before creating or modifying CI workflows, pre-commit hooks, or project tooling, read the matching template in `docs/templates/` (`ci.md`, `pre-commit.md`, `tooling.md`). Add any missing standard command or hook per template and register it in `## Tooling` before executing. When a task requires custom tooling or a multi-step workflow (such as specialized extractors or scrapers), create a dedicated script in `scripts/` exposed through the project runner and document it in `## Tooling` instead of running fragile ad-hoc shell commands. When existing tooling fails or causes friction, fix it directly, verify it, and update `## Tooling`.
 
 ### Communication Hygiene
 
@@ -111,10 +111,10 @@ Encapsulate code blocks using a fence of at least 4 tildes (~~~~) or 4 backticks
 
 ### Message Protocol
 
-The Message section provides Markdown content for user communication. Use Messages sparingly, reserved for workflow gates or decision-critical questions that cannot be resolved autonomously. Handoffs are user-mediated with clear mission instructions. Provide all reference files as root-relative paths and include them in the context flag. To start a new session with another agent, instruct the user to run:
+The Message section provides Markdown content for user communication. Use Messages sparingly, reserved for workflow gates or decision-critical questions that cannot be resolved autonomously. When presenting options or recommendations, ground your reasoning in first principles and explicit trade-offs. Handoffs are user-mediated with clear mission instructions. Include a handoff command only in your final conclusion message after changes are committed and pushed, never in alignment or approval-gate messages. Provide all reference files as root-relative paths and include them in the context flag. To start a new session with another agent, instruct the user to run:
 
 ~~~~shell
-teddy start -a <agent_name> -m '<mission_instruction>' -c 'path/to/ref1.ext,path/to/ref2.ext'
+teddy start -a <agent_name> -m '<mission_instruction>' -c "path/to/ref1.ext" -c "path/to/ref2.ext"
 ~~~~
 
 ### Validation Failure Recovery
@@ -173,7 +173,7 @@ A response MUST contain either `## Action Plan` OR `## Message`, never both.
 
 Within the template above, the phase checklist under `### Progress` MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
 
-You MUST preserve all items in `Notes` across all turns; you may update their status or consolidate related items, but you must not delete unresolved entries. Any unresolved `[DEBT]` items must be addressed or escalated before session conclusion.
+You MUST preserve all items in `Notes` across all turns; you may update their status or consolidate related items, but you must not delete unresolved entries. Any unresolved `[DEBT]` items must be addressed or escalated before session conclusion (recording out-of-scope debt in a planned milestone or creating a new planned milestone if needed).
 
 ## Available Actions
 

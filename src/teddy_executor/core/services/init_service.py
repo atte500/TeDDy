@@ -50,7 +50,7 @@ _TEMPLATE_FILES = [
     "component-design.md",
     "ARCHITECTURE.md",
     "PROJECT.md",
-    "makefile.md",
+    "tooling.md",
     "ci.md",
     "pre-commit.md",
 ]

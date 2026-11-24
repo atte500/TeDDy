@@ -10,11 +10,13 @@ Naming: MM = Sequential Milestone Number (e.g. 01, 02).
 ## Goal
 The Why: Problem definition, customer motivation, and measurable value delivered by this milestone.
 
-## Solution
-The What: Strategic architecture, chosen design patterns, system boundaries, and key trade-offs.
+## Requirements
+The What: Functional and technical requirements to deliver the goal.
+- [ ] **Requirement 1:** Description of capability or constraint.
+- [ ] **Requirement 2:** Description of capability or constraint.
 
 ## Guidelines
-The How: Actionable strategy, engineering invariants, architectural rules, and test harness considerations.
+The How: Architecture, design patterns, system boundaries, technical constraints, invariants, and test harness considerations.
 
 ## Slices
 Decompose requirements into end-to-end vertical slices cutting across all layers.

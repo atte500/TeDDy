@@ -6,8 +6,18 @@
 ## Goal
 To clean up the codebase by eliminating unnecessary quality bypasses, removing dead code and redundant tests, and fixing pre-existing quality gate violations that block pre-commit and CI. This ensures the quality gates can run cleanly and the codebase is maintainable.
 
-## Solution
-Audit and fix all unnecessary inline quality suppression comments (`# noqa`, `# pylint: disable`, `# type: ignore`). Deprecate and remove `--console` mode and all related dead code paths. Remove tests that duplicate coverage without adding behavioral value. Fix the pre-existing Mypy errors and the remaining structural quality violations that keep the non-blocking quality job red. Audit Git history for bypass commits and verify their justification.
+## Requirements
+- [x] **Fix Pre-existing C901 Complexity:** Refactored `MarkdownPlanParser.parse` into helper methods; `ruff check --select C901` passes.
+- [ ] **Audit Inline Quality Bypasses:** Remove unnecessary inline suppression comments (`# noqa`, `# type: ignore`) across `src/` and `tests/`.
+- [ ] **Remove Redundant Tests:** Audit acceptance and unit test overlap (including `teddy update` notification tests).
+- [ ] **Fix Pre-existing Mypy Errors:** Resolve confirmed type errors across `action_executor.py`, `console_interactor_ask_loop.py`, `session_cli_handlers.py`, and `session_lifecycle_manager.py`.
+- [ ] **Audit Quality Gate Bypasses in Git History:** Verify `--no-verify` commits in git log.
+- [ ] **Reconcile Failing Non-blocking Quality Checks:** Drive the 9 failing quality checks green (detect-secrets, hygiene, ruff, mypy, bandit/pip-audit, structural, test pyramid, file length, jscpd).
+- [ ] **Split CI Quality Job into Blocking Static Analysis Gate:** Implement 3-job CI architecture on OS matrix (`test-suite`, blocking `static-analysis`, advisory `quality-metrics`).
+- [ ] **Enforce `assert` Scope Rule:** Codify `assert` for contract positions only; require explicit `TeddyError` raise for untrusted plan input validation.
+- [ ] **Add Action-Type Registration Matrix Test:** Guard Milestone 4 MOVE/DELETE delivery across the 6 registration sites.
+- [ ] **Address Structural File-Length Debt:** Split files exceeding the 300-line gate (`session_orchestrator.py`, `yaml_config_adapter.py`, `edit_matcher.py`, `web_scraper_adapter.py`, `tests/conftest.py`, `config_schema.py`).
+- [ ] **Migrate LiteLLM Adapter Tests Off Global Module Patching:** Replace `monkeypatch.setattr` on the `litellm` module across 4 test modules with constructor-injected provider fakes, then add deterministic check banning module-level third-party patching.
 
 ## Guidelines
 - **Test Harness Strategy:**
@@ -17,8 +27,8 @@ Audit and fix all unnecessary inline quality suppression comments (`# noqa`, `# 
     - **Mypy Fixes:** Add type annotations and fix return type mismatches. Run Mypy to confirm clean pass.
     - **C901 Fix:** Refactor parser method. Run Ruff to confirm complexity below threshold.
 - **Poka-Yoke:** Add a CI check that fails if new inline quality bypasses are introduced without justification comment.
-
-## Technical Specifications
+- **Reduce `web_scraper_adapter.py` Length:** Slice 00-02 added the PDF branch (`_handle_pdf`, `_fetch_pdf_bytes`, `_render_html_content`), growing the file further past the 300-line gate. Split the GitHub parsing, PDF byte-fetch, and User-Agent rotation helpers into sibling modules when the file is next touched, leaving `get_content`'s dispatch as the public surface.
+- **Migrate LiteLLM Adapter Tests Off Global Module Patching:** Four modules patch the `litellm` module directly through function-based `monkeypatch.setattr` instead of injecting the adapter's `_litellm_provider` seam: `test_litellm_adapter_preflight.py` (`validate_environment`, line 98), `test_litellm_adapter_provider_resolution.py` (`get_llm_provider`, line 71), `test_litellm_adapter_robustness.py` (`completion`, four sites), and `test_litellm_retries.py` (`completion`, two sites). The architecture rule forbids global/runtime module patching, and `TID251` does not catch this shape because it flags `mock.patch` and bare `MagicMock` imports rather than `monkeypatch.setattr`. Extend the shared `FakeLitellmProvider` in `tests/harness/setup/litellm_doubles.py` with scripted completion responses and failures so the retry-success and robustness cases can drive it, then migrate each module onto constructor injection; `test_litellm_adapter_stream_guard.py` and `test_planning_service_preflight.py` already comply and show the pattern, and `test_litellm_adapter_retries.py` already injects its provider through `register_mock`. Land the deterministic structural check banning module-level patching of third-party modules in the same pass as the migration, never before it, so the non-blocking quality job does not accrue another permanently failing step. Found during slice 00-53 verification on 2026-11-24.
 - **Files to Fix (Mypy), measured 2026-10-28:** `uv run mypy src` reports 8 errors across 6 files. The confirmed findings are `action_executor.py:208` (return-value), `console_interactor_ask_loop.py:80` and `:81` (missing `kbhit` and `getwch` attributes on the Windows console module), `session_cli_handlers.py:1426` (assignment), and `session_lifecycle_manager.py:92` (assignment). The previously named `session_orchestrator.py:251` and `openrouter_hydrator.py:17` errors no longer reproduce, so the list must be re-derived from the live run during decomposition. The remaining three findings were truncated by the audit output limit.
 - **File to Refactor (C901):**
     - `src/teddy_executor/core/services/markdown_plan_parser.py` — `parse` method (complexity 10, threshold 9). Extract preamble stripping, normalization, and AST validation steps.

@@ -22,7 +22,7 @@ EXPECTED_TEMPLATES = [
     "component-design.md",
     "ARCHITECTURE.md",
     "PROJECT.md",
-    "makefile.md",
+    "tooling.md",
     "ci.md",
     "pre-commit.md",
 ]
