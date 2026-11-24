@@ -1,5 +1,5 @@
 # Slice: Proxy Timeout Guidance and the llm.stream Guard
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** None (ad-hoc slice)
 - **Depends On:** None
 - **Specs:** None
@@ -67,13 +67,16 @@ None. The pass-through, the extraction path, and the preflight seam are establis
 3. `[PRUNE]` The silent empty-plan path — Once validation rejects the key, it can no longer reach the completion call.
 
 ## Deliverables
-- [ ] **Interface** — Extend `validate_config` with the `llm.stream` rejection and unit tests for boolean `true`, string `"true"`, `false`, `"false"`, and absent.
+- [x] **Interface** — Extend `validate_config` with the `llm.stream` rejection and unit tests for boolean `true`, string `"true"`, `false`, `"false"`, and absent.
 - [ ] **Wiring** — Prove the preflight seam end to end: a `PlanningService`-level test asserting `ConfigurationError` is raised before any completion call and that no plan file is written.
 - [ ] **Migration** — Document streaming's rejection and the proxy recipe (the 125 second Cloudflare ceiling, the DNS-only route with its CGNAT and tunnel precondition, `proxy_read_timeout`, `proxy_buffering off`, and `llm.timeout`) in the parameter-merge section of `litellm_adapter.md`.
 - [ ] **Cleanup** — Confirm no remaining code path can hand `llm.stream` to the completion call, and that the component doc's parameter-merge section states the rejection.
 
 ## Implementation Notes
 - The proxy recipe lives only in the `LiteLLMAdapter` component doc. The user-facing README is deliberately left alone: a deployment-specific ingress recipe reads as bloat there and duplicates the adapter contract that already owns the `llm.*` pass-through.
+
+- **Interface:** `validate_config` appends the `llm.stream` rejection before the `if not errors:` gates, so a missing API key and a truthy flag are reported together instead of the first fault masking the second. `_is_truthy_flag` normalizes the value: a string compares case-insensitively against `"true"`, because env interpolation yields the literal `"false"` and a bare `bool()` would read it as enabled; non-strings fall back to native truthiness. Covered by `tests/suites/unit/adapters/outbound/test_litellm_adapter_stream_guard.py`.
+- **Interface:** The two retry tests in `test_litellm_retries.py` built their config double with a blanket `get_setting.return_value = {"model": "gpt-4o"}`, so every key resolved to that dict and `llm.stream` came back truthy. They now use the shared `mock_config` fixture, which answers per key and leaves the flag absent.
 
 ## Verification
 1. **Loud rejection:**

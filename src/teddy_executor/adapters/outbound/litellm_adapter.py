@@ -547,14 +547,28 @@ class LiteLLMAdapter(ILlmClient):
                 "(or your shell environment)."
             )
 
-        # 2. Provider resolution: a bare model name cannot be routed, so the
+        # 2. Streaming is rejected outright: every llm.* key passes through to
+        # litellm.completion, so a truthy llm.stream yields a stream wrapper,
+        # the plan extraction finds no choices, and the turn burns its retries
+        # on an empty plan. The message points at the proxy recipe because a
+        # long generation is the usual reason the key gets set at all.
+        if self._is_truthy_flag(self._config_service.get_setting("llm.stream")):
+            errors.append(
+                "'llm.stream' must not be enabled: streaming is unsupported "
+                "because plan generation reads one complete, non-streamed "
+                "response. Remove llm.stream and raise the idle timeout at your "
+                "proxy instead (see the LiteLLMAdapter component doc for the "
+                "Cloudflare and nginx recipe)."
+            )
+
+        # 3. Provider resolution: a bare model name cannot be routed, so the
         # failure surfaces at preflight with a paste-ready fix instead of at the
         # first completion. Skipped when an earlier error already explains the
         # configuration problem.
         if not errors:
             errors.extend(self._provider_resolution_errors(model))
 
-        # 3. Optional remote check: verify key validity and expiration.
+        # 4. Optional remote check: verify key validity and expiration.
         if not errors:
             errors.extend(
                 self._remote_check_errors(
@@ -563,6 +577,19 @@ class LiteLLMAdapter(ILlmClient):
             )
 
         return errors
+
+    @staticmethod
+    def _is_truthy_flag(value: Any) -> bool:
+        """Interprets a boolean-ish config value.
+
+        YAML parses a bare ``true``/``false`` as booleans, while ``${VAR}``
+        interpolation yields the literal strings ``"true"``/``"false"``. A bare
+        ``bool("false")`` would be truthy and enable the broken path, so the
+        string form is compared case-insensitively instead.
+        """
+        if isinstance(value, str):
+            return value.strip().lower() == "true"
+        return bool(value)
 
     def _provider_resolution_errors(self, model: str) -> List[str]:
         """Returns the paste-ready error when litellm cannot infer a provider.

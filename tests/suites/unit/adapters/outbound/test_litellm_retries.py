@@ -3,20 +3,18 @@ import litellm
 from tests.harness.setup.mocking import POSIXPathMock
 from teddy_executor.adapters.outbound.litellm_adapter import LiteLLMAdapter
 from teddy_executor.core.ports.outbound.llm_client import LlmApiError
-from teddy_executor.core.ports.outbound.config_service import IConfigService
 
 
-def test_litellm_adapter_retries_on_ssl_error(monkeypatch, mock_time_service):
+def test_litellm_adapter_retries_on_ssl_error(
+    monkeypatch, mock_time_service, mock_config
+):
     """
     Test that the adapter retries the completion call on specific SSL errors.
     """
-    # Arrange
-    config_service = POSIXPathMock(spec=IConfigService)
-    config_service.get_setting.return_value = {"model": "gpt-4o"}
-
-    adapter = LiteLLMAdapter(
-        config_service=config_service, time_service=mock_time_service
-    )
+    # Arrange: the shared config double answers per key. A blanket dict return
+    # value would answer ``llm.stream`` with the model name, which preflight
+    # reads as a truthy flag and rejects.
+    adapter = LiteLLMAdapter(config_service=mock_config, time_service=mock_time_service)
 
     # Setup the success response using POSIXPathMock for external library consistency
     mock_response = POSIXPathMock()
@@ -49,16 +47,13 @@ def test_litellm_adapter_retries_on_ssl_error(monkeypatch, mock_time_service):
     assert mock_time_service.sleep_calls == [0.5, 1.0]
 
 
-def test_litellm_adapter_exhausts_retries(monkeypatch, mock_time_service):
+def test_litellm_adapter_exhausts_retries(monkeypatch, mock_time_service, mock_config):
     """
     Test that the adapter eventually raises LlmApiError if all retries fail.
     """
-    # Arrange
-    config_service = POSIXPathMock(spec=IConfigService)
-    config_service.get_setting.return_value = {"model": "gpt-4o"}
-    adapter = LiteLLMAdapter(
-        config_service=config_service, time_service=mock_time_service
-    )
+    # Arrange: the shared config double answers per key, so ``llm.stream``
+    # stays absent and preflight passes.
+    adapter = LiteLLMAdapter(config_service=mock_config, time_service=mock_time_service)
 
     call_count = 0
     error_msg = "SSLV3_ALERT_BAD_RECORD_MAC"
