@@ -312,14 +312,14 @@ You do not need API keys or per-token billing to use TeDDy. If you already have 
 TeDDy packages your workspace context into a single clipboard payload, and the agent prompts instruct the model to automatically format its response as an executable, self-contained Markdown plan.
 
 1. **Set the system instructions:** Copy your chosen agent persona's prompt with `teddy get-prompt <agent_name>` and paste it into your web interface's system prompt or custom instructions field.
-2. **Bundle project context:** Export your workspace context to the clipboard with `teddy context` (see [Exporting Context](#exporting-context)). This bundles system information, current git status, project structure, and the full verbatim contents of all files listed in `.teddy/init.context` into a single Markdown payload.
+2. **Bundle project context:** Export your workspace context to the clipboard with `teddy context` (see [Exporting Context](#exporting-context)). This bundles system information, current git status, project structure, the full verbatim contents of all files listed in `.teddy/init.context`, and the runtime section into a single Markdown payload.
 3. **Prompt the AI:** Paste the context payload into the chat alongside your task request. Guided by the system instructions, the model will automatically structure its response as an executable Markdown plan.
 4. **Apply changes:** Copy the full Markdown plan to your clipboard and run `teddy execute` to validate, review diffs, and apply approved changes automatically, or copy and run individual snippets manually as you would in standard CHOP.
 5. **Report back:** When `teddy execute` finishes, it automatically copies a concise execution report back to your clipboard to paste into the chat.
 
 ### Exporting Context
 
-`teddy context` bundles system information, git status, project structure, and file contents into a single Markdown payload. It copies the payload to the clipboard unless you pass `--no-copy`.
+`teddy context` bundles system information, git status, project structure, file contents, and the runtime section into a single Markdown payload. It copies the payload to the clipboard unless you pass `--no-copy`.
 
 Pass `-c/--context` to add ad-hoc values for a single run. The flag is repeatable and accepts comma-separated values. Explicit values extend the default set from `.teddy/init.context`. They do not replace it.
 
@@ -343,7 +343,7 @@ A `-c` value resolves by kind. A directory expands recursively. A URL is fetched
 teddy context -c review.context
 ```
 
-`--only` skips the default set and the session scopes. With no `-c` value the explicit set is empty, so the payload carries system information, git status, and project structure but no `Resource Contents` section.
+`--only` skips the default set and the session scopes. With no `-c` value the explicit set is empty, so the payload carries system information, git status, project structure, and the runtime section but no `Resource Contents` section.
 
 ---
 
