@@ -1,5 +1,5 @@
 # Slice: Cache Telemetry
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** None (ad-hoc slice)
 - **Depends On:** None (reads the same `meta.yaml` that slice 00-03 leaves untouched)
 - **Specs:** None — the `meta.yaml` field set is an implementation contract documented in the session-manager component doc
@@ -114,6 +114,12 @@ The adapter owns provider-shape parsing; the core sees only integers. Cumulative
 - `test_cache_telemetry_wiring.py` extends its turn-1 meta assertion to the full four-key schema: the cumulative pair is present and integer-valued at zero, since accumulation only happens on a transition. That pins the CLI-boundary contract without duplicating the accumulation arithmetic or the display omission matrix, which stay owned by the two Core unit modules.
 - As-Built doc pass, applied because Migration is the slice's last deliverable: `token_usage.md` created, linked from the Component Map, and named in the Ubiquitous Language; `llm_client.md` and `litellm_adapter.md` gained `get_token_usage` plus the DTO; `prompt_manager.md` records the four persisted usage keys and the additive sixth `update_meta` parameter; `session_manager.md` names `TURN_USAGE_META_KEYS`; `session_service.md` records the seeding and accumulation invariants; `planning_service.md` records the cache-suffix gate and the estimate-versus-usage separation.
 - The stale `update_turn_meta` name inherited from the slice draft was corrected to `update_meta` in the Context and Impact sections, so the planning artifact names the shipped method.
+
+### Verification audit
+- **Seam confinement:** `get_token_usage` resolves only through the port default, the `LiteLLMAdapter`, `PlanningService`, the `FakeLlmClient`, and the two unit modules that pin it. `TURN_USAGE_META_KEYS` is consumed only by the port module, `session_service.py`, and its contract test, with no sibling writer. `_as_usage_count` stays local to `session_service.py`. `update_meta`'s sixth argument appears only at the production call site, while the legacy five-argument shape survives in `test_model_prefix_preservation.py`. No skeleton responses or hardcoded mock values remain in `src/`; the only `placeholder` hits are the legitimate `$???` cost-line documentation.
+- **Test-suite partition:** the display matrix owns the omission rules, `test_session_service_turn_meta.py` owns the accumulation arithmetic, and the wiring acceptance test owns the four-key CLI-boundary schema, so no coverage is duplicated.
+- **Shebang debt:** the carried `make test` item closes as resolved — the failure was a stale `.venv` shebang from the former `TeDDy3` checkout, repaired by `uv sync --reinstall` without moving `uv.lock`. It is machine state, not repository code, so no roadmap entry is warranted.
+- **Final result:** the unfiltered `make test` runs green at `2533 passed, 5 skipped` across all five commits.
 
 ## Verification
 1. **Persisted counters:**
