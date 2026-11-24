@@ -14,15 +14,19 @@ The core principle is the **separation of concerns**:
 -   **Structured & Scannable:** The payload uses clear Markdown headings to delineate sections, allowing an AI to easily locate specific pieces of information.
 -   **Explicit Sourcing:** The origin of every resource in the context is explicitly stated to avoid ambiguity.
 -   **Single Source of Truth:** This payload represents the complete "worldview" for the AI for a given turn.
+-   **Byte-Stable Prefix:** The sections are ordered so the session's stable documents and its accumulated history sit ahead of everything that changes between turns. Two consecutive payloads then share a byte-identical prefix, which a provider serves from its prompt cache instead of reprocessing.
 
 ## Technical Specifications
 
-The payload is a single Markdown document with the following top-level sections.
+The payload is a single Markdown document with the following top-level sections, in this order.
 
 ```markdown
 # Project Context
 
 ## System Information
+...
+
+## Session Resources (Session Mode only)
 ...
 
 ## Session History (Session Mode only)
@@ -36,27 +40,63 @@ The payload is a single Markdown document with the following top-level sections.
 
 ## Resource Contents
 ...
+
+## Runtime
+...
 ```
+
+The order is load-bearing. A provider's prefix cache serves only the leading bytes that match an earlier request, so the first difference between two consecutive payloads decides how much of the payload is free. The session's own documents come first, then its history, which grows by appending; the sections that change every turn follow, and `## Runtime` closes the document because it holds the values that always change.
+
+Session-mode sections (`## Session Resources` and `## Session History`) render only when a session root is in scope. A session-agnostic `teddy context` export carries neither and keeps a single `## Resource Contents` section for every resource, the shape the CHOP workflow expects.
 
 ---
 
 ### System Information
 
-A simple key-value list of essential environment details, giving the AI awareness of its operating environment.
+A simple key-value list of the environment details that stay constant for the whole session, giving the AI awareness of its operating environment without disturbing the byte-stable prefix.
 
+The list closes with a static pointer row naming the `## Runtime` section, so the agent still finds the date, time, and turn number after they move to the payload tail. The row carries no values, so it never varies between turns.
+
+-   **Rows, in order:** `CWD`, `OS`, `Shell`, then the `Runtime` pointer row.
 -   **Example:**
     ```markdown
     ## System Information
     - **CWD:** /Users/developer/projects/TeDDy
     - **OS:** Darwin 25.2.0
     - **Shell:** /bin/zsh
+    - **Runtime:** Current Date, Current Time, and Current Turn appear under the final `## Runtime` section.
     ```
+
+### Session Resources
+
+In session mode, the files the session holds across turns render here, directly behind the header. These are the payload's most rewarding cacheable bytes: they usually change little between turns, so a provider serves them from cache instead of reprocessing them.
+
+A file qualifies when it is listed in a scope other than `Turn` and is not part of this session's own history.
+
+-   **Ordering:** Files render in `session.context` declaration order, so that manifest's order is the user's knob: a document that rarely changes stays inside the cached prefix as long as the documents above it do too.
+-   **Precedence:** A path listed in both the session and turn scopes renders here only, so the payload never carries the same content twice.
+-   **Own history stays out:** A session-scoped path that is this session's own history renders under `## Session History` instead, because that section pins chronological order and its `### Initial Request` / `### Turn N` headers.
+-   **Omission:** The section is omitted entirely when no file qualifies, when the session context holds only history, or when no session root is in scope. An empty heading is indistinguishable from an omitted one, so it is never rendered.
+-   **Format:** Each file is preceded by a horizontal rule and a header line, and its content is enclosed in a dynamic fence, exactly as in `## Resource Contents`.
+-   **Example:**
+    `````markdown
+    ## Session Resources
+
+    ---
+    ### [docs/project/PROJECT.md](/docs/project/PROJECT.md)
+    ````markdown
+    # Project Dashboard: TeDDy
+    ... (full file content) ...
+    ````
+    `````
 
 ### Session History
 
 In Stateful (Interactive) Session Mode, the stateful conversation history files (e.g. `initial_request.md`, turn plans, and execution reports under `.teddy/sessions/`) are completely isolated and filtered out of standard `## Resource Contents`.
 
 Instead, they are appended in chronological order under a dedicated `## Session History` section using clean, human-readable turn headers (e.g. `### Initial Request`, `### Turn 1: Plan`, `### Turn 1: Execution Report`) with all raw directory paths stripped out to keep the prompt concise and structured.
+
+The section follows `## Session Resources`, so both stable parts of the session sit directly behind the header and form one growing cached prefix. Only the session's own root belongs here: a file read from another session is a resource, not our history.
 
 -   **Example:**
     `````markdown
@@ -154,10 +194,13 @@ The notices carry no explanation, so the section states both limits once in an i
 
 ### Resource Contents
 
-The full, verbatim content of every resource (file or URL) included in the context.
+The full, verbatim content of every resource (file or URL) that is neither hoisted into `## Session Resources` nor part of `## Session History`.
+
+In session mode this is the turn-scoped working set: the files the current turn pulled in. A session-agnostic `teddy context` export has no session sections, so every resource renders here.
 
 -   **Format:** Each resource's content is preceded by a horizontal rule and a header line identifying it.
 -   **Safety:** Resource contents are enclosed in dynamic code fences (e.g., ```` or ````) that are at least one backtick longer than any existing fence within the content to prevent formatting collisions.
+-   **Omission:** The section is omitted when no resource remains for it.
 -   **Example:**
     `````markdown
     ## Resource Contents
@@ -169,3 +212,18 @@ The full, verbatim content of every resource (file or URL) included in the conte
     ... (full file content) ...
     ````
     `````
+
+### Runtime
+
+The payload's final section. It holds exactly the three key-value rows that change on every turn: `Current Date`, `Current Time`, and `Current Turn`.
+
+Keeping them here holds per-turn values out of the byte-stable prefix. Since the three rows are its only content, the pointer row in `## System Information` stays a truthful single-line signpost. The section renders in every mode, including a session-agnostic `teddy context` export, because those values exist regardless of session scope.
+
+-   **Rows, in order:** `Current Date`, `Current Time`, `Current Turn`.
+-   **Example:**
+    ```markdown
+    ## Runtime
+    - **Current Date:** 2026-03-26
+    - **Current Time:** 16:50:00
+    - **Current Turn:** 02
+    ```

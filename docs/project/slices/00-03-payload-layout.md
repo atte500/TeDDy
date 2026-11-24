@@ -1,5 +1,5 @@
 # Slice: Payload Layout for Prefix Caching
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** None (ad-hoc slice)
 - **Depends On:** None
 - **Specs:** [context-payload-format.md](/docs/project/specs/context-payload-format.md)
@@ -74,7 +74,7 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 
 ## Deliverables
 
-- [ ] **Interface** - Revise `docs/project/specs/context-payload-format.md` (section-order block, new `## Session Resources` and `## Runtime` sections, the static pointer row, the session-mode-only rule) and update the `Context Payload` and `Session Root` entries in `docs/architecture/ARCHITECTURE.md`.
+- [x] **Interface** - Revise `docs/project/specs/context-payload-format.md` (section-order block, new `## Session Resources` and `## Runtime` sections, the static pointer row, the session-mode-only rule) and update the `Context Payload` and `Session Root` entries in `docs/architecture/ARCHITECTURE.md`.
 - [ ] **Harness** - Extend the context-service unit fixtures to build a `ProjectContext` with one session-scoped non-history path, one session-scoped own-history path, and one turn-scoped path, so the partition is observable without real session directories.
 - [ ] **Wiring** - Emit the `## Session Resources` heading and the trailing `## Runtime` section with today's content still entirely in `## Resource Contents`, proving the shape end-to-end before the partition lands.
 - [ ] **Core** - Implement the partition: in session mode only, session-scoped paths not admitted by `is_own_session_path` render in `## Session Resources` in `session.context` declaration order; relocate the three volatile fields out of `## System Information` into `## Runtime` and insert the static pointer row.
@@ -83,6 +83,9 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 
 ## Implementation Notes
 The hoist is deliberately restricted to session mode. Reusing the existing `scoped_paths` keying keeps the change inside `_format_content`, and the exclusion of own-session history keeps `## Session History` chronological and header-shaped.
+
+- **Interface (delivered):** the spec pins the section order and documents `## Session Resources` (declaration-order rendering, session-over-turn precedence, own-history exclusion, omission when nothing qualifies) and `## Runtime` (exactly the three volatile rows, rendered in every mode because date/time/turn exist without a session). `## System Information` closes with a static pointer row naming `## Runtime`, so the agent still finds the values after they leave the header while the row itself never varies between turns. The `Context Payload` and `Session Root` entries in `ARCHITECTURE.md` were rewritten to the same contract, so the ubiquitous language and the spec state one rule rather than two drifting descriptions.
+- **Interface (migration consequence):** the spec's session-mode-only rule confirms the hoist must not touch the `teddy context` export path, so `_format_content` gains the new sections behind a session-root gate rather than unconditionally.
 
 ## Verification
 1. **Session payload shape:**
