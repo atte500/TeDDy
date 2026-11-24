@@ -1,5 +1,6 @@
 import concurrent.futures
 import json
+from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 from teddy_executor.core.domain.models import ProjectContext, ContextItem
@@ -22,6 +23,30 @@ from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScr
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
 from teddy_executor.core.utils.string import truncate_lines
+
+
+class PayloadSection(Enum):
+    """The ordered sections of a session payload's body.
+
+    The order is load-bearing for provider prefix caching, so it lives in one
+    place: a future section is inserted here with a renderer, never spliced into
+    a call site.
+    """
+
+    SESSION_RESOURCES = "Session Resources"
+    SESSION_HISTORY = "Session History"
+    GIT_STATUS = "Git Status"
+    PROJECT_STRUCTURE = "Project Structure"
+    RESOURCE_CONTENTS = "Resource Contents"
+
+
+CONTENT_SECTION_ORDER = (
+    PayloadSection.SESSION_RESOURCES,
+    PayloadSection.SESSION_HISTORY,
+    PayloadSection.GIT_STATUS,
+    PayloadSection.PROJECT_STRUCTURE,
+    PayloadSection.RESOURCE_CONTENTS,
+)
 
 
 class ContextService(IGetContextUseCase):
@@ -416,36 +441,46 @@ class ContextService(IGetContextUseCase):
         session_resources, session_paths, resource_paths = self._partition_paths(
             scoped_paths, session_root
         )
+        section_bodies = {
+            PayloadSection.SESSION_RESOURCES: self._format_file_section(
+                PayloadSection.SESSION_RESOURCES.value,
+                session_resources,
+                file_contents,
+            ),
+            PayloadSection.SESSION_HISTORY: self._format_session_history(
+                session_paths, file_contents, session_root
+            ),
+            PayloadSection.GIT_STATUS: self._format_git_status_section(git_status),
+            PayloadSection.PROJECT_STRUCTURE: self._format_project_structure_section(
+                repo_tree
+            ),
+            PayloadSection.RESOURCE_CONTENTS: self._format_file_section(
+                PayloadSection.RESOURCE_CONTENTS.value,
+                resource_paths,
+                file_contents,
+            ),
+        }
+        content_parts: List[str] = []
+        for section in CONTENT_SECTION_ORDER:
+            content_parts.extend(section_bodies[section])
+        return "\n".join(content_parts)
 
-        git_status_body = (
+    def _format_git_status_section(self, git_status: Optional[str]) -> List[str]:
+        """The Git Status heading plus its fenced body, empty when unavailable."""
+        body = (
             embed_in_fence(git_status, "")
             if isinstance(git_status, str) and git_status
             else ""
         )
-        content_parts = [
-            "\n## Git Status",
-            git_status_body,
-            "\n## Project Structure",
+        return [f"\n## {PayloadSection.GIT_STATUS.value}", body]
+
+    def _format_project_structure_section(self, repo_tree: str) -> List[str]:
+        """The Project Structure heading, its limit subtitle, and the tree fence."""
+        return [
+            f"\n## {PayloadSection.PROJECT_STRUCTURE.value}",
             self._format_tree_subtitle(),
             f"```\n{repo_tree}\n```",
         ]
-        content_parts.extend(
-            self._format_file_section(
-                "Resource Contents", resource_paths, file_contents
-            )
-        )
-
-        # The stable session parts sit directly behind the header, ahead of the
-        # per-turn sections, so the growing prefix stays byte-identical.
-        content_parts = (
-            self._format_file_section(
-                "Session Resources", session_resources, file_contents
-            )
-            + self._format_session_history(session_paths, file_contents, session_root)
-            + content_parts
-        )
-
-        return "\n".join(content_parts)
 
     def _format_tree_subtitle(self) -> str:
         """State both tree limits once, so the compact notices stay meaningful."""
@@ -501,14 +536,13 @@ class ContextService(IGetContextUseCase):
                     target.append(path)
 
         owned = non_turn + turn
-        session_paths = [p for p in owned if is_own_session_path(p, session_root)]
+        own_history = {p: is_own_session_path(p, session_root) for p in owned}
+        session_paths = [p for p in owned if own_history[p]]
         session_resources = (
-            [p for p in non_turn if not is_own_session_path(p, session_root)]
-            if session_root
-            else []
+            [p for p in non_turn if not own_history[p]] if session_root else []
         )
         resource_paths = [
-            p for p in owned if p not in session_paths and p not in session_resources
+            p for p in owned if not own_history[p] and p not in session_resources
         ]
         return session_resources, session_paths, resource_paths
 
@@ -586,7 +620,7 @@ class ContextService(IGetContextUseCase):
             return []
 
         recognized_session_paths.sort(key=get_session_history_sort_key)
-        parts = ["\n## Session History"]
+        parts = [f"\n## {PayloadSection.SESSION_HISTORY.value}"]
         for path in recognized_session_paths:
             disp_name = get_session_history_display_name(path, session_root)
             content = file_contents.get(path) or ""
