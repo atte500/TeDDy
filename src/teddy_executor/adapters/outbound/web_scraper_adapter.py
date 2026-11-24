@@ -1,6 +1,8 @@
 from teddy_executor.adapters.outbound.suppressed_logging import suppressed_logging
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper
 from teddy_executor.core.ports.outbound.config_service import IConfigService
+from teddy_executor.core.ports.outbound.pdf_extractor import IPdfExtractor
+from teddy_executor.core.utils.pdf import is_pdf_source
 
 
 MIN_GITHUB_CONTENT_LENGTH = 10
@@ -16,8 +18,13 @@ class WebScraperAdapter(WebScraper):
     An adapter that implements the WebScraper port using requests and trafilatura.
     """
 
-    def __init__(self, config_service: IConfigService = None):  # type: ignore
+    def __init__(
+        self,
+        config_service: IConfigService | None = None,
+        pdf_extractor: IPdfExtractor | None = None,
+    ):
         self._config_service = config_service
+        self._pdf_extractor = pdf_extractor
 
     def _get_trafilatura(self):
         """Lazy-load trafilatura to keep CLI startup fast."""
@@ -202,11 +209,7 @@ class WebScraperAdapter(WebScraper):
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1",
         ]
 
-        max_retries = 3
-        if self._config_service:
-            val = self._config_service.get_setting("research.max_scraper_retries", 3)
-            if val is not None:
-                max_retries = int(val)
+        max_retries = self._max_scraper_retries()
 
         last_error: Exception | None = None
 
@@ -248,11 +251,7 @@ class WebScraperAdapter(WebScraper):
             else url
         )
 
-        max_retries = 3
-        if self._config_service:
-            val = self._config_service.get_setting("research.max_scraper_retries", 3)
-            if val is not None:
-                max_retries = int(val)
+        max_retries = self._max_scraper_retries()
 
         for attempt in range(max_retries):
             try:
@@ -285,6 +284,58 @@ class WebScraperAdapter(WebScraper):
                     continue
                 raise
         return None
+
+    def _max_scraper_retries(self) -> int:
+        """Resolves the configured retry budget, defaulting to three attempts."""
+        if not self._config_service:
+            return 3
+        val = self._config_service.get_setting("research.max_scraper_retries", 3)
+        if val is None:
+            return 3
+        return int(val)
+
+    def _fetch_pdf_bytes(self, url: str) -> bytes:
+        """Fetches a PDF payload as raw bytes, retrying known transient failures."""
+        import requests
+        import time
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept": "application/pdf,*/*",
+        }
+        max_retries = self._max_scraper_retries()
+        last_error: Exception | None = None
+
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(url, headers=headers, timeout=5)
+                response.raise_for_status()
+                return response.content
+            except (
+                requests.exceptions.HTTPError,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout,
+            ) as error:
+                last_error = error
+                if attempt < max_retries - 1:
+                    time.sleep(2**attempt)
+
+        assert last_error is not None, (
+            "retry budget must attempt a PDF fetch at least once"
+        )
+        raise last_error
+
+    def _handle_pdf(self, url: str, truncate: bool) -> str:
+        """Extracts text from a PDF URL and applies the shared read cap."""
+        extractor = self._pdf_extractor
+        assert extractor is not None, (
+            "pdf_extractor port is required for a remote PDF read"
+        )
+        data = self._fetch_pdf_bytes(url)
+        text = extractor.extract_text(data, source=url)
+        if not truncate:
+            return text
+        return self._truncate_content(text)
 
     def _truncate_content(self, markdown_content: str) -> str:
         """Truncates markdown content based on read.max_lines configuration."""
@@ -328,6 +379,9 @@ class WebScraperAdapter(WebScraper):
 
     def _get_content_impl(self, url: str, truncate: bool = True, **_kwargs) -> str:
         """Internal implementation of get_content (extracted for logging suppression wrapper)."""
+        if is_pdf_source(url):
+            return self._handle_pdf(url, truncate)
+
         # 1. Specialized handling for GitHub raw content
         raw_github_content = self._handle_github_raw(url)
         if raw_github_content is not None:
@@ -338,7 +392,11 @@ class WebScraperAdapter(WebScraper):
         if not html_content:
             return ""
 
-        # 3. Routing: Use specialized extractor for GitHub Issues and Pull Requests
+        # 3. Rendering: GitHub conversations and trafilatura markdown extraction
+        return self._render_html_content(url, html_content, truncate)
+
+    def _render_html_content(self, url: str, html_content: str, truncate: bool) -> str:
+        """Converts fetched HTML to markdown, routing GitHub conversations specially."""
         is_github_domain = (
             "github.com" in url or "localhost" in url or "127.0.0.1" in url
         )

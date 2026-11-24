@@ -46,3 +46,22 @@ def build_minimal_pdf(text: str = DEFAULT_PDF_TEXT) -> bytes:
         "ascii"
     )
     return bytes(out)
+
+
+def build_encrypted_pdf(password: str = "secret") -> bytes:
+    """Return a minimal PDF whose document stream requires ``password``.
+
+    Built inside the function so only tests exercising the encrypted branch pay
+    the pypdf import. RC4-128 is pure Python, so no optional crypto extra is
+    required to build or parse the fixture.
+    """
+    import io
+
+    from pypdf import PdfWriter
+
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.encrypt(user_password=password, algorithm="RC4-128")
+    buffer = io.BytesIO()
+    writer.write(buffer)
+    return buffer.getvalue()

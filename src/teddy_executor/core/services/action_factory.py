@@ -3,6 +3,8 @@ from typing import Any, Dict, Optional
 from teddy_executor.core.domain.models.action_ports import ActionPorts
 from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.services.action_dispatcher import IAction, IActionFactory
+from teddy_executor.core.services.parser_infrastructure import coerce_param
+from teddy_executor.core.utils.pdf import cap_extracted_text, is_pdf_source
 
 
 class ActionFactory(IActionFactory):
@@ -69,7 +71,7 @@ class ActionFactory(IActionFactory):
 
             return WebReadAction(self._web_scraper)
 
-        if resource.lower().endswith(".pdf"):
+        if is_pdf_source(resource):
             return self._create_pdf_read_action()
 
         if safe_params.get("lines"):
@@ -98,14 +100,28 @@ class ActionFactory(IActionFactory):
         assert extractor is not None, (
             "pdf_extractor port is required for a local PDF read"
         )
+        max_lines = self._resolve_read_max_lines()
 
         class PdfReadAction:
             def execute(self, **kwargs: Any) -> Any:
                 path = kwargs.get("path", kwargs.get("resource", ""))
                 data = fs.read_file_bytes(path=path)
-                return extractor.extract_text(data, source=path)
+                text = extractor.extract_text(data, source=path)
+                if max_lines is None:
+                    return text
+                return cap_extracted_text(text, max_lines)
 
         return PdfReadAction()
+
+    def _resolve_read_max_lines(self) -> Optional[int]:
+        """Resolves the shared ``read.max_lines`` budget, or ``None`` when unset."""
+        if not self._config_service:
+            return None
+        raw = self._config_service.get_setting("read.max_lines", None)
+        coerced = coerce_param(raw, int)
+        if not isinstance(coerced, int) or coerced <= 0:
+            return None
+        return coerced
 
     def _get_action_wrapper(self, handler: Any, method_name: str) -> IAction:
         """Returns an IAction wrapper around an adapter method."""
@@ -158,10 +174,6 @@ class ActionFactory(IActionFactory):
                 "execute.default_timeout_seconds", 60.0
             )
             if default_timeout is not None:
-                from teddy_executor.core.services.parser_infrastructure import (
-                    coerce_param,
-                )
-
                 coerced = coerce_param(default_timeout, float)
                 if coerced is not None:
                     execute_params["timeout"] = coerced
@@ -177,10 +189,6 @@ class ActionFactory(IActionFactory):
                 "edit.similarity_threshold", DEFAULT_SIMILARITY_THRESHOLD
             )
             if global_threshold is not None:
-                from teddy_executor.core.services.parser_infrastructure import (
-                    coerce_param,
-                )
-
                 coerced = coerce_param(global_threshold, float)
                 if coerced is not None:
                     kwargs["similarity_threshold"] = coerced

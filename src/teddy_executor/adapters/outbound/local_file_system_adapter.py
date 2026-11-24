@@ -309,6 +309,17 @@ class LocalFileSystemAdapter(IFileSystemManager):
         except IOError as e:
             raise IOError(f"Failed to read raw file at {path}: {e}") from e
 
+    def read_file_bytes(self, path: str) -> bytes:
+        """
+        Reads the raw bytes of a file, bypassing text decoding and truncation.
+        """
+        try:
+            return self._resolve_path(path).read_bytes()
+        except FileNotFoundError:
+            raise
+        except IOError as e:
+            raise IOError(f"Failed to read bytes from file at {path}: {e}") from e
+
     def remove_file(self, path: str) -> None:
         """
         Deletes a file from the file system.

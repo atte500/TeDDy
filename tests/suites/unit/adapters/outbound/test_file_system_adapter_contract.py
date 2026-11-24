@@ -128,3 +128,24 @@ def test_remove_file_raises_on_nonexistent_file(tmp_path):
     # Act / Assert
     with pytest.raises(FileNotFoundError):
         adapter.remove_file("nonexistent.txt")
+
+
+def test_read_file_bytes_returns_the_exact_payload(tmp_path):
+    # Arrange
+    simulator = POSIXPathMock(spec=IEditSimulator)
+    adapter = LocalFileSystemAdapter(edit_simulator=simulator, root_dir=str(tmp_path))
+    payload = b"%PDF-1.4\n\xff\x00binary"
+    (tmp_path / "doc.pdf").write_bytes(payload)
+
+    # Act / Assert
+    assert adapter.read_file_bytes("doc.pdf") == payload
+
+
+def test_read_file_bytes_raises_for_a_missing_file(tmp_path):
+    # Arrange
+    simulator = POSIXPathMock(spec=IEditSimulator)
+    adapter = LocalFileSystemAdapter(edit_simulator=simulator, root_dir=str(tmp_path))
+
+    # Act / Assert
+    with pytest.raises(FileNotFoundError):
+        adapter.read_file_bytes("missing.pdf")
