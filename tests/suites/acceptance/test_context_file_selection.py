@@ -141,3 +141,23 @@ def test_context_command_reports_missing_path(tmp_path: Path, monkeypatch) -> No
     assert result.exit_code == 0, result.stdout
     assert "### [missing.py](/missing.py)" in result.stdout
     assert "--- FILE NOT FOUND ---" in result.stdout
+
+
+def test_session_payload_carries_session_resources_and_runtime_sections(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A session-rooted payload emits the shape headings the partition fills.
+
+    Tracer bullet: proves the session-mode boundary reaches the two new sections
+    before their content is partitioned.
+    """
+    turn_dir = _seed_session_workspace(tmp_path)
+
+    result = _run_context(monkeypatch, tmp_path, [], cwd=turn_dir)
+
+    assert result.exit_code == 0, result.stdout
+    assert "## Session Resources" in result.stdout
+    assert "## Runtime" in result.stdout
+    assert result.stdout.index("## Resource Contents") < result.stdout.index(
+        "## Runtime"
+    )

@@ -448,6 +448,15 @@ class ContextService(IGetContextUseCase):
         if session_history_parts:
             content_parts = session_history_parts + content_parts
 
+        # Session-mode shape: Session Resources sit ahead of the history. The
+        # content partition lands in Core; this only proves the boundary.
+        if session_root:
+            content_parts = ["\n## Session Resources"] + content_parts
+
+        # Runtime closes the document so no volatile bytes precede the append
+        # point. Its rows move here in Core; the heading alone pins the shape.
+        content_parts.append("\n## Runtime")
+
         return "\n".join(content_parts)
 
     def _format_tree_subtitle(self) -> str:
