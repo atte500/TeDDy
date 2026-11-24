@@ -28,6 +28,7 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
     - Editor detection: Long/multiline params open in external editor.
 - **Deprecation:** `--console` flag marked deprecated. No functional removal in this milestone (deferred to M5).
 - **Manual Execution Logging & Ordering:** On plan submit, skipped actions (deselected, halted, interrupted) should be re-emitted to the console via the existing `notify_skipped_action` formatter. Manually executed actions (`x`) must appear in actual execution order in both the console log and `report.md`, not original plan order. This requires a per-action execution sequence stamped when each action runs.
+- **Rationale Heading Parsing:** The plan reviewer opens a node for every `###` heading a rationale carries and labels it with the heading text, so a plan that adds, renames, or reorders a section is shown as authored instead of having that section folded into its predecessor. The four canonical sections stay the authored contract in [plan-format.md](/docs/project/specs/plan-format.md); only the reviewer's parser restriction is removed. The split must be fence-aware, because a `###` line inside a fenced block currently merges into its predecessor and an unguarded split would tear the fence apart. Text before the first heading renders as a leading `Raw` entry rather than being dropped, and a rationale with no heading at all still renders as one quieter `Raw` node so archived plans and resumed sessions stay reviewable. `ALLOWED_RATIONALE_SECTIONS`, `recognized_rationale_sections`, and `rationale_entries` collapse into a single `rationale_sections` entry point; `test_tui_only_accepts_markdown_headings` and `test_recognized_rationale_sections_merge_unrecognized_headings` pin the behaviour this removes and must be replaced rather than relaxed; and the `rationale_heading_only` invariant in [the reviewer component page](/docs/architecture/adapters/inbound/textual_plan_reviewer.md) flips in the same commit as the code.
 
 ## Slices
 > Slice definitions will be created by the Architect during the Design phase. The following high-level breakdown is anticipated:
@@ -44,6 +45,7 @@ Expand the TUI with improved navigation, context interactions, and metadata visi
 > 10. Session interrupt mechanism
 > 11. `--console` deprecation marking
 > 12. Manual execution logging and ordering
+> 13. Rationale heading parsing (generalize beyond the four canonical sections)
 
 **Delivered Slices:**
 - [x] [04-01: Normalize Editor Basenames for Windows Launcher Suffixes](/docs/project/slices/04-01-editor-basename-normalization.md)
