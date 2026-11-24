@@ -1,5 +1,5 @@
 # Slice: Cache Telemetry
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** None (ad-hoc slice)
 - **Depends On:** None (reads the same `meta.yaml` that slice 00-03 leaves untouched)
 - **Specs:** None — the `meta.yaml` field set is an implementation contract documented in the session-manager component doc
@@ -69,7 +69,7 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 
 ## Deliverables
 
-- [ ] **Interface** - Add the `TokenUsage` DTO, the additive `ILlmClient.get_token_usage` method, its `LiteLLMAdapter` implementation reusing the existing extraction, and the four new `meta.yaml` keys on the session-manager contract. One commit, because a port method without its only implementation leaves the suite red.
+- [x] **Interface** - Add the `TokenUsage` DTO, the additive `ILlmClient.get_token_usage` method, its `LiteLLMAdapter` implementation reusing the existing extraction, and the four new `meta.yaml` keys on the session-manager contract. One commit, because a port method without its only implementation leaves the suite red.
 - [ ] **Harness** - Add a fake `ILlmClient` usage stub that drives the cached-hit, zero-cache, and no-usage branches deterministically.
 - [ ] **Wiring** - Thread the usage DTO from `PlanningService` into metadata persistence, writing zeros when the provider reports nothing and never emitting the suffix yet.
 - [ ] **Core** - Accumulate the cumulative prompt and cached counters in `SessionService`, derive the integer percentage, and append `(X% cached)` in `_display_telemetry` under the documented omission rules.
@@ -77,6 +77,15 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 
 ## Implementation Notes
 The adapter owns provider-shape parsing; the core sees only integers. Cumulative counters live beside `cumulative_cost` so the whole display renders from one meta object.
+
+### Interface delivered
+- `TokenUsage` is a frozen dataclass in `core/domain/models/token_usage.py`, re-exported from the models package. An absent provider field reads as `0`, never as a guess.
+- `ILlmClient.get_token_usage` is a concrete, defaulted method returning a zeroed `TokenUsage`, mirroring the `get_text_token_count` precedent. An abstract method would have broken the three contract-test stubs outside this deliverable's scope, and the zeroed default encodes the rule that an unobservable count is never rendered as a cache estimate.
+- `LiteLLMAdapter.get_token_usage` reuses the existing `_extract_usage_value` and `_extract_detail_value` readers. Both accept only real `int` values, so a string or float from a provider payload is dropped rather than stored.
+- `_log_cost_failure` is deliberately unchanged: its diagnostic payload distinguishes `None` from `0`, so it must not be rerouted through the zero-filling accessor.
+- The four meta keys are declared once as `TURN_USAGE_META_KEYS` in the session-manager port module and pinned by a contract test; the persistence and display work lands in Wiring and Core.
+- The DTO intentionally does not assert `cached_tokens <= prompt_tokens`: a provider may count sub-blocks, and clamping belongs to the display layer.
+- Environment repair: `.venv/bin/pytest` carried a shebang pointing at the former `TeDDy3` checkout; `uv sync --reinstall` regenerated the console scripts without moving `uv.lock`.
 
 ## Verification
 1. **Persisted counters:**

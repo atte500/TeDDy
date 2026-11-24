@@ -106,3 +106,41 @@ def test_llm_client_get_completion_accepts_llm_overrides():
 
     assert "llm_overrides" in sig.parameters
     assert sig.parameters["llm_overrides"].default is None
+
+
+def test_llm_client_defines_get_token_usage_signature():
+    """The usage operation takes the opaque response and returns a typed DTO."""
+    import inspect
+
+    from teddy_executor.core.domain.models.token_usage import TokenUsage
+
+    sig = inspect.signature(ILlmClient.get_token_usage)
+
+    assert "completion_response" in sig.parameters
+    assert sig.return_annotation is TokenUsage
+
+
+def test_llm_client_get_token_usage_defaults_to_zeroed_usage():
+    """A client that cannot observe usage reports zeros instead of guessing."""
+    from teddy_executor.core.domain.models.token_usage import TokenUsage
+
+    class CompleteClient(ILlmClient):
+        def get_completion(self, messages, model=None, llm_overrides=None, **kwargs):
+            return "ok"
+
+        def get_token_count(self, messages, model=None):
+            return 0
+
+        def get_completion_cost(self, _response, model_override=None):
+            return 0.0
+
+        def validate_config(self, _include_remote=False):
+            return []
+
+        def get_context_window(self, model=None):
+            return 0
+
+        def supports_pricing(self, model=None):
+            return False
+
+    assert CompleteClient().get_token_usage(object()) == TokenUsage()

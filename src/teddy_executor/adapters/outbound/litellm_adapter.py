@@ -3,6 +3,7 @@ import math
 from typing import Any, Dict, List, Mapping, Optional, Protocol
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.domain.models.exceptions import ConfigurationError
+from teddy_executor.core.domain.models.token_usage import TokenUsage
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient, LlmApiError
 from teddy_executor.core.ports.outbound.time_service import ITimeService
 
@@ -292,6 +293,27 @@ class LiteLLMAdapter(ILlmClient):
         resolved_model = self._resolve_model(model)
         encoding = self._get_encoding(resolved_model)
         return len(encoding.encode(text, disallowed_special=()))
+
+    def get_token_usage(self, completion_response: Any) -> TokenUsage:
+        """Reads the provider's token usage, zero-filling absent fields.
+
+        ``prompt_tokens`` is the provider's own input count, not the
+        request estimate the adapter computes before the call. A provider
+        that reports no cache details contributes ``cached_tokens=0``; a
+        value of a non-integer type is dropped rather than stored.
+        """
+        return TokenUsage(
+            prompt_tokens=self._extract_usage_value(
+                completion_response, "prompt_tokens"
+            )
+            or 0,
+            cached_tokens=self._extract_detail_value(
+                completion_response,
+                "prompt_tokens_details",
+                "cached_tokens",
+            )
+            or 0,
+        )
 
     def get_completion_cost(
         self, completion_response: Any, model_override: Optional[str] = None

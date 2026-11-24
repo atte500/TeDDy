@@ -9,6 +9,17 @@ from teddy_executor.core.domain.models.session import SessionOptions
 # hard-killed mid-execution turn from a never-dispatched pending turn.
 EXECUTION_STARTED_MARKER = "execution.started"
 
+# The turn-metadata keys carrying provider cache accounting. ``prompt_tokens``
+# and ``cached_tokens`` describe the turn; the ``cumulative_*`` pair carries the
+# session running total the cost line renders from. Every value is an int and
+# absent provider data persists as 0.
+TURN_USAGE_META_KEYS = (
+    "prompt_tokens",
+    "cached_tokens",
+    "cumulative_prompt_tokens",
+    "cumulative_cached_tokens",
+)
+
 
 class SessionState(Enum):
     """Represents the current state of a session based on its latest turn."""

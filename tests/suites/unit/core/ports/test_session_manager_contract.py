@@ -92,3 +92,15 @@ def test_protocol_declares_resolve_session_from_slug():
     assert hasattr(ISessionManager, "resolve_session_from_slug"), (
         "ISessionManager must declare resolve_session_from_slug"
     )
+
+
+def test_session_manager_contract_declares_cache_telemetry_meta_keys():
+    """The turn-metadata contract names the four cache-telemetry counters."""
+    from teddy_executor.core.ports.outbound.session_manager import TURN_USAGE_META_KEYS
+
+    assert TURN_USAGE_META_KEYS == (
+        "prompt_tokens",
+        "cached_tokens",
+        "cumulative_prompt_tokens",
+        "cumulative_cached_tokens",
+    )

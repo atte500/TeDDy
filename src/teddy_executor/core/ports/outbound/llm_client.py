@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Mapping, Optional
 
+from teddy_executor.core.domain.models.token_usage import TokenUsage
+
 
 class LlmApiError(Exception):
     """Raised for any failures during an LLM API call."""
@@ -55,6 +57,16 @@ class ILlmClient(ABC):
         raise NotImplementedError(
             "ILlmClient implementation must provide get_text_token_count"
         )
+
+    def get_token_usage(self, completion_response: Any) -> TokenUsage:
+        """
+        Returns the provider-reported token usage for a completion response.
+
+        A client that cannot observe usage inherits this default, which
+        reports zeros so an unknown count is never rendered as a cache
+        estimate.
+        """
+        return TokenUsage()
 
     @abstractmethod
     def get_completion_cost(

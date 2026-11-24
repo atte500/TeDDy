@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from teddy_executor.core.domain.models.token_usage import TokenUsage
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 
 
@@ -522,3 +523,51 @@ def test_get_completion_cost_keeps_reported_fee_without_upstream_spend(
 
     assert cost == 0.0105
     assert fake.completion_cost_calls == []
+
+
+def test_get_token_usage_reads_prompt_and_cached_tokens(container):
+    adapter = container.resolve(ILlmClient)
+    response = SimpleNamespace(
+        usage=SimpleNamespace(
+            prompt_tokens=1000,
+            prompt_tokens_details=SimpleNamespace(cached_tokens=600),
+        )
+    )
+
+    assert adapter.get_token_usage(response) == TokenUsage(
+        prompt_tokens=1000, cached_tokens=600
+    )
+
+
+@pytest.mark.parametrize(
+    "usage",
+    [
+        SimpleNamespace(prompt_tokens=1000),
+        SimpleNamespace(prompt_tokens=1000, prompt_tokens_details=SimpleNamespace()),
+    ],
+    ids=["no-details-object", "details-without-cached-tokens"],
+)
+def test_get_token_usage_zero_fills_absent_cached_tokens(container, usage):
+    adapter = container.resolve(ILlmClient)
+
+    assert adapter.get_token_usage(SimpleNamespace(usage=usage)) == TokenUsage(
+        prompt_tokens=1000, cached_tokens=0
+    )
+
+
+def test_get_token_usage_returns_zeroed_usage_without_usage_object(container):
+    adapter = container.resolve(ILlmClient)
+
+    assert adapter.get_token_usage(SimpleNamespace()) == TokenUsage()
+
+
+def test_get_token_usage_drops_non_integer_counters(container):
+    adapter = container.resolve(ILlmClient)
+    response = SimpleNamespace(
+        usage=SimpleNamespace(
+            prompt_tokens="1000",
+            prompt_tokens_details=SimpleNamespace(cached_tokens=12.5),
+        )
+    )
+
+    assert adapter.get_token_usage(response) == TokenUsage()

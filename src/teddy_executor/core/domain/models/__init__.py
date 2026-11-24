@@ -19,6 +19,7 @@ from .change_set import ChangeSet
 from .project_context import ContextItem, ProjectContext
 from .report_assembly_data import ReportAssemblyData
 from .action_ports import ActionPorts
+from .token_usage import TokenUsage
 
 __all__ = [
     "ActionPorts",
@@ -26,6 +27,7 @@ __all__ = [
     "ContextItem",
     "ProjectContext",
     "ReportAssemblyData",
+    "TokenUsage",
     "Plan",
     "ActionData",
     "ActionType",
