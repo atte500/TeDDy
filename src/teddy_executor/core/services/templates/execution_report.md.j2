@@ -103,6 +103,11 @@
 {% if report.validation_ast -%}
 {{ report.validation_ast }}
 {% endif -%}
+{# The `-%}` markers above strip every following whitespace character up to the
+   next non-whitespace one, and the gap between the validation blocks and
+   `## Action Log` holds nothing but block tags. Emit the separator explicitly
+   so the heading never abuts the last error line or the validation AST dump. #}
+{% if report.validation_result or report.validation_ast %}{{ '\n' }}{% endif -%}
 {# Classify content-bearing logs ONCE — the single source of truth deciding
    where each log's content renders:
      - resource_logs: rendered under `## Resource Contents` (non-session only)

@@ -16,7 +16,12 @@ from tests.harness.observers.report_parser import ReportParser
 RESEARCH_HINT = "*Hint: Use READ on a result URL to fetch the page contents.*"
 
 
-def _get_report(action_logs=None, status=RunStatus.SUCCESS, validation_result=None):
+def _get_report(
+    action_logs=None,
+    status=RunStatus.SUCCESS,
+    validation_result=None,
+    validation_ast=None,
+):
     return ExecutionReport(
         plan_title="Test Plan",
         run_summary=RunSummary(
@@ -26,6 +31,7 @@ def _get_report(action_logs=None, status=RunStatus.SUCCESS, validation_result=No
         ),
         action_logs=action_logs or [],
         validation_result=validation_result,
+        validation_ast=validation_ast,
     )
 
 
@@ -265,6 +271,39 @@ def test_formats_validation_failed_report():
     assert "## Validation Errors" in output
     assert "E1" in output
     assert "E2" in output
+
+
+def test_validation_errors_are_separated_from_action_log_by_blank_line():
+    """The Action Log heading never abuts the last validation error line."""
+    formatter = MarkdownReportFormatter()
+    report = _get_report(
+        [
+            ActionLog(
+                status=ActionStatus.SUCCESS,
+                action_type="CREATE",
+                params={"path": "new.txt"},
+            )
+        ],
+        status=RunStatus.VALIDATION_FAILED,
+        validation_result=["E1", "E2"],
+    )
+
+    output = formatter.format(report)
+
+    assert "\n\n## Action Log\n" in output
+
+
+def test_validation_ast_is_separated_from_action_log_by_blank_line():
+    """The Action Log heading never abuts the validation AST dump."""
+    formatter = MarkdownReportFormatter()
+    report = _get_report(
+        status=RunStatus.VALIDATION_FAILED,
+        validation_ast="Expression body must be a call.",
+    )
+
+    output = formatter.format(report)
+
+    assert "\n\n## Action Log\n" in output
 
 
 def test_research_query_without_results_renders_no_results_note():
