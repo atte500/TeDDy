@@ -11,6 +11,7 @@ def register_infrastructure(container: punq.Container) -> None:
         IEnvironmentInspector,
         IFileSystemManager,
         ILlmClient,
+        IPdfExtractor,
         IRepoTreeGenerator,
         IShellExecutor,
         ISystemEnvironment,
@@ -48,6 +49,7 @@ def register_infrastructure(container: punq.Container) -> None:
         SystemEnvironmentInspector,
     )
     from teddy_executor.adapters.outbound.system_time_adapter import SystemTimeAdapter
+    from teddy_executor.adapters.outbound.pypdf_extractor import PypdfExtractor
     from teddy_executor.adapters.outbound.web_scraper_adapter import WebScraperAdapter
     from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
     from teddy_executor.adapters.outbound.yaml_config_adapter import YamlConfigAdapter
@@ -101,9 +103,14 @@ def register_infrastructure(container: punq.Container) -> None:
         scope=punq.Scope.transient,
     )
 
+    container.register(IPdfExtractor, PypdfExtractor, scope=punq.Scope.transient)
+
     container.register(
         IWebScraper,
-        factory=lambda: WebScraperAdapter(container.resolve(IConfigService)),
+        factory=lambda: WebScraperAdapter(
+            config_service=container.resolve(IConfigService),
+            pdf_extractor=container.resolve(IPdfExtractor),
+        ),
         scope=punq.Scope.transient,
     )
 

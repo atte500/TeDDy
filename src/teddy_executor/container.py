@@ -89,6 +89,7 @@ def _register_services(container: punq.Container) -> None:
     register_reviewer(container)
 
     from teddy_executor.core.ports.outbound import (
+        IPdfExtractor,
         IShellExecutor,
         IWebScraper,
         IWebSearcher,
@@ -105,6 +106,7 @@ def _register_services(container: punq.Container) -> None:
                 web_scraper=container.resolve(IWebScraper),
                 web_searcher=container.resolve(IWebSearcher),
                 config_service=container.resolve(IConfigService),
+                pdf_extractor=container.resolve(IPdfExtractor),
             )
         ),
         scope=punq.Scope.transient,

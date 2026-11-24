@@ -16,12 +16,15 @@ Translates an action type string from a plan into an executable `IAction` handle
 - [`IUserInteractor`](../ports/outbound/user_interactor.md): Supplies the MESSAGE handler.
 - [`IWebScraper`](../ports/outbound/web_scraper.md): Supplies the remote READ handler.
 - [`IWebSearcher`](../ports/outbound/web_searcher.md): Supplies the RESEARCH handler.
-- [`IConfigService`](../ports/outbound/config_service.md): Supplies the default timeout and similarity threshold.
+- [`IConfigService`](../ports/outbound/config_service.md): Supplies the default timeout, similarity threshold, and the `read.max_lines` budget.
+- [`IPdfExtractor`](../ports/outbound/pdf_extractor.md): Supplies the local PDF extraction behind a PDF `READ`.
 - **`DEFAULT_SIMILARITY_THRESHOLD`** (`teddy_executor.core.domain.models.plan`): The fallback similarity threshold.
 
 ## Class Invariants
 - `ports_from_dto`: Every outbound port arrives through the `ActionPorts` DTO; the factory holds no container reference.
-- `read_polymorphism`: The READ action is routed by resource type (remote URL, line-range request, or local file) to a distinct handler.
+- `read_polymorphism`: The READ action is routed by resource type (remote URL, PDF source, line-range request, or local file) to a distinct handler.
+- `pdf_precedes_lines`: A PDF source is routed before the line-range branch, so a `lines` range on a PDF is ignored and the full text is extracted.
+- `pdf_cap_resolved_once`: The PDF handler resolves `read.max_lines` at action-creation time and applies the shared head-truncation helper, so a PDF obeys the same budget as a text file.
 - `config_default_injection`: When a plan omits `timeout` or `similarity_threshold`, the factory injects the configured default.
 
 ## Inbound Ports
@@ -38,6 +41,7 @@ None — the factory is a concrete service consumed through the `IActionFactory`
 
 ### `create_action(action_type, params=None) -> IAction`
 - **Preconditions:** `action_type` is a known verb.
-- **Postconditions:** Returns an `IAction` whose `execute` calls the mapped adapter method. A remote READ binds `IWebScraper.get_content`; a line-range READ binds `IFileSystemManager.read_raw_file`; a local READ binds `IFileSystemManager.read_file`.
+- **Postconditions:** Returns an `IAction` whose `execute` calls the mapped adapter method. A remote READ binds `IWebScraper.get_content`; a PDF READ binds `IFileSystemManager.read_file_bytes` and then `IPdfExtractor.extract_text`, capped at `read.max_lines` when configured; a line-range READ binds `IFileSystemManager.read_raw_file`; a local READ binds `IFileSystemManager.read_file`.
 - **Exceptions:**
   - `ValueError`: Unknown or unmapped action verb provided.
+  - `AssertionError`: A PDF READ is created while `ActionPorts.pdf_extractor` is `None`, which is a composition-root defect rather than user input.

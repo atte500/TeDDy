@@ -1,9 +1,14 @@
+from teddy_executor.adapters.outbound.pypdf_extractor import PypdfExtractor
 from teddy_executor.container import create_container
 from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUseCase
+from teddy_executor.core.ports.outbound import IPdfExtractor, IWebScraper
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
+from teddy_executor.core.services.action_dispatcher import IActionFactory
 from teddy_executor.core.services.context_service import ContextService
+from tests.harness.setup.mocking import POSIXPathMock
+from tests.harness.setup.pdf_fixture import build_minimal_pdf
 
 
 def test_container_resolves_foundational_services(container):
@@ -64,3 +69,35 @@ def test_composition_root_caps_plan_content_at_plan_max_lines(monkeypatch, tmp_p
 
     assert "[Showing first 5 of 10 lines.]" in context.content
     assert "line 10" not in context.content
+
+
+def test_container_registers_the_pypdf_extractor():
+    """The composition root resolves the real PDF extractor adapter."""
+    extractor = create_container().resolve(IPdfExtractor)
+
+    assert isinstance(extractor, PypdfExtractor)
+
+
+def test_resolved_scraper_extracts_text_from_a_pdf_url():
+    """The resolved scraper carries the injected extractor into its PDF branch."""
+    scraper = create_container().resolve(IWebScraper)
+    scraper._fetch_pdf_bytes = POSIXPathMock(
+        return_value=build_minimal_pdf("Hello PDF")
+    )
+
+    result = scraper.get_content("https://example.com/report.pdf")
+
+    assert "Hello PDF" in result
+
+
+def test_composition_root_reads_a_local_pdf(monkeypatch, tmp_path):
+    """The resolved factory reads a real PDF from disk through the whole stack."""
+    (tmp_path / "report.pdf").write_bytes(build_minimal_pdf("Quarterly Report"))
+    monkeypatch.chdir(tmp_path)
+
+    factory = create_container().resolve(IActionFactory)
+    action = factory.create_action(
+        "READ", {"resource": "report.pdf", "path": "report.pdf"}
+    )
+
+    assert "Quarterly Report" in action.execute(path="report.pdf")

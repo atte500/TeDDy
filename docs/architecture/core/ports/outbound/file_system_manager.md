@@ -35,6 +35,7 @@ None — this is an outbound (driven) port.
 - **`edits` parameter** (`edit_file`): a list of `{"find": str, "replace": str}` blocks.
 - **`edit_file` return:** a list of per-edit similarity scores.
 - **`read_files_in_vault` return:** a mapping of path to content, with `None` for missing files.
+- **`read_file_bytes` return:** the file's raw bytes, undecoded and uncapped, so a binary payload such as a PDF reaches the extractor unchanged.
 - **`FileAlreadyExistsError`** (`FileExistsError`): Raised on file collision when overwrite is disabled.
 - **`SearchTextNotFoundError`** (`ValueError`): Raised when an edit find block cannot be matched.
 - **`MultipleMatchesFoundError`** (`Exception`): Raised when an edit find block matches ambiguously.
@@ -86,6 +87,12 @@ None — this is an outbound (driven) port.
 ### `read_raw_file(path) -> str`
 - **Preconditions:** `path` exists.
 - **Postconditions:** Returns the full, uncapped file content.
+- **Exceptions:**
+  - `FileNotFoundError`: No file exists at `path`.
+
+### `read_file_bytes(path) -> bytes`
+- **Preconditions:** `path` exists.
+- **Postconditions:** Returns the file's exact bytes, with no text decoding and no truncation, so binary payloads survive intact.
 - **Exceptions:**
   - `FileNotFoundError`: No file exists at `path`.
 

@@ -16,10 +16,11 @@ A frozen data transfer object that groups the collection of outbound ports requi
 - [`IWebScraper`](../ports/outbound/web_scraper.md): Required for fetching remote web content.
 - [`IWebSearcher`](../ports/outbound/web_searcher.md): Required for web search queries.
 - [`IConfigService`](../ports/outbound/config_service.md): Optional configuration access.
+- [`IPdfExtractor`](../ports/outbound/pdf_extractor.md): Optional PDF text extraction for a PDF `READ`.
 
 ## Class Invariants
 - `frozen_dataclass`: The instance is immutable after construction.
-- `config_service_optional`: `config_service` defaults to `None` and is the only optional field.
+- `optional_defaults_none`: `config_service` and `pdf_extractor` both default to `None`, so an assembly site that omits them keeps the non-configurable and text-only paths working.
 
 ## Inbound Ports
 None — this is a passive data structure.
@@ -35,6 +36,7 @@ This DTO aggregates, but does not itself consume, the outbound ports listed unde
     - `web_scraper: IWebScraper`
     - `web_searcher: IWebSearcher`
     - `config_service: Optional[IConfigService] = None`
+    - `pdf_extractor: Optional[IPdfExtractor] = None`
 
 ## Operations
 None — this component holds data only.

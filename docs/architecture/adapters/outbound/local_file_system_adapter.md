@@ -21,6 +21,7 @@ Implements the `IFileSystemManager` outbound port for the local disk. It resolve
 - `exclusive_create`: `create_file` uses exclusive mode (`x`) unless `overwrite` is set, and re-raises a domain `FileAlreadyExistsError` on collision.
 - `newline_deterministic_writes`: `write_file`, `create_file`, `edit_file`, and `open_file_for_append` use `newline=""`, so content is emitted verbatim on every OS.
 - `head_truncation`: `read_file` truncates at the head to `max_read_lines` (default `1000`); `read_raw_file` and `read_files_in_vault` bypass the cap.
+- `binary_passthrough`: `read_file_bytes` neither decodes nor truncates, so a binary payload reaches its caller byte-for-byte.
 - `lazy_ignore_spec`: The ignore specification and the resolved root are computed once and cached on the instance.
 
 ## Inbound Ports
@@ -33,6 +34,7 @@ None — this is an outbound (driven) adapter.
 - **`EditPair`** (`TypedDict`): `find: str`, `replace: str`, `match_all: bool`.
 - **`edit_file` return:** `list[float]` — the per-edit similarity scores.
 - **`read_files_in_vault` return:** `dict[str, str | None]`, where `None` marks a missing file.
+- **`read_file_bytes` return:** the file's exact bytes, undecoded and uncapped.
 - **`FileAlreadyExistsError`** (`teddy_executor.core.domain.models.exceptions`): Raised on file collision when overwrite is unset.
 - **`SearchTextNotFoundError`** (`teddy_executor.core.domain.models.exceptions`): Propagated from simulator on missing edit find block.
 - **`MultipleMatchesFoundError`** (`teddy_executor.core.domain.models.exceptions`): Propagated from simulator on ambiguous edit match.
@@ -52,6 +54,13 @@ None — this is an outbound (driven) adapter.
 - **Postconditions:** `read_file` returns head-truncated content; `read_raw_file` returns the full content.
 - **Exceptions:**
   - `FileNotFoundError`: No file exists at `path`.
+
+### `read_file_bytes(path) -> bytes`
+- **Preconditions:** `path` resolves inside the project root.
+- **Postconditions:** Returns the file's exact bytes with no UTF-8 decoding and no line cap, so a PDF payload survives intact.
+- **Exceptions:**
+  - `FileNotFoundError`: No file exists at `path`.
+  - `IOError`: The read failed for any other reason, with the path in the message.
 
 ### `write_file(path, content) -> None`
 - **Postconditions:** Upserts the file with LF-verbatim content.
