@@ -72,7 +72,7 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 - [x] **Interface** - Add the `TokenUsage` DTO, the additive `ILlmClient.get_token_usage` method, its `LiteLLMAdapter` implementation reusing the existing extraction, and the four new `meta.yaml` keys on the session-manager contract. One commit, because a port method without its only implementation leaves the suite red.
 - [x] **Harness** - Add a fake `ILlmClient` usage stub that drives the cached-hit, zero-cache, and no-usage branches deterministically.
 - [x] **Wiring** - Thread the usage DTO from `PlanningService` into metadata persistence, writing zeros when the provider reports nothing and never emitting the suffix yet.
-- [ ] **Core** - Accumulate the cumulative prompt and cached counters in `SessionService`, derive the integer percentage, and append `(X% cached)` in `_display_telemetry` under the documented omission rules.
+- [x] **Core** - Accumulate the cumulative prompt and cached counters in `SessionService`, derive the integer percentage, and append `(X% cached)` in `_display_telemetry` under the documented omission rules.
 - [ ] **Migration** - Update existing telemetry-output and meta-field assertions, and document the new keys in the session-manager component doc.
 
 ## Implementation Notes
@@ -102,6 +102,13 @@ The adapter owns provider-shape parsing; the core sees only integers. Cumulative
 - The acceptance test at `tests/suites/acceptance/test_cache_telemetry_wiring.py` drives `start -y -m` at the CLI boundary with a container-registered `FakeLlmClient` over the real filesystem, proving `1234/0` from a scripted usage and `0/0` from a drained queue land as integers in the real `meta.yaml` while the cost line carries no cache suffix.
 
 - The concrete `update_meta` carries a narrowly scoped `# noqa: PLR0913` with a reason comment: the sixth typed parameter is the deliberate additive seam, and a module-level `per-file-ignores` entry would blanket a 400-line module to silence one line.
+
+### Core delivered
+- `SessionService._initialize_meta_data` seeds all four `TURN_USAGE_META_KEYS` to `0`, so turn 1 always carries the complete usage schema and the cumulative counters read as integers rather than a missing key.
+- `SessionService._persist_next_meta` accumulates each counter as the carried total plus this turn's own count (`cumulative + prompt_tokens`, `cumulative + cached_tokens`), coercing each operand independently through the pure `_as_usage_count` helper. A junk contribution counts as zero without resetting a valid running total, mirroring the `cumulative_cost` carry.
+- `PlanningService._display_telemetry` hoists the dollar-figure gate into `show_cost` and appends ` (N% cached)` only when the cost is a rendered dollar figure, `cumulative_cost > 0`, the prompt denominator is positive, and the cached total is positive. `N = min(100, round(cached * 100 / prompt))`, so a provider counting sub-blocks clamps at 100%; `$???`, a recorded free-model `$0.0000`, a zero denominator, and an absent or zero cache all render suffix-free.
+- Because `_display_telemetry` runs pre-response over the turn's own meta, turn N renders the ratio accumulated from completed turns: turn 1 reads the seeded zeros and shows no suffix, and the suffix appears once the carried cumulative cache and the accumulated cost are both positive.
+- Test coverage: `test_cache_telemetry_display.py` drives the real `generate_plan` seam across the eight-case omission matrix, and five accumulation cases were appended to `test_session_service_turn_meta.py` (accumulate, first-turn seed, absent-usage carry, per-value coercion, seeded-zero schema). The display and accumulation halves were each observed Red then Green in separate cycles. Scenario 2's end-to-end two-turn chain is pinned at each link — Wiring persists per-turn usage, these units accumulate and render — and covered manually in the Verification steps.
 
 ## Verification
 1. **Persisted counters:**

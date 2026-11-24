@@ -283,13 +283,24 @@ class PlanningService(IPlanningUseCase):
         # `cumulative_cost > 0`, because a free model legitimately records 0.0
         # and cannot be distinguished from "no cost" by cost > 0.
         cost_recorded = meta.get("cost_recorded") is True
-        cost_str = (
-            f"${cumulative_cost:.4f}"
-            if context_window > 0 and (pricing_supported or cost_recorded)
-            else "$???"
-        )
+        show_cost = context_window > 0 and (pricing_supported or cost_recorded)
+        cost_str = f"${cumulative_cost:.4f}" if show_cost else "$???"
+
+        cumulative_prompt = int(self._safe_float(meta.get("cumulative_prompt_tokens")))
+        cumulative_cached = int(self._safe_float(meta.get("cumulative_cached_tokens")))
+        cached_suffix = ""
+        if (
+            show_cost
+            and cumulative_cost > 0
+            and cumulative_prompt > 0
+            and cumulative_cached > 0
+        ):
+            pct = min(100, round(cumulative_cached * 100 / cumulative_prompt))
+            cached_suffix = f" ({pct}% cached)"
+
         self._user_interactor.display_message(
-            f"[blue]• Session Cost:[/blue] [magenta]{cost_str}[/magenta]\n"
+            f"[blue]• Session Cost:[/blue] [magenta]{cost_str}{cached_suffix}"
+            "[/magenta]\n"
         )
 
     def _check_context_budget(self, token_count: int, model: str) -> None:

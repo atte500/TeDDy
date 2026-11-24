@@ -188,3 +188,98 @@ def test_next_turn_meta_carries_model_override(service, turn_repository):
     persisted = turn_repository.load_meta(TURN_DIR)
     assert persisted["model_override"] == "flag/model"
     assert persisted["model"] == "persona/model"
+
+
+# --- provider cache accounting accumulation (Core deliverable) ---
+
+
+def test_next_turn_meta_accumulates_provider_usage(service, turn_repository):
+    """Each completed turn's usage joins the running cumulative total."""
+    current_meta = {
+        "turn_id": "01",
+        "agent_name": "developer",
+        "cumulative_cost": 0.5,
+        "cumulative_prompt_tokens": 1000,
+        "cumulative_cached_tokens": 600,
+        "prompt_tokens": 500,
+        "cached_tokens": 100,
+    }
+
+    service._persist_next_meta(TURN_DIR, "02", current_meta, 0.1)
+
+    persisted = turn_repository.load_meta(TURN_DIR)
+    assert persisted["cumulative_prompt_tokens"] == 1500
+    assert persisted["cumulative_cached_tokens"] == 700
+    assert isinstance(persisted["cumulative_prompt_tokens"], int)
+    assert isinstance(persisted["cumulative_cached_tokens"], int)
+
+
+def test_next_turn_meta_seeds_counters_from_the_first_turn(service, turn_repository):
+    """Turn 1 carries no cumulative pair, so its own usage becomes the total."""
+    current_meta = {
+        "turn_id": "01",
+        "agent_name": "developer",
+        "cumulative_cost": 0.0,
+        "prompt_tokens": 1234,
+        "cached_tokens": 0,
+    }
+
+    service._persist_next_meta(TURN_DIR, "02", current_meta, 0.0)
+
+    persisted = turn_repository.load_meta(TURN_DIR)
+    assert persisted["cumulative_prompt_tokens"] == 1234
+    assert persisted["cumulative_cached_tokens"] == 0
+
+
+def test_next_turn_meta_carries_counters_when_turn_usage_is_absent(
+    service, turn_repository
+):
+    """A provider that reports nothing adds zero without resetting the total."""
+    current_meta = {
+        "turn_id": "01",
+        "agent_name": "developer",
+        "cumulative_cost": 0.0,
+        "cumulative_prompt_tokens": 1000,
+        "cumulative_cached_tokens": 600,
+    }
+
+    service._persist_next_meta(TURN_DIR, "02", current_meta, 0.0)
+
+    persisted = turn_repository.load_meta(TURN_DIR)
+    assert persisted["cumulative_prompt_tokens"] == 1000
+    assert persisted["cumulative_cached_tokens"] == 600
+
+
+def test_next_turn_meta_drops_unusable_usage_without_resetting_the_total(
+    service, turn_repository
+):
+    """A junk contribution counts as zero; a numeric string is coerced."""
+    current_meta = {
+        "turn_id": "01",
+        "agent_name": "developer",
+        "cumulative_cost": 0.0,
+        "cumulative_prompt_tokens": 800,
+        "cumulative_cached_tokens": "40",
+        "prompt_tokens": "not-a-number",
+        "cached_tokens": 20,
+    }
+
+    service._persist_next_meta(TURN_DIR, "02", current_meta, 0.0)
+
+    persisted = turn_repository.load_meta(TURN_DIR)
+    assert persisted["cumulative_prompt_tokens"] == 800
+    assert persisted["cumulative_cached_tokens"] == 60
+
+
+def test_initialize_meta_seeds_zeroed_usage_counters(service):
+    """Turn 1 starts with a complete, zeroed usage schema."""
+    from teddy_executor.core.domain.models.session import SessionOptions
+
+    meta = service._initialize_meta_data(
+        SessionOptions(name="s", agent_name="developer")
+    )
+
+    assert meta["prompt_tokens"] == 0
+    assert meta["cached_tokens"] == 0
+    assert meta["cumulative_prompt_tokens"] == 0
+    assert meta["cumulative_cached_tokens"] == 0

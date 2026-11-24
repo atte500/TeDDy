@@ -13,12 +13,26 @@ from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemMa
 from teddy_executor.core.ports.outbound.session_manager import (
     ISessionManager,
     SessionState,
+    TURN_USAGE_META_KEYS,
 )
 from teddy_executor.core.ports.outbound.session_repository import ISessionRepository
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 from teddy_executor.core.ports.outbound.time_service import ITimeService
 from teddy_executor.core.utils.paths import normalize_resource_path, prefer_markdown
 from teddy_executor.core.utils.string import canonical_agent_name, slugify
+
+
+def _as_usage_count(value: Any) -> int:
+    """Coerces a provider-supplied count to ``int``, treating junk as zero.
+
+    The cumulative counters add the carried total to this turn's own count, so
+    each value is coerced independently: a non-integer contribution counts as
+    zero without resetting a valid running total.
+    """
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
 
 
 class SessionService(ISessionManager):
@@ -135,6 +149,9 @@ class SessionService(ISessionManager):
             "turn_cost": 0.0,
             "creation_timestamp": self._time_service.now_utc().isoformat(),
         }
+        # Turn 1 starts with a complete, zeroed usage schema, so the cumulative
+        # counters always read as integers rather than a missing key.
+        meta_data.update({key: 0 for key in TURN_USAGE_META_KEYS})
         if options.model:
             meta_data["model"] = options.model
             # The explicit flag is the only resolution input; ``model`` records
@@ -478,10 +495,22 @@ class SessionService(ISessionManager):
         except (TypeError, ValueError):
             cumulative = 0.0
 
+        # Provider usage accumulates like cost: the carried total plus this
+        # turn's own count, each coerced independently so a junk contribution
+        # counts as zero without resetting a valid running total.
+        cumulative_prompt = _as_usage_count(
+            current_meta.get("cumulative_prompt_tokens")
+        ) + _as_usage_count(current_meta.get("prompt_tokens"))
+        cumulative_cached = _as_usage_count(
+            current_meta.get("cumulative_cached_tokens")
+        ) + _as_usage_count(current_meta.get("cached_tokens"))
+
         meta = {
             "turn_id": next_id,
             "agent_name": current_meta.get("agent_name", "pf"),
             "cumulative_cost": cumulative,
+            "cumulative_prompt_tokens": cumulative_prompt,
+            "cumulative_cached_tokens": cumulative_cached,
             "parent_turn_id": current_meta.get("turn_id", "00"),
             "creation_timestamp": self._time_service.now_utc().isoformat(),
         }
