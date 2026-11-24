@@ -444,11 +444,15 @@ def update(
         typer.echo("To apply prompt updates, run: teddy init prompts")
     else:
         typer.echo(f"A new version {latest} is available.")
-        # A pre-release install comes from PyPI with a dev version (--pre).
-        # `uv tool upgrade` cannot reliably move the tool off --pre back to
-        # stable, so force a reinstall from the default index instead.
+        # A pre-release install follows the pre-release channel recorded in
+        # its receipt, so a bare `uv tool upgrade` would overshoot to a newer
+        # dev release instead of the announced stable. `--prerelease disallow`
+        # lands on the stable and preserves the recorded install source that a
+        # forced reinstall discards.
         if is_prerelease(current):
-            typer.echo("To upgrade, run: uv tool install teddy-cli --force")
+            typer.echo(
+                "To upgrade, run: uv tool upgrade teddy-cli --prerelease disallow"
+            )
         else:
             typer.echo("To upgrade, run: uv tool upgrade teddy-cli")
         typer.echo("To apply prompt updates, run: teddy init prompts")

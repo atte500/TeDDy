@@ -770,7 +770,12 @@ def _display_drift_notification(container: Container) -> list[str]:
     return fired
 
 
-def _display_update_notification(container: Container, cache_path: Path) -> list[str]:
+def _display_update_notification(
+    container: Container,
+    cache_path: Path,
+    *,
+    current_version: str | None = None,
+) -> list[str]:
     """Check the update cache and display a non-blocking notification
     if a newer version is available. Called on session startup, after
     the background check thread has been started. Gated by the
@@ -779,7 +784,8 @@ def _display_update_notification(container: Container, cache_path: Path) -> list
 
     Returns ``["checks.update"]`` when a newer version is actually
     displayed, else ``[]`` so the shared disable-footer can name the
-    fired check."""
+    fired check. ``current_version`` overrides the installed version so a
+    caller can pin the channel branch without patching module state."""
     config = container.resolve(IConfigService)
     if not config.get_setting("checks.update", True):
         return []
@@ -790,13 +796,15 @@ def _display_update_notification(container: Container, cache_path: Path) -> list
         latest = cache.get("latest_version", "")
         if not latest:
             return []
-        current = get_current_version()
+        current = current_version or get_current_version()
         if compare_versions(current, latest):
-            # A pre-release install comes from the PyPI experimental channel (--pre).
-            # `uv tool upgrade` cannot reliably move the tool off that flag back to
-            # stable, so force a reinstall from the default index instead.
+            # A pre-release install follows the pre-release channel recorded in
+            # its receipt, so a bare `uv tool upgrade` would overshoot to a newer
+            # dev release instead of the announced stable. `--prerelease disallow`
+            # lands on the stable and preserves the recorded install source that a
+            # forced reinstall discards.
             if is_prerelease(current):
-                command = "uv tool install teddy-cli --force"
+                command = "uv tool upgrade teddy-cli --prerelease disallow"
             else:
                 command = "uv tool upgrade teddy-cli"
             typer.echo(

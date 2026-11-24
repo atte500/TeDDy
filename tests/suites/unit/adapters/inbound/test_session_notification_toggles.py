@@ -242,6 +242,29 @@ def test_update_notification_reports_fired_key_when_it_fires(env, capsys, tmp_pa
     )
 
 
+def test_update_notification_prerelease_install_hint(env, capsys, tmp_path):
+    # A pre-release install must be told to upgrade with `--prerelease disallow`,
+    # which lands on the announced stable. A bare upgrade would follow the
+    # receipt's pre-release policy to a newer dev release, and `--force` would
+    # discard the recorded install source.
+    config = env.mock_port(IConfigService)
+    config.get_setting.side_effect = lambda key, default=None: default
+    cache_path = tmp_path / ".update_cache.json"
+    _write_fresh_update_cache(cache_path)
+
+    _display_update_notification(
+        env.container, cache_path, current_version="0.2.3.dev1527"
+    )
+
+    captured = capsys.readouterr()
+    assert "uv tool upgrade teddy-cli --prerelease disallow" in captured.err, (
+        f"Expected the pre-release-to-stable upgrade; got: {captured.err!r}"
+    )
+    assert "uv tool install teddy-cli --force" not in captured.err, (
+        f"Should not force a reinstall; got: {captured.err!r}"
+    )
+
+
 def test_update_notification_returns_empty_when_no_update_available(
     env, capsys, tmp_path
 ):
