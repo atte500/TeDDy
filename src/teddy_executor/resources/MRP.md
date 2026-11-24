@@ -113,7 +113,7 @@ Encapsulate code blocks using a fence of at least 4 tildes (~~~~) or 4 backticks
 
 The Message section provides Markdown content for user communication. Use Messages sparingly, reserved for workflow gates or decision-critical questions that cannot be resolved autonomously. Handoffs are user-mediated with clear mission instructions. Provide all reference files as root-relative paths and include them in the context flag. To start a new session with another agent, instruct the user to run:
 
-~~~~
+~~~~shell
 teddy start -a <agent_name> -m '<mission_instruction>' -c 'path/to/ref1.ext,path/to/ref2.ext'
 ~~~~
 
@@ -144,8 +144,12 @@ A validation failure occurs when an Execution Report returns "Validation Failed"
 
 ### Progress
 Goal: [The objective of the current task/session]
-Reference Files: [Root-relative paths to the key artifacts guiding this work]
 
+Reference Files:
+- `[Root-relative path 1]`
+- `[Root-relative path 2]`
+
+Workflow:
 - [✓ | ▶ |  ] [Phase 1]
 - [✓ | ▶ |  ] [Phase 2]
 - [✓ | ▶ |  ] [Phase 3]
@@ -268,8 +272,11 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
 
 ### Progress
 Goal: Lorem ipsum dolor sit amet.
-Reference Files: `docs/project/PROJECT.md`
 
+Reference Files:
+- `docs/project/PROJECT.md`
+
+Workflow:
 - [✓] Lorem
 - [▶] Ipsum
 - [ ] Dolor

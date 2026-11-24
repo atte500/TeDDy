@@ -20,7 +20,7 @@ Follow these phases and steps in order to systematically deliver verified progre
 **Goal:** Explore codebase reality and de-risk technical feasibility.
 
 1. **Context Exploration:**
-   Use `git grep`, file inspection, and targeted research across existing code, specs in `docs/project/specs/`, and existing milestones to map dependencies and blast radius.
+   Use `git grep`, file inspection, and targeted research across existing code, specs in `docs/project/specs/`, and existing milestones to map dependencies and blast radius. Identify every entry point, execution mode, and code path where the target behavior or the mechanism it replaces currently occurs, so the Roadmap item, Spec, or Ad-hoc Slice covers all of them or explicitly marks exclusions as out of scope.
 2. **Feasibility Check:**
    If system feasibility or external behavior is uncertain, create minimal probes in `spikes/` and run them to validate assumptions before specifying requirements.
 3. **Greenfield Baseline:**

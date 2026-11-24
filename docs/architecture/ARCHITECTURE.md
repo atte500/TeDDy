@@ -144,6 +144,7 @@ This section serves as the "System Law" (Poka-Yoke) for TeDDy. It defines the pr
 - **DI Testing:** All tests requiring DI MUST use the centralized `container` fixture. (Ensures isolation and correct patching.)
 - **DI Scopes:** Use `punq.Scope.transient` for services and adapters. (Prevents state leakage across CLI turns or tests.)
 - **Acceptance Testing:** Use `typer.testing.CliRunner` for in-process execution. (Ensures speed, reliability, and mock respect.)
+- **Terminal & Environmental Gates:** `typer.testing.CliRunner` captures stdout and stderr via non-TTY streams, so `isatty()` and `Console.is_terminal` default to `False` in acceptance tests. Any adapter or service gating behavior on terminal state or ambient environment MUST accept an explicit injected capability (such as `Console(force_terminal=...)` or `ISystemEnvironment`) at the composition root, and tests MUST exercise both terminal (`force_terminal=True` or a PTY) and non-terminal (`force_terminal=False`) branches rather than relying on `CliRunner` defaults. (Prevents TTY-gated branches from becoming unobservable in the test suite.)
 - **Type Enforcement:** Rely on static checking (Mypy) in CI's non-blocking quality job; do not enforce at runtime. (Balances safety with low overhead.)
 - **Structured Output:** Parse output into data structures before assertion. (Ensures resilience to minor formatting changes.)
 - **CLI I/O:** Use positional arguments for files; reserve `stdin` for prompts. (Prevents input stream conflicts.)
