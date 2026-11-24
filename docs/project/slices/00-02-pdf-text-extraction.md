@@ -1,5 +1,5 @@
 # Slice: PDF Text Extraction for Local and Remote Reads
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** Ad-hoc (00)
 - **Depends On:** None
 - **Specs:** None
@@ -71,7 +71,7 @@ Then the action result is unchanged from today's behaviour
 8. `[PRUNE]` `playwright` removed from `pyproject.toml` and `uv.lock`.
 
 ## Deliverables
-- [ ] **Env** - Remove `playwright` and add `pypdf` (current stable, bounded range) in `pyproject.toml`; regenerate `uv.lock`.
+- [x] **Env** - Remove `playwright` and add `pypdf` (current stable, bounded range) in `pyproject.toml`; regenerate `uv.lock`.
 - [ ] **Interface** - Add the `TeddyError` root, `PdfExtractionError`, the `IPdfExtractor` protocol, `read_file_bytes` on `IFileSystemManager`, and `pdf_extractor` on `ActionPorts`.
 - [ ] **Harness** - Add a deterministic PDF fixture builder under `tests/harness/setup/`, prove pypdf extracts its text, and register a fake `IPdfExtractor` the container fixture can inject.
 - [ ] **Wiring** - Route a local `.pdf` READ through the extractor in `ActionFactory` and assert the acceptance path returns text; non-PDF reads stay unchanged.
@@ -84,6 +84,7 @@ Then the action result is unchanged from today's behaviour
 - `web_scraper_adapter.py` already exceeds the 300-line gate; keep the PDF branch in a small private helper and record any further growth.
 - The cap is applied by the core helper with `read.max_lines` read from `IConfigService`, so the PDF path and the text path share one budget and one config key.
 - If the Harness probe shows pypdf cannot parse the builder's output, escalate to the Prototyper for a `spikes/pdf-extraction/` de-risk before continuing.
+- **Env (delivered):** `playwright` sat bare on line 21 of `pyproject.toml` and was imported nowhere; it was replaced in place by `pypdf>=7.1.1,<8` (PyPI stable 7.1.1, `requires_python >=3.10`, inside the project's `>=3.11,<3.15` floor), leaving the unsorted dependency list order untouched to keep the commit atomic. `uv lock` + `uv sync` removed `playwright 1.61.0`, `greenlet`, and `pyee`, and added `pypdf 7.1.1`; `git grep -i playwright` over `pyproject.toml` and `uv.lock` now returns nothing. Full suite green afterwards (2416 passed, 5 skipped), as expected since neither package is imported by production or test code yet.
 
 ## Verification
 1. **Local PDF:**
