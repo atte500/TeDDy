@@ -158,6 +158,7 @@ def test_session_payload_carries_session_resources_and_runtime_sections(
     assert result.exit_code == 0, result.stdout
     assert "## Session Resources" in result.stdout
     assert "## Runtime" in result.stdout
+    # The header pointer row names the section too, so anchor on the heading line.
     assert result.stdout.index("## Resource Contents") < result.stdout.index(
-        "## Runtime"
+        "\n## Runtime"
     )

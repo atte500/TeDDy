@@ -5,6 +5,13 @@ from teddy_executor.core.ports.inbound.get_context_use_case import IGetContextUs
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
 from teddy_executor.core.services.context_service import ContextService
+from tests.harness.setup.context_scenarios import (
+    MIXED_SCOPES,
+    OWN_HISTORY_REQUEST,
+    SESSION_DOCUMENT,
+    TURN_DOCUMENT,
+    context_scenario,
+)
 from tests.harness.setup.mocking import register_mock
 
 
@@ -74,10 +81,14 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     assert "## System Information" in result.header
     assert "- **CWD:** /test/dir" in result.header
     assert "- **OS:** test_os" in result.header
-    assert "- **Current Date:** 2026-03-26" in result.header
-    assert "- **Current Time:** 16:50:00" in result.header
+    assert "- **Runtime:**" in result.header
+    # Volatile values live in the trailing Runtime section, not the header.
+    assert "- **Current Date:** 2026-03-26" in result.content
+    assert "- **Current Time:** 16:50:00" in result.content
     # Default (no current_turn passed) should show "N/A"
-    assert "- **Current Turn:** N/A" in result.header
+    assert "- **Current Turn:** N/A" in result.content
+    # No session root is in scope, so no session-mode section renders.
+    assert "## Session Resources" not in result.content
 
     # Check the fenced porcelain git status section
     assert result.git_status == mock_git_status
@@ -606,9 +617,9 @@ def test_get_context_with_current_turn_parameter(
     mock_inspector,
 ):
     """
-    Scenario: Current Turn in System Information
-    Tests that passing current_turn to get_context() results in the header
-    containing the correct turn number.
+    Scenario: Current Turn in Runtime
+    Tests that passing current_turn to get_context() results in the trailing
+    Runtime section containing the correct turn number.
     """
     # Arrange
     mock_inspector.get_environment_info.return_value = {}
@@ -620,7 +631,7 @@ def test_get_context_with_current_turn_parameter(
     result = service.get_context(current_turn="01")
 
     # Assert
-    assert "- **Current Turn:** 01" in result.header
+    assert "- **Current Turn:** 01" in result.content
 
 
 def test_get_context_computes_content_tokens(
@@ -773,3 +784,133 @@ def test_get_context_renders_the_tree_limit_subtitle(
     subtitle_index = result.content.index(expected_subtitle)
     fence_index = result.content.index("```")
     assert heading_index < subtitle_index < fence_index, result.content
+
+
+def _render_session_payload(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+    scenario,
+) -> ProjectContext:
+    """Render one canonical scenario through the real ContextService."""
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_fs.read_files_in_vault.return_value = scenario.file_contents
+    mock_fs.resolve_paths_from_files.side_effect = lambda files: files
+    mock_fs.is_dir.return_value = False
+    return service.get_context(**scenario.get_context_kwargs())
+
+
+def test_session_payload_partitions_resources_history_and_turn_contents(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+):
+    """Session-scoped non-history files hoist; turn files stay in Resource Contents."""
+    result = _render_session_payload(
+        service, mock_fs, mock_tree_gen, mock_inspector, MIXED_SCOPES
+    )
+
+    content = result.content
+    assert content.index("## Session Resources") < content.index("## Session History")
+    assert content.index("## Session History") < content.index("## Resource Contents")
+
+    session_resources = content.split("## Session Resources")[1].split(
+        "## Session History"
+    )[0]
+    session_history = content.split("## Session History")[1].split(
+        "## Resource Contents"
+    )[0]
+    resource_contents = content.split("## Resource Contents")[1]
+
+    assert SESSION_DOCUMENT in session_resources
+    assert TURN_DOCUMENT not in session_resources
+    assert OWN_HISTORY_REQUEST not in session_resources
+
+    assert "### Initial Request" in session_history
+    assert SESSION_DOCUMENT not in session_history
+    assert TURN_DOCUMENT not in session_history
+
+    assert TURN_DOCUMENT in resource_contents
+    assert SESSION_DOCUMENT not in resource_contents
+    assert OWN_HISTORY_REQUEST not in resource_contents
+
+
+def test_a_path_listed_in_both_scopes_renders_only_under_session_resources(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+):
+    """Session-over-turn precedence keeps the payload from duplicating content."""
+    scenario = context_scenario(session=[SESSION_DOCUMENT], turn=[SESSION_DOCUMENT])
+
+    result = _render_session_payload(
+        service, mock_fs, mock_tree_gen, mock_inspector, scenario
+    )
+
+    content = result.content
+    assert "## Resource Contents" not in content
+    session_resources = content.split("## Session Resources")[1].split("## Runtime")[0]
+    assert session_resources.count(f"### [{SESSION_DOCUMENT}]") == 1
+
+
+@pytest.mark.parametrize(
+    "scenario",
+    [
+        context_scenario(session=[OWN_HISTORY_REQUEST]),
+        context_scenario(turn=[TURN_DOCUMENT]),
+    ],
+    ids=["session-context-only-history", "no-session-resources"],
+)
+def test_session_resources_section_is_omitted_when_nothing_qualifies(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+    scenario,
+):
+    """An empty Session Resources heading is indistinguishable from omission."""
+    result = _render_session_payload(
+        service, mock_fs, mock_tree_gen, mock_inspector, scenario
+    )
+
+    assert "## Session Resources" not in result.content
+    assert "## Runtime" in result.content
+
+
+def test_runtime_rows_render_under_the_final_runtime_section(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+):
+    """The three volatile rows close the payload; the header keeps a pointer."""
+    mock_inspector.get_environment_info.return_value = {
+        "current_date": "2026-03-26",
+        "current_time": "16:50:00",
+        "cwd": "/test/dir",
+        "os_name": "test_os",
+        "os_version": "1.0",
+        "shell": "/bin/zsh",
+    }
+    mock_inspector.get_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_fs.get_context_paths.return_value = []
+
+    result = service.get_context(current_turn="02")
+
+    assert "- **Current Date:** 2026-03-26" not in result.header
+    assert "- **Current Time:** 16:50:00" not in result.header
+    assert "- **Current Turn:** 02" not in result.header
+    assert "- **Runtime:**" in result.header
+
+    runtime_start = result.content.index("## Runtime")
+    assert runtime_start > result.content.index("## Project Structure")
+    runtime = result.content[runtime_start:]
+    assert "- **Current Date:** 2026-03-26" in runtime
+    assert "- **Current Time:** 16:50:00" in runtime
+    assert "- **Current Turn:** 02" in runtime

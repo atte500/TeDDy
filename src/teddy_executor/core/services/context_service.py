@@ -113,12 +113,17 @@ class ContextService(IGetContextUseCase):
         content = self._format_content(
             repo_tree, scoped_paths, file_contents, git_status, session_root
         )
+        # Runtime closes the document: both assembly paths join header + content,
+        # so only the tail of content lands at the payload's end.
+        content = f"{content}\n\n## Runtime\n" + "\n".join(
+            self._format_runtime_rows(system_info, current_turn)
+        )
         content_tokens = (
             self._count_text_tokens(content, model) if include_tokens else 0
         )
 
         return ProjectContext(
-            header=self._format_header(system_info, current_turn),
+            header=self._format_header(system_info),
             content=content,
             scoped_paths=scoped_paths,
             git_status=git_status,
@@ -386,19 +391,16 @@ class ContextService(IGetContextUseCase):
 
         return status_map
 
-    def _format_header(
-        self, system_info: Dict[str, str], current_turn: Optional[str] = None
-    ) -> str:
-        """Formats the header section of the context report."""
+    def _format_header(self, system_info: Dict[str, str]) -> str:
+        """Formats the byte-stable header, closing with a Runtime pointer row."""
         header_parts = [
             "# Project Context",
             "\n## System Information",
-            f"- **Current Date:** {system_info.get('current_date', 'N/A')}",
-            f"- **Current Time:** {system_info.get('current_time', 'N/A')}",
             f"- **CWD:** {system_info.get('cwd', 'N/A')}",
             f"- **OS:** {system_info.get('os_name', 'N/A')} {system_info.get('os_version', 'N/A')}".strip(),
             f"- **Shell:** {system_info.get('shell', 'N/A')}",
-            f"- **Current Turn:** {current_turn or 'N/A'}",
+            "- **Runtime:** Current Date, Current Time, and Current Turn appear "
+            "under the final `## Runtime` section.",
         ]
         return "\n".join(header_parts)
 
@@ -411,17 +413,9 @@ class ContextService(IGetContextUseCase):
         session_root: Optional[str] = None,
     ) -> str:
         """Formats the main content section of the context report."""
-        # Gather all unique paths
-        all_paths: List[str] = []
-        for paths in scoped_paths.values():
-            for p in paths:
-                if p not in all_paths:
-                    all_paths.append(p)
-
-        # Partition this session's own artifacts from ordinary resources. A path
-        # read from another session is a resource, not our own history.
-        session_paths = [p for p in all_paths if is_own_session_path(p, session_root)]
-        workspace_paths = [p for p in all_paths if p not in session_paths]
+        session_resources, session_paths, resource_paths = self._partition_paths(
+            scoped_paths, session_root
+        )
 
         git_status_body = (
             embed_in_fence(git_status, "")
@@ -435,27 +429,21 @@ class ContextService(IGetContextUseCase):
             self._format_tree_subtitle(),
             f"```\n{repo_tree}\n```",
         ]
-
-        # Format workspace files under ## Resource Contents
         content_parts.extend(
-            self._format_workspace_contents(workspace_paths, file_contents)
+            self._format_file_section(
+                "Resource Contents", resource_paths, file_contents
+            )
         )
 
-        # Prepend Session History section first (after header's System Information)
-        session_history_parts = self._format_session_history(
-            session_paths, file_contents, session_root
+        # The stable session parts sit directly behind the header, ahead of the
+        # per-turn sections, so the growing prefix stays byte-identical.
+        content_parts = (
+            self._format_file_section(
+                "Session Resources", session_resources, file_contents
+            )
+            + self._format_session_history(session_paths, file_contents, session_root)
+            + content_parts
         )
-        if session_history_parts:
-            content_parts = session_history_parts + content_parts
-
-        # Session-mode shape: Session Resources sit ahead of the history. The
-        # content partition lands in Core; this only proves the boundary.
-        if session_root:
-            content_parts = ["\n## Session Resources"] + content_parts
-
-        # Runtime closes the document so no volatile bytes precede the append
-        # point. Its rows move here in Core; the heading alone pins the shape.
-        content_parts.append("\n## Runtime")
 
         return "\n".join(content_parts)
 
@@ -467,17 +455,18 @@ class ContextService(IGetContextUseCase):
             "truncated directories show entry counts only.*"
         )
 
-    def _format_workspace_contents(
+    def _format_file_section(
         self,
-        workspace_paths: List[str],
+        heading: str,
+        paths: List[str],
         file_contents: Dict[str, Optional[str]],
     ) -> List[str]:
-        """Formats the workspace contents section."""
-        if not workspace_paths:
+        """Formats a resource-bearing section, or nothing when it has no paths."""
+        if not paths:
             return []
 
-        parts = ["\n## Resource Contents"]
-        for path in workspace_paths:
+        parts = [f"\n## {heading}"]
+        for path in paths:
             parts.append("\n---")
             if self._is_url(path):
                 parts.append(f"### [{path}]({path})")
@@ -490,6 +479,48 @@ class ContextService(IGetContextUseCase):
             else:
                 parts.append("```\n--- FILE NOT FOUND ---\n```")
         return parts
+
+    def _partition_paths(
+        self,
+        scoped_paths: Dict[str, List[str]],
+        session_root: Optional[str],
+    ) -> tuple[List[str], List[str], List[str]]:
+        """Split paths into session resources, own history, and turn resources.
+
+        A non-``Turn`` scope wins over ``Turn``, so a path listed in both renders
+        once. Own-session history never hoists into Session Resources because it
+        renders chronologically under Session History. Session Resources exist
+        only in session mode.
+        """
+        non_turn: List[str] = []
+        turn: List[str] = []
+        for scope, paths in scoped_paths.items():
+            target = turn if scope == "Turn" else non_turn
+            for path in paths:
+                if path not in non_turn and path not in turn:
+                    target.append(path)
+
+        owned = non_turn + turn
+        session_paths = [p for p in owned if is_own_session_path(p, session_root)]
+        session_resources = (
+            [p for p in non_turn if not is_own_session_path(p, session_root)]
+            if session_root
+            else []
+        )
+        resource_paths = [
+            p for p in owned if p not in session_paths and p not in session_resources
+        ]
+        return session_resources, session_paths, resource_paths
+
+    def _format_runtime_rows(
+        self, system_info: Dict[str, str], current_turn: Optional[str]
+    ) -> List[str]:
+        """The three per-turn key-value rows that always change."""
+        return [
+            f"- **Current Date:** {system_info.get('current_date', 'N/A')}",
+            f"- **Current Time:** {system_info.get('current_time', 'N/A')}",
+            f"- **Current Turn:** {current_turn or 'N/A'}",
+        ]
 
     CACHE_FILENAME = ".web_cache.json"
 
