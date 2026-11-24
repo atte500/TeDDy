@@ -440,7 +440,7 @@ def update(
         typer.echo("To apply prompt updates, run: teddy init prompts")
     elif experimental:
         typer.echo(f"A new experimental version {latest} is available.")
-        typer.echo("To upgrade, run: uv tool install teddy-cli --pre --force")
+        typer.echo("To upgrade, run: uv tool upgrade teddy-cli --prerelease allow")
         typer.echo("To apply prompt updates, run: teddy init prompts")
     else:
         typer.echo(f"A new version {latest} is available.")
