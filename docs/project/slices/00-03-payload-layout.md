@@ -1,5 +1,5 @@
 # Slice: Payload Layout for Prefix Caching
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** None (ad-hoc slice)
 - **Depends On:** None
 - **Specs:** [context-payload-format.md](/docs/project/specs/context-payload-format.md)
@@ -104,6 +104,7 @@ The hoist is deliberately restricted to session mode. Reusing the existing `scop
 - **Refactor (predicate):** `_partition_paths` evaluates `is_own_session_path` once per path into a lookup and derives the three lists from it, replacing the two per-path calls. Membership and order are unchanged: `session_paths` is the own-history subset of `owned`, so the Resource Contents exclusion collapses to the same predicate result.
 - **Refactor (scope):** only the `content` body order is single-sourced. The header (System Information plus the Runtime pointer row) and the `## Runtime` append stay in their own methods, because both assembly paths join `header + "\n" + content` and tests assert those fields separately; restructuring them would be a riskier, out-of-scope change.
 - **Refactor (component doc refresh):** `context_service.md`'s stale `own_session_history_only` invariant is replaced by `session_mode_partition`, and the page now records `session_resources_root_gated`, `runtime_closes_payload`, `content_section_order`, and the `PayloadSection` / `CONTENT_SECTION_ORDER` data contract, so it states the delivered shape rather than the pre-slice one.
+- **Verification (quality audit):** the production double audit found no skeleton response, placeholder, or shim left in the assembly path, and every private renderer plus the partition helper carries a definition and a live caller, so the Refactor left no dead predecessor behind. `PayloadSection` and `CONTENT_SECTION_ORDER` have no consumer outside `context_service.py`, and the five Core behavior cases read the shared `MIXED_SCOPES` bundle instead of re-authoring paths. All three `session_root` callers supply the session directory the partition gates on: `PlanningService` passes the turn directory's parent, the `context` CLI handler passes `detect_session_root()`, and the session orchestrator's fallback path passes the same `cache_dir` it hands the web-content cache. The suite stays green at 2429 passed and 5 skipped.
 
 ## Verification
 1. **Session payload shape:**
