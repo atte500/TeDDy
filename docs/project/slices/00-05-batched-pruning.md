@@ -1,5 +1,5 @@
 # Slice: Batched Retention Pruning
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** None (ad-hoc slice)
 - **Depends On:** None (independent of slice 00-03, but it protects whatever prefix 00-03 wins)
 - **Specs:** None
@@ -61,7 +61,7 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 
 ## Deliverables
 
-- [ ] **Interface** - Add `auto_pruning.retention_batch: 5` to the canonical configuration defaults with integer coercion and a `>= 1` floor.
+- [x] **Interface** - Add `auto_pruning.retention_batch: 5` to the canonical configuration defaults with integer coercion and a `>= 1` floor.
 - [ ] **Harness** - Add a pruning fixture that builds N `ContextItem`s with sequential turn ids, so batch boundaries are observable without a real session.
 - [ ] **Wiring** - Read the setting and thread it into `_apply_retention_limit` as `1`, leaving the suite's behaviour identical.
 - [ ] **Core** - Implement the batched window: prune only once the excess reaches the batch, then drop the whole batch in one step, clamping so at least `max_turns_retention` turns survive.
@@ -69,6 +69,9 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 
 ## Implementation Notes
 The setting is a cadence knob, not a retention length: `max_turns_retention` still defines how much history survives, and the batch only defines how often the excess is collected.
+
+### Interface
+`AutoPruningConfig.retention_batch` is a frozen-dataclass field defaulting to `5`. `_SCHEMA_FIELDS` declares `auto_pruning.retention_batch` as an `int` with an inclusive `minimum=1`, so a clean integer string coerces, `1` is accepted as the escape hatch, and `0` or a negative value raises `ConfigurationError` naming the key. `construct_app_config` already forwards group overrides generically, so no construction branch was needed.
 
 ## Verification
 1. **Batched cadence:**

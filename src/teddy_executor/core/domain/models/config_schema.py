@@ -78,6 +78,7 @@ class AutoPruningConfig:
     prune_validation_failures: bool = True
     preserve_message_turns: bool = True
     max_turns_retention: int = 10
+    retention_batch: int = 5
 
 
 @dataclass(frozen=True)
@@ -261,6 +262,13 @@ _SCHEMA_FIELDS: tuple[_FieldSpec, ...] = (
         "auto_pruning",
         "max_turns_retention",
         int,
+    ),
+    _FieldSpec(
+        "auto_pruning.retention_batch",
+        "auto_pruning",
+        "retention_batch",
+        int,
+        minimum=1,
     ),
     _FieldSpec("guardrails.enabled", "guardrails", "enabled", bool),
     _FieldSpec("guardrails.max_turns", "guardrails", "max_turns", int),

@@ -222,6 +222,42 @@ def test_non_string_update_source_raises_naming_the_key(value):
         construct_app_config({"update": {"index_url": value}})
 
 
+# --- Retention batch cadence ---
+
+
+def test_default_retention_batch_is_five():
+    """The shipped retention batch defaults to five turns."""
+    assert DEFAULT_APP_CONFIG.auto_pruning.retention_batch == 5
+
+
+def test_nested_retention_batch_overrides_the_default():
+    """A nested override replaces the retention batch."""
+    config = construct_app_config({"auto_pruning": {"retention_batch": 2}})
+
+    assert config.auto_pruning.retention_batch == 2
+
+
+def test_string_retention_batch_is_coerced():
+    """A clean integer string coerces to the declared int field."""
+    config = construct_app_config({"auto_pruning": {"retention_batch": "3"}})
+
+    assert config.auto_pruning.retention_batch == 3
+
+
+def test_single_retention_batch_is_accepted():
+    """A batch of one is the escape hatch that keeps the per-turn cadence."""
+    config = construct_app_config({"auto_pruning": {"retention_batch": 1}})
+
+    assert config.auto_pruning.retention_batch == 1
+
+
+@pytest.mark.parametrize("value", [0, -3])
+def test_non_positive_retention_batch_raises_naming_the_key(value):
+    """A batch below one is rejected, naming the key."""
+    with pytest.raises(ConfigurationError, match=r"auto_pruning\.retention_batch"):
+        construct_app_config({"auto_pruning": {"retention_batch": value}})
+
+
 # --- Documentation / schema drift closure ---
 
 _DOC_PATH = (
