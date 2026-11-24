@@ -27,6 +27,7 @@ class ActionFactory(IActionFactory):
         self._web_scraper = ports.web_scraper
         self._web_searcher = ports.web_searcher
         self._config_service = ports.config_service
+        self._pdf_extractor = ports.pdf_extractor
         self._standalone_actions: set[str] = set()
         self._action_map: Dict[str, Any] = {
             "execute": self._shell_executor,
@@ -68,6 +69,9 @@ class ActionFactory(IActionFactory):
 
             return WebReadAction(self._web_scraper)
 
+        if resource.lower().endswith(".pdf"):
+            return self._create_pdf_read_action()
+
         if safe_params.get("lines"):
             # Lines-aware read: use read_raw_file (bypass truncation) and extract range
             from teddy_executor.core.utils.string import extract_lines_range  # noqa: PLC0415
@@ -86,6 +90,22 @@ class ActionFactory(IActionFactory):
 
         # Fall through to the standard file system handler for local files
         return self._create_standard_action("read_file", params)
+
+    def _create_pdf_read_action(self) -> IAction:
+        """Builds a READ handler that extracts text from a local PDF payload."""
+        fs = self._file_system_manager
+        extractor = self._pdf_extractor
+        assert extractor is not None, (
+            "pdf_extractor port is required for a local PDF read"
+        )
+
+        class PdfReadAction:
+            def execute(self, **kwargs: Any) -> Any:
+                path = kwargs.get("path", kwargs.get("resource", ""))
+                data = fs.read_file_bytes(path=path)
+                return extractor.extract_text(data, source=path)
+
+        return PdfReadAction()
 
     def _get_action_wrapper(self, handler: Any, method_name: str) -> IAction:
         """Returns an IAction wrapper around an adapter method."""
