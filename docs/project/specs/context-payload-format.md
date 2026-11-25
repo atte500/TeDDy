@@ -194,11 +194,12 @@ The notices carry no explanation, so the section states both limits once in an i
 
 ### Resource Contents
 
-The full, verbatim content of every resource (file or URL) that is neither hoisted into `## Session Resources` nor part of `## Session History`.
+The content of every resource (file or URL) that is neither hoisted into `## Session Resources` nor part of `## Session History`. A text resource renders verbatim; a PDF resource renders as its extracted text layer.
 
 In session mode this is the turn-scoped working set: the files the current turn pulled in. A session-agnostic `teddy context` export has no session sections, so every resource renders here.
 
 -   **Format:** Each resource's content is preceded by a horizontal rule and a header line identifying it.
+-   **PDF Resources:** A local path ending in `.pdf`, matched case-insensitively with any query string or fragment ignored, is read as bytes and embedded as the text layer extracted through `IPdfExtractor`, capped by `read.max_lines`. A missing file renders the same `--- FILE NOT FOUND ---` marker as a text resource; an extraction failure fails the assembly with a `PdfExtractionError` naming the path.
 -   **Safety:** Resource contents are enclosed in dynamic code fences (e.g., ```` or ````) that are at least one backtick longer than any existing fence within the content to prevent formatting collisions.
 -   **Omission:** The section is omitted when no resource remains for it.
 -   **Example:**

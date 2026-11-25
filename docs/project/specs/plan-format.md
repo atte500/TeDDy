@@ -127,7 +127,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
 
 #### `READ`
 
--   **Purpose:** Reads a local file or remote URL to gather information.
+-   **Purpose:** Reads a local file or remote URL, including a PDF document, to gather information.
 -   **System Behavior:** A successful `READ` will cause the system to automatically add the target resource to the context for the *next* turn.
 -   **Format:**
     ````markdown
@@ -136,6 +136,7 @@ All actions are located under the `## Action Plan` heading. Each action is defin
     - **File Path:** [docs/ARCHITECTURE.md](/docs/ARCHITECTURE.md)
     - **Description:** Read the current architectural conventions.
     ````
+-   **PDF Sources:** A target ending in `.pdf`, matched case-insensitively with any query string or fragment ignored, returns the document's extracted text layer instead of its bytes, for a local path and a URL alike. A `lines` range does not apply: the full text is returned, capped by `read.max_lines`. A payload without the `%PDF` magic bytes, or one that is unparseable, encrypted, or text-less, fails with a `PdfExtractionError` naming the source.
 -   **Parsing Rules:**
   1.  Extract `Resource` or `File Path` and `Description`.
   2.  `Resource` supports both local paths (starting with `/`) and URLs (starting with `http`).

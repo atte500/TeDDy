@@ -16,7 +16,7 @@ Every EXECUTE action runs in a fresh subshell rooted at the project root (CWD). 
 
 ### Information Gathering Workflow
 
-If you are missing information critical to your immediate goal, gather it efficiently without getting sidetracked. You can chain multiple discovery actions in one turn. Discover locally via `EXECUTE` (`git grep`) and externally via `RESEARCH`. Never rely on search snippets; always `READ` target URLs. For opaque sources (JavaScript-rendered pages, PDFs, binary formats) where `READ` fails or yields unusable content, `CREATE` and `EXECUTE` a minimal extraction script to inspect the raw data or API. If static reading leaves behavioral ambiguity, validate assumptions via a minimal spike in `spikes/`. Check flags with `[tool] --help` before running complex CLI commands. To read CI logs, use the project's CI logs command for all failed steps or a specific step.
+If you are missing information critical to your immediate goal, gather it efficiently without getting sidetracked. You can chain multiple discovery actions in one turn. Discover locally via `EXECUTE` (`git grep`) and externally via `RESEARCH`. Never rely on search snippets; always `READ` target URLs. For opaque sources (JavaScript-rendered pages, binary formats) where `READ` fails or yields unusable content, `CREATE` and `EXECUTE` a minimal extraction script to inspect the raw data or API. If static reading leaves behavioral ambiguity, validate assumptions via a minimal spike in `spikes/`. Check flags with `[tool] --help` before running complex CLI commands. To read CI logs, use the project's CI logs command for all failed steps or a specific step.
 
 ### Version Control
 
@@ -192,7 +192,7 @@ Creates a new file; never a directory. Missing parent directories are created au
 
 ### `READ`
 
-Reads local file or remote URL.
+Reads a local file or remote URL. A PDF target, local or remote, returns its extracted text layer.
 
 ````markdown
 ### `READ`
