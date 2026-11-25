@@ -10,8 +10,9 @@ from teddy_executor.core.ports.outbound.time_service import ITimeService
 logger = logging.getLogger(__name__)
 
 _STREAM_REJECTION_MESSAGE = (
-    "'llm.stream' must not be enabled: streaming is unsupported because "
-    "plan generation reads one complete, non-streamed response."
+    "'llm.stream' (or the persona-level 'stream' key under 'agents') must not "
+    "be enabled: streaming is unsupported because plan generation reads one "
+    "complete, non-streamed response."
 )
 
 
