@@ -240,6 +240,30 @@ def test_fetch_system_prompt_assembles_agent_content_and_mrp(
     )
 
 
+def test_fetch_system_prompt_repersists_deleted_session_prompt(
+    mrp_prompt_manager, mock_fs
+):
+    """A deleted session-root composed prompt is recomposed AND re-saved.
+
+    Option A's invariant is that the session-root file IS the composed prompt.
+    A manual deletion must heal: the lazy-compose fallback writes the composed
+    value back under the same source basename so later turns read it verbatim.
+    """
+    turn_path = _arrange_teddy_prompt_resolution(
+        mock_fs,
+        agent_file="pathfinder.md",
+        content="<agent>AGENT_SPECIFIC</agent>",
+    )
+
+    result = mrp_prompt_manager.fetch_system_prompt("pathfinder", turn_path)
+
+    expected = "<agent>AGENT_SPECIFIC</agent>\n\n---\n\n<mrp>SHARED_PROTOCOL</mrp>"
+    assert result == expected
+    mock_fs.write_file.assert_called_once_with(
+        ".teddy/sessions/my-session/pathfinder.md", expected
+    )
+
+
 def test_fetch_system_prompt_skips_mrp_when_response_format_present(
     mrp_prompt_manager, mock_fs
 ):

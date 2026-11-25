@@ -1,0 +1,229 @@
+"""Sandbox replica of src/teddy_executor/core/services/prompt_manager.py.
+
+Frozen proof snapshot from the investigation: it carries the write-back that was
+validated here BEFORE production was touched, where the lazy-compose fallback
+re-persists the composed prompt at the session root so the Option A invariant
+heals after a manual deletion. The identical change now lives in
+``src/teddy_executor/core/services/prompt_manager.py``, which the MRE in this
+folder exercises directly. Kept as the record of the pre-fix proof.
+"""
+
+from importlib import resources
+import logging
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+import yaml
+
+from teddy_executor.core.domain.models.token_usage import TokenUsage
+from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
+from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
+from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
+from teddy_executor.core.utils.paths import prefer_markdown
+from teddy_executor.core.utils.serialization import scrub_dict_for_serialization
+
+_MRP_PACKAGE = "teddy_executor.resources"
+_MRP_FILENAME = "MRP.md"
+
+
+class PromptManager(IPromptManager):
+    """
+    Service for resolving agent configuration, system prompts, and user messages.
+    """
+
+    def __init__(
+        self,
+        file_system_manager: IFileSystemManager,
+        user_interactor: IUserInteractor = None,  # type: ignore
+        mrp_resource_root: Any = None,
+    ):
+        self._file_system_manager = file_system_manager
+        self._user_interactor = user_interactor
+        self._mrp_resource_root = mrp_resource_root
+
+    def get_prompt_content(self, agent_name: str) -> Optional[str]:
+        """Synchronously retrieves the raw content of an agent prompt."""
+        from teddy_executor.prompts import find_prompt_content
+
+        return find_prompt_content(agent_name)
+
+    def get_available_agents(self) -> list[str]:
+        """Returns the list of available agent names from .teddy/prompts/."""
+        prompts_dir = ".teddy/prompts/"
+        if not self._file_system_manager.path_exists(prompts_dir):
+            return []
+        files = self._file_system_manager.list_directory(prompts_dir)
+        return sorted((Path(f).stem for f in files), key=str.casefold)
+
+    def resolve_agent_metadata(
+        self, turn_path: Path
+    ) -> tuple[str, Dict[str, Any], str]:
+        meta_file_path = (turn_path / "meta.yaml").as_posix()
+        meta_content = ""
+        if self._file_system_manager.path_exists(meta_file_path):
+            meta_content = self._file_system_manager.read_file(meta_file_path)
+
+        meta = yaml.safe_load(str(meta_content))
+        if not isinstance(meta, dict):
+            meta = {}
+        return meta.get("agent_name", "pathfinder"), meta, meta_file_path
+
+    def resolve_message(
+        self, user_message: Optional[str], turn_path: Path
+    ) -> Optional[str]:
+        if user_message == "":
+            return ""
+
+        resolved = user_message
+        if resolved is None and turn_path.name == "01":
+            request_path = (turn_path.parent / "initial_request.md").as_posix()
+            if self._file_system_manager.path_exists(request_path):
+                resolved = self._file_system_manager.read_file(request_path)
+
+        if resolved is not None and not resolved.strip():
+            return None
+
+        return resolved
+
+    def _find_prompt_file(self, directory: str, agent_name: str) -> Optional[str]:
+        """Searches a directory for a file with the given agent name."""
+        if not self._file_system_manager.path_exists(directory):
+            return None
+        matches = [
+            f
+            for f in self._file_system_manager.list_directory(directory)
+            if Path(f).stem.casefold() == agent_name.casefold()
+        ]
+        preferred = prefer_markdown(matches)
+        if preferred is None:
+            return None
+        return f"{directory}/{preferred}"
+
+    def _resolve_agent_prompt_content(
+        self, agent_name: str, turn_path: Path
+    ) -> tuple[str, Optional[str]]:
+        """Resolves content AND basename from the canonical ``.teddy/prompts/``.
+
+        Returns a ``(content, filename)`` pair. ``content`` is empty (with a
+        warning) when no prompt file is found, preserving the graceful-
+        degradation contract. ``filename`` is the resolved source basename,
+        used to re-persist the composed prompt at the same session-root name
+        that ``SessionService`` writes at creation / agent switch.
+        """
+        teddy_prompt_dir = (
+            turn_path.parent.parent.parent.parent / ".teddy" / "prompts"
+        ).as_posix()
+        teddy_prompt_path = self._find_prompt_file(teddy_prompt_dir, agent_name)
+        if teddy_prompt_path:
+            return (
+                self._file_system_manager.read_file(teddy_prompt_path),
+                Path(teddy_prompt_path).name,
+            )
+
+        logging.getLogger(__name__).warning(
+            "PromptManager: Failed to resolve system prompt for agent '%s' (searched %s)",
+            agent_name,
+            teddy_prompt_path,
+        )
+        return "", None
+
+    def _load_mrp_base_prompt(self) -> str:
+        """Loads the bundled Markdown Response Protocol base prompt."""
+        root = self._mrp_resource_root
+        if root is None:
+            root = resources.files(_MRP_PACKAGE)
+        resource = root / _MRP_FILENAME
+        if not resource.is_file():
+            raise FileNotFoundError(
+                f"Bundled MRP base prompt not found at {resource}. "
+                f"The package resource '{_MRP_PACKAGE}/{_MRP_FILENAME}' is missing."
+            )
+        return resource.read_text(encoding="utf-8")
+
+    def fetch_system_prompt(self, agent_name: str, turn_path: Path) -> str:
+        # Option A: the session-root prompt file IS the composed system prompt
+        # (written by SessionService at session creation / agent switch). Return
+        # it verbatim -- never re-compose, to avoid a duplicate header and MRP.
+        session_root_prompt = self._find_prompt_file(
+            turn_path.parent.as_posix(), agent_name
+        )
+        if session_root_prompt:
+            return self._file_system_manager.read_file(session_root_prompt)
+
+        # Lazy-compose fallback (legacy session or manually deleted file):
+        # assemble from the canonical ``.teddy/prompts/`` source and re-persist
+        # the composed value at the session root, restoring the Option A
+        # invariant so later turns reuse the persisted prompt verbatim.
+        content, prompt_filename = self._resolve_agent_prompt_content(
+            agent_name, turn_path
+        )
+        if not content:
+            # No agent prompt resolved: preserve the historical empty-string
+            # contract (no header, no MRP) rather than fabricating a prompt.
+            return ""
+
+        composed = self._assemble_composed_prompt(content)
+        if prompt_filename:
+            self._file_system_manager.write_file(
+                f"{turn_path.parent.as_posix()}/{prompt_filename}", composed
+            )
+        return composed
+
+    def _assemble_composed_prompt(self, content: str) -> str:
+        """Assembles a composed system prompt from agent content."""
+        if "<response_format>" in content:
+            return content
+
+        return f"{content}\n\n---\n\n{self._load_mrp_base_prompt()}"
+
+    def compose_system_prompt(self, agent_name: str) -> Optional[str]:
+        """Composes the full system prompt for an agent WITHOUT a turn path."""
+        content = self.get_prompt_content(agent_name)
+        if not content:
+            return None
+        return self._assemble_composed_prompt(content)
+
+    def log_telemetry(self, token_count: Any, turn_cost: Any) -> float:
+        def safe_float(v: Any, default: float = 0.0) -> float:
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return default
+
+        return safe_float(turn_cost)
+
+    def update_meta(  # noqa: PLR0913
+        self,
+        meta: Dict[str, Any],
+        response: Any,
+        token_count: int,
+        turn_cost: float,
+        meta_file_path: str,
+        token_usage: Optional[TokenUsage] = None,
+    ) -> None:
+        usage = token_usage if token_usage is not None else TokenUsage()
+        try:
+            meta["turn_cost"] = float(turn_cost)
+            meta["token_count"] = int(token_count)
+            meta["prompt_tokens"] = int(usage.prompt_tokens)
+            meta["cached_tokens"] = int(usage.cached_tokens)
+        except (TypeError, ValueError):
+            meta["turn_cost"] = meta.get("turn_cost", 0.0)
+            meta["token_count"] = meta.get("token_count", 0)
+            meta["prompt_tokens"] = meta.get("prompt_tokens", 0)
+            meta["cached_tokens"] = meta.get("cached_tokens", 0)
+
+        actual_model = str(getattr(response, "model", "unknown"))
+        if "model" not in meta or meta.get("model") == actual_model:
+            meta["model"] = actual_model
+        meta["actual_model"] = actual_model
+
+        if hasattr(response, "choices") and len(response.choices) > 0:
+            meta["finish_reason"] = getattr(
+                response.choices[0], "finish_reason", "unknown"
+            )
+
+        serializable_meta = scrub_dict_for_serialization(meta)
+        self._file_system_manager.write_file(
+            meta_file_path, yaml.dump(serializable_meta)
+        )

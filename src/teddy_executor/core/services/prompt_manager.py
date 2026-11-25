@@ -106,28 +106,34 @@ class PromptManager(IPromptManager):
             return None
         return f"{directory}/{preferred}"
 
-    def _resolve_agent_prompt_content(self, agent_name: str, turn_path: Path) -> str:
-        """Resolves the agent-specific prompt content from the canonical
-        ``.teddy/prompts/`` directory (the user-editable source).
+    def _resolve_agent_prompt_content(
+        self, agent_name: str, turn_path: Path
+    ) -> tuple[str, Optional[str]]:
+        """Resolves content AND basename from the canonical ``.teddy/prompts/``.
 
-        Returns an empty string (with a warning) when no prompt file is found,
-        preserving the graceful-degradation contract. Session-root prompts are
-        resolved by the caller (``fetch_system_prompt``), which returns them
-        verbatim rather than re-composing them.
+        Returns a ``(content, filename)`` pair. ``content`` is empty (with a
+        warning) when no prompt file is found, preserving the graceful-
+        degradation contract. ``filename`` is the resolved source basename,
+        which the lazy-compose fallback reuses to re-persist the composed
+        prompt under the same session-root name that ``SessionService`` writes
+        at creation / agent switch.
         """
         teddy_prompt_dir = (
             turn_path.parent.parent.parent.parent / ".teddy" / "prompts"
         ).as_posix()
         teddy_prompt_path = self._find_prompt_file(teddy_prompt_dir, agent_name)
         if teddy_prompt_path:
-            return self._file_system_manager.read_file(teddy_prompt_path)
+            return (
+                self._file_system_manager.read_file(teddy_prompt_path),
+                Path(teddy_prompt_path).name,
+            )
 
         logging.getLogger(__name__).warning(
             "PromptManager: Failed to resolve system prompt for agent '%s' (searched %s)",
             agent_name,
             teddy_prompt_path,
         )
-        return ""
+        return "", None
 
     def _load_mrp_base_prompt(self) -> str:
         """Loads the bundled Markdown Response Protocol base prompt.
@@ -159,14 +165,23 @@ class PromptManager(IPromptManager):
             return self._file_system_manager.read_file(session_root_prompt)
 
         # Lazy-compose fallback (legacy session or manually deleted file):
-        # assemble from the canonical ``.teddy/prompts/`` source.
-        content = self._resolve_agent_prompt_content(agent_name, turn_path)
+        # assemble from the canonical ``.teddy/prompts/`` source and re-persist
+        # the composed value at the session root, restoring the Option A
+        # invariant so later turns reuse the persisted prompt verbatim.
+        content, prompt_filename = self._resolve_agent_prompt_content(
+            agent_name, turn_path
+        )
         if not content:
             # No agent prompt resolved: preserve the historical empty-string
             # contract (no header, no MRP) rather than fabricating a prompt.
             return ""
 
-        return self._assemble_composed_prompt(content)
+        composed = self._assemble_composed_prompt(content)
+        if prompt_filename:
+            self._file_system_manager.write_file(
+                f"{turn_path.parent.as_posix()}/{prompt_filename}", composed
+            )
+        return composed
 
     def _assemble_composed_prompt(self, content: str) -> str:
         """Assembles a composed system prompt from agent content.

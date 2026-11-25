@@ -14,13 +14,14 @@ Implements the `IPromptManager` outbound port. It resolves agent prompts, compos
 - [Composition Root](/src/teddy_executor/container.py): Registers `PromptManager` against `IPromptManager`.
 
 ## Dependencies
-- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Reads agent prompt files and persists `meta.yaml`.
+- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Reads agent prompt files, re-persists a deleted session-root prompt, and persists `meta.yaml`.
 - [`IUserInteractor`](../ports/outbound/user_interactor.md): Optional collaborator for prompting the user when instructions are missing.
 - `importlib.resources` (stdlib): Loads the bundled `MRP.md` base prompt through the `Traversable` contract.
 - `yaml` (external): Serializes the turn metadata dictionary.
 
 ## Class Invariants
 - `verbatim_session_prompt`: When a session-root prompt file exists, `fetch_system_prompt` returns it unchanged and never re-composes it.
+- `session_heal_on_fallback`: When the session-root prompt file is absent but the canonical `.teddy/prompts/` source resolves, `fetch_system_prompt` re-persists the composed value at the session root under the source basename, so the Option A invariant heals after a manual deletion.
 - `mrp_appended_once`: The MRP base prompt is appended only on the lazy-compose fallback path, after the agent content and separated by a `---` rule.
 - `legacy_short_circuit`: A resolved prompt that already carries `<response_format>` is returned unchanged, without the MRP block.
 - `single_sourced_assembly`: Both composition entry points delegate to `_assemble_composed_prompt`, so the composed prompt cannot drift.
@@ -42,7 +43,7 @@ None — this is a concrete implementation of an outbound port.
 
 ### `fetch_system_prompt(agent_name, turn_path) -> str`
 - **Preconditions:** `agent_name` is a non-empty string; `turn_path` is the current turn directory.
-- **Postconditions:** Returns the session-root prompt verbatim when it exists. Otherwise resolves the agent content from `.teddy/prompts/` and returns the assembled prompt. Returns an empty string when no agent prompt resolves.
+- **Postconditions:** Returns the session-root prompt verbatim when it exists. Otherwise resolves the agent content from `.teddy/prompts/`, re-persists the composed prompt at the session root under the source basename, and returns the assembled prompt. Returns an empty string when no agent prompt resolves.
 - **Exceptions:**
   - `FileNotFoundError`: Required `MRP.md` protocol prompt is missing when composition is required.
 
