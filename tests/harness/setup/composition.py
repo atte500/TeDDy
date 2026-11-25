@@ -26,6 +26,8 @@ sys.modules["litellm"] = mock_litellm
 from tests.harness.setup.mocks import (
     fake_pdf_extractor as fake_pdf_extractor,
     fake_llm_client as fake_llm_client,
+    fake_web_content_cache as fake_web_content_cache,
+    fake_web_scraper as fake_web_scraper,
     mock_action_dispatcher as mock_action_dispatcher,
     mock_action_factory as mock_action_factory,
     mock_config as mock_config,

@@ -16,6 +16,8 @@ import pytest
 from tests.harness.setup.composition import (
     container,
     fake_pdf_extractor,
+    fake_web_content_cache,
+    fake_web_scraper,
     mock_config,
     mock_user_interactor,
     mock_fs,
@@ -97,6 +99,8 @@ def pytest_configure(config):
 __all__ = [
     "container",
     "fake_pdf_extractor",
+    "fake_web_content_cache",
+    "fake_web_scraper",
     "mock_config",
     "mock_user_interactor",
     "mock_fs",

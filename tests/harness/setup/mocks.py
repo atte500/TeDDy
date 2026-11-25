@@ -75,6 +75,28 @@ def fake_pdf_extractor(container):
 
 
 @pytest.fixture
+def fake_web_content_cache(container):
+    from teddy_executor.core.ports.outbound import IWebContentCache
+    from tests.harness.setup.fake_web_content_cache import FakeWebContentCache
+
+    fake = FakeWebContentCache()
+    container.register(IWebContentCache, instance=fake)
+    return fake
+
+
+@pytest.fixture
+def fake_web_scraper(container):
+    # Registers the same IWebScraper port as `mock_scraper`, so a test must
+    # request one fixture or the other: the later registration wins.
+    from teddy_executor.core.ports.outbound import IWebScraper
+    from tests.harness.setup.fake_web_scraper import FakeWebScraper
+
+    fake = FakeWebScraper()
+    container.register(IWebScraper, instance=fake)
+    return fake
+
+
+@pytest.fixture
 def mock_searcher(container):
     from teddy_executor.core.ports.outbound import IWebSearcher
 
