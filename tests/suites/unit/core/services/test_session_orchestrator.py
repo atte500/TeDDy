@@ -16,7 +16,7 @@ from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
 from teddy_executor.core.ports.inbound.plan_validator import IPlanValidator
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
-from tests.harness.setup.mocking import register_mock
+from tests.harness.setup.mocking import register_mock, to_posix_path
 
 
 @pytest.fixture
@@ -199,7 +199,7 @@ def test_session_orchestrator_resolves_context_when_non_interactive(
     # Assert
     orchestrator._context_service.get_context.assert_called_once()
     gather_kwargs = orchestrator._context_service.get_context.call_args.kwargs
-    assert gather_kwargs["session_root"] == "path/to", (
+    assert to_posix_path(gather_kwargs["session_root"]) == "path/to", (
         "the session scope is the plan path's turn directory's parent"
     )
     orchestrator._pruning_service.prune.assert_called_once()
