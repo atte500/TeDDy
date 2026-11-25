@@ -14,6 +14,7 @@ pruning inert so only the retention window shapes each result.
 
 import logging
 from collections.abc import Mapping
+from dataclasses import replace
 from typing import Any
 from unittest.mock import create_autospec
 
@@ -171,3 +172,41 @@ def test_a_bad_batch_falls_back_to_one_with_a_warning(bad_batch, caplog):
         True,
     ]
     assert any("retention_batch" in message for message in caplog.messages)
+
+
+def test_retention_disabled_leaves_every_turn_selected():
+    """A ceiling of 0 disables retention, so a long history survives untouched."""
+    context = _prune(sequential_turn_context(12), limit=0)
+
+    assert all(item.selected for item in context.items)
+    assert all(item.auto_prune_reason is None for item in context.items)
+
+
+def test_pruning_twice_deselects_nothing_further():
+    """The second pass finds the history on the trough, so it changes nothing."""
+    first = _prune(sequential_turn_context(11), limit=10)
+
+    second = _prune(list(first.items), limit=10)
+
+    assert [(item.selected, item.auto_prune_reason) for item in second.items] == [
+        (item.selected, item.auto_prune_reason) for item in first.items
+    ]
+
+
+def test_a_turn_already_deselected_keeps_its_reason_and_the_newest_six():
+    """A turn dropped by another heuristic holds no context, so it neither
+    counts against the ceiling nor earns a retention reason."""
+    items = sequential_turn_context(12)
+    items[0] = replace(
+        items[0], selected=False, auto_prune_reason="Plan failed validation"
+    )
+
+    context = _prune(items, limit=10)
+
+    assert _selected_by_path(context) == {
+        turn_path(turn_id): turn_id >= 7 for turn_id in range(1, 13)
+    }
+    assert context.items[0].auto_prune_reason == "Plan failed validation"
+    assert {
+        item.auto_prune_reason for item in context.items[1:] if not item.selected
+    } == {"Turn exceeds retention limit of 10"}

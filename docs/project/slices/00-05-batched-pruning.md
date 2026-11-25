@@ -91,6 +91,9 @@ The acceptance tracer bullet `tests/suites/acceptance/test_session_pruning_reten
 ### Migration
 No existing retention test asserted a per-turn deletion under a live window, so this deliverable required no test edits. The audit enumerated every surface: `test_config_schema.py` pins the schema defaults, coercion, and the `>= 1` floor without running pruning; `test_session_pruning_service_refinement.py` sets `max_turns_retention: 25` against one-to-three-turn contexts, so the excess stays negative and the window returns untouched; `test_validation_failure_pruning_timing_integration.py`, `test_session_pruning_persistence.py`, and `test_session_pruning_windows.py` declare no retention limit, so `_apply_retention_limit` returns before computing a threshold and their failure-status and budget assertions are unaffected; the four remaining pruning modules carry no retention reference at all. The only live windows are the acceptance tracer bullet, which pins `retention_batch: 1`, and the new Core module, written against the batched semantics. The unfiltered suite stayed at 2562 passed / 5 skipped, unchanged from the Core commit, confirming the additive design held and no caller needed migration.
 
+> [!NOTE]
+> Superseded by [Retention Ceiling](00-55-retention-ceiling.md): `max_turns_retention` is now a hard ceiling rather than a floor, so the window arithmetic recorded above (retaining ten to fourteen turns at the shipped defaults) no longer holds. The batch cadence is unchanged; the retained depth is now `max_turns_retention - retention_batch + 1` turns.
+
 ## Verification
 1. **Batched cadence:**
    Set `auto_pruning.retention_batch: 5` in `.teddy/config.yaml`, run a session past the retention boundary, and inspect consecutive `input.md` payloads.

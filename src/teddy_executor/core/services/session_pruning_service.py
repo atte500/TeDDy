@@ -340,12 +340,14 @@ class SessionPruningService:
         return turns_to_prune
 
     def _read_retention_batch(self) -> int:
-        """Read the configured retention batch cadence.
+        """Read the retention batch, the drop size once the ceiling is exceeded.
 
-        A missing setting falls back to one, keeping the per-turn cadence that
-        predates batching. A non-positive or unparseable value also falls back
-        to one but logs a warning, because a bad setting must not silently
-        disable retention.
+        The batch counts how many of the oldest turns fall together; it never
+        sets the retained depth, which is ``max_turns_retention``. A missing
+        setting falls back to one, keeping the per-turn cadence that predates
+        batching. A non-positive or unparseable value also falls back to one but
+        logs a warning, because a bad setting must not silently disable
+        retention.
         """
         raw = self._config_service.get_setting("auto_pruning.retention_batch", 1)
         if raw is None:
