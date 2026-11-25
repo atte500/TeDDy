@@ -163,6 +163,7 @@ def _register_context_assembly_services(container: punq.Container) -> None:
         factory=lambda: WebContentService(
             web_scraper=container.resolve(IWebScraper),
             cache=container.resolve(IWebContentCache),
+            config_service=container.resolve(IConfigService),
         ),
         scope=punq.Scope.transient,
     )
