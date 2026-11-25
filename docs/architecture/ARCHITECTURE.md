@@ -134,6 +134,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **TestComposition (Fixtures)**   | A set of reusable pytest fixtures and globally mocked heavy dependencies (e.g., LiteLLM).                                                  | [TestComposition](./tests/setup/composition.md)        |
 | **EditScenarios** (Setup)        | A data-only module of canonical EDIT scenarios: composable builders and named content/FIND bundles shared by matcher and validator tests.  | [EditScenarios](./tests/setup/edit_scenarios.md)       |
 | **ContextScenarios** (Setup) | A data-only module of canonical context-payload scenarios: three paths driving the session-resources partition branches, a deterministic body per path, and a builder that always emits both session-mode scope keys. | [ContextScenarios](./tests/setup/context_scenarios.md) |
+| **PruningScenarios** (Setup) | A data-only module of canonical retention-boundary scenarios: zero-padded turn paths, explicit sparse-id contexts, and a sequential builder so batch boundaries are observable without a real session. | [PruningScenarios](./tests/setup/pruning_scenarios.md) |
 
 ---
 

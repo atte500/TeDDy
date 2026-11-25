@@ -40,7 +40,7 @@ None — the service is consumed directly by `SessionOrchestrator`.
 ### Heuristics
 - **Validation-failure pruning:** A validation-failed turn is pruned only when a later non-validation-failure report exists, either on disk or as the current status. Consecutive validation failures stay visible to preserve the audit trail.
 - **Recovery cleanup:** Non-green turns are pruned once the current status is green or the latest on-disk turn is green.
-- **Retention limit:** Turns older than `auto_pruning.max_turns_retention` are deselected.
+- **Retention limit:** Turns older than `auto_pruning.max_turns_retention` are deselected in batches of `auto_pruning.retention_batch`. Nothing is deselected while the excess stays below the batch; a filled batch is dropped in one pass, and the cut never passes the retention floor, so at least the newest `max_turns_retention` turns survive. A batch of `1` reproduces the per-turn cadence. A missing batch reads as `1`; a non-positive or unparseable value logs a warning and falls back to `1`.
 - **Global budget:** When the selected Turn-scope token total exceeds `auto_pruning.turn_context_threshold`, the largest Turn-scope files are deselected first.
 
 ### Sparing rules

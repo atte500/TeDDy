@@ -65,7 +65,7 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 - [x] **Harness** - Add a pruning fixture that builds N `ContextItem`s with sequential turn ids, so batch boundaries are observable without a real session.
 - [x] **Wiring** - Read the setting and thread it into `_apply_retention_limit` as `1`, leaving the suite's behaviour identical.
 - [x] **Core** - Implement the batched window: prune only once the excess reaches the batch, then drop the whole batch in one step, clamping so at least `max_turns_retention` turns survive.
-- [ ] **Migration** - Update existing retention tests that assert a one-turn deletion per boundary crossing.
+- [x] **Migration** - Update existing retention tests that assert a one-turn deletion per boundary crossing.
 
 ## Implementation Notes
 The setting is a cadence knob, not a retention length: `max_turns_retention` still defines how much history survives, and the batch only defines how often the excess is collected.
@@ -87,6 +87,9 @@ The acceptance tracer bullet `tests/suites/acceptance/test_session_pruning_reten
 `_read_retention_batch` keeps a missing setting silent (a default of one, so unit-test config doubles that omit the key stay on the old cadence) but logs a module-level warning for a non-positive (`< 1`) or unparseable value before falling back to one, so a bad setting cannot silently disable retention. The module gained a `logger` for that path.
 
 `tests/suites/unit/core/services/test_session_pruning_retention_window.py` drives the outermost `prune()` entry point over `InMemoryConfigService` (a dictionary-backed `IConfigService`) and a `create_autospec` filesystem double whose `path_exists` is always `False`, so failure-status pruning stays inert and only the retention window shapes each result. Sixteen cases cover the batched progression (five counts hold, the fifteenth drops ids 1–5), batch-of-one parity (three counts), both clamp sides (a batch beyond the excess reserves nothing; eight turns at a limit of three drop a batch of five and keep three), a history shorter than the limit, a sparse-id gap (three entries pruned, not eight), and the three bad-batch forms falling back to one with a warning. Red failed on the batching-specific and logged-fallback cases; Green passed all sixteen and the full suite at 2562 passed / 5 skipped.
+
+### Migration
+No existing retention test asserted a per-turn deletion under a live window, so this deliverable required no test edits. The audit enumerated every surface: `test_config_schema.py` pins the schema defaults, coercion, and the `>= 1` floor without running pruning; `test_session_pruning_service_refinement.py` sets `max_turns_retention: 25` against one-to-three-turn contexts, so the excess stays negative and the window returns untouched; `test_validation_failure_pruning_timing_integration.py`, `test_session_pruning_persistence.py`, and `test_session_pruning_windows.py` declare no retention limit, so `_apply_retention_limit` returns before computing a threshold and their failure-status and budget assertions are unaffected; the four remaining pruning modules carry no retention reference at all. The only live windows are the acceptance tracer bullet, which pins `retention_batch: 1`, and the new Core module, written against the batched semantics. The unfiltered suite stayed at 2562 passed / 5 skipped, unchanged from the Core commit, confirming the additive design held and no caller needed migration.
 
 ## Verification
 1. **Batched cadence:**

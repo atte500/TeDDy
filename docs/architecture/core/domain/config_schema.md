@@ -29,6 +29,7 @@ None — the module is pure and declares no injected dependencies.
 
 ## Data Contracts
 - **`AppConfig`** (frozen dataclass): The typed root, composed of the per-group config dataclasses (`ExecuteConfig`, `EditConfig`, `WorkspaceConfig`, `ReadConfig`, `PlanConfig`, `ContextConfig`, `ResearchConfig`, `ChecksConfig`, `AutoPruningConfig`, `GuardrailsConfig`) plus the top-level `editor` and `yolo_default` scalars.
+- **`AutoPruningConfig`**: Includes the retention cadence `retention_batch` (int, default `5`, inclusive minimum `1`) alongside the existing auto-pruning flags and limits.
 - **`ConfigurationError`**: Raised for a bad declared value or a malformed `agents` block.
 
 ## Operations
