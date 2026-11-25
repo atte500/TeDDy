@@ -12,6 +12,7 @@ from .shell_executor import IShellExecutor
 from .system_environment import ISystemEnvironment
 from .time_service import ITimeService
 from .user_interactor import IUserInteractor
+from .web_content_cache import IWebContentCache
 from .web_scraper import WebScraper as IWebScraper
 from .web_searcher import IWebSearcher
 
@@ -30,6 +31,7 @@ __all__ = [
     "ISystemEnvironment",
     "ITimeService",
     "IUserInteractor",
+    "IWebContentCache",
     "IWebScraper",
     "IWebSearcher",
     "LlmApiError",

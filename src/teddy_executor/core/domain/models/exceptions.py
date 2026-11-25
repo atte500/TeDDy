@@ -50,3 +50,11 @@ class ConfigurationError(Exception):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+class WebContentCacheError(TeddyError):
+    """Raised when a fetched body cannot be persisted to the session cache."""
+
+    def __init__(self, message: str, session_root: str):
+        super().__init__(message)
+        self.session_root = session_root

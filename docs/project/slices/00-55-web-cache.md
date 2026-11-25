@@ -92,7 +92,7 @@ None remaining. All four unknowns were resolved during discovery and are recorde
 ## Deliverables
 
 - [x] **Env** - Extend `.githooks/check_architecture_boundaries.py` so the `.web_cache.json` literal is owned by the adapter alone, failing the check when it appears outside the cache adapter module and `tests/`.
-- [ ] **Interface** - Define `IWebContentCache` with `load_entries` / `merge_entries` keyed by an optional `session_root`, and add `WebContentCacheError` under `TeddyError`, with no caller changed yet.
+- [x] **Interface** - Define `IWebContentCache` with `load_entries` / `merge_entries` keyed by an optional `session_root`, and add `WebContentCacheError` under `TeddyError`, with no caller changed yet.
 - [ ] **Harness** - Add `FakeWebContentCache` and `FakeWebScraper` under `tests/harness/setup/` plus the fixture wiring that drives all three surfaces without network or disk.
 - [ ] **Wiring** - Register the adapter and `WebContentService` at the composition root and route context assembly through the coordinator with the previous behavior intact apart from this slice's stated changes.
 - [ ] **Core** - Implement `WebContentService`: one map load per batch, parallel misses, verbatim store, announced cap for a capped read, successes-only persistence, and a tolerated cache-write failure.
@@ -111,6 +111,16 @@ None remaining. All four unknowns were resolved during discovery and are recorde
 - Unrelated pre-existing findings surfaced by the repository-wide run: six `_FORBIDDEN_CORE_ADAPTER_LIBS` violations (`yaml` in `init_service`, `prompt_manager`, `session_lifecycle_manager`, `session_repository`; `typer` in `session_orchestrator` and `core/utils/terminal.py`). Not introduced by this slice, the hook stays non-blocking, and Milestone 05 already owns the reconciliation.
 - Full suite green with the hook edit in place: 2584 passed, 5 skipped.
 - No design-doc change was required: the cache adapter's design already states that the filename literal lives in that module and in its tests alone, which is now enforced rather than merely documented.
+
+### Interface — Cache port and error
+- `IWebContentCache` lives in `core/ports/outbound/web_content_cache.py` as a `@runtime_checkable` `typing.Protocol`, matching the nearest precedent `IPdfExtractor` and the Protocol majority among outbound ports. It declares `load_entries(session_root) -> dict[str, str]` and `merge_entries(session_root, entries) -> None`, both taking the session root explicitly: the port answers "which session", the adapter alone answers "where on disk".
+- The `ABC` idiom was deliberately not used, even though `test_llm_client_contract.py` relies on `Abstract-Class TypeError` for `ILlmClient`. `ILlmClient` predates the Protocol convention; every port added beside it is a `runtime_checkable` Protocol, and the design doc specifies that shape. The contract test therefore asserts structural conformance rather than instantiation failure, and records that choice here rather than leaving it implicit.
+- `WebContentCacheError(message, session_root)` sits in `core/domain/models/exceptions.py`, inheriting `TeddyError` and carrying the failing root as a constructor-followed attribute — the exact shape of `PdfExtractionError(message, source)`. It is not re-exported from the ports package, matching `PdfExtractionError`, which is imported from its domain module everywhere.
+- The port is re-exported through `core/ports/outbound/__init__.py` and registered in `__all__`, so callers import it like every sibling port. This mattered for the Red step: without the re-export the module would exist but the package import would still fail.
+- Red evidence: `ImportError: cannot import name 'IWebContentCache' from 'teddy_executor.core.ports.outbound'` and `ImportError: cannot import name 'WebContentCacheError' from 'teddy_executor.core.domain.models.exceptions'`, both collection errors, so neither test passed vacuously.
+- Green evidence: 6 tests pass across `tests/suites/unit/core/ports/outbound/test_web_content_cache_contract.py` (conforming fake matches, merge-less partial does not, both members declared) and `tests/suites/unit/core/domain/models/test_web_content_cache_error.py` (inherits `TeddyError`, carries the session root). Full suite green at 2590 passed, 5 skipped.
+- Additive constraint honored: no container registration, no `ActionPorts` field change, and no context-assembly routing was touched. The port has no production caller yet, which is exactly what the Interface deliverable requires.
+- Pre-existing finding while reading `exceptions.py`: five siblings still inherit bare built-ins — `SearchTextNotFoundError(ValueError)`, `FileAlreadyExistsError(FileExistsError)`, `MultipleMatchesFoundError(Exception)`, `WebSearchError(Exception)`, `ConfigurationError(Exception)` — contrary to the `TeddyError` root rule. Not introduced here; Milestone 06 already owns "unify custom exceptions". `WebContentCacheError` follows the mandated root, so the new artifact does not add to that debt.
 
 ## Verification
 1. **Cache written at READ time:**
