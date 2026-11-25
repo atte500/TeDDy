@@ -64,7 +64,7 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 - [x] **Interface** - Add `auto_pruning.retention_batch: 5` to the canonical configuration defaults with integer coercion and a `>= 1` floor.
 - [x] **Harness** - Add a pruning fixture that builds N `ContextItem`s with sequential turn ids, so batch boundaries are observable without a real session.
 - [x] **Wiring** - Read the setting and thread it into `_apply_retention_limit` as `1`, leaving the suite's behaviour identical.
-- [ ] **Core** - Implement the batched window: prune only once the excess reaches the batch, then drop the whole batch in one step, clamping so at least `max_turns_retention` turns survive.
+- [x] **Core** - Implement the batched window: prune only once the excess reaches the batch, then drop the whole batch in one step, clamping so at least `max_turns_retention` turns survive.
 - [ ] **Migration** - Update existing retention tests that assert a one-turn deletion per boundary crossing.
 
 ## Implementation Notes
@@ -80,6 +80,13 @@ The setting is a cadence knob, not a retention length: `max_turns_retention` sti
 `prune()` now calls `_apply_retention_limit(items, self._read_retention_batch())`. `_read_retention_batch()` reads `auto_pruning.retention_batch` through `IConfigService`, parses it to an int, and clamps to at least `1`; a missing or unparseable value falls back to `1` so the unit-test config doubles that do not declare the key keep today's cadence. `_apply_retention_limit` consumes the value through an inclusive `retention_batch >= 1` contract assertion, but the window still drops every turn past `max_turns_retention` on each pass, so behaviour is identical to the pre-change cadence. The batched window and the docstring updates that describe it land in the Core deliverable.
 
 The acceptance tracer bullet `tests/suites/acceptance/test_session_pruning_retention_wiring.py` composes a real `YamlConfigAdapter` over a temporary `.teddy/config.yaml` — subclassed only to record every `get_setting` key, so the read stays observable while the real schema path stays intact — plus a real `LocalFileSystemAdapter` (with an `EditSimulator`) rooted in the same temp directory, so the turn files genuinely do not exist and retention runs isolated from failure-status pruning. It drives `SessionPruningService.prune()` and pins both the configuration read and the batch-of-one escape hatch, which stays valid once Core batches the window.
+
+### Core
+`_apply_retention_limit` now collects the excess in whole batches. With `excess = max_id - max_turns_retention`, nothing is pruned while `excess < retention_batch`; once the excess reaches the batch, the cut is `threshold = (excess // retention_batch) * retention_batch` and every turn id at or below it is dropped in one pass. Because the cut never passes `excess`, the newest `max_turns_retention` turn positions always survive — the clamp the slice demands — and a batch of one collapses to `threshold = excess`, reproducing the per-turn cadence that predates batching. `max_turns_retention: 10` with `retention_batch: 5` therefore keeps ten through fourteen turns intact and prunes ids 1–5 on the fifteenth, matching the Gherkin primary scenario.
+
+`_read_retention_batch` keeps a missing setting silent (a default of one, so unit-test config doubles that omit the key stay on the old cadence) but logs a module-level warning for a non-positive (`< 1`) or unparseable value before falling back to one, so a bad setting cannot silently disable retention. The module gained a `logger` for that path.
+
+`tests/suites/unit/core/services/test_session_pruning_retention_window.py` drives the outermost `prune()` entry point over `InMemoryConfigService` (a dictionary-backed `IConfigService`) and a `create_autospec` filesystem double whose `path_exists` is always `False`, so failure-status pruning stays inert and only the retention window shapes each result. Sixteen cases cover the batched progression (five counts hold, the fifteenth drops ids 1–5), batch-of-one parity (three counts), both clamp sides (a batch beyond the excess reserves nothing; eight turns at a limit of three drop a batch of five and keep three), a history shorter than the limit, a sparse-id gap (three entries pruned, not eight), and the three bad-batch forms falling back to one with a warning. Red failed on the batching-specific and logged-fallback cases; Green passed all sixteen and the full suite at 2562 passed / 5 skipped.
 
 ## Verification
 1. **Batched cadence:**

@@ -1,3 +1,4 @@
+import logging
 import re
 from dataclasses import is_dataclass, replace
 from typing import Any, Dict, Optional
@@ -6,6 +7,8 @@ from teddy_executor.core.domain.models import ProjectContext
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.utils.paths import normalize_resource_path
+
+logger = logging.getLogger(__name__)
 
 
 class SessionPruningService:
@@ -339,25 +342,41 @@ class SessionPruningService:
     def _read_retention_batch(self) -> int:
         """Read the configured retention batch cadence.
 
-        The value is threaded into the retention window so the Core deliverable
-        can batch collections. Until then the window prunes per turn regardless.
-        A missing or unparseable value falls back to one, because a bad setting
-        must not silently disable retention.
+        A missing setting falls back to one, keeping the per-turn cadence that
+        predates batching. A non-positive or unparseable value also falls back
+        to one but logs a warning, because a bad setting must not silently
+        disable retention.
         """
-        setting = self._config_service.get_setting("auto_pruning.retention_batch", 1)
+        raw = self._config_service.get_setting("auto_pruning.retention_batch", 1)
+        if raw is None:
+            return 1
         try:
-            batch = int(setting) if setting is not None else 1
+            batch = int(raw)
         except (TypeError, ValueError):
-            batch = 1
-        return max(batch, 1)
+            logger.warning(
+                "Unparseable auto_pruning.retention_batch %r; falling back to 1.",
+                raw,
+            )
+            return 1
+        if batch < 1:
+            logger.warning(
+                "auto_pruning.retention_batch must be at least 1, got %r; "
+                "falling back to 1.",
+                raw,
+            )
+            return 1
+        return batch
 
     def _apply_retention_limit(self, items, retention_batch: int = 1):
-        """Prunes turn context items that exceed the turn retention limit.
+        """Prunes turn context items once the collected excess fills a batch.
 
-        ``retention_batch`` is the configured collection cadence. It is threaded
-        in here but does not yet reshape the window: this method still drops
-        every turn past the limit on each pass, which is exactly the batch-of-one
-        cadence. The batched window lands in the Core deliverable.
+        ``max_turns_retention`` still defines how much history survives; the
+        batch only defines how often the excess is collected. Nothing is pruned
+        until ``max_id - limit`` reaches the batch, and then the collected batch
+        is dropped in one step, so the retained prefix stays stable between
+        collections. The cut never passes ``max_id - limit``, which keeps the
+        newest ``max_turns_retention`` turn positions alive, and a batch of one
+        reproduces the per-turn cadence that predates batching.
         """
         assert retention_batch >= 1, (
             "retention_batch must be at least 1 to keep retention enabled"
@@ -377,8 +396,11 @@ class SessionPruningService:
         if max_id == -1:
             return items
 
-        # Calculate threshold and prune
-        threshold = max_id - limit
+        excess = max_id - limit
+        if excess < retention_batch:
+            return items
+
+        threshold = (excess // retention_batch) * retention_batch
         reason = f"Turn exceeds retention limit of {limit}"
 
         for idx, tid in turn_id_map.items():
