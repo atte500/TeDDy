@@ -369,7 +369,7 @@ class SessionPruningService:
             return 1
         return batch
 
-    def _apply_retention_limit(self, items, retention_batch: int = 1):
+    def _apply_retention_limit(self, items, retention_batch: int):
         """Keeps the turn-scoped history inside ``max_turns_retention`` turns.
 
         ``max_turns_retention`` is a ceiling on how many distinct turns the

@@ -86,9 +86,9 @@ def _selected_by_path(context: ProjectContext) -> dict[str, bool]:
     return {item.path: item.selected for item in context.items}
 
 
-@pytest.mark.parametrize("turn_count", [8, 9, 10])
+@pytest.mark.parametrize("turn_count", [3, 8, 9, 10])
 def test_history_at_or_under_the_ceiling_is_untouched(turn_count):
-    """A ceiling of 10 holds a history that never exceeds ten turns."""
+    """A short history and one that never exceeds ten turns are both untouched."""
     context = _prune(sequential_turn_context(turn_count), limit=10)
 
     assert [item.selected for item in context.items] == [True] * turn_count
@@ -137,12 +137,6 @@ def test_an_overage_larger_than_the_batch_lands_on_the_trough():
     assert [selected[turn_path(turn_id)] for turn_id in range(1, 9)] == (
         [False] * 6 + [True] * 2
     )
-
-
-def test_history_shorter_than_the_retention_limit_is_untouched():
-    context = _prune(sequential_turn_context(3), limit=10)
-
-    assert all(item.selected for item in context.items)
 
 
 def test_a_gap_in_turn_ids_does_not_inflate_the_ceiling():
