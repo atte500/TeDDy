@@ -81,7 +81,11 @@ def test_get_context_orchestrates_and_returns_correct_dto(
     assert "## System Information" in result.header
     assert "- **CWD:** /test/dir" in result.header
     assert "- **OS:** test_os" in result.header
-    assert "- **Runtime:**" in result.header
+    # The header states environment facts only: no row restates the Runtime
+    # section, so a search for that heading reaches the real tail section.
+    assert "Runtime" not in result.header
+    # No empty row or dangling separator survives the removal.
+    assert result.header.splitlines()[-1] == "- **Shell:** /bin/test"
     # Volatile values live in the trailing Runtime section, not the header.
     assert "- **Current Date:** 2026-03-26" in result.content
     assert "- **Current Time:** 16:50:00" in result.content
@@ -888,7 +892,7 @@ def test_runtime_rows_render_under_the_final_runtime_section(
     mock_tree_gen,
     mock_inspector,
 ):
-    """The three volatile rows close the payload; the header keeps a pointer."""
+    """The three volatile rows close the payload; the header states no pointer."""
     mock_inspector.get_environment_info.return_value = {
         "current_date": "2026-03-26",
         "current_time": "16:50:00",
@@ -906,7 +910,7 @@ def test_runtime_rows_render_under_the_final_runtime_section(
     assert "- **Current Date:** 2026-03-26" not in result.header
     assert "- **Current Time:** 16:50:00" not in result.header
     assert "- **Current Turn:** 02" not in result.header
-    assert "- **Runtime:**" in result.header
+    assert "Runtime" not in result.header
 
     runtime_start = result.content.index("## Runtime")
     assert runtime_start > result.content.index("## Project Structure")

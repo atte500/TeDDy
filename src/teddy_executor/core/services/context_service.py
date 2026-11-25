@@ -467,8 +467,6 @@ class ContextService(IGetContextUseCase):
             f"- **CWD:** {system_info.get('cwd', 'N/A')}",
             f"- **OS:** {system_info.get('os_name', 'N/A')} {system_info.get('os_version', 'N/A')}".strip(),
             f"- **Shell:** {system_info.get('shell', 'N/A')}",
-            "- **Runtime:** Current Date, Current Time, and Current Turn appear "
-            "under the final `## Runtime` section.",
         ]
         return "\n".join(header_parts)
 
