@@ -1,5 +1,5 @@
 # Slice: Session-Scoped Content Cache for Every Remote Fetch
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** Ad-hoc (00)
 - **Depends On:** None
 - **Specs:** None
@@ -91,7 +91,7 @@ None remaining. All four unknowns were resolved during discovery and are recorde
 
 ## Deliverables
 
-- [ ] **Env** - Extend `.githooks/check_architecture_boundaries.py` so the `.web_cache.json` literal is owned by the adapter alone, failing the check when it appears outside the cache adapter module and `tests/`.
+- [x] **Env** - Extend `.githooks/check_architecture_boundaries.py` so the `.web_cache.json` literal is owned by the adapter alone, failing the check when it appears outside the cache adapter module and `tests/`.
 - [ ] **Interface** - Define `IWebContentCache` with `load_entries` / `merge_entries` keyed by an optional `session_root`, and add `WebContentCacheError` under `TeddyError`, with no caller changed yet.
 - [ ] **Harness** - Add `FakeWebContentCache` and `FakeWebScraper` under `tests/harness/setup/` plus the fixture wiring that drives all three surfaces without network or disk.
 - [ ] **Wiring** - Register the adapter and `WebContentService` at the composition root and route context assembly through the coordinator with the previous behavior intact apart from this slice's stated changes.
@@ -101,7 +101,16 @@ None remaining. All four unknowns were resolved during discovery and are recorde
 - [ ] **Cleanup** - Remove the private cache helpers, the fetch pool, the sentinel normalization, the `truncate` flag with `_truncate_content`, and the superseded cache-failure and adapter truncation tests once no caller remains, recording the Bug 39 reversal in its case file.
 
 ## Implementation Notes
-Not started.
+
+### Env — Cache filename ownership ratchet
+- `check_architecture_boundaries.py` now names `src/teddy_executor/adapters/outbound/web_content_cache_adapter.py` as the single owner of the `.web_cache.json` literal and reports a violation for any other `src/`, `scripts/`, or `tests/` Python file that holds it. `tests/` is exempt by design, because the adapter's own suite has to assert on the filename it writes.
+- The rule ships with one sanctioned legacy holder, `src/teddy_executor/core/services/context_service.py`, since the adapter does not exist yet. The Cleanup deliverable prunes `_WEB_CACHE_FILENAME_LEGACY_OWNERS` together with the private cache helpers, and ownership becomes absolute at that commit.
+- Enforcement path is unchanged: the existing `check-architecture-boundaries` entry already runs this script over `^(src|scripts|tests)/` for `types: [python]` at the `manual` stage, so the quality job picks the rule up without new wiring.
+- The checker is string-based rather than AST-based on purpose: it guards a filename literal, which may appear in code, in a docstring, or in a path fragment, and any of those occurrences is a second owner.
+- Verified with three probes: a module outside the adapter exits 1 with a violation naming the adapter, the adapter path exits 0, and the tracked tree reports zero cache-literal violations.
+- Unrelated pre-existing findings surfaced by the repository-wide run: six `_FORBIDDEN_CORE_ADAPTER_LIBS` violations (`yaml` in `init_service`, `prompt_manager`, `session_lifecycle_manager`, `session_repository`; `typer` in `session_orchestrator` and `core/utils/terminal.py`). Not introduced by this slice, the hook stays non-blocking, and Milestone 05 already owns the reconciliation.
+- Full suite green with the hook edit in place: 2584 passed, 5 skipped.
+- No design-doc change was required: the cache adapter's design already states that the filename literal lives in that module and in its tests alone, which is now enforced rather than merely documented.
 
 ## Verification
 1. **Cache written at READ time:**

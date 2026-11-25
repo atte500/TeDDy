@@ -26,6 +26,33 @@ _FORBIDDEN_CORE_ADAPTER_LIBS = frozenset(
     }
 )
 
+_WEB_CACHE_FILENAME = ".web_cache.json"
+_WEB_CACHE_FILENAME_OWNER = (
+    "src/teddy_executor/adapters/outbound/web_content_cache_adapter.py"
+)
+# The cache adapter alone owns the filename literal. ContextService still holds
+# it until slice 00-55-web-cache's Cleanup deliverable prunes the private cache
+# helpers, so this allowance is temporary and must be deleted with them.
+_WEB_CACHE_FILENAME_LEGACY_OWNERS = frozenset(
+    {"src/teddy_executor/core/services/context_service.py"}
+)
+
+
+def _check_cache_filename_ownership(filepath: str, source: str) -> list[str]:
+    normalized = filepath.replace("\\", "/")
+    if normalized.startswith("tests/"):
+        return []
+    if normalized == _WEB_CACHE_FILENAME_OWNER:
+        return []
+    if normalized in _WEB_CACHE_FILENAME_LEGACY_OWNERS:
+        return []
+    if _WEB_CACHE_FILENAME not in source:
+        return []
+    return [
+        f"{filepath}: the {_WEB_CACHE_FILENAME} literal belongs to "
+        f"{_WEB_CACHE_FILENAME_OWNER} alone."
+    ]
+
 
 def _iter_imported_modules(tree: ast.AST) -> list[str]:
     modules: list[str] = []
@@ -48,6 +75,9 @@ def _check_file(filepath: str) -> list[str]:
         source = f.read()
     tree = ast.parse(source, filename=filepath)
     violations: list[str] = []
+
+    if is_production_or_test:
+        violations.extend(_check_cache_filename_ownership(filepath, source))
 
     for mod in _iter_imported_modules(tree):
         root = mod.split(".")[0]
