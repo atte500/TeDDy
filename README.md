@@ -165,7 +165,7 @@ uv tool upgrade teddy-cli --prerelease allow
 `uv tool upgrade` re-resolves the requirement recorded in the tool receipt, so an install from a fork or a private index keeps its source, whereas a forced reinstall resets it to the default index. When the upgrade applies a new version, uv records `prerelease = "allow"` in the receipt, so later bare `uv tool upgrade teddy-cli` runs keep following pre-releases.
 
 > [!WARNING]
-> Experimental versions are published as PEP 440 dev pre-releases on PyPI and may include breaking changes or unstable features.
+> Experimental versions are published as PEP 440 dev pre-releases on PyPI and may include breaking changes or unstable features. To move back to the stable channel, run `uv tool upgrade teddy-cli --prerelease disallow`.
 
 ### Installing From a Fork or Private Index
 
