@@ -50,7 +50,11 @@ def register_infrastructure(container: punq.Container) -> None:
     )
     from teddy_executor.adapters.outbound.system_time_adapter import SystemTimeAdapter
     from teddy_executor.adapters.outbound.pypdf_extractor import PypdfExtractor
+    from teddy_executor.adapters.outbound.web_content_cache_adapter import (
+        WebContentCacheAdapter,
+    )
     from teddy_executor.adapters.outbound.web_scraper_adapter import WebScraperAdapter
+    from teddy_executor.core.ports.outbound import IWebContentCache
     from teddy_executor.adapters.outbound.web_searcher_adapter import WebSearcherAdapter
     from teddy_executor.adapters.outbound.yaml_config_adapter import YamlConfigAdapter
 
@@ -105,6 +109,11 @@ def register_infrastructure(container: punq.Container) -> None:
 
     container.register(IPdfExtractor, PypdfExtractor, scope=punq.Scope.transient)
 
+    container.register(
+        IWebContentCache,
+        WebContentCacheAdapter,
+        scope=punq.Scope.transient,
+    )
     container.register(
         IWebScraper,
         factory=lambda: WebScraperAdapter(

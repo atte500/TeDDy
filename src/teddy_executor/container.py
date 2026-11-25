@@ -140,6 +140,56 @@ def _register_services(container: punq.Container) -> None:
     _register_orchestration_services(container)
 
 
+def _register_context_assembly_services(container: punq.Container) -> None:
+    """Registers the context assembly graph and its inbound port."""
+    from teddy_executor.core.ports.inbound.get_context_use_case import (
+        IGetContextUseCase,
+    )
+    from teddy_executor.core.ports.outbound import (
+        IConfigService,
+        IEnvironmentInspector,
+        IFileSystemManager,
+        ILlmClient,
+        IPdfExtractor,
+        IRepoTreeGenerator,
+        IWebContentCache,
+        IWebScraper,
+    )
+    from teddy_executor.core.services.context_service import ContextService
+    from teddy_executor.core.services.web_content_service import WebContentService
+
+    container.register(
+        WebContentService,
+        factory=lambda: WebContentService(
+            web_scraper=container.resolve(IWebScraper),
+            cache=container.resolve(IWebContentCache),
+        ),
+        scope=punq.Scope.transient,
+    )
+    container.register(
+        ContextService,
+        factory=lambda: ContextService(
+            file_system_manager=container.resolve(IFileSystemManager),
+            repo_tree_generator=container.resolve(IRepoTreeGenerator),
+            environment_inspector=container.resolve(IEnvironmentInspector),
+            llm_client=container.resolve(ILlmClient),
+            web_scraper=container.resolve(IWebScraper),
+            config_service=container.resolve(IConfigService),
+            pdf_extractor=container.resolve(IPdfExtractor),
+            web_content_service=container.resolve(WebContentService),
+        ),
+        scope=punq.Scope.transient,
+    )
+    # Delegate to the concrete registration so the inbound port inherits the
+    # injected config service. Registering the bare class here makes punq
+    # auto-resolve the constructor and fall back to `config_service=None`.
+    container.register(
+        IGetContextUseCase,
+        factory=lambda: container.resolve(ContextService),
+        scope=punq.Scope.transient,
+    )
+
+
 def _register_orchestration_services(container: punq.Container) -> None:
     """Registers orchestration and use case implementation services."""
     from teddy_executor.core.ports.inbound.get_context_use_case import (
@@ -161,7 +211,6 @@ def _register_orchestration_services(container: punq.Container) -> None:
         IExecutionReportAssembler,
     )
     from teddy_executor.core.services.action_executor import ActionExecutor
-    from teddy_executor.core.services.context_service import ContextService
     from teddy_executor.core.services.execution_orchestrator import (
         ExecutionOrchestrator,
     )
@@ -222,34 +271,7 @@ def _register_orchestration_services(container: punq.Container) -> None:
         scope=punq.Scope.transient,
     )
     container.register(ExecutionOrchestrator, scope=punq.Scope.transient)
-    from teddy_executor.core.ports.outbound import (
-        IEnvironmentInspector,
-        IPdfExtractor,
-        IRepoTreeGenerator,
-        IWebScraper,
-    )
-
-    container.register(
-        ContextService,
-        factory=lambda: ContextService(
-            file_system_manager=container.resolve(IFileSystemManager),
-            repo_tree_generator=container.resolve(IRepoTreeGenerator),
-            environment_inspector=container.resolve(IEnvironmentInspector),
-            llm_client=container.resolve(ILlmClient),
-            web_scraper=container.resolve(IWebScraper),
-            config_service=container.resolve(IConfigService),
-            pdf_extractor=container.resolve(IPdfExtractor),
-        ),
-        scope=punq.Scope.transient,
-    )
-    # Delegate to the concrete registration so the inbound port inherits the
-    # injected config service. Registering the bare class here makes punq
-    # auto-resolve the constructor and fall back to `config_service=None`.
-    container.register(
-        IGetContextUseCase,
-        factory=lambda: container.resolve(ContextService),
-        scope=punq.Scope.transient,
-    )
+    _register_context_assembly_services(container)
     from teddy_executor.core.domain.models.planning_ports import PlanningPorts
 
     container.register(

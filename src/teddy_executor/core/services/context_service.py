@@ -22,6 +22,7 @@ from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.pdf_extractor import IPdfExtractor
+from teddy_executor.core.services.web_content_service import WebContentService
 from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
 from teddy_executor.core.utils.pdf import cap_extracted_text, is_pdf_source
 from teddy_executor.core.utils.string import truncate_lines
@@ -65,6 +66,7 @@ class ContextService(IGetContextUseCase):
         web_scraper: IWebScraper,
         config_service: Optional[IConfigService] = None,
         pdf_extractor: Optional[IPdfExtractor] = None,
+        web_content_service: Optional[WebContentService] = None,
     ):
         self._file_system_manager = file_system_manager
         self._repo_tree_generator = repo_tree_generator
@@ -73,6 +75,7 @@ class ContextService(IGetContextUseCase):
         self._web_scraper = web_scraper
         self._config_service = config_service
         self._pdf_extractor = pdf_extractor
+        self._web_content_service = web_content_service
 
     def get_context(  # noqa: PLR0913
         self,
@@ -106,8 +109,16 @@ class ContextService(IGetContextUseCase):
         # token count, so pruning budgets track real window impact.
         file_contents = self._cap_plan_contents(file_contents)
 
+        # Remote content resolves through the session cache coordinator when one
+        # is injected. The legacy private cache path below keeps every
+        # hand-constructed service working until the migration completes.
+        if urls and self._web_content_service is not None:
+            web_cache = {}
+            file_contents.update(
+                self._web_content_service.fetch_many(urls, session_root=session_root)
+            )
         # Fetch remote content with session-level caching (parallelized)
-        if urls:
+        elif urls:
             web_cache = self._load_web_cache(cache_dir)
             # Partition: already cached vs. fresh
             cached_urls = [url for url in urls if url in web_cache]
