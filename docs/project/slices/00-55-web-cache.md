@@ -1,5 +1,5 @@
 # Slice: Session-Scoped Content Cache for Every Remote Fetch
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** Ad-hoc (00)
 - **Depends On:** None
 - **Specs:** None
@@ -212,6 +212,12 @@ None remaining. All four unknowns were resolved during discovery and are recorde
 - The hook's legacy filename allowance went with the private helpers, so the `.web_cache.json` literal is owned by the adapter alone with no sanctioned exception, and the repository-wide structural run reports zero cache-literal violations.
 - Full suite green at 2615 passed / 5 skipped with no filesystem-pollution failure.
 - Deliberately left optional: `WebContentService.config_service` stays a `None`-able handle, because the design specifies that shape and `None` falls back to `ReadConfig.max_lines`. That is a documented contract rather than a leftover seam, unlike the `ContextService` handle the Wiring notes flagged.
+
+### Completion — Verification audit
+- Impact #13 is discharged: `planning_service.py:91` calls `session_root_from_turn_dir`, and `session_orchestrator.py:478` together with `execution_orchestrator.py:180` call `session_root_from_plan_path`, so the three touched call sites share one definition of the turn-to-session step and no fourth copy was added. The hand-rolled parent chains that remain under `core/services/` serve other concerns — a marker path, turn metadata, `history.log`, an `initial_request.md` read, a prompt-directory walk — and stay untouched exactly as that impact scoped them.
+- The factory proves the slice's central claim: `_url_fetcher` binds `coordinator.fetch_one(url, session_root=session_root)` behind a contract assertion, and the class holds no scraper handle, so no route to remote content bypasses the cache.
+- Deferred debt is escalated rather than dropped: the wall-clock latency budgets, the six pre-existing core-adapter-library violations, and the preview suite's module patching are recorded as anticipated slices in Milestone 05; the shell-output bounding requirement is recorded on Milestone 06's tooling slice. Two items need no entry — the bare-built-in exceptions are already Milestone 06 requirements 7 and slices 11/15, and the intra-process merge lock is a stated boundary rather than a defect.
+- Full suite green at 2615 passed / 5 skipped with no filesystem-pollution failure.
 
 ## Verification
 1. **Cache written at READ time:**
