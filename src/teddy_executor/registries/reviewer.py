@@ -13,7 +13,6 @@ def register_reviewer(container: punq.Container) -> None:
         IConfigService,
         IFileSystemManager,
         ISystemEnvironment,
-        IWebScraper,
     )
     from teddy_executor.adapters.outbound.console_tooling import (
         ConsoleToolingHelper,
@@ -31,7 +30,6 @@ def register_reviewer(container: punq.Container) -> None:
             file_system=container.resolve(IFileSystemManager),
             console_tooling=container.resolve(ConsoleToolingHelper),
             action_dispatcher=container.resolve(ActionDispatcher),
-            web_scraper=container.resolve(IWebScraper),
             web_content_service=container.resolve(WebContentService),
             config_service=container.resolve(IConfigService),
         )

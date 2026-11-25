@@ -15,6 +15,8 @@ from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper
 from teddy_executor.core.ports.outbound.web_searcher import IWebSearcher
 from teddy_executor.core.services.action_factory import ActionFactory
+from teddy_executor.core.services.web_content_service import WebContentService
+from tests.harness.setup.fake_web_content_cache import FakeWebContentCache
 
 
 class _MockContainer:
@@ -51,12 +53,16 @@ def test_web_read_action_catches_scraper_exceptions(container: _MockContainer):
         shell_executor=register_mock(container, IShellExecutor),
         file_system_manager=register_mock(container, IFileSystemManager),
         user_interactor=register_mock(container, IUserInteractor),
-        web_scraper=mock_scraper,
         web_searcher=register_mock(container, IWebSearcher),
         config_service=mock_config,
     )
 
-    factory = ActionFactory(ports)
+    factory = ActionFactory(
+        ports,
+        web_content_service=WebContentService(
+            web_scraper=mock_scraper, cache=FakeWebContentCache()
+        ),
+    )
     action = factory.create_action("read", {"path": "http://example.com/403"})
 
     # Execute the action — should NOT raise; returns error string

@@ -15,6 +15,8 @@ from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGenerator
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
 from teddy_executor.core.services.context_service import ContextService
+from teddy_executor.core.services.web_content_service import WebContentService
+from tests.harness.setup.fake_web_content_cache import FakeWebContentCache
 
 
 def _build_service():
@@ -40,7 +42,16 @@ def _build_service():
     config = POSIXPathMock(spec=IConfigService)
     config.get_setting.side_effect = lambda key, default=None: default
 
-    return ContextService(fs, tree, inspector, llm, scraper, config), llm
+    coordinator = WebContentService(web_scraper=scraper, cache=FakeWebContentCache())
+    service = ContextService(
+        file_system_manager=fs,
+        repo_tree_generator=tree,
+        environment_inspector=inspector,
+        llm_client=llm,
+        web_content_service=coordinator,
+        config_service=config,
+    )
+    return service, llm
 
 
 def test_get_context_threads_the_model_to_token_count():

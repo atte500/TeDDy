@@ -1,5 +1,5 @@
 # Component Design: WebScraperAdapter
-- **Status:** Refactoring
+- **Status:** Implemented
 - **Source:** [`src/teddy_executor/adapters/outbound/web_scraper_adapter.py`](/src/teddy_executor/adapters/outbound/web_scraper_adapter.py)
 
 ## Purpose

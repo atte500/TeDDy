@@ -1,6 +1,8 @@
 from typing import Any
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
 from teddy_executor.core.services.context_service import ContextService
+from teddy_executor.core.services.web_content_service import WebContentService
+from tests.harness.setup.fake_web_content_cache import FakeWebContentCache
 from tests.harness.setup.mocking import register_mock
 
 
@@ -21,7 +23,9 @@ def test_resolve_files_to_paths_expands_directories_recursively(
         repo_tree_generator=mock_tree_gen,
         environment_inspector=mock_inspector,
         llm_client=mock_llm_client,
-        web_scraper=mock_scraper,
+        web_content_service=WebContentService(
+            web_scraper=mock_scraper, cache=FakeWebContentCache()
+        ),
     )
 
     # Setup FSM behavior:
@@ -69,7 +73,9 @@ def test_resolve_recursive_ignores_urls_for_directory_checks(
         repo_tree_generator=mock_tree_gen,
         environment_inspector=mock_inspector,
         llm_client=mock_llm_client,
-        web_scraper=mock_scraper,
+        web_content_service=WebContentService(
+            web_scraper=mock_scraper, cache=FakeWebContentCache()
+        ),
     )
 
     url = "https://example.com/spec.md"

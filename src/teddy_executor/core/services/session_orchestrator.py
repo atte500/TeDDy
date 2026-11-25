@@ -19,6 +19,7 @@ from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.services.session_replanner import SessionReplanner
 from teddy_executor.core.utils.io import Tee as _Tee
+from teddy_executor.core.utils.paths import session_root_from_plan_path
 from teddy_executor.core.utils.session_notices import format_termination_notice
 from teddy_executor.core.utils.terminal import emit_user_message
 from teddy_executor.core.utils.message_renderer import (
@@ -474,7 +475,7 @@ class SessionOrchestrator(IRunPlanUseCase):
 
         total_window = self._llm_client.get_context_window(model=model)
 
-        cache_dir = str(Path(plan_path).parent.parent)
+        session_root = session_root_from_plan_path(plan_path)
         # Compute system prompt token count BEFORE context construction so the
         # ProjectContext DTO is born with correct data (no post-hoc patching needed).
         system_prompt = self._prompt_manager.fetch_system_prompt(
@@ -491,9 +492,8 @@ class SessionOrchestrator(IRunPlanUseCase):
             context_files=context_files,
             agent_name=agent_name,
             total_window=total_window,
-            cache_dir=cache_dir,
             system_prompt_tokens=system_token_count,
-            session_root=cache_dir,
+            session_root=session_root,
             model=model,
         )
 

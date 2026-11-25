@@ -43,8 +43,8 @@ def test_assembly_fetches_verbatim_and_merges_the_body(
     assert FETCHED_BODY in context.content, (
         "the fetched body must render in the assembled payload"
     )
-    assert scraper.calls == [(PDF_URL, False, {})], (
-        "assembly must fetch the body verbatim, never ask the scraper to truncate"
+    assert scraper.calls == [(PDF_URL, {})], (
+        "assembly must fetch the body through the scraper, verbatim"
     )
     assert cache.load_calls == [SESSION_ROOT], (
         "assembly must load the session map once, keyed by the session root"

@@ -13,14 +13,14 @@ def test_get_content_returns_the_scripted_body():
     fake = FakeWebScraper(contents={PDF_URL: "alpha"})
 
     assert fake.get_content(PDF_URL) == "alpha"
-    assert fake.calls == [(PDF_URL, True, {})]
+    assert fake.calls == [(PDF_URL, {})]
 
 
-def test_get_content_records_the_truncate_flag():
+def test_get_content_records_extraction_hints():
     fake = FakeWebScraper(contents={PDF_URL: "alpha"})
 
-    assert fake.get_content(PDF_URL, truncate=False) == "alpha"
-    assert fake.calls == [(PDF_URL, False, {})]
+    assert fake.get_content(PDF_URL, include_comments=True) == "alpha"
+    assert fake.calls == [(PDF_URL, {"include_comments": True})]
 
 
 def test_get_content_raises_the_scripted_failure():
@@ -30,7 +30,7 @@ def test_get_content_raises_the_scripted_failure():
     with pytest.raises(TimeoutError):
         fake.get_content(PDF_URL)
 
-    assert fake.calls == [(PDF_URL, True, {})]
+    assert fake.calls == [(PDF_URL, {})]
 
 
 def test_unscripted_url_is_rejected_loudly():

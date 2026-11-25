@@ -92,7 +92,6 @@ def _register_services(container: punq.Container) -> None:
     from teddy_executor.core.ports.outbound import (
         IPdfExtractor,
         IShellExecutor,
-        IWebScraper,
         IWebSearcher,
     )
     from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
@@ -105,7 +104,6 @@ def _register_services(container: punq.Container) -> None:
                 shell_executor=container.resolve(IShellExecutor),
                 file_system_manager=container.resolve(IFileSystemManager),
                 user_interactor=container.resolve(IUserInteractor),
-                web_scraper=container.resolve(IWebScraper),
                 web_searcher=container.resolve(IWebSearcher),
                 config_service=container.resolve(IConfigService),
                 pdf_extractor=container.resolve(IPdfExtractor),
@@ -176,10 +174,9 @@ def _register_context_assembly_services(container: punq.Container) -> None:
             repo_tree_generator=container.resolve(IRepoTreeGenerator),
             environment_inspector=container.resolve(IEnvironmentInspector),
             llm_client=container.resolve(ILlmClient),
-            web_scraper=container.resolve(IWebScraper),
+            web_content_service=container.resolve(WebContentService),
             config_service=container.resolve(IConfigService),
             pdf_extractor=container.resolve(IPdfExtractor),
-            web_content_service=container.resolve(WebContentService),
         ),
         scope=punq.Scope.transient,
     )

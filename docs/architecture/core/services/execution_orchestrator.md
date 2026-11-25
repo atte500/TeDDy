@@ -1,5 +1,5 @@
 # Component Design: ExecutionOrchestrator
-- **Status:** Refactoring
+- **Status:** Implemented
 - **Source:** [`src/teddy_executor/core/services/execution_orchestrator.py`](/src/teddy_executor/core/services/execution_orchestrator.py)
 
 ## Purpose
@@ -28,7 +28,7 @@ Implements the `IRunPlanUseCase` inbound port. It runs a parsed `Plan` atomicall
 - `interrupt_drain`: When the interrupt guard is set, every remaining action is skipped with the interrupt reason and the loop exits normally.
 - `session_marker`: A session turn writes an empty `execution.started` marker into its turn directory after validation and review succeed and immediately before the first dispatch; a stateless run and an aborted review write none. The marker outlives dispatch only until the turn is finalized, which clears it once the report exists.
 - `temp_plan_cleanup`: A generated temporary plan file is removed in a `finally` block.
-- `session_scope_passthrough`: At dispatch time the session root is derived once from the plan's own path (`session_root_from` in `core.utils.paths`) and forwarded with `agent_name` and `is_session` into `ActionExecutor.confirm_and_dispatch`, so a READ on a URL is built with the session's cache scope. A plan without an on-disk path has no session scope, and its actions run uncached rather than failing.
+- `session_scope_passthrough`: At dispatch time the session root is derived once from the plan's own path (`session_root_from_plan_path` in `core.utils.paths`) and forwarded with `agent_name` and `is_session` into `ActionExecutor.confirm_and_dispatch`, so a READ on a URL is built with the session's cache scope. A plan without an on-disk path has no session scope, and its actions run uncached rather than failing.
 
 ## Inbound Ports
 - **`IRunPlanUseCase`**: Exposes `execute(...)`; `resume(...)` raises `NotImplementedError` because sessions are not supported here.

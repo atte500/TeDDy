@@ -1,7 +1,5 @@
 import concurrent.futures
-import json
 from enum import Enum
-from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 from teddy_executor.core.domain.models import ProjectContext, ContextItem
 from teddy_executor.core.utils.markdown import (
@@ -19,7 +17,6 @@ from teddy_executor.core.ports.outbound.environment_inspector import (
     IEnvironmentInspector,
 )
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
-from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.pdf_extractor import IPdfExtractor
 from teddy_executor.core.services.web_content_service import WebContentService
@@ -63,16 +60,14 @@ class ContextService(IGetContextUseCase):
         repo_tree_generator: IRepoTreeGenerator,
         environment_inspector: IEnvironmentInspector,
         llm_client: ILlmClient,
-        web_scraper: IWebScraper,
+        web_content_service: WebContentService,
         config_service: Optional[IConfigService] = None,
         pdf_extractor: Optional[IPdfExtractor] = None,
-        web_content_service: Optional[WebContentService] = None,
     ):
         self._file_system_manager = file_system_manager
         self._repo_tree_generator = repo_tree_generator
         self._environment_inspector = environment_inspector
         self._llm_client = llm_client
-        self._web_scraper = web_scraper
         self._config_service = config_service
         self._pdf_extractor = pdf_extractor
         self._web_content_service = web_content_service
@@ -83,7 +78,6 @@ class ContextService(IGetContextUseCase):
         include_tokens: bool = True,
         agent_name: str = "Unknown",
         total_window: int = 0,
-        cache_dir: Optional[str] = None,
         current_turn: Optional[str] = None,
         system_prompt_tokens: int = 0,
         session_root: Optional[str] = None,
@@ -109,49 +103,10 @@ class ContextService(IGetContextUseCase):
         # token count, so pruning budgets track real window impact.
         file_contents = self._cap_plan_contents(file_contents)
 
-        # Remote content resolves through the session cache coordinator when one
-        # is injected. The legacy private cache path below keeps every
-        # hand-constructed service working until the migration completes.
-        if urls and self._web_content_service is not None:
-            web_cache = {}
+        if urls:
             file_contents.update(
                 self._web_content_service.fetch_many(urls, session_root=session_root)
             )
-        # Fetch remote content with session-level caching (parallelized)
-        elif urls:
-            web_cache = self._load_web_cache(cache_dir)
-            # Partition: already cached vs. fresh
-            cached_urls = [url for url in urls if url in web_cache]
-            uncached_urls = [url for url in urls if url not in web_cache]
-
-            # Fill cached entries immediately
-            for url in cached_urls:
-                file_contents[url] = web_cache[url]
-
-            # Fetch uncached URLs in parallel
-            if uncached_urls:
-                with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-                    future_to_url = {
-                        executor.submit(
-                            self._fetch_and_cache_url, url, web_cache, cache_dir
-                        ): url
-                        for url in uncached_urls
-                    }
-                    for future in concurrent.futures.as_completed(future_to_url):
-                        url = future_to_url[future]
-                        try:
-                            content = future.result()
-                            file_contents[url] = content
-                        except Exception:
-                            file_contents[url] = None
-
-            # Normalize empty-string sentinels to None for downstream formatting
-            for url in urls:
-                stored = file_contents.get(url)
-                if stored == "":
-                    file_contents[url] = None
-        else:
-            web_cache = {}
 
         content = self._format_content(
             repo_tree, scoped_paths, file_contents, git_status, session_root
@@ -335,26 +290,6 @@ class ContextService(IGetContextUseCase):
     def _is_url(self, path: str) -> bool:
         """Determines if a path is a remote URL."""
         return path.startswith("http://") or path.startswith("https://")
-
-    def _fetch_and_cache_url(
-        self, url: str, web_cache: Dict[str, str], cache_dir: Optional[str]
-    ) -> str:
-        """Fetch a single URL, cache the result, and save atomically.
-
-        On failure, caches an empty string sentinel and re-raises so the
-        caller can decide how to handle the error.
-        """
-        try:
-            content = self._web_scraper.get_content(url, truncate=False)
-            web_cache[url] = content
-            if cache_dir:
-                self._save_web_cache(cache_dir, web_cache)
-            return content
-        except Exception:
-            web_cache[url] = ""
-            if cache_dir:
-                self._save_web_cache(cache_dir, web_cache)
-            raise
 
     def _collect_items(
         self,
@@ -611,53 +546,6 @@ class ContextService(IGetContextUseCase):
             f"- **Current Time:** {system_info.get('current_time', 'N/A')}",
             f"- **Current Turn:** {current_turn or 'N/A'}",
         ]
-
-    CACHE_FILENAME = ".web_cache.json"
-
-    def _load_web_cache(self, cache_dir: Optional[str]) -> Dict[str, str]:
-        """Load the web content cache from disk.
-
-        Returns an empty dict if:
-        - cache_dir is None (caching disabled)
-        - Cache file does not exist
-        - Cache file contains invalid JSON
-        - Cache file contains non-dict structure
-        - Cache file contains non-string values
-        """
-        if not cache_dir:
-            return {}
-        cache_path = Path(cache_dir) / self.CACHE_FILENAME
-        if not cache_path.exists():
-            return {}
-        try:
-            raw = cache_path.read_text(encoding="utf-8")
-            parsed = json.loads(raw)
-            if not isinstance(parsed, dict):
-                return {}
-            # Validate all values are strings
-            for k, v in parsed.items():
-                if not isinstance(k, str) or not isinstance(v, str):
-                    return {}
-            return parsed
-        except (json.JSONDecodeError, OSError, UnicodeDecodeError):
-            return {}
-
-    def _save_web_cache(self, cache_dir: str, cache: Dict[str, str]) -> None:
-        """Write the cache to disk atomically.
-
-        Creates cache_dir if it does not exist.
-        Writes to a .tmp file first, then atomically renames to .web_cache.json
-        using Path.replace(). This prevents partial writes from corrupting
-        the cache if the process crashes mid-write.
-        """
-        cache_dir_path = Path(cache_dir)
-        cache_dir_path.mkdir(parents=True, exist_ok=True)
-        target = cache_dir_path / self.CACHE_FILENAME
-        tmp = cache_dir_path / f"{self.CACHE_FILENAME}.tmp"
-        tmp.write_text(
-            json.dumps(cache, ensure_ascii=False), encoding="utf-8", newline=""
-        )
-        tmp.replace(target)
 
     def _format_session_history(
         self,

@@ -65,7 +65,7 @@ class WebContentService:
         if url in entries:
             body = entries[url]
         else:
-            body = self._web_scraper.get_content(url, truncate=False)
+            body = self._web_scraper.get_content(url)
             self._merge_entries(session_root, {url: body})
         if not truncate:
             return body
@@ -146,7 +146,7 @@ class WebContentService:
         traceback and rendered as missing data by the caller.
         """
         try:
-            return self._web_scraper.get_content(url, truncate=False)
+            return self._web_scraper.get_content(url)
         except Exception:  # Documented raise surface of the scraper port.
             logger.warning(
                 "Fetching %s failed; rendering it as missing.", url, exc_info=True

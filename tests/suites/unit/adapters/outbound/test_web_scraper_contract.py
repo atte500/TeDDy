@@ -32,13 +32,9 @@ def test_web_scraper_contract_is_implemented_by_adapter():
     assert isinstance(scraper, WebScraper)
 
 
-def test_web_scraper_disables_high_recall_flags_and_truncates_lines():
+def test_web_scraper_disables_high_recall_flags():
     # Arrange
-    mock_config = POSIXPathMock(spec=IConfigService)
-    # Set the max_lines to 3 for testing
-    mock_config.get_setting.return_value = 3
-
-    adapter = WebScraperAdapter(config_service=mock_config)
+    adapter = WebScraperAdapter()
 
     # Mock trafilatura and the internal rotation fetcher
     mock_trafilatura = POSIXPathMock()
@@ -48,10 +44,9 @@ def test_web_scraper_disables_high_recall_flags_and_truncates_lines():
     adapter._fetch_with_rotation = POSIXPathMock(return_value="<html>Dummy</html>")
 
     # Act
-    result = adapter.get_content("http://example.com")
+    adapter.get_content("http://example.com")
 
     # Assert
-    # 1. Verify the correct flags were passed
     mock_trafilatura.extract.assert_called_once_with(
         "<html>Dummy</html>",
         url="http://example.com",
@@ -63,18 +58,15 @@ def test_web_scraper_disables_high_recall_flags_and_truncates_lines():
         include_tables=True,
     )
 
-    # 2. Verify truncation (head of the document up to max_lines)
-    assert result == "Line 1\nLine 2\nLine 3"
 
-
-def test_web_scraper_returns_full_content_when_truncate_disabled():
+def test_web_scraper_returns_the_extracted_body_verbatim():
     """
-    Scenario: Context-embedded URLs bypass the READ cap.
+    Scenario: the adapter extracts, the coordinator caps.
 
     Given a remote URL whose extracted markdown exceeds read.max_lines,
-    When it is fetched during context assembly (get_content(..., truncate=False)),
+    When it is fetched through the scraper,
     Then the full, untruncated content is returned,
-    And the READ *action* / TUI path (default truncate=True) stays capped.
+    And the announced read cap is the coordinator's alone to apply.
     """
     # Arrange: a 5-line body with the READ cap configured at 3.
     mock_config = POSIXPathMock(spec=IConfigService)
@@ -88,8 +80,8 @@ def test_web_scraper_returns_full_content_when_truncate_disabled():
     adapter._get_trafilatura = POSIXPathMock(return_value=mock_trafilatura)
     adapter._fetch_with_rotation = POSIXPathMock(return_value="<html>Dummy</html>")
 
-    # Act: context assembly requests verbatim content.
-    result = adapter.get_content("http://example.com", truncate=False)
+    # Act
+    result = adapter.get_content("http://example.com")
 
-    # Assert: verbatim content — the cap is NOT applied.
+    # Assert: the configured read cap is not applied anywhere in the adapter.
     assert result == full_content

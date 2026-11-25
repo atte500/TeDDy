@@ -9,11 +9,10 @@ from tests.harness.setup.fake_pdf_extractor import FakePdfExtractor
 
 
 @pytest.fixture
-def factory_for(  # noqa: PLR0913  # Six port mocks mirror the ActionPorts constructor.
+def factory_for(
     mock_shell,
     mock_fs,
     mock_user_interactor,
-    mock_scraper,
     mock_searcher,
     mock_config,
 ):
@@ -23,7 +22,6 @@ def factory_for(  # noqa: PLR0913  # Six port mocks mirror the ActionPorts const
                 shell_executor=mock_shell,
                 file_system_manager=mock_fs,
                 user_interactor=mock_user_interactor,
-                web_scraper=mock_scraper,
                 web_searcher=mock_searcher,
                 config_service=mock_config,
                 pdf_extractor=extractor,

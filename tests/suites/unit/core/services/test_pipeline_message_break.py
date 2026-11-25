@@ -18,7 +18,6 @@ from teddy_executor.core.ports.outbound import (
     IShellExecutor,
     IUserInteractor,
     IConfigService,
-    IWebScraper,
     IWebSearcher,
 )
 from teddy_executor.core.ports.inbound.edit_simulator import IEditSimulator
@@ -35,7 +34,6 @@ def action_executor():
     mock_interactor = Mock(spec=IUserInteractor)
     mock_interactor.confirm_action.return_value = (True, "")
     mock_interactor.ask_question.return_value = "user reply"
-    mock_web_scraper = Mock(spec=IWebScraper)
     mock_web_searcher = Mock(spec=IWebSearcher)
     mock_config = Mock(spec=IConfigService)
     mock_config.get_setting.return_value = None
@@ -46,7 +44,6 @@ def action_executor():
         shell_executor=mock_shell,
         file_system_manager=mock_fs,
         user_interactor=mock_interactor,
-        web_scraper=mock_web_scraper,
         web_searcher=mock_web_searcher,
         config_service=mock_config,
     )

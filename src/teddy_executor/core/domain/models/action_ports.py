@@ -7,7 +7,6 @@ if TYPE_CHECKING:
         IShellExecutor,
         IFileSystemManager,
         IUserInteractor,
-        IWebScraper,
         IWebSearcher,
         IConfigService,
         IPdfExtractor,
@@ -24,7 +23,6 @@ class ActionPorts:
     shell_executor: IShellExecutor
     file_system_manager: IFileSystemManager
     user_interactor: IUserInteractor
-    web_scraper: IWebScraper
     web_searcher: IWebSearcher
     config_service: Optional[IConfigService] = None
     pdf_extractor: Optional[IPdfExtractor] = None

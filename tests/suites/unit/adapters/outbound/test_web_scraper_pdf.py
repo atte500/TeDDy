@@ -39,7 +39,7 @@ def test_signed_pdf_url_keeps_the_full_source():
     assert extractor.calls == [(b"%PDF-1.4\n", url)]
 
 
-def test_pdf_content_is_capped_when_truncate_is_true():
+def test_pdf_text_layer_ignores_the_configured_read_cap():
     text = "\n".join(f"line{i}" for i in range(1, 6))
     config = POSIXPathMock(spec=IConfigService)
     config.get_setting.side_effect = lambda key, default=None: (
@@ -49,20 +49,6 @@ def test_pdf_content_is_capped_when_truncate_is_true():
     adapter._fetch_pdf_bytes = POSIXPathMock(return_value=b"%PDF-1.4\n")
 
     result = adapter.get_content("https://example.com/report.pdf")
-
-    assert result == "line1\nline2\nline3"
-
-
-def test_pdf_content_is_verbatim_when_truncate_is_false():
-    text = "\n".join(f"line{i}" for i in range(1, 6))
-    config = POSIXPathMock(spec=IConfigService)
-    config.get_setting.side_effect = lambda key, default=None: (
-        3 if key == "read.max_lines" else default
-    )
-    adapter = _build_adapter(FakePdfExtractor(text), config)
-    adapter._fetch_pdf_bytes = POSIXPathMock(return_value=b"%PDF-1.4\n")
-
-    result = adapter.get_content("https://example.com/report.pdf", truncate=False)
 
     assert result == text
 

@@ -1,5 +1,5 @@
 # Component Design: TextualPlanReviewer
-- **Status:** Refactoring
+- **Status:** Implemented
 - **Source:** [`src/teddy_executor/adapters/inbound/textual_plan_reviewer.py`](/src/teddy_executor/adapters/inbound/textual_plan_reviewer.py)
 
 ## Purpose

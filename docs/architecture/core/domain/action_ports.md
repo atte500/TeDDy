@@ -1,5 +1,5 @@
 # Component Design: ActionPorts
-- **Status:** Refactoring
+- **Status:** Implemented
 - **Source:** [`src/teddy_executor/core/domain/models/action_ports.py`](/src/teddy_executor/core/domain/models/action_ports.py)
 
 ## Purpose
@@ -34,7 +34,6 @@ This DTO aggregates, but does not itself consume, the outbound ports listed unde
     - `shell_executor: IShellExecutor`
     - `file_system_manager: IFileSystemManager`
     - `user_interactor: IUserInteractor`
-
     - `web_searcher: IWebSearcher`
     - `config_service: Optional[IConfigService] = None`
     - `pdf_extractor: Optional[IPdfExtractor] = None`

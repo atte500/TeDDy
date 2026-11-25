@@ -34,7 +34,6 @@ class ActionFactory(IActionFactory):
         self._shell_executor = ports.shell_executor
         self._file_system_manager = ports.file_system_manager
         self._user_interactor = ports.user_interactor
-        self._web_scraper = ports.web_scraper
         self._web_searcher = ports.web_searcher
         self._config_service = ports.config_service
         self._pdf_extractor = ports.pdf_extractor
@@ -107,17 +106,16 @@ class ActionFactory(IActionFactory):
         return self._create_standard_action("read_file", params)
 
     def _url_fetcher(self, session_root: Optional[str]) -> Callable[[str], str]:
-        """Selects the fetch path for a URL read, preferring the coordinator.
+        """Binds the coordinator's cached read to the creation-time session root.
 
-        A coordinator routes the read through the session cache and applies the
-        announced truncation cap. The bare scraper stays for callers that build a
-        factory without one, so the wrapper's translation is unchanged either way.
+        A remote read has no other route: the coordinator owns the session cache
+        and the announced cap, so a factory built without one cannot serve a URL.
         """
         coordinator = self._web_content_service
-        if coordinator is not None:
-            return lambda url: coordinator.fetch_one(url, session_root=session_root)
-        scraper = self._web_scraper
-        return lambda url: scraper.get_content(url=url)
+        assert coordinator is not None, (
+            "web_content_service is required for a READ on a URL"
+        )
+        return lambda url: coordinator.fetch_one(url, session_root=session_root)
 
     def _create_pdf_read_action(self) -> IAction:
         """Builds a READ handler that extracts text from a local PDF payload."""

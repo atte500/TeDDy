@@ -7,11 +7,10 @@ from teddy_executor.core.services.action_factory import ActionFactory
 
 
 @pytest.fixture
-def factory(  # noqa: PLR0913  # Six port mocks mirror the constructor.
+def factory(
     mock_shell,
     mock_fs,
     mock_user_interactor,
-    mock_scraper,
     mock_searcher,
     mock_config,
 ) -> ActionFactory:
@@ -24,7 +23,6 @@ def factory(  # noqa: PLR0913  # Six port mocks mirror the constructor.
         shell_executor=mock_shell,
         file_system_manager=mock_fs,
         user_interactor=mock_user_interactor,
-        web_scraper=mock_scraper,
         web_searcher=mock_searcher,
         config_service=mock_config,
     )

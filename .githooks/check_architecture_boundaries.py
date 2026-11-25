@@ -30,12 +30,6 @@ _WEB_CACHE_FILENAME = ".web_cache.json"
 _WEB_CACHE_FILENAME_OWNER = (
     "src/teddy_executor/adapters/outbound/web_content_cache_adapter.py"
 )
-# The cache adapter alone owns the filename literal. ContextService still holds
-# it until slice 00-55-web-cache's Cleanup deliverable prunes the private cache
-# helpers, so this allowance is temporary and must be deleted with them.
-_WEB_CACHE_FILENAME_LEGACY_OWNERS = frozenset(
-    {"src/teddy_executor/core/services/context_service.py"}
-)
 
 
 def _check_cache_filename_ownership(filepath: str, source: str) -> list[str]:
@@ -43,8 +37,6 @@ def _check_cache_filename_ownership(filepath: str, source: str) -> list[str]:
     if normalized.startswith("tests/"):
         return []
     if normalized == _WEB_CACHE_FILENAME_OWNER:
-        return []
-    if normalized in _WEB_CACHE_FILENAME_LEGACY_OWNERS:
         return []
     if _WEB_CACHE_FILENAME not in source:
         return []

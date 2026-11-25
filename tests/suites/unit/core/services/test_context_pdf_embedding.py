@@ -7,8 +7,10 @@ earlier READ must arrive as extracted text instead of being decoded as UTF-8.
 import pytest
 
 from teddy_executor.core.services.context_service import ContextService
+from teddy_executor.core.services.web_content_service import WebContentService
 from teddy_executor.core.utils.pdf import cap_extracted_text
 from tests.harness.setup.fake_pdf_extractor import FakePdfExtractor
+from tests.harness.setup.fake_web_content_cache import FakeWebContentCache
 from tests.harness.setup.pdf_fixture import build_minimal_pdf
 
 PDF_PATH = "report.pdf"
@@ -36,7 +38,9 @@ def service_factory(  # noqa: PLR0913 - mirrors the service's port set
             repo_tree_generator=mock_tree_gen,
             environment_inspector=mock_inspector,
             llm_client=mock_llm_client,
-            web_scraper=mock_scraper,
+            web_content_service=WebContentService(
+                web_scraper=mock_scraper, cache=FakeWebContentCache()
+            ),
             config_service=config_service,
             pdf_extractor=pdf_extractor,
         )

@@ -29,7 +29,6 @@ def _build_ports(**overrides):
         "shell_executor": placeholder,
         "file_system_manager": placeholder,
         "user_interactor": placeholder,
-        "web_scraper": placeholder,
         "web_searcher": placeholder,
     }
     fields.update(overrides)

@@ -325,62 +325,41 @@ class WebScraperAdapter(WebScraper):
         )
         raise last_error
 
-    def _handle_pdf(self, url: str, truncate: bool) -> str:
-        """Extracts text from a PDF URL and applies the shared read cap."""
+    def _handle_pdf(self, url: str) -> str:
+        """Extracts the text layer from a PDF URL."""
         extractor = self._pdf_extractor
         assert extractor is not None, (
             "pdf_extractor port is required for a remote PDF read"
         )
         data = self._fetch_pdf_bytes(url)
-        text = extractor.extract_text(data, source=url)
-        if not truncate:
-            return text
-        return self._truncate_content(text)
+        return extractor.extract_text(data, source=url)
 
-    def _truncate_content(self, markdown_content: str) -> str:
-        """Truncates markdown content based on read.max_lines configuration."""
-        if not self._config_service or not markdown_content:
-            return markdown_content
-
-        max_lines = self._config_service.get_setting("read.max_lines", None)
-        if max_lines is not None:
-            try:
-                max_lines_int = int(max_lines)
-                lines = markdown_content.splitlines()
-                if len(lines) > max_lines_int:
-                    return "\n".join(lines[:max_lines_int])
-            except (ValueError, TypeError):
-                pass
-        return markdown_content
-
-    def get_content(self, url: str, truncate: bool = True, **_kwargs) -> str:
+    def get_content(self, url: str, **_kwargs) -> str:
         """
         Fetches and extracts the content from the given URL.
         Employs a multi-stage stealth rotation to bypass automated blocking.
 
         Args:
             url: The URL to fetch content from.
-            truncate: Whether to apply the read.max_lines cap (default True).
-                Context assembly passes False so embedded content is verbatim.
             **_kwargs: Optional extraction hints.
 
         Returns:
-            The extracted text content.
+            The extracted text content, verbatim.
         """
         # Suppress logging below CRITICAL to prevent trafilatura's internal
         # LOGGER messages from reaching the terminal. A counted, thread-safe
-        # scope is required: get_content() runs concurrently (ContextService
-        # fetches context URLs via a ThreadPoolExecutor), and a bare
+        # scope is required: get_content() runs concurrently (WebContentService
+        # fetches a batch of URLs via a ThreadPoolExecutor), and a bare
         # logging.disable() enter/restore toggle is racy — the first caller
         # to exit re-opens the process-global threshold while siblings are
         # still inside trafilatura.extract(), letting their WARNINGs escape.
         with suppressed_logging():
-            return self._get_content_impl(url, truncate=truncate, **_kwargs)
+            return self._get_content_impl(url, **_kwargs)
 
-    def _get_content_impl(self, url: str, truncate: bool = True, **_kwargs) -> str:
+    def _get_content_impl(self, url: str, **_kwargs) -> str:
         """Internal implementation of get_content (extracted for logging suppression wrapper)."""
         if is_pdf_source(url):
-            return self._handle_pdf(url, truncate)
+            return self._handle_pdf(url)
 
         # 1. Specialized handling for GitHub raw content
         raw_github_content = self._handle_github_raw(url)
@@ -393,9 +372,9 @@ class WebScraperAdapter(WebScraper):
             return ""
 
         # 3. Rendering: GitHub conversations and trafilatura markdown extraction
-        return self._render_html_content(url, html_content, truncate)
+        return self._render_html_content(url, html_content)
 
-    def _render_html_content(self, url: str, html_content: str, truncate: bool) -> str:
+    def _render_html_content(self, url: str, html_content: str) -> str:
         """Converts fetched HTML to markdown, routing GitHub conversations specially."""
         is_github_domain = (
             "github.com" in url or "localhost" in url or "127.0.0.1" in url
@@ -420,7 +399,4 @@ class WebScraperAdapter(WebScraper):
         if not markdown_content:
             return ""
 
-        if not truncate:
-            return markdown_content
-
-        return self._truncate_content(markdown_content)
+        return markdown_content

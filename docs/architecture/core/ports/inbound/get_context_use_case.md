@@ -25,7 +25,7 @@ None — the port declares no injected dependencies; the implementing service ow
 
 ## Operations
 
-### `get_context(context_files=None, include_tokens=True, agent_name="Unknown", total_window=0, cache_dir=None, current_turn=None, system_prompt_tokens=0, session_root=None, model=None) -> ProjectContext`
+### `get_context(context_files=None, include_tokens=True, agent_name="Unknown", total_window=0, current_turn=None, system_prompt_tokens=0, session_root=None, model=None) -> ProjectContext`
 - **Preconditions:** None.
 - **Postconditions:** Returns a `ProjectContext` carrying the repository tree, system details, and the content of the requested files. `context_files` maps a scope name to that scope's paths. A plain list stays accepted for backward compatibility and resolves as the `Default` scope. When `session_root` is supplied, a session-history path is classified as history only if it lives under that root; `None` keeps the session-agnostic default. The optional `model` is the effective model used for token counting; its `None` default keeps the port additively backward compatible.
 - **Exceptions:** None declared by the port.

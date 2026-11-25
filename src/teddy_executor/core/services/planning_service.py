@@ -7,6 +7,7 @@ from teddy_executor.core.domain.models.config_schema import (
 )
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.utils.interruptible_call import run_interruptible
+from teddy_executor.core.utils.paths import session_root_from_turn_dir
 
 
 class PlanningService(IPlanningUseCase):
@@ -87,13 +88,12 @@ class PlanningService(IPlanningUseCase):
         except Exception:
             system_token_count = 0
 
-        session_root = str(Path(turn_dir).parent)
+        session_root = session_root_from_turn_dir(turn_dir)
         context = self._context_service.get_context(
             context_files=resolved_context_files,
             agent_name=agent_name,
             current_turn=Path(turn_dir).name,
             system_prompt_tokens=system_token_count,
-            cache_dir=session_root,
             session_root=session_root,
             model=model,
         )

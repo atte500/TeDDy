@@ -153,17 +153,13 @@ def _resolve_read_resource(app: ReviewerApp, resource: str) -> Optional[dict]:
     is_url = resource.startswith(("http://", "https://"))
     if is_url:
         coordinator = getattr(app, "_web_content_service", None)
-        scraper = app._web_scraper
-        if coordinator is None and scraper is None:
-            app.notify("No web scraper configured. Cannot fetch URL content.")
+        if coordinator is None:
+            app.notify("No web content service configured. Cannot fetch URL content.")
             return None
         try:
-            if coordinator is not None:
-                content = coordinator.fetch_one(
-                    resource, session_root=_reviewer_session_root(app)
-                )
-            else:
-                content = scraper.get_content(resource)
+            content = coordinator.fetch_one(
+                resource, session_root=_reviewer_session_root(app)
+            )
         except Exception:
             app.notify(f"Failed to fetch URL: {resource}")
             return None

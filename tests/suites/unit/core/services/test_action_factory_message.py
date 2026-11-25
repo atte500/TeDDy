@@ -5,7 +5,6 @@ from teddy_executor.core.domain.models.action_ports import ActionPorts
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
-from teddy_executor.core.ports.outbound.web_scraper import WebScraper
 from teddy_executor.core.ports.outbound.web_searcher import IWebSearcher
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 
@@ -19,7 +18,6 @@ def test_action_factory_resolves_message_action():
         shell_executor=POSIXPathMock(spec=IShellExecutor),
         file_system_manager=POSIXPathMock(spec=IFileSystemManager),
         user_interactor=mock_interactor,
-        web_scraper=POSIXPathMock(spec=WebScraper),
         web_searcher=POSIXPathMock(spec=IWebSearcher),
         config_service=POSIXPathMock(spec=IConfigService),
     )
@@ -46,7 +44,6 @@ def test_message_action_passes_content_as_is():
         shell_executor=POSIXPathMock(spec=IShellExecutor),
         file_system_manager=POSIXPathMock(spec=IFileSystemManager),
         user_interactor=mock_interactor,
-        web_scraper=POSIXPathMock(spec=WebScraper),
         web_searcher=POSIXPathMock(spec=IWebSearcher),
         config_service=POSIXPathMock(spec=IConfigService),
     )

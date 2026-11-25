@@ -20,6 +20,8 @@ from teddy_executor.core.ports.outbound.repo_tree_generator import IRepoTreeGene
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
 from teddy_executor.core.services.context_service import ContextService
 from teddy_executor.core.services.edit_simulator import EditSimulator
+from teddy_executor.core.services.web_content_service import WebContentService
+from tests.harness.setup.fake_web_content_cache import FakeWebContentCache
 from tests.harness.setup.mocking import register_mock
 
 PLAN_REL = "docs/turns/01/plan.md"
@@ -53,7 +55,9 @@ def _build_service(
         repo_tree_generator=tree,
         environment_inspector=env,
         llm_client=llm,
-        web_scraper=scraper,
+        web_content_service=WebContentService(
+            web_scraper=scraper, cache=FakeWebContentCache()
+        ),
         config_service=config,
     )
     return service, llm

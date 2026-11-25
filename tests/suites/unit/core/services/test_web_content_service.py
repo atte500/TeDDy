@@ -48,10 +48,8 @@ class _ConcurrencyProbeScraper:
         self._barrier = threading.Barrier(parties, timeout=BARRIER_TIMEOUT_SECONDS)
         self._in_flight = 0
         self.max_in_flight = 0
-        self.truncate_flags: list[bool] = []
 
-    def get_content(self, url: str, truncate: bool = True, **_kwargs: Any) -> str:
-        self.truncate_flags.append(truncate)
+    def get_content(self, url: str, **_kwargs: Any) -> str:
         with self._lock:
             self._in_flight += 1
             self.max_in_flight = max(self.max_in_flight, self._in_flight)
@@ -87,7 +85,7 @@ def test_capped_read_returns_the_announced_cap_and_stores_the_full_body():
     # The expectation comes from the shared announced-cap helper, so the
     # notice text keeps a single owner.
     assert result == cap_extracted_text(TEN_LINE_BODY, 3)
-    assert scraper.calls == [(PDF_URL, False, {})]
+    assert scraper.calls == [(PDF_URL, {})]
     assert cache.merge_calls == [(SESSION_ROOT, {PDF_URL: TEN_LINE_BODY})]
 
 
@@ -152,7 +150,7 @@ def test_absent_session_fetches_without_touching_the_session_map():
     result = _service(scraper, cache).fetch_one(PDF_URL)
 
     assert result == "fresh body"
-    assert scraper.calls == [(PDF_URL, False, {})]
+    assert scraper.calls == [(PDF_URL, {})]
     assert cache.load_calls == [None]
     assert cache.load_entries(SESSION_ROOT) == {}
 
@@ -178,7 +176,7 @@ def test_batch_fetches_a_duplicate_url_once():
         [PDF_URL, PDF_URL], session_root=SESSION_ROOT
     )
 
-    assert scraper.calls == [(PDF_URL, False, {})]
+    assert scraper.calls == [(PDF_URL, {})]
     assert bodies == {PDF_URL: "alpha"}
 
 
@@ -220,7 +218,4 @@ def test_batch_fetches_misses_concurrently():
     )
     assert probe.max_in_flight == 2, (
         "uncached URLs must be fetched concurrently, not one after another"
-    )
-    assert probe.truncate_flags == [False, False], (
-        "a batch fetch must ask the scraper for the verbatim body"
     )

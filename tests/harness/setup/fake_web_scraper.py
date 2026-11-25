@@ -15,9 +15,9 @@ class FakeWebScraper:
     """Deterministic ``IWebScraper`` double for harness-driven tests.
 
     Scripts one body per URL and one exception per URL, and records every
-    ``get_content`` call as ``(url, truncate, kwargs)`` so a test can prove the
-    coordinator never asks the scraper to truncate. An unscripted URL fails
-    loudly, because a silently empty body would let a mis-scripted test pass.
+    ``get_content`` call as ``(url, kwargs)`` so a test can assert exactly how a
+    surface asked for the body. An unscripted URL fails loudly, because a
+    silently empty body would let a mis-scripted test pass.
     """
 
     def __init__(
@@ -27,10 +27,10 @@ class FakeWebScraper:
     ) -> None:
         self._contents: dict[str, str] = dict(contents or {})
         self._failures: dict[str, BaseException] = dict(failures or {})
-        self.calls: list[tuple[str, bool, dict[str, Any]]] = []
+        self.calls: list[tuple[str, dict[str, Any]]] = []
 
-    def get_content(self, url: str, truncate: bool = True, **kwargs: Any) -> str:
-        self.calls.append((url, truncate, dict(kwargs)))
+    def get_content(self, url: str, **kwargs: Any) -> str:
+        self.calls.append((url, dict(kwargs)))
         if url in self._failures:
             raise self._failures[url]
         assert url in self._contents, f"FakeWebScraper received unscripted URL: {url}"

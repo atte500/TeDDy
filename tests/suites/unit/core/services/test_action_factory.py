@@ -44,26 +44,6 @@ def test_create_action_raises_error_for_unknown_type(factory: ActionFactory):
         factory.create_action(action_type)
 
 
-def test_read_action_with_url_resolves_web_scraper(
-    mock_scraper, factory: ActionFactory
-):
-    """
-    Given an ActionFactory with a WebScraper registered,
-    When create_action is called for a 'read' action with a URL parameter,
-    Then it should return a handler that calls the WebScraper.
-    """
-    # Arrange
-    mock_scraper.get_content.return_value = "web content"
-
-    # Act
-    action_handler = factory.create_action("read", {"resource": "http://example.com"})
-    result = action_handler.execute(path="http://example.com")
-
-    # Assert
-    assert result == "web content"
-    mock_scraper.get_content.assert_called_once_with(url="http://example.com")
-
-
 def test_read_action_with_url_resolves_the_coordinator(
     mock_shell, mock_fs, mock_user_interactor, mock_searcher, mock_config
 ):
@@ -83,7 +63,6 @@ def test_read_action_with_url_resolves_the_coordinator(
             shell_executor=mock_shell,
             file_system_manager=mock_fs,
             user_interactor=mock_user_interactor,
-            web_scraper=scraper,
             web_searcher=mock_searcher,
             config_service=mock_config,
         ),
@@ -100,8 +79,8 @@ def test_read_action_with_url_resolves_the_coordinator(
 
     # Assert
     assert result == body
-    assert scraper.calls == [(url, False, {})], (
-        "a URL read must resolve through the coordinator, which fetches verbatim"
+    assert scraper.calls == [(url, {})], (
+        "a URL read must resolve through the coordinator, which fetches the body"
     )
     assert cache.merge_calls == [(session_root, {url: body})]
 

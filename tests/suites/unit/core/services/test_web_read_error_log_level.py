@@ -9,71 +9,45 @@ import logging
 
 from teddy_executor.core.domain.models.action_ports import ActionPorts
 from teddy_executor.core.services.action_factory import ActionFactory
+from teddy_executor.core.services.web_content_service import WebContentService
+from tests.harness.setup.fake_web_content_cache import FakeWebContentCache
+from tests.harness.setup.fake_web_scraper import FakeWebScraper
+
+FACTORY_LOGGER = "teddy_executor.core.services.action_factory"
+FAILING_URL = "https://example.com/fail"
+FETCH_FAILURE = Exception("404 Client Error: Not Found for url: " + FAILING_URL)
 
 
-class _MockFailingScraper:
-    """Scraper that always raises an exception."""
-
-    def get_content(self, url: str) -> str:
-        raise Exception("404 Client Error: Not Found for url: " + url)
-
-
-class _CapturingHandler(logging.Handler):
-    """Logging handler that captures log records in memory."""
-
-    def __init__(self):
-        super().__init__()
-        self.records: list[logging.LogRecord] = []
-
-    def emit(self, record: logging.LogRecord) -> None:
-        self.records.append(record)
-
-
-def test_web_read_error_log_level_is_debug_not_warning():
-    """Regression test: the WebReadAction error log should be DEBUG level.
-
-    When a URL fetch fails, the diagnostic message must be logged at DEBUG
-    so that it is suppressed at the default INFO log level and does not
-    appear on the user's terminal.
-    """
-    # Arrange
+def _build_factory() -> ActionFactory:
+    """A factory whose coordinator re-raises the scraper's fetch failure."""
     ports = ActionPorts(
         shell_executor=None,
         file_system_manager=None,
         user_interactor=None,
-        web_scraper=_MockFailingScraper(),
         web_searcher=None,
-        config_service=None,
     )
-    factory = ActionFactory(ports=ports)
-    read_action = factory._create_read_action({"path": "https://example.com/fail"})
+    coordinator = WebContentService(
+        web_scraper=FakeWebScraper(failures={FAILING_URL: FETCH_FAILURE}),
+        cache=FakeWebContentCache(),
+    )
+    return ActionFactory(ports=ports, web_content_service=coordinator)
 
-    # Use a mock logger to capture the log call
-    logger = logging.getLogger("teddy_executor.core.services.action_factory")
-    original_level = logger.level
-    original_handlers = logger.handlers[:]
-    try:
-        # Set logger to DEBUG so we can capture calls
-        logger.setLevel(logging.DEBUG)
-        logger.handlers.clear()
-        handler = _CapturingHandler()
-        logger.addHandler(handler)
 
-        # Act
-        result = read_action.execute(path="https://example.com/fail")
+def test_web_read_error_log_level_is_debug_not_warning(caplog):
+    """A failed URL fetch logs its diagnostic at DEBUG, never at WARNING."""
+    factory = _build_factory()
+    read_action = factory.create_action("READ", {"path": FAILING_URL})
 
-        # Assert
-        # The error string should still be returned
-        assert "Error: Failed to fetch URL" in result
+    with caplog.at_level(logging.DEBUG, logger=FACTORY_LOGGER):
+        result = read_action.execute(path=FAILING_URL)
 
-        # The log record should be at DEBUG level, not WARNING
-        assert len(handler.records) == 1
-        record = handler.records[0]
-        assert record.levelno == logging.DEBUG, (
-            f"Expected DEBUG level, got {logging.getLevelName(record.levelno)}. "
-            "WARNING level would leak to stderr at default INFO configuration."
-        )
-        assert "Failed to fetch URL" in record.getMessage()
-    finally:
-        logger.level = original_level
-        logger.handlers = original_handlers
+    assert "Error: Failed to fetch URL" in result
+
+    records = [record for record in caplog.records if record.name == FACTORY_LOGGER]
+    assert len(records) == 1
+    record = records[0]
+    assert record.levelno == logging.DEBUG, (
+        f"Expected DEBUG level, got {logging.getLevelName(record.levelno)}. "
+        "WARNING level would leak to stderr at default INFO configuration."
+    )
+    assert "Failed to fetch URL" in record.getMessage()

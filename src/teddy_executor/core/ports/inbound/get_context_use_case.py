@@ -14,7 +14,6 @@ class IGetContextUseCase(Protocol):
         include_tokens: bool = True,
         agent_name: str = "Unknown",
         total_window: int = 0,
-        cache_dir: Optional[str] = None,
         current_turn: Optional[str] = None,
         system_prompt_tokens: int = 0,
         session_root: Optional[str] = None,

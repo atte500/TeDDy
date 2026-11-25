@@ -9,6 +9,8 @@ from teddy_executor.core.ports.outbound.environment_inspector import (
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
 from teddy_executor.core.services.context_service import ContextService
+from teddy_executor.core.services.web_content_service import WebContentService
+from tests.harness.setup.fake_web_content_cache import FakeWebContentCache
 from tests.harness.setup.mocking import register_mock
 
 
@@ -43,7 +45,14 @@ def test_context_gathering_is_performant_for_large_repos(container):
 
     scraper = register_mock(container, IWebScraper)
 
-    service = ContextService(fs, tree, env, llm, scraper)
+    coordinator = WebContentService(web_scraper=scraper, cache=FakeWebContentCache())
+    service = ContextService(
+        file_system_manager=fs,
+        repo_tree_generator=tree,
+        environment_inspector=env,
+        llm_client=llm,
+        web_content_service=coordinator,
+    )
 
     # 500 files * 0.006s = 3s synchronous.
     # With parallelization on a modern machine, it should be well under 1s.

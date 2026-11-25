@@ -1,5 +1,5 @@
 # Component Design: ActionDispatcher
-- **Status:** Refactoring
+- **Status:** Implemented
 - **Source:** [`src/teddy_executor/core/services/action_dispatcher.py`](/src/teddy_executor/core/services/action_dispatcher.py)
 
 ## Purpose

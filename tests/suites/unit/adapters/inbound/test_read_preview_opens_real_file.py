@@ -57,8 +57,7 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         self.mock_app.suspend.return_value = suspend_cm
         self.mock_app.push_screen_wait = AsyncMock(return_value=True)
         self.mock_app._console_tooling = MagicMock()
-        # URL ports — None by default; URL tests configure the one they drive
-        self.mock_app._web_scraper = None
+        # The URL surface resolves through a coordinator a test injects.
         self.mock_app._web_content_service = None
 
         # Track temp file operations
@@ -229,13 +228,17 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
             self.assertEqual(len(self.temp_files_deleted), 0)
 
     def test_readonly_url_fetches_content_and_opens_temp_file(self):
-        """URL: must fetch via WebScraper port, open in launch_editor with content."""
+        """URL: must fetch via the coordinator, then open it in launch_editor."""
         self.action.params = {"resource": "https://example.com/test.md", "path": ""}
         editor_cmd = ["vim"]
         self.mock_app._console_tooling.find_editor.return_value = editor_cmd
         expected_content = "# Test\nFetched content from URL.\n"
-        self.mock_app._web_scraper = MagicMock()
-        self.mock_app._web_scraper.get_content.return_value = expected_content
+        scraper = FakeWebScraper(
+            contents={"https://example.com/test.md": expected_content}
+        )
+        self.mock_app._web_content_service = WebContentService(
+            web_scraper=scraper, cache=FakeWebContentCache()
+        )
 
         with patch(
             "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.launch_editor",
@@ -243,10 +246,8 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         ) as mock_launch:
             asyncio.run(preview_readonly(self.mock_app, self.action))
 
-        # Assert: the existing WebScraper port was called with the correct URL
-        self.mock_app._web_scraper.get_content.assert_called_once_with(
-            "https://example.com/test.md"
-        )
+        # Assert: the coordinator fetched the URL once, without hints
+        self.assertEqual(scraper.calls, [("https://example.com/test.md", {})])
 
         # Assert: launch_editor was called with the scraped content, .md suffix, skip_confirm=True
         mock_launch.assert_called_once()
@@ -270,12 +271,16 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         )
 
     def test_readonly_url_fetch_failure_notifies_user(self):
-        """If the WebScraper port fetch fails, must notify and return without opening editor."""
+        """If the coordinator fetch fails, must notify without opening an editor."""
         self.action.params = {"resource": "https://example.com/fail.md", "path": ""}
         editor_cmd = ["vim"]
         self.mock_app._console_tooling.find_editor.return_value = editor_cmd
-        self.mock_app._web_scraper = MagicMock()
-        self.mock_app._web_scraper.get_content.side_effect = Exception("Network error")
+        self.mock_app._web_content_service = WebContentService(
+            web_scraper=FakeWebScraper(
+                failures={"https://example.com/fail.md": Exception("Network error")}
+            ),
+            cache=FakeWebContentCache(),
+        )
 
         with patch("subprocess.run") as mock_run:
             asyncio.run(preview_readonly(self.mock_app, self.action))
@@ -316,9 +321,13 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         }
         editor_cmd = ["codium"]
         self.mock_app._console_tooling.find_editor.return_value = editor_cmd
-        self.mock_app._web_scraper = MagicMock()
-        self.mock_app._web_scraper.get_content.return_value = (
-            "# Test\nFetched content from URL.\n"
+        self.mock_app._web_content_service = WebContentService(
+            web_scraper=FakeWebScraper(
+                contents={
+                    "https://example.com/test.md": "# Test\nFetched content from URL.\n"
+                }
+            ),
+            cache=FakeWebContentCache(),
         )
         # Initialize the log preview files list for tracking
         self.mock_app._log_preview_files = []
@@ -394,8 +403,10 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         self.action.params = {"resource": "https://example.com/test.md", "path": ""}
         editor_cmd = ["vim"]
         self.mock_app._console_tooling.find_editor.return_value = editor_cmd
-        self.mock_app._web_scraper = MagicMock()
-        self.mock_app._web_scraper.get_content.return_value = "content"
+        scraper = FakeWebScraper(contents={"https://example.com/test.md": "content"})
+        self.mock_app._web_content_service = WebContentService(
+            web_scraper=scraper, cache=FakeWebContentCache()
+        )
 
         with patch(
             "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.launch_editor",
@@ -403,10 +414,8 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         ) as mock_launch:
             asyncio.run(preview_readonly(self.mock_app, self.action))
 
-        # Assert: the WebScraper port was consulted with the URL
-        self.mock_app._web_scraper.get_content.assert_called_once_with(
-            "https://example.com/test.md"
-        )
+        # Assert: the coordinator fetched the URL once, without hints
+        self.assertEqual(scraper.calls, [("https://example.com/test.md", {})])
 
         # Assert: launch_editor was called with the scraped content
         mock_launch.assert_called_once()
@@ -414,18 +423,18 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         self.assertEqual(call_args[1], "content")
         # Temp file cleanup is handled internally by launch_editor — no explicit assertion needed.
 
-    def test_readonly_url_without_web_scraper_notifies(self):
-        """If no web scraper is configured, URL READ must notify and return."""
+    def test_readonly_url_without_web_content_service_notifies(self):
+        """If no content coordinator is configured, URL READ must notify and return."""
         self.action.params = {"resource": "https://example.com/test.md", "path": ""}
         editor_cmd = ["vim"]
         self.mock_app._console_tooling.find_editor.return_value = editor_cmd
-        self.mock_app._web_scraper = None
+        self.mock_app._web_content_service = None
 
         with patch("subprocess.run") as mock_run:
             asyncio.run(preview_readonly(self.mock_app, self.action))
 
         self.mock_app.notify.assert_any_call(
-            "No web scraper configured. Cannot fetch URL content."
+            "No web content service configured. Cannot fetch URL content."
         )
         mock_run.assert_not_called()
 
@@ -452,7 +461,6 @@ def test_resolve_read_resource_prefers_the_coordinator():
                 web_scraper=FakeWebScraper(contents={url: "fresh body"}),
                 cache=FakeWebContentCache(entries={url: cached_body}),
             )
-            self._web_scraper = None
             self.notifications: list[str] = []
 
         def notify(self, message: str) -> None:
