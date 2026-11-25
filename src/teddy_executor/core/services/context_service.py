@@ -21,7 +21,9 @@ from teddy_executor.core.ports.outbound.environment_inspector import (
 from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
 from teddy_executor.core.ports.outbound.config_service import IConfigService
+from teddy_executor.core.ports.outbound.pdf_extractor import IPdfExtractor
 from teddy_executor.core.domain.models.config_schema import DEFAULT_APP_CONFIG
+from teddy_executor.core.utils.pdf import cap_extracted_text, is_pdf_source
 from teddy_executor.core.utils.string import truncate_lines
 
 
@@ -62,6 +64,7 @@ class ContextService(IGetContextUseCase):
         llm_client: ILlmClient,
         web_scraper: IWebScraper,
         config_service: Optional[IConfigService] = None,
+        pdf_extractor: Optional[IPdfExtractor] = None,
     ):
         self._file_system_manager = file_system_manager
         self._repo_tree_generator = repo_tree_generator
@@ -69,6 +72,7 @@ class ContextService(IGetContextUseCase):
         self._llm_client = llm_client
         self._web_scraper = web_scraper
         self._config_service = config_service
+        self._pdf_extractor = pdf_extractor
 
     def get_context(  # noqa: PLR0913
         self,
@@ -94,7 +98,10 @@ class ContextService(IGetContextUseCase):
         local_paths = [p for p in all_resolved_paths if not self._is_url(p)]
         urls = [p for p in all_resolved_paths if self._is_url(p)]
 
-        file_contents = self._file_system_manager.read_files_in_vault(local_paths)
+        pdf_paths = [p for p in local_paths if is_pdf_source(p)]
+        text_paths = [p for p in local_paths if not is_pdf_source(p)]
+        file_contents = self._file_system_manager.read_files_in_vault(text_paths)
+        file_contents.update(self._read_pdf_contents(pdf_paths))
         # Truncate-first: cap plan.md content before both the embed and the
         # token count, so pruning budgets track real window impact.
         file_contents = self._cap_plan_contents(file_contents)
@@ -190,11 +197,47 @@ class ContextService(IGetContextUseCase):
 
     def _resolve_plan_max_lines(self) -> int:
         """Resolve the plan context cap, falling back to the schema default."""
-        default = DEFAULT_APP_CONFIG.plan.max_lines
+        return self._resolve_max_lines(
+            "plan.max_lines", DEFAULT_APP_CONFIG.plan.max_lines
+        )
+
+    def _resolve_read_max_lines(self) -> int:
+        """Resolve the extracted-PDF cap, falling back to the schema default."""
+        return self._resolve_max_lines(
+            "read.max_lines", DEFAULT_APP_CONFIG.read.max_lines
+        )
+
+    def _resolve_max_lines(self, setting_key: str, default: int) -> int:
+        """Read a ``*.max_lines`` setting, falling back to its schema default."""
         if self._config_service is None:
             return default
-        value = self._config_service.get_setting("plan.max_lines", default)
+        value = self._config_service.get_setting(setting_key, default)
         return value if value is not None else default
+
+    def _read_pdf_contents(self, pdf_paths: Sequence[str]) -> Dict[str, Optional[str]]:
+        """Extract each PDF resource's text layer so no raw bytes are embedded.
+
+        Context assembly embeds resources verbatim, so a PDF path in the working
+        set must arrive as extracted text. A path that vanished from disk keeps
+        the not-found shape the vault read returns for text resources.
+        """
+        if not pdf_paths:
+            return {}
+        extractor = self._pdf_extractor
+        assert extractor is not None, (
+            "pdf_extractor port is required to embed a PDF context resource"
+        )
+        max_lines = self._resolve_read_max_lines()
+        contents: Dict[str, Optional[str]] = {}
+        for path in pdf_paths:
+            try:
+                data = self._file_system_manager.read_file_bytes(path)
+            except FileNotFoundError:
+                contents[path] = None
+                continue
+            text = extractor.extract_text(data, source=path)
+            contents[path] = cap_extracted_text(text, max_lines)
+        return contents
 
     def _resolve_scoped_paths(
         self, context_files: Optional[Dict[str, Sequence[str]]]
