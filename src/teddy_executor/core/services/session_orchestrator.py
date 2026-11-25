@@ -113,8 +113,8 @@ def _print_message_from_teddy(content: str, console: Optional[Console] = None) -
     """Print the agent's MESSAGE under the shared TeDDy framing.
 
     Renders a blank separator, the CYAN `--- MESSAGE from TeDDy ---`
-    framing, then the message body. This is the single source of truth
-    shared by the pipeline-start MESSAGE print
+    framing, a blank line, then the message body. This is the single source
+    of truth shared by the pipeline-start MESSAGE print
     (`SessionOrchestrator.execute`) and the `resume -p` stop-again
     re-print (`SessionLifecycleManager._consume_awaiting_reply`), so the
     two presentations stay byte-identical (Bug 54 / defect 4a).
@@ -127,6 +127,7 @@ def _print_message_from_teddy(content: str, console: Optional[Console] = None) -
     """
     typer.secho("")
     typer.secho("--- MESSAGE from TeDDy ---", fg=typer.colors.CYAN)
+    typer.secho("")
     active = console if console is not None else Console(theme=inline_code_theme())
     if active.is_terminal:
         render_message_body(content, active)

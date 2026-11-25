@@ -46,7 +46,7 @@ None — this is an outbound (driven) adapter.
 - **Postconditions:** Returns the editor content. Returns the `TEDDY_TEST_MOCK_EDITOR_OUTPUT` value when that variable is set.
 
 ### `ask_question(prompt, resources=None, agent_name=None) -> str`
-- **Postconditions:** Prints a cyan `--- MESSAGE from {agent_name} ---` header, the prompt, and any reference files, then returns the response from `ConsoleAskLoop`. On a terminal the prompt body is rendered through `render_message_body`; off-terminal it is echoed raw, so pipeline and redirected output stay byte-identical. Defaults the name to `TeDDy` when `agent_name` is absent. A terminal reply that abandons an opened editor draft deletes the draft file and clears the pending state.
+- **Postconditions:** Prints a cyan `--- MESSAGE from {agent_name} ---` header, a blank line, then the prompt and any reference files, and returns the response from `ConsoleAskLoop`. On a terminal the prompt body is rendered through `render_message_body`; off-terminal it is echoed raw, so pipeline and redirected output stay byte-identical. Defaults the name to `TeDDy` when `agent_name` is absent. A terminal reply that abandons an opened editor draft deletes the draft file and clears the pending state.
 
 ### `display_message(message) -> None`
 - **Postconditions:** Prints the message to the rich console bound to `stderr`.

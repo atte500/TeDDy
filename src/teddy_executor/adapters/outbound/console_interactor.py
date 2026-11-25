@@ -96,6 +96,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
         display_name = agent_name if agent_name else "TeDDy"
         header = f"\n--- MESSAGE from {display_name} ---"
         typer.secho(header, fg=typer.colors.CYAN, err=True)
+        typer.secho("", err=True)
         if self._console.is_terminal:
             render_message_body(prompt, self._console)
         else:
