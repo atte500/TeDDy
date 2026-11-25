@@ -460,7 +460,7 @@ class ContextService(IGetContextUseCase):
         return status_map
 
     def _format_header(self, system_info: Dict[str, str]) -> str:
-        """Formats the byte-stable header, closing with a Runtime pointer row."""
+        """Formats the byte-stable header of constant environment facts."""
         header_parts = [
             "# Project Context",
             "\n## System Information",

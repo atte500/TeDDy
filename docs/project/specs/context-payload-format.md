@@ -55,16 +55,13 @@ Session-mode sections (`## Session Resources` and `## Session History`) render o
 
 A simple key-value list of the environment details that stay constant for the whole session, giving the AI awareness of its operating environment without disturbing the byte-stable prefix.
 
-The list closes with a static pointer row naming the `## Runtime` section, so the agent still finds the date, time, and turn number after they move to the payload tail. The row carries no values, so it never varies between turns.
-
--   **Rows, in order:** `CWD`, `OS`, `Shell`, then the `Runtime` pointer row.
+-   **Rows, in order:** `CWD`, `OS`, `Shell`.
 -   **Example:**
     ```markdown
     ## System Information
     - **CWD:** /Users/developer/projects/TeDDy
     - **OS:** Darwin 25.2.0
     - **Shell:** /bin/zsh
-    - **Runtime:** Current Date, Current Time, and Current Turn appear under the final `## Runtime` section.
     ```
 
 ### Session Resources
@@ -218,7 +215,7 @@ In session mode this is the turn-scoped working set: the files the current turn 
 
 The payload's final section. It holds exactly the three key-value rows that change on every turn: `Current Date`, `Current Time`, and `Current Turn`.
 
-Keeping them here holds per-turn values out of the byte-stable prefix. Since the three rows are its only content, the pointer row in `## System Information` stays a truthful single-line signpost. The section renders in every mode, including a session-agnostic `teddy context` export, because those values exist regardless of session scope.
+Keeping them here holds per-turn values out of the byte-stable prefix, and the header above carries only the constant environment facts. The section renders in every mode, including a session-agnostic `teddy context` export, because those values exist regardless of session scope.
 
 -   **Rows, in order:** `Current Date`, `Current Time`, `Current Turn`.
 -   **Example:**

@@ -1,5 +1,5 @@
 # Slice: Remove the Runtime Pointer Row from the Payload Header
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** —
 - **Depends On:** —
 - **Specs:** [context-payload-format](../specs/context-payload-format.md)
@@ -59,11 +59,16 @@ Excluded surfaces: `docs/project/slices/00-03-payload-layout.md` is a completed 
 
 ## Deliverables
 
-- [ ] **Interface** - Revise the spec's `System Information` and `Runtime` sections and the design doc's `runtime_closes_payload` invariant to describe a header of CWD, OS, and Shell only, and drop the `_format_header` docstring clause naming the row.
+- [x] **Interface** - Revise the spec's `System Information` and `Runtime` sections and the design doc's `runtime_closes_payload` invariant to describe a header of CWD, OS, and Shell only, and drop the `_format_header` docstring clause naming the row.
 - [ ] **Core** - Remove the pointer row from `ContextService._format_header` and reframe the two unit header assertions as guards against its return, keeping the `## Runtime` placement assertions unchanged.
 - [ ] **Migration** - Update the acceptance tracer's ordering assertion and comment to match a header that no longer mentions the section.
 
 ## Implementation Notes
+
+- **Interface:** The contract now reads as a header of constant environment facts only. Four surfaces changed together: the spec's `System Information` prose dropped the paragraph justifying the signpost and its ordered rows list now ends at `Shell`; the spec's example block closes at the `- **Shell:**` row; the spec's `Runtime` section replaced the signpost justification with the plain statement that the header carries only constant environment facts, keeping its placement rationale and its every-mode coverage; the design doc's `runtime_closes_payload` now says `_format_header` emits only the constant environment rows; and the `_format_header` docstring reads "Formats the byte-stable header of constant environment facts."
+- **Deliberate ordering:** The contract is declared before the code reaches it, so the code still emits the row while the docs describe its absence. The suite stayed green because the two unit assertions that still assert the row's presence sit in the Core deliverable, not this one.
+- **Inherited traps for Core:** the two unit assertions pinning `- **Runtime:**` in `result.header` (header-shape test and Runtime-placement test) will fail the moment the row is removed, so they must flip in the same commit as the removal. The acceptance tracer's ordering anchor at `result.stdout.index("\n## Runtime")` currently survives only because the header row writes `## Runtime` inside backticks without the leading newline; once the row is gone the anchor must be re-derived from the plain heading.
+- **Excluded surfaces confirmed untouched:** `docs/project/slices/00-03-payload-layout.md` keeps its historical account of introducing the row, and `spikes/debug/pdf-context-utf8-decode/replica_context_service.py` keeps its copy as throwaway sandbox code.
 
 ## Verification
 1. **Session payload header:**
