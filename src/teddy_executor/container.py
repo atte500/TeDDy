@@ -88,6 +88,7 @@ def _register_services(container: punq.Container) -> None:
 
     register_reviewer(container)
 
+    from teddy_executor.core.domain.models.config_schema import ReadConfig
     from teddy_executor.core.ports.outbound import (
         IPdfExtractor,
         IShellExecutor,
@@ -124,7 +125,13 @@ def _register_services(container: punq.Container) -> None:
         scope=punq.Scope.transient,
     )
     container.register(
-        IMarkdownReportFormatter, MarkdownReportFormatter, scope=punq.Scope.transient
+        IMarkdownReportFormatter,
+        factory=lambda: MarkdownReportFormatter(
+            read_max_lines=container.resolve(IConfigService).get_setting(
+                "read.max_lines", ReadConfig.max_lines
+            )
+        ),
+        scope=punq.Scope.transient,
     )
 
     container.register(

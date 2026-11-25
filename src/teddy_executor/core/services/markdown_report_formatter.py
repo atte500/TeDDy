@@ -3,6 +3,7 @@ from datetime import timezone
 from typing import Any
 
 from teddy_executor.core.domain.models import ExecutionReport
+from teddy_executor.core.domain.models.config_schema import ReadConfig
 from teddy_executor.core.ports.outbound.markdown_report_formatter import (
     IMarkdownReportFormatter,
 )
@@ -26,7 +27,7 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
         cls._cached_env = None
         cls._cached_template = None
 
-    def __init__(self):
+    def __init__(self, read_max_lines: int = ReadConfig.max_lines):
         from jinja2 import Environment, PackageLoader
 
         if MarkdownReportFormatter._cached_env is None:
@@ -47,6 +48,7 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
 
         self.env = MarkdownReportFormatter._cached_env
         self.template = MarkdownReportFormatter._cached_template
+        self.read_max_lines = read_max_lines
 
     def _prepare_context(self, report: ExecutionReport) -> dict[str, Any]:
         """Prepares the report data for rendering."""
@@ -76,6 +78,7 @@ class MarkdownReportFormatter(IMarkdownReportFormatter):
             "is_session": is_session,
             "plan_title": plan_title,
             "format_datetime": format_datetime,
+            "read_max_lines": self.read_max_lines,
         }
 
     def format(self, report: ExecutionReport) -> str:

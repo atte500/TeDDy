@@ -296,6 +296,8 @@
 
 {% if log in report_ns.inline_logs %}
 {{ log.details.content | trim | embed_fence('') }}
+
+*Hint: Omit 'Lines' unless you need a specific range (reads from the start, up to {{ read_max_lines }} lines).*
 {% endif %}
 
 {{ render_action_blocks(log) }}

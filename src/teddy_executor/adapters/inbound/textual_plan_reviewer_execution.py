@@ -5,6 +5,7 @@ import io
 import logging
 from typing import TYPE_CHECKING, Any
 
+from teddy_executor.core.domain.models.config_schema import ReadConfig
 from teddy_executor.core.utils.terminal import emit_user_message
 
 if TYPE_CHECKING:
@@ -40,7 +41,9 @@ def harvest_action_content(action: Any, instruction_marker: str) -> None:
         )
 
 
-def format_action_log(log: ActionLog) -> str:
+def format_action_log(
+    log: ActionLog, read_max_lines: int = ReadConfig.max_lines
+) -> str:
     """
     Formats an ActionLog entry using the global MarkdownReportFormatter to ensure
     exact formatting consistency with the final execution report.
@@ -73,7 +76,7 @@ def format_action_log(log: ActionLog) -> str:
         action_logs=[log],
     )
 
-    formatter = MarkdownReportFormatter()
+    formatter = MarkdownReportFormatter(read_max_lines=read_max_lines)
     return formatter.format(synthetic_report)
 
 

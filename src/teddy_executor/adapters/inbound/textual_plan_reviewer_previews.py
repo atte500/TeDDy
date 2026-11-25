@@ -253,7 +253,14 @@ async def view_details_handler(app: "ReviewerApp") -> None:
         return
 
     if action.action_log:
-        log_content = format_action_log(action.action_log)
+        from teddy_executor.core.domain.models.config_schema import ReadConfig
+
+        read_max_lines = ReadConfig.max_lines
+        if app.config_service:
+            read_max_lines = app.config_service.get_setting(
+                "read.max_lines", ReadConfig.max_lines
+            )
+        log_content = format_action_log(action.action_log, read_max_lines)
         temp_file = app._system_env.create_temp_file(suffix=".md")
         app._log_preview_files.append(temp_file)
         await launch_editor(

@@ -102,3 +102,31 @@ def test_failed_action_with_content_renders_in_resource_contents():
     output = _format([failed_log], is_session=False)
     assert output.count(SENTINEL) == 1
     assert "## Resource Contents" in output
+
+
+def test_line_scoped_read_renders_cap_hint_once():
+    output = _format([_line_scoped_read_log()], is_session=False)
+    assert output.count("Omit 'Lines' unless you need a specific range") == 1
+    assert "up to 1000 lines" in output
+
+
+def test_line_scoped_read_cap_hint_quotes_configured_cap():
+    report = _build_report([_line_scoped_read_log()], is_session=False)
+    output = MarkdownReportFormatter(read_max_lines=250).format(report)
+    assert "up to 250 lines" in output
+
+
+def test_full_read_renders_no_cap_hint():
+    output = _format([_full_read_log()], is_session=False)
+    assert "Omit 'Lines'" not in output
+
+
+def test_failed_line_scoped_read_renders_no_cap_hint():
+    failed_log = ActionLog(
+        status=ActionStatus.FAILURE,
+        action_type="READ",
+        params={"File Path": "docs/spec.md", "lines": "1-3"},
+        details={"error": "boom", "content": CONTENT},
+    )
+    output = _format([failed_log], is_session=False)
+    assert "Omit 'Lines'" not in output
