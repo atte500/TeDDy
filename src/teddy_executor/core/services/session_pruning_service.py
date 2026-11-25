@@ -46,7 +46,7 @@ class SessionPruningService:
                     items[i] = new_item
 
             # 2. Heuristic 6: Retention Limit
-            items = self._apply_retention_limit(items)
+            items = self._apply_retention_limit(items, self._read_retention_batch())
 
             # 3. Heuristic 2: Global Budget
             items = self._apply_global_budget(
@@ -336,8 +336,32 @@ class SessionPruningService:
 
         return turns_to_prune
 
-    def _apply_retention_limit(self, items):
-        """Prunes turn context items that exceed the turn retention limit."""
+    def _read_retention_batch(self) -> int:
+        """Read the configured retention batch cadence.
+
+        The value is threaded into the retention window so the Core deliverable
+        can batch collections. Until then the window prunes per turn regardless.
+        A missing or unparseable value falls back to one, because a bad setting
+        must not silently disable retention.
+        """
+        setting = self._config_service.get_setting("auto_pruning.retention_batch", 1)
+        try:
+            batch = int(setting) if setting is not None else 1
+        except (TypeError, ValueError):
+            batch = 1
+        return max(batch, 1)
+
+    def _apply_retention_limit(self, items, retention_batch: int = 1):
+        """Prunes turn context items that exceed the turn retention limit.
+
+        ``retention_batch`` is the configured collection cadence. It is threaded
+        in here but does not yet reshape the window: this method still drops
+        every turn past the limit on each pass, which is exactly the batch-of-one
+        cadence. The batched window lands in the Core deliverable.
+        """
+        assert retention_batch >= 1, (
+            "retention_batch must be at least 1 to keep retention enabled"
+        )
         try:
             setting = self._config_service.get_setting(
                 "auto_pruning.max_turns_retention", 0

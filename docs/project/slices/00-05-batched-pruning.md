@@ -63,7 +63,7 @@ Boundary conditions, errors, and validation edge cases. These drive granular Uni
 
 - [x] **Interface** - Add `auto_pruning.retention_batch: 5` to the canonical configuration defaults with integer coercion and a `>= 1` floor.
 - [x] **Harness** - Add a pruning fixture that builds N `ContextItem`s with sequential turn ids, so batch boundaries are observable without a real session.
-- [ ] **Wiring** - Read the setting and thread it into `_apply_retention_limit` as `1`, leaving the suite's behaviour identical.
+- [x] **Wiring** - Read the setting and thread it into `_apply_retention_limit` as `1`, leaving the suite's behaviour identical.
 - [ ] **Core** - Implement the batched window: prune only once the excess reaches the batch, then drop the whole batch in one step, clamping so at least `max_turns_retention` turns survive.
 - [ ] **Migration** - Update existing retention tests that assert a one-turn deletion per boundary crossing.
 
@@ -75,6 +75,11 @@ The setting is a cadence knob, not a retention length: `max_turns_retention` sti
 
 ### Harness
 `tests/harness/setup/pruning_scenarios.py` is data only, mirroring `context_scenarios.py`. `turn_path(turn_id)` renders `.teddy/sessions/retention-scenario/<NN>/plan.md`, so the production extractor reads the id back unchanged. `turn_context(ids)` builds one selected `Turn`-scoped `ContextItem` per id in the given order, which lets a test express a sparse id gap because retention counts ids rather than entries; `sequential_turn_context(count, start=1)` is the consecutive shorthand. The contract test reads ids through the real `SessionPruningService._extract_turn_id` instead of a duplicated regex, so a change to the path convention breaks the fixture loudly rather than drifting silently.
+
+### Wiring
+`prune()` now calls `_apply_retention_limit(items, self._read_retention_batch())`. `_read_retention_batch()` reads `auto_pruning.retention_batch` through `IConfigService`, parses it to an int, and clamps to at least `1`; a missing or unparseable value falls back to `1` so the unit-test config doubles that do not declare the key keep today's cadence. `_apply_retention_limit` consumes the value through an inclusive `retention_batch >= 1` contract assertion, but the window still drops every turn past `max_turns_retention` on each pass, so behaviour is identical to the pre-change cadence. The batched window and the docstring updates that describe it land in the Core deliverable.
+
+The acceptance tracer bullet `tests/suites/acceptance/test_session_pruning_retention_wiring.py` composes a real `YamlConfigAdapter` over a temporary `.teddy/config.yaml` — subclassed only to record every `get_setting` key, so the read stays observable while the real schema path stays intact — plus a real `LocalFileSystemAdapter` (with an `EditSimulator`) rooted in the same temp directory, so the turn files genuinely do not exist and retention runs isolated from failure-status pruning. It drives `SessionPruningService.prune()` and pins both the configuration read and the batch-of-one escape hatch, which stays valid once Core batches the window.
 
 ## Verification
 1. **Batched cadence:**
