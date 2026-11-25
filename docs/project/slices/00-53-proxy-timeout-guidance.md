@@ -7,6 +7,8 @@
 - **Component Docs:** [LiteLLMAdapter](/docs/architecture/adapters/outbound/litellm_adapter.md), [ILlmClient](/docs/architecture/core/ports/outbound/llm_client.md)
 - **Scope Slug:** `proxy-timeout-guidance`
 
+> **Partially superseded (2026-11-25):** the rejection message no longer points at the proxy recipe, so the prose below that describes it as doing so is historical. The guard's rule and reason stand as recorded, and the recipe continues to live in the [LiteLLMAdapter component doc](/docs/architecture/adapters/outbound/litellm_adapter.md) as standalone guidance rather than as an addressee of the error.
+
 ## Goal
 A user running a local model behind Cloudflare or nginx loses a long generation to a hop idle timer and finds no in-product explanation of why or of what to change. Publish the working recipe, and make the one workaround people reach for fail loudly instead of silently burning three retries on an empty plan.
 
