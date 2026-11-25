@@ -61,7 +61,7 @@ Excluded surfaces: `docs/project/slices/00-03-payload-layout.md` is a completed 
 
 - [x] **Interface** - Revise the spec's `System Information` and `Runtime` sections and the design doc's `runtime_closes_payload` invariant to describe a header of CWD, OS, and Shell only, and drop the `_format_header` docstring clause naming the row.
 - [x] **Core** - Remove the pointer row from `ContextService._format_header` and reframe the two unit header assertions as guards against its return, keeping the `## Runtime` placement assertions unchanged.
-- [ ] **Migration** - Update the acceptance tracer's ordering assertion and comment to match a header that no longer mentions the section.
+- [x] **Migration** - Update the acceptance tracer's ordering assertion and comment to match a header that no longer mentions the section.
 
 ## Implementation Notes
 
@@ -74,6 +74,8 @@ Excluded surfaces: `docs/project/slices/00-03-payload-layout.md` is a completed 
 - **Edge-case coverage:** the absence guard covers *No literal collision*, because neither `- **Runtime:**` nor `## Runtime` can survive a header that carries no `Runtime` token at all; the final-line pin covers *Header row set*, because a leftover empty row or separator would displace the Shell row from last position. *Volatile values stay at the tail* and *Session-agnostic parity* hold by construction, since the append in `get_context` is untouched and renders regardless of session scope. *Token accounting* is unaffected because the count runs over the assembled `content` string, never over the header.
 - **Integration:** the full suite passed (`2586 passed, 5 skipped`) with the acceptance tracer unmodified, so its `"\n## Runtime"` anchor now matches only the appended section. The Migration deliverable tightens that anchor and drops the stale comment without a red gate in between.
 - **Grep result:** `git grep "Runtime:\*\*" -- src tests docs` returns no hit in `src/` or `tests/`; the surviving hits are the historical `00-03` slice and this slice's own Context and Traps prose. The acceptance test's comment is the only remaining stale test surface, and it belongs to Migration.
+- **Migration:** the acceptance tracer now anchors on the plain `## Runtime` heading. The comment explaining the former collision is gone with the collision itself, so the ordering assertion reverts to the natural form and states what it means: `## Resource Contents` precedes the tail section. The module passed (`8 passed`) with the tightened anchor, which is the evidence that the assertion still measures the real heading rather than a header artefact. No production behaviour changed, so there was no Red step to drive; the tightened anchor proves itself by holding.
+- **Grep exit codes:** `git grep` exits 1 when nothing matches, and the executor reports a non-zero first command as `FAILED_COMMAND` with no stdout, so a clean audit and a broken pattern looked identical in this slice's earlier reports. Both audits that appeared to fail were that exit code. Every later audit appends `|| echo none` so zero matches report as success.
 
 ## Verification
 1. **Session payload header:**
