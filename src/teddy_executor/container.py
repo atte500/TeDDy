@@ -224,6 +224,7 @@ def _register_orchestration_services(container: punq.Container) -> None:
     container.register(ExecutionOrchestrator, scope=punq.Scope.transient)
     from teddy_executor.core.ports.outbound import (
         IEnvironmentInspector,
+        IPdfExtractor,
         IRepoTreeGenerator,
         IWebScraper,
     )
@@ -237,6 +238,7 @@ def _register_orchestration_services(container: punq.Container) -> None:
             llm_client=container.resolve(ILlmClient),
             web_scraper=container.resolve(IWebScraper),
             config_service=container.resolve(IConfigService),
+            pdf_extractor=container.resolve(IPdfExtractor),
         ),
         scope=punq.Scope.transient,
     )

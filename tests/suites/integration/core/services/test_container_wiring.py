@@ -101,3 +101,28 @@ def test_composition_root_reads_a_local_pdf(monkeypatch, tmp_path):
     )
 
     assert "Quarterly Report" in action.execute(path="report.pdf")
+
+
+def test_context_use_case_receives_the_injected_pdf_extractor(container):
+    """The inbound context port must inherit the composition root's extractor.
+
+    Regression: the factory omitted pdf_extractor, so a local PDF in the working
+    set reached context assembly with no port and tripped its contract.
+    """
+    context_service = container.resolve(IGetContextUseCase)
+
+    assert isinstance(context_service._pdf_extractor, IPdfExtractor)
+
+
+def test_composition_root_embeds_a_local_pdf_as_extracted_text(monkeypatch, tmp_path):
+    """A PDF in the working set renders its text layer, never a decode error."""
+    (tmp_path / "report.pdf").write_bytes(build_minimal_pdf("Quarterly Report"))
+    monkeypatch.chdir(tmp_path)
+
+    context_service = create_container().resolve(IGetContextUseCase)
+    context = context_service.get_context(
+        context_files={"Turn": ["report.pdf"]}, include_tokens=False
+    )
+
+    assert "Quarterly Report" in context.content
+    assert "--- FILE NOT FOUND ---" not in context.content
