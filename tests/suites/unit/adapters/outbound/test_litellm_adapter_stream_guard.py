@@ -48,7 +48,7 @@ def test_validate_config_rejects_truthy_stream(mock_config, stream_value):
     assert len(errors) == 1, errors
     assert "llm.stream" in errors[0]
     assert "streaming" in errors[0].lower()
-    assert "proxy" in errors[0].lower()
+    assert "non-streamed" in errors[0].lower()
 
 
 @pytest.mark.parametrize("stream_value", [False, "false", _ABSENT])

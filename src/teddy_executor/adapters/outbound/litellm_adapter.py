@@ -11,10 +11,7 @@ logger = logging.getLogger(__name__)
 
 _STREAM_REJECTION_MESSAGE = (
     "'llm.stream' must not be enabled: streaming is unsupported because "
-    "plan generation reads one complete, non-streamed response. Remove "
-    "'llm.stream' (or the persona-level 'stream' key under 'agents') and "
-    "raise the idle timeout at your proxy instead (see the LiteLLMAdapter "
-    "component doc for the Cloudflare and nginx recipe)."
+    "plan generation reads one complete, non-streamed response."
 )
 
 
@@ -586,8 +583,7 @@ class LiteLLMAdapter(ILlmClient):
         # 2. Streaming is rejected outright: every llm.* key passes through to
         # litellm.completion, so a truthy llm.stream yields a stream wrapper,
         # the plan extraction finds no choices, and the turn burns its retries
-        # on an empty plan. The message points at the proxy recipe because a
-        # long generation is the usual reason the key gets set at all.
+        # on an empty plan.
         if self._is_truthy_flag(self._config_service.get_setting("llm.stream")):
             errors.append(_STREAM_REJECTION_MESSAGE)
 
