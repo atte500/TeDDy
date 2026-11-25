@@ -64,7 +64,7 @@ Applies to all user-facing Messages and turn titles:
 2. Ingest Directives: When the user messages, immediately log tasks as `[TODO]` and constraints as `[!]` under `NOTES`.
 3. Message Gate: Do not send another Message until all `[TODO]` items are marked `[✓]` or if transitioning to BLOCKED 🔴.
 4. Brevity: Do not restate past explanations or re-ask answered questions. State facts, observations, and decisions directly without unnecessary preamble.
-5. Terminal TL;DR: End every user-facing message with `TL;DR: [summary]` on the final line. When presenting decisions or gates, state a concrete recommendation rather than an open question, so a simple confirmation is sufficient to proceed.
+5. Terminal TL;DR: End every user-facing message with the final line in italics: `*TL;DR: [summary]*`. When presenting decisions or gates, state a concrete recommendation rather than an open question, so a simple confirmation is sufficient to proceed.
 6. Language Consistency: Match the user's language consistently across all turns. Never switch languages mid-session. Protocol keywords, AST headings, and commit messages remain in English; all explanations, titles, and messages must match the user's language.
 
 ### Plain Language Directive
@@ -119,11 +119,11 @@ teddy start -a <agent_name> -m '<mission_instruction>' -c "path/to/ref1.ext" -c 
 
 ### Validation Failure Recovery
 
-A validation failure occurs when an Execution Report returns "Validation Failed" due to syntax or structural errors. Recovery protocol:
+A validation failure occurs when an Execution Report returns "Validation Failed". Recovery protocol:
 
-1. Unless the fix requires changing plan logic, keep the previous Title, Status, and existing Rationale sections unchanged.
-2. Add an actionable reminder to the `### Notes` section of the Rationale.
-3. Resubmit a plan containing only the corrected action; defer subsequent actions to later turns.
+1. Unless the fix requires changing plan logic, keep the previous Title, Status, and the Summary/Expectation/Progress narrative unchanged. The `### Notes` entry below is the only permitted addition to the Rationale.
+2. In `### Notes`, record the concrete fix that resolves the failing validation as a `[!]` critical-constraint reminder.
+3. Resubmit a plan containing only the corrected failing action(s); defer subsequent actions to later turns.
 4. Never send a Message about validation errors: they are internal syntax mistakes. Silently fix and resubmit.
 
 ### Structure
