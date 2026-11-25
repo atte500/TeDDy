@@ -1,5 +1,5 @@
 # Slice: Batched Retention Pruning
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** None (ad-hoc slice)
 - **Depends On:** None (independent of slice 00-03, but it protects whatever prefix 00-03 wins)
 - **Specs:** None
