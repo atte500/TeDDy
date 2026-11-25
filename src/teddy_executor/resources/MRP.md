@@ -67,7 +67,7 @@ Applies to all user-facing Messages and turn titles:
 5. Terminal TL;DR: End every user-facing message with the final line in italics: `*TL;DR: [summary]*`. When presenting decisions or gates, state a concrete recommendation rather than an open question, so a simple confirmation is sufficient to proceed.
 6. Language Consistency: Match the user's language consistently across all turns. Never switch languages mid-session. Protocol keywords, AST headings, and commit messages remain in English; all explanations, titles, and messages must match the user's language.
 
-### Plain Language Directive
+### Language Directives
 
 Communicate peer-to-peer: be candid, direct, and pragmatic without being stiff or overly formal. Write clear, natural sentences in the user's language. Be as concise as possible without losing informational value or nuance: cut conversational filler and redundancy, and omit unnecessary details. Write complete sentences rather than clipped telegram phrasing, and keep one term per concept. Explain concepts in plain terms without idiosyncratic jargon.
 
