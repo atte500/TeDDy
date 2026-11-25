@@ -1,5 +1,5 @@
 # Component Design: ExecutionOrchestrator
-- **Status:** Implemented
+- **Status:** Refactoring
 - **Source:** [`src/teddy_executor/core/services/execution_orchestrator.py`](/src/teddy_executor/core/services/execution_orchestrator.py)
 
 ## Purpose
@@ -13,7 +13,7 @@ Implements the `IRunPlanUseCase` inbound port. It runs a parsed `Plan` atomicall
 ## Dependencies
 - [`IPlanParser`](../ports/inbound/plan_parser.md): Parses raw plan content into a `Plan`.
 - [`IPlanValidator`](../ports/inbound/plan_validator.md): Runs pre-flight validation.
-- [`ActionExecutor`](/src/teddy_executor/core/services/action_executor.py): Confirms and dispatches each action.
+- [`ActionExecutor`](/src/teddy_executor/core/services/action_executor.py): Confirms and dispatches each action, receiving the plan-level facts this orchestrator forwards. It holds no component design doc, so its role in that pass-through is documented here and in the dispatcher's contract.
 - [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Reads plan files and writes temporary plans.
 - [`IExecutionReportAssembler`](../ports/outbound/execution_report_assembler.md): Builds the final report.
 - [`IUserInteractor`](../ports/outbound/user_interactor.md): Displays messages.
@@ -28,6 +28,7 @@ Implements the `IRunPlanUseCase` inbound port. It runs a parsed `Plan` atomicall
 - `interrupt_drain`: When the interrupt guard is set, every remaining action is skipped with the interrupt reason and the loop exits normally.
 - `session_marker`: A session turn writes an empty `execution.started` marker into its turn directory after validation and review succeed and immediately before the first dispatch; a stateless run and an aborted review write none.
 - `temp_plan_cleanup`: A generated temporary plan file is removed in a `finally` block.
+- `session_scope_passthrough`: At dispatch time the session root is derived once from the plan's own path (`session_root_from` in `core.utils.paths`) and forwarded with `agent_name` and `is_session` into `ActionExecutor.confirm_and_dispatch`, so a READ on a URL is built with the session's cache scope. A plan without an on-disk path has no session scope, and its actions run uncached rather than failing.
 
 ## Inbound Ports
 - **`IRunPlanUseCase`**: Exposes `execute(...)`; `resume(...)` raises `NotImplementedError` because sessions are not supported here.
@@ -45,7 +46,7 @@ None declared directly — the service consumes the concrete services and ports 
 
 ### `execute(plan=None, plan_content=None, plan_path=None, require_approval=True, message=None, project_context=None, pipeline=False) -> ExecutionReport`
 - **Preconditions:** Exactly one of `plan`, `plan_content`, or `plan_path` supplies the plan.
-- **Postconditions:** Returns the assembled `ExecutionReport`. The method resolves the plan, validates it, performs the batch plan review, then — for a session plan — writes an empty `execution.started` marker into the turn directory immediately before the first dispatch, dispatches the actions, and assembles the report. A user abort returns an `ABORTED` report and writes no marker, and a plan that fails pre-flight validation raises before any marker write.
+- **Postconditions:** Returns the assembled `ExecutionReport`. The method resolves the plan, validates it, performs the batch plan review, then — for a session plan — writes an empty `execution.started` marker into the turn directory immediately before the first dispatch, dispatches the actions, and assembles the report. Every dispatch carries the session root derived from the plan's path, so an action that reads a remote resource reaches it through the session cache. A user abort returns an `ABORTED` report and writes no marker, and a plan that fails pre-flight validation raises before any marker write.
 - **Exceptions:**
   - `InvalidPlanError`: Plan pre-flight validation fails.
   - `ValueError`: No plan source (`plan`, `plan_content`, or `plan_path`) provided.

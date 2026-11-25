@@ -4,7 +4,7 @@
 - **Depends On:** None
 - **Specs:** None
 - **Prototype:** None
-- **Component Docs:** [ContextService](../../architecture/core/services/context_service.md), [WebScraperAdapter](../../architecture/adapters/outbound/web_scraper_adapter.md), [WebScraper](../../architecture/core/ports/outbound/web_scraper.md)
+- **Component Docs:** [IWebContentCache](../../architecture/core/ports/outbound/web_content_cache.md), [WebContentService](../../architecture/core/services/web_content_service.md), [WebContentCacheAdapter](../../architecture/adapters/outbound/web_content_cache_adapter.md), [ContextService](../../architecture/core/services/context_service.md), [ActionFactory](../../architecture/core/services/action_factory.md), [ActionPorts](../../architecture/core/domain/action_ports.md), [ActionDispatcher](../../architecture/core/services/action_dispatcher.md), [ExecutionOrchestrator](../../architecture/core/services/execution_orchestrator.md), [TextualPlanReviewer](../../architecture/adapters/inbound/textual_plan_reviewer.md), [WebScraperAdapter](../../architecture/adapters/outbound/web_scraper_adapter.md), [WebScraper](../../architecture/core/ports/outbound/web_scraper.md)
 - **Scope Slug:** `web-cache`
 
 ## Goal
@@ -18,7 +18,13 @@ Put one session-scoped cache behind every surface that fetches a remote resource
 - Cost shape: `_fetch_pdf_bytes` issues `requests.get(url, timeout=5)` with `research.max_scraper_retries` attempts and `2**attempt` backoff, so a failing URL burns roughly 18 seconds before giving up, against 0.3–163 ms to extract the same document once its bytes are local. Network latency, not extraction, is the cost this slice removes.
 - Concurrency: the cache dict is shared across the five fetch threads, each mutating it and triggering a whole-dict serialization. A racing save can drop a sibling entry, and serializing a dict a sibling is mutating can raise. Centralizing persistence removes the class instead of patching it.
 - Registration sites: `WebScraperAdapter` at `registries/infrastructure.py:110`, `ContextService` at `container.py:233`, and `ActionPorts` constructed at `container.py:103`. Existing cache coverage lives in `tests/suites/unit/core/services/test_context_service_caching.py`.
-- `docs/project/specs/context-payload-format.md` specifies payload shape and never mentions caching, so this slice amends no spec. The cache invariant lives in `ARCHITECTURE.md` under "Web Content Cache", which must be rewritten because it currently describes the cache as a `ContextService` detail.
+- `docs/project/specs/context-payload-format.md` specifies payload shape and never mentions caching, so this slice amends no spec. The cache invariant lives in `ARCHITECTURE.md` under "Web Content Cache", rewritten in the design phase to describe the port and adapter instead of a `ContextService` detail.
+- **Resolved — session-scope handoff:** `ActionExecutor.confirm_and_dispatch` → `ActionDispatcher.dispatch_and_execute` → `execute(**execution_params)` forwards only plan params, and `ActionData` carries no session field, so nothing session-scoped reaches a READ today. `ExecutionOrchestrator` holds `plan.plan_path` (`plan.py:77`) and already forwards plan-level facts (`agent_name`, `is_session`), so an optional `session_root` keyword travels that same route into `IActionFactory.create_action`. The reviewer needs no plumbing: `ReviewerApp.project_context.session_root` is already read by the reviewer helpers.
+- **Resolved — write ownership:** the adapter owns a locked read-modify-write merge, so a save names only the URLs it fetched and never replaces a sibling entry. The port therefore exposes `load_entries` / `merge_entries` rather than per-URL get/put: assembly fetches a batch, and per-URL reads would parse the same JSON once per URL per turn.
+- **Resolved — failure rendering:** after the migration no negative sentinel exists, so a failed URL renders the existing `--- FILE NOT FOUND ---` marker and is retried on the next turn. The payload format needs no change.
+- **Resolved — harness:** the project convention is `tests/harness/setup/fake_<port>.py` implementing the port (as `FakeLlmClient(ILlmClient)` does). `_resolve_read_resource` is a plain sync function over an injected app with no existing coverage, so the preview surface is drivable without a terminal.
+- **Resolved — truncation:** `truncate_lines(content, max_lines, direction="tail", hint="", action_type=None)` is the single announced helper, and `cap_extracted_text` wraps it with `direction="head", action_type="read"`. `WebContentService` becomes its only remote caller, so the adapter's private `_truncate_content` and the port's `truncate` flag are pruned rather than corrected: one owner applies the cap, and no surface can reach a silent line slice.
+- **Redundant parameter:** `cache_dir` on `get_context` always equals `session_root` at every call site (`planning_service.py:90-97`, `session_orchestrator.py:477-496`), so it is pruned and `session_root` stays the single scope handle.
 
 ## Scenarios
 > As an agent working through a session, I want a remote document I already fetched to stay available without another network round trip, so that a large PDF URL does not cost a full fetch on every turn.
@@ -56,39 +62,43 @@ Then the embedded body is the full untruncated text
 - **Corrupt cache**: If the cache file is missing, unparseable, or not a flat string-to-string map, then it reads as empty and the fetch proceeds, because cache damage must never block a turn.
 - **No session root**: If no session is in scope, as in a session-agnostic `teddy context` export, then fetches run uncached and no file is created, because there is nowhere session-scoped to write.
 - **Concurrent writers**: If several fetches complete at once, then each write merges into the on-disk map under one lock rather than replacing it, because a racing save must not drop a sibling entry.
+- **Cache write failure**: If a merge cannot be persisted, then the fetched body is still returned and the failure is logged, because discarding a completed fetch over a cache write is the worse outcome.
 - **Same URL in two scopes**: If a URL appears in both the session and turn scopes, then exactly one fetch serves both, because the cache is keyed by URL alone.
 - **Non-PDF payload**: If a URL named `.pdf` returns a body without the `%PDF-` magic bytes, then the fetch fails with `PdfExtractionError` and nothing is cached, because the magic check rejects it before extraction.
 - **Empty body**: If a fetch succeeds but yields no text, then the empty body is cached and renders as an empty resource, because a successful empty response is a fact rather than a failure, and the previous `--- FILE NOT FOUND ---` rendering for that case disappears with the sentinel.
-- **Announced truncation**: If remote content exceeds `read.max_lines`, then the cut carries the same notice a long local file receives, because silent truncation violates Failure Transparency.
+- **Announced truncation**: If remote content exceeds `read.max_lines`, then `WebContentService` cuts it through the shared helper so the cut carries the same notice a long local file receives, because silent truncation violates Failure Transparency.
 
 ## Key Unknowns
-
-- [ ] `[Technical]` Session-scope handoff: `ActionFactory` and the plan reviewer hold no session root, so the cache must learn it either by being bound per turn at the composition root, by receiving a `session_root` argument on each call, or by resolving it through the session manager. Design Sensitivity: if bound per turn, `ActionPorts` and the reviewer gain a dependency while fetch-call signatures stay unchanged; if passed per call, every fetch surface's signature and caller tests change; if resolved through the session manager, the cache adapter takes on a filesystem lookup it does not own.
-- [ ] `[Technical]` Write ownership: whether the adapter performs a locked read-modify-write per save, or callers merge and the adapter only writes a supplied map. Design Sensitivity: if the adapter owns the merge, saving one URL is the whole contract and the shared mutable dict disappears; if callers merge, the racing-save defect survives and must be fixed elsewhere.
-- [ ] `[Functional]` Failure rendering: with no negative sentinel, a URL that fails during a READ shows what in the action log and in the next payload, namely the existing `--- FILE NOT FOUND ---` marker, an explicit fetch-failure marker, or a fresh attempt each turn. Design Sensitivity: if a distinct marker is wanted, `_format_file_section` gains a second missing state and the payload spec's `Resource Contents` wording needs review; if the existing marker stays, no formatting changes at all.
-- [ ] `[Harness]` Deterministic three-surface coverage: proving cache reuse from context assembly, the READ action, and the reviewer preview without global patching or real network needs an in-memory fake cache plus an injected fake scraper per surface, and the preview branch must be driven under a forced terminal per the architecture's terminal-gate rule. Design Sensitivity: if the preview cannot be driven deterministically, that surface is covered at adapter level only and the slice records the gap.
+None remaining. All four unknowns were resolved during discovery and are recorded under Context: the session root travels as an optional keyword from the orchestrator, the adapter owns the locked merge, a failed fetch leaves no entry and keeps the existing missing marker, and the three surfaces are covered by an in-memory cache fake plus an injected fake scraper.
 
 ## Impact
-1. `[NEW]` Session-scoped content cache port in `core/ports/outbound/` — the read and save contract for URL-keyed session content, including the untruncated-body invariant and the absent-session behavior. Naming follows the surrounding port convention and is settled by the Architect.
-2. `[NEW]` Filesystem cache adapter in `adapters/outbound/` — `.web_cache.json` under the session root, atomic temp-then-replace write, locked merge, tolerant load, no TTL, intra-session only.
-3. `[EXTEND]` `WebScraperAdapter._truncate_content` — route the cap through the shared announced helper instead of a silent line slice, leaving the lazy imports and the retry budget untouched.
-4. `[MIGRATE]` `ContextService` — delete `CACHE_FILENAME`, `_load_web_cache`, `_save_web_cache`, and the empty-sentinel normalization; read once per assembly through the port, fetch misses in parallel, persist successes only.
-5. `[MIGRATE]` `ActionFactory` READ-on-URL wrapper at `action_factory.py:65` — consult the cache, fetch on a miss, persist the untruncated body, return the capped body.
-6. `[MIGRATE]` `textual_plan_reviewer_previews.py:146` — serve previews from the cache under the same miss-then-store rule.
-7. `[MIGRATE]` Composition root — `container.py` and `registries/infrastructure.py` register the adapter and thread it into `ContextService`, `ActionPorts`, and the plan reviewer.
-8. `[PRUNE]` The per-surface ad-hoc cache plumbing once all three surfaces use the port, so no private cache helper remains inside a core service.
-9. Explicitly out of scope: bounding embedded PDF text by size, TTL and expiry, cross-session sharing, eviction policy, and any change to what a cache hit embeds.
-10. Documentation: `ARCHITECTURE.md`'s "Web Content Cache" bullet and its Component Map rows are rewritten by the Architect to describe the port and adapter rather than a `ContextService` detail, with a component doc for the new port created in the same pass.
+1. `[NEW]` `IWebContentCache` in `core/ports/outbound/` — the stateless read and merge contract for URL-keyed session content, keyed by an explicitly passed `session_root`, including the untruncated-body and absent-session rules.
+2. `[NEW]` `WebContentService` in `core/services/` — the coordinator owning the single (`fetch_one`) and batch (`fetch_many`) cached-fetch workflows, so the store-verbatim/cap-only-on-return rule exists once rather than per surface.
+3. `[NEW]` `WebContentCacheAdapter` in `adapters/outbound/` — `.web_cache.json` under the session root, atomic temp-then-replace write, locked merge, tolerant load, no TTL, intra-session only.
+4. `[NEW]` `WebContentCacheError` in `core/domain/models/exceptions.py` — inherits from `TeddyError`, so the coordinator catches this specific type and still returns the fetched body.
+5. `[PRUNE]` `WebScraper.get_content`'s `truncate` flag and `WebScraperAdapter._truncate_content` — the adapter returns the verbatim body and `WebContentService` owns the announced cap, so the second truncation owner disappears instead of being corrected in place. Pruned only after the three surfaces migrate; the lazy imports and the retry budget stay untouched.
+6. `[EXTEND]` `IActionFactory.create_action` / `ActionFactory.create_action` — add an optional `session_root` keyword so a READ-on-URL is built already knowing its cache scope; existing two-argument callers stay valid.
+7. `[MIGRATE]` `ContextService` — delete `CACHE_FILENAME`, `_load_web_cache`, `_save_web_cache`, `_fetch_and_cache_url`, the fetch pool, and the empty-sentinel normalization; resolve the URL scope through one `fetch_many` call and drop the redundant `cache_dir` parameter.
+8. `[MIGRATE]` `ActionFactory._create_read_action` — bind `WebContentService.fetch_one` with the creation-time session root instead of the scraper, so the handler never decides truncation.
+9. `[MIGRATE]` `textual_plan_reviewer_previews._resolve_read_resource` — serve URL previews through the coordinator with `project_context.session_root`, keeping the existing empty-content notice.
+10. `[MIGRATE]` `ExecutionOrchestrator` → `ActionExecutor.confirm_and_dispatch` → `ActionDispatcher.dispatch_and_execute` — thread one optional `session_root`, derived from `plan.plan_path` through the shared helper, following the existing `agent_name`/`is_session` convention rather than a new channel. `ActionExecutor` carries mile zero of that pass-through but holds no component design, so the contract is documented at the orchestrator and dispatcher boundaries and the gap is not papered over with a phantom link.
+11. `[MIGRATE]` `ActionPorts` — drop the now-dead `web_scraper` field so the bundle cannot offer a second, uncached path to remote content; the coordinator arrives at the factory as a separate keyword because a `core/domain/models/` DTO must not name a `core/services/` class.
+12. `[MIGRATE]` Composition root — register the adapter and the coordinator, thread them into `ContextService`, `ActionFactory`, and the plan reviewer, and drop the `ActionPorts` scraper argument at `container.py:103`.
+13. `[REFACTOR]` Session-root derivation at the touched call sites — one helper in `core/utils/paths.py` replaces the hand-rolled `Path(...).parent.parent` in `planning_service`, in `session_orchestrator`'s context assembly, and in the new dispatch-time derivation in `execution_orchestrator`, rather than adding a fourth copy; unrelated occurrences stay untouched. `SessionOrchestrator` and `PlanningService` only adopt the helper, so their contracts are unchanged and their designs need no edit.
+14. `[PRUNE]` The superseded expectations — the per-surface cache plumbing, the `cache_dir` parameter and its port-contract tests, the adapter's own truncation tests, which move to the coordinator's suite with the announced notice they must now assert, and the Bug 39 cache-failure tests, whose reversal is recorded in that bug's case file rather than left as a silent deletion.
+15. Explicitly out of scope: bounding embedded PDF text by size, TTL and expiry, cross-session sharing, eviction policy, and any change to what a cache hit embeds.
+16. Documentation: `ARCHITECTURE.md`, the six affected component designs, and the three new component designs are written by the Architect in the same pass.
 
 ## Deliverables
 
-- [ ] **Interface** - Define the session-scoped content cache port: reading returns cached content or nothing, saving persists one URL's untruncated body, and the contract states how an absent session behaves.
-- [ ] **Harness** - Add an in-memory fake cache and the fixture wiring that lets each surface be driven without network or disk.
-- [ ] **Wiring** - Register the cache adapter at the composition root and thread it into `ContextService`, `ActionPorts`, and the plan reviewer with the previous behavior intact apart from this slice's stated changes.
-- [ ] **Core** - Migrate `ContextService` to the port: one read per assembly, parallel misses, successes persisted only, sentinel normalization removed.
-- [ ] **Adapter** - Implement the filesystem cache with atomic writes, a locked merge, tolerant load, and session-root resolution.
-- [ ] **Migration** - Route READ-on-URL and the reviewer preview through the cache, unify remote truncation on the announced helper, and update the affected caller tests.
-- [ ] **Cleanup** - Remove the private cache helpers and the silent line slice once no caller remains.
+- [ ] **Env** - Extend `.githooks/check_architecture_boundaries.py` so the `.web_cache.json` literal is owned by the adapter alone, failing the check when it appears outside the cache adapter module and `tests/`.
+- [ ] **Interface** - Define `IWebContentCache` with `load_entries` / `merge_entries` keyed by an optional `session_root`, and add `WebContentCacheError` under `TeddyError`, with no caller changed yet.
+- [ ] **Harness** - Add `FakeWebContentCache` and `FakeWebScraper` under `tests/harness/setup/` plus the fixture wiring that drives all three surfaces without network or disk.
+- [ ] **Wiring** - Register the adapter and `WebContentService` at the composition root and route context assembly through the coordinator with the previous behavior intact apart from this slice's stated changes.
+- [ ] **Core** - Implement `WebContentService`: one map load per batch, parallel misses, verbatim store, announced cap for a capped read, successes-only persistence, and a tolerated cache-write failure.
+- [ ] **Adapter** - Implement `WebContentCacheAdapter` with atomic writes, a locked merge, tolerant load, and the absent-session no-op.
+- [ ] **Migration** - Route READ-on-URL through the coordinator with the session root threaded from the orchestrator into `create_action`, serve the reviewer preview from `project_context.session_root`, unify the remote cap on `truncate_lines`, drop `ActionPorts.web_scraper` and the `cache_dir` parameter, adopt the shared session-root helper at the touched call sites, and update the affected caller tests.
+- [ ] **Cleanup** - Remove the private cache helpers, the fetch pool, the sentinel normalization, the `truncate` flag with `_truncate_content`, and the superseded cache-failure and adapter truncation tests once no caller remains, recording the Bug 39 reversal in its case file.
 
 ## Implementation Notes
 Not started.
@@ -109,3 +119,9 @@ Not started.
 5. **Untruncated cache:**
    After the capped READ from step 4, continue one turn.
    Verify the payload embeds more than five lines, proving the cache kept the full body.
+6. **Preview reuses the cache:**
+   Review a plan containing a READ on a URL already fetched this session, then select that action.
+   Verify the preview opens the cached body and no new fetch is logged.
+7. **Failure retried, not remembered:**
+   Keep a READ on an unreachable URL across two turns.
+   Verify each turn reports the failure again rather than serving a cached empty document.

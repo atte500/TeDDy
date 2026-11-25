@@ -1,5 +1,5 @@
 # Component Design: TextualPlanReviewer
-- **Status:** Implemented
+- **Status:** Refactoring
 - **Source:** [`src/teddy_executor/adapters/inbound/textual_plan_reviewer.py`](/src/teddy_executor/adapters/inbound/textual_plan_reviewer.py)
 
 ## Purpose
@@ -11,6 +11,7 @@ Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It p
 ## Dependencies
 - [`ISystemEnvironment`](../../core/ports/outbound/system_environment.md): Launches the external editor for context-aware editing.
 - **`is_cli_editor` / `normalize_editor_basename`** (`teddy_executor.core.utils.editor_names`): Classify editor commands by stripping Windows launcher suffixes and lowercasing the basename. The module-level `_is_cli_editor` in `textual_plan_reviewer_editor.py` stays a thin delegator because `textual_plan_reviewer_previews` imports it.
+- [`WebContentService`](../../core/services/web_content_service.md): Serves a READ action's URL preview from the session cache, fetching once on a miss.
 
 ## Class Invariants
 - `stdin_ownership`: While the app runs, the reviewer claims `stdin_owned()` so the session quit-key listener backs off and the TUI's own `q` binding stays authoritative.
@@ -18,12 +19,14 @@ Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It p
 - `log_is_read_only`: Viewing an action log bypasses the apply-changes confirmation prompt.
 - `session_root_grouped_context`: The context pane groups reads by the DTO's `session_root`. Only paths under that root become History; a foreign session's read keeps the scope group it arrived in, because the exclusion uses `is_own_session_path` rather than the coarse "under `sessions/`" test, and its label falls back to the raw path. A `None` root keeps the legacy grouping.
 - `mutable_plan_models`: The `Plan` and `ActionData` models are unfrozen so the reviewer can update them in memory.
+- `cache_served_url_preview`: A READ preview on an `http`/`https` resource resolves through `WebContentService.fetch_one` with `project_context.session_root`, so previewing a URL a READ already fetched costs no network round trip, and a preview miss is stored for the following turn. A missing project context reads as no session, so the preview falls back to an uncached fetch.
 
 ## Inbound Ports
 - **`IPlanReviewer`**: Exposes `review(plan, project_context=None)` and `review_action(action, total_actions, agent_name=None)`.
 
 ## Outbound Ports
 - **`ISystemEnvironment`**: Consumed to open the editor for parameter edits.
+- **`WebContentService`**: Consumed to produce a READ preview's URL body without a redundant fetch.
 
 ## Data Contracts
 - **`Plan`** and **`ActionData`** (`teddy_executor.core.domain.models.plan`): The reviewed objects, updated in memory.
