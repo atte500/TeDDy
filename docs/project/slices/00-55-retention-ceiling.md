@@ -1,6 +1,6 @@
 # Slice: Retention Ceiling
 
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** None (ad-hoc)
 - **Depends On:** [Batched Retention Pruning](00-05-batched-pruning.md)
 - **Specs:** None
@@ -71,13 +71,20 @@ None. The domain rule was settled with the user during alignment, the batch fall
 4. `[PRUNE]` The below-batch guard and the floor wording in the `_apply_retention_limit` docstring, once the ceiling rule replaces them.
 
 ## Deliverables
-- [ ] **Wiring** - Re-pin the acceptance tracer bullet `tests/suites/acceptance/test_session_pruning_retention_wiring.py` to the ceiling promise, keeping its real `YamlConfigAdapter` over a temporary `.teddy/config.yaml` and its real `LocalFileSystemAdapter` so the configuration read stays observable end to end, and asserting both a batched drop and the batch-of-one cadence through the outer `prune()` entry point.
-- [ ] **Core** - Implement the ceiling in `_apply_retention_limit`: count the distinct turn ids that still have a selected item, return unchanged at or below `max_turns_retention`, otherwise deselect every selected turn id older than the newest `max(1, max_turns_retention - retention_batch + 1)` and annotate them with the retention reason. Update the docstring, invert the sixteen cases in `test_session_pruning_retention_window.py` to the `[limit - batch + 1, limit]` band while keeping batch-of-one parity, the sparse-id case, the disable case, and the bad-batch fallback, and align every prose surface listed under Impact.
+- [x] **Wiring** - Re-pin the acceptance tracer bullet `tests/suites/acceptance/test_session_pruning_retention_wiring.py` to the ceiling promise, keeping its real `YamlConfigAdapter` over a temporary `.teddy/config.yaml` and its real `LocalFileSystemAdapter` so the configuration read stays observable end to end, and asserting both a batched drop and the batch-of-one cadence through the outer `prune()` entry point.
+- [ ] **Core** - Extend the ceiling's coverage and finish its prose. The rule itself shipped with Wiring (see Implementation Notes) so every commit stayed green: `_apply_retention_limit` counts the distinct turn ids that still hold a selected item, returns unchanged at or below `max_turns_retention`, and otherwise keeps only the newest `max(1, max_turns_retention - retention_batch + 1)`. Remaining here: add the granular edge-case cases (repeated pruning is a no-op, exactly-at-the-ceiling, an overage larger than the batch stated as its own case, retention disabled, and the bad-batch fallback alongside the migrated band), settle the final docstring, and align every prose surface listed under Impact.
 
 ## Implementation Notes
 The ceiling and the floor prune on the same cadence — one batch every `retention_batch` turns — so the prefix-cache benefit is identical between the two designs. What changes is which promise the setting makes and how deep the retained history runs: the ceiling's trough is `limit - batch + 1` turns rather than `limit`, so at the shipped defaults the number of turns held between collections falls from 10 to 6, and anyone who wants the old depth at the old cadence sets `max_turns_retention` to `14` to keep a guaranteed ten.
 
 Pruning is evaluated against the turn ids present in the gathered context, so the first drop lands on the turn after the ceiling is first exceeded, not on the turn that reaches it. Slices and tests should be phrased by the ids in the context rather than by "when turn N starts", to stay free of that off-by-one.
+
+### Wiring
+The tracer bullet drives the outer `prune()` entry point over a real `YamlConfigAdapter` — subclassed only to record every `get_setting` key — and a real `LocalFileSystemAdapter` rooted in the same temporary directory, so both retention settings are read from a genuine `.teddy/config.yaml` while no turn artifact exists on disk to trigger failure-status pruning. `_prune_with(tmp_path, *, limit, batch, turn_count)` composes that boundary once and returns the pruned context together with the recorder, so both scenarios share one composition instead of duplicating adapter wiring.
+
+The acceptance assertion cannot pass without the arithmetic changing, and the change contradicts five pre-existing floor-semantics unit cases, so the rule inversion landed in this commit rather than in Core: the per-deliverable gate requires every commit to be green. `_apply_retention_limit` now counts the distinct turn ids that still hold a selected item, returns the items untouched at or below `max_turns_retention`, and otherwise keeps the newest `max(1, limit - retention_batch + 1)` ids while annotating every dropped turn with `Turn exceeds retention limit of N`. Skipping items that are already deselected keeps a turn removed by failure-status pruning free of a retention reason. `_map_turn_ids` lost its `max_id` return, which had no other caller.
+
+The shipped numbers are the band itself: `limit=4, batch=2` over five turns retains `4 - 2 + 1 = 3` ids and drops 1–2; a batch of one retains four and drops only id 1; and the primary Gherkin falls out as eleven turns against `10`/`5` keeping the newest six. The five migrated unit cases were re-pinned to that band — at or under the ceiling holds, the first turn past the ceiling drops a full batch, a batch beyond the ceiling clamps to the newest turn, an overage larger than the batch lands on the trough, and a sparse id gap counts distinct turns rather than path ids. The batch-of-one, short-history, and bad-batch cases needed no edit. Targeted runs: 22 passed for the acceptance module plus both retention unit modules, 11 passed for the pruning sweep across the acceptance and integration suites, and the full suite at 2581 passed / 5 skipped.
 
 ## Verification
 1. **Ceiling drops a whole batch:**

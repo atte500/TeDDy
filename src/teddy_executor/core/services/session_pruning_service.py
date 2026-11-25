@@ -368,15 +368,19 @@ class SessionPruningService:
         return batch
 
     def _apply_retention_limit(self, items, retention_batch: int = 1):
-        """Prunes turn context items once the collected excess fills a batch.
+        """Keeps the turn-scoped history inside ``max_turns_retention`` turns.
 
-        ``max_turns_retention`` still defines how much history survives; the
-        batch only defines how often the excess is collected. Nothing is pruned
-        until ``max_id - limit`` reaches the batch, and then the collected batch
-        is dropped in one step, so the retained prefix stays stable between
-        collections. The cut never passes ``max_id - limit``, which keeps the
-        newest ``max_turns_retention`` turn positions alive, and a batch of one
-        reproduces the per-turn cadence that predates batching.
+        ``max_turns_retention`` is a ceiling on how many distinct turns the
+        turn-scoped context may hold, and ``retention_batch`` is how many of the
+        oldest turns fall together once that ceiling is exceeded. At or below the
+        ceiling nothing is deselected. Past it, only the newest
+        ``max(1, max_turns_retention - retention_batch + 1)`` turns survive, so
+        one extra turn drops a whole batch and a larger overage drops that
+        overage plus a full batch, minus one. Counting distinct turn ids keeps a
+        sparse history honest, and clamping to one keeps the newest turn alive
+        even when the batch meets or exceeds the ceiling. A batch of one retains
+        the newest ``max_turns_retention`` turns, reproducing the per-turn
+        cadence that predates batching.
         """
         assert retention_batch >= 1, (
             "retention_batch must be at least 1 to keep retention enabled"
@@ -392,31 +396,31 @@ class SessionPruningService:
         if limit <= 0:
             return items
 
-        turn_id_map, max_id = self._map_turn_ids(items)
-        if max_id == -1:
+        turn_id_map = self._map_turn_ids(items)
+        selected_ids = sorted(
+            {turn_id for idx, turn_id in turn_id_map.items() if items[idx].selected}
+        )
+        if len(selected_ids) <= limit:
             return items
 
-        excess = max_id - limit
-        if excess < retention_batch:
-            return items
-
-        threshold = (excess // retention_batch) * retention_batch
+        retained_count = max(1, limit - retention_batch + 1)
+        retained_ids = set(selected_ids[-retained_count:])
         reason = f"Turn exceeds retention limit of {limit}"
 
-        for idx, tid in turn_id_map.items():
-            if tid <= threshold:
-                items[idx] = replace(
-                    items[idx],
-                    selected=False,
-                    auto_prune_reason=reason,
-                )
+        for idx, turn_id in turn_id_map.items():
+            if turn_id in retained_ids or not items[idx].selected:
+                continue
+            items[idx] = replace(
+                items[idx],
+                selected=False,
+                auto_prune_reason=reason,
+            )
 
         return items
 
-    def _map_turn_ids(self, items) -> tuple[Dict[int, int], int]:
-        """Identifies turn IDs and the maximum ID in the context items."""
-        max_id = -1
-        turn_id_map = {}  # idx -> int_id
+    def _map_turn_ids(self, items) -> Dict[int, int]:
+        """Maps each item index carrying a turn id to that id."""
+        turn_id_map: Dict[int, int] = {}
 
         for i, item in enumerate(items):
             if item.scope != "Turn":
@@ -425,12 +429,10 @@ class SessionPruningService:
             tid_str = self._extract_turn_id(item.path)
             if tid_str:
                 try:
-                    tid = int(tid_str)
-                    turn_id_map[i] = tid
-                    max_id = max(max_id, tid)
+                    turn_id_map[i] = int(tid_str)
                 except (ValueError, TypeError):
                     continue
-        return turn_id_map, max_id
+        return turn_id_map
 
     def _get_turn_context_threshold(self) -> int:
         """Reads the turn context threshold from config.

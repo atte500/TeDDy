@@ -1,11 +1,12 @@
-"""Unit coverage for the batched retention window.
+"""Unit coverage for the retention ceiling.
 
-Retention collects excess turn history in whole batches: nothing is pruned
-until ``max_id - max_turns_retention`` reaches the configured batch, and then
-the collected batch is dropped in one pass. The cut never passes
-``max_id - max_turns_retention``, so the newest retention-limit turn positions
-always survive, and a batch of one collapses to the per-turn cadence that
-predates batching.
+``max_turns_retention`` is a ceiling on how many distinct turns the turn-scoped
+context may hold, and ``retention_batch`` is how many of the oldest turns fall
+together once that ceiling is exceeded. Past the ceiling, only the newest
+``max(1, max_turns_retention - retention_batch + 1)`` turns survive, so the
+retained history lands on that trough and holds there until the ceiling is
+crossed again. A batch of one keeps the newest ``max_turns_retention`` turns,
+reproducing the per-turn cadence that predates batching.
 
 The file system double reports every path absent, which keeps failure-status
 pruning inert so only the retention window shapes each result.
@@ -84,22 +85,22 @@ def _selected_by_path(context: ProjectContext) -> dict[str, bool]:
     return {item.path: item.selected for item in context.items}
 
 
-@pytest.mark.parametrize("turn_count", [10, 11, 12, 13, 14])
-def test_history_holds_while_the_excess_is_below_the_batch(turn_count):
-    """With a limit of 10 and a batch of 5, the first four extra turns keep all."""
+@pytest.mark.parametrize("turn_count", [8, 9, 10])
+def test_history_at_or_under_the_ceiling_is_untouched(turn_count):
+    """A ceiling of 10 holds a history that never exceeds ten turns."""
     context = _prune(sequential_turn_context(turn_count), limit=10)
 
     assert [item.selected for item in context.items] == [True] * turn_count
     assert [item.auto_prune_reason for item in context.items] == [None] * turn_count
 
 
-def test_the_fifth_extra_turn_drops_the_collected_batch_of_five():
-    """The fifteenth turn prunes ids 1-5 together and keeps the newest ten."""
-    context = _prune(sequential_turn_context(15), limit=10)
+def test_the_first_turn_past_the_ceiling_drops_a_full_batch():
+    """Eleven turns against a ceiling of 10 drop ids 1-5 and keep six."""
+    context = _prune(sequential_turn_context(11), limit=10)
 
     selected = _selected_by_path(context)
-    assert [selected[turn_path(turn_id)] for turn_id in range(1, 16)] == (
-        [False] * 5 + [True] * 10
+    assert [selected[turn_path(turn_id)] for turn_id in range(1, 12)] == (
+        [False] * 5 + [True] * 6
     )
     reasons = {item.auto_prune_reason for item in context.items if not item.selected}
     assert reasons == {"Turn exceeds retention limit of 10"}
@@ -117,20 +118,23 @@ def test_a_batch_of_one_reproduces_the_per_turn_cadence(turn_count):
     ] == expected
 
 
-def test_a_batch_beyond_the_excess_reserves_nothing():
-    """Seven turns against a limit of 3 leave an excess of 4, short of the batch."""
-    context = _prune(sequential_turn_context(7), limit=3)
+def test_a_batch_beyond_the_ceiling_keeps_the_newest_turn():
+    """Seven turns against a ceiling of 3 clamp the retained count to one."""
+    context = _prune(sequential_turn_context(7), limit=3, batch=5)
 
-    assert all(item.selected for item in context.items)
+    selected = _selected_by_path(context)
+    assert [selected[turn_path(turn_id)] for turn_id in range(1, 8)] == (
+        [False] * 6 + [True]
+    )
 
 
-def test_the_collected_batch_never_eats_into_the_retention_floor():
-    """Eight turns against a limit of 3 drop one batch of 5 and keep three."""
-    context = _prune(sequential_turn_context(8), limit=3)
+def test_an_overage_larger_than_the_batch_lands_on_the_trough():
+    """Eight turns against a ceiling of 3 and a batch of 2 keep the newest two."""
+    context = _prune(sequential_turn_context(8), limit=3, batch=2)
 
     selected = _selected_by_path(context)
     assert [selected[turn_path(turn_id)] for turn_id in range(1, 9)] == (
-        [False] * 5 + [True] * 3
+        [False] * 6 + [True] * 2
     )
 
 
@@ -140,14 +144,14 @@ def test_history_shorter_than_the_retention_limit_is_untouched():
     assert all(item.selected for item in context.items)
 
 
-def test_a_gap_in_turn_ids_is_not_counted_as_a_pruned_turn():
-    """An excess of 8 drops every id up to 6, which is three entries, not eight."""
-    context = _prune(turn_context([1, 2, 5, 7, 10]), limit=2, batch=3)
+def test_a_gap_in_turn_ids_does_not_inflate_the_ceiling():
+    """Five turns spread to id 10 drop the two oldest and keep the newest three."""
+    context = _prune(turn_context([1, 2, 5, 7, 10]), limit=4, batch=2)
 
     assert _selected_by_path(context) == {
         turn_path(1): False,
         turn_path(2): False,
-        turn_path(5): False,
+        turn_path(5): True,
         turn_path(7): True,
         turn_path(10): True,
     }

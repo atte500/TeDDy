@@ -1,10 +1,11 @@
-"""Acceptance coverage for wiring the retention batch setting into pruning.
+"""Acceptance coverage for the retention ceiling.
 
-The retention batch is a cadence knob read from ``auto_pruning.retention_batch``.
-This tracer bullet proves the outermost pruning entry point reads that setting
-through the real configuration adapter, while the value does not yet reshape the
-window: a batch of one keeps today's per-turn cadence. The batched window itself
-is exercised by the Core deliverable.
+``auto_pruning.max_turns_retention`` is a ceiling on how many turns the
+turn-scoped history may hold, and ``auto_pruning.retention_batch`` is how many
+of the oldest turns fall together once the ceiling is exceeded. This tracer
+bullet drives the outermost pruning entry point over the real configuration and
+file-system adapters, so both settings are read from a real ``config.yaml`` and
+the ceiling is enforced at the boundary.
 """
 
 from teddy_executor.adapters.outbound.local_file_system_adapter import (
@@ -29,22 +30,16 @@ class _RecordingConfigAdapter(YamlConfigAdapter):
         return super().get_setting(key, default)
 
 
-def test_prune_reads_the_retention_batch_and_keeps_the_per_turn_cadence(tmp_path):
-    """
-    Given ``retention_batch: 1`` and ``max_turns_retention: 2``
-    And four consecutive turns in the context
-    When pruning runs
-    Then the batch setting was read from configuration
-    And the two turns past the limit are pruned, one turn per boundary crossing
-    """
+def _prune_with(tmp_path, *, limit: int, batch: int, turn_count: int):
+    """Drive ``prune()`` over a real config and file system in ``tmp_path``."""
     config_dir = tmp_path / ".teddy"
     config_dir.mkdir()
     (config_dir / "config.yaml").write_text(
         "auto_pruning:\n"
         "  enabled: true\n"
         "  turn_context_threshold: 0\n"
-        "  max_turns_retention: 2\n"
-        "  retention_batch: 1\n",
+        f"  max_turns_retention: {limit}\n"
+        f"  retention_batch: {batch}\n",
         encoding="utf-8",
     )
     config = _RecordingConfigAdapter(
@@ -54,14 +49,50 @@ def test_prune_reads_the_retention_batch_and_keeps_the_per_turn_cadence(tmp_path
         edit_simulator=EditSimulator(), root_dir=str(tmp_path)
     )
     service = SessionPruningService(config_service=config, file_system_manager=files)
+    context = ProjectContext(
+        items=sequential_turn_context(turn_count), header="", content=""
+    )
+    return service.prune(context), config
 
-    context = ProjectContext(items=sequential_turn_context(4), header="", content="")
 
-    result = service.prune(context)
+def test_a_turn_past_the_ceiling_drops_a_batch_of_the_oldest_turns(tmp_path):
+    """
+    Given ``max_turns_retention: 4`` and ``retention_batch: 2``
+    And five consecutive turns in the context
+    When pruning runs
+    Then both settings were read from configuration
+    And the two oldest turns are dropped together, keeping the three newest
+    """
+    result, config = _prune_with(tmp_path, limit=4, batch=2, turn_count=5)
 
+    assert "auto_pruning.max_turns_retention" in config.reads
     assert "auto_pruning.retention_batch" in config.reads
     selected = {item.path: item.selected for item in result.items}
-    assert selected[turn_path(1)] is False
-    assert selected[turn_path(2)] is False
-    assert selected[turn_path(3)] is True
-    assert selected[turn_path(4)] is True
+    assert [selected[turn_path(turn_id)] for turn_id in range(1, 6)] == [
+        False,
+        False,
+        True,
+        True,
+        True,
+    ]
+    reasons = {item.auto_prune_reason for item in result.items if not item.selected}
+    assert reasons == {"Turn exceeds retention limit of 4"}
+
+
+def test_a_batch_of_one_keeps_the_per_turn_cadence(tmp_path):
+    """
+    Given ``max_turns_retention: 4`` and ``retention_batch: 1``
+    And five consecutive turns in the context
+    When pruning runs
+    Then exactly the oldest turn is dropped
+    """
+    result, _ = _prune_with(tmp_path, limit=4, batch=1, turn_count=5)
+
+    selected = {item.path: item.selected for item in result.items}
+    assert [selected[turn_path(turn_id)] for turn_id in range(1, 6)] == [
+        False,
+        True,
+        True,
+        True,
+        True,
+    ]
