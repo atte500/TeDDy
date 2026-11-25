@@ -1,6 +1,6 @@
 # Slice: Retention Ceiling
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** None (ad-hoc)
 - **Depends On:** [Batched Retention Pruning](00-05-batched-pruning.md)
 - **Specs:** None
