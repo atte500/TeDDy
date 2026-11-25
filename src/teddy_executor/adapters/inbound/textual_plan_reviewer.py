@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
     from teddy_executor.core.ports.outbound.web_scraper import WebScraper
     from teddy_executor.core.services.action_dispatcher import ActionDispatcher
+    from teddy_executor.core.services.web_content_service import WebContentService
 
 
 class TextualPlanReviewer(IPlanReviewer):
@@ -32,6 +33,7 @@ class TextualPlanReviewer(IPlanReviewer):
         console_tooling: ConsoleToolingHelper,
         action_dispatcher: ActionDispatcher,
         web_scraper: Optional[WebScraper] = None,
+        web_content_service: Optional[WebContentService] = None,
         config_service: Optional[IConfigService] = None,
     ):
         self._system_env = system_env
@@ -39,6 +41,7 @@ class TextualPlanReviewer(IPlanReviewer):
         self._console_tooling = console_tooling
         self._action_dispatcher = action_dispatcher
         self._web_scraper = web_scraper
+        self._web_content_service = web_content_service
         self._config_service = config_service
 
     def review(
@@ -77,6 +80,7 @@ class TextualPlanReviewer(IPlanReviewer):
             file_system=self._file_system,
             project_context=project_context,
             web_scraper=self._web_scraper,
+            web_content_service=self._web_content_service,
             config_service=self._config_service,
         )
         # The session-level quit-key reader polls stdin for the whole turn

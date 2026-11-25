@@ -18,6 +18,7 @@ from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.session_manager import EXECUTION_STARTED_MARKER
 from teddy_executor.core.domain.models.orchestrator_ports import OrchestratorPorts
 from teddy_executor.core.utils.interrupt_guard import INTERRUPT_REASON
+from teddy_executor.core.utils.paths import session_root_from_plan_path
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +177,11 @@ class ExecutionOrchestrator(IRunPlanUseCase):
     ) -> tuple[ActionLog, str]:
         """Handles the review and dispatch of a single action."""
         agent_name = plan.metadata.get("Agent") or plan.metadata.get("agent")
+        session_root = (
+            session_root_from_plan_path(plan.plan_path)
+            if plan.is_session and plan.plan_path
+            else None
+        )
         reviewer_handled = False
         should_dispatch = True
         captured_message = ""
@@ -205,6 +211,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                 total_actions=len(plan.actions),
                 agent_name=agent_name,
                 is_session=plan.is_session,
+                session_root=session_root,
                 skip_isolation=True,
                 pipeline=pipeline,
             )
@@ -217,6 +224,7 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             total_actions=len(plan.actions),
             agent_name=agent_name,
             is_session=plan.is_session,
+            session_root=session_root,
             pipeline=pipeline,
         )
 

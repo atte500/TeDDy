@@ -23,7 +23,10 @@ class IActionFactory(Protocol):
     """Defines the interface for the factory that creates actions."""
 
     def create_action(
-        self, action_type: str, params: Optional[dict] = None
+        self,
+        action_type: str,
+        params: Optional[dict] = None,
+        session_root: Optional[str] = None,
     ) -> IAction: ...
 
 
@@ -75,12 +78,20 @@ class ActionDispatcher:
         return clean_params
 
     def _execute_and_process_result(
-        self, action_type: str, execution_params: dict[str, Any]
+        self,
+        action_type: str,
+        execution_params: dict[str, Any],
+        session_root: Optional[str] = None,
     ) -> tuple[Any, ActionStatus]:
         """Executes the action, normalizes the result, and determines status."""
-        action_handler = self._action_factory.create_action(
-            action_type, execution_params
-        )
+        if session_root is None:
+            action_handler = self._action_factory.create_action(
+                action_type, execution_params
+            )
+        else:
+            action_handler = self._action_factory.create_action(
+                action_type, execution_params, session_root=session_root
+            )
         result = action_handler.execute(**execution_params)
 
         if is_dataclass(result) and not isinstance(result, type):
@@ -106,7 +117,10 @@ class ActionDispatcher:
         return result, status
 
     def dispatch_and_execute(
-        self, action_data: ActionData, agent_name: Optional[str] = None
+        self,
+        action_data: ActionData,
+        agent_name: Optional[str] = None,
+        session_root: Optional[str] = None,
     ) -> ActionLog:
         """
         Takes an ActionData object, finds the corresponding action handler
@@ -132,7 +146,7 @@ class ActionDispatcher:
         try:
             execution_params = self._prepare_execution_params(action_data)
             details, status = self._execute_and_process_result(
-                action_data.type, execution_params
+                action_data.type, execution_params, session_root=session_root
             )
             log_data["details"] = details
             log_data["status"] = status

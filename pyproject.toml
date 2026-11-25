@@ -125,6 +125,11 @@ ignore = ["E501"]
 "tests/suites/unit/core/services/test_orchestrator_data_flow.py" = ["TID251"]
 "tests/suites/unit/core/services/test_session_lifecycle_manager.py" = ["TID251"]
 "tests/suites/unit/core/services/test_session_orchestrator_pruning.py" = ["TID251"]
+# The READ-preview regressions drive an editor launch that has no injection
+# seam, so they patch module-level symbols and build their mock app directly.
+# Migrating them onto constructor injection is scheduled with the broader
+# quality-gate debt, not with the session content cache slice.
+"tests/suites/unit/adapters/inbound/test_read_preview_opens_real_file.py" = ["TID251"]
 
 # The showcase recording driver is a single linear pexpect script that mirrors
 # the user journey for the demo GIF. It has no test coverage, so splitting

@@ -96,6 +96,7 @@ def _register_services(container: punq.Container) -> None:
         IWebSearcher,
     )
     from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
+    from teddy_executor.core.services.web_content_service import WebContentService
 
     container.register(
         IActionFactory,
@@ -108,7 +109,8 @@ def _register_services(container: punq.Container) -> None:
                 web_searcher=container.resolve(IWebSearcher),
                 config_service=container.resolve(IConfigService),
                 pdf_extractor=container.resolve(IPdfExtractor),
-            )
+            ),
+            web_content_service=container.resolve(WebContentService),
         ),
         scope=punq.Scope.transient,
     )

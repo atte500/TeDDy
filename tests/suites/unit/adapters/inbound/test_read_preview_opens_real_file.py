@@ -22,9 +22,13 @@ sys.path.insert(
 )
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
+    _resolve_read_resource,
     preview_readonly,
 )
 from teddy_executor.core.domain.models.plan import ActionData
+from teddy_executor.core.services.web_content_service import WebContentService
+from tests.harness.setup.fake_web_content_cache import FakeWebContentCache
+from tests.harness.setup.fake_web_scraper import FakeWebScraper
 
 
 class TestReadPreviewOpensRealFile(unittest.TestCase):
@@ -53,8 +57,9 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         self.mock_app.suspend.return_value = suspend_cm
         self.mock_app.push_screen_wait = AsyncMock(return_value=True)
         self.mock_app._console_tooling = MagicMock()
-        # Web scraper port (WebScraper) — None by default; URL tests configure it
+        # URL ports — None by default; URL tests configure the one they drive
         self.mock_app._web_scraper = None
+        self.mock_app._web_content_service = None
 
         # Track temp file operations
         self.temp_files_created = []
@@ -290,13 +295,12 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
             patch(
                 "teddy_executor.adapters.inbound.textual_plan_reviewer_previews.spawn_editor"
             ) as mock_spawn,
-            patch.object(self.mock_app, "push_screen_wait") as mock_push,
+            patch.object(self.mock_app, "push_screen_wait"),
         ):
             asyncio.run(preview_readonly(self.mock_app, self.action))
 
         # Assert: spawn_editor was called with the real file path
         mock_spawn.assert_called_once()
-        call_args = mock_spawn.call_args[0]
 
     def test_gui_url_temp_file_persists_for_deferred_cleanup(self):
         """GUI editor + URL: temp file must NOT be deleted immediately; tracked for cleanup.
@@ -321,7 +325,6 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
         # Mock is_headless to avoid ConfirmScreen for GUI
         self.mock_app.is_headless = False
 
-        expected_content = "# Test\nFetched content from URL.\n"
         created_temp_path = None
 
         def mock_named_temp_file(
@@ -425,6 +428,44 @@ class TestReadPreviewOpensRealFile(unittest.TestCase):
             "No web scraper configured. Cannot fetch URL content."
         )
         mock_run.assert_not_called()
+
+
+def test_resolve_read_resource_prefers_the_coordinator():
+    """A cached URL preview must resolve through the coordinator, not the scraper."""
+    url = "https://example.com/test.md"
+    cached_body = "cached preview body"
+
+    class _Context:
+        session_root = ".teddy/sessions/demo/first"
+
+    class _PreviewAppStub:
+        """The reviewer surface the resolver reads, without a terminal.
+
+        ``_resolve_read_resource`` is a plain function over an injected app and
+        the real ``ReviewerApp`` needs a terminal, so a hand-written stub keeps
+        the double honest about the attributes actually consulted.
+        """
+
+        def __init__(self) -> None:
+            self.project_context = _Context()
+            self._web_content_service = WebContentService(
+                web_scraper=FakeWebScraper(contents={url: "fresh body"}),
+                cache=FakeWebContentCache(entries={url: cached_body}),
+            )
+            self._web_scraper = None
+            self.notifications: list[str] = []
+
+        def notify(self, message: str) -> None:
+            self.notifications.append(message)
+
+    app = _PreviewAppStub()
+
+    resolved = _resolve_read_resource(app, url)
+
+    assert resolved is not None, "a cached URL must resolve without a scraper"
+    assert resolved["content"] == cached_body
+    assert app.notifications == [], "a cache hit must not report a failure"
+    os.unlink(resolved["path"])
 
 
 if __name__ == "__main__":

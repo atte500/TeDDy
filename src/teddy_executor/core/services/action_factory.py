@@ -1,10 +1,14 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
+
 from teddy_executor.core.domain.models.action_ports import ActionPorts
 from teddy_executor.core.domain.models.plan import DEFAULT_SIMILARITY_THRESHOLD
 from teddy_executor.core.services.action_dispatcher import IAction, IActionFactory
 from teddy_executor.core.services.parser_infrastructure import coerce_param
 from teddy_executor.core.utils.pdf import cap_extracted_text, is_pdf_source
+
+if TYPE_CHECKING:
+    from teddy_executor.core.services.web_content_service import WebContentService
 
 
 class ActionFactory(IActionFactory):
@@ -22,7 +26,11 @@ class ActionFactory(IActionFactory):
         "RESEARCH": "research",
     }
 
-    def __init__(self, ports: ActionPorts):
+    def __init__(
+        self,
+        ports: ActionPorts,
+        web_content_service: Optional["WebContentService"] = None,
+    ):
         self._shell_executor = ports.shell_executor
         self._file_system_manager = ports.file_system_manager
         self._user_interactor = ports.user_interactor
@@ -30,6 +38,7 @@ class ActionFactory(IActionFactory):
         self._web_searcher = ports.web_searcher
         self._config_service = ports.config_service
         self._pdf_extractor = ports.pdf_extractor
+        self._web_content_service = web_content_service
         self._standalone_actions: set[str] = set()
         self._action_map: Dict[str, Any] = {
             "execute": self._shell_executor,
@@ -50,26 +59,30 @@ class ActionFactory(IActionFactory):
         # Fallback to lowercasing for YAML/other formats.
         return action_type.lower()
 
-    def _create_read_action(self, params: Optional[dict] = None) -> IAction:
+    def _create_read_action(
+        self, params: Optional[dict] = None, session_root: Optional[str] = None
+    ) -> IAction:
         """Handles the special routing for the READ action."""
         safe_params = params or {}
         resource = safe_params.get("resource", safe_params.get("path", ""))
         if resource.startswith("http"):
+            fetch = self._url_fetcher(session_root)
+
             # Return a wrapper instead of monkeypatching the adapter
             class WebReadAction:
-                def __init__(self, scraper):
-                    self._scraper = scraper
+                def __init__(self, fetcher):
+                    self._fetcher = fetcher
 
                 def execute(self, **kwargs: Any) -> Any:
                     try:
-                        return self._scraper.get_content(url=kwargs["path"])
+                        return self._fetcher(kwargs["path"])
                     except Exception as e:
                         logging.getLogger(__name__).debug(
                             "Failed to fetch URL '%s': %s", kwargs.get("path"), e
                         )
                         return f"Error: Failed to fetch URL ({e})"
 
-            return WebReadAction(self._web_scraper)
+            return WebReadAction(fetch)
 
         if is_pdf_source(resource):
             return self._create_pdf_read_action()
@@ -92,6 +105,19 @@ class ActionFactory(IActionFactory):
 
         # Fall through to the standard file system handler for local files
         return self._create_standard_action("read_file", params)
+
+    def _url_fetcher(self, session_root: Optional[str]) -> Callable[[str], str]:
+        """Selects the fetch path for a URL read, preferring the coordinator.
+
+        A coordinator routes the read through the session cache and applies the
+        announced truncation cap. The bare scraper stays for callers that build a
+        factory without one, so the wrapper's translation is unchanged either way.
+        """
+        coordinator = self._web_content_service
+        if coordinator is not None:
+            return lambda url: coordinator.fetch_one(url, session_root=session_root)
+        scraper = self._web_scraper
+        return lambda url: scraper.get_content(url=url)
 
     def _create_pdf_read_action(self) -> IAction:
         """Builds a READ handler that extracts text from a local PDF payload."""
@@ -234,11 +260,16 @@ class ActionFactory(IActionFactory):
 
         return self._get_action_wrapper(action_handler, method_map[action_type_key])
 
-    def create_action(self, action_type: str, params: Optional[dict] = None) -> IAction:
+    def create_action(
+        self,
+        action_type: str,
+        params: Optional[dict] = None,
+        session_root: Optional[str] = None,
+    ) -> IAction:
         """
         Looks up the adapter protocol for the given action type and binds the correct
         adapter method to the `execute` method required by the IAction protocol.
         """
         if action_type.lower() == "read":
-            return self._create_read_action(params)
+            return self._create_read_action(params, session_root=session_root)
         return self._create_standard_action(action_type, params)

@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
     from teddy_executor.core.services.action_dispatcher import ActionDispatcher
     from teddy_executor.core.ports.outbound.web_scraper import WebScraper
+    from teddy_executor.core.services.web_content_service import WebContentService
 
 T = TypeVar("T")
 
@@ -89,6 +90,7 @@ class ReviewerApp(App):
         file_system: Optional[IFileSystemManager] = None,
         project_context: Optional[ProjectContext] = None,
         web_scraper: Optional[WebScraper] = None,
+        web_content_service: Optional[WebContentService] = None,
         config_service: Optional[IConfigService] = None,
     ):
         super().__init__()
@@ -99,6 +101,7 @@ class ReviewerApp(App):
         self._action_dispatcher = action_dispatcher
         self._file_system = file_system
         self._web_scraper = web_scraper
+        self._web_content_service = web_content_service
         self.config_service = config_service
         self._edit_simulator = EditSimulator()
         self._user_message_cache: Optional[str] = None

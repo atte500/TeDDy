@@ -77,3 +77,21 @@ def prefer_markdown(candidates: Iterable[_T]) -> Optional[_T]:
         if Path(candidate).suffix.casefold() == _MARKDOWN_SUFFIX:
             return candidate
     return ordered[0] if ordered else None
+
+
+def session_root_from_turn_dir(turn_dir: str) -> str:
+    """Returns the session root for a turn directory path.
+
+    A turn lives at ``<session_root>/<turn>/``, so its session root is the turn
+    directory's parent.
+    """
+    return str(Path(turn_dir).parent)
+
+
+def session_root_from_plan_path(plan_path: str) -> str:
+    """Returns the session root for a plan path inside a turn directory.
+
+    A plan lives at ``<session_root>/<turn>/plan.md``, so its session root is two
+    levels up. Delegating keeps one definition of the turn-to-session step.
+    """
+    return session_root_from_turn_dir(str(Path(plan_path).parent))

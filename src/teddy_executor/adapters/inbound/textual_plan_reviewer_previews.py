@@ -131,6 +131,19 @@ async def preview_text_action(app: ReviewerApp, action: ActionData, node: Any) -
         app._refresh_node(node)
 
 
+def _reviewer_session_root(app: ReviewerApp) -> Optional[str]:
+    """Returns the session root carried by the app's project context, if any.
+
+    The context may be absent, and a test double may answer with a non-string
+    attribute, so only a real string becomes a cache scope.
+    """
+    context = app.project_context
+    if context is None:
+        return None
+    root = getattr(context, "session_root", None)
+    return root if isinstance(root, str) else None
+
+
 def _resolve_read_resource(app: ReviewerApp, resource: str) -> Optional[dict]:
     """Resolve a READ resource: fetch URL content or validate file path.
 
@@ -139,11 +152,18 @@ def _resolve_read_resource(app: ReviewerApp, resource: str) -> Optional[dict]:
     """
     is_url = resource.startswith(("http://", "https://"))
     if is_url:
-        if app._web_scraper is None:
+        coordinator = getattr(app, "_web_content_service", None)
+        scraper = app._web_scraper
+        if coordinator is None and scraper is None:
             app.notify("No web scraper configured. Cannot fetch URL content.")
             return None
         try:
-            content = app._web_scraper.get_content(resource)
+            if coordinator is not None:
+                content = coordinator.fetch_one(
+                    resource, session_root=_reviewer_session_root(app)
+                )
+            else:
+                content = scraper.get_content(resource)
         except Exception:
             app.notify(f"Failed to fetch URL: {resource}")
             return None

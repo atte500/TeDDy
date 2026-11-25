@@ -115,6 +115,25 @@ class ActionExecutor:
             action=action, action_prompt=prompt, change_set=change_set
         )
 
+    def _dispatch_scoped(
+        self,
+        action,
+        agent_name: Optional[str],
+        session_root: Optional[str],
+    ) -> ActionLog:
+        """Dispatches one action, forwarding a session scope only when present.
+
+        Forwarding the keyword unconditionally would change every unscoped
+        dispatch call, so a stateless run keeps the exact call it made before.
+        """
+        if session_root is None:
+            return self._action_dispatcher.dispatch_and_execute(
+                action, agent_name=agent_name
+            )
+        return self._action_dispatcher.dispatch_and_execute(
+            action, agent_name=agent_name, session_root=session_root
+        )
+
     def confirm_and_dispatch(  # noqa: PLR0913, C901
         self,
         action,
@@ -124,6 +143,7 @@ class ActionExecutor:
         is_session: bool = False,
         skip_isolation: bool = False,
         pipeline: bool = False,
+        session_root: Optional[str] = None,
     ) -> tuple[ActionLog, str]:
         """Handles user confirmation and dispatches a single action."""
         # Capture the change set BEFORE execution for diff reporting
@@ -186,9 +206,7 @@ class ActionExecutor:
                 # If we can't read the file, proceed with normal dispatch
                 pass
 
-        action_log = self._action_dispatcher.dispatch_and_execute(
-            action, agent_name=agent_name
-        )
+        action_log = self._dispatch_scoped(action, agent_name, session_root)
 
         if action_log.status == ActionStatus.FAILURE:
             return self._enrich_failed_log(action, action_log), reason

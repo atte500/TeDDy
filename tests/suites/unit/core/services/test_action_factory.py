@@ -1,6 +1,10 @@
 import pytest
 
+from teddy_executor.core.domain.models.action_ports import ActionPorts
 from teddy_executor.core.services.action_factory import ActionFactory
+from teddy_executor.core.services.web_content_service import WebContentService
+from tests.harness.setup.fake_web_content_cache import FakeWebContentCache
+from tests.harness.setup.fake_web_scraper import FakeWebScraper
 
 # --- Test Cases ---
 
@@ -58,6 +62,48 @@ def test_read_action_with_url_resolves_web_scraper(
     # Assert
     assert result == "web content"
     mock_scraper.get_content.assert_called_once_with(url="http://example.com")
+
+
+def test_read_action_with_url_resolves_the_coordinator(
+    mock_shell, mock_fs, mock_user_interactor, mock_searcher, mock_config
+):
+    """
+    Given an ActionFactory wired to a WebContentService,
+    When a URL READ is created with a session root,
+    Then the handler resolves through the coordinator and caches the body.
+    """
+    # Arrange
+    url = "http://example.com"
+    body = "web content"
+    session_root = ".teddy/sessions/demo/first"
+    scraper = FakeWebScraper(contents={url: body})
+    cache = FakeWebContentCache()
+    factory = ActionFactory(
+        ActionPorts(
+            shell_executor=mock_shell,
+            file_system_manager=mock_fs,
+            user_interactor=mock_user_interactor,
+            web_scraper=scraper,
+            web_searcher=mock_searcher,
+            config_service=mock_config,
+        ),
+        web_content_service=WebContentService(
+            web_scraper=scraper, cache=cache, config_service=mock_config
+        ),
+    )
+
+    # Act
+    action_handler = factory.create_action(
+        "read", {"resource": url}, session_root=session_root
+    )
+    result = action_handler.execute(path=url)
+
+    # Assert
+    assert result == body
+    assert scraper.calls == [(url, False, {})], (
+        "a URL read must resolve through the coordinator, which fetches verbatim"
+    )
+    assert cache.merge_calls == [(session_root, {url: body})]
 
 
 def test_read_action_with_path_resolves_file_system_manager(

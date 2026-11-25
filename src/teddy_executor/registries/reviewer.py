@@ -24,6 +24,7 @@ def register_reviewer(container: punq.Container) -> None:
         from teddy_executor.adapters.inbound.textual_plan_reviewer import (
             TextualPlanReviewer,
         )
+        from teddy_executor.core.services.web_content_service import WebContentService
 
         return TextualPlanReviewer(
             system_env=container.resolve(ISystemEnvironment),
@@ -31,6 +32,7 @@ def register_reviewer(container: punq.Container) -> None:
             console_tooling=container.resolve(ConsoleToolingHelper),
             action_dispatcher=container.resolve(ActionDispatcher),
             web_scraper=container.resolve(IWebScraper),
+            web_content_service=container.resolve(WebContentService),
             config_service=container.resolve(IConfigService),
         )
 
