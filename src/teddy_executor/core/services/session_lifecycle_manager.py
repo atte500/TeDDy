@@ -796,6 +796,17 @@ class SessionLifecycleManager:
         report_file_path = self._session_service.to_root_relative(turn_dir, "report.md")
         self._file_system_manager.write_file(report_file_path, formatted_report)
 
+        # Clear the in-flight marker only AFTER the report exists: the marker
+        # tells a mid-execution kill from a never-dispatched turn, and the
+        # report now answers that for good. A kill between the two writes
+        # leaves a stale marker that no resume path reads, because
+        # get_session_state resolves COMPLETE_TURN from report.md first.
+        # Guarded because a plan rejected by pre-flight validation finalizes
+        # its turn without ever having been marked.
+        marker_path = (turn_dir / EXECUTION_STARTED_MARKER).as_posix()
+        if self._file_system_manager.path_exists(marker_path):
+            self._file_system_manager.remove_file(marker_path)
+
         # Extract manual pruning paths from plan metadata
         pruned_paths = []
         if plan:

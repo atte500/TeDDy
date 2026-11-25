@@ -27,7 +27,7 @@ None — this is an outbound (driven) port.
 
 ## Data Contracts
 - **`SessionState`** (str Enum): `EMPTY`, `PENDING_PLAN`, `COMPLETE_TURN`.
-- **`EXECUTION_STARTED_MARKER`** (str constant, `"execution.started"`): The turn-scoped filename written into a session turn directory when execution begins; the resume gate reads it to tell a mid-execution kill from a never-dispatched turn.
+- **`EXECUTION_STARTED_MARKER`** (str constant, `"execution.started"`): The turn-scoped filename written into a session turn directory when execution begins; the resume gate reads it to tell a mid-execution kill from a never-dispatched turn. It lives only while the turn is in flight: `SessionLifecycleManager.finalize_turn` removes it once `report.md` is written, and a leftover marker beside a report is inert because `get_session_state` resolves `COMPLETE_TURN` from the report first.
 - **`TURN_USAGE_META_KEYS`** (tuple constant): The four turn-metadata keys carrying provider cache accounting — `prompt_tokens`, `cached_tokens`, `cumulative_prompt_tokens`, `cumulative_cached_tokens`. Every value is an `int`, and absent provider data persists as `0`.
 
 ## Operations
