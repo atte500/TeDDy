@@ -70,11 +70,11 @@ These files live in `docs/templates/` and are created or refreshed by `teddy ini
 
 ## Roadmap
 
-A compact index of upcoming and completed milestones. Detailed requirements, guidelines, and slices live in each milestone document (`docs/project/milestones/`).
+A compact index of upcoming and completed milestones. Detailed requirements, guidelines, and slices live in each milestone document (`docs/project/milestones/`). Rows are ordered by priority (milestone numbers are stable IDs, not execution order); the next milestone is the first planned row with all dependencies completed, and multiple milestones may be in progress concurrently when their boundaries do not overlap.
 
-| Milestone | Status | Goal | Specs |
-| --- | --- | --- | --- |
-| [Foundational Refactors](milestones/03-foundational-refactors.md) | `COMPLETED` | Extract prompt blueprints to templates, centralize MRP, and add editor discovery. | — |
-| [TUI & UX Enhancements](milestones/04-tui-ux-enhancements.md) | `IN PROGRESS` | Enhance interactive TUI visibility and navigation, add MOVE/DELETE actions, and show waiting feedback. | [interactive-session-workflow](specs/interactive-session-workflow.md) |
-| [Quality Gate & Debt Reconciliation](milestones/05-quality-gate-debt-reconciliation.md) | `PLANNED` | Reconcile failing quality gates, eliminate quality bypasses and redundant tests, and split CI static analysis. | TBD |
-| [Cross-Cutting Consolidation](milestones/06-cross-cutting-consolidation.md) | `PLANNED` | Deduplicate helpers/literals, unify custom exceptions, and migrate project tooling to `justfile` + `scripts/`. | TBD |
+| Milestone | Status | Depends On | Goal | Specs |
+| --- | --- | --- | --- | --- |
+| [Foundational Refactors](milestones/03-foundational-refactors.md) | `COMPLETED` | — | Extract prompt blueprints to templates, centralize MRP, and add editor discovery. | — |
+| [TUI & UX Enhancements](milestones/04-tui-ux-enhancements.md) | `IN PROGRESS` | — | Enhance interactive TUI visibility and navigation, add MOVE/DELETE actions, and show waiting feedback. | [interactive-session-workflow](specs/interactive-session-workflow.md) |
+| [Quality Gate & Debt Reconciliation](milestones/05-quality-gate-debt-reconciliation.md) | `PLANNED` | — | Reconcile failing quality gates, eliminate quality bypasses and redundant tests, and split CI static analysis. | TBD |
+| [Cross-Cutting Consolidation](milestones/06-cross-cutting-consolidation.md) | `PLANNED` | — | Deduplicate helpers/literals, unify custom exceptions, and migrate project tooling to `justfile` + `scripts/`. | TBD |

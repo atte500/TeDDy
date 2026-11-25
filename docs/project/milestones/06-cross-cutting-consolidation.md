@@ -1,6 +1,7 @@
 # Milestone: Cross-Cutting Consolidation
 
 - **Status:** Planned
+- **Depends On:** None
 - **Specs:** TBD
 
 ## Goal

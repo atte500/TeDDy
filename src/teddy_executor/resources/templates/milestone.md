@@ -5,6 +5,7 @@ Naming: MM = Sequential Milestone Number (e.g. 01, 02).
 
 # Milestone: {{Milestone Title}}
 - **Status:** [Planned | In Progress | Completed]
+- **Depends On:** [None | links]
 - **Specs:** [links]
 
 ## Goal

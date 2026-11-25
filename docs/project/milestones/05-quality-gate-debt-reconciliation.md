@@ -1,6 +1,7 @@
 # Milestone: Quality Gate & Debt Reconciliation
 
 - **Status:** Planned
+- **Depends On:** None
 - **Specs:** TBD
 
 ## Goal

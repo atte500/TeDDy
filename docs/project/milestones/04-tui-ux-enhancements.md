@@ -1,6 +1,7 @@
 # Milestone: TUI & UX Enhancements
 
 - **Status:** In Progress
+- **Depends On:** None
 - **Specs:** [docs/project/specs/interactive-session-workflow.md](/docs/project/specs/interactive-session-workflow.md)
 
 ## Goal

@@ -72,8 +72,8 @@ Initialize docs/project/milestones/00-project-bootstrapping.md with:
 - Continuous Integration: Parallel OS matrix test suite and static analysis jobs via docs/templates/ci.md.
 -->
 
-A compact index of upcoming and completed milestones. Detailed requirements, guidelines, and slices live in each milestone document (`docs/project/milestones/`).
+A compact index of upcoming and completed milestones. Detailed requirements, guidelines, and slices live in each milestone document (`docs/project/milestones/`). Rows are ordered by priority (milestone numbers are stable IDs, not execution order); the next milestone is the first planned row with all dependencies completed, and multiple milestones may be in progress concurrently when their boundaries do not overlap.
 
-| Milestone | Status | Goal | Specs |
-| --- | --- | --- | --- |
-| [Project Bootstrapping](milestones/00-project-bootstrapping.md) | `PLANNED` | Establish runtime, testing, quality gates, CI/CD, and project tooling infrastructure. | — |
+| Milestone | Status | Depends On | Goal | Specs |
+| --- | --- | --- | --- | --- |
+| [Project Bootstrapping](milestones/00-project-bootstrapping.md) | `PLANNED` | — | Establish runtime, testing, quality gates, CI/CD, and project tooling infrastructure. | — |

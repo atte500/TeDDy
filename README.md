@@ -402,6 +402,8 @@ No. TeDDy is designed to run inside existing repositories. It only creates a `.t
 
 All strategic artifacts created by agents (roadmaps in `docs/project/`, component designs, and vertical slices) are saved directly in your repository's `docs/` directory and committed to Git like regular code. The internal `.teddy/` directory is ignored by default, keeping private session logs and environment credentials local to each developer.
 
+In a team, assign one independent **Milestone** per developer (with no unmet dependencies or overlapping boundaries) and merge completed **Slices** back to `main` continuously so branches stay short-lived. Within a milestone, a developer can run multiple agents in parallel worktrees on independent slices whose prerequisites are done. Because planning is iterative, newly discovered requirements or details can be added to an active milestone as slices are verified.
+
 </details>
 
 <details>

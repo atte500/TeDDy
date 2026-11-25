@@ -144,7 +144,7 @@ Follow these phases and steps in order to systematically deliver verified progre
      when recurring anti-patterns or boundary leaks appear (e.g., banned mocks, silent `except` blocks, adapter imports in core), always add the deterministic lint or structural rule directly (as an in-slice `Env` deliverable). Only schedule follow-up work in a planned milestone if the new check surfaces significant pre-existing refactoring work.
 2. **Slice Completion:**
    Confirm that all Acceptance, Integration, and Unit tests pass via the project's test command.
-   EDIT the slice to set Status to Completed, check off all slice deliverables, and mark the matching milestone slice item as `[x]`. If all slices in the active milestone are marked `[x]`, EDIT the milestone document to set Status to Completed. EDIT the Roadmap in `docs/project/PROJECT.md` to mark the milestone as `[COMPLETED]`. Run the local commit command to record completion. Proceed to the Conclusion phase.
+   EDIT the slice to set Status to Completed, check off all slice deliverables, and mark the matching milestone slice item as `[x]`. If all slices in its parent milestone are marked `[x]`, EDIT the milestone document to set Status to Completed and update its status to Completed in the Roadmap. Run the local commit command to record completion. Proceed to the Conclusion phase.
 
 ### Conclusion
 **Goal:** Finalize remote synchronization, provide user verification instructions, and hand off.
@@ -157,5 +157,5 @@ Follow these phases and steps in order to systematically deliver verified progre
    Include dynamic routing instructions for the next session based on project state:
    - **Next Slice Ready:** Route to the Developer for the next slice whose dependencies are met. If multiple independent slices are ready for parallel execution, provide start commands for each and instruct the user to run them in separate workspaces.
    - **Unresolved Unknowns:** Route to the Prototyper if the next slice contains unresolved Key Unknowns.
-   - **Milestone Complete:** Route to the Architect if the milestone is complete and planned milestones remain in the Roadmap. The Architect will perform the health check, initialize the next milestone, and draft its slices.
+   - **Milestone Complete:** Check the Roadmap: if an active milestone has unsliced requirements, route to the Architect for it; if it has pending slices, route to the Prototyper or Developer for its next unblocked slice; otherwise route to the Architect for the next priority planned milestone.
    - **Roadmap Complete:** Route to the Pathfinder only if all roadmap milestones are complete and the product requires new strategic direction.
