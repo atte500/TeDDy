@@ -1,5 +1,5 @@
 # Slice: Remove the Runtime Pointer Row from the Payload Header
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** —
 - **Depends On:** —
 - **Specs:** [context-payload-format](../specs/context-payload-format.md)
