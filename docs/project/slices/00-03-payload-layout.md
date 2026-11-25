@@ -106,6 +106,9 @@ The hoist is deliberately restricted to session mode. Reusing the existing `scop
 - **Refactor (component doc refresh):** `context_service.md`'s stale `own_session_history_only` invariant is replaced by `session_mode_partition`, and the page now records `session_resources_root_gated`, `runtime_closes_payload`, `content_section_order`, and the `PayloadSection` / `CONTENT_SECTION_ORDER` data contract, so it states the delivered shape rather than the pre-slice one.
 - **Verification (quality audit):** the production double audit found no skeleton response, placeholder, or shim left in the assembly path, and every private renderer plus the partition helper carries a definition and a live caller, so the Refactor left no dead predecessor behind. `PayloadSection` and `CONTENT_SECTION_ORDER` have no consumer outside `context_service.py`, and the five Core behavior cases read the shared `MIXED_SCOPES` bundle instead of re-authoring paths. All three `session_root` callers supply the session directory the partition gates on: `PlanningService` passes the turn directory's parent, the `context` CLI handler passes `detect_session_root()`, and the session orchestrator's fallback path passes the same `cache_dir` it hands the web-content cache. The suite stays green at 2429 passed and 5 skipped.
 
+> [!NOTE]
+> Superseded in part: `session_resources_root_gated` is now `session_sections_root_gated`. Only `## Session Resources` needed a session root when this slice closed, and a later fix gated the history partition the same way, so a `.teddy/sessions/` path in a session-agnostic export renders under `## Resource Contents` rather than `## Session History`.
+
 ## Verification
 1. **Session payload shape:**
    Run `teddy start -m "smoke check"`, approve the plan, then inspect `.teddy/sessions/<session>/02/input.md`.

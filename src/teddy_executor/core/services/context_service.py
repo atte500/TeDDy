@@ -565,8 +565,9 @@ class ContextService(IGetContextUseCase):
 
         A non-``Turn`` scope wins over ``Turn``, so a path listed in both renders
         once. Own-session history never hoists into Session Resources because it
-        renders chronologically under Session History. Session Resources exist
-        only in session mode.
+        renders chronologically under Session History. Both session-mode rules
+        need a session root: without one there is no history to append to, so a
+        ``sessions/`` path is an ordinary resource.
         """
         non_turn: List[str] = []
         turn: List[str] = []
@@ -577,7 +578,10 @@ class ContextService(IGetContextUseCase):
                     target.append(path)
 
         owned = non_turn + turn
-        own_history = {p: is_own_session_path(p, session_root) for p in owned}
+        own_history = {
+            p: is_own_session_path(p, session_root) if session_root else False
+            for p in owned
+        }
         session_paths = [p for p in owned if own_history[p]]
         session_resources = (
             [p for p in non_turn if not own_history[p]] if session_root else []

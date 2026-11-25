@@ -28,7 +28,7 @@ class ContextScenario(NamedTuple):
 
     context_files: dict[str, list[str]]
     file_contents: dict[str, str]
-    session_root: str
+    session_root: str | None
 
     def get_context_kwargs(self) -> dict[str, object]:
         """Forward the mapping with ``session_root`` to ``get_context``."""
@@ -41,7 +41,7 @@ class ContextScenario(NamedTuple):
 def context_scenario(
     session: Sequence[str] | None = None,
     turn: Sequence[str] | None = None,
-    session_root: str = SESSION_ROOT,
+    session_root: str | None = SESSION_ROOT,
 ) -> ContextScenario:
     """Build a scenario while always emitting both scope keys.
 
@@ -64,4 +64,10 @@ def context_scenario(
 MIXED_SCOPES = context_scenario(
     session=[SESSION_DOCUMENT, OWN_HISTORY_REQUEST],
     turn=[TURN_DOCUMENT],
+)
+
+EXPORT_SCOPES = context_scenario(
+    session=[SESSION_DOCUMENT, OWN_HISTORY_REQUEST],
+    turn=[TURN_DOCUMENT],
+    session_root=None,
 )

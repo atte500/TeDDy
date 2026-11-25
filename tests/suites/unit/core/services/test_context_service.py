@@ -6,6 +6,7 @@ from teddy_executor.core.ports.outbound.llm_client import ILlmClient
 from teddy_executor.core.ports.outbound.web_scraper import WebScraper as IWebScraper
 from teddy_executor.core.services.context_service import ContextService
 from tests.harness.setup.context_scenarios import (
+    EXPORT_SCOPES,
     MIXED_SCOPES,
     OWN_HISTORY_REQUEST,
     SESSION_DOCUMENT,
@@ -375,7 +376,8 @@ def test_get_context_separates_and_formats_session_history(
     mock_fs.read_files_in_vault.return_value = mock_file_contents
 
     # Act
-    # Pass both session files and normal files
+    # The session root is what makes these paths our own history; without it
+    # they are plain resources, which the export case pins.
     result = service.get_context(
         context_files={
             "Session": [
@@ -387,7 +389,8 @@ def test_get_context_separates_and_formats_session_history(
                 f"{session_prefix}/01/report.md",
                 "src/main.py",
             ],
-        }
+        },
+        session_root=session_prefix,
     )
 
     # Assert
@@ -507,6 +510,35 @@ def test_get_context_renders_foreign_session_read_as_resource_content(
     assert "### [src/main.py]" in resource_block
 
     assert result.session_root == own_root
+
+
+def test_export_payload_renders_every_path_under_resource_contents(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+):
+    """
+    Scenario: Session-Agnostic Export
+
+    Without a session root there is no history to append to, so the paths the
+    session payload partitions render as plain resources: a `.teddy/sessions/`
+    path supplied to `teddy context` is never labelled a turn.
+    """
+    result = _render_session_payload(
+        service, mock_fs, mock_tree_gen, mock_inspector, EXPORT_SCOPES
+    )
+
+    content = result.content
+    assert result.session_root is None
+    assert "## Session Resources" not in content
+    assert "## Session History" not in content
+
+    resource_contents = content.split("## Resource Contents")[1].split("## Runtime")[0]
+    assert f"### [{OWN_HISTORY_REQUEST}]" in resource_contents
+    assert f"### [{SESSION_DOCUMENT}]" in resource_contents
+    assert f"### [{TURN_DOCUMENT}]" in resource_contents
+    assert "### Turn" not in content
 
 
 def test_get_context_omits_session_history_if_none_present(
@@ -718,7 +750,10 @@ def test_get_context_bounds_degenerate_session_history_fence(
     mock_fs.read_files_in_vault.return_value = mock_file_contents
 
     # Act
-    result = service.get_context(context_files={"Turn": [session_path]})
+    result = service.get_context(
+        context_files={"Turn": [session_path]},
+        session_root=".teddy/sessions/20260521_134944-test-session",
+    )
 
     # Assert
     assert "## Session History" in result.content

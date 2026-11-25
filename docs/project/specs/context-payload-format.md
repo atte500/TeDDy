@@ -47,7 +47,19 @@ The payload is a single Markdown document with the following top-level sections,
 
 The order is load-bearing. A provider's prefix cache serves only the leading bytes that match an earlier request, so the first difference between two consecutive payloads decides how much of the payload is free. The session's own documents come first, then its history, which grows by appending; the sections that change every turn follow, and `## Runtime` closes the document because it holds the values that always change.
 
-Session-mode sections (`## Session Resources` and `## Session History`) render only when a session root is in scope. A session-agnostic `teddy context` export carries neither and keeps a single `## Resource Contents` section for every resource, the shape the CHOP workflow expects.
+Session-mode sections (`## Session Resources` and `## Session History`) render only when a session root is in scope. A session-agnostic `teddy context` export carries neither and keeps a single `## Resource Contents` section for every resource, the shape the CHOP workflow expects: a `.teddy/sessions/` path supplied to an export is a resource there, never history.
+
+### Measured Basis for the Order
+
+The order above was measured rather than assumed, over consecutive `input.md` pairs of real sessions. Only payloads carrying this layout count: an older payload keeps the per-turn clock rows in its header, which caps every order at the same ~96-byte prefix and makes the comparison meaningless.
+
+-   **Population:** 40 consecutive pairs across 3 sessions, 11.6 MB of payload, mean payload 289 KB. Order comparisons come from a 39-pair run and the death-point attribution from a 40-pair run, one turn of drift because a new turn entered the corpus between runs. The metric counts bytes while providers cache in token blocks, so a real hit rate rounds slightly below these figures.
+-   **Where the prefix ends:** in 29 pairs the shared prefix ran to the end of `## Session History`, in 10 it died inside that section because retention front-truncated it, in 1 inside `## Session Resources` because a listed document was edited, and never later. The cached set is therefore exactly `## Session Resources` plus `## Session History` — 60.4% of a mean payload by weight, 67.2% at the median, 27.6% at the tenth percentile.
+-   **Post-history order is cosmetic:** permuting `## Git Status`, `## Project Structure`, and `## Resource Contents` in any way yields byte-identical served shares, because all three sit behind the point where the prefix has already ended. Their order is a readability decision, not a caching one.
+-   **History must precede the volatile sections:** moving `## Session History` behind them scores 46.9% against 60.8% and loses on 25 of 39 pairs. Hoisting a section that changes between turns ahead of an append-only one can only tie (the section matched, so the prefix reached history anyway) or lose (it changed, so everything behind it is forfeited). It wins only on the turns where retention truncated the history, which is the minority case behind the 27.6% floor.
+-   **History is the more cacheable growing section:** its own shared prefix averages 84 KB against 41 KB for `## Resource Contents`, and is larger in 25 of 33 comparable pairs.
+-   **Ordering never changes what is pruned:** `_apply_global_budget` sorts its candidates by token count descending and retention counts distinct turn ids, so a resource's rendered position has no bearing on whether it survives.
+-   **No ordering remedy for the largest section:** `## Resource Contents` contributes no cached bytes, but its size follows from the turn-scoped working set and the `read.max_lines` / `plan.max_lines` caps. Only giving the agent less content reduces it, which is a quality tradeoff rather than a format change.
 
 ---
 
@@ -94,6 +106,8 @@ In Stateful (Interactive) Session Mode, the stateful conversation history files 
 Instead, they are appended in chronological order under a dedicated `## Session History` section using clean, human-readable turn headers (e.g. `### Initial Request`, `### Turn 1: Plan`, `### Turn 1: Execution Report`) with all raw directory paths stripped out to keep the prompt concise and structured.
 
 The section follows `## Session Resources`, so both stable parts of the session sit directly behind the header and form one growing cached prefix. Only the session's own root belongs here: a file read from another session is a resource, not our history.
+
+-   **Communicating turns:** a turn that answered with a `## Message` instead of an action plan writes the same `plan.md` and `report.md`, so its content renders here as `### Turn N: Plan` / `### Turn N: Report`, never under `## Session Resources`.
 
 -   **Example:**
     `````markdown
