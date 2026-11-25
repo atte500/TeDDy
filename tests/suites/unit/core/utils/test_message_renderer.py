@@ -91,3 +91,40 @@ def test_inline_code_theme_drops_background_but_keeps_colour_and_weight():
 
 def test_inline_code_theme_inherits_other_markdown_styles():
     assert inline_code_theme().styles.get("markdown.strong") is not None
+
+
+_WIDTH_PARAGRAPH = (
+    "This paragraph is deliberately long enough to exceed a narrow console "
+    "width, so a renderer that folds it at print time would leave hard "
+    "newlines that no later resize could undo."
+)
+
+
+def test_prose_is_width_invariant_so_a_resize_can_reflow_it():
+    out_wide = _plain(_render(_WIDTH_PARAGRAPH, width=80))
+    out_narrow = _plain(_render(_WIDTH_PARAGRAPH, width=40))
+
+    assert out_wide == out_narrow
+    assert _WIDTH_PARAGRAPH in out_wide
+
+
+def test_list_items_are_not_cropped_at_a_narrow_width():
+    body = "- Inline `teddy resume -p` should stay whole.\n"
+
+    out = _plain(_render(body, width=40))
+
+    assert "Inline teddy resume -p should stay whole." in out
+
+
+def test_rendered_prose_emits_no_trailing_padding():
+    out = _plain(_render("Short.\n", width=80))
+
+    assert all(line == line.rstrip() for line in out.split("\n"))
+
+
+def test_prose_and_fence_are_separated_by_a_single_blank_line():
+    out = _plain(_render("Before.\n```bash\necho hi\n```\nAfter.\n"))
+
+    assert "\n\n```bash" in out
+    assert "```\n\n" in out
+    assert "\n\n\n" not in out
