@@ -45,19 +45,22 @@ def test_edit_validator_performance_large_file(container, mock_fs, mock_config):
         node=None,
     )
 
-    # 3. Benchmark the validation
-    start_time = time.perf_counter()
+    # 3. Benchmark the validation. Thread CPU time measures the matcher's own
+    # cost, so parallel xdist workers and background threads cannot inflate the
+    # measurement the way wall-clock time does.
+    start_time = time.thread_time()
     errors = validator.validate(action)
-    duration = time.perf_counter() - start_time
+    duration = time.thread_time() - start_time
 
     # 4. Assertions
     assert len(errors) == 1
     # Large repeating patterns in the setup trigger ambiguity at 0.95
     assert "ambiguous" in errors[0].message.lower()
 
-    # 100ms is a generous budget for the optimized version (RCA says 10ms)
-    # but the current logic takes ~15-20s.
+    # 100ms of CPU time is a generous budget for the optimized version (RCA
+    # says 10ms), while the pre-optimization logic burns ~15-20s.
     performance_budget_seconds = 0.1
     assert duration < performance_budget_seconds, (
-        f"Validation took {duration:.4f}s, exceeding {performance_budget_seconds}s budget."
+        f"Validation took {duration:.4f}s of CPU time, exceeding the "
+        f"{performance_budget_seconds}s budget."
     )
