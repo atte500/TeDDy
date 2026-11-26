@@ -1,5 +1,5 @@
 # Slice: Uniform Panel Insets Across the Reviewer
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -57,11 +57,14 @@ Then the highlight band starts at the panel's gutter and never overlaps the left
 5. `[MIGRATE]` The reviewer component page — record the single-inset rule beside the layout description.
 
 ## Deliverables
-- [ ] **Harness** — Add a stylesheet parser to the harness that returns `{selector: {property: value}}`, so padding can be asserted per selector and a future duplicate declaration fails with a readable diff.
+- [x] **Harness** — Add a stylesheet parser to the harness that returns `{selector: {property: value}}`, so padding can be asserted per selector and a future duplicate declaration fails with a readable diff.
 - [ ] **Adapter** — Introduce `PANEL_INSET` with `build_tui_css()`, apply the inset to both pane containers, and remove the per-child inset declarations, proving the substitution with a unit test over the rendered stylesheet.
 - [ ] **Cleanup** — Record the one-inset rule in the reviewer component page and delete the now-unused precedent of per-widget padding.
 
 ## Implementation Notes
+- **Parser home:** `parse_stylesheet` lives in `tests/harness/observers/stylesheet_parser.py`, not `tests/harness/setup/`, because it turns a production artifact back into a structure for assertions — the same job `ReportParser` does for report Markdown. Its guard, `tests/suites/unit/test_stylesheet_parser.py`, sits at the unit-suite root beside `test_report_parser.py`, matching the existing observer convention.
+- **Parse ordering:** comments are stripped before block matching, so a comment inside a block cannot surface as a bogus declaration, and each comma-expanded selector receives its own declarations dict, so a sibling selector never aliases another's properties. Textual `$variables` and composite values such as `vkey $foreground 15%` are kept verbatim, because the stylesheet is asserted as written rather than resolved.
+- **Box-model probe:** a 40-column Textual probe with `width: 50%` plus `padding: 0 1` measured `outer_width 20` for both panes with the second starting at `x 20`, so percentage width is a border-box measure. The inset can therefore be added to `#left-pane` and `#right-pane` without overflowing the 65/35 split, and no `1fr` width migration is needed.
 
 ## Verification
 1. **Gutter alignment:**
