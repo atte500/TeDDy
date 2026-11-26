@@ -23,7 +23,7 @@ import threading
 from collections.abc import Callable
 from contextlib import contextmanager
 from types import FrameType
-from typing import Iterator, Optional
+from typing import Any, Iterator, Optional
 
 # Grace-window duration (seconds): how long a second Ctrl+C during action
 # execution is treated as an escalation (immediate force-kill) instead of a
@@ -37,8 +37,15 @@ GRACE_WINDOW_SECONDS = 2.0
 INTERRUPT_REASON = "Interrupted by user."
 
 
+# Marks that the guard owns no SIGINT disposition. A dedicated sentinel
+# (not None) keeps the claim explicit, because signal.getsignal() may
+# legitimately return None for a handler not set from Python.
+_UNCLAIMED_DISPOSITION = object()
+
+
 class InterruptGuard:
-    """Installs the SIGINT handler and tracks the WAITING/EXECUTING phase.
+    """Installs the SIGINT handler, owns the disposition, and tracks the
+    WAITING/EXECUTING phase.
 
     Constructor-Injected dependency:
     - monotonic: the time source for grace-window bookkeeping (e.g.,
@@ -58,14 +65,40 @@ class InterruptGuard:
         self.source: Optional[str] = None
         self._executing = False
         self._first_signal_at: Optional[float] = None
+        # The disposition restore() reinstates, or the sentinel while the
+        # guard owns nothing. One guard holds at most one claim: two owners
+        # each taking their own snapshot would restore each other's handler.
+        self._previous_handler: Any = _UNCLAIMED_DISPOSITION
 
     def install(self) -> object:
-        """Registers the SIGINT handler and returns the previous disposition.
+        """Takes ownership of the SIGINT disposition and installs the handler.
 
-        The caller owns restoration: keep the returned value and pass it to
-        signal.signal(SIGINT, ...) when the guard's lifetime ends.
+        Returns the previous disposition for callers that only inspect it;
+        the guard itself owns restoration through restore(). A second install
+        without an intervening restore is a programming defect, so the
+        contract fails fast instead of taking a second snapshot.
         """
-        return signal.signal(signal.SIGINT, self._handle_signal)
+        assert self._previous_handler is _UNCLAIMED_DISPOSITION, (
+            "InterruptGuard already owns the process SIGINT disposition "
+            f"({signal.getsignal(signal.SIGINT)!r}); call restore() before "
+            "installing again."
+        )
+        self._previous_handler = signal.signal(signal.SIGINT, self._handle_signal)
+        return self._previous_handler
+
+    def restore(self) -> None:
+        """Reinstates the captured disposition and releases the claim.
+
+        Releasing (rather than latching) ownership lets one memoized-container
+        guard bracket a later command, while a genuine nested install still
+        fails its contract.
+        """
+        assert self._previous_handler is not _UNCLAIMED_DISPOSITION, (
+            "InterruptGuard.restore() requires a matching install(); "
+            "no SIGINT disposition is owned."
+        )
+        signal.signal(signal.SIGINT, self._previous_handler)
+        self._previous_handler = _UNCLAIMED_DISPOSITION
 
     def record_source(self, source: str) -> None:
         """Record which key triggered the interrupt (e.g. ``"q"``).

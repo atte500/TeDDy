@@ -76,7 +76,7 @@ Then the previous SIGINT disposition is restored and the next Ctrl+C in the shel
 9. `[PRUNE]` `execute_valid_plan` in `src/teddy_executor/adapters/inbound/cli_helpers.py` - no callers; deleting it retires the stray debug print in the same stroke.
 
 ## Deliverables
-- [▶] **Interface** - Give `InterruptGuard` install ownership: `install()` still returns the previous disposition but also records the claim, a second install fails its contract assertion naming the held disposition, and `restore()` reinstates the disposition and releases the claim.
+- [x] **Interface** - Give `InterruptGuard` install ownership: `install()` still returns the previous disposition but also records the claim, a second install fails its contract assertion naming the held disposition, and `restore()` reinstates the disposition and releases the claim.
 - [ ] **Interface** - Define `interrupt_scope(guard, listener)` as a context manager over the injected guard and listener, stopping the listener and releasing the claim in `finally` on every exit path including a raised exit.
 - [ ] **Harness** - Extend the SIGINT delivery double so a simulated press routes through the currently installed handler, letting an acceptance test drive the real guard without raising in the test process.
 - [ ] **Wiring** - Move the session loop onto the seam unchanged and prove the existing session interrupt and quit-listener tests stay green before the stateless path adopts anything.
@@ -94,6 +94,13 @@ Then the previous SIGINT disposition is restored and the next Ctrl+C in the shel
 - A stateless run has no turn directory, so the drained status surfaces in the printed report, not in a turn report file. Both scenario wordings were corrected.
 - The harness already ships a SIGINT delivery double, a container stub, and a quit-key listener fake, so its deliverable is a thin extension, and no acceptance test currently touches `signal`.
 - A stateless interrupt in the waiting phase must not escape as a traceback: the `execute` boundary needs its own notice, because the orchestrator only stamps the drain reason onto skipped actions and never prints one.
+
+**Deliverable 1 — guard install ownership (delivered).**
+
+- `install()` keeps returning the captured disposition, records it in a sentinel-backed field, and asserts against a held claim; `restore()` reinstates that disposition and clears the claim. Ownership uses a dedicated sentinel rather than `None`, because `signal.getsignal()` may legitimately return `None` for a handler not set from Python.
+- Four unit tests in `TestInstallOwnership` pin the contract: restoration reinstates the exact captured disposition, a nested install fails naming `restore()`, a released claim admits the next bracket, and a `restore()` with no claim is refused instead of installing a foreign handler.
+- The session loop's `finally` migrated from raw `signal.signal(...)` to `guard.restore()` inside this same deliverable, and the then-dead `import signal` was pruned. The contract alone left eleven multi-command acceptance flows red: one memoized container keeps a single guard instance alive, so raw restoration latched the claim and the next in-process command's `install()` tripped the assertion. The leak was confirmed by a direct probe and reproduced under `-n0`, ruling out xdist worker reuse.
+- Deliberate scope boundary: the transient press source is not reset here. `restore()` releases the claim but leaves `guard.source` set, so a later in-process bracket would name the previous key in its notice. Production is unaffected because every CLI invocation is a fresh process, and the seam deliverable clears press state at bracket entry with its own test.
 
 ## Verification
 1. **Interrupted stateless run:**

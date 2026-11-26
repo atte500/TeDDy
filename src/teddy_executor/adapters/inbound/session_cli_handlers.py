@@ -1,7 +1,6 @@
 import logging
 import os
 import shutil
-import signal
 import subprocess  # nosec B404
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Sequence
@@ -585,9 +584,9 @@ def _orchestrate_session_loop(  # noqa: PLR0913
     # guard instance (punq.Scope.singleton — documented exception: signal
     # disposition is process-global) between this boundary and the
     # orchestrator's action-dispatch loop. The handler is installed for the
-    # whole turn loop; the boundary restores the previous disposition on exit.
+    # whole turn loop; the boundary releases it through the guard's restore() on exit.
     interrupt_guard = container.resolve(InterruptGuard)
-    previous_handler: Any = interrupt_guard.install()
+    interrupt_guard.install()
 
     # The quit-key listener is a process-global resource whose start()/stop()
     # lifecycle this boundary owns (mirroring the InterruptGuard precedent): a
@@ -659,11 +658,11 @@ def _orchestrate_session_loop(  # noqa: PLR0913
             fg=typer.colors.YELLOW,
         )
     finally:
-        # Caller-owned restoration contract: restore the SIGINT disposition
-        # that preceded the guard's install() when the turn loop ends. Stop the
-        # quit-key listener first so no keystrokes are read during restoration.
+        # The guard owns restoration: restore() reinstates the disposition
+        # it captured and releases its claim. Stop the quit-key listener
+        # first so no keystrokes are read during restoration.
         quit_listener.stop()
-        signal.signal(signal.SIGINT, previous_handler)
+        interrupt_guard.restore()
 
 
 def _format_drift_clause(

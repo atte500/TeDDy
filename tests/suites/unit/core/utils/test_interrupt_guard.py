@@ -63,6 +63,69 @@ class TestInterruptGuardContract:
             signal.signal(signal.SIGINT, previous)
 
 
+class TestInstallOwnership:
+    """install()/restore() own the process-global SIGINT disposition.
+
+    One guard holds at most one claim, because two owners each taking their own
+    snapshot would restore each other's handler. restore() releases the claim so
+    the same instance can bracket a later run.
+    """
+
+    def test_restore_reinstates_the_previous_handler(self, guard) -> None:
+        # Arrange
+        previous = signal.getsignal(signal.SIGINT)
+        try:
+            # Act
+            guard.install()
+            installed = signal.getsignal(signal.SIGINT)
+            guard.restore()
+
+            # Assert: restore() reinstates exactly the captured disposition.
+            assert installed == guard._handle_signal
+            assert signal.getsignal(signal.SIGINT) is previous
+        finally:
+            signal.signal(signal.SIGINT, previous)
+
+    def test_second_install_without_restore_fails_the_contract(self, guard) -> None:
+        # Arrange
+        previous = signal.getsignal(signal.SIGINT)
+        try:
+            guard.install()
+
+            # Act / Assert: a nested install is a programming defect, so the
+            # contract fails fast instead of quietly taking a second snapshot.
+            with pytest.raises(AssertionError) as failure:
+                guard.install()
+            assert "restore()" in str(failure.value)
+        finally:
+            signal.signal(signal.SIGINT, previous)
+
+    def test_restore_releases_the_claim_for_a_later_install(self, guard) -> None:
+        # Arrange: one memoized container keeps a single guard alive across
+        # in-process commands, so a released claim must not block the next
+        # legitimate bracket.
+        previous = signal.getsignal(signal.SIGINT)
+        try:
+            guard.install()
+            guard.restore()
+
+            # Act
+            guard.install()
+            guard.restore()
+
+            # Assert
+            assert signal.getsignal(signal.SIGINT) is previous
+        finally:
+            signal.signal(signal.SIGINT, previous)
+
+    def test_restore_without_install_fails_the_contract(self, guard) -> None:
+        # Act / Assert: restoring a disposition the guard never captured would
+        # install a foreign handler, so the contract refuses it.
+        with pytest.raises(AssertionError) as failure:
+            guard.restore()
+        assert "install()" in str(failure.value)
+
+
 class TestPhaseSignalHandling:
     """WAITING raises immediately; EXECUTING drains, then escalates."""
 
