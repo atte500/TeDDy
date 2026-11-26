@@ -842,6 +842,77 @@ def _render_session_payload(
     return service.get_context(**scenario.get_context_kwargs())
 
 
+def _render_empty_workspace(
+    service: IGetContextUseCase,
+    mock_fs,
+    mock_tree_gen,
+    mock_inspector,
+    **kwargs,
+) -> ProjectContext:
+    """Render an empty workspace so only the seam keywords under test vary."""
+    mock_inspector.get_environment_info.return_value = {}
+    mock_inspector.get_git_status.return_value = None
+    mock_tree_gen.generate_tree.return_value = ""
+    mock_fs.get_context_paths.return_value = []
+    mock_fs.read_files_in_vault.return_value = {}
+    return service.get_context(include_tokens=False, **kwargs)
+
+
+def test_the_model_row_reads_the_effective_model_used_for_token_counting(
+    service, mock_fs, mock_tree_gen, mock_inspector
+):
+    """The panel names the same model the turn counted its tokens against."""
+    result = _render_empty_workspace(
+        service,
+        mock_fs,
+        mock_tree_gen,
+        mock_inspector,
+        model="openrouter/deepseek/deepseek-flash-latest",
+    )
+
+    assert result.model_name == "openrouter/deepseek/deepseek-flash-latest"
+
+
+@pytest.mark.parametrize("unresolved_model", [None, "", "   "])
+def test_an_unresolved_model_renders_as_unknown(
+    service, mock_fs, mock_tree_gen, mock_inspector, unresolved_model
+):
+    """An empty cell would read as a missing row, so a blank model never passes through."""
+    result = _render_empty_workspace(
+        service,
+        mock_fs,
+        mock_tree_gen,
+        mock_inspector,
+        model=unresolved_model,
+    )
+
+    assert result.model_name == "Unknown"
+
+
+def test_an_unrecorded_session_cost_stays_unrecorded(
+    service, mock_fs, mock_tree_gen, mock_inspector
+):
+    """None means "no figure", never a fabricated zero, so the panel can read $???."""
+    result = _render_empty_workspace(service, mock_fs, mock_tree_gen, mock_inspector)
+
+    assert result.session_cost is None
+
+
+def test_a_resolved_session_cost_reaches_the_context(
+    service, mock_fs, mock_tree_gen, mock_inspector
+):
+    """The panel's cost row must be the figure the producers resolved."""
+    result = _render_empty_workspace(
+        service,
+        mock_fs,
+        mock_tree_gen,
+        mock_inspector,
+        session_cost=0.42,
+    )
+
+    assert result.session_cost == 0.42
+
+
 def test_session_payload_partitions_resources_history_and_turn_contents(
     service: IGetContextUseCase,
     mock_fs,

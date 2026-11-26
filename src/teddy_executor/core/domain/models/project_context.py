@@ -44,6 +44,9 @@ class ProjectContext:
         system_prompt_tokens: Token count of the system prompt.
         total_window: Total context window for the model.
         session_root: Optional root of the session the context was assembled for.
+        model_name: The effective model answering this turn, ``Unknown`` if unresolved.
+        session_cost: The session's accumulated cost, ``None`` when unrecorded and
+            ``0.0`` when a free provider recorded a real zero.
     """
 
     header: str
@@ -56,3 +59,5 @@ class ProjectContext:
     content_tokens: int = 0
     total_window: int = 0
     session_root: Optional[str] = None
+    model_name: str = "Unknown"
+    session_cost: Optional[float] = None

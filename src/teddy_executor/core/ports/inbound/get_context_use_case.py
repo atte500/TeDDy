@@ -18,6 +18,7 @@ class IGetContextUseCase(Protocol):
         system_prompt_tokens: int = 0,
         session_root: Optional[str] = None,
         model: Optional[str] = None,
+        session_cost: Optional[float] = None,
     ) -> ProjectContext:
         """
         Gathers all project context information.
@@ -29,7 +30,11 @@ class IGetContextUseCase(Protocol):
             session_root: Optional root of the rendering session, used to gate
                 session-history classification.
             model: Optional effective model used for token counting. Omitted,
-                the provider's configured model is used.
+                the provider's configured model is used. Also names the model
+                the reviewer displays, with a blank value resolving to
+                ``Unknown``.
+            session_cost: Optional accumulated session cost. ``None`` means no
+                figure was recorded; ``0.0`` is a recorded zero.
 
         Returns:
             ProjectContext: A data object containing the aggregated context.

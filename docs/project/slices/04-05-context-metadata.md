@@ -72,7 +72,7 @@ Then it reads $???
 8. `[MIGRATE]` The `ProjectContext`, `ContextService`, `PlanningService`, and reviewer component pages, plus the Ubiquitous Language entry for the shared formatter.
 
 ## Deliverables
-- [ ] **Interface** — Extend `ProjectContext` with `model_name` and `session_cost`, thread `session_cost` as an additive keyword through `IGetContextUseCase.get_context` and `ContextService.get_context`, and derive `model_name` from the existing `model` keyword; contract-test the defaults, the blank-model fallback, and the unrecorded-cost default without disturbing existing callers.
+- [x] **Interface** — Extend `ProjectContext` with `model_name` and `session_cost`, thread `session_cost` as an additive keyword through `IGetContextUseCase.get_context` and `ContextService.get_context`, and derive `model_name` from the existing `model` keyword; contract-test the defaults, the blank-model fallback, and the unrecorded-cost default without disturbing existing callers.
 - [ ] **Core** — Implement `format_cost_usd`, `resolve_session_cost`, and `split_model_identity` as pure functions with unit tests covering the four-decimal boundary, recorded zero, unrecorded cost, a provider-less model, and a nested provider segment.
 - [ ] **Harness** — Extend `ContextScenarios` with `model` and `session_cost` fields, a canonical costed bundle, and a forwarding `get_context_kwargs`, migrating the pinned contract test to the widened dict.
 - [ ] **Wiring** — Resolve the session cost in `PlanningService.generate_plan` and `SessionOrchestrator._gather_fallback_context`, pass it into `get_context`, then render the Model, Provider, and Session Cost rows in `populate_context_detail` to complete the tracer bullet.
@@ -80,6 +80,14 @@ Then it reads $???
 - [ ] **Cleanup** — Update the four affected component pages and record `format_cost_usd` in the Ubiquitous Language as the one cost renderer.
 
 ## Implementation Notes
+
+### Interface
+- `ProjectContext` gained `model_name: str = "Unknown"` and `session_cost: Optional[float] = None`, appended after `session_root` so every existing construction kept its positional and default shape. The full unfiltered suite (2634 passed, 5 skipped) confirmed no construction or `replace()` caller broke.
+- The seam gained exactly one keyword, `session_cost`. `ContextService.get_context` derives `model_name` from the `model` keyword it already receives for token counting (`(str(model).strip() if model else "") or "Unknown"`), so the displayed model and the counted model cannot diverge and no second model keyword needs keeping in step.
+- The `None`-versus-`0.0` distinction is contractual at both the DTO and the seam: `None` means no figure was recorded (the panel renders `$???`), `0.0` is a recorded free-provider zero (it renders `$0.0000`). The dataclass docstring and the inbound-port docstring both state it, so a later producer cannot collapse the two.
+- Tests landed in the two files that already own their contracts — `test_project_context.py` for the DTO defaults, `test_context_service.py` for the seam — instead of a new module that would have duplicated the container-resolved `ContextService` fake assembly.
+- The seam tests render through a new `_render_empty_workspace` helper that pins an empty workspace and passes `include_tokens=False`, so `_count_text_tokens` is never reached and the model assertions stay hermetic.
+- Red was 8 targeted contract failures (two `AttributeError` on the new DTO fields, five `AttributeError` on `model_name` across the model-derivation cases including the three blank-model parameters, and the `TypeError` for the unexpected `session_cost` keyword) with the 34 pre-existing tests in those modules still green; Green returned all 42.
 
 ## Verification
 1. **Panel contents:**

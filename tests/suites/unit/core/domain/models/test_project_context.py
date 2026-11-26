@@ -110,3 +110,29 @@ def test_project_context_content_tokens_can_be_set():
     """
     project_context = ProjectContext(header="H", content="C", content_tokens=1500)
     assert project_context.content_tokens == 1500
+
+
+def test_project_context_defaults_to_an_unknown_model_and_unrecorded_cost():
+    """
+    Verify the reviewer's model and cost rows start from honest placeholders
+    instead of an empty cell or a fabricated zero.
+    """
+    project_context = ProjectContext(header="H", content="C")
+
+    assert project_context.model_name == "Unknown"
+    assert project_context.session_cost is None
+
+
+def test_project_context_keeps_a_recorded_zero_cost_apart_from_an_unrecorded_one():
+    """
+    Verify a free provider's recorded 0.0 is representable separately from None.
+    """
+    project_context = ProjectContext(
+        header="H",
+        content="C",
+        model_name="openrouter/free-model",
+        session_cost=0.0,
+    )
+
+    assert project_context.model_name == "openrouter/free-model"
+    assert project_context.session_cost == 0.0

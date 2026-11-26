@@ -82,6 +82,7 @@ class ContextService(IGetContextUseCase):
         system_prompt_tokens: int = 0,
         session_root: Optional[str] = None,
         model: Optional[str] = None,
+        session_cost: Optional[float] = None,
     ) -> ProjectContext:
         """
         Gathers all project context information by orchestrating its dependencies.
@@ -120,6 +121,10 @@ class ContextService(IGetContextUseCase):
             self._count_text_tokens(content, model) if include_tokens else 0
         )
 
+        # One keyword serves both token counting and the reviewer's model row,
+        # so the displayed model can never drift from the counted one.
+        model_name = (str(model).strip() if model else "") or "Unknown"
+
         return ProjectContext(
             header=self._format_header(system_info),
             content=content,
@@ -133,6 +138,8 @@ class ContextService(IGetContextUseCase):
             system_prompt_tokens=system_prompt_tokens,
             content_tokens=content_tokens,
             session_root=session_root,
+            model_name=model_name,
+            session_cost=session_cost,
         )
 
     def _cap_plan_contents(
