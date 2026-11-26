@@ -1,5 +1,5 @@
 # Slice: External Editor for Long and Multiline Parameters
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** None
@@ -109,6 +109,15 @@ The Harness deliverable left the routing module with its own autouse fixture cle
 The reviewer component page gained a `### Parameter editing` subsection under `## Operations`, as a peer of `### Keyboard bindings` and `### Action log format` — the page's existing precedent for a topic that is neither a method nor a class invariant. It carries the three-arm table (`PathInputScreen` for the `path` key, `launch_editor` for a value `needs_external_editor` accepts, `ParameterEditModal` otherwise) plus the contract notes a reader would otherwise have to infer from the code: the threshold is judged on the rendered string after the `", "` join, exactly 100 characters stays inline, `None` and `""` mean dismissal and clearing respectively, and the single appended newline is trimmed only when the original value did not already end with one. `e` on an action node keeps its own split, so the page states why the two paths differ instead of implying they are one. The page keeps `Status: Refactoring` because milestone 4 still has pending slices editing the same reviewer modules.
 
 The stale-reference sweep came back clean: every hit names a live symbol (`needs_external_editor`, `MAX_INLINE_PARAM_LENGTH`, `_strip_appended_newline`, `ParameterEditModal`) or is this slice's own pre-branch Context narrative, so no renamed or removed component leaves a dangling reference.
+
+### Verification — quality audit
+Three audits over the built change set came back clean, and one pre-existing convention was classified rather than silently passed.
+
+Upstream and downstream: `needs_external_editor`, `MAX_INLINE_PARAM_LENGTH`, and `_strip_appended_newline` appear only in `textual_plan_reviewer_helpers.py`, the parameter branch of `textual_plan_reviewer_editor.py`, and the two test modules, so no caller is orphaned and no helper is dead. `ParameterEditModal` keeps its two further push sites in the `e`-on-action path for EXECUTE and RESEARCH — the split the slice deliberately excludes and the component page now explains — so the pane is the only surface this contract governs.
+
+Production doubles: `TEDDY_TEST_MOCK_EDITOR_OUTPUT` is read at six sites across `textual_plan_reviewer_editor.py` and `console_interactor.py`. This slice changed exactly one of them, `launch_editor`'s hook gate, from a truthiness test to a presence test, and introduced none. The variable is a pre-existing seam whose lifetime `tests/conftest.py`'s `clean_test_env` already owns, but a production adapter branching on a test-only environment variable is boundary impurity regardless of age, so the replacement is escalated to [07-08](/docs/project/slices/07-08-editor-seam-injection.md) under [Milestone 7](/docs/project/milestones/07-runtime-reliability.md) as adapter-boundary work rather than attributed to this slice.
+
+Test-suite hygiene: the routing module's inline-modal case and the pre-existing `test_reviewer_app_edit_execute_parameter` diverge — the first drives pane selection and asserts zero editor handovers, the second drives `e` and asserts the write-back — so neither supersedes the other and both stay.
 
 ## Verification
 1. **Multiline value:**
