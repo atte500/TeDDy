@@ -45,6 +45,8 @@ The canonical domain vocabulary for TeDDy. All documentation, component names, t
 - **Auto-Pruning:** The ordered heuristics that deselect session-context items so the turn context stays bounded: validation-failure pruning, then the retention ceiling, then the global Turn-scope budget. `auto_pruning.enabled: false` disables the chain and returns the context unchanged.
 - **Retention Ceiling:** `auto_pruning.max_turns_retention` bounds how many distinct turns the turn-scoped context may hold. Nothing is deselected at or below it; past it, only the newest `max(1, max_turns_retention - retention_batch + 1)` turns survive, never fewer than one, and `auto_pruning.retention_batch` is how many of the oldest turns drop together, so a batch of `1` reproduces the per-turn cadence.
 - **Waiting Indicator:** The transient spinner line `IUserInteractor.begin_waiting` / `end_waiting` bracket around a model call: one line beneath the telemetry, erased on completion, and rendered only when a terminal is attached so redirected logs and CI transcripts stay newline-delimited.
+- **Session Cost:** The one recorded-money answer for a session. `resolve_session_cost` decides it from the turn's own `meta.yaml` — the recorded-cost signal or a priced model, never `cumulative_cost > 0` — and `format_cost_usd` renders it on every surface at exactly four decimals, with `$???` for an unrecorded figure, so the panel, the terminal telemetry line, and the guardrail notice cannot disagree. A recorded free-provider `0.0` and an unmeasured `None` are different facts and never render alike.
+- **Model Identity:** The `(name, provider)` pair the reviewer displays. `ProjectContext.model_name` carries the effective model the composition root resolved, and `split_model_identity` derives the provider from its leading `/` segment because a LiteLLM provider prefix is optional, so a provider-less model reports `unknown` and an unresolved one `Unknown`.
 
 ---
 
@@ -109,6 +111,8 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **Parser Infrastructure**     | Low-level utilities for AST traversal, stream management, and path normalization used during plan parsing.                                          | [ParserInfrastructure](./core/services/parser_infrastructure.md)                 |
 | **MarkdownReportFormatter**   | Implements `IMarkdownReportFormatter` using the Jinja2 template engine to generate CLI reports.                                                     | [MarkdownReportFormatter](./core/services/markdown_report_formatter.md)          |
 | **PlanValidator**             | Implements `IPlanValidator` using a strategy pattern to run pre-flight checks on a plan's actions.                                                  | [PlanValidator](./core/services/plan_validator.md)                               |
+| **Money**                     | The one money standard: `format_cost_usd` renders any recorded amount at four decimals and an unrecorded one as `$???`, and `resolve_session_cost` decides whether a turn's accumulated cost is a recorded figure. | [Money](./core/utils/money.md)                                                   |
+| **Model Identity**            | Splits a LiteLLM model string into the `(name, provider)` pair the reviewer's Context panel states, deriving the provider from the optional leading prefix. | [ModelIdentity](./core/utils/model_identity.md)                                  |
 
 ### Inbound Adapters (Driving)
 
