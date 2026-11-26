@@ -13,20 +13,20 @@ Core engineering philosophy, quality standards, and foundational rules that dict
 ## Workflow Standards
 Defines the high-level artifact lifecycle and conventions for project management documents.
 
-- **Artifact Lifecycle:** How work flows (e.g., Spec → Milestone → Slice).
+- **Artifact Lifecycle:** Features flow from a Milestone, which defines the goal and requirements for work needing architectural design, to Vertical Slices, which deliver end-to-end increments. Standalone changes within existing boundaries use an ad-hoc Vertical Slice directly without a Milestone, and Specs are reserved for permanent cross-cutting contracts that outlive a single milestone.
 - **Archiving Policy:** When and how completed artifacts are archived or deleted.
 
 ## Tooling
 Project automation is exposed through a thin command runner (`justfile` recommended; see [docs/templates/tooling.md](docs/templates/tooling.md)), with multi-step logic living in `scripts/` (subject to all quality gates) rather than `spikes/` or `tests/`. Agents bind to these exact commands:
 
-| Command | Purpose |
-| --- | --- |
-| `just test` | Run the full test suite via the project runner |
+| Command                                 | Purpose                                                           |
+| --------------------------------------- | ----------------------------------------------------------------- |
+| `just test`                             | Run the full test suite via the project runner                    |
 | `just commit "<type>(<scope>): <desc>"` | Stage all changes, run pre-commit auto-fixers, and commit locally |
-| `just push` | Fast rebase and push to remote |
-| `just ci-watch` | Monitor remote CI workflows and attribute regressions |
-| `just logs <run-id> ["<step>"]` | Extract sanitized CI failure logs |
-| `just probe "<reason>"` | Trigger the Remote Probing Protocol for isolated CI diagnostics |
+| `just push`                             | Fast rebase and push to remote                                    |
+| `just ci-watch`                         | Monitor remote CI workflows and attribute regressions             |
+| `just logs <run-id> ["<step>"]`         | Extract sanitized CI failure logs                                 |
+| `just probe "<reason>"`                 | Trigger the Remote Probing Protocol for isolated CI diagnostics   |
 
 When a repetitive task or multi-step command sequence arises, agents must not run long ad-hoc shell commands. Add a dedicated recipe/script in `scripts/`, wire it through the project runner, and document its usage here.
 
@@ -74,6 +74,6 @@ Initialize docs/project/milestones/00-project-bootstrapping.md with:
 
 A compact index of upcoming and completed milestones. Detailed requirements, guidelines, and slices live in each milestone document (`docs/project/milestones/`). Rows are ordered by priority (milestone numbers are stable IDs, not execution order); the next milestone is the first planned row with all dependencies completed, and multiple milestones may be in progress concurrently when their boundaries do not overlap.
 
-| Milestone | Status | Depends On | Goal | Specs |
-| --- | --- | --- | --- | --- |
-| [Project Bootstrapping](milestones/00-project-bootstrapping.md) | `PLANNED` | — | Establish runtime, testing, quality gates, CI/CD, and project tooling infrastructure. | — |
+| Milestone                                                       | Status    | Depends On | Goal                                                                                  | Specs |
+| --------------------------------------------------------------- | --------- | ---------- | ------------------------------------------------------------------------------------- | ----- |
+| [Project Bootstrapping](milestones/00-project-bootstrapping.md) | `PLANNED` | —          | Establish runtime, testing, quality gates, CI/CD, and project tooling infrastructure. | —     |
