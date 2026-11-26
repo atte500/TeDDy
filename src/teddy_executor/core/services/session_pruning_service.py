@@ -187,20 +187,6 @@ class SessionPruningService:
             )
         return False
 
-    def _check_report_is_success(self, path: str) -> bool:
-        """Checks if a report file contains the official success status."""
-        content = self._safe_read(path)
-        if content:
-            # Anchored to target the standardized overall status line
-            return bool(
-                re.search(
-                    r"^- \*\*Overall Status:\*\* SUCCESS",
-                    content,
-                    re.MULTILINE,
-                )
-            )
-        return False
-
     def _safe_read(self, path: str) -> Optional[str]:
         """Reads a file with caching and error handling."""
         if path in self._read_cache:
@@ -213,18 +199,6 @@ class SessionPruningService:
         except (FileNotFoundError, OSError):
             pass
         return None
-
-    def _check_file_contains(self, path: str, patterns: str | tuple[str, ...]) -> bool:
-        """Safely checks if a file exists and contains specific patterns."""
-        try:
-            if self._file_system_manager.path_exists(path):
-                content = self._file_system_manager.read_file(path)
-                if isinstance(patterns, str):
-                    return patterns in content
-                return any(p in content for p in patterns)
-        except (FileNotFoundError, OSError):
-            pass
-        return False
 
     def _apply_pruning_heuristics(
         self,
