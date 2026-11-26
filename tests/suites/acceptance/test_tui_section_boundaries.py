@@ -48,17 +48,6 @@ def _driver(
     )
 
 
-def _find_node(tree, matches):
-    """Return the first node in render order whose payload satisfies matches."""
-    stack = [tree.root]
-    while stack:
-        node = stack.pop()
-        if matches(node.data):
-            return node
-        stack.extend(reversed(node.children))
-    raise AssertionError("no tree node matched the search")
-
-
 async def _press(pilot, key: str) -> None:
     await pilot.press(key)
     await pilot.pause()
@@ -69,8 +58,7 @@ async def test_alt_down_visits_every_context_group_before_the_plan(mock_env, moc
     driver = _driver(mock_env, mock_fs, "history_less")
 
     async with driver.interaction() as pilot:
-        tree = driver.tree(pilot)
-        context_root = _find_node(tree, lambda data: data == CONTEXT_ROOT)
+        context_root = driver.find_node(pilot, lambda data: data == CONTEXT_ROOT)
         assert context_root.is_expanded is False
 
         visited = [driver.cursor_data(pilot)]
@@ -127,11 +115,11 @@ async def test_alt_down_from_a_file_row_advances_past_its_group(mock_env, mock_f
 
     async with driver.interaction() as pilot:
         tree = driver.tree(pilot)
-        _find_node(tree, lambda data: data == CONTEXT_ROOT).expand()
+        driver.find_node(pilot, lambda data: data == CONTEXT_ROOT).expand()
         await pilot.pause()
 
-        row = _find_node(
-            tree, lambda data: getattr(data, "path", None) == SESSION_ITEM_PATH
+        row = driver.find_node(
+            pilot, lambda data: getattr(data, "path", None) == SESSION_ITEM_PATH
         )
         tree.move_cursor(row)
         await pilot.pause()

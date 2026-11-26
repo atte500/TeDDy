@@ -73,6 +73,7 @@ And the cursor does not move to the Action Plan root
 - [x] **Wiring** — Rewire `action_jump_next` and `action_jump_prev` onto the derived sequence, scrolling to the tree's end or start at the boundaries, and prove the order end to end through the driver.
 - [x] **Refactor** — Delete `jump_to_section`, now that both actions reach the tree through `jump_to_node`, and port its two unit tests onto the new method.
 - [x] **Cleanup** — Update the reviewer component page's binding table with the boundary rule and the new subsection targets.
+- [x] **Harness** — Add `TuiDriver.find_node` as the single tree-node lookup, cover it in the driver's contract test, and replace the two duplicated traversals in the navigation test modules.
 
 ## Implementation Notes
 
@@ -135,6 +136,18 @@ And the cursor does not move to the Action Plan root
 **Status left as `Refactoring`:** the reviewer page keeps that status deliberately. This slice scoped only its bindings and invariant sections, and milestone 04 carries five further reviewer slices that keep editing the same surface, so flipping it to `Implemented` would overstate what is finished.
 
 **Stale references:** the sweep over `src/`, `tests/`, `docs/`, `spikes/`, and `scripts/` — wider than the earlier `NO_REFS` probe, which by construction skipped `docs/` and `spikes/` — finds `jump_to_section` only in this document's own history.
+
+### Harness — the shared tree lookup
+
+**Files:** `tests/harness/drivers/tui_driver.py`, `tests/suites/unit/test_tui_driver.py`, `tests/suites/acceptance/test_tui_section_boundaries.py`, `tests/suites/unit/adapters/inbound/test_section_navigation.py`.
+
+**What changed:** the slice's two navigation modules each carried the same preorder scan under a different name — `_find_node` in the boundary module and `_first_node` in the unit module, identical apart from its message. `TuiDriver.find_node(pilot, matches)` now performs that walk once, returns the first node in render order whose payload satisfies the predicate, and raises an assertion naming the failed search when nothing matches. Three call sites migrated onto it and both private helpers were deleted.
+
+**Why it is a Harness deliverable:** it adds a public observation port to a first-class test boundary, which the architecture contract expects to carry its own contract tests. The Red step observed both new tests failing with `AttributeError: 'TuiDriver' object has no attribute 'find_node'`, so neither passed for an incidental reason; the targeted run then reported `20 passed` across the four affected modules, and the unfiltered suite rose by exactly the two new cases.
+
+**Appended after Cleanup, deliberately:** the deliverable order in this slice was written before implementation, and only the Verification phase's test-hygiene audit surfaced the duplication — the two modules were created by earlier deliverables and their builders were single-sourced by the Refactor, so the traversal itself went unnoticed until the audit looked for it. The list records the extraction as the tail deliverable rather than pretending it was planned.
+
+**Predicates stay local:** each module still passes its own one-line predicate (`_is_session_file_row`, `_is_agent_row`, and one inline `getattr` check), because a predicate states which row its scenario wants rather than re-implementing shared infrastructure. The per-file `_driver` helpers likewise stay: they wire `mock_env`/`mock_fs`, they do not duplicate content.
 
 ## Verification
 1. **Subsection walk:**

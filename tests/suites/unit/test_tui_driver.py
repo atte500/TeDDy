@@ -20,6 +20,7 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
 )
 from tests.harness.drivers.tui_driver import TuiDriver
 from tests.harness.setup.reviewer_context_scenarios import (
+    SESSION_ITEM_PATH,
     ReviewerContextShape,
     reviewer_plan,
     reviewer_project_context,
@@ -89,3 +90,26 @@ async def test_interaction_hands_back_a_focused_tree(mock_env, mock_fs):
 
     async with driver.interaction() as pilot:
         assert driver.tree(pilot).has_focus
+
+
+@pytest.mark.anyio
+async def test_find_node_returns_the_first_matching_node_in_render_order(
+    mock_env, mock_fs
+):
+    driver = _driver(mock_env, mock_fs, "history_less")
+
+    async with driver.interaction() as pilot:
+        row = driver.find_node(
+            pilot, lambda data: getattr(data, "path", None) == SESSION_ITEM_PATH
+        )
+
+        assert row.data.path == SESSION_ITEM_PATH
+
+
+@pytest.mark.anyio
+async def test_find_node_fails_loudly_when_no_node_matches(mock_env, mock_fs):
+    driver = _driver(mock_env, mock_fs, "history_less")
+
+    async with driver.interaction() as pilot:
+        with pytest.raises(AssertionError, match="no node in the tree matched"):
+            driver.find_node(pilot, lambda data: data == HISTORY_LABEL)

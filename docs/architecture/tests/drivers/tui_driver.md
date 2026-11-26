@@ -23,11 +23,13 @@ Mounts the real `ReviewerApp` for a test and hands back the two things a reviewe
 - `one_mount_path`: `run_interaction` delegates to `interaction()`, so key-driven scenarios and observation-driven scenarios share a single way of mounting the app.
 - `observation_stays_inside`: The app is unmounted when `interaction()` exits, so every cursor, focus, or scroll assertion runs inside that block.
 - `positional_compatibility`: `project_context`, `action_dispatcher`, and the doubled ports were added as keyword-only parameters while `console_tooling` kept its fourth positional slot, so every pre-existing construction site compiles unchanged.
+- `one_tree_lookup`: A scenario locates a node through `find_node`, so no test re-implements the preorder walk and a render-order correction lands in one place.
 
 ## Inbound Ports
 - **`interaction()`**: An async context manager yielding a `Pilot` whose `ActionTree` holds focus.
 - **`tree(pilot)`**: Returns the mounted `ActionTree`.
 - **`cursor_data(pilot)`**: Returns the payload of the node the cursor sits on, or `None` when no node is under it.
+- **`find_node(pilot, matches)`**: Returns the first node in render order whose payload satisfies the predicate.
 - **`run_interaction(keys)`**: Mounts the app, presses each key, and returns the app's resulting plan.
 - **`set_input(pilot, selector, value)`**: Fills an `Input` on the active screen and submits it.
 - **`get_active_view_id(pilot)`**: Returns the `ContentSwitcher`'s current view id.
@@ -53,6 +55,12 @@ None — the driver forwards the ports it is handed (`system_env`, `file_system`
 ### `tree(pilot) -> ActionTree` and `cursor_data(pilot) -> Any`
 - **Preconditions:** `pilot` came from `interaction()`.
 - **Postconditions:** Return the mounted tree and the cursor's payload respectively; `cursor_data` returns `None` when no node sits under the cursor.
+
+### `find_node(pilot, matches) -> Any`
+- **Preconditions:** `pilot` came from `interaction()`; `matches` accepts any node payload, including the unhashable `ContextItem` carried by a file row.
+- **Postconditions:** Returns the first node in render order whose payload satisfies `matches`, so a caller observes the tree's own traversal order rather than an assumed one.
+- **Exceptions:**
+  - `AssertionError`: No node in the tree satisfied the predicate; the message names the failed search so a missing row is never mistaken for a `None` payload.
 
 ### `set_input(pilot, selector, value) -> None`
 - **Preconditions:** The active screen carries an `Input` matching `selector`.

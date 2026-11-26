@@ -86,17 +86,6 @@ def _payloads(tree) -> list[str]:
     return [node.data for node in section_sequence(tree)]
 
 
-def _first_node(tree, matches):
-    """Return the first node whose payload satisfies ``matches``."""
-    stack = [tree.root]
-    while stack:
-        node = stack.pop()
-        if matches(node.data):
-            return node
-        stack.extend(reversed(node.children))
-    raise AssertionError("no node in the tree matched the search")
-
-
 def _is_session_file_row(data) -> bool:
     """Report whether a node payload is the Session group's file row."""
     return getattr(data, "path", None) == SESSION_ITEM_PATH
@@ -186,7 +175,7 @@ async def test_containing_section_resolves_a_file_row_to_its_group(mock_env, moc
     driver = _driver(mock_env, mock_fs, "populated")
 
     async with driver.interaction() as pilot:
-        row = _first_node(driver.tree(pilot), _is_session_file_row)
+        row = driver.find_node(pilot, _is_session_file_row)
         assert containing_section(row).data == SESSION_LABEL
 
 
@@ -197,7 +186,7 @@ async def test_containing_section_resolves_the_agent_row_to_the_system_group(
     driver = _driver(mock_env, mock_fs, "populated")
 
     async with driver.interaction() as pilot:
-        row = _first_node(driver.tree(pilot), _is_agent_row)
+        row = driver.find_node(pilot, _is_agent_row)
         assert containing_section(row).data == SYSTEM_LABEL
 
 

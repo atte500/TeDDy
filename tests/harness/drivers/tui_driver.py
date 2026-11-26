@@ -1,6 +1,6 @@
 import os
 import tempfile
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Callable, Sequence
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
@@ -81,6 +81,16 @@ class TuiDriver:
         """Return the payload of the node the cursor sits on."""
         node = self.tree(pilot).cursor_node
         return node.data if node is not None else None
+
+    def find_node(self, pilot: "Pilot", matches: Callable[[Any], bool]) -> Any:
+        """Return the first node in render order whose payload satisfies matches."""
+        stack = [self.tree(pilot).root]
+        while stack:
+            node = stack.pop()
+            if matches(node.data):
+                return node
+            stack.extend(reversed(node.children))
+        raise AssertionError("no node in the tree matched the search")
 
     @asynccontextmanager
     async def interaction(self) -> AsyncIterator["Pilot"]:
