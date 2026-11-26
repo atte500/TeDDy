@@ -31,6 +31,7 @@ from teddy_executor.adapters.inbound.cli_helpers import (
     echo_and_copy,
     find_project_root,
 )
+from teddy_executor.adapters.inbound.interrupt_scope import interrupt_scope
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
 from teddy_executor.core.services.update_checker import (
     background_check,
@@ -580,75 +581,71 @@ def _orchestrate_session_loop(  # noqa: PLR0913
         max_cost=max_cost,
     )
 
-    # Two-phase Ctrl+C interrupt (tracer bullet): the container shares ONE
-    # guard instance (punq.Scope.singleton — documented exception: signal
-    # disposition is process-global) between this boundary and the
-    # orchestrator's action-dispatch loop. The handler is installed for the
-    # whole turn loop; the boundary releases it through the guard's restore() on exit.
+    # Two-phase Ctrl+C interrupt: the container shares ONE guard instance
+    # (punq.Scope.singleton — documented exception: signal disposition is
+    # process-global) between this boundary and the orchestrator's
+    # action-dispatch loop. The shared seam installs the handler and starts
+    # the quit-key listener for the whole turn loop, then stops the listener
+    # and releases the disposition on every exit path — including a raised
+    # validation exit or an interrupt.
     interrupt_guard = container.resolve(InterruptGuard)
-    interrupt_guard.install()
-
-    # The quit-key listener is a process-global resource whose start()/stop()
-    # lifecycle this boundary owns (mirroring the InterruptGuard precedent): a
-    # single bare `q` self-delivers SIGINT so the shared guard runs the SAME
-    # WAITING/EXECUTING branch. It is started alongside the handler install and
-    # stopped in the finally below before the disposition is restored.
     quit_listener = container.resolve(IQuitKeyListener)
-    quit_listener.start()
+
     try:
-        turn_count = 0
-        while True:
-            turn_count += 1
-            session_name, report = orchestrator.resume(
-                session_name=session_name,
-                require_approval=require_approval,
-                pipeline=pipeline,
-                message=message,
-            )
-            # The injected reply is consumed by the first resume; a stale
-            # message must NOT re-plan later COMPLETE_TURNs.
-            message = None
-            if report is None:
-                break
-
-            # In session mode, we do NOT exit on validation failure
-            # because the orchestrator triggers an automatic re-plan.
-            handle_report_output(
-                container, report, no_copy, silent=True, exit_on_failure=False
-            )
-
-            # Graceful interrupt drain (Bug 58 Option B): a bare `q`/Ctrl+C
-            # during action execution terminated the in-flight action and
-            # skipped the rest; the turn's report.md was already finalized by
-            # the orchestrator's turn-transition path. EXIT the session so the
-            # user regains control instead of auto-advancing to the next turn.
-            if interrupt_guard.interrupted.is_set():
-                typer.secho(
-                    format_interrupt_notice(interrupt_guard.source),
-                    fg=typer.colors.YELLOW,
+        with interrupt_scope(interrupt_guard, quit_listener):
+            turn_count = 0
+            while True:
+                turn_count += 1
+                session_name, report = orchestrator.resume(
+                    session_name=session_name,
+                    require_approval=require_approval,
+                    pipeline=pipeline,
+                    message=message,
                 )
-                break
+                # The injected reply is consumed by the first resume; a stale
+                # message must NOT re-plan later COMPLETE_TURNs.
+                message = None
+                if report is None:
+                    break
 
-            cumulative_cost = float(report.metadata.get("cumulative_cost", 0.0))
+                # In session mode, we do NOT exit on validation failure
+                # because the orchestrator triggers an automatic re-plan.
+                handle_report_output(
+                    container, report, no_copy, silent=True, exit_on_failure=False
+                )
 
-            # A communication turn means the human is present and approves the
-            # continuation, so re-anchor the budget BEFORE the limit check. The
-            # message turn therefore never trips the limit, and the next segment
-            # starts fresh. The guard itself gates the reset on
-            # guardrails.message_reset.
-            if _is_communication_turn(report):
-                loop_guard.reset_baseline(turn_count, cumulative_cost)
+                # Graceful interrupt drain (Bug 58 Option B): a bare `q`/Ctrl+C
+                # during action execution terminated the in-flight action and
+                # skipped the rest; the turn's report.md was already finalized by
+                # the orchestrator's turn-transition path. EXIT the session so the
+                # user regains control instead of auto-advancing to the next turn.
+                if interrupt_guard.interrupted.is_set():
+                    typer.secho(
+                        format_interrupt_notice(interrupt_guard.source),
+                        fg=typer.colors.YELLOW,
+                    )
+                    break
 
-            should_continue, guard_reason = loop_guard.should_continue(
-                turn_count, cumulative_cost, require_approval
-            )
-            if not should_continue:
-                _emit_guard_termination(guard_reason)
-                break
+                cumulative_cost = float(report.metadata.get("cumulative_cost", 0.0))
 
-            # Pipeline mode: exit cleanly after the first ## Message
-            if _should_exit_pipeline(pipeline, report):
-                break
+                # A communication turn means the human is present and approves the
+                # continuation, so re-anchor the budget BEFORE the limit check. The
+                # message turn therefore never trips the limit, and the next segment
+                # starts fresh. The guard itself gates the reset on
+                # guardrails.message_reset.
+                if _is_communication_turn(report):
+                    loop_guard.reset_baseline(turn_count, cumulative_cost)
+
+                should_continue, guard_reason = loop_guard.should_continue(
+                    turn_count, cumulative_cost, require_approval
+                )
+                if not should_continue:
+                    _emit_guard_termination(guard_reason)
+                    break
+
+                # Pipeline mode: exit cleanly after the first ## Message
+                if _should_exit_pipeline(pipeline, report):
+                    break
     except KeyboardInterrupt:
         # Immediate-exit semantics (Task Brief): Ctrl+C while nothing is in
         # flight (prompts, planning) terminates the session with a notice —
@@ -657,12 +654,6 @@ def _orchestrate_session_loop(  # noqa: PLR0913
             format_interrupt_notice(interrupt_guard.source),
             fg=typer.colors.YELLOW,
         )
-    finally:
-        # The guard owns restoration: restore() reinstates the disposition
-        # it captured and releases its claim. Stop the quit-key listener
-        # first so no keystrokes are read during restoration.
-        quit_listener.stop()
-        interrupt_guard.restore()
 
 
 def _format_drift_clause(

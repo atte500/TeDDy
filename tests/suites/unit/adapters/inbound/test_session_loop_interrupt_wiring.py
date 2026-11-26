@@ -90,11 +90,21 @@ def test_session_loop_catches_keyboard_interrupt_with_termination_notice(capsys)
 
 def test_session_loop_names_the_quit_key_when_recorded(capsys):
     """When the guard recorded the `q` source (a bare quit-key press), the
-    boundary notice names `q` instead of the default `Ctrl+C` (Slice 00-37)."""
+    boundary notice names `q` instead of the default `Ctrl+C` (Slice 00-37).
+
+    The press is recorded inside the run because the real quit-key listener
+    records the key and self-delivers SIGINT mid-turn. The interrupt bracket
+    clears transient press state on entry, so a source recorded before the loop
+    belongs to a previous run and must not name this run's notice.
+    """
     # Arrange
-    container, _ = _build_interrupt_harness()
-    guard = container.resolve(InterruptGuard)
-    guard.record_source("q")
+    container, orchestrator = _build_interrupt_harness()
+
+    def press_quit_key_then_interrupt(*args: object, **kwargs: object) -> None:
+        container.resolve(InterruptGuard).record_source("q")
+        raise KeyboardInterrupt
+
+    orchestrator.resume.side_effect = press_quit_key_then_interrupt
 
     # Act
     _orchestrate_session_loop(

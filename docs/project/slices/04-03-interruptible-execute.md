@@ -79,7 +79,7 @@ Then the previous SIGINT disposition is restored and the next Ctrl+C in the shel
 - [x] **Interface** - Give `InterruptGuard` install ownership: `install()` still returns the previous disposition but also records the claim, a second install fails its contract assertion naming the held disposition, and `restore()` reinstates the disposition and releases the claim.
 - [x] **Interface** - Define `interrupt_scope(guard, listener)` as a context manager over the injected guard and listener, stopping the listener and releasing the claim in `finally` on every exit path including a raised exit.
 - [x] **Harness** - Extend the SIGINT delivery double so a simulated press routes through the currently installed handler, letting an acceptance test drive the real guard without raising in the test process.
-- [ ] **Wiring** - Move the session loop onto the seam unchanged and prove the existing session interrupt and quit-listener tests stay green before the stateless path adopts anything.
+- [x] **Wiring** - Move the session loop onto the seam unchanged and prove the existing session interrupt and quit-listener tests stay green before the stateless path adopts anything.
 - [ ] **Adapter** - Bracket the stateless `execute` command body with the seam, surface the interrupt notice at that boundary, and add the acceptance test for an interrupted run.
 - [ ] **Cleanup** - Flip `boundary_owns_interrupt_lifecycle` in the CLI component page, record the `execute` key semantics in the reviewer page, and prune the dead `execute_valid_plan` helper.
 
@@ -123,6 +123,15 @@ Then the previous SIGINT disposition is restored and the next Ctrl+C in the shel
 - No production code changed here; the mode exists for the Adapter deliverable's acceptance test.
 
 **Noted for the Adapter deliverable.** No shell-executor double exists under `tests/harness`. The only acceptance test needing one builds a bare `Mock(spec=IShellExecutor)` inline in `test_execute_fail_fast.py`, so the `execute` bracket's acceptance test must add a sanctioned in-memory shell double rather than a second inline mock, and that double retires the existing inline one in the same stroke.
+
+**Deliverable 4 — session loop onto the shared seam (delivered).**
+
+- The inline `interrupt_guard.install()` / `quit_listener.start()` / `finally` block became `with interrupt_scope(interrupt_guard, quit_listener):`, with the turn loop re-indented under it. The swap stayed mechanical because the old `finally` held exactly `quit_listener.stop()` then `interrupt_guard.restore()` — the seam's own release order — and a grep confirmed the session loop was the last production bracket outside the seam.
+- The `except KeyboardInterrupt` stays OUTSIDE the `with` but inside the surrounding `try`, so the release runs while the interrupt unwinds and the notice still renders: `restore()` reinstates the disposition but never clears press state, so `interrupt_guard.source` is still readable.
+- The turn loop is ~60 lines, so the wrap ran as a targeted re-indent script anchored on the region's own lines (guard resolve, listener start, `try:`, `except`, `finally:`, `restore()`), asserting the old `finally` body first so no statement could be dropped. A whitespace-sensitive `EDIT` over that block would have been brittle.
+- One existing test moved its arrangement, not its coverage: `test_session_loop_names_the_quit_key_when_recorded` recorded `q` BEFORE entering the loop, which the seam's entry-time `clear_source()` correctly erases. Because the real quit-key listener records the key and self-delivers SIGINT mid-turn, the press now happens inside the resume side effect. The predicted single failure appeared exactly once (25 passed, 1 failed) before the fix, which is the evidence that handler install, restoration, listener lifecycle, drain exit, and baseline reset all survived unchanged.
+- Two hygiene defects from the programmatic rewrite were fixed in this same deliverable rather than deferred: the stale "tracer bullet" comment block stacked above the new bracket explanation, and the collapsed blank-line separation before `_format_drift_clause`.
+- No production behavior changed: the three existing session-loop suites plus the seam, baseline-reset, and pipeline-wiring suites pass (26 targeted), and the full suite is unchanged at 2643 passed, 5 skipped. No test was added.
 
 ## Verification
 1. **Interrupted stateless run:**
