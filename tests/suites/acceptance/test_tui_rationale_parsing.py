@@ -8,6 +8,7 @@ from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 from tests.harness.setup.rationale_scenarios import (
+    HEADINGLESS_RATIONALE,
     NON_PROTOCOL_SECTIONS,
     PREAMBLE,
     rationale,
@@ -101,10 +102,7 @@ async def test_tui_renders_sectionless_rationale_as_untitled_node(env):
     # GIVEN a legacy rationale with no recognized ### heading
     builder = MarkdownPlanBuilder("Legacy Rationale Test")
     builder.add_execute("ls")
-    builder.with_rationale(
-        "1. Synthesis\nThe parser builds one plan per turn.\n\n"
-        "2. Justification\nOne model call keeps the audit trail tight."
-    )
+    builder.with_rationale(HEADINGLESS_RATIONALE)
     plan_content = builder.build()
 
     parser = MarkdownPlanParser()
@@ -130,8 +128,7 @@ async def test_tui_renders_sectionless_rationale_as_untitled_node(env):
         # rationale
         assert [child.label.plain for child in rat_root.children] == ["Untitled"]
         content = rat_root.children[0].data["content"]
-        assert "1. Synthesis" in content
-        assert "One model call keeps the audit trail tight." in content
+        assert content == HEADINGLESS_RATIONALE
 
         # AND selecting that node renders its content in the detail pane
         tree.move_cursor(rat_root.children[0])
