@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 
+import pytest
+
 from teddy_executor.core.domain.models.execution_report import ActionLog, ActionStatus
 from teddy_executor.core.domain.models.project_context import (
     ContextItem,
@@ -9,6 +11,8 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
     format_action_log,
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+    MAX_INLINE_PARAM_LENGTH,
+    needs_external_editor,
     populate_context_detail,
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import DetailItem
@@ -180,3 +184,28 @@ def test_populate_context_detail_system_info_tokens_equals_content_tokens_when_n
     # System = 500 + 1000 = 1500 -> 1.5k
     assert "• System" in detail_map
     assert "1.5k" in detail_map["• System"]
+
+
+def test_inline_param_budget_is_one_hundred_characters():
+    """The milestone's Tier 2 Editing requirement fixes the budget at 100."""
+    assert MAX_INLINE_PARAM_LENGTH == 100
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        pytest.param("echo hi", False, id="short-single-line"),
+        pytest.param("c" * MAX_INLINE_PARAM_LENGTH, False, id="exactly-at-budget"),
+        pytest.param(
+            "c" * (MAX_INLINE_PARAM_LENGTH + 1), True, id="one-char-over-budget"
+        ),
+        pytest.param("echo one\necho two", True, id="multiline"),
+        pytest.param("echo one\r\necho two", True, id="crlf-multiline"),
+        pytest.param(", ".join(["query"] * 4), False, id="joined-list-within-budget"),
+        pytest.param(", ".join(["q" * 30] * 4), True, id="joined-list-over-budget"),
+        pytest.param("42", False, id="scalar-rendered-as-text"),
+    ],
+)
+def test_needs_external_editor(value: str, expected: bool):
+    """Only a value above the budget or carrying a newline needs the editor."""
+    assert needs_external_editor(value) is expected

@@ -69,7 +69,7 @@ Then the inline modal opens and no editor is launched
 
 ## Deliverables
 - [x] **Harness** — Expose the launched editor content from the TUI driver so a test can assert what the editor received and feed a replacement value back.
-- [ ] **Core** — Implement `needs_external_editor` beside `MAX_INLINE_PARAM_LENGTH` with unit tests covering the exact boundary, a multiline value, a joined list, and a scalar.
+- [x] **Core** — Implement `needs_external_editor` beside `MAX_INLINE_PARAM_LENGTH` with unit tests covering the exact boundary, a multiline value, a joined list, and a scalar.
 - [ ] **Wiring** — Branch `handle_list_view_selected` on the predicate, route the editor result through `_apply_param_edit`, strip a single editor-appended trailing newline, and prove both branches end to end through the driver.
 - [ ] **Cleanup** — Update the reviewer component page with the threshold and the branch table.
 
@@ -86,6 +86,11 @@ Covered by `tests/suites/unit/test_tui_driver_editor_handover.py`: one `m`-then-
 
 ### Refactor — spec-bound driver defaults
 The two bare `MagicMock()` defaults the driver passed as `console_tooling` and `action_dispatcher` were replaced with `Mock(spec=ConsoleToolingHelper)` and `Mock(spec=ActionDispatcher)`. Bare `MagicMock` is banned by TID251 and, worse, answers any attribute, so a drift between the reviewer and those collaborators stayed invisible; the spec-bound doubles fail loudly on an undeclared attribute. Behavior-neutral: the reviewer reaches only `find_editor` and `get_diff_viewer_command`, both declared on `ConsoleToolingHelper`.
+
+### Core — inline budget and trigger predicate
+`MAX_INLINE_PARAM_LENGTH = 100` sits beside `MAX_LABEL_LENGTH = 60`, because both are reviewer display budgets rather than user configuration: the milestone fixes the number, so it is a module constant like its neighbour. `needs_external_editor(value)` is the entire trigger, `"\n" in value or len(value) > MAX_INLINE_PARAM_LENGTH`, and three of the slice's edge cases follow directly from its shape. The comparison is strictly greater, so a value at exactly 100 characters keeps the inline modal. Any `\n` triggers, which catches CRLF bodies through their `\n` half while the returned text is stored untouched, so the editor's line endings survive verbatim. And the check runs on the rendered string, so a list is judged after `", ".join` — the same separator `_apply_param_edit` re-splits on — while an integer, float, or boolean arrives already stringified and needs no type branch.
+
+Covered by `tests/suites/unit/adapters/inbound/test_textual_plan_reviewer_helpers.py`: eight parametrized cases (short single line, exactly at budget, one character over, LF multiline, CRLF multiline, joined list within budget, joined list over budget, rendered scalar) plus one test pinning the budget at 100. The pin exists because a boundary case parametrized on the constant alone would silently follow a future change to it and stop proving the milestone's number. Red was `ImportError: cannot import name 'MAX_INLINE_PARAM_LENGTH'`, so the failing gate was the absent capability rather than a broken fixture.
 
 ## Verification
 1. **Multiline value:**

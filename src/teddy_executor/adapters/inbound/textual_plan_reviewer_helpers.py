@@ -12,6 +12,21 @@ logger = logging.getLogger(__name__)
 
 MAX_LABEL_LENGTH = 60
 
+# A parameter value above this budget, or carrying any newline, has no honest
+# single-line representation and opens in the external editor instead.
+MAX_INLINE_PARAM_LENGTH = 100
+
+
+def needs_external_editor(value: str) -> bool:
+    """Whether a rendered parameter value must open in the external editor.
+
+    A value carrying a newline loses its line breaks in a single-line `Input`,
+    and one above the inline budget degrades into horizontal scrolling. The
+    budget triggers only strictly above itself, so a value at exactly
+    ``MAX_INLINE_PARAM_LENGTH`` stays inline.
+    """
+    return "\n" in value or len(value) > MAX_INLINE_PARAM_LENGTH
+
 
 def extract_status_emoji(raw_status: str) -> str:
     """Extracts the status emoji, preferring anchored status lines."""
