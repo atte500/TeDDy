@@ -64,7 +64,7 @@ Then the indicator is already stopped and the error text prints without animatio
 - **Non-streaming model**: If the provider answers in one shot, then the indicator still appears and still stops on completion, because the region tracks the wait, not the transport.
 
 ## Key Unknowns
-- None. The look-alike prototype at [`spikes/prototypes/waiting-indicator/preview.py`](/spikes/prototypes/waiting-indicator/preview.py) settled the appearance: a bare braille-dot spinner on a transient line beneath the telemetry, no label and no elapsed suffix, erased on completion. The two-method port holds, because the design needs no live figure from the core.
+- None. The look-alike prototype at [`spikes/prototypes/waiting-indicator/preview.py`](/spikes/prototypes/waiting-indicator/preview.py) settled the spinner's appearance, and the label reconciliation under Implementation Notes settles how the message joins it, so no question remains open.
 
 ## Impact
 1. `[EXTEND]` `IUserInteractor.begin_waiting` / `IUserInteractor.end_waiting` — Additive operations carrying silent no-op default bodies, so the one concrete implementation stays instantiable. The harness resolves the port as an auto-specced mock, so no caller breaks.
@@ -80,7 +80,7 @@ Then the indicator is already stopped and the error text prints without animatio
 - [x] **Harness** — Register recording no-op defaults for both methods in `TestEnvironment._apply_interactor_defaults` so harness-driven planning flows stay deterministic and the call sequence is assertable.
 - [x] **Wiring** — Call `begin_waiting` before the retry loop and `end_waiting` in a `finally` inside `PlanningService._perform_generation_with_retry`, then extend the planning-service unit coverage to assert the begin/end order around a stubbed completion. Delete `InterruptGuard.enter_waiting` and its dedicated test in the same change, because the guard is a CLI-boundary process-global that never reaches `PlanningService`.
 - [x] **Adapter** — Implement `WaitingIndicator` in `adapters/outbound/console_waiting_indicator.py` and delegate both `ConsoleInteractorAdapter` methods to it, with unit tests covering the terminal gate, unbalanced end, nested begin, exception unwinding, interrupt teardown, and the interpreter-exit hook that stops a region abandoned on the daemon worker.
-- [ ] **Cleanup** — Update the `ConsoleInteractor` and `PlanningService` component docs, add the slice to the Milestone 4 delivered list, and remove this slice's Key Unknown once the prototype answers it.
+- [x] **Cleanup** — Update the `ConsoleInteractor` and `PlanningService` component docs, add the slice to the Milestone 4 delivered list, and remove this slice's Key Unknown once the prototype answers it.
 
 ## Implementation Notes
 
@@ -137,6 +137,25 @@ Three rich realities became code rather than commentary:
 **Refactor in the same commit.** `_failing_indicator` had manufactured a second, unwired `RecordingExitHooks`, and the guard tests compensated by reading `indicator._exit_hooks`; it now binds the registry once and returns it, so the assertions observe the collaborator they name.
 
 Test census: 16 new cases — 10 indicator unit, 2 never-raise unit, 2 delegation unit, 2 real-region integration. Full suite after the change: 2655 passed, 5 skipped (the 2639 baseline plus 16).
+
+### Cleanup — delivered
+
+Documentation only: no `src/` or `tests/` behaviour changed, and the full suite reproduced 2655 passed / 5 skipped across every run.
+
+**One new component page.** `docs/architecture/adapters/outbound/console_waiting_indicator.md` describes the module's real surface — `IWaitingIndicator`, `ILiveRegion`, `IExitHooks`, `LiveFactory`, `create_live`, `create_indicator`, `begin`/`end` — with `terminal_gate`, `single_region`, `never_raise`, `hook_per_wait`, `own_line_only`, and `frame_counter` as invariants. It was written from the source, not from these notes, which is why it names the guard release order and the disabled redirection as postconditions rather than as trivia. The Component Map gained its row and the Ubiquitous Language gained a **Waiting Indicator** entry, since the concept now spans code, tests, and docs.
+
+**Two module constants carved out by name.** `ARCHITECTURE.md` extended its documented exception for the interrupt knobs with `SPINNER_FRAMES` and `SPINNER_REFRESH_PER_SECOND`, so a later reader does not "fix" presentation frames into the config layer.
+
+**Three component pages amended.**
+- `user_interactor.md`: the `abstract_base_class` invariant previously claimed "implementing adapters override every operation", which the shipped no-op defaults falsify. It now carves out the two display-only notifications, and both operations are documented with their never-raise, no-stdin, terminal-gated contract.
+- `console_interactor.md`: the indicator is listed as a dependency with its `create_indicator(self._console)` default, the `waiting_delegation` invariant pins that the adapter renders no part of the wait, and both operations appear in its operation list.
+- `planning_service.md`: the interactor's role now includes the waiting region, a `waiting_bracket` invariant pins the `finally`-guarded bracket, and `_perform_generation_with_retry` gained the operation entry the list had omitted entirely.
+
+**Signature drift caught by probing, twice.** The first drafted retry entry omitted `llm_overrides`; the probe corrected it. The planning-phase entry then still omitted `*, agent_name`, which the next probe corrected too — both methods take it keyword-only, and a page that hides the parameter also hides how the label's persona arrives. The general lesson is recorded rather than the specific instance: documenting a signature from its call sites is guesswork, so the `def` gets read.
+
+**Stale references swept.** Milestone 4's 04-02 row is now `[x] … Delivered.` Milestone 5's debt disposition lost its settled `InterruptGuard.enter_waiting` clause. Slice `05-05`'s scope exclusion now reads as settled rather than pending, and its precedent bullet no longer calls the `begin_waiting` seam unbuilt. `tests/suites/unit/core/utils/test_interrupt_guard.py`'s docstring stopped advertising a WAITING phase manager that the prune removed, now states the default-is-WAITING semantics correctly, and lost its ticket reference.
+
+The `enter_waiting` census closed the prune question empirically: zero hits under `src/` or `tests/`, so every surviving mention is a document — and the two forward-looking ones were the only stale ones. Slice 04-02's own notes keep describing the contraction they performed.
 
 ## Verification
 1. **Terminal animation:**

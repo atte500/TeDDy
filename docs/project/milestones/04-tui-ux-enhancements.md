@@ -40,7 +40,7 @@ Make the interactive reviewer truthful about the session it is showing: which mo
 
 ## Slices
 - [x] [04-01-editor-basename-normalization](../slices/04-01-editor-basename-normalization.md): Normalizes editor basenames for Windows launcher suffixes so `codium.CMD` and `nvim.CMD` are detected. Delivered.
-- [ ] [04-02-waiting-feedback](../slices/04-02-waiting-feedback.md): Tackles Req 10. `IUserInteractor` gains a waiting region and the console adapter renders a transient spinner, with no-op behaviour off a terminal.
+- [x] [04-02-waiting-feedback](../slices/04-02-waiting-feedback.md): Tackles Req 10. `IUserInteractor` gains a waiting region and the console adapter renders a transient spinner, with no-op behaviour off a terminal. Delivered.
 - [ ] [04-03-interruptible-execute](../slices/04-03-interruptible-execute.md): Tackles Req 9. Hoists the install/restore and listener start/stop lifecycle into one seam, then brackets the stateless `execute` run with it.
 - [x] [04-04-guardrail-defaults](../slices/04-04-guardrail-defaults.md): Tackles Req 11. Pins the yolo-only gate and the per-run resume baseline, corrects the turn seed that inflated a resumed run's budget, asserts the four 150 spellings agree, and records the behaviour as built. Delivered.
 - [ ] [04-05-context-metadata](../slices/04-05-context-metadata.md): Tackles Req 1. `ProjectContext` gains the model name and session cost, and one `format_cost_usd` replaces the two other money formats.

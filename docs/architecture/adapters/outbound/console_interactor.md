@@ -18,6 +18,7 @@ Implements the `IUserInteractor` outbound port for the terminal. It renders prom
 - **`ConsoleToolingHelper`** (`teddy_executor.adapters.outbound.console_tooling`): Discovers the editor and the diff-viewer command.
 - **`ConsoleAskLoop`** (`teddy_executor.adapters.outbound.console_interactor_ask_loop`): Runs the interactive ask loop with the editor fallback. It classifies editors through the shared `core.utils.editor_names` helper, so a launcher wrapper such as `nvim.CMD` takes the synchronous suspend path. It receives `ISystemEnvironment` and resolves presence through the port.
 - **`console_interactor_helpers`** (`teddy_executor.adapters.outbound.console_interactor_helpers`): Provides the handoff prompt, the preview-file setup, and the terminal-restore helper.
+- [`WaitingIndicator`](./console_waiting_indicator.md): Owns the transient line behind `begin_waiting` and `end_waiting`. It arrives through the optional `waiting_indicator` parameter and defaults to `create_indicator(self._console)`, so production needs no composition change and every existing construction site stays valid.
 
 ## Class Invariants
 - `stdin_ownership`: Every interactive read runs inside the `stdin_owned()` context so the session quit-key listener backs off.
@@ -25,6 +26,7 @@ Implements the `IUserInteractor` outbound port for the terminal. It renders prom
 - `terminal_restore`: The adapter restores the cooked terminal mode before each interaction block and after an external editor exits.
 - `stderr_only`: Prompts and messages write to `stderr`, so `stdout` stays reserved for report output.
 - `ask_loop_presence_source`: `ConsoleAskLoop._is_tty()` returns the injected `ISystemEnvironment.isatty()` answer guarded by `sys.stdin.isatty()`. The port is the authoritative presence source, so the loop and the lifecycle manager agree; the stdin check guards the read capability because prompt_toolkit and `termios` cannot drive a pipe.
+- `waiting_delegation`: `begin_waiting` and `end_waiting` forward to the injected indicator unchanged. The adapter renders no part of the wait, so the transient line has one implementation.
 
 ## Inbound Ports
 None — this is an outbound (driven) adapter.
@@ -66,6 +68,12 @@ None — this is an outbound (driven) adapter.
 
 ### `confirm_manual_handoff(action_type, target_agent, resources, message) -> tuple[bool, str]`
 - **Postconditions:** Prints the handoff details and returns `(True, "")` on an empty response, or `(False, reason)` on a non-empty response.
+
+### `begin_waiting(message) -> None`
+- **Postconditions:** Forwards the label to the indicator and writes nothing itself, so a run that draws no animation stays byte-identical.
+
+### `end_waiting() -> None`
+- **Postconditions:** Forwards the teardown to the indicator; a call with no open region does nothing.
 
 ### Internal helpers
 `_display_ask_header` prints the ask header and reference files, rendering the body through `render_message_body` when the console is a terminal. `_launch_editor_synchronous` opens the editor on a temporary file and returns its content. `_handle_external_preview` writes the preview files and launches the diff command in the background.

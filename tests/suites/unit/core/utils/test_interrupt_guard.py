@@ -1,14 +1,14 @@
 """Unit tests: InterruptGuard contract (two-phase Ctrl+C interrupt).
 
-The guard installs the process SIGINT handler and exposes WAITING /
-EXECUTING phase context managers plus an `interrupted` threading.Event.
-Phase semantics (Task-Brief-approved): in WAITING (prompts, planning
-LLM call) a signal raises KeyboardInterrupt immediately — nothing is in
-flight. In EXECUTING the first signal sets the flag so the in-flight
-action can drain gracefully; a second signal within the grace window
-escalates to immediate termination. The grace window is a module
-constant and the monotonic clock is Constructor-Injected for
-deterministic escalation tests (no sleeps).
+The guard installs the process SIGINT handler and exposes an EXECUTING
+phase context manager plus an `interrupted` threading.Event. Phase
+semantics: outside EXECUTING the guard is WAITING — nothing is in
+flight, so a signal raises KeyboardInterrupt immediately. In EXECUTING
+the first signal sets the flag so the in-flight action can drain
+gracefully; a second signal within the grace window escalates to
+immediate termination. The grace window is a module constant and the
+monotonic clock is Constructor-Injected for deterministic escalation
+tests (no sleeps).
 """
 
 import signal

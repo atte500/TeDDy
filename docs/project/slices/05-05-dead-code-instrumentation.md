@@ -16,8 +16,8 @@ Delete the unreachable `execute_valid_plan` helper and the stray `DEBUG CLI` lin
 - Why the debug line matters even while dead: it is one plausible re-wiring away from printing an internal object type onto a user's terminal on every `execute` run, which is exactly the kind of leftover instrumentation the Failure Transparency standard exists to prevent.
 - Neighbours that stay: `handle_report_output` and `prewarm_imports` live in the same module and are live code paths.
 - Disposal of the historical confusion: the helper's name suggests it is the `execute` command's body, but the live `execute` path resolves its orchestrator elsewhere, so the name is the only thing that ever made this function look load-bearing.
-- Scope exclusion: the `InterruptGuard.enter_waiting` wire-or-remove decision belongs to [slice 04-02](./04-02-waiting-feedback.md), which owns the waiting seam, so this slice does not touch it.
-- Precedent: the `begin_waiting` census in the same sweep returned zero hits and confirmed that seam is *unbuilt* rather than dead, which is the opposite conclusion for the opposite reason — an absent implementation is work, an unreferenced one is debt.
+- Scope exclusion: the `InterruptGuard.enter_waiting` wire-or-remove decision was settled by [slice 04-02](./04-02-waiting-feedback.md), which owns the waiting seam and removed the unreferenced method as a port contraction, so this slice does not touch it.
+- Precedent: the `begin_waiting` census in the same sweep returned zero hits while that seam was still unbuilt, and 04-02 has since built it — an absent implementation is work, an unreferenced one is debt.
 
 ## Scenarios
 

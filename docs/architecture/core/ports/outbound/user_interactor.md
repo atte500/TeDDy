@@ -16,7 +16,7 @@ Defines the outbound port for all user interaction: prompting for free text, con
 - **`Plan`**, **`ActionData`**, **`ChangeSet`** (`teddy_executor.core.domain.models`): Domain models exchanged by the confirmation flows (type-checking only).
 
 ## Class Invariants
-- `abstract_base_class`: The port is an `ABC`; implementing adapters override every operation.
+- `abstract_base_class`: The port is an `ABC`; implementing adapters override every operation except the two display-only waiting notifications, which ship silent no-op bodies so the seam stays additive for an adapter written against the older contract.
 - `single_source_of_input`: Implementations own the input stream and must not leak stdin between calls.
 
 ## Inbound Ports
@@ -62,3 +62,11 @@ None — this is an outbound (driven) port.
 ### `notify_warning(message) -> None`
 - **Preconditions:** None.
 - **Postconditions:** Surfaces a non-fatal warning.
+
+### `begin_waiting(message) -> None`
+- **Preconditions:** None; `message` is a short presentation hint describing the wait.
+- **Postconditions:** Announces that a blocking wait has begun. The default body renders nothing, so an adapter that ignores the seam stays silent. An override owns exactly the transient line it draws and must never raise, never read stdin, never install a process-interrupt handler, and render nothing without an attached terminal.
+
+### `end_waiting() -> None`
+- **Preconditions:** None; an unbalanced call is a silent no-op, so a defensive `finally` may end a wait a failure already ended.
+- **Postconditions:** Ends the announced wait, erasing the region it drew before returning. The default body renders nothing; an override must never raise, so the error that ended the wait propagates onto a clean line.

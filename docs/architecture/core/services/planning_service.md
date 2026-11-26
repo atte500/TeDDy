@@ -19,7 +19,7 @@ Implements the `IPlanningUseCase` inbound port. It gathers project context, reso
 - [`IConfigService`](../ports/outbound/config_service.md): Resolves the `agents` block, model, and retry settings.
 - [`resolve_agent_llm_overrides` and `resolve_effective_model`](../domain/config_schema.md): Resolve the persona overlay and the effective model by the pinned precedence.
 - [`IPromptManager`](/src/teddy_executor/core/ports/outbound/prompt_manager.py): Resolves the agent prompt and persists telemetry.
-- [`IUserInteractor`](../ports/outbound/user_interactor.md): Displays telemetry and retry notices.
+- [`IUserInteractor`](../ports/outbound/user_interactor.md): Displays telemetry and retry notices, and renders the waiting region around the model call.
 - [`ISessionManager`](../ports/outbound/session_manager.md): Resolves session and turn context manifests.
 
 ## Class Invariants
@@ -37,6 +37,7 @@ Implements the `IPlanningUseCase` inbound port. It gathers project context, reso
 - `interruptible_planning_phase`: The hydration, token-count, telemetry, budget, and completion calls run on a daemon worker, so the calling thread waits on a future that a quit can interrupt.
 - `cache_suffix_gate`: `_display_telemetry` appends ` (N% cached)` only when the cost renders as a dollar figure, `cumulative_cost > 0`, the cumulative prompt denominator is positive, and the cumulative cached count is positive; `N = min(100, round(cached * 100 / prompt))`. `$???`, a recorded free-model `$0.0000`, a zero denominator, and an absent or zero cache all render suffix-free.
 - `estimate_versus_usage`: The pre-call `token_count` stays the request estimate that feeds the context-budget check; provider accounting arrives separately through `get_token_usage` as a `TokenUsage` and never overwrites the estimate.
+- `waiting_bracket`: `_perform_generation_with_retry` brackets its whole retry loop with `begin_waiting` and a `finally`-guarded `end_waiting`, so one region spans every attempt and the wait always ends — on the first success, across a retry, and when the completion raises.
 
 ## Inbound Ports
 - **`IPlanningUseCase`**: Exposes `generate_plan(...)`.
@@ -61,9 +62,9 @@ None declared directly — the service consumes the ports bundled in `PlanningPo
   - `FileNotFoundError`: System prompt file is missing in turn directory.
   - `KeyboardInterrupt`: User quits while the planning wait is pending.
 
-### `_run_planning_phase(messages, model, meta, llm_overrides=None) -> tuple[Any, int, str, float]`
-- **Preconditions:** `messages` holds the assembled system and context messages; `model` is the resolved effective model; `meta` carries the turn telemetry; `llm_overrides` is the persona overlay (empty or `None` for a project without an `agents` block).
-- **Postconditions:** Hydrates through `get_context_window`, counts tokens, displays telemetry, checks the context budget, and performs the generation with retry, all on a daemon worker. Returns the response, the token count, the plan content, and the turn cost.
+### `_run_planning_phase(messages, model, meta, llm_overrides=None, *, agent_name) -> tuple[Any, int, str, float]`
+- **Preconditions:** `messages` holds the assembled system and context messages; `model` is the resolved effective model; `meta` carries the turn telemetry; `llm_overrides` is the persona overlay (empty or `None` for a project without an `agents` block); `agent_name` names the persona whose response the waiting label announces.
+- **Postconditions:** Hydrates through `get_context_window`, counts tokens, displays telemetry, checks the context budget, and performs the generation with retry, all on a daemon worker. It forwards `agent_name` unchanged, so the wait opened below it names the answering persona. Returns the response, the token count, the plan content, and the turn cost.
 - **Exceptions:**
   - `ConfigurationError`: Assembled request token count exceeds the context window.
 
@@ -72,3 +73,10 @@ None declared directly — the service consumes the ports bundled in `PlanningPo
 - **Postconditions:** Returns normally when the context window is unknown or the request fits; the guardrail never calls the LLM.
 - **Exceptions:**
   - `ConfigurationError`: Token count strictly exceeds positive context window limit.
+
+### `_perform_generation_with_retry(messages, model, llm_overrides=None, *, agent_name) -> tuple[Any, str, float]`
+- **Preconditions:** `messages` holds the assembled system and context messages; `model` is the resolved effective model; `llm_overrides` is the persona overlay (empty or `None` for a project without an `agents` block), forwarded to every attempt; `agent_name` names the persona whose response the waiting label announces.
+- **Postconditions:** Opens one waiting region before the first attempt, retries an empty completion up to `llm.max_retries` times, accumulates every billed attempt into the turn cost, and closes the region in a `finally`. Returns the response, the plan content, and the turn cost.
+- **Exceptions:**
+  - `KeyboardInterrupt`: The wait was quit; the region closes before the interrupt propagates.
+  - Any completion failure: re-raised unchanged after the region closes, so a traceback never interleaves with the animation.
