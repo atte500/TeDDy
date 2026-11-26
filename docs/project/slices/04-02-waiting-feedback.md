@@ -77,7 +77,7 @@ Then the indicator is already stopped and the error text prints without animatio
 
 ## Deliverables
 - [x] **Interface** — Add `begin_waiting(message: str)` and `end_waiting()` to `IUserInteractor` with contract docs pinning that they are display-only, must never raise, must tolerate an unbalanced `end_waiting`, are no-ops without an attached terminal, never alter a line they did not print, and never touch stdin or a signal handler.
-- [ ] **Harness** — Register recording no-op defaults for both methods in `TestEnvironment._apply_interactor_defaults` so harness-driven planning flows stay deterministic and the call sequence is assertable.
+- [x] **Harness** — Register recording no-op defaults for both methods in `TestEnvironment._apply_interactor_defaults` so harness-driven planning flows stay deterministic and the call sequence is assertable.
 - [ ] **Wiring** — Call `begin_waiting` before the retry loop and `end_waiting` in a `finally` inside `PlanningService._perform_generation_with_retry`, then extend the planning-service unit coverage to assert the begin/end order around a stubbed completion. Delete `InterruptGuard.enter_waiting` and its dedicated test in the same change, because the guard is a CLI-boundary process-global that never reaches `PlanningService`.
 - [ ] **Adapter** — Implement `WaitingIndicator` in `adapters/outbound/console_waiting_indicator.py` and delegate both `ConsoleInteractorAdapter` methods to it, with unit tests covering the terminal gate, unbalanced end, nested begin, exception unwinding, interrupt teardown, and the interpreter-exit hook that stops a region abandoned on the daemon worker.
 - [ ] **Cleanup** — Update the `ConsoleInteractor` and `PlanningService` component docs, add the slice to the Milestone 4 delivered list, and remove this slice's Key Unknown once the prototype answers it.
@@ -95,6 +95,14 @@ Contract coverage lives at `tests/suites/unit/core/ports/outbound/test_user_inte
 **Label reconciliation.** The Key Unknowns record a *bare* glyph with no label, while the Edge Cases carry a "label wider than the console" behaviour and the pinned signature takes `message`. A bare glyph would leave the parameter dead and that edge case untestable, so the Adapter deliverable renders `{spinner} {message}` on the transient line and the core supplies the short label `Waiting for {agent} to respond...` — the banner's wording without duplicating its turn/session prefix. Both statements then hold: the indicator rewrites no line it did not print, and the label has a defined width behaviour.
 
 **Prune plan confirmed by census.** `InterruptGuard.enter_waiting` has zero production call sites and exactly two test-side users: the dedicated case in `tests/suites/unit/core/utils/test_interrupt_guard.py` (deleted with the method) and `tests/suites/unit/core/utils/test_interruptible_call.py`, which wraps `run_interruptible` in it purely as phase bookkeeping. The guard's default phase already *is* WAITING — a signal raises immediately before any phase is entered — so that wrapper is redundant and is dropped rather than migrated.
+
+### Harness — delivered
+
+`TestEnvironment._apply_interactor_defaults` now registers `begin_waiting` and `end_waiting` with `return_value = None`, alongside the three existing interactor defaults. Coverage lives at `tests/suites/unit/test_user_interactor_harness.py` (2 tests) and drives the double through the composition `env` fixture, so it asserts against the same configured interactor every planning and acceptance flow receives.
+
+The registration fixes a real unfaithfulness rather than a cosmetic one. The harness double is a `POSIXPathMock(spec=IUserInteractor)`, and an auto-specced double answers an *unregistered* operation with a truthy dynamic child mock — the Red run printed `assert <POSIXPathMock name='mock.begin_waiting()' ...> is None`. The port's contract is `None`, so before this change a harness-driven planning flow observed a fabricated answer. The rule generalizes: any port operation whose contract is "returns None" needs that `None` registered explicitly in the harness, because the mock's default answer is never `None`. Calls stay recorded either way, which is what keeps the upcoming bracketing order assertable from the double.
+
+Full suite after the change: 2636 passed, 5 skipped — the previous 2634 plus exactly the two new tests, so no fixture-consuming suite was disturbed.
 
 ## Verification
 1. **Terminal animation:**

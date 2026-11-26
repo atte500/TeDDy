@@ -261,6 +261,12 @@ class TestEnvironment(RealAdapterMixin):
         mock.confirm_action.return_value = (True, "")
         mock.confirm_manual_handoff.return_value = (True, "")
         mock.ask_question.return_value = ""
+        # The waiting operations are display-only no-ops whose contract is
+        # "returns None". An unregistered auto-specced call would answer with a
+        # truthy child mock instead, so the answers are registered explicitly
+        # while the calls stay recorded for bracketing-order assertions.
+        mock.begin_waiting.return_value = None
+        mock.end_waiting.return_value = None
 
     def _apply_loop_guard_defaults(self, mock: Any) -> None:
         import os
