@@ -78,14 +78,14 @@ Then the guard continues without a limit notice
 
 ## Impact
 1. `[EXTEND]` `tests/harness/setup/container_stub.py` — record the constructor kwargs of each `resolve` call, so a test can observe the baselines the boundary seeds. Additive: the current double discards kwargs, and no caller relies on that. Delivered: the recording plus a `resolved_kwargs(service_type)` accessor that returns a copy, covered by `test_container_stub_harness.py`.
-2. `[MIGRATE]` `src/teddy_executor/adapters/inbound/session_cli_handlers.py` — seed the turn baseline at `0` (the per-run scale the loop counts in) and delete the now-dead `_resolve_initial_turn` helper, keeping `initial_cost` seeded from `get_cumulative_cost`.
+2. `[MIGRATE]` `src/teddy_executor/adapters/inbound/session_cli_handlers.py` — seed the turn baseline at `0` (the per-run scale the loop counts in) and delete the now-dead `_resolve_initial_turn` helper, keeping `initial_cost` seeded from `get_cumulative_cost`. Delivered: `initial_turn = 0` replaces the history-based helper, which is deleted along with its swallowed `ValueError`/`TypeError`; the cost seed is byte-identical.
 3. `[MIGRATE]` `tests/suites/unit/adapters/inbound/test_session_loop_baseline_reset.py` — add the resumed-run turn-budget pin: a session whose latest turn is `40` must still halt at `guardrails.max_turns` turns in this run.
 4. `[MIGRATE]` `tests/suites/unit/core/services/test_session_loop_guard_configuration.py` — replace the local `_load_bundled_config` with the shared harness loader, and assert the bundled `guardrails.max_turns` and `guardrails.max_session_cost` equal the `GuardrailsConfig` defaults and the guard's resolution fallbacks.
 5. `[PRUNE]` `tests/suites/unit/core/services/test_session_loop_guard.py::test_production_guard_stores_initial_state` — the private-attribute assertion is superseded by behavioural delta pins and would survive a regression in `should_continue`.
 
 ## Deliverables
 - [x] **Harness** — Record the resolve kwargs in `ContainerStub` (with its own unit test) so the boundary seed is observable, and pin the four guardrail spellings to the schema defaults and the guard's resolution fallbacks.
-- [ ] **Core** — Re-base the turn budget per run: seed `initial_turn=0`, delete the dead `_resolve_initial_turn` helper, and pin the resumed-run budget with a boundary test.
+- [x] **Core** — Re-base the turn budget per run: seed `initial_turn=0`, delete the dead `_resolve_initial_turn` helper, and pin the resumed-run budget with a boundary test.
 - [ ] **Cleanup** — Retire the private-attribute guard test, consolidate the duplicated bundled-config loader, and record the delivered behaviour as built on the guard service and port pages.
 
 ## Implementation Notes
@@ -102,7 +102,14 @@ The duplicated `guardrails.get("max_turns") == 150` assertion was pruned from `t
 
 **Deferred deliberately:** the local `_load_bundled_config` in `test_session_loop_guard_configuration.py` still duplicates `tests/harness/setup/bundled_config.py`. The new agreement test reuses the local loader so the consolidation lands as its own atomic step in the Cleanup deliverable.
 
-**Gate:** the full suite passes at this point (2627 passed, 5 skipped).
+**Core — the resumed run's turn budget starts at zero.**
+The seed was wrong, not the counter. `_orchestrate_session_loop` seeded the guard from `max(0, latest_turn - 1)` parsed out of the session's latest turn directory, while the loop passes a counter that restarts at `1` on every run: a session at turn `40` seeded `39`, the first check computed `1 - 39 = -38`, and the run only halted at turn `189` under the default `150`. So the budget grew by exactly the turns the session had already spent. The fix seeds `initial_turn = 0` and deletes `_resolve_initial_turn`, whose only production caller was that line; the helper's `try/except (ValueError, TypeError)` went with it, which is a second gain — it existed to tolerate test doubles, and it would have quietly resolved a reintroduced history-based seed to `0`. The cost seed is untouched: `get_cumulative_cost` and the report's `cumulative_cost` are both session-cumulative, so that delta already started at zero.
+
+The pin builds the real guard from the boundary's injected kwargs. `ContainerStub` hands back a fixed mapped instance, so asserting `resolved_kwargs(ISessionLoopGuard)` would have pinned an argument instead of a budget — the same weakness as the `_initial_turn` assertion this slice retires. `_GuardConstructingContainer` overrides only the `ISessionLoopGuard` resolution and constructs `ProductionSessionLoopGuard` from the kwargs the boundary passes, so the seeded budget drives the loop's own halt count. `session_manager.get_latest_turn` is left arranged in this one test on purpose: a bare `Mock(spec=ISessionManager)` would raise `TypeError` into a reintroduced history-based seed and be swallowed to `0`, letting the regression pass silently, whereas the explicit turn-40 path makes it fail loudly at 44 resumes.
+
+Red observed exactly `assert 44 == 5`, with the guard's own notice printed at the end reading "Turn limit reached: 5/5 turns in this run" after 44 resumes — the notice and the counter disagreeing is the defect stated in one line. Green observed 4 passed. The then-dead `get_latest_turn` arrangements were pruned from `_run_loop` and `test_pipeline_wiring.py`, since the boundary no longer reads that method; `get_latest_turn` stays in live use for meta persistence (`session_cli_handlers.py:1514`), so no port method was orphaned.
+
+**Gate:** the full suite passes at this point (2628 passed, 5 skipped).
 
 ## Verification
 1. **Configured halt:**

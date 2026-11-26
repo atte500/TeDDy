@@ -64,8 +64,6 @@ def _build_mock_container_for_orchestrate() -> tuple[Mock, Mock]:
     mock_session_manager = Mock()
     mock_loop_guard = Mock()
 
-    # session_manager.get_latest_turn returns a fake path
-    mock_session_manager.get_latest_turn.return_value = "01"
     mock_session_manager.get_cumulative_cost.return_value = 0.0
 
     # loop_guard.should_continue returns (True, None) to not break
