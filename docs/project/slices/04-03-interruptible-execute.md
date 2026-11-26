@@ -78,7 +78,7 @@ Then the previous SIGINT disposition is restored and the next Ctrl+C in the shel
 ## Deliverables
 - [x] **Interface** - Give `InterruptGuard` install ownership: `install()` still returns the previous disposition but also records the claim, a second install fails its contract assertion naming the held disposition, and `restore()` reinstates the disposition and releases the claim.
 - [x] **Interface** - Define `interrupt_scope(guard, listener)` as a context manager over the injected guard and listener, stopping the listener and releasing the claim in `finally` on every exit path including a raised exit.
-- [ ] **Harness** - Extend the SIGINT delivery double so a simulated press routes through the currently installed handler, letting an acceptance test drive the real guard without raising in the test process.
+- [x] **Harness** - Extend the SIGINT delivery double so a simulated press routes through the currently installed handler, letting an acceptance test drive the real guard without raising in the test process.
 - [ ] **Wiring** - Move the session loop onto the seam unchanged and prove the existing session interrupt and quit-listener tests stay green before the stateless path adopts anything.
 - [ ] **Adapter** - Bracket the stateless `execute` command body with the seam, surface the interrupt notice at that boundary, and add the acceptance test for an interrupted run.
 - [ ] **Cleanup** - Flip `boundary_owns_interrupt_lifecycle` in the CLI component page, record the `execute` key semantics in the reviewer page, and prune the dead `execute_valid_plan` helper.
@@ -111,6 +111,18 @@ Then the previous SIGINT disposition is restored and the next Ctrl+C in the shel
 - The seam never swallows a `KeyboardInterrupt` or a `typer.Exit`: the boundary that entered the bracket owns the notice and the exit code.
 - Eight unit tests in `tests/suites/unit/adapters/inbound/test_interrupt_scope.py` pin it: install-and-start for the body, release on the normal, raising, `typer.Exit` and `KeyboardInterrupt` paths, stop-before-restore ordering, a second bracket on one memoized guard, and entry clearing a stale press source.
 - No production caller uses the seam yet: the session loop keeps its inline install/restore until the Wiring deliverable migrates it, so this commit adds the capability without switching any boundary onto it.
+
+**Deliverable 3 — SIGINT routing mode in the delivery double (delivered).**
+
+- The mode is an enum on the existing helper (`SigintDeliveryMode`) rather than a second seam, because three suites already pin the recorder contract. `RECORD` stays the default and the routing leg is strictly additive.
+- `ROUTE_TO_HANDLER` resolves `signal.getsignal(signal.SIGINT)` at press time, never at stub time: the run installs its handler after the stub is applied, so an early lookup would capture the pre-run disposition and drive nothing.
+- The signal number is recorded BEFORE routing, so a handler that raises — the guard's WAITING branch does exactly that — still leaves evidence of the press for the assertion.
+- A non-callable disposition such as `SIG_IGN` is skipped rather than invoked, because not every disposition the process can hold is a Python callable.
+- Five cases in `tests/suites/unit/test_sigint_delivery_harness.py` pin it: routing through both `raise_signal` and `pthread_kill`, record mode leaving the installed handler untouched, the `SIG_IGN` skip, and a routed press setting the real `InterruptGuard`'s drain flag inside `enter_executing()`. The three pre-existing recorder pins are unchanged.
+- Full suite at this commit: 2643 passed, 5 skipped.
+- No production code changed here; the mode exists for the Adapter deliverable's acceptance test.
+
+**Noted for the Adapter deliverable.** No shell-executor double exists under `tests/harness`. The only acceptance test needing one builds a bare `Mock(spec=IShellExecutor)` inline in `test_execute_fail_fast.py`, so the `execute` bracket's acceptance test must add a sanctioned in-memory shell double rather than a second inline mock, and that double retires the existing inline one in the same stroke.
 
 ## Verification
 1. **Interrupted stateless run:**
