@@ -274,9 +274,11 @@ async def launch_editor(
     skip_confirm: bool = False,
 ) -> Optional[str]:
     """Launches an external editor non-blockingly and waits for TUI confirmation."""
-    mock_out = os.environ.get("TEDDY_TEST_MOCK_EDITOR_OUTPUT")
-
-    if mock_out:
+    # Presence, not truthiness, marks a simulated editor run: an empty value
+    # models a buffer the user emptied, which must stay distinguishable from a
+    # dismissal (None) so the caller can clear the parameter.
+    if "TEDDY_TEST_MOCK_EDITOR_OUTPUT" in os.environ:
+        mock_out = os.environ["TEDDY_TEST_MOCK_EDITOR_OUTPUT"]
         temp_file = persistent_path or app._system_env.create_temp_file(suffix=suffix)
         is_temp = persistent_path is None
         handle_mock_editor(temp_file, mock_out)
@@ -517,10 +519,33 @@ def _process_diff_result(
     return False
 
 
+def _strip_appended_newline(original: str, edited: str) -> str:
+    """Drop the single newline an editor appends, keeping an intended one.
+
+    Many editors terminate the saved buffer with a newline. The original value
+    decides which case this is: a value that already ended with a newline keeps
+    the edited text untouched, and one that did not loses a single appended
+    break so a command cannot gain a stray line. A Windows editor appends CRLF,
+    which is one newline and is removed as a pair.
+    """
+    if original.endswith("\n") or not edited.endswith("\n"):
+        return edited
+    trimmed = edited[:-1]
+    return trimmed[:-1] if trimmed.endswith("\r") else trimmed
+
+
 async def handle_list_view_selected(
     app: "ReviewerApp", item: Any, update_fn: Any
 ) -> None:
-    """Handle parameter editing when a DetailItem is selected in the right pane."""
+    """Handle parameter editing when a DetailItem is selected in the right pane.
+
+    A path keeps its file picker, a value with no honest single-line
+    representation opens in the external editor, and everything else uses the
+    inline modal. All three write back through the same apply path.
+    """
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+        needs_external_editor,
+    )
     from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
         ActionTree,
         PathInputScreen,
@@ -543,9 +568,13 @@ async def handle_list_view_selected(
         if not isinstance(val, (str, int, float, bool, list)) and val is not None:
             return
         v_str = ", ".join(map(str, val)) if isinstance(val, list) else str(val)
-        new_val = await cast(
-            Any, app.push_screen_wait(ParameterEditModal(f"{key}:", v_str))
-        )
+        if needs_external_editor(v_str):
+            edited = await launch_editor(app, v_str)
+            new_val = None if edited is None else _strip_appended_newline(v_str, edited)
+        else:
+            new_val = await cast(
+                Any, app.push_screen_wait(ParameterEditModal(f"{key}:", v_str))
+            )
 
     if new_val is not None and str(new_val) != str(val):
         from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (

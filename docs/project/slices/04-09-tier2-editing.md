@@ -70,7 +70,7 @@ Then the inline modal opens and no editor is launched
 ## Deliverables
 - [x] **Harness** — Expose the launched editor content from the TUI driver so a test can assert what the editor received and feed a replacement value back.
 - [x] **Core** — Implement `needs_external_editor` beside `MAX_INLINE_PARAM_LENGTH` with unit tests covering the exact boundary, a multiline value, a joined list, and a scalar.
-- [ ] **Wiring** — Branch `handle_list_view_selected` on the predicate, route the editor result through `_apply_param_edit`, strip a single editor-appended trailing newline, and prove both branches end to end through the driver.
+- [x] **Wiring** — Branch `handle_list_view_selected` on the predicate, route the editor result through `_apply_param_edit`, strip a single editor-appended trailing newline, and prove both branches end to end through the driver.
 - [ ] **Cleanup** — Update the reviewer component page with the threshold and the branch table.
 
 ## Implementation Notes
@@ -91,6 +91,17 @@ The two bare `MagicMock()` defaults the driver passed as `console_tooling` and `
 `MAX_INLINE_PARAM_LENGTH = 100` sits beside `MAX_LABEL_LENGTH = 60`, because both are reviewer display budgets rather than user configuration: the milestone fixes the number, so it is a module constant like its neighbour. `needs_external_editor(value)` is the entire trigger, `"\n" in value or len(value) > MAX_INLINE_PARAM_LENGTH`, and three of the slice's edge cases follow directly from its shape. The comparison is strictly greater, so a value at exactly 100 characters keeps the inline modal. Any `\n` triggers, which catches CRLF bodies through their `\n` half while the returned text is stored untouched, so the editor's line endings survive verbatim. And the check runs on the rendered string, so a list is judged after `", ".join` — the same separator `_apply_param_edit` re-splits on — while an integer, float, or boolean arrives already stringified and needs no type branch.
 
 Covered by `tests/suites/unit/adapters/inbound/test_textual_plan_reviewer_helpers.py`: eight parametrized cases (short single line, exactly at budget, one character over, LF multiline, CRLF multiline, joined list within budget, joined list over budget, rendered scalar) plus one test pinning the budget at 100. The pin exists because a boundary case parametrized on the constant alone would silently follow a future change to it and stop proving the milestone's number. Red was `ImportError: cannot import name 'MAX_INLINE_PARAM_LENGTH'`, so the failing gate was the absent capability rather than a broken fixture.
+
+### Wiring — parameter branch and editor handover
+`handle_list_view_selected` forks after rendering: a value `needs_external_editor` accepts goes to `launch_editor`, everything else keeps `ParameterEditModal`, and both arms converge on the same `new_val is not None and str(new_val) != str(val)` write-back through `_apply_param_edit`. The `path` guard stays first, so a path is still one token edited through `PathInputScreen`, and the unrenderable-type guard is untouched.
+
+Two orientation findings shaped the branch. First, the pane's value is always a string for action parameters: `resolve_action_parameters` joins a list with the same `", "` separator `_apply_param_edit` re-splits on, and `_render_action_data_detail` stringifies whatever remains. The "non-string scalar" edge case therefore holds structurally — an integer, float, or boolean arrives as `"60.0"` or `"False"`, below the budget and without a newline — so a wiring-level type gate would be an unreachable branch and was not added. Second, `launch_editor` returns `None` for a dismissed edit but an empty string for an emptied buffer, so the arm tests for `None` rather than truthiness; a truthiness test would silently swallow the clear case and leave the old value in place.
+
+`_strip_appended_newline` conditions the trim on the original value: a value that already ended with a newline keeps the edited text untouched, and one that did not loses a single appended break, removed as a pair when the editor wrote Windows line endings. An unconditional strip would rewrite an already terminated command and mark the action modified on a round trip the user never changed.
+
+Covered by `tests/suites/unit/adapters/inbound/test_reviewer_parameter_editor_routing.py`, driven through the real key path — tree focus, three moves onto the action, `tab` into the pane, `enter` on the first row: a multiline RESEARCH query reaching the editor and re-splitting into the list, four EXECUTE permutations (one appended newline stripped, an intentional one preserved, a CRLF pair stripped, an empty result clearing the value), and a short command keeping the inline modal with no handover recorded. Red was `assert [] == ['.txt']` on the editor cases while the inline case passed, which proved the pane journey and isolated the gap to the branch itself.
+
+The emptied-buffer case also exposed a harness fidelity gap the branch could not fix: `launch_editor` gated its mock hook on the variable's truthiness, so an empty replacement behaved exactly like no mock and fell through to the real editor path, returning the unchanged buffer. Gating on the variable's presence makes "the editor returned nothing" representable, which is what the clear case requires.
 
 ## Verification
 1. **Multiline value:**
