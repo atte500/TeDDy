@@ -290,15 +290,15 @@ def handle_mount_logic(app: Any, update_detail_fn: Any) -> None:
         RATIONALE_ROOT,
         ACTION_PLAN_ROOT,
         RATIONALE_FALLBACK_TITLE,
-        rationale_entries,
+        rationale_sections,
     )
 
     rat_root = tree.root.add("[bold]Rationale[/]", data=RATIONALE_ROOT, expand=True)
-    for title, content in rationale_entries(app.plan.rationale):
+    for title, content in rationale_sections(app.plan.rationale):
         label = title
         if title == RATIONALE_FALLBACK_TITLE:
-            # The whole-block fallback is secondary: keep it visually quieter so
-            # it does not read as one of the protocol sections.
+            # Untitled content is secondary: keep it visually quieter so it
+            # does not read as one of the authored sections.
             label = f"[#888888 italic]{title}[/]"
         rat_root.add_leaf(
             label,

@@ -7,6 +7,13 @@ from teddy_executor.core.ports.outbound.system_environment import ISystemEnviron
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 from teddy_executor.core.services.markdown_plan_parser import MarkdownPlanParser
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
+from tests.harness.setup.rationale_scenarios import (
+    NON_PROTOCOL_SECTIONS,
+    PREAMBLE,
+    rationale,
+    section,
+    sections,
+)
 
 
 @pytest.mark.anyio
@@ -42,18 +49,20 @@ async def test_tui_parses_default_rationale_sections(env):
 
 
 @pytest.mark.anyio
-async def test_tui_only_accepts_markdown_headings(env):
+async def test_tui_renders_every_authored_heading_as_a_node(env):
     """
-    Verify only ### headings create nodes: a numeric marker is body text, and an
-    unrecognized ### section merges into the previous node.
+    Verify every ### heading reaches the tree whether or not the plan format
+    defines it, and that text before the first heading stays visible.
     """
-    # GIVEN a rationale that uses a numeric marker and an unrecognized ### heading
-    builder = MarkdownPlanBuilder("Marker Contract Test")
+    # GIVEN a rationale with a preamble plus headings the format does not define
+    builder = MarkdownPlanBuilder("Authored Sections Test")
     builder.add_execute("ls")
     builder.with_rationale(
-        "1. Synthesis\nA numeric marker is not a heading.\n\n"
-        "### Summary\nThe summary.\n\n"
-        "### Extra Details\nMerged into the summary node."
+        rationale(
+            PREAMBLE,
+            section("Summary", "The summary."),
+            sections(NON_PROTOCOL_SECTIONS),
+        )
     )
     plan_content = builder.build()
 
@@ -72,10 +81,15 @@ async def test_tui_only_accepts_markdown_headings(env):
         rat_root = tree.root.children[0]
         titles = [child.label.plain for child in rat_root.children]
 
-        assert titles == ["Summary"], f"Only ### headings create nodes, got {titles}"
-        summary_node = rat_root.children[0]
-        assert "The summary." in summary_node.data["content"]
-        assert "Merged into the summary node." in summary_node.data["content"]
+        assert titles == ["Untitled", "Summary", "Context", "Trade-offs"], (
+            f"Expected every authored heading as a node, got {titles}"
+        )
+
+        # AND the non-protocol node carries only its own body
+        context_node = rat_root.children[2]
+        assert context_node.data["type"] == "RATIONALE_SECTION"
+        assert context_node.data["title"] == "Context"
+        assert context_node.data["content"] == "The context."
 
 
 @pytest.mark.anyio
