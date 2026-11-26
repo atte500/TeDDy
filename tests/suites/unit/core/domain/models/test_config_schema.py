@@ -7,6 +7,7 @@ the key. The hyphenated ``workspace.pre-commit`` YAML key maps to the
 ``pre_commit`` Python field.
 """
 
+import dataclasses
 import re
 from pathlib import Path
 
@@ -16,6 +17,7 @@ import teddy_executor
 from teddy_executor.adapters.outbound.yaml_config_adapter import YamlConfigAdapter
 from teddy_executor.core.domain.models.config_schema import (
     DEFAULT_APP_CONFIG,
+    AutoPruningConfig,
     construct_app_config,
     is_declared_key,
     read_declared_value,
@@ -256,6 +258,23 @@ def test_non_positive_retention_batch_raises_naming_the_key(value):
     """A batch below one is rejected, naming the key."""
     with pytest.raises(ConfigurationError, match=r"auto_pruning\.retention_batch"):
         construct_app_config({"auto_pruning": {"retention_batch": value}})
+
+
+# --- Retired plan-status key ---
+
+_RETIRED_PLAN_STATUS_KEY = "auto_pruning.prune_failure_history"
+
+
+def test_retired_plan_status_key_is_no_longer_declared():
+    """The plan-status heuristic is gone, so the schema stops declaring its key.
+
+    A user who keeps the line in ``config.yaml`` gets it dropped silently, the
+    same tolerance every undeclared group already receives.
+    """
+    assert not is_declared_key(_RETIRED_PLAN_STATUS_KEY)
+    assert _RETIRED_PLAN_STATUS_KEY.rsplit(".", 1)[-1] not in {
+        field.name for field in dataclasses.fields(AutoPruningConfig)
+    }
 
 
 # --- Documentation / schema drift closure ---

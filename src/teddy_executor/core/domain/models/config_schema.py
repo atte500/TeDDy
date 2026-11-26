@@ -74,7 +74,6 @@ class UpdateConfig:
 class AutoPruningConfig:
     enabled: bool = True
     turn_context_threshold: int = 50000
-    prune_failure_history: bool = True
     prune_validation_failures: bool = True
     preserve_message_turns: bool = True
     max_turns_retention: int = 10
@@ -238,12 +237,6 @@ _SCHEMA_FIELDS: tuple[_FieldSpec, ...] = (
         "auto_pruning",
         "turn_context_threshold",
         int,
-    ),
-    _FieldSpec(
-        "auto_pruning.prune_failure_history",
-        "auto_pruning",
-        "prune_failure_history",
-        bool,
     ),
     _FieldSpec(
         "auto_pruning.prune_validation_failures",

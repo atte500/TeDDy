@@ -1,5 +1,5 @@
 # Slice: Pruning Policy by Cost of Loss
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** None (ad-hoc)
 - **Depends On:** None
 - **Specs:** [context-payload-format](../specs/context-payload-format.md)
@@ -104,14 +104,27 @@ None. Every remaining question is answerable by reading the service body, and th
 10. `[MIGRATE]` documentation surfaces — the `IConfigService` key table, the heuristics list in `session_pruning_service.md` (whose `Global budget` bullet must state the class-then-size order and the whole-turn fallback), and the census bullet in `context-payload-format.md`, which must keep its measurement while noting that only validation and budget removal remain live.
 
 ## Deliverables
-- [ ] **Interface** - Remove `prune_failure_history` from `AutoPruningConfig`, its `_SCHEMA_FIELDS` entry, and the shipped `config.yaml` line with its comment; drop the key from the `IConfigService` table and delete the adapter test assertion that reads it. Behaviour is unchanged at this commit: the merged mapping still supplies `true`, so the service reads the same value through the fallback path.
+- [x] **Interface** - Remove `prune_failure_history` from `AutoPruningConfig`, its `_SCHEMA_FIELDS` entry, and the shipped `config.yaml` line with its comment; drop the key from the `IConfigService` table and delete the adapter test assertion that reads it. Behaviour is unchanged at this commit: the merged mapping still supplies `true`, so the service reads the same value through the fallback path.
 - [ ] **Core** - Delete the heuristic chain and retire the unit and integration cases that pin it in one commit, so the suite stays green at every step: the recovery-cleanup branch, the `prune_non_green` read, `turn_statuses`, `_update_metadata_from_plan`, `_check_plan_failed`, and the `statuses` key plus `turn_statuses` parameter. Keep `current_status` threading for validation pruning. Update the heuristics list in `session_pruning_service.md` and the spec's census bullet in the same commit, so no document describes a mechanism the code no longer has.
 - [ ] **Core** - Order the budget's victims by cost of loss: classify a turn-scope path as record or copy, rank copies before records and largest-first inside each class, and drop the oldest retained turn's records together once no copy remains. Carry the ordering's unit cases in the same commit — a copy leaves before a larger record, whole turns leave oldest first when copies run out, a turn's plan and report leave together whenever both are present, a turn holding only one record drops just that one, a project file named `plan.md` outside a turn directory stays a copy, and equal sizes keep manifest order — and update the `Global budget` bullet in `session_pruning_service.md`.
 - [ ] **Migration** - Drive both behaviours through the outermost boundary: the two acceptance cases in `test_context_management_ui.py` become "an amber turn survives recovery" and "a validation-failed turn is still pruned"; an over-budget assembly keeps its newest record and drops a larger copy instead; and every pruning config double across the suites loses the dead key.
 - [ ] **Cleanup** - Remove `_check_report_is_success` and `_check_file_contains`, which have no caller in `src` or `tests`. If implementation finds a dynamic caller, drop this deliverable and record the finding rather than preserving dead code around it.
 
 ## Implementation Notes
-Not yet started.
+
+### Interface — retiring the plan-status key
+
+The key stopped being declared in one commit, across four surfaces plus one test:
+
+- `AutoPruningConfig` lost the field and `_SCHEMA_FIELDS` lost its `_FieldSpec`, so `is_declared_key` now reports `False` and `construct_app_config` ignores a user value instead of coercing it.
+- `src/teddy_executor/resources/config/config.yaml` lost the shipped line and its trailing comment.
+- The `IConfigService` key table lost its row. This was not optional: `test_documentation_and_schema_declare_the_same_keys` fails the moment the schema drops a key the document still lists, so the drift closure is what makes the removal contractual rather than a silent deletion.
+- `test_auto_pruning_defaults_are_present` lost the single assertion reading the key from the bundled file; its four remaining `auto_pruning` assertions stayed.
+- A positive contract test, `test_retired_plan_status_key_is_no_longer_declared`, pins the absence through the public `is_declared_key` seam plus the `AutoPruningConfig` field set. It failed first with `assert not True` against the still-declared key.
+
+Behaviour is unchanged at this commit, as the slice required. `SessionPruningService` still calls `get_setting("auto_pruning.prune_failure_history", True)`, and with the key undeclared and absent from the shipped baseline that call resolves the call-site default `True`, the same value the baseline supplied. A test double that still sets the key keeps exercising the live merged mapping for an undeclared key, so an explicit `False` still reaches the service. Full suite after the change: 2619 passed, 5 skipped.
+
+Discovery corrected one assumption in the slice's Impact section: `test_config_schema.py` already owned both `is_declared_key` and the documentation drift closure, so the Red test needed no new machinery beyond a `dataclasses` import and the `AutoPruningConfig` type.
 
 ## Verification
 1. **The schema no longer declares the key:**
