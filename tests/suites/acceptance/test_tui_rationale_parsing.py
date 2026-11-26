@@ -79,10 +79,10 @@ async def test_tui_only_accepts_markdown_headings(env):
 
 
 @pytest.mark.anyio
-async def test_tui_renders_sectionless_rationale_as_raw_node(env):
+async def test_tui_renders_sectionless_rationale_as_untitled_node(env):
     """
-    Verify a rationale carrying none of the four headings becomes one `Raw`
-    node holding the whole content, and that selecting it shows that content.
+    Verify a rationale carrying no heading becomes one `Untitled` node holding
+    the whole content, and that selecting it shows that content.
     """
     # GIVEN a legacy rationale with no recognized ### heading
     builder = MarkdownPlanBuilder("Legacy Rationale Test")
@@ -112,8 +112,9 @@ async def test_tui_renders_sectionless_rationale_as_raw_node(env):
         tree = app.query_one(ActionTree)
         rat_root = tree.root.children[0]
 
-        # THEN the root exposes a single Raw node carrying the whole rationale
-        assert [child.label.plain for child in rat_root.children] == ["Raw"]
+        # THEN the root exposes a single Untitled node carrying the whole
+        # rationale
+        assert [child.label.plain for child in rat_root.children] == ["Untitled"]
         content = rat_root.children[0].data["content"]
         assert "1. Synthesis" in content
         assert "One model call keeps the audit trail tight." in content

@@ -25,9 +25,9 @@ ALLOWED_RATIONALE_SECTIONS = [
     "Notes",
 ]
 
-# Label for the whole-block node shown when a rationale carries none of the
-# allowed section headings.
-RATIONALE_FALLBACK_TITLE = "Raw"
+# Label for content the author left untitled: text before the first heading,
+# and a rationale that carries no heading at all.
+RATIONALE_FALLBACK_TITLE = "Untitled"
 
 # Tree Node Identifiers
 CONTEXT_ROOT = "CONTEXT_ROOT"
@@ -67,6 +67,87 @@ def is_section_payload(data: Any) -> bool:
 # Summary logic moved to textual_plan_reviewer_helpers.py
 
 
+_FENCE_PATTERN = re.compile(r"^ {0,3}(?P<fence>`{3,}|~{3,})")
+_HEADING_PREFIX = "### "
+
+
+def _trim_blank_lines(lines: list[str]) -> str:
+    """Joins ``lines`` with the blank lines around them removed, not inside."""
+    start = 0
+    end = len(lines)
+    while start < end and not lines[start].strip():
+        start += 1
+    while end > start and not lines[end - 1].strip():
+        end -= 1
+    return "\n".join(lines[start:end])
+
+
+def _opening_fence(line: str) -> str | None:
+    """Returns the fence sequence opening a block on ``line``, or ``None``."""
+    match = _FENCE_PATTERN.match(line)
+    return match.group("fence") if match else None
+
+
+def _closes_fence(line: str, fence: str) -> bool:
+    """Returns whether ``line`` closes a block opened by ``fence``.
+
+    A closer carries the opener's character and at least its length, so a
+    three-backtick line inside a four-backtick block stays content.
+    """
+    stripped = line.strip()
+    return len(stripped) >= len(fence) and stripped == fence[0] * len(stripped)
+
+
+def rationale_sections(rationale: str) -> list[tuple[str, str]]:
+    """Splits a rationale into one section per authored `###` heading.
+
+    Every `### ` heading at the start of a line opens a section whatever its
+    title, so a plan that adds, renames, or reorders a section stays reviewable
+    in the authored order. Fenced blocks are scanned so a `### ` line inside one
+    stays body text: an opening fence of three or more backticks or tildes is
+    closed only by the same character at or above the same length, and an
+    unclosed fence keeps the rest of the rationale in its own section instead of
+    tearing the block in two. Text before the first heading becomes a leading
+    ``RATIONALE_FALLBACK_TITLE`` section, and a rationale with no heading at all
+    becomes a single such section. Only the blank lines around a body are
+    trimmed, so an indented line stays body content and a blank rationale yields
+    no sections.
+    """
+    sections: list[tuple[str, str]] = []
+    title: str | None = None
+    body: list[str] = []
+    fence: str | None = None
+
+    def flush() -> None:
+        nonlocal body
+        content = _trim_blank_lines(body)
+        if title is not None:
+            sections.append((title, content))
+        elif content:
+            sections.append((RATIONALE_FALLBACK_TITLE, content))
+        body = []
+
+    for line in rationale.splitlines():
+        if fence is not None:
+            if _closes_fence(line, fence):
+                fence = None
+            body.append(line)
+            continue
+        opening = _opening_fence(line)
+        if opening is not None:
+            fence = opening
+            body.append(line)
+            continue
+        if line.startswith(_HEADING_PREFIX):
+            flush()
+            title = line.removeprefix(_HEADING_PREFIX).strip()
+            continue
+        body.append(line)
+
+    flush()
+    return sections
+
+
 def recognized_rationale_sections(rationale: str) -> list[tuple[str, str]]:
     """Splits a rationale into its recognized `###` sections.
 
@@ -74,7 +155,7 @@ def recognized_rationale_sections(rationale: str) -> list[tuple[str, str]]:
     a section. Any other chunk, including a numeric `1. Section` marker, merges
     into the preceding section as body text; text before the first recognized
     heading is dropped. A rationale with no recognized heading yields an empty
-    list, which the caller turns into a single ``Raw`` block.
+    list, which the caller turns into a single ``Untitled`` block.
     """
     titles: list[str] = []
     contents: list[str] = []
@@ -93,11 +174,11 @@ def recognized_rationale_sections(rationale: str) -> list[tuple[str, str]]:
 
 
 def rationale_entries(rationale: str) -> list[tuple[str, str]]:
-    """Returns the rationale tree entries, falling back to one raw block.
+    """Returns the rationale tree entries, falling back to one untitled block.
 
     A rationale written before the section contract carries none of the
     recognized headings, so it yields no sections. Render it as a single
-    ``Raw`` entry instead of losing it, so stored plans and resumed sessions
+    ``Untitled`` entry instead of losing it, so stored plans and resumed sessions
     stay reviewable. A blank rationale yields no entry at all.
     """
     sections = recognized_rationale_sections(rationale)
