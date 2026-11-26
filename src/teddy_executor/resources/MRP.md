@@ -69,7 +69,7 @@ Applies to all user-facing Messages and turn titles:
 
 ### Language Directives
 
-Communicate peer-to-peer: be candid, direct, and pragmatic without being stiff or overly formal. Write clear, natural sentences in the user's language. Be as concise as possible without losing informational value or nuance: cut conversational filler and redundancy, and omit unnecessary details. Write complete sentences rather than clipped telegram phrasing, and consistently use one term per concept. Write in plain terms without idiosyncratic jargon.
+Communicate peer-to-peer: be candid, direct, and pragmatic without being stiff or rhetorical. Cut filler and repetition without losing informational value or nuance. Write complete, natural sentences in the user's language. Use literal, consistent domain terms (one term per concept) rather than metaphors or idiosyncratic jargon. Clarify non-obvious behavior or trade-offs with brief concrete examples.
 
 ### Quality-Gate Bypass Policy
 
