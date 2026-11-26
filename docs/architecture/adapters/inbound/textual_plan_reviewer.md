@@ -1,5 +1,5 @@
 # Component Design: TextualPlanReviewer
-- **Status:** Implemented
+- **Status:** Refactoring
 - **Source:** [`src/teddy_executor/adapters/inbound/textual_plan_reviewer.py`](/src/teddy_executor/adapters/inbound/textual_plan_reviewer.py)
 
 ## Purpose
@@ -12,6 +12,7 @@ Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It p
 - [`ISystemEnvironment`](../../core/ports/outbound/system_environment.md): Launches the external editor for context-aware editing.
 - **`is_cli_editor` / `normalize_editor_basename`** (`teddy_executor.core.utils.editor_names`): Classify editor commands by stripping Windows launcher suffixes and lowercasing the basename. The module-level `_is_cli_editor` in `textual_plan_reviewer_editor.py` stays a thin delegator because `textual_plan_reviewer_previews` imports it.
 - [`WebContentService`](../../core/services/web_content_service.md): Serves a READ action's URL preview from the session cache, fetching once on a miss.
+- [`IAgentCatalog`](../../core/ports/outbound/agent_catalog.md): Supplies the persona roster the System node's agent switch offers (slice 04-06). Injected at the composition root like `console_tooling`, so a reviewer test drives both the populated and the empty roster without touching `.teddy/prompts/`.
 
 ## Class Invariants
 - `stdin_ownership`: While the app runs, the reviewer claims `stdin_owned()` so the session quit-key listener backs off and the TUI's own `q` binding stays authoritative.
@@ -20,6 +21,8 @@ Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It p
 - `session_root_grouped_context`: The context pane groups reads by the DTO's `session_root`. Only paths under that root become History; a foreign session's read keeps the scope group it arrived in, because the exclusion uses `is_own_session_path` rather than the coarse "under `sessions/`" test, and its label falls back to the raw path. A `None` root keeps the legacy grouping.
 - `mutable_plan_models`: The `Plan` and `ActionData` models are unfrozen so the reviewer can update them in memory.
 - `cache_served_url_preview`: A READ preview on an `http`/`https` resource resolves through `WebContentService.fetch_one` with `project_context.session_root`, so previewing a URL a READ already fetched costs no network round trip, and a preview miss is stored for the following turn. A missing project context reads as no session, so the preview falls back to an uncached fetch.
+- `context_node_e_dispatch`: `e` resolves by node kind and is never silently dead on a context node. A `ContextItem` opens its own path; the Session and Turn roots open their `.context` manifest through `launch_editor` with `skip_confirm`, so the manifest is read-only in place and no temp file is harvested; the System node opens the injected roster. The Turn manifest is `turn.context` beside `plan.plan_path` and the Session manifest is `session.context` under `project_context.session_root`, so neither directory is guessed. A `--plan-content` run has no `plan.plan_path`, so its Turn node notifies that the turn context is unavailable, and a missing manifest notifies with its path rather than opening an empty buffer. Enter and Space still toggle selection, because `e` must not absorb the toggle binding.
+- `cost_rows_share_one_format`: The Context root's Model, Provider, and Session Cost rows read from the DTO rather than from ambient configuration, and the cost row routes through `format_cost_usd`, so the panel cannot disagree with the terminal telemetry line or the guardrail notice about the same session. Unrecorded cost renders `$???` while recorded zero renders `$0.0000`, because those are different facts about a run, and every recorded amount renders at exactly four decimal places.
 
 ## Inbound Ports
 - **`IPlanReviewer`**: Exposes `review(plan, project_context=None)` and `review_action(action, total_actions, agent_name=None)`.
@@ -42,7 +45,7 @@ Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It p
 - **Postconditions:** Returns `(should_execute, captured_message)` for sequential review.
 
 ### Keyboard bindings
-`s` submits the plan; `a` toggles all actions; `e` edits the highlighted action (external editor for CREATE and EDIT, modal for EXECUTE and RESEARCH); `d` opens the read-only action log; `r` reverts manual modifications; `v` views the original plan file; `x` marks a step executed; `m` adds or edits a user message; `q` cancels and exits.
+`s` submits the plan; `a` toggles all actions; `e` edits the highlighted node — an action (external editor for CREATE and EDIT, modal for EXECUTE and RESEARCH) or a context node (a file path, the Session root, the Turn root, or the System node's agent roster); `d` opens the read-only action log; `r` reverts manual modifications; `v` views the original plan file; `x` marks a step executed; `m` adds or edits a user message; `q` cancels and exits.
 
 ### Action log format
 The reviewer renders an action log as a structured Markdown document: an `### {ACTION_TYPE}: {SUMMARY}` header, a `- **Status:** {STATUS}` line, and quadruple-backtick fences around `stdout`, `stderr`, and `diff`.

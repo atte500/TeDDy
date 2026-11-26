@@ -25,7 +25,7 @@ This section defines the conventions for our project management artifacts.
 
 ## Tooling
 
-The project `Makefile` is the current automation interface (modular fragments under `make/*.mk`), scheduled to migrate to `justfile` + `scripts/` in Milestone 6. Agents must use these exact bound commands:
+The project `Makefile` is the current automation interface (modular fragments under `make/*.mk`) and stays bound until [06-06](slices/06-06-tooling-migration.md) retires it in favour of a `justfile` plus tested `scripts/tooling/` helpers. That migration's install path is measured rather than assumed: `uv tool install rust-just` provides `just` 1.59.0 with no compiler required, and `uvx --from rust-just just <recipe>` runs a single recipe with no install at all. Agents must use these exact bound commands until that slice lands:
 
 | Command | Purpose |
 | --- | --- |
@@ -74,7 +74,8 @@ A compact index of upcoming and completed milestones. Detailed requirements, gui
 
 | Milestone | Status | Depends On | Goal | Specs |
 | --- | --- | --- | --- | --- |
-| [Foundational Refactors](milestones/03-foundational-refactors.md) | `COMPLETED` | — | Extract prompt blueprints to templates, centralize MRP, and add editor discovery. | — |
+| Foundational Refactors _(archived)_ | `COMPLETED` | — | Extract prompt blueprints to templates, centralize MRP, and add editor discovery. | — |
 | [TUI & UX Enhancements](milestones/04-tui-ux-enhancements.md) | `IN PROGRESS` | — | Enhance interactive TUI visibility and navigation, add MOVE/DELETE actions, and show waiting feedback. | [interactive-session-workflow](specs/interactive-session-workflow.md) |
-| [Quality Gate & Debt Reconciliation](milestones/05-quality-gate-debt-reconciliation.md) | `PLANNED` | — | Reconcile failing quality gates, eliminate quality bypasses and redundant tests, and split CI static analysis. | TBD |
-| [Cross-Cutting Consolidation](milestones/06-cross-cutting-consolidation.md) | `PLANNED` | — | Deduplicate helpers/literals, unify custom exceptions, and migrate project tooling to `justfile` + `scripts/`. | TBD |
+| [Quality Gate & Debt Reconciliation](milestones/05-quality-gate-debt-reconciliation.md) | `PLANNED` | — | Drive the blocking gates green, enforce the bypass policy with a hook, split CI static analysis, and prune redundant test cases while the advisory metrics stay advisory. | — |
+| [Cross-Cutting Consolidation](milestones/06-cross-cutting-consolidation.md) | `PLANNED` | — | Single-source duplicated literals, helpers, doubles, and the action-type registry, unify the exception hierarchy, and migrate tooling to `justfile` + `scripts/`. | — |
+| [Runtime Reliability & Boundary Purity](milestones/07-runtime-reliability.md) | `PLANNED` | — | Make session metadata writes durable, the suite deterministic, the heuristics bounded, the resume state single-sourced, and `core` free of adapter libraries. | — |

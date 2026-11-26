@@ -183,7 +183,7 @@ The `teddy execute` command creates the *next* turn (`T_next`) based on the stat
     -   Handoffs are mediated by the User; the agent provides the necessary `teddy start` command in the message body.
 6.  **Finalize and Report:**
     -   **Generate Report:** The factual `T_current/report.md` is generated based on the execution of the plan (or its validation failure).
-    -   **Update Session Log:** The system will create or append to the `<session_name>/session-log.md` file. It will append the full content of `T_current/plan.md` and the "Action Log" section from `T_current/report.md`. See the [Automatic Session Log Specification](./session-history-view.md) for details.
+    -   **Update Session Log:** The system will create or append to the `<session_name>/session-log.md` file. It will append the full content of `T_current/plan.md` and the "Action Log" section from `T_current/report.md`. See the Automatic Session Log Specification for details.
     -   **Append Previous Artifacts to Context:** The paths to BOTH the original `T_current/plan.md` and the newly generated `T_current/report.md` are always appended to `T_next/turn.context` (regardless of execution outcome or validation status). This ensures the AI has its previous intent and the resulting outcome in its worldview for the next turn.
 7.  **Continuous Loop:**
     -   Instead of exiting, the command should automatically trigger the `plan` phase for `T_next` (prompting the user for their next instruction), creating a seamless, continuous conversational loop until the user explicitly exits.
@@ -218,7 +218,7 @@ This phase provides a unified TUI experience for reviewing and modifying plans b
     - Pressing `e` on the Session/Turn root node opens the corresponding `.context` file in the external editor.
     - Pressing `e` on a specific file path node opens that file directly.
 - **Visuals & Data:**
-    - The `Context Root` displays the current model name and cumulative session cost (rounded up to the nearest cent) in the right panel. Ensure consistent rounding across all displays.
+    - The `Context Root` displays the current model name and cumulative session cost in the right panel at exactly four decimal places, and route every display of that figure through the one money formatter so the panel, the terminal telemetry line, and the guardrail notice state the same amount.
     - File paths in the context section are project-root relative without the `./` prefix.
     - **Layout Consistency:** All panels (Rationale items, Message sections, left panel, and right panel) MUST use consistent padding.
     - **Tier 2 Parameter Editing:** If a parameter is multiline or exceeds 100 characters, the TUI must automatically open the external editor for that parameter instead of an inline prompt to prevent UI breakup.

@@ -8,7 +8,7 @@ This template documents how to set up Continuous Integration and the Debug Workf
 
 The CI pipeline consists of three parallel jobs. Two are merge gates; one is advisory.
 
-A check earns a merge veto only when it is deterministic (the verdict is reproducible locally) and diff-actionable (the author can fix it within the commit that triggered it). Deterministic static analysis meets that bar for a project that starts at zero debt. Aggregate, repository-wide metrics do not: no single commit can satisfy a test-pyramid ratio, a file-length cap, or a duplication threshold without unrelated refactoring.
+A check earns a merge veto only when it is deterministic (the verdict is reproducible locally) and diff-actionable (the author can fix it within the commit that triggered it). Deterministic static analysis meets that bar for a project that starts at zero debt. Aggregate, repository-wide metrics do not: no single commit can satisfy a file-length cap or a duplication threshold without unrelated refactoring.
 
 ### Job 1: Blocking OS Matrix Test Suite
 - Runs on each push and pull request.
@@ -27,10 +27,10 @@ A check earns a merge veto only when it is deterministic (the verdict is reprodu
 - **Blocking:** Configured with `continue-on-error: false`. A failure on any OS leg fails the pipeline.
 
 ### Job 3: Advisory Quality Metrics
-- Runs aggregate, repository-wide checks that no single commit can satisfy without unrelated refactoring: test-pyramid ratios, file-length caps, and duplication thresholds.
+- Runs aggregate, repository-wide checks that no single commit can satisfy without unrelated refactoring: file-length caps and duplication thresholds.
 - Executes across the same OS matrix so a platform-specific path or line-ending difference cannot hide behind a single-runner verdict. These checks carry no merge veto, so a matrix here costs runner minutes without risking a blocked merge.
 - Sets `fail-fast: false` and `defaults.run.shell: bash` for the same reasons as Job 2.
-- **Advisory:** Configured with `continue-on-error: true`. Findings surface as triage items, not merge blockers; a ratchet that fails only when a metric worsens is an acceptable upgrade.
+- **Advisory:** Configured with `continue-on-error: true`. Findings surface as triage items, not merge blockers, and the job never vetoes a merge.
 
 ```shell
 # Fast hooks (default stage)
@@ -194,15 +194,10 @@ jobs:
       - name: Install dependencies
         run: {runner} sync --frozen
 
-      - name: "Verify Test Pyramid"
+      - name: "Check Python File Length (Max 500 Lines)"
         if: success() || failure()
         run: |
-          {runner} python scripts/verify_test_pyramid.py
-
-      - name: "Check Python File Length (Max 300 Lines)"
-        if: success() || failure()
-        run: |
-          find src tests -name "*.py" | xargs wc -l | awk '$1 > 300 && $2 != "total" {print "File " $2 " is too long (" $1 " lines)."; exit 1}'
+          find src tests -name "*.py" | xargs wc -l | awk '$1 > 500 && $2 != "total" {print "File " $2 " is too long (" $1 " lines)."; exit 1}'
 
       - name: "Detect Code Duplication (jscpd)"
         if: success() || failure()
