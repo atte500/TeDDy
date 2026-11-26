@@ -352,8 +352,6 @@ def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
         return False
 
     data = cast(ActionData, node.data)
-
-    data = cast(ActionData, node.data)
     results = {
         "execute_step": not data.executed,
         "edit_details": not data.executed,
