@@ -49,5 +49,16 @@ Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It p
 ### Keyboard bindings
 `s` submits the plan; `a` toggles all actions; `e` edits the highlighted node — an action (external editor for CREATE and EDIT, modal for EXECUTE and RESEARCH) or a context node (a file path, the Session root, the Turn root, or the System node's agent roster); `d` opens the read-only action log; `r` reverts manual modifications; `v` views the original plan file; `x` marks a step executed; `m` adds or edits a user message; `q` cancels and exits.
 
+### Parameter editing
+Selecting a parameter row in the right pane resolves in exactly one of three arms, and every arm writes back through the same `_apply_param_edit`:
+
+| Selected value | Arm | Why |
+| --- | --- | --- |
+| The `path` key | `PathInputScreen` | A path is a single token, so the file-picker semantics stay unchanged. |
+| A rendered value `needs_external_editor` accepts | `launch_editor` | Any newline, or a length strictly above `MAX_INLINE_PARAM_LENGTH` (100 characters). |
+| Anything else | `ParameterEditModal` | A single-line `Input` is honest for a short, single-line value. |
+
+The test runs on the rendered string, so a joined list is judged after `", "` — the same separator `_apply_param_edit` re-splits on — and a value of exactly 100 characters still stays inline. A dismissed editor returns `None` and leaves the parameter untouched, while an emptied buffer returns an empty string and clears it, so the arm distinguishes `None` from `""` instead of testing truthiness. The editor result loses exactly one appended newline, and only when the original value did not already end with one, so an editor round trip of an already terminated command is not recorded as a modification; a Windows CRLF pair counts as one newline and is removed as a pair. `e` on an action node keeps its own split — the editor for CREATE and EDIT bodies, the modal for EXECUTE and RESEARCH command and queries — because that path never goes through this branch.
+
 ### Action log format
 The reviewer renders an action log as a structured Markdown document: an `### {ACTION_TYPE}: {SUMMARY}` header, a `- **Status:** {STATUS}` line, and quadruple-backtick fences around `stdout`, `stderr`, and `diff`.

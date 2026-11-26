@@ -1,5 +1,3 @@
-import os
-
 import pytest
 from textual.widgets import Input, Tree
 
@@ -7,15 +5,6 @@ from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.ports.outbound import IFileSystemManager, ISystemEnvironment
 
 from tests.harness.drivers.tui_driver import TuiDriver
-
-
-@pytest.fixture(autouse=True)
-def _isolate_mock_editor_environment():
-    """Keeps the driver's mock-editor hook from leaking into the next test."""
-    try:
-        yield
-    finally:
-        os.environ.pop("TEDDY_TEST_MOCK_EDITOR_OUTPUT", None)
 
 
 def _build_driver(env, plan: Plan, replacement: str) -> TuiDriver:

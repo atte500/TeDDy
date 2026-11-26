@@ -71,7 +71,7 @@ Then the inline modal opens and no editor is launched
 - [x] **Harness** — Expose the launched editor content from the TUI driver so a test can assert what the editor received and feed a replacement value back.
 - [x] **Core** — Implement `needs_external_editor` beside `MAX_INLINE_PARAM_LENGTH` with unit tests covering the exact boundary, a multiline value, a joined list, and a scalar.
 - [x] **Wiring** — Branch `handle_list_view_selected` on the predicate, route the editor result through `_apply_param_edit`, strip a single editor-appended trailing newline, and prove both branches end to end through the driver.
-- [ ] **Cleanup** — Update the reviewer component page with the threshold and the branch table.
+- [x] **Cleanup** — Update the reviewer component page with the threshold and the branch table.
 
 ## Implementation Notes
 
@@ -102,6 +102,13 @@ Two orientation findings shaped the branch. First, the pane's value is always a 
 Covered by `tests/suites/unit/adapters/inbound/test_reviewer_parameter_editor_routing.py`, driven through the real key path — tree focus, three moves onto the action, `tab` into the pane, `enter` on the first row: a multiline RESEARCH query reaching the editor and re-splitting into the list, four EXECUTE permutations (one appended newline stripped, an intentional one preserved, a CRLF pair stripped, an empty result clearing the value), and a short command keeping the inline modal with no handover recorded. Red was `assert [] == ['.txt']` on the editor cases while the inline case passed, which proved the pane journey and isolated the gap to the branch itself.
 
 The emptied-buffer case also exposed a harness fidelity gap the branch could not fix: `launch_editor` gated its mock hook on the variable's truthiness, so an empty replacement behaved exactly like no mock and fell through to the real editor path, returning the unchanged buffer. Gating on the variable's presence makes "the editor returned nothing" representable, which is what the clear case requires.
+
+### Cleanup — single-sourced hook ownership and the component page
+The Harness deliverable left the routing module with its own autouse fixture clearing `TEDDY_TEST_MOCK_EDITOR_OUTPUT` after each test, because `TuiDriver` installs that hook process-wide. That guard turned out to be duplicate ownership: `tests/conftest.py` already runs an autouse `clean_test_env` fixture that deletes the variable both before and after every test, so the hook cannot outlive a test in the first place. The honest cleanup was therefore deletion — the fixture and its now-unused `os` import — rather than a second guard, and the 21 cases across the routing, driver-handover, and helpers modules stayed green without it. Because the composition root owns the hook, no entry is needed in [Milestone 6](/docs/project/milestones/06-cross-cutting-consolidation.md), whose consolidated-doubles slice has nothing to absorb here.
+
+The reviewer component page gained a `### Parameter editing` subsection under `## Operations`, as a peer of `### Keyboard bindings` and `### Action log format` — the page's existing precedent for a topic that is neither a method nor a class invariant. It carries the three-arm table (`PathInputScreen` for the `path` key, `launch_editor` for a value `needs_external_editor` accepts, `ParameterEditModal` otherwise) plus the contract notes a reader would otherwise have to infer from the code: the threshold is judged on the rendered string after the `", "` join, exactly 100 characters stays inline, `None` and `""` mean dismissal and clearing respectively, and the single appended newline is trimmed only when the original value did not already end with one. `e` on an action node keeps its own split, so the page states why the two paths differ instead of implying they are one. The page keeps `Status: Refactoring` because milestone 4 still has pending slices editing the same reviewer modules.
+
+The stale-reference sweep came back clean: every hit names a live symbol (`needs_external_editor`, `MAX_INLINE_PARAM_LENGTH`, `_strip_appended_newline`, `ParameterEditModal`) or is this slice's own pre-branch Context narrative, so no renamed or removed component leaves a dangling reference.
 
 ## Verification
 1. **Multiline value:**
