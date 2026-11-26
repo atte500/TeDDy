@@ -1,5 +1,5 @@
 # Slice: Interruptible `execute` Run
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** None
@@ -151,6 +151,14 @@ Then the previous SIGINT disposition is restored and the next Ctrl+C in the shel
 - `execute_valid_plan` was deliberately NOT deleted here. Milestone 05 requirement 5 names its deletion with `Owner: 05-05`, and slice 05-05's Harness deliverable is a module-surface assertion that needs a real dead public function to fail on. Deleting it from this slice would gut another milestone's artifact to satisfy one Impact line, so our item is marked `[PRUNE, DEFERRED]` with the reason and the function stays unreachable.
 - The non-slice-scoped shell double in `test_pipeline_message_break.py` is a six-mock unit fixture, not an acceptance arrangement, so it was recorded under milestone 06's shared-fake consolidation (06-03) instead of being rewritten from a slice that never exercised it.
 - Raw `signal.signal(...)` restorations in the interrupt suites were classified rather than migrated: they are fixture-level ambient-state restoration wrapped around a fresh guard per test, and a latched install claim would only bite on a second install of the same instance, which the green suite shows never happens. Migrating them to `guard.restore()` would test the guard through itself.
+
+**As-Built gap found and closed by the audit (delivered).**
+
+- The as-built audit surfaced a documentation gap, not a code defect. `InterruptGuard` (Impact item 1) and `tests/harness/setup/sigint_delivery.py` (Impact item 5) had no component pages, and the new seam page linked `InterruptGuard` and `IQuitKeyListener` to files that did not exist. The closure commit's link precondition aborted before writing, so the gap was caught rather than committed.
+- Three pages were created from the component-design template with no instructional comments or placeholders, and each is linked from the Component Map: the guard (`core/utils/`), the quit-key listener port (`core/ports/outbound/`), and the SIGINT-delivery harness setup (`tests/setup/`).
+- The listener page is the one page outside the Impact list. It was written because the seam page already links it and it was the only outbound port of eighteen without a page, so citing a real page keeps the seam's dependency section honest instead of degrading it to a bare code reference.
+- The guard page states the sentinel-backed claim and the released-not-latched restoration as invariants, because that pair is the whole reason renaming raw `signal.signal()` calls onto `restore()` once broke eleven multi-command acceptance flows.
+- Map rows were inserted by line-prefix anchor rather than exact padding, because those tables are space-aligned and a whitespace-sensitive match is the brittleness that already cost this session a turn.
 
 ## Verification
 1. **Interrupted stateless run:**

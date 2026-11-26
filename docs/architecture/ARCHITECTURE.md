@@ -67,6 +67,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **ActionPorts**               | A DTO grouping the outbound ports required by the ActionFactory to maintain low constructor complexity.                                             | [ActionPorts](./core/domain/action_ports.md)                                     |
 | **TokenUsage** | A frozen value object carrying the provider's `prompt_tokens` and `cached_tokens` for one completion. | [TokenUsage](./core/domain/token_usage.md) |
 | **ConfigSchema**              | The typed configuration view: canonical defaults, type coercion, the `agents` overlay extractor, and the effective-model resolver.                  | [ConfigSchema](./core/domain/config_schema.md)                                   |
+| **InterruptGuard** | A core utility owning the process SIGINT disposition and the two-phase drain-then-escalate policy, with `install()`/`restore()` claim ownership and the recorded press source. | [InterruptGuard](./core/utils/interrupt_guard.md) |
 | **IGetContextUseCase**        | Defines the inbound port for orchestrating the collection of project context.                                                                       | [IGetContextUseCase](./core/ports/inbound/get_context_use_case.md)               |
 | **IInitUseCase**              | Defines the inbound port for project auto-initialization.                                                                                           | [IInitUseCase](./core/ports/inbound/init.md)                                     |
 | **IRunPlanUseCase**           | Defines the primary inbound port for executing a plan from a raw YAML string.                                                                       | [IRunPlanUseCase](./core/ports/inbound/run_plan_use_case.md)                     |
@@ -82,6 +83,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **ILlmClient**                | Defines the outbound port for communicating with a Large Language Model.                                                                            | [ILlmClient](./core/ports/outbound/llm_client.md)                                |
 | **IMarkdownReportFormatter**  | Defines the outbound port for formatting an `ExecutionReport` into a Markdown string.                                                               | [IMarkdownReportFormatter](./core/ports/outbound/markdown_report_formatter.md)   |
 | **IPdfExtractor**             | Defines the outbound port for turning raw PDF bytes into extracted text.                                                                            | [IPdfExtractor](./core/ports/outbound/pdf_extractor.md)                          |
+| **IQuitKeyListener** | Defines the outbound port for the terminal single-key quit listener: an idempotent, TTY-gated start/stop lifecycle plus the injected trigger hook. | [IQuitKeyListener](./core/ports/outbound/quit_key_listener.md) |
 | **IRepoTreeGenerator**        | Defines the outbound port for generating a file tree, respecting `.gitignore` and `.teddyignore` files.                                             | [IRepoTreeGenerator](./core/ports/outbound/repo_tree_generator.md)               |
 | **ISessionLoopGuard** | Defines the outbound port for the guardrails that bound unattended session runs. | [ISessionLoopGuard](./core/ports/outbound/session_loop_guard.md) |
 | **IShellExecutor**            | Defines the outbound port for executing shell commands and returning a `ShellOutput` DTO.                                                           | [IShellExecutor](./core/ports/outbound/shell_executor.md)                        |
@@ -120,6 +122,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | **CLI Adapter**         | The primary inbound adapter that drives the application via the `Typer` CLI framework.                               | [CLI Adapter](./adapters/inbound/cli.md)                           |
 | **TextualPlanReviewer** | Implements `IPlanReviewer` using a dual-pane `Textual` TUI (ActionTree/ParameterDetail) for interactive plan review. | [TextualPlanReviewer](./adapters/inbound/textual_plan_reviewer.md) |
+| **Interrupt Scope** | The shared context-manager seam that owns the SIGINT disposition and the quit-key listener lifecycle for both interruptible boundaries. | [Interrupt Scope](./adapters/inbound/interrupt_scope.md) |
 
 ### Outbound Adapters (Driven)
 
@@ -158,6 +161,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **TuiDriver** (Driver) | Mounts the real `ReviewerApp` for a test, exposes an observation surface over the action tree, and yields a pilot whose tree holds focus. | [TuiDriver](./tests/drivers/tui_driver.md) |
 | **ReviewerContextScenarios** (Setup) | A data-only module of canonical context-panel shapes — every group, no History, no panel — plus the `### Summary` plan the navigation scenarios drive. | [ReviewerContextScenarios](./tests/setup/reviewer_context_scenarios.md) |
 | **RationaleScenarios** (Setup) | A data-only module of canonical rationale scenarios: fragment builders plus preamble, protocol, non-protocol, fenced-heading, non-splitting, empty-section, duplicate-title, and trailing-whitespace variants, so every splitter branch is drivable from one helper. | [RationaleScenarios](./tests/setup/rationale_scenarios.md) |
+| **SigintDelivery** (Setup) | A harness seam that records simulated SIGINT presses and, in routing mode, invokes the handler installed at press time so an acceptance run drives the real interrupt lifecycle. | [SigintDelivery](./tests/setup/sigint_delivery.md) |
 
 ---
 
