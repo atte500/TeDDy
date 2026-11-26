@@ -11,6 +11,8 @@ import pytest
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
     RATIONALE_FALLBACK_TITLE,
+    RATIONALE_ROOT,
+    _rationale_content,
     rationale_sections,
 )
 from tests.harness.setup.rationale_scenarios import (
@@ -103,3 +105,15 @@ def test_duplicate_titles_yield_both_sections_in_order():
 
 def test_trailing_whitespace_is_stripped_from_the_title():
     assert rationale_sections(TRAILING_WHITESPACE_HEADING) == [("Notes", "The notes.")]
+
+
+def test_rationale_content_renders_only_section_nodes():
+    """Only a section node carries rationale Markdown to the detail pane."""
+    section_node = {
+        "type": "RATIONALE_SECTION",
+        "title": "Summary",
+        "content": "The summary.",
+    }
+
+    assert _rationale_content(RATIONALE_ROOT) is None
+    assert _rationale_content(section_node) == "The summary."

@@ -18,13 +18,6 @@ if TYPE_CHECKING:
     from teddy_executor.core.domain.models.plan import ActionData
 
 
-ALLOWED_RATIONALE_SECTIONS = [
-    "Summary",
-    "Expectation",
-    "Progress",
-    "Notes",
-]
-
 # Label for content the author left untitled: text before the first heading,
 # and a rationale that carries no heading at all.
 RATIONALE_FALLBACK_TITLE = "Untitled"
@@ -146,46 +139,6 @@ def rationale_sections(rationale: str) -> list[tuple[str, str]]:
 
     flush()
     return sections
-
-
-def recognized_rationale_sections(rationale: str) -> list[tuple[str, str]]:
-    """Splits a rationale into its recognized `###` sections.
-
-    Only a `### ` heading whose title is in ``ALLOWED_RATIONALE_SECTIONS`` opens
-    a section. Any other chunk, including a numeric `1. Section` marker, merges
-    into the preceding section as body text; text before the first recognized
-    heading is dropped. A rationale with no recognized heading yields an empty
-    list, which the caller turns into a single ``Untitled`` block.
-    """
-    titles: list[str] = []
-    contents: list[str] = []
-    for chunk in re.split(r"\n(?=### )", "\n" + rationale):
-        chunk = chunk.strip()
-        if not chunk:
-            continue
-        lines = chunk.split("\n")
-        title = re.sub(r"^###\s*", "", lines[0]).strip()
-        if title in ALLOWED_RATIONALE_SECTIONS:
-            titles.append(title)
-            contents.append("\n".join(lines[1:]).strip())
-        elif contents:
-            contents[-1] += "\n\n" + chunk
-    return list(zip(titles, contents))
-
-
-def rationale_entries(rationale: str) -> list[tuple[str, str]]:
-    """Returns the rationale tree entries, falling back to one untitled block.
-
-    A rationale written before the section contract carries none of the
-    recognized headings, so it yields no sections. Render it as a single
-    ``Untitled`` entry instead of losing it, so stored plans and resumed sessions
-    stay reviewable. A blank rationale yields no entry at all.
-    """
-    sections = recognized_rationale_sections(rationale)
-    if sections:
-        return sections
-    raw = rationale.strip()
-    return [(RATIONALE_FALLBACK_TITLE, raw)] if raw else []
 
 
 def on_tree_node_highlighted(app: "ReviewerApp", event: Any) -> None:
