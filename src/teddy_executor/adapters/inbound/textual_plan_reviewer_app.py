@@ -24,6 +24,10 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
     view_details_logic,
     view_plan_logic,
 )
+from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+    containing_section,
+    section_sequence,
+)
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     ActionTree,
     ParameterDetail,
@@ -47,6 +51,20 @@ if TYPE_CHECKING:
     from teddy_executor.core.services.web_content_service import WebContentService
 
 T = TypeVar("T")
+
+
+def _section_index(sections: list[Any], node: Any) -> int:
+    """Return ``node``'s position among ``sections``, or ``-1`` when absent.
+
+    An empty scope group renders a placeholder row carrying its header's own
+    sentinel, so a cursor parked there names its group by payload rather than by
+    identity. Payloads are unique within a sequence, so the fallback is
+    unambiguous.
+    """
+    for index, section in enumerate(sections):
+        if section is node or section.data == node.data:
+            return index
+    return -1
 
 
 class ReviewerApp(App):
@@ -298,59 +316,49 @@ class ReviewerApp(App):
         self.action_focus_next()
 
     def action_jump_next(self) -> None:
-        """Jump to the next major section root."""
+        """Advance to the next section, scrolling instead of wrapping at the end.
+
+        The sequence is read from the tree, so every context subsection is a
+        stop. When no successor exists the tree scrolls to its last row and the
+        cursor stays put, because a wrap would teleport the reviewer from the
+        plan back to the top of the panel.
+        """
         tree = self.query_one(ActionTree)
-        sections = [
-            ActionTree.CONTEXT_ROOT,
-            ActionTree.RATIONALE_ROOT,
-            ActionTree.ACTION_PLAN_ROOT,
-        ]
+        sections = section_sequence(tree)
+        cursor = tree.cursor_node
+        current = containing_section(cursor) if cursor is not None else None
+        index = _section_index(sections, current) if current is not None else -1
 
-        # Find current section of cursor
-        current_section = None
-        node = tree.cursor_node
-        while node:
-            if node.data in sections:
-                current_section = node.data
-                break
-            node = node.parent
-
-        # Find next section index
-        try:
-            current_idx = sections.index(current_section) if current_section else -1
-            next_idx = (current_idx + 1) % len(sections)
-            tree.jump_to_section(sections[next_idx])
-        except (ValueError, IndexError):
-            tree.jump_to_section(sections[0])
+        if index + 1 < len(sections):
+            tree.jump_to_node(sections[index + 1])
+        else:
+            tree.scroll_end(animate=False)
         tree.focus()
 
     def action_jump_prev(self) -> None:
-        """Jump to the current section root or the previous one."""
+        """Step back to the current section root or the previous one.
+
+        A boundary press scrolls to the tree's first row instead of wrapping,
+        and a cursor sitting on a child first returns to the section that
+        governs it, so one press never skips past its own group.
+        """
         tree = self.query_one(ActionTree)
-        sections = [
-            ActionTree.CONTEXT_ROOT,
-            ActionTree.RATIONALE_ROOT,
-            ActionTree.ACTION_PLAN_ROOT,
-        ]
+        sections = section_sequence(tree)
+        cursor = tree.cursor_node
+        current = containing_section(cursor) if cursor is not None else None
+        index = _section_index(sections, current) if current is not None else -1
 
-        node = tree.cursor_node
-        if not node:
-            tree.jump_to_section(sections[-1])
-            tree.focus()
-            return
-
-        # If we are ALREADY on a root, jump to the previous one
-        if node.data in sections:
-            current_idx = sections.index(node.data)
-            prev_idx = (current_idx - 1) % len(sections)
-            tree.jump_to_section(sections[prev_idx])
+        if current is None:
+            if sections:
+                tree.jump_to_node(sections[-1])
+            else:
+                tree.scroll_home(animate=False)
+        elif current is not cursor:
+            tree.jump_to_node(current)
+        elif index > 0:
+            tree.jump_to_node(sections[index - 1])
         else:
-            # If we are on a child, jump to the CURRENT root
-            while node:
-                if node.data in sections:
-                    tree.move_cursor(node)
-                    break
-                node = node.parent
+            tree.scroll_home(animate=False)
         tree.focus()
 
     def action_toggle_all(self) -> None:

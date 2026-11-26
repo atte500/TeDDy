@@ -110,6 +110,28 @@ class ActionTree(Tree):
         ),
     ]
 
+    def jump_to_node(self, node: Any) -> None:
+        """Move the cursor onto ``node``, expanding it and its ancestors first.
+
+        A context subsection lives under the Context root, which starts
+        collapsed, so expanding the whole lineage is what makes the destination
+        visible. Expansion only schedules the line rebuild, so a previously
+        hidden node still has no line this frame and ``move_cursor`` would
+        record that as ``-1`` and move nowhere; the move is deferred until the
+        lines exist. A target that already has a line moves immediately.
+        """
+        lineage = []
+        current: Any = node
+        while current is not None:
+            lineage.append(current)
+            current = current.parent
+        for ancestor in reversed(lineage):
+            ancestor.expand()
+        if node.line < 0:
+            self.call_after_refresh(self.move_cursor, node)
+        else:
+            self.move_cursor(node)
+
     def jump_to_section(self, section_id: str) -> None:
         """
         Jump focus to a major section node.

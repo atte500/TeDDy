@@ -63,15 +63,15 @@ And the cursor does not move to the Action Plan root
 1. `[NEW]` `section_sequence(tree)` in `textual_plan_reviewer_helpers.py` — a pure depth-first walk returning every node whose payload is a section sentinel, in tree order and recorded once each, so the sequence reflects whichever sections actually exist and an empty scope group's `(None)` placeholder does not add a second stop.
 2. `[NEW]` `containing_section(node)` in the same module — returns the section governing a node: the last section node at or before it in render order, because the context pane renders each scope header beside its rows rather than above them.
 3. `[MIGRATE]` `ReviewerApp.action_jump_next` and `action_jump_prev` — replace the constant list and the modulo with the derived sequence, scrolling to the end or the start instead of wrapping.
-4. `[MIGRATE]` `ActionTree` — expose a `jump_to_node(node)` that expands the target before moving the cursor.
+4. `[MIGRATE]` `ActionTree` — expose a `jump_to_node(node)` that expands the target and its ancestors before moving the cursor, so a subsection under a collapsed root is reachable, and defer the move until a newly revealed node has a line, because `move_cursor` records the target's line verbatim and `-1` moves nowhere.
 5. `[PRUNE]` `ActionTree.jump_to_section` — remove the direct-children-only search once both actions use the derived sequence.
 6. `[MIGRATE]` The reviewer component page's Keyboard bindings section — record the boundary behaviour and the subsection targets.
 
 ## Deliverables
 - [x] **Harness** — Extend the TUI driver so a test can build a tree with a synthetic context panel, including the no-history and no-context shapes.
 - [x] **Core** — Implement `section_sequence` and `containing_section` as pure helpers with unit tests over a fully populated tree, a history-less tree, and a context-less tree.
-- [ ] **Wiring** — Rewire `action_jump_next` and `action_jump_prev` onto the derived sequence, scrolling to the tree's end or start at the boundaries, and prove the order end to end through the driver.
-- [ ] **Refactor** — Replace `jump_to_section` with `jump_to_node` and delete the direct-children-only search once both actions no longer call it.
+- [x] **Wiring** — Rewire `action_jump_next` and `action_jump_prev` onto the derived sequence, scrolling to the tree's end or start at the boundaries, and prove the order end to end through the driver.
+- [ ] **Refactor** — Delete `jump_to_section`, now that both actions reach the tree through `jump_to_node`, and port its two unit tests onto the new method.
 - [ ] **Cleanup** — Update the reviewer component page's binding table with the boundary rule and the new subsection targets.
 
 ## Implementation Notes
@@ -97,6 +97,18 @@ And the cursor does not move to the Action Plan root
 **Corrected membership model:** the first implementation walked parent pointers and the tests rejected it — a Session file row resolved to `CONTEXT_ROOT`. `build_context_section` renders each scope header and its rows as siblings under the Context root (`add_leaf` for both), so ancestry cannot identify a row's group. Membership is positional: the last section node at or before the node in render order. That single rule resolves a section node to itself, a scope row to its header, and the invisible root to `None`, and it matches the flat panel the reviewer actually draws. The agent row therefore resolves to `SYSTEM_LABEL`, the group it renders under, which the corrected test pins.
 
 **One traversal:** both helpers read the tree through a shared `_preorder`, so "render order" has one implementation rather than a duplicated walk. The `_logic` import stays function-local to preserve the existing import direction.
+
+### Wiring — derived walk with a deferred jump
+
+**Files:** `src/teddy_executor/adapters/inbound/textual_plan_reviewer_app.py`, `src/teddy_executor/adapters/inbound/textual_plan_reviewer_widgets.py`, `tests/suites/acceptance/test_tui_section_boundaries.py`.
+
+**What changed:** both jump actions read `section_sequence(tree)`, resolve the cursor's governing section through `containing_section`, and translate it with a module-level `_section_index`. The arithmetic carries the no-wrap rule: `index + 1 < len(sections)` jumps and the else branch scrolls, so an ungoverned cursor at the invisible root (`index == -1`) lands on the first section and an exhausted sequence scrolls to the last row without moving the cursor. Prev returns to the governing section first when the cursor sits on a child, then steps back, and scrolls home at index 0. `ActionTree.jump_to_node` expands the whole lineage before moving the cursor.
+
+**Deferred move (why the first press was lost):** `spikes/debug/section-jump-expand/probe.py` showed a child's `line` still `-1` immediately after its parent's `expand()`, while `Tree.move_cursor` assigns `cursor_line = node._line` — so the first move onto a just-revealed node recorded `-1` and went nowhere. Exactly one press was swallowed, always the first, which is why the file-row case passed: it expands the Context root itself before pressing. `probe_fix.py` then compared the remedies: `call_after_refresh(move_cursor)` lands inside a single `pilot.pause()`, whereas `refresh(layout=True)` computes the line but never re-applies the move that already ran against `-1`. `jump_to_node` therefore defers only when `node.line < 0`, so already-visible targets keep their synchronous move and existing pause-free callers stay unaffected.
+
+**Payload-identity fallback:** `_section_index` matches by identity first and by payload second, because `containing_section` can return an empty-scope `(None)` placeholder leaf that `section_sequence` dropped in favour of its header. Payloads are unique within a sequence, so the fallback cannot be ambiguous.
+
+**Acceptance observability:** the new module drives the app through `TuiDriver`, whose doubles are spec-bound, instead of the older acceptance file whose bare `MagicMock` would trip the banned-API rule when staged. The boundary assertions read `scroll_y` against `max_scroll_y` and `0` on a 40-action plan, with the overflow itself asserted as a precondition so a non-scrolling viewport fails loudly rather than passing vacuously; the top-boundary case scrolls away first, because the Context root is the first row and a naive `scroll_y == 0` would hold trivially.
 
 ## Verification
 1. **Subsection walk:**
