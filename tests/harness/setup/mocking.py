@@ -97,12 +97,25 @@ class POSIXPathMock(MagicMock):
         )
 
 
+def spec_mock(port_type: Any) -> Any:
+    """
+    Builds a contract-bound double without registering it in a container.
+
+    Use this where a double is handed straight to a constructor instead of
+    being resolved from the container: the spec rejects an attribute the port
+    type does not declare, so signature drift fails loudly instead of returning
+    a silent child mock. Every harness double is built here, which keeps the
+    banned-API exemption to a single module.
+    """
+    return POSIXPathMock(spec=port_type)
+
+
 def register_mock(container: Any, port_type: Any) -> Any:
     """
-    Creates, registers, and returns a POSIXPathMock for a specific port.
+    Creates, registers, and returns a spec-bound double for a specific port.
     This is the preferred way to mock dependencies in tests.
     """
-    mock = POSIXPathMock(spec=port_type)
+    mock = spec_mock(port_type)
     container.register(port_type, instance=mock)
     return mock
 

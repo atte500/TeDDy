@@ -1,5 +1,5 @@
 # Slice: Boundary-Aware Section Navigation
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -68,13 +68,25 @@ And the cursor does not move to the Action Plan root
 6. `[MIGRATE]` The reviewer component page's Keyboard bindings section — record the boundary behaviour and the subsection targets.
 
 ## Deliverables
-- [ ] **Harness** — Extend the TUI driver so a test can build a tree with a synthetic context panel, including the no-history and no-context shapes.
+- [x] **Harness** — Extend the TUI driver so a test can build a tree with a synthetic context panel, including the no-history and no-context shapes.
 - [ ] **Core** — Implement `section_sequence` and `containing_section` as pure helpers with unit tests over a fully populated tree, a history-less tree, and a context-less tree.
 - [ ] **Wiring** — Rewire `action_jump_next` and `action_jump_prev` onto the derived sequence, scrolling to the tree's end or start at the boundaries, and prove the order end to end through the driver.
 - [ ] **Refactor** — Replace `jump_to_section` with `jump_to_node` and delete the direct-children-only search once both actions no longer call it.
 - [ ] **Cleanup** — Update the reviewer component page's binding table with the boundary rule and the new subsection targets.
 
 ## Implementation Notes
+
+### Harness — observable TUI driver and canonical context shapes
+
+**Files:** `tests/harness/drivers/tui_driver.py`, `tests/harness/setup/reviewer_context_scenarios.py`, `tests/suites/unit/test_tui_driver.py`, `tests/suites/unit/test_reviewer_context_scenarios_harness.py`.
+
+**What changed:** `TuiDriver` injects `project_context` at construction and exposes `tree(pilot)` and `cursor_data(pilot)` observers plus an `interaction()` async context manager that mounts the app and yields a pilot whose tree holds focus. `run_interaction` now delegates to `interaction()`, so key-driven tests and observation-driven tests share one mount path. Before this, `run_interaction` returned only after `run_test()` closed and no test could read the cursor mid-run.
+
+**Signature stability:** `project_context`, `action_dispatcher`, and the doubled ports were added as keyword-only parameters and `console_tooling` kept its fourth positional slot, so all five existing `TuiDriver` construction sites compiled unchanged and needed no migration.
+
+**Path-derived shapes:** the context pane partitions items through `is_own_session_path` and `is_session_history_path`, so the three shapes (`populated`, `history_less`, `none`) are built from real session paths under a fixed `SESSION_ROOT`. The invariant tests assert each shape through the same predicate the panel consumes, so a shape cannot silently stop meaning what its name says.
+
+**Spec-bound defaults:** the driver's `console_tooling` and `action_dispatcher` defaults come from `spec_mock` in `tests/harness/setup/mocking.py`, which builds a `POSIXPathMock(spec=<seam type>)` without a container. Staging the driver put its former bare `MagicMock()` defaults under the TID251 banned-API rule, so the migration landed here rather than later. The specs are `ConsoleToolingHelper` and `ActionDispatcher` — the two classes the reviewer actually calls (`find_editor`, `get_diff_viewer_command`, `dispatch_and_execute`) — so no construction site can reach an attribute the seam lacks. `register_mock` now delegates to the same factory, leaving one construction site for every harness double.
 
 ## Verification
 1. **Subsection walk:**
