@@ -49,7 +49,7 @@ auto_pruning:
   prune_validation_failures: true   # Prunes malformed turns that failed validation.
   preserve_message_turns: true      # Preserves user-communicating turns from pruning.
   max_turns_retention: 10           # Ceiling on historical turns held in turn context.
-  retention_batch: 5                # Oldest turns dropped together once the ceiling is exceeded (1 = per-turn cadence).
+  retention_batch: 5                # Oldest turns dropped together once the ceiling is exceeded.
 
 # LiteLLM reference: https://docs.litellm.ai/docs/completion/input (all keys under llm pass directly to litellm).
 # OpenRouter syntax: "openrouter/<slug>". Variants documented at: https://openrouter.ai/docs/guides/routing/model-variants/overview
