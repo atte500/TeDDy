@@ -124,3 +124,38 @@ class IUserInteractor(ABC):
             message: The warning message to display.
         """
         pass
+
+    def begin_waiting(self, message: str) -> None:
+        """
+        Announces that a blocking wait has begun.
+
+        Display-only. An adapter renders activity for the duration of the wait
+        and owns exactly the transient line it draws, so no line printed by
+        another caller is ever rewritten. Without an attached terminal the
+        operation renders nothing, keeping redirected logs and CI transcripts
+        machine-readable.
+
+        This body is deliberately a silent no-op rather than an abstract
+        operation: a seam added to a shared contract must stay additive, so an
+        adapter written against the older contract remains instantiable. An
+        override must never raise, must never read stdin, and must never
+        install a process-interrupt handler.
+
+        Args:
+            message: A short presentation hint describing the wait. The adapter
+                decides whether and how to draw it.
+        """
+        pass
+
+    def end_waiting(self) -> None:
+        """
+        Ends the wait announced by ``begin_waiting``.
+
+        Display-only and unbalanced-safe: calling it with no active wait does
+        nothing, so a defensive ``finally`` may end a wait a failure already
+        ended. An override must erase the region it drew before returning and
+        must never raise, so the error that ended the wait propagates onto a
+        clean line. The default body renders nothing for the same reason as
+        ``begin_waiting``.
+        """
+        pass
