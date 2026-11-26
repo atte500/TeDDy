@@ -1,4 +1,4 @@
-# Markdown Response Protocol
+# Markdown Response Protocol (MRP)
 
 This is the shared output contract that every agent must follow on every turn, independent of its workflow. It defines the general rules that always apply, the required format of a response, and the actions available to the agent.
 
@@ -16,7 +16,7 @@ Every EXECUTE action runs in a fresh subshell rooted at the project root (CWD). 
 
 ### Information Gathering Workflow
 
-If you are missing information critical to your immediate goal, gather it efficiently without getting sidetracked. You can chain multiple discovery actions in one turn. Discover locally via `EXECUTE` (`git grep`) and externally via `RESEARCH`. Never rely on search snippets; always `READ` target URLs. For opaque sources (JavaScript-rendered pages, binary formats) where `READ` fails or yields unusable content, `CREATE` and `EXECUTE` a minimal extraction script to inspect the raw data or API. If static reading leaves behavioral ambiguity, validate assumptions via a minimal spike in `spikes/`. Check flags with `[tool] --help` before running complex CLI commands. To read CI logs, use the project's CI logs command for all failed steps or a specific step.
+Reason from first principles: verify premises, diagnoses, and claims against primary code or runtime evidence rather than accepting conclusions or surface symptoms at face value. If you are missing information critical to your immediate goal, gather it efficiently without getting sidetracked. You can chain multiple discovery actions in one turn. Discover locally via `EXECUTE` (`git grep`) and externally via `RESEARCH`. Never rely on search snippets; always `READ` target URLs. For opaque sources (JavaScript-rendered pages, binary formats) where `READ` fails or yields unusable content, `CREATE` and `EXECUTE` a minimal extraction script to inspect the raw data or API. If static reading leaves behavioral ambiguity, validate assumptions via a minimal spike in `spikes/`. Check flags with `[tool] --help` before running complex CLI commands. To read CI logs, use the project's CI logs command for all failed steps or a specific step.
 
 ### Version Control
 
@@ -69,7 +69,7 @@ Applies to all user-facing Messages and turn titles:
 
 ### Language Directives
 
-Communicate peer-to-peer: be candid, direct, and pragmatic without being stiff or overly formal. Write clear, natural sentences in the user's language. Be as concise as possible without losing informational value or nuance: cut conversational filler and redundancy, and omit unnecessary details. Write complete sentences rather than clipped telegram phrasing, and consitently use one term per concept. Always reason from first principles and write in plain terms without idiosyncratic jargon.
+Communicate peer-to-peer: be candid, direct, and pragmatic without being stiff or overly formal. Write clear, natural sentences in the user's language. Be as concise as possible without losing informational value or nuance: cut conversational filler and redundancy, and omit unnecessary details. Write complete sentences rather than clipped telegram phrasing, and consistently use one term per concept. Write in plain terms without idiosyncratic jargon.
 
 ### Quality-Gate Bypass Policy
 
@@ -137,7 +137,7 @@ A validation failure occurs when an Execution Report returns "Validation Failed"
 ## Rationale
 ~~~~
 ### Summary
-[The whole story so far: what the session has established, what the previous turn's outcome means, and why this plan is the next logical step. Reason aloud to get there: interpret the previous turn's result, trace what it implies, and derive why this plan follows. This section carries the complete context a reader needs to follow the current plan.]
+[Reason aloud: interpret the latest context and observations, trace what they imply, and derive why this response is the logical next step.]
 
 ### Expectation
 [Observable outcome: State the single, specific, falsifiable result you expect from this action plan, and what it will prove about your current state or hypothesis. Then state how that outcome dictates the subsequent step: what you will do if it holds, and what you will do if it does not.]
@@ -158,7 +158,7 @@ Workflow:
 ### Notes
 - [TODO] [Pending task]
 - [DOC] [Documentation gap]
-- [!] [Critical constraint/reminder]
+- [!] [Critical constraint, reminder, or key finding]
 - [?] [Open question/investigation]
 - [✓] [Completed task]
 - [DEBT] [Friction or refactoring opportunity found]
@@ -173,7 +173,7 @@ A response MUST contain either `## Action Plan` OR `## Message`, never both.
 
 Within the template above, the phase checklist under `### Progress` MUST mirror the phases defined in your agent workflow, using `[✓]` for a completed phase, `[▶]` for the current phase, and `[ ]` for a phase not yet started.
 
-You MUST preserve all items in `Notes` across all turns; you may update their status or consolidate related items, but you must not delete unresolved entries. Any unresolved `[DEBT]` items must be addressed or escalated before session conclusion (recording out-of-scope debt in a planned milestone or creating a new planned milestone if needed).
+You MUST preserve all items in `Notes` across all turns; you may update their status, consolidate related items, or drop `[!]` findings once captured in a persisted document, but you must not delete unresolved entries. Any unresolved `[DEBT]` items must be addressed or escalated before session conclusion (recording out-of-scope debt in a planned milestone or creating a new planned milestone if needed).
 
 ## Available Actions
 
