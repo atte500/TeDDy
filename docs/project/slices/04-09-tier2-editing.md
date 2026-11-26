@@ -121,8 +121,8 @@ Test-suite hygiene: the routing module's inline-modal case and the pre-existing 
 
 ## Verification
 1. **Multiline value:**
-   Build a plan with a RESEARCH action whose query spans three lines, start a session, and press `e` then Tab to that query.
-   Verify your editor opens with all three lines and the edited value persists in the parameter list.
+   Build a plan with a RESEARCH action whose query spans three lines, start a session, highlight that action in the tree, and press Tab to focus the parameter list.
+   Select the `queries` row and verify your editor opens with all three lines and that the edited value persists in the parameter list. `e` on the action node is a different path — it keeps the inline modal for RESEARCH and EXECUTE — so it cannot demonstrate this branch.
 2. **Long value:**
    Build a plan with a 240-character EXECUTE command and select it in the parameter list.
    Verify the editor opens instead of the inline modal.

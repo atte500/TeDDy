@@ -71,6 +71,7 @@ And no environment variable can make the launch silently succeed
 7. `[MIGRATE]` The harness — `TuiDriver._install_mock_editor` becomes constructor injection of the fake while `editor_launch_suffixes` keeps reporting what was requested; the two `monkeypatch.setenv` sites in the acceptance module switch to the fake; `clean_test_env` drops only the variable branch.
 8. `[PRUNE]` The mock helpers in the editor module once nothing legitimate calls them.
 9. `[MIGRATE]` The three component pages above plus `docs/architecture/ARCHITECTURE.md` — record the port in the Component Map and state on the reviewer page that parameter editing routes through it.
+10. `[NEW]` A structural hook beside the existing `.githooks/check_*.py` family — exit non-zero when any module under `src/` reads a `TEDDY_TEST_*` variable, so the cleanliness this slice proves by grep becomes a rule the next adapter cannot quietly break.
 
 ## Deliverables
 - [ ] **Interface** — Land the editor-launch port with its contract tests, stating the dismissal-versus-empty distinction and the in-place path semantics.
@@ -78,6 +79,7 @@ And no environment variable can make the launch silently succeed
 - [ ] **Adapter** — Implement the real adapter over the injected collaborators, driven by a scripted editor command in a temporary directory so the launch is proven without a human editor.
 - [ ] **Migration** — Point both adapters and the composition root at the port, convert the two acceptance tests onto the fake, and narrow `clean_test_env` to its CWD and detritus duties.
 - [ ] **Cleanup** — Delete the mock helpers, verify no `TEDDY_TEST_MOCK_EDITOR_OUTPUT` read survives in `src/`, and update the component pages and the Component Map.
+- [ ] **Env** — Add the `src/` test-hook structural hook, landing last rather than first because it can only exit zero once the reads are gone, with a unit case proving it fails on a scratch `TEDDY_TEST_*` read.
 
 ## Implementation Notes
 
@@ -90,3 +92,6 @@ And no environment variable can make the launch silently succeed
    Verify it returns nothing, while `git grep` over `tests/` still finds nothing that depends on the variable.
 3. **Console prompt:**
    Run `teddy resume -m ""` at a terminal and confirm the editor opens, then run it in a pipeline context and confirm it prompts nothing.
+4. **The ratchet bites:**
+   Add a scratch module under `src/` that reads `os.environ["TEDDY_TEST_DEMO"]` and run the new structural hook.
+   Verify it exits non-zero naming that file, then delete it and verify the hook exits zero again.
