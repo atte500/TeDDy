@@ -300,8 +300,10 @@ def test_generate_plan_auto_resolves_context_from_turn_dir_when_missing(env):
     )
 
     # 2. Verify get_context received the resolved manifests. The planner always
-    # threads the effective model; the config double supplies no string model,
-    # so it resolves to an empty string and keeps the no-model token-call shape.
+    # threads the effective model and the resolved session cost; the config
+    # double supplies no string model, so it resolves to an empty string and
+    # keeps the no-model token-call shape, and the pricing double reports
+    # support, so an empty ledger reads as a recorded zero.
     mock_context_service.get_context.assert_called_once_with(
         context_files=fake_manifests,
         agent_name="pf",
@@ -309,6 +311,7 @@ def test_generate_plan_auto_resolves_context_from_turn_dir_when_missing(env):
         system_prompt_tokens=0,
         session_root=str(Path("sessions/S1/02").parent),
         model="",
+        session_cost=0.0,
     )
 
 

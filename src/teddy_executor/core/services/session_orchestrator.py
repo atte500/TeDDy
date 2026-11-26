@@ -19,6 +19,7 @@ from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.services.session_replanner import SessionReplanner
 from teddy_executor.core.utils.io import Tee as _Tee
+from teddy_executor.core.utils.money import resolve_session_cost
 from teddy_executor.core.utils.paths import session_root_from_plan_path
 from teddy_executor.core.utils.session_notices import format_termination_notice
 from teddy_executor.core.utils.terminal import emit_user_message
@@ -495,6 +496,9 @@ class SessionOrchestrator(IRunPlanUseCase):
             system_prompt_tokens=system_token_count,
             session_root=session_root,
             model=model,
+            session_cost=resolve_session_cost(
+                turn_meta, self._llm_client.supports_pricing(model=model)
+            ),
         )
 
         if is_dataclass(project_context) and agent_name != getattr(

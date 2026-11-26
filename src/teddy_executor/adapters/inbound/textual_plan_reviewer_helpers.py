@@ -47,6 +47,8 @@ def populate_context_detail(app: "ReviewerApp", pane: Any, data: Any) -> None:
     from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import DetailItem
     from teddy_executor.core.domain.models.project_context import ContextItem
     from teddy_executor.core.utils.markdown import is_session_history_path
+    from teddy_executor.core.utils.model_identity import split_model_identity
+    from teddy_executor.core.utils.money import format_cost_usd
 
     if isinstance(data, ContextItem):
         pane.append(DetailItem("Path", data.path))
@@ -113,6 +115,15 @@ def populate_context_detail(app: "ReviewerApp", pane: Any, data: Any) -> None:
         pane.append(DetailItem("• Session", f"{session_tokens / 1000.0:.1f}k"))
         pane.append(DetailItem("• Turn", f"{turn_tokens / 1000.0:.1f}k"))
         pane.append(DetailItem("• History", f"{history_tokens / 1000.0:.1f}k"))
+
+        model_name, provider = split_model_identity(app.project_context.model_name)
+        pane.append(DetailItem("Model", model_name))
+        pane.append(DetailItem("Provider", provider))
+        pane.append(
+            DetailItem(
+                "Session Cost", format_cost_usd(app.project_context.session_cost)
+            )
+        )
 
 
 # Editor helpers moved to textual_plan_reviewer_editor.py

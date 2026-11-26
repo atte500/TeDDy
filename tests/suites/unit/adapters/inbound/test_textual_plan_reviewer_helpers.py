@@ -16,6 +16,7 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
     populate_context_detail,
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import DetailItem
+from tests.harness.setup.context_scenarios import COSTED_SESSION
 
 
 def test_format_action_log_success():
@@ -209,3 +210,44 @@ def test_inline_param_budget_is_one_hundred_characters():
 def test_needs_external_editor(value: str, expected: bool):
     """Only a value above the budget or carrying a newline needs the editor."""
     assert needs_external_editor(value) is expected
+
+
+def test_the_context_root_states_the_model_provider_and_session_cost():
+    """A reviewer sees who answers and what the session has spent before approving."""
+    app = SimpleNamespace()
+    pane = []
+    app.project_context = ProjectContext(
+        header="H",
+        content="C",
+        model_name=COSTED_SESSION.model,
+        session_cost=COSTED_SESSION.session_cost,
+    )
+
+    populate_context_detail(app, pane, {"type": "CONTEXT_ROOT"})
+
+    detail_map = {
+        item.data["key"]: item.data["val"]
+        for item in pane
+        if isinstance(item, DetailItem)
+    }
+    assert detail_map["Model"] == "~deepseek/deepseek-flash-latest"
+    assert detail_map["Provider"] == "openrouter"
+    assert detail_map["Session Cost"] == "$0.4200"
+
+
+def test_the_context_root_states_placeholders_for_an_unresolved_identity_and_an_unrecorded_cost():
+    """An unresolved model and an unmeasured turn render placeholders, never blanks."""
+    app = SimpleNamespace()
+    pane = []
+    app.project_context = ProjectContext(header="H", content="C")
+
+    populate_context_detail(app, pane, {"type": "CONTEXT_ROOT"})
+
+    detail_map = {
+        item.data["key"]: item.data["val"]
+        for item in pane
+        if isinstance(item, DetailItem)
+    }
+    assert detail_map["Model"] == "Unknown"
+    assert detail_map["Provider"] == "unknown"
+    assert detail_map["Session Cost"] == "$???"

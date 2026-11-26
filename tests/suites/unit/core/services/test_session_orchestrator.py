@@ -202,6 +202,10 @@ def test_session_orchestrator_resolves_context_when_non_interactive(
     assert to_posix_path(gather_kwargs["session_root"]) == "path/to", (
         "the session scope is the plan path's turn directory's parent"
     )
+    assert "session_cost" in gather_kwargs, (
+        "the fallback turn states the session cost too, so the panel never "
+        "reads a missing figure when a PENDING_PLAN turn resumes"
+    )
     orchestrator._pruning_service.prune.assert_called_once()
 
 

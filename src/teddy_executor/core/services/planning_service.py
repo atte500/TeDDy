@@ -7,6 +7,7 @@ from teddy_executor.core.domain.models.config_schema import (
 )
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.utils.interruptible_call import run_interruptible
+from teddy_executor.core.utils.money import resolve_session_cost
 from teddy_executor.core.utils.paths import session_root_from_turn_dir
 
 
@@ -111,6 +112,9 @@ class PlanningService(IPlanningUseCase):
             system_prompt_tokens=system_token_count,
             session_root=session_root,
             model=model,
+            session_cost=resolve_session_cost(
+                meta, self._llm_client.supports_pricing(model=model)
+            ),
         )
 
         # Context is purely project state (including initial_request.md via session.context).
