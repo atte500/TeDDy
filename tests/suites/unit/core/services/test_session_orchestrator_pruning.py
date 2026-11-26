@@ -29,7 +29,6 @@ def mock_config():
     service.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
         "auto_pruning.turn_context_threshold": 10000,
-        "auto_pruning.prune_preceding_on_non_green": True,
         "auto_pruning.prune_validation_failures": True,
     }.get(key, default)
     return service
@@ -155,68 +154,6 @@ def test_execute_prunes_global_budget_heuristic(orchestrator, mock_context_servi
     )
     assert (
         next(i for i in passed_context.items if i.path == "small.py").selected is True
-    )
-
-
-def test_execute_prunes_failure_history_heuristic(orchestrator, mock_context_service):
-    """
-    Heuristic 3: Prune preceding turn artifacts after a successful recovery.
-    """
-    # Arrange
-    orchestrator._file_system_manager.path_exists.return_value = True
-
-    # Turn 01 is 🔴, Turn 02 is 🟢
-    items = [
-        ContextItem(
-            path="session/01/plan.md", token_count=100, git_status="", scope="Turn"
-        ),
-        ContextItem(
-            path="session/01/report.md", token_count=100, git_status="", scope="Turn"
-        ),
-        ContextItem(
-            path="session/02/plan.md", token_count=100, git_status="", scope="Turn"
-        ),
-        ContextItem(
-            path="session/02/report.md", token_count=100, git_status="", scope="Turn"
-        ),
-    ]
-
-    mock_context_service.get_context.return_value = ProjectContext(
-        items=items, header="", content=""
-    )
-
-    def mock_read(path):
-        if "01/plan.md" in path:
-            return "- **Status:** [OUTCOME: FAILURE] [STATE: 🔴]"
-        if "02/plan.md" in path:
-            return "- **Status:** [OUTCOME: SUCCESS] [STATE: 🟢]"
-        return ""
-
-    orchestrator._file_system_manager.read_file.side_effect = mock_read
-
-    orchestrator._plan_parser.parse.return_value = MagicMock()
-    orchestrator._plan_validator.validate.return_value = []
-
-    # Act
-    orchestrator.execute(plan_path="session/02/plan.md")
-
-    # Assert
-    passed_context = orchestrator._execution_orchestrator.execute.call_args.kwargs.get(
-        "project_context"
-    )
-    plan_item = next(i for i in passed_context.items if "01/plan.md" in i.path)
-    report_item = next(i for i in passed_context.items if "01/report.md" in i.path)
-
-    assert plan_item.selected is False
-    assert report_item.selected is False
-    assert (
-        plan_item.auto_prune_reason
-        == "Pruned failure history after successful recovery"
-    )
-
-    # Turn 02 should remain
-    assert (
-        next(i for i in passed_context.items if "02/plan.md" in i.path).selected is True
     )
 
 

@@ -12,7 +12,6 @@ def mock_config():
     service.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
         "auto_pruning.turn_context_threshold": 10000,
-        "auto_pruning.prune_failure_history": True,
         "auto_pruning.prune_validation_failures": True,
         "auto_pruning.max_turns_retention": 25,
     }.get(key, default)
@@ -46,42 +45,6 @@ def test_prune_accepts_current_status(service):
     service.prune(context, current_status="SUCCESS 🟢")
 
 
-def test_prune_triggers_recovery_cleanup_via_current_status(service, mock_fs):
-    """
-    Logic: If current_status is Green, it should trigger pruning of preceding failures.
-    """
-    # Arrange
-    from teddy_executor.core.domain.models.project_context import ContextItem
-
-    # Use standard turn directory names (digits only) to match extraction logic
-    items = [
-        ContextItem(path="01/plan.md", scope="Turn", token_count=100, git_status=" "),
-        ContextItem(path="01/report.md", scope="Turn", token_count=100, git_status=" "),
-    ]
-    context = ProjectContext(items=items, header="", content="")
-
-    # Mock file content to indicate Turn 01 was a failure
-    def mock_read(path):
-        if "01/plan.md" in path:
-            return "- **Status:** Execution Failed 🔴"
-        return ""
-
-    mock_fs.read_file.side_effect = mock_read
-
-    # Act
-    # We simulate that the 'current' turn (not yet on disk) is Green
-    result = service.prune(context, current_status="SUCCESS 🟢")
-
-    # Assert
-    pruned_paths = [i.path for i in result.items if not i.selected]
-    assert "01/plan.md" in pruned_paths
-    assert "01/report.md" in pruned_paths
-    assert (
-        result.items[0].auto_prune_reason
-        == "Pruned failure history after successful recovery"
-    )
-
-
 def test_global_budget_includes_all_selected_tokens_and_system_prompt(
     service, mock_config
 ):
@@ -99,7 +62,6 @@ def test_global_budget_includes_all_selected_tokens_and_system_prompt(
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
         "auto_pruning.turn_context_threshold": 5000,
-        "auto_pruning.prune_failure_history": True,
         "auto_pruning.prune_validation_failures": True,
         "auto_pruning.max_turns_retention": 25,
     }.get(key, default)
@@ -153,7 +115,6 @@ def test_turn_context_threshold_no_longer_falls_back(service, mock_config):
             "auto_pruning.enabled": True,
             "auto_pruning.turn_context_threshold": None,  # new key NOT set
             "auto_pruning.global_context_threshold": 5000,  # old key IS set (must be ignored)
-            "auto_pruning.prune_failure_history": True,
             "auto_pruning.prune_validation_failures": True,
             "auto_pruning.max_turns_retention": 25,
             "auto_pruning.preserve_message_turns": True,
@@ -203,7 +164,6 @@ def test_global_budget_strictly_protects_initial_request(service, mock_config):
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
         "auto_pruning.turn_context_threshold": 3000,
-        "auto_pruning.prune_failure_history": True,
         "auto_pruning.prune_validation_failures": True,
         "auto_pruning.max_turns_retention": 25,
     }.get(key, default)

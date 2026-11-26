@@ -40,7 +40,7 @@ class SessionPruningService:
 
             items = list(context.items)
 
-            # 1. Prune by status/validation failure (Heuristics 3 & 4)
+            # 1. Prune turns whose report failed validation
             turns_to_prune = self._identify_turns_to_prune(items, current_status)
 
             for i, item in enumerate(items):
@@ -80,10 +80,8 @@ class SessionPruningService:
         # Match numeric turn directories (e.g. '01', '02')
         turn_id = self._extract_turn_id(posix_path)
         if turn_id:
-            # Check both raw string and integer-normalized version
-            reason = turns_to_prune.get(turn_id) or turns_to_prune.get(
-                str(int(turn_id))
-            )
+            # Producers key on the unpadded id, so a padded directory normalizes.
+            reason = turns_to_prune.get(str(int(turn_id)))
             if reason:
                 return replace(
                     item,
@@ -106,38 +104,32 @@ class SessionPruningService:
     def _identify_turns_to_prune(
         self, items, current_status: Optional[str] = None
     ) -> Dict[str, str]:
-        """Identifies turns that should be pruned based on failure status."""
-        prune_non_green = bool(
-            self._config_service.get_setting("auto_pruning.prune_failure_history", True)
-        )
+        """Identifies the turns to prune because their report failed validation."""
         prune_validation = bool(
             self._config_service.get_setting(
                 "auto_pruning.prune_validation_failures", True
             )
         )
 
-        turn_statuses, validation_failures, non_vf_reports = (
-            self._collect_turn_metadata(items, prune_non_green, prune_validation)
+        validation_failures, non_vf_reports = self._collect_turn_metadata(
+            items, prune_validation
         )
 
-        turns_to_prune = self._apply_pruning_heuristics(
-            turn_statuses,
+        return self._apply_pruning_heuristics(
             validation_failures,
-            prune_non_green,
             current_status,
             non_vf_reports,
         )
 
-        return turns_to_prune
-
     def _collect_turn_metadata(
         self,
         items,
-        prune_non_green: bool,
         prune_validation: bool,
-    ) -> tuple[Dict[int, bool], set[int], set[int]]:
-        """Scans items to determine turn statuses, validation failures, and non-VF reports."""
-        turn_statuses: Dict[int, bool] = {}
+    ) -> tuple[set[int], set[int]]:
+        """Collects the turns that failed validation and the turns that did not.
+
+        Only a ``report.md`` carries either fact, so a plan is never read here.
+        """
         validation_failures: set[int] = set()
         non_vf_reports: set[int] = set()
         checked_paths = set()
@@ -147,6 +139,9 @@ class SessionPruningService:
                 continue
 
             posix_path = item.path.replace("\\", "/")
+            if not posix_path.endswith("report.md"):
+                continue
+
             turn_id_str = self._extract_turn_id(posix_path)
             if not turn_id_str:
                 continue
@@ -154,83 +149,13 @@ class SessionPruningService:
             turn_id = int(turn_id_str)
             checked_paths.add(item.path)
 
-            self._update_turn_metadata_from_item(
-                item,
-                posix_path,
-                turn_id,
-                {
-                    "statuses": turn_statuses,
-                    "validation_fails": validation_failures,
-                    "non_vf_reports": non_vf_reports,
-                },
-                {
-                    "non_green": prune_non_green,
-                    "validation": prune_validation,
-                },
-            )
+            if prune_validation and self._check_report_failed_validation(item.path):
+                validation_failures.add(turn_id)
 
-        return turn_statuses, validation_failures, non_vf_reports
+            if self._check_report_is_non_vf_report(item.path):
+                non_vf_reports.add(turn_id)
 
-    def _update_turn_metadata_from_item(
-        self,
-        item: Any,
-        posix_path: str,
-        turn_id: int,
-        state: Dict[str, Any],
-        config: Dict[str, bool],
-    ) -> None:
-        """Processes a single item to update turn-level metadata."""
-        self._update_metadata_from_report(item, posix_path, turn_id, state, config)
-        self._update_metadata_from_plan(item, posix_path, turn_id, state, config)
-
-    def _update_metadata_from_report(
-        self,
-        item: Any,
-        posix_path: str,
-        turn_id: int,
-        state: Dict[str, Any],
-        config: Dict[str, bool],
-    ) -> None:
-        """Processes a report.md item for validation failure and sparing metadata."""
-        if not posix_path.endswith("report.md"):
-            return
-
-        # Heuristic 4: Validation failure
-        if config.get("validation") and self._check_report_failed_validation(item.path):
-            state["validation_fails"].add(turn_id)
-
-        # Non-VF reports for Heuristic 4 guard
-        if self._check_report_is_non_vf_report(item.path):
-            state["non_vf_reports"].add(turn_id)
-
-    def _update_metadata_from_plan(
-        self,
-        item: Any,
-        posix_path: str,
-        turn_id: int,
-        state: Dict[str, Any],
-        config: Dict[str, bool],
-    ) -> None:
-        """Processes a plan.md item for status and message sparing metadata."""
-        if not posix_path.endswith("plan.md"):
-            return
-
-        # Heuristic 3: Non-green state
-        is_failed = self._check_plan_failed(item.path)
-        if config["non_green"]:
-            is_green = not is_failed
-            # If any file in turn is non-green, the whole turn is non-green
-            state["statuses"][turn_id] = (
-                state["statuses"].get(turn_id, True) and is_green
-            )
-
-    def _check_plan_failed(self, path: str) -> bool:
-        """Checks if a plan file contains a failure status emoji on the status line."""
-        content = self._safe_read(path)
-        if content:
-            # Anchored to start of line to avoid matches in rationales or code blocks
-            return bool(re.search(r"^- \*\*Status:\*\*.*[🔴🟡]", content, re.MULTILINE))
-        return False
+        return validation_failures, non_vf_reports
 
     def _check_report_failed_validation(self, path: str) -> bool:
         """Checks if a report file contains the official validation failure status."""
@@ -300,16 +225,14 @@ class SessionPruningService:
 
     def _apply_pruning_heuristics(
         self,
-        turn_statuses: Dict[int, bool],
         validation_failures: set[int],
-        prune_non_green: bool,
         current_status: Optional[str] = None,
         non_vf_reports: Optional[set[int]] = None,
     ) -> Dict[str, str]:
-        """Applies heuristics to the collected metadata."""
+        """Applies the validation-failure heuristic to the collected metadata."""
         turns_to_prune: Dict[str, str] = {}
 
-        # Heuristic 4: Validation Failure (guarded by non-VF report)
+        # A validation failure is pruned only once a non-validation turn follows it.
         is_currently_non_vf = (
             current_status is not None and "Validation Failed" not in current_status
         )
@@ -321,21 +244,6 @@ class SessionPruningService:
                 prune_vf = True
             if prune_vf:
                 turns_to_prune[str(tid)] = "Plan failed validation"
-
-        # Heuristic 3: Recovery Cleanup
-        # If current_status is Green, OR if the latest turn on disk is Green, prune failures.
-        is_currently_green = current_status is not None and "🟢" in current_status
-
-        if prune_non_green and turn_statuses:
-            latest_on_disk = max(turn_statuses.keys())
-            is_latest_green = turn_statuses[latest_on_disk]
-
-            if is_currently_green or is_latest_green:
-                for tid, is_green in turn_statuses.items():
-                    if not is_green:
-                        turns_to_prune.setdefault(
-                            str(tid), "Pruned failure history after successful recovery"
-                        )
 
         return turns_to_prune
 

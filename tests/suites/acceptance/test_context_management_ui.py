@@ -119,7 +119,7 @@ async def test_auto_pruning_strikes_through_failed_plans(env: TestEnvironment):
             git_status="",
             scope="Turn",
             selected=False,
-            auto_prune_reason="Pruned failure history after successful recovery",
+            auto_prune_reason="Plan failed validation",
         )
     ]
     context = ProjectContext(
@@ -171,10 +171,10 @@ def _setup_acceptance_session(env, session_dir):
     )
 
     env.workspace.joinpath(f"{session_dir}/02/plan.md").write_text(
-        "# Turn 2\n- **Status:** 🔴"
+        "# Turn 2\n- **Status:** OFF-TRACK 🟡"
     )
     env.workspace.joinpath(f"{session_dir}/02/report.md").write_text(
-        "# Report 2\nStatus: ABORTED"
+        "# Report 2\n- **Overall Status:** SUCCESS"
     )
 
     turn_03_plan = (
@@ -192,7 +192,8 @@ def _setup_acceptance_session(env, session_dir):
 
     env.workspace.joinpath(f"{session_dir}/03/turn.context").write_text(
         f"{session_dir}/01/plan.md\n{session_dir}/01/report.md\n{session_dir}/02/plan.md\n"
-        f"{session_dir}/03/plan.md\n{session_dir}/03/report.md"
+        f"{session_dir}/02/report.md\n{session_dir}/03/plan.md\n"
+        f"{session_dir}/03/report.md"
     )
     env.workspace.joinpath(f"{session_dir}/03/meta.yaml").write_text(
         "turn_id: '03'\nagent_name: pf"
@@ -201,7 +202,7 @@ def _setup_acceptance_session(env, session_dir):
 
 
 def test_auto_pruning_heuristics_acceptance(env, monkeypatch):
-    """Regression test for pruning heuristics."""
+    """An off-track turn survives recovery while a validation failure is pruned."""
     env.setup().with_real_filesystem()
     session_dir = ".teddy/sessions/20260511_120000-regression"
     turn_03_plan = _setup_acceptance_session(env, session_dir)
@@ -211,7 +212,6 @@ def test_auto_pruning_heuristics_acceptance(env, monkeypatch):
     mock_config = env.get_service(IConfigService)
     mock_config.get_setting.side_effect = lambda k, d=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.prune_failure_history": True,
         "auto_pruning.prune_validation_failures": True,
     }.get(k, d)
 
@@ -246,12 +246,11 @@ def test_auto_pruning_heuristics_acceptance(env, monkeypatch):
     # Turn 01 was 🟢, so it remains selected.
     assert items_map[f"{session_dir}/01/plan.md"].selected is True
 
-    # Turn 02 was 🔴 and Turn 03 is 🟢 (Recovery). Turn 02 should be pruned.
-    assert items_map[f"{session_dir}/02/plan.md"].selected is False
-    assert (
-        items_map[f"{session_dir}/02/plan.md"].auto_prune_reason
-        == "Pruned failure history after successful recovery"
-    )
+    # Turn 02 was OFF-TRACK 🟡 with a SUCCESS report, so the insight it gathered
+    # survives the later recovery and both of its records stay in context.
+    assert items_map[f"{session_dir}/02/plan.md"].selected is True
+    assert items_map[f"{session_dir}/02/report.md"].selected is True
+    assert items_map[f"{session_dir}/02/plan.md"].auto_prune_reason is None
 
     # Turn 03 failed validation.
     assert items_map[f"{session_dir}/03/plan.md"].selected is False

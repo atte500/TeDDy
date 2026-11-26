@@ -30,59 +30,33 @@ def service(mock_config, mock_fs):
     )
 
 
-def test_prune_ignores_emoji_in_rationale(service, mock_fs):
-    """
-    Logic: Ensure that 🔴 in rationale does not trigger pruning if the Status line is 🟢.
-    """
-    # Arrange
-    items = [
-        ContextItem(path="01/plan.md", scope="Turn", token_count=100, git_status=" "),
-    ]
-    context = ProjectContext(items=items, header="", content="")
+def test_amber_plan_survives_a_later_green_turn(service, mock_fs):
+    """An off-track turn keeps its plan and report once a later turn recovers.
 
-    # Plan has a 🔴 in rationale but 🟢 in status
-    content = (
-        "# Plan\n"
-        "## Rationale\n"
-        "I found a bug 🔴 but I fixed it.\n"
-        "\n"
-        "- **Status:** SUCCESS 🟢"
-    )
-    mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = content
-
-    # Act
-    # Recovery cleanup is triggered by current status being green
-    result = service.prune(context, current_status="SUCCESS 🟢")
-
-    # Assert
-    # Turn 01 should NOT be pruned because it is actually green
-    assert result.items[0].selected is True
-
-
-def test_prune_targets_anchored_status_failure(service, mock_fs):
-    """
-    Logic: Ensure that 🔴 in the Status line correctly triggers pruning.
+    ``OFF-TRACK`` means the turn missed its expectation while gathering usable
+    insight, so the records already verified stay in context.
     """
     # Arrange
     items = [
         ContextItem(path="01/plan.md", scope="Turn", token_count=100, git_status=" "),
+        ContextItem(path="01/report.md", scope="Turn", token_count=100, git_status=" "),
     ]
     context = ProjectContext(items=items, header="", content="")
 
-    content = "# Plan\n- **Status:** FAILED 🔴"
+    def read_file_side_effect(path: str) -> str:
+        if "01/plan.md" in path:
+            return "# Plan\n- **Status:** OFF-TRACK 🟡"
+        return "# Report\n- **Overall Status:** SUCCESS"
+
     mock_fs.path_exists.return_value = True
-    mock_fs.read_file.return_value = content
+    mock_fs.read_file.side_effect = read_file_side_effect
 
     # Act
-    result = service.prune(context, current_status="SUCCESS 🟢")
+    result = service.prune(context, current_status="ON-TRACK 🟢")
 
     # Assert
-    assert result.items[0].selected is False
-    assert (
-        result.items[0].auto_prune_reason
-        == "Pruned failure history after successful recovery"
-    )
+    assert [item.selected for item in result.items] == [True, True]
+    assert not any(item.auto_prune_reason for item in result.items)
 
 
 def test_prune_targets_anchored_validation_failure(service, mock_fs):

@@ -18,7 +18,6 @@ def pruning_service():
     # Enable all pruning heuristics
     config.get_setting.side_effect = lambda k, d=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.prune_failure_history": True,
         "auto_pruning.prune_validation_failures": True,
         "auto_pruning.turn_context_threshold": 0,
     }.get(k, d)
@@ -27,16 +26,9 @@ def pruning_service():
 
 
 def test_pruning_handles_windows_path_separators(pruning_service):
-    # Arrange: Simulate Turn 1 (Success) and Turn 2 (Failure) using Windows paths
-    # Turn 3 is the current turn and is Green, triggering recovery cleanup of Turn 2.
+    """A backslash path prunes a validation-failed turn once a later turn succeeds."""
+    # Arrange: Turn 02 failed validation and Turn 03 succeeded afterwards.
     items = [
-        ContextItem(
-            path=".teddy\\sessions\\S\\01\\plan.md",
-            token_count=100,
-            scope="Turn",
-            selected=True,
-            git_status="",
-        ),
         ContextItem(
             path=".teddy\\sessions\\S\\01\\report.md",
             token_count=100,
@@ -59,7 +51,7 @@ def test_pruning_handles_windows_path_separators(pruning_service):
             git_status="",
         ),
         ContextItem(
-            path=".teddy\\sessions\\S\\03\\plan.md",
+            path=".teddy\\sessions\\S\\03\\report.md",
             token_count=100,
             scope="Turn",
             selected=True,
@@ -75,15 +67,15 @@ def test_pruning_handles_windows_path_separators(pruning_service):
         total_window=0,
     )
 
-    # Mock file contents: Turn 1 Green, Turn 2 Red, Turn 3 Green
+    # Mock file contents: Turn 01 and Turn 03 succeeded, Turn 02 failed validation.
     def mock_read(path):
         p = path.replace("\\", "/")
-        if "01/plan.md" in p:
-            return "- **Status:** SUCCESS 🟢"
-        if "02/plan.md" in p:
-            return "- **Status:** FAILURE 🔴"
-        if "03/plan.md" in p:
-            return "- **Status:** SUCCESS 🟢"
+        if "01/report.md" in p:
+            return "- **Overall Status:** SUCCESS"
+        if "02/report.md" in p:
+            return "- **Overall Status:** Validation Failed"
+        if "03/report.md" in p:
+            return "- **Overall Status:** SUCCESS"
         return ""
 
     pruning_service._file_system_manager.path_exists.return_value = True
@@ -95,16 +87,15 @@ def test_pruning_handles_windows_path_separators(pruning_service):
     # Assert
     pruned_items = {item.path: item for item in pruned_context.items}
 
-    # Turn 1 should be selected (Green)
-    assert pruned_items[".teddy\\sessions\\S\\01\\plan.md"].selected is True
-    # Turn 2 should be pruned (Recovery cleanup of Red turn)
+    assert pruned_items[".teddy\\sessions\\S\\01\\report.md"].selected is True
+    # The failed turn leaves with both of its records.
     assert pruned_items[".teddy\\sessions\\S\\02\\plan.md"].selected is False
+    assert pruned_items[".teddy\\sessions\\S\\02\\report.md"].selected is False
     assert (
-        "Pruned failure history"
-        in pruned_items[".teddy\\sessions\\S\\02\\plan.md"].auto_prune_reason
+        pruned_items[".teddy\\sessions\\S\\02\\report.md"].auto_prune_reason
+        == "Plan failed validation"
     )
-    # Turn 3 is the latest, so it remains selected
-    assert pruned_items[".teddy\\sessions\\S\\03\\plan.md"].selected is True
+    assert pruned_items[".teddy\\sessions\\S\\03\\report.md"].selected is True
 
 
 def test_extract_turn_id_is_platform_agnostic(pruning_service):

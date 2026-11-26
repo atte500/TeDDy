@@ -3,14 +3,14 @@
 - **Source:** [`src/teddy_executor/core/services/session_pruning_service.py`](/src/teddy_executor/core/services/session_pruning_service.py)
 
 ## Purpose
-Applies configurable auto-pruning heuristics to session context items. It deselects context files by failure status, retention ceiling, and token budget so the turn context stays bounded, while sparing turns that carry user interaction or a successful message.
+Applies configurable auto-pruning heuristics to session context items. It deselects context files by validation outcome, retention ceiling, and token budget so the turn context stays bounded, while sparing turns that carry user interaction or a successful message.
 
 ## Consumers
 - [`SessionOrchestrator`](./session_orchestrator.md): Calls `prune` on every session turn before harvesting pruned paths.
 
 ## Dependencies
 - [`IConfigService`](../ports/outbound/config_service.md): Supplies the `auto_pruning.*` settings.
-- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Reads plan and report files during heuristic evaluation.
+- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Reads a turn's report file when checking whether it failed validation.
 - **`normalize_resource_path`** (`teddy_executor.core.utils.paths`): Normalizes link-aware context paths for turn matching.
 
 ## Class Invariants
@@ -34,12 +34,11 @@ None — the service is consumed directly by `SessionOrchestrator`.
 
 ### `prune(context, current_status=None) -> ProjectContext`
 - **Preconditions:** `context` is a `ProjectContext`; `current_status` is the current plan's status string when available.
-- **Postconditions:** Returns a `ProjectContext` with deselected items annotated by `auto_prune_reason`. Heuristics run in order: failure-status pruning, retention ceiling, then the global Turn-scope budget.
+- **Postconditions:** Returns a `ProjectContext` with deselected items annotated by `auto_prune_reason`. Heuristics run in order: validation-failure pruning, retention ceiling, then the global Turn-scope budget.
 - **Exceptions:** None — an internal error is logged and the original context is returned.
 
 ### Heuristics
 - **Validation-failure pruning:** A validation-failed turn is pruned only when a later non-validation-failure report exists, either on disk or as the current status. Consecutive validation failures stay visible to preserve the audit trail.
-- **Recovery cleanup:** Non-green turns are pruned once the current status is green or the latest on-disk turn is green.
 - **Retention ceiling:** `auto_pruning.max_turns_retention` bounds how many distinct turns the turn-scoped context may hold. Nothing is deselected while the selected history is at or below the ceiling; past it, only the newest `max(1, max_turns_retention - retention_batch + 1)` turns survive, so one extra turn drops a whole batch of the oldest turns in one pass, and a larger overage drops that overage plus a full batch, minus one. The retained count never falls below one turn. A batch of `1` keeps the newest `max_turns_retention` turns, reproducing the per-turn cadence. A missing batch reads as `1`; a non-positive or unparseable value logs a warning and falls back to `1`.
 - **Global budget:** When the selected Turn-scope token total exceeds `auto_pruning.turn_context_threshold`, the largest Turn-scope files are deselected first.
 
