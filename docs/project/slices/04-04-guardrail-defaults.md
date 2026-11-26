@@ -77,18 +77,32 @@ Then the guard continues without a limit notice
 - [x] [Harness] Whether the resume-seeded baseline and the yolo-only gate each already have a named unit test. **Resolved:** the yolo-only gate is pinned by `test_production_guard_ignores_limits_in_interactive_mode`; the resume seed is unpinned *and* the behaviour it would have asserted is wrong. The slice therefore prepends a production fix and places the pin after it, because a pin written first would freeze the defect. The baselines are observable once `ContainerStub` records the kwargs of each `resolve` call, which is additive for every existing caller.
 
 ## Impact
-1. `[EXTEND]` `tests/harness/setup/container_stub.py` — record the constructor kwargs of each `resolve` call, so a test can observe the baselines the boundary seeds. Additive: the current double discards kwargs, and no caller relies on that.
+1. `[EXTEND]` `tests/harness/setup/container_stub.py` — record the constructor kwargs of each `resolve` call, so a test can observe the baselines the boundary seeds. Additive: the current double discards kwargs, and no caller relies on that. Delivered: the recording plus a `resolved_kwargs(service_type)` accessor that returns a copy, covered by `test_container_stub_harness.py`.
 2. `[MIGRATE]` `src/teddy_executor/adapters/inbound/session_cli_handlers.py` — seed the turn baseline at `0` (the per-run scale the loop counts in) and delete the now-dead `_resolve_initial_turn` helper, keeping `initial_cost` seeded from `get_cumulative_cost`.
 3. `[MIGRATE]` `tests/suites/unit/adapters/inbound/test_session_loop_baseline_reset.py` — add the resumed-run turn-budget pin: a session whose latest turn is `40` must still halt at `guardrails.max_turns` turns in this run.
 4. `[MIGRATE]` `tests/suites/unit/core/services/test_session_loop_guard_configuration.py` — replace the local `_load_bundled_config` with the shared harness loader, and assert the bundled `guardrails.max_turns` and `guardrails.max_session_cost` equal the `GuardrailsConfig` defaults and the guard's resolution fallbacks.
 5. `[PRUNE]` `tests/suites/unit/core/services/test_session_loop_guard.py::test_production_guard_stores_initial_state` — the private-attribute assertion is superseded by behavioural delta pins and would survive a regression in `should_continue`.
 
 ## Deliverables
-- [▶] **Harness** — Record the resolve kwargs in `ContainerStub` (with its own unit test) so the boundary seed is observable, and pin the four guardrail spellings to the schema defaults and the guard's resolution fallbacks.
+- [x] **Harness** — Record the resolve kwargs in `ContainerStub` (with its own unit test) so the boundary seed is observable, and pin the four guardrail spellings to the schema defaults and the guard's resolution fallbacks.
 - [ ] **Core** — Re-base the turn budget per run: seed `initial_turn=0`, delete the dead `_resolve_initial_turn` helper, and pin the resumed-run budget with a boundary test.
 - [ ] **Cleanup** — Retire the private-attribute guard test, consolidate the duplicated bundled-config loader, and record the delivered behaviour as built on the guard service and port pages.
 
 ## Implementation Notes
+
+**Harness — the boundary seed became observable.**
+`ContainerStub.resolve` now records the constructor kwargs of every call and exposes them through `resolved_kwargs(service_type)`, which returns a copy so a caller cannot mutate the double's recorded history. Three states stay distinguishable, because a test must be able to tell a bare resolve from an absent one: a mapped type records the kwargs it received, a call without kwargs records an empty mapping, and a type never resolved records nothing. The punq-compatible lookup and the `Mock()` fallback are untouched, so the change is additive for every existing consumer (the interrupt-wiring, quit-listener-wiring and resume-message-threading suites all call `resolve` and none reads the new accessor).
+
+`tests/suites/unit/test_container_stub_harness.py` already existed and was extended rather than duplicated: the kwargs-record test failed first with `AttributeError: 'ContainerStub' object has no attribute 'resolved_kwargs'` while 15 other tests passed, then turned green after the recording landed (16 passed). This is the capability whose absence hid the turn-seed defect — `test_session_loop_baseline_reset.py` injects a pre-built guard through the stub, and with kwargs discarded the seeded baseline was unobservable at the boundary.
+
+**Harness — the four guardrail spellings gained a single owner.**
+`test_default_turn_limit_is_150` and `test_default_cost_limit_is_five_dollars` were replaced by `test_default_limits_are_the_pinned_budget`, which states the product decision (150 turns, 5.00 USD) as the one literal and derives every guard probe from `GuardrailsConfig` instead of a second copy of the numbers. `test_bundled_guardrails_agree_with_the_schema_defaults` pins the shipped `config.yaml` guardrails block to those same schema defaults, so a divergent copy fails by name on either side. Both passed at creation, which is the correct signal: the shipped values already agreed, so the pins are drift guards rather than defect reports.
+
+The duplicated `guardrails.get("max_turns") == 150` assertion was pruned from `test_bundled_config_declares_only_the_renamed_guardrails_namespace`, which now guards the namespace rename alone and no longer reports the same drift twice under two names.
+
+**Deferred deliberately:** the local `_load_bundled_config` in `test_session_loop_guard_configuration.py` still duplicates `tests/harness/setup/bundled_config.py`. The new agreement test reuses the local loader so the consolidation lands as its own atomic step in the Cleanup deliverable.
+
+**Gate:** the full suite passes at this point (2627 passed, 5 skipped).
 
 ## Verification
 1. **Configured halt:**

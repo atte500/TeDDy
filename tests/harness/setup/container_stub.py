@@ -21,9 +21,21 @@ class ContainerStub:
 
     def __init__(self, mapping: dict[type, object]) -> None:
         self._mapping = mapping
+        self._resolved_kwargs: dict[type, list[dict[str, object]]] = {}
 
     def resolve(self, service_type: type, **kwargs: object) -> object:
+        self._resolved_kwargs.setdefault(service_type, []).append(dict(kwargs))
         service = self._mapping.get(service_type)
         if service is None:
             return Mock()
         return service
+
+    def resolved_kwargs(self, service_type: type) -> list[dict[str, object]]:
+        """Returns the constructor kwargs of each resolve call, in call order.
+
+        A call without kwargs records an empty mapping, and a type that was
+        never resolved records nothing, so a test can tell a bare resolve from
+        an absent one. The returned list is a copy, so a caller cannot mutate
+        the double's recorded history.
+        """
+        return list(self._resolved_kwargs.get(service_type, []))

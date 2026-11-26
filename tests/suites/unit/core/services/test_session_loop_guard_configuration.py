@@ -11,6 +11,7 @@ from unittest.mock import create_autospec
 
 import yaml
 
+from teddy_executor.core.domain.models.config_schema import GuardrailsConfig
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.services.session_loop_guard import ProductionSessionLoopGuard
@@ -82,11 +83,27 @@ def test_legacy_yolo_guardrails_key_is_ignored():
     assert guard.should_continue(150, 0.0, False)[0] is False
 
 
-def test_default_turn_limit_is_150():
-    """The turn limit defaults to 150 when no source supplies a value."""
+def test_default_limits_are_the_pinned_budget():
+    """The default budget is 150 turns and 5.00 USD, and the guard enforces it.
+
+    This is the one place the product decision is pinned to a literal. The
+    bundled config and the guard's resolution fallback are asserted against
+    the schema rather than against a second copy of the numbers, so a single
+    edit can no longer move the budget for one surface only.
+    """
+    schema = GuardrailsConfig()
     guard = _guard()
-    assert guard.should_continue(149, 0.0, False) == (True, None)
-    assert guard.should_continue(150, 0.0, False)[0] is False
+
+    assert schema.max_turns == 150
+    assert schema.max_session_cost == 5.0
+
+    assert guard.should_continue(schema.max_turns - 1, 0.0, False) == (True, None)
+    assert guard.should_continue(schema.max_turns, 0.0, False)[0] is False
+    assert guard.should_continue(0, schema.max_session_cost - 0.01, False) == (
+        True,
+        None,
+    )
+    assert guard.should_continue(0, schema.max_session_cost, False)[0] is False
 
 
 def test_environment_overrides_cost_limit():
@@ -96,11 +113,20 @@ def test_environment_overrides_cost_limit():
     assert guard.should_continue(1, 1.00, False)[0] is False
 
 
-def test_default_cost_limit_is_five_dollars():
-    """The cost limit defaults to five dollars when no source supplies a value."""
-    guard = _guard()
-    assert guard.should_continue(1, 4.99, False) == (True, None)
-    assert guard.should_continue(1, 5.00, False)[0] is False
+def test_bundled_guardrails_agree_with_the_schema_defaults():
+    """The shipped guardrails block states the schema defaults.
+
+    The turn limit appears in four places that must agree: the bundled
+    ``config.yaml``, the ``GuardrailsConfig`` default, the guard's resolution
+    fallback, and the guard service page. Pinning the shipped values to the
+    schema makes a divergent copy fail by name instead of silently restoring an
+    undocumented budget.
+    """
+    bundled = _load_bundled_config()["guardrails"]
+    schema = GuardrailsConfig()
+
+    assert bundled["max_turns"] == schema.max_turns
+    assert bundled["max_session_cost"] == schema.max_session_cost
 
 
 def test_reset_baseline_re_anchors_turn_and_cost():
@@ -148,7 +174,12 @@ def test_cost_limit_message_uses_neutral_wording():
 
 
 def test_bundled_config_declares_only_the_renamed_guardrails_namespace():
-    """The bundled config declares ``guardrails`` and no legacy ``yolo_guardrails``."""
+    """The bundled config declares ``guardrails`` and no legacy ``yolo_guardrails``.
+
+    The shipped values themselves are pinned against the schema defaults in
+    ``test_bundled_guardrails_agree_with_the_schema_defaults``, so this test
+    guards the namespace rename alone.
+    """
     config = _load_bundled_config()
 
     guardrails = config.get("guardrails")
@@ -156,7 +187,6 @@ def test_bundled_config_declares_only_the_renamed_guardrails_namespace():
         "Bundled config.yaml must declare the renamed 'guardrails' block, "
         f"got: {guardrails!r}"
     )
-    assert guardrails.get("max_turns") == 150
     assert "yolo_guardrails" not in config
 
 
