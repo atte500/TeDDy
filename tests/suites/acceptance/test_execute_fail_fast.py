@@ -1,8 +1,8 @@
 """Acceptance tests for EXECUTE fail-fast behavior on interactive prompts."""
 
-from unittest.mock import Mock
 from teddy_executor.core.domain.models.shell_output import ShellOutput
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
+from tests.harness.setup.fake_shell_executor import FakeShellExecutor
 from tests.harness.setup.test_environment import TestEnvironment
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
@@ -16,14 +16,15 @@ def test_execute_fails_with_interactive_prompt_message(monkeypatch, tmp_path):
     """
     # Arrange: Set up the environment with a mocked shell that returns interactive prompt failure
     env = TestEnvironment(monkeypatch, tmp_path).setup()
-    mock_shell = Mock(spec=IShellExecutor)
-    mock_shell.execute.return_value = ShellOutput(
-        return_code=1,
-        stdout="FAILURE: Interactive prompt detected",
-        stderr="EOFError: EOF when reading a line",
+    shell = FakeShellExecutor(
+        output=ShellOutput(
+            return_code=1,
+            stdout="FAILURE: Interactive prompt detected",
+            stderr="EOFError: EOF when reading a line",
+        )
     )
     # Override the default IShellExecutor mock
-    env.container.register(IShellExecutor, lambda: mock_shell)
+    env.container.register(IShellExecutor, lambda: shell)
 
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 

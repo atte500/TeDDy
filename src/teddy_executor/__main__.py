@@ -632,11 +632,16 @@ def execute(  # noqa: PLR0913
     Executes a Markdown plan file (from path or clipboard) and generates an execution report.
     """
     from teddy_executor.adapters.inbound.cli_helpers import (
+        create_failure_report,
         get_plan_content,
         handle_report_output,
     )
+    from teddy_executor.adapters.inbound.interrupt_scope import interrupt_scope
     from teddy_executor.core.ports.inbound.plan_parser import InvalidPlanError
     from teddy_executor.core.ports.inbound.run_plan_use_case import IRunPlanUseCase
+    from teddy_executor.core.ports.outbound.quit_key_listener import IQuitKeyListener
+    from teddy_executor.core.utils.interrupt_guard import InterruptGuard
+    from teddy_executor.core.utils.session_notices import format_interrupt_notice
 
     report: Optional[ExecutionReport] = None
     start_time = datetime.now(timezone.utc)
@@ -644,26 +649,35 @@ def execute(  # noqa: PLR0913
     container = get_container()
     _ensure_project_initialized(container)
     config_service = container.resolve(IConfigService)
+    interrupt_guard = container.resolve(InterruptGuard)
+    quit_listener = container.resolve(IQuitKeyListener)
 
     try:
-        final_plan_content = get_plan_content(plan_content, plan_file)
-        orchestrator = container.resolve(IRunPlanUseCase)
+        with interrupt_scope(interrupt_guard, quit_listener):
+            try:
+                final_plan_content = get_plan_content(plan_content, plan_file)
+                orchestrator = container.resolve(IRunPlanUseCase)
 
-        report = orchestrator.execute(
-            plan_content=final_plan_content,
-            plan_path=str(plan_file) if plan_file else None,
-            require_approval=not _resolve_yolo(yolo, config_service),
-            message=message,
-        )
+                report = orchestrator.execute(
+                    plan_content=final_plan_content,
+                    plan_path=str(plan_file) if plan_file else None,
+                    require_approval=not _resolve_yolo(yolo, config_service),
+                    message=message,
+                )
 
-    except (InvalidPlanError, NotImplementedError) as e:
-        from teddy_executor.adapters.inbound.cli_helpers import create_failure_report
+            except (InvalidPlanError, NotImplementedError) as e:
+                report = create_failure_report(
+                    e, start_time, container, plan_content=final_plan_content
+                )
 
-        report = create_failure_report(
-            e, start_time, container, plan_content=final_plan_content
-        )
+            # A mid-execution press drains instead of raising, so the notice
+            # cannot come from the exception path alone.
+            if interrupt_guard.interrupted.is_set():
+                typer.echo(format_interrupt_notice(interrupt_guard.source), err=True)
 
-    handle_report_output(container, report, no_copy)
+            handle_report_output(container, report, no_copy)
+    except KeyboardInterrupt:
+        typer.echo(format_interrupt_notice(interrupt_guard.source), err=True)
 
 
 if __name__ == "__main__":
