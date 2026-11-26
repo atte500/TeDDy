@@ -46,7 +46,7 @@ Make the interactive reviewer truthful about the session it is showing: which mo
 - [ ] [04-05-context-metadata](../slices/04-05-context-metadata.md): Tackles Req 1. `ProjectContext` gains the model name and session cost, and one `format_cost_usd` replaces the two other money formats.
 - [ ] [04-06-context-actions](../slices/04-06-context-actions.md): Tackles Req 2. `e` on a context node resolves to a manifest, a file, or the agent roster, and a persona switch re-composes the agent+MRP prompt through the same seam `resume -a` uses.
 - [ ] [04-07-section-navigation](../slices/04-07-section-navigation.md): Tackles Req 3. A derived section sequence replaces the three-root modulo, and boundaries scroll instead of wrapping.
-- [ ] [04-08-panel-insets](../slices/04-08-panel-insets.md): Tackles Req 4. One `PANEL_INSET` rendered into the stylesheet and asserted per selector.
+- [x] [04-08-panel-insets](../slices/04-08-panel-insets.md): Tackles Req 4. One `PANEL_INSET` rendered into the stylesheet and asserted per selector. Delivered.
 - [ ] [04-09-tier2-editing](../slices/04-09-tier2-editing.md): Tackles Req 5. One predicate routes long or multiline values through the external editor.
 - [ ] [04-10-rationale-sections](../slices/04-10-rationale-sections.md): Tackles Req 6. A fence-aware split replaces the four-heading allowlist, and the fallback label becomes `Untitled`.
 - [ ] [04-11-move-delete-actions](../slices/04-11-move-delete-actions.md): Tackles Req 8. Two protocol members across every registration site, with live manifest synchronization.

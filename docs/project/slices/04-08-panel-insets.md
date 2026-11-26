@@ -1,5 +1,5 @@
 # Slice: Uniform Panel Insets Across the Reviewer
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -70,6 +70,7 @@ Then the highlight band starts at the panel's gutter and never overlaps the left
 - **Inset value `(1, 2)`:** the pair rationale prose already used (`padding: 1 2`), so the richest right-panel variant does not shrink, while the parameter list trades its `0 1` for the same one-line breathing room. It is declared on the two pane containers only; `#rationale-content` and `ListItem` lost their declarations because CSS padding stacks and a surviving child inset would put that row back on a different gutter.
 - **One-level proof:** `tests/suites/unit/adapters/inbound/test_reviewer_stylesheet.py` asserts the shipped `ReviewerApp.CSS` carries the inset on both panes, that none of `#rationale-content`, `ListItem`, or `Tree` re-declares a padding, that `#right-pane` keeps its `border-left`, and that four arbitrary pairs render through `build_tui_css` — so a reintroduced child inset fails with a selector-named diff rather than silently reintroducing the drift.
 - **Documentation half of the cleanup:** the per-widget padding precedent was already gone from the code when the Adapter change landed, because CSS padding stacks and a surviving child declaration would have undone the fix. What remained was prose: the reviewer page now states the rule as the `single_panel_inset` invariant beside the dual-pane layout description and its `review` postcondition names the shared gutter, so no page still describes four separate gutters. The parser is documented as As-Built at `docs/architecture/tests/observers/stylesheet_parser.md` and linked from the Component Map's Test Harness table beside `ReportParser`, because both are inverse adapters that turn a production artifact back into a structure for assertions.
+- **Verification audit:** the seam has exactly three consumers — the widgets module (constant, sentinel, template, builder, `TUI_CSS = build_tui_css(PANEL_INSET)`), the app's `CSS = TUI_CSS` binding, and the contract test — with no orphaned helper and no literal inset left anywhere under `adapters/inbound/`. The contract test imports `PANEL_INSET` rather than restating `(1, 2)`, so both sides read the single source of truth. The two surviving `padding: 0 1` strings are arbitrary CSS input inside `test_stylesheet_parser.py`, proving declaration parsing and comma expansion, so they carry no coupling to the reviewer's stylesheet and stay put. No lint rule was added: the one-gutter invariant is already enforced per selector against the shipped `ReviewerApp.CSS`, which is stronger than a text match over the module.
 
 ## Verification
 1. **Gutter alignment:**
