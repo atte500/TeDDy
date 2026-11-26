@@ -38,6 +38,31 @@ HISTORY_LABEL = "HISTORY_LABEL"
 RATIONALE_ROOT = "RATIONALE_ROOT"
 ACTION_PLAN_ROOT = "ACTION_PLAN_ROOT"
 
+# Every payload that marks a tree node as a navigation section. Derived from the
+# identifiers above, so a new section cannot be introduced without joining the
+# navigation walk.
+SECTION_SENTINELS = frozenset(
+    {
+        CONTEXT_ROOT,
+        SYSTEM_LABEL,
+        SESSION_LABEL,
+        TURN_LABEL,
+        HISTORY_LABEL,
+        RATIONALE_ROOT,
+        ACTION_PLAN_ROOT,
+    }
+)
+
+
+def is_section_payload(data: Any) -> bool:
+    """Report whether a node payload identifies a navigation section.
+
+    File rows carry an unhashable ``ContextItem`` and the agent row carries a
+    dict, so the membership test is gated on ``str`` instead of trusting the
+    payload's type.
+    """
+    return isinstance(data, str) and data in SECTION_SENTINELS
+
 
 # Summary logic moved to textual_plan_reviewer_helpers.py
 

@@ -206,6 +206,64 @@ def build_context_section(app: "ReviewerApp", tree: Any) -> Any:
     return con_root
 
 
+def _preorder(root: Any) -> Any:
+    """Yield ``root`` and every descendant in render order."""
+    stack = [root]
+    while stack:
+        node = stack.pop()
+        yield node
+        stack.extend(reversed(node.children))
+
+
+def section_sequence(tree: Any) -> list[Any]:
+    """Return the built tree's section nodes in render order.
+
+    The sequence is read from the tree rather than from a constant list, so a
+    panel that carries no context root and a session with no history both walk
+    exactly the sections that exist. An empty scope group renders a ``(None)``
+    leaf repeating its header's own sentinel, so each section is recorded once:
+    keeping the first occurrence leaves the cursor on the header instead of a
+    placeholder row.
+    """
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
+        is_section_payload,
+    )
+
+    sequence: list[Any] = []
+    seen: set[str] = set()
+    for node in _preorder(tree.root):
+        data = node.data
+        if is_section_payload(data) and data not in seen:
+            seen.add(data)
+            sequence.append(node)
+    return sequence
+
+
+def containing_section(node: Any) -> Any:
+    """Return the section node governing ``node``, or ``None``.
+
+    Membership is positional, not parental: the context pane renders each scope
+    header and its rows as siblings under the Context root, so a row is governed
+    by the last section node at or before it in render order. A section node
+    governs itself, and the invisible tree root governs nothing.
+    """
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
+        is_section_payload,
+    )
+
+    root = node
+    while root.parent is not None:
+        root = root.parent
+
+    governing = None
+    for current in _preorder(root):
+        if is_section_payload(current.data):
+            governing = current
+        if current is node:
+            return governing
+    return None
+
+
 def handle_mount_logic(app: Any, update_detail_fn: Any) -> None:
     """Populate the action tree and set title when the app is mounted."""
     if getattr(app, "_tree_built", False) is True:
