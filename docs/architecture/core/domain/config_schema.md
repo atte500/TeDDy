@@ -1,5 +1,6 @@
 # Component Design: Configuration Schema
 - **Status:** Implemented
+- **Classification:** Core Domain
 - **Source:** [`src/teddy_executor/core/domain/models/config_schema.py`](/src/teddy_executor/core/domain/models/config_schema.py)
 
 ## Purpose

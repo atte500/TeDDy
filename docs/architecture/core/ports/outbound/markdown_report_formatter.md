@@ -1,5 +1,6 @@
 # Component Design: IMarkdownReportFormatter
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/markdown_report_formatter.py`](/src/teddy_executor/core/ports/outbound/markdown_report_formatter.py)
 
 ## Purpose

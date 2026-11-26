@@ -1,5 +1,6 @@
 # Component Design: ShellAdapter
 - **Status:** Implemented
+- **Classification:** Outbound Adapter
 - **Source:** [`src/teddy_executor/adapters/outbound/shell_adapter.py`](/src/teddy_executor/adapters/outbound/shell_adapter.py)
 
 ## Purpose

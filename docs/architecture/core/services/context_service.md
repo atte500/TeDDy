@@ -1,5 +1,6 @@
 # Component Design: ContextService
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/context_service.py`](/src/teddy_executor/core/services/context_service.py)
 
 ## Purpose

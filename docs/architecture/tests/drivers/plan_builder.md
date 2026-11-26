@@ -1,5 +1,6 @@
 # Component Design: MarkdownPlanBuilder
 - **Status:** Implemented
+- **Classification:** Test Driver
 - **Source:** [`tests/harness/drivers/plan_builder.py`](/tests/harness/drivers/plan_builder.py)
 
 ## Purpose

@@ -1,5 +1,6 @@
 # Component Design: IAgentCatalog
 - **Status:** Planned
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/agent_catalog.py`](/src/teddy_executor/core/ports/outbound/agent_catalog.py)
 
 ## Purpose

@@ -1,5 +1,6 @@
 # Component Design: Parser Infrastructure
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/parser_infrastructure.py`](/src/teddy_executor/core/services/parser_infrastructure.py)
 
 ## Purpose

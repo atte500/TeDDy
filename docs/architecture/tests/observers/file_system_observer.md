@@ -1,5 +1,6 @@
 # Component Design: FileSystemObserver
 - **Status:** Implemented
+- **Classification:** Test Observer
 - **Source:** [`tests/harness/observers/file_system_observer.py`](/tests/harness/observers/file_system_observer.py)
 
 ## Purpose

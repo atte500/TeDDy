@@ -1,5 +1,6 @@
 # Component Design: ActionFactory
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/action_factory.py`](/src/teddy_executor/core/services/action_factory.py)
 
 ## Purpose

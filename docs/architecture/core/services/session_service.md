@@ -1,5 +1,6 @@
 # Component Design: SessionService
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/session_service.py`](/src/teddy_executor/core/services/session_service.py)
 
 ## Purpose

@@ -1,5 +1,6 @@
 # Component Design: Tee
 - **Status:** Implemented
+- **Classification:** Core Utility
 - **Source:** [`src/teddy_executor/core/utils/io.py`](/src/teddy_executor/core/utils/io.py)
 
 ## Purpose

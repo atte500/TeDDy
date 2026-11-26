@@ -1,5 +1,6 @@
 # Component Design: IConfigService
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/config_service.py`](/src/teddy_executor/core/ports/outbound/config_service.py)
 
 ## Purpose

@@ -1,5 +1,6 @@
 # Component Design: ActionDispatcher
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/action_dispatcher.py`](/src/teddy_executor/core/services/action_dispatcher.py)
 
 ## Purpose

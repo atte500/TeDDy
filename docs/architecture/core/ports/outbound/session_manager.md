@@ -1,5 +1,6 @@
 # Component Design: ISessionManager
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/session_manager.py`](/src/teddy_executor/core/ports/outbound/session_manager.py)
 
 ## Purpose

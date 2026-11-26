@@ -1,5 +1,6 @@
 # Component Design: ContextScenarios (Setup)
 - **Status:** Implemented
+- **Classification:** Test Setup
 - **Source:** [`tests/harness/setup/context_scenarios.py`](/tests/harness/setup/context_scenarios.py)
 
 ## Purpose

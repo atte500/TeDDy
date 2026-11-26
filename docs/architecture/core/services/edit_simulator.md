@@ -1,5 +1,6 @@
 # Component Design: EditSimulator
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/edit_simulator.py`](/src/teddy_executor/core/services/edit_simulator.py)
 
 ## Purpose

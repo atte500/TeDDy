@@ -1,5 +1,6 @@
 # Component Design: PlanValidator
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/plan_validator.py`](/src/teddy_executor/core/services/plan_validator.py)
 
 ## Purpose

@@ -1,5 +1,6 @@
 # Component Design: PlanningService
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/planning_service.py`](/src/teddy_executor/core/services/planning_service.py)
 
 ## Purpose

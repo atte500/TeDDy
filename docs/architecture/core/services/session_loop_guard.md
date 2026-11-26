@@ -1,5 +1,6 @@
 # Component Design: ProductionSessionLoopGuard
 - **Status:** Refactoring
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/session_loop_guard.py`](/src/teddy_executor/core/services/session_loop_guard.py)
 
 ## Purpose

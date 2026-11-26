@@ -1,5 +1,6 @@
 # Component Design: IEditSimulator
 - **Status:** Implemented
+- **Classification:** Core Inbound Port
 - **Source:** [`src/teddy_executor/core/ports/inbound/edit_simulator.py`](/src/teddy_executor/core/ports/inbound/edit_simulator.py)
 
 ## Purpose

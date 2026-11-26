@@ -1,5 +1,6 @@
 # Component Design: CliTestAdapter
 - **Status:** Implemented
+- **Classification:** Test Driver
 - **Source:** [`tests/harness/drivers/cli_adapter.py`](/tests/harness/drivers/cli_adapter.py)
 
 ## Purpose

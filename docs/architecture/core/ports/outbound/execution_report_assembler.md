@@ -1,5 +1,6 @@
 # Component Design: IExecutionReportAssembler
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/execution_report_assembler.py`](/src/teddy_executor/core/ports/outbound/execution_report_assembler.py)
 
 ## Purpose

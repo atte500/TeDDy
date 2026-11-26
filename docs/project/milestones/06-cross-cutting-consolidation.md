@@ -4,7 +4,7 @@
 - **Depends On:** None
 - **Specs:** None. Every requirement preserves an existing format or fixes a boundary; the one documented exception is stated under Constraints.
 
-## Goal
+## Motivation
 Give every concept that currently lives in more than one place one authoritative definition — production literals and helpers, exception types, harness doubles, and the action-type registration surface — so a change lands once instead of four times, and finish the two bounded sweeps that the duplication allowed to persist: silent-error transparency and boundary translation.
 
 ## Requirements

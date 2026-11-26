@@ -1,5 +1,6 @@
 # Component Design: ProjectContext
 - **Status:** Refactoring
+- **Classification:** Core Domain
 - **Source:** [`src/teddy_executor/core/domain/models/project_context.py`](/src/teddy_executor/core/domain/models/project_context.py)
 
 ## Purpose

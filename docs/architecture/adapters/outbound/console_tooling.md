@@ -1,5 +1,6 @@
 # Component Design: ConsoleToolingHelper
 - **Status:** Implemented
+- **Classification:** Outbound Adapter
 - **Source:** [`src/teddy_executor/adapters/outbound/console_tooling.py`](/src/teddy_executor/adapters/outbound/console_tooling.py)
 
 ## Purpose

@@ -1,5 +1,6 @@
 # Component Design: TestEnvironment
 - **Status:** Implemented
+- **Classification:** Test Setup
 - **Source:** [`tests/harness/setup/test_environment.py`](/tests/harness/setup/test_environment.py)
 
 ## Purpose

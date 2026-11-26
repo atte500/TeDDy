@@ -1,5 +1,6 @@
 # Component Design: ExecutionReport
 - **Status:** Implemented
+- **Classification:** Core Domain
 - **Source:** [`src/teddy_executor/core/domain/models/execution_report.py`](/src/teddy_executor/core/domain/models/execution_report.py)
 
 ## Purpose

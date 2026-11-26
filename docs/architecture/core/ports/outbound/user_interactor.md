@@ -1,5 +1,6 @@
 # Component Design: IUserInteractor
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/user_interactor.py`](/src/teddy_executor/core/ports/outbound/user_interactor.py)
 
 ## Purpose

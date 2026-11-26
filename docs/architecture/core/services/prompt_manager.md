@@ -1,5 +1,6 @@
 # Component Design: PromptManager
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/prompt_manager.py`](/src/teddy_executor/core/services/prompt_manager.py)
 
 ## Purpose

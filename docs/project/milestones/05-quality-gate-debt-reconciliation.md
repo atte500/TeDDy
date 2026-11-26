@@ -4,7 +4,7 @@
 - **Depends On:** None
 - **Specs:** None. Every requirement is measurement, enforcement, or removal; the formats it guards are specified by [Report Format](/docs/project/specs/report-format.md) and [Plan Format](/docs/project/specs/plan-format.md), and neither changes here.
 
-## Goal
+## Motivation
 Drive every blocking quality gate green, replace the bypass policy's prose with a check that fails the build, split CI into a blocking static-analysis job and an advisory metrics job, and prune the test cases whose behaviour a lower tier already pins. The advisory job stays advisory (2026-11-26 product decision): its file-length cap rises from 300 to 500 lines and nothing in it gains a merge veto. No requirement changes runtime behaviour.
 
 ## Requirements
@@ -27,6 +27,8 @@ Drive every blocking quality gate green, replace the bypass policy's prose with 
 - **Debt disposition — owned by other milestones:** the `InterruptGuard.enter_waiting` contraction ([04-02](/docs/project/slices/04-02-waiting-feedback.md)); preservation-arm extraction ([06-01](/docs/project/slices/06-01-literal-helper-single-sourcing.md)); the three `InMemoryFileSystem` fakes, the hand-written `ISessionManager` double, private-collaborator access around `SessionPruningService`, and the TUI preview-test mock migration ([06-03](/docs/project/slices/06-03-shared-harness-doubles.md)); the two `SessionReplanner` / `SessionPruningService` swallows ([06-04](/docs/project/slices/06-04-failure-transparency-sweep.md)); the `SessionLifecycleManager` component page and the dead `trigger_replan` parameter ([06-07](/docs/project/slices/06-07-user-request-render-alignment.md)); the VCP POSIX-shell friction and the fix-safe sentinel ([06-06](/docs/project/slices/06-06-tooling-migration.md)); the action-registration collapse ([06-08](/docs/project/slices/06-08-action-registration-collapse.md)).
 - **Debt disposition — deferred to [Milestone 7](/docs/project/milestones/07-runtime-reliability.md):** both `meta.yaml` write/read atomicity and the prohibition on folding the `execution.started` marker in before it lands; the order-dependent recursion flake, the retry-exhaustion sibling double, and the preflight stdin flake; the wall-clock latency budgets and their CI skipif; the exhaustive matcher tier's latency; the matcher's asymmetric ambiguity guard; the interactive-prompt sentinel's false positive; the resume state machine's two-factor inference (the non-communication `PENDING_PLAN` reply path is measured delivered and pinned by [07-05](/docs/project/slices/07-05-resume-state-truth.md) instead); the six `yaml`/`typer` imports inside `core`; the report-template render-site merge and the ReportParser inline extraction; and the hand-written contract double's autospec convention.
 - **Resolved and removed:** the unreachable pruning readers were deleted by an earlier slice, so no work remains.
+
+- **Debt disposition — unowned, needs its own slice:** a structural hook asserting that every component doc under `docs/architecture/` declares a `Classification` matching the leaf directory its `Source` path implies. The 2026-11-26 backfill classified 82 docs by hand; without the check, the first new component doc reintroduces the gap. No requirement here owns it, so it is recorded rather than scheduled.
 
 ## Slices
 - [ ] [05-01 Static Analysis Green](/docs/project/slices/05-01-static-analysis-green.md)

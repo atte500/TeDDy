@@ -1,5 +1,6 @@
 # Component Design: MessageRenderer
 - **Status:** Implemented
+- **Classification:** Core Utility
 - **Source:** [`src/teddy_executor/core/utils/message_renderer.py`](/src/teddy_executor/core/utils/message_renderer.py)
 
 ## Purpose

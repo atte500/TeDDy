@@ -1,5 +1,6 @@
 # Component Design: ActionPorts
 - **Status:** Implemented
+- **Classification:** Core Domain
 - **Source:** [`src/teddy_executor/core/domain/models/action_ports.py`](/src/teddy_executor/core/domain/models/action_ports.py)
 
 ## Purpose

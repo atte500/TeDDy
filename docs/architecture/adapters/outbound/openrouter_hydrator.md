@@ -1,5 +1,6 @@
 # Component Design: OpenRouterMetadataHydrator
 - **Status:** Implemented
+- **Classification:** Outbound Adapter
 - **Source:** [`src/teddy_executor/adapters/outbound/openrouter_hydrator.py`](/src/teddy_executor/adapters/outbound/openrouter_hydrator.py)
 
 ## Purpose

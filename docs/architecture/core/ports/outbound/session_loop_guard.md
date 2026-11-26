@@ -1,5 +1,6 @@
 # Component Design: ISessionLoopGuard
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/session_loop_guard.py`](/src/teddy_executor/core/ports/outbound/session_loop_guard.py)
 
 ## Purpose

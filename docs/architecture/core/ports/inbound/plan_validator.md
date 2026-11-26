@@ -1,5 +1,6 @@
 # Component Design: IPlanValidator
 - **Status:** Implemented
+- **Classification:** Core Inbound Port
 - **Source:** [`src/teddy_executor/core/ports/inbound/plan_validator.py`](/src/teddy_executor/core/ports/inbound/plan_validator.py)
 
 ## Purpose

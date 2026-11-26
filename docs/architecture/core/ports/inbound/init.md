@@ -1,5 +1,6 @@
 # Component Design: IInitUseCase
 - **Status:** Implemented
+- **Classification:** Core Inbound Port
 - **Source:** [`src/teddy_executor/core/ports/inbound/init.py`](/src/teddy_executor/core/ports/inbound/init.py)
 
 ## Purpose

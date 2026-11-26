@@ -1,5 +1,6 @@
 # Component Design: MarkdownPlanParser
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/markdown_plan_parser.py`](/src/teddy_executor/core/services/markdown_plan_parser.py)
 
 ## Purpose

@@ -1,5 +1,6 @@
 # Component Design: WebContentCache
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/web_content_cache.py`](/src/teddy_executor/core/ports/outbound/web_content_cache.py)
 
 ## Purpose

@@ -1,5 +1,6 @@
 # Component Design: ShellOutput
 - **Status:** Implemented
+- **Classification:** Core Domain
 - **Source:** [`src/teddy_executor/core/domain/models/shell_output.py`](/src/teddy_executor/core/domain/models/shell_output.py)
 
 ## Purpose

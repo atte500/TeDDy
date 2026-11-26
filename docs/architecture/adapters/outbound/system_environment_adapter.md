@@ -1,5 +1,6 @@
 # Component Design: SystemEnvironmentAdapter
 - **Status:** Implemented
+- **Classification:** Outbound Adapter
 - **Source:** [`src/teddy_executor/adapters/outbound/system_environment_adapter.py`](/src/teddy_executor/adapters/outbound/system_environment_adapter.py)
 
 ## Purpose

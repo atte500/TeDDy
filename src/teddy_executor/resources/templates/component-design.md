@@ -1,9 +1,11 @@
 <!--
-Destination: docs/architecture/{boundary}/{layer}/{type}/{component-name}.md
+Destination: docs/architecture/{boundary}/{layer}/{component-name}.md
+Layers: core/{domain,services,utils,ports/inbound,ports/outbound}, adapters/{inbound,outbound}, tests/{drivers,observers,setup}
 -->
 
 # Component Design: {{Component Name}}
 - **Status:** [Planned | Implemented | Refactoring]
+- **Classification:** [Core Domain | Core Inbound Port | Core Outbound Port | Core Service | Core Utility | Inbound Adapter | Outbound Adapter | Test Driver | Test Observer | Test Setup]
 - **Source:** [`src/path/to/file.ext`](/src/path/to/file.ext)
 
 ## Purpose

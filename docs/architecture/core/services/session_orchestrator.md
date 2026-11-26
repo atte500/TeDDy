@@ -1,5 +1,6 @@
 # Component Design: SessionOrchestrator
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/session_orchestrator.py`](/src/teddy_executor/core/services/session_orchestrator.py)
 
 ## Purpose

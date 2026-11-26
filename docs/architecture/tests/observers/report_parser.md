@@ -1,5 +1,6 @@
 # Component Design: ReportParser
 - **Status:** Implemented
+- **Classification:** Test Observer
 - **Source:** [`tests/harness/observers/report_parser.py`](/tests/harness/observers/report_parser.py)
 
 ## Purpose

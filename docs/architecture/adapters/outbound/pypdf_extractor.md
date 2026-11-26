@@ -1,5 +1,6 @@
 # Component Design: PypdfExtractor
 - **Status:** Implemented
+- **Classification:** Outbound Adapter
 - **Source:** [`src/teddy_executor/adapters/outbound/pypdf_extractor.py`](/src/teddy_executor/adapters/outbound/pypdf_extractor.py)
 
 ## Purpose

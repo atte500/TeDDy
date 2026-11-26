@@ -1,5 +1,6 @@
 # Component Design: IGetContextUseCase
 - **Status:** Implemented
+- **Classification:** Core Inbound Port
 - **Source:** [`src/teddy_executor/core/ports/inbound/get_context_use_case.py`](/src/teddy_executor/core/ports/inbound/get_context_use_case.py)
 
 ## Purpose

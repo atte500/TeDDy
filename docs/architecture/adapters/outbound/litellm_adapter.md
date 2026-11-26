@@ -1,5 +1,6 @@
 # Component Design: LiteLLMAdapter
 - **Status:** Implemented
+- **Classification:** Outbound Adapter
 - **Source:** [`src/teddy_executor/adapters/outbound/litellm_adapter.py`](/src/teddy_executor/adapters/outbound/litellm_adapter.py)
 
 ## Purpose

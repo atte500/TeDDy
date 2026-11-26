@@ -1,5 +1,6 @@
 # Component Design: TokenUsage
 - **Status:** Implemented
+- **Classification:** Core Domain
 - **Source:** [`src/teddy_executor/core/domain/models/token_usage.py`](/src/teddy_executor/core/domain/models/token_usage.py)
 
 ## Purpose

@@ -1,5 +1,6 @@
 # Component Design: EditScenarios
 - **Status:** Implemented
+- **Classification:** Test Setup
 - **Source:** [`tests/harness/setup/edit_scenarios.py`](/tests/harness/setup/edit_scenarios.py)
 
 ## Purpose

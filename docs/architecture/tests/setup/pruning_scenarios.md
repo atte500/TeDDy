@@ -1,5 +1,6 @@
 # Component Design: PruningScenarios (Setup)
 - **Status:** Implemented
+- **Classification:** Test Setup
 - **Source:** [`tests/harness/setup/pruning_scenarios.py`](/tests/harness/setup/pruning_scenarios.py)
 
 ## Purpose

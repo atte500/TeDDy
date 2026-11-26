@@ -1,5 +1,6 @@
 # Component Design: ILlmClient
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/llm_client.py`](/src/teddy_executor/core/ports/outbound/llm_client.py)
 
 ## Purpose

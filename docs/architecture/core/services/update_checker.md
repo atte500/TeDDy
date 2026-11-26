@@ -1,5 +1,6 @@
 # Component Design: UpdateChecker
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/update_checker.py`](/src/teddy_executor/core/services/update_checker.py)
 
 ## Purpose

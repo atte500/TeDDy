@@ -1,5 +1,6 @@
 # Component Design: MarkdownReportFormatter
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/markdown_report_formatter.py`](/src/teddy_executor/core/services/markdown_report_formatter.py)
 
 ## Purpose

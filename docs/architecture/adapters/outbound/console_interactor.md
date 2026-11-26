@@ -1,5 +1,6 @@
 # Component Design: ConsoleInteractorAdapter
 - **Status:** Implemented
+- **Classification:** Outbound Adapter
 - **Source:** [`src/teddy_executor/adapters/outbound/console_interactor.py`](/src/teddy_executor/adapters/outbound/console_interactor.py)
 
 ## Purpose

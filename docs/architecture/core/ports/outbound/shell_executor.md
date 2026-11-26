@@ -1,5 +1,6 @@
 # Component Design: IShellExecutor
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/shell_executor.py`](/src/teddy_executor/core/ports/outbound/shell_executor.py)
 
 ## Purpose

@@ -1,5 +1,6 @@
 # Component Design: ExecutionOrchestrator
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/execution_orchestrator.py`](/src/teddy_executor/core/services/execution_orchestrator.py)
 
 ## Purpose

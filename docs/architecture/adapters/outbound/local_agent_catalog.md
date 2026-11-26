@@ -1,5 +1,6 @@
 # Component Design: LocalAgentCatalog
 - **Status:** Planned
+- **Classification:** Outbound Adapter
 - **Source:** [`src/teddy_executor/adapters/outbound/local_agent_catalog.py`](/src/teddy_executor/adapters/outbound/local_agent_catalog.py)
 
 ## Purpose

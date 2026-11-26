@@ -1,5 +1,6 @@
 # Component Design: WebContentService
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/web_content_service.py`](/src/teddy_executor/core/services/web_content_service.py)
 
 ## Purpose

@@ -1,5 +1,6 @@
 # Component Design: WebScraper
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/web_scraper.py`](/src/teddy_executor/core/ports/outbound/web_scraper.py)
 
 ## Purpose

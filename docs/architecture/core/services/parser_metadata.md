@@ -1,5 +1,6 @@
 # Component Design: Parser Metadata
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/parser_metadata.py`](/src/teddy_executor/core/services/parser_metadata.py)
 
 ## Purpose

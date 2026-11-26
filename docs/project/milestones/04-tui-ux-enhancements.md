@@ -4,7 +4,7 @@
 - **Depends On:** None
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md), [Plan Format](/docs/project/specs/plan-format.md), [Plan Format Validation](/docs/project/specs/plan-format-validation.md)
 
-## Goal
+## Motivation
 Make the interactive reviewer truthful about the session it is showing: which model is answering, what it has cost, which files the next turn carries, and what each key does on every node. The same pass closes the protocol gaps an interactive workflow exposes — a rename or removal that leaves a context manifest pointing at a dead path, a report that orders actions by how they were written rather than how they ran, a rationale section that vanishes because the reviewer recognizes only four headings — and gives the unattended `execute` run the interrupt handling the session loop already has.
 
 ## Requirements

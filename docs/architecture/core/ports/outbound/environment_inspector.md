@@ -1,5 +1,6 @@
 # Component Design: IEnvironmentInspector
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/environment_inspector.py`](/src/teddy_executor/core/ports/outbound/environment_inspector.py)
 
 ## Purpose

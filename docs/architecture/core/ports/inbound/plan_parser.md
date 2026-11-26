@@ -1,5 +1,6 @@
 # Component Design: IPlanParser
 - **Status:** Implemented
+- **Classification:** Core Inbound Port
 - **Source:** [`src/teddy_executor/core/ports/inbound/plan_parser.py`](/src/teddy_executor/core/ports/inbound/plan_parser.py)
 
 ## Purpose

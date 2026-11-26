@@ -1,5 +1,6 @@
 # Component Design: EditMatcher
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/validation_rules/edit_matcher.py`](/src/teddy_executor/core/services/validation_rules/edit_matcher.py)
 
 ## Purpose

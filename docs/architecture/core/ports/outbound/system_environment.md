@@ -1,5 +1,6 @@
 # Component Design: ISystemEnvironment
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/system_environment.py`](/src/teddy_executor/core/ports/outbound/system_environment.py)
 
 ## Purpose

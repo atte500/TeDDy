@@ -1,5 +1,6 @@
 # Component Design: CLI Adapter
 - **Status:** Implemented
+- **Classification:** Inbound Adapter
 - **Source:** [`src/teddy_executor/__main__.py`](/src/teddy_executor/__main__.py)
 
 ## Purpose

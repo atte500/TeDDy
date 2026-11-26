@@ -1,5 +1,6 @@
 # Component Design: WebContentCacheAdapter
 - **Status:** Implemented
+- **Classification:** Outbound Adapter
 - **Source:** [`src/teddy_executor/adapters/outbound/web_content_cache_adapter.py`](/src/teddy_executor/adapters/outbound/web_content_cache_adapter.py)
 
 ## Purpose

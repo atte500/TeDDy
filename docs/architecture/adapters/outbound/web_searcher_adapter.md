@@ -1,5 +1,6 @@
 # Component Design: WebSearcherAdapter
 - **Status:** Implemented
+- **Classification:** Outbound Adapter
 - **Source:** [`src/teddy_executor/adapters/outbound/web_searcher_adapter.py`](/src/teddy_executor/adapters/outbound/web_searcher_adapter.py)
 
 ## Purpose

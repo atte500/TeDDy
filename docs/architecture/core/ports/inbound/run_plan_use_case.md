@@ -1,5 +1,6 @@
 # Component Design: IRunPlanUseCase
 - **Status:** Implemented
+- **Classification:** Core Inbound Port
 - **Source:** [`src/teddy_executor/core/ports/inbound/run_plan_use_case.py`](/src/teddy_executor/core/ports/inbound/run_plan_use_case.py)
 
 ## Purpose

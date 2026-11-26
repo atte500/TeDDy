@@ -1,5 +1,6 @@
 # Component Design: LocalRepoTreeGenerator
 - **Status:** Implemented
+- **Classification:** Outbound Adapter
 - **Source:** [`src/teddy_executor/adapters/outbound/local_repo_tree_generator.py`](/src/teddy_executor/adapters/outbound/local_repo_tree_generator.py)
 
 ## Purpose

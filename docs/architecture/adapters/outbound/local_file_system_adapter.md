@@ -1,5 +1,6 @@
 # Component Design: LocalFileSystemAdapter
 - **Status:** Implemented
+- **Classification:** Outbound Adapter
 - **Source:** [`src/teddy_executor/adapters/outbound/local_file_system_adapter.py`](/src/teddy_executor/adapters/outbound/local_file_system_adapter.py)
 
 ## Purpose

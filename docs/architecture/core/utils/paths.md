@@ -1,5 +1,6 @@
 # Component Design: Shared Path Utilities
 - **Status:** Implemented
+- **Classification:** Core Utility
 - **Source:** [`src/teddy_executor/core/utils/paths.py`](/src/teddy_executor/core/utils/paths.py)
 
 ## Purpose

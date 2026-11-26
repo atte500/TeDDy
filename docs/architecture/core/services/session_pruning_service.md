@@ -1,5 +1,6 @@
 # Component Design: SessionPruningService
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/session_pruning_service.py`](/src/teddy_executor/core/services/session_pruning_service.py)
 
 ## Purpose

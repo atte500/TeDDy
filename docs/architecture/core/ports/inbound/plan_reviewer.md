@@ -1,5 +1,6 @@
 # Component Design: IPlanReviewer
 - **Status:** Implemented
+- **Classification:** Core Inbound Port
 - **Source:** [`src/teddy_executor/core/ports/inbound/plan_reviewer.py`](/src/teddy_executor/core/ports/inbound/plan_reviewer.py)
 
 ## Purpose

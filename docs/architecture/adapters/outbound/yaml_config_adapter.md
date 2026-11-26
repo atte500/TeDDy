@@ -1,5 +1,6 @@
 # Component Design: YamlConfigAdapter
 - **Status:** Implemented
+- **Classification:** Outbound Adapter
 - **Source:** [`src/teddy_executor/adapters/outbound/yaml_config_adapter.py`](/src/teddy_executor/adapters/outbound/yaml_config_adapter.py)
 
 ## Purpose

@@ -1,5 +1,6 @@
 # Component Design: Action Parser Strategies
 - **Status:** Implemented
+- **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/action_parser_strategies.py`](/src/teddy_executor/core/services/action_parser_strategies.py)
 
 ## Purpose

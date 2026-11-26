@@ -1,5 +1,6 @@
 # Component Design: Test Composition
 - **Status:** Implemented
+- **Classification:** Test Setup
 - **Source:** [`tests/harness/setup/composition.py`](/tests/harness/setup/composition.py)
 
 ## Purpose

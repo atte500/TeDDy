@@ -1,5 +1,6 @@
 # Component Design: IPdfExtractor
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/pdf_extractor.py`](/src/teddy_executor/core/ports/outbound/pdf_extractor.py)
 
 ## Purpose

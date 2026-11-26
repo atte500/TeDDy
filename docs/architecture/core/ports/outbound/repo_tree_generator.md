@@ -1,5 +1,6 @@
 # Component Design: IRepoTreeGenerator
 - **Status:** Implemented
+- **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/repo_tree_generator.py`](/src/teddy_executor/core/ports/outbound/repo_tree_generator.py)
 
 ## Purpose

@@ -4,7 +4,7 @@
 - **Depends On:** None
 - **Specs:** None. Every requirement fixes a defect with an observable failure mode; none changes a specified format.
 
-## Goal
+## Motivation
 Remove the reliability defects and layering violations that the consolidation program does not own: make session metadata survive a hard kill, make the suite's flakes and latency budgets deterministic, bound the two heuristics that can silently degrade a run, collapse the resume state machine to one source of truth, and take the adapter libraries out of `core`. Each item was previously a numbered debt entry with no owning slice.
 
 ## Requirements
