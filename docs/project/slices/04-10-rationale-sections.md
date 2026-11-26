@@ -1,5 +1,5 @@
 # Slice: Rationale Sections as Authored
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** [Plan Format](/docs/project/specs/plan-format.md)
@@ -70,13 +70,18 @@ Then a leading Untitled node holds that paragraph
 5. `[MIGRATE]` The reviewer component page's `rationale_heading_only` invariant — restated as "every level-three heading is a section, fences respected, preamble preserved, and a heading-less rationale renders as `Untitled`".
 
 ## Deliverables
-- [ ] **Harness** — Add a rationale fixture builder emitting preamble, protocol sections, non-protocol sections, and fenced blocks with `### ` content, so every splitter branch is drivable from one helper.
-- [ ] **Adapter** — Implement `rationale_sections` as a pure fence-aware splitter with unit tests for the preamble, the four-hash line, tilde and long fences, an unclosed fence, an empty section, duplicates, and an indented heading, and rename `RATIONALE_FALLBACK_TITLE` to `Untitled` with its two docstrings.
-- [ ] **Wiring** — Switch `handle_mount_logic` onto `rationale_sections`, preserving the quieter fallback styling, and prove a non-protocol heading reaches the tree end to end.
-- [ ] **Refactor** — Delete the three superseded helpers and replace the two pinned tests, keeping the suite green throughout.
+- [x] **Harness** — Add a rationale fixture builder emitting preamble, protocol sections, non-protocol sections, and fenced blocks with `### ` content, so every splitter branch is drivable from one helper.
+- [ ] **Adapter** — Implement `rationale_sections` as a pure fence-aware splitter in `textual_plan_reviewer_logic.py` with unit tests in `tests/suites/unit/adapters/inbound/test_rationale_sections.py` covering the preamble, the four-hash line, tilde and long fences, an unclosed fence, an empty section, duplicates, and an indented heading; rename `RATIONALE_FALLBACK_TITLE` to `Untitled` with its two docstrings and update the `["Raw"]` label assertion in the sectionless acceptance test so the suite stays green.
+- [ ] **Wiring** — Switch `handle_mount_logic` onto `rationale_sections`, preserving the quieter fallback styling, replace `test_tui_only_accepts_markdown_headings` with an acceptance test proving a non-protocol heading reaches the tree, and keep the sectionless test green against the new splitter.
+- [ ] **Refactor** — Delete `ALLOWED_RATIONALE_SECTIONS`, `recognized_rationale_sections`, and `rationale_entries`, move `_rationale_content`'s surviving coverage into `test_rationale_sections.py`, and delete `test_section_filtering.py`, keeping the suite green throughout.
 - [ ] **Cleanup** — Restate the `rationale_heading_only` invariant in the reviewer component page as the new fence-aware rule, with `Untitled` as the fallback label.
 
 ## Implementation Notes
+
+- **Harness builder splits into fragments, not literals.** `section(title, body)`, `fenced(body, fence)`, `rationale(*blocks)` and `sections(pairs)` compose every fixture, so a scenario states which branch it drives instead of carrying opaque Markdown. `rationale` joins with `\n\n` and blocks carry no trailing newline, which is what keeps exactly one blank line between two sections.
+- **Branch shapes stay literal where a helper would obscure them.** `EMPTY_SECTION_RATIONALE`, `DUPLICATE_TITLE_RATIONALE`, `TRAILING_WHITESPACE_HEADING`, `NON_SPLITTING_LINES` and the `unclosed` variant are written out verbatim, because a builder that could emit them cleanly would also hide the very shape the Adapter test asserts on.
+- **`HIDDEN_HEADING` is named once** so the `FENCED_HEADING_RATIONALES` parametrization can prove each of the four fence variants (backtick, tilde, longer, unclosed) really carries a `### ` line that a naive splitter would tear apart — the property that makes those fixtures worth having.
+- **Red was a real collection failure**, `ModuleNotFoundError: tests.harness.setup.rationale_scenarios`, before the module existed; Green reported 24 passing tests (13 single cases plus the 3-, 4-, and 3-case parametrizations, matching the plan's expectation of 23 plus one more uncovered by the count).
 
 ## Verification
 1. **Non-protocol section:**
