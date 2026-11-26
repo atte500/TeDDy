@@ -34,7 +34,9 @@ def test_planning_service_uses_configured_retries(container: Any) -> None:
     service = PlanningService(ports)
 
     # Act
-    service._perform_generation_with_retry(messages=[], model="test-model")
+    service._perform_generation_with_retry(
+        messages=[], model="test-model", agent_name="pathfinder"
+    )
 
     # Assert
     # 5 attempts expected if PlanningService is updated to use the config
@@ -68,7 +70,7 @@ def test_retry_loop_accumulates_cost_across_billed_attempts(container: Any) -> N
 
     # Act
     _, plan_content, turn_cost = service._perform_generation_with_retry(
-        messages=[], model="test-model"
+        messages=[], model="test-model", agent_name="pathfinder"
     )
 
     # Assert: both billed attempts contribute; the retry does not discard the first
@@ -101,7 +103,7 @@ def test_single_successful_attempt_is_billed_exactly_once(container: Any) -> Non
 
     # Act
     _, _, turn_cost = service._perform_generation_with_retry(
-        messages=[], model="test-model"
+        messages=[], model="test-model", agent_name="pathfinder"
     )
 
     # Assert

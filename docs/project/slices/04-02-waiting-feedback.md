@@ -78,7 +78,7 @@ Then the indicator is already stopped and the error text prints without animatio
 ## Deliverables
 - [x] **Interface** — Add `begin_waiting(message: str)` and `end_waiting()` to `IUserInteractor` with contract docs pinning that they are display-only, must never raise, must tolerate an unbalanced `end_waiting`, are no-ops without an attached terminal, never alter a line they did not print, and never touch stdin or a signal handler.
 - [x] **Harness** — Register recording no-op defaults for both methods in `TestEnvironment._apply_interactor_defaults` so harness-driven planning flows stay deterministic and the call sequence is assertable.
-- [ ] **Wiring** — Call `begin_waiting` before the retry loop and `end_waiting` in a `finally` inside `PlanningService._perform_generation_with_retry`, then extend the planning-service unit coverage to assert the begin/end order around a stubbed completion. Delete `InterruptGuard.enter_waiting` and its dedicated test in the same change, because the guard is a CLI-boundary process-global that never reaches `PlanningService`.
+- [x] **Wiring** — Call `begin_waiting` before the retry loop and `end_waiting` in a `finally` inside `PlanningService._perform_generation_with_retry`, then extend the planning-service unit coverage to assert the begin/end order around a stubbed completion. Delete `InterruptGuard.enter_waiting` and its dedicated test in the same change, because the guard is a CLI-boundary process-global that never reaches `PlanningService`.
 - [ ] **Adapter** — Implement `WaitingIndicator` in `adapters/outbound/console_waiting_indicator.py` and delegate both `ConsoleInteractorAdapter` methods to it, with unit tests covering the terminal gate, unbalanced end, nested begin, exception unwinding, interrupt teardown, and the interpreter-exit hook that stops a region abandoned on the daemon worker.
 - [ ] **Cleanup** — Update the `ConsoleInteractor` and `PlanningService` component docs, add the slice to the Milestone 4 delivered list, and remove this slice's Key Unknown once the prototype answers it.
 
@@ -103,6 +103,19 @@ Contract coverage lives at `tests/suites/unit/core/ports/outbound/test_user_inte
 The registration fixes a real unfaithfulness rather than a cosmetic one. The harness double is a `POSIXPathMock(spec=IUserInteractor)`, and an auto-specced double answers an *unregistered* operation with a truthy dynamic child mock — the Red run printed `assert <POSIXPathMock name='mock.begin_waiting()' ...> is None`. The port's contract is `None`, so before this change a harness-driven planning flow observed a fabricated answer. The rule generalizes: any port operation whose contract is "returns None" needs that `None` registered explicitly in the harness, because the mock's default answer is never `None`. Calls stay recorded either way, which is what keeps the upcoming bracketing order assertable from the double.
 
 Full suite after the change: 2636 passed, 5 skipped — the previous 2634 plus exactly the two new tests, so no fixture-consuming suite was disturbed.
+
+### Wiring — delivered
+
+`PlanningService._perform_generation_with_retry` now brackets its **entire** retry loop with `begin_waiting` and a `finally`-guarded `end_waiting`, and the responding persona's name reaches it as a keyword-only `agent_name` threaded `generate_plan` → `_run_planning_phase` → `_perform_generation_with_retry`. Coverage lives at `tests/suites/unit/core/services/test_planning_service_waiting.py` (4 tests): the begin-before/completion/end-after ordering, the label naming the agent, unwinding when the completion raises, and one region spanning a retry.
+
+Three decisions carry the behaviour:
+- **One region spans every attempt.** Bracketing the loop rather than each attempt is what satisfies the retry-notice edge case: the notice prints on its own line while the region stays open, so the user can read both, and the indicator never flickers between attempts. The `finally` erases the region before a raising completion propagates, so a traceback cannot interleave with the animation.
+- **The wording has one source.** A module-level `waiting_label(agent_name)` returns `Waiting for {agent} to respond...` and both the waiting banner and the transient line render it. The banner's bytes are unchanged, so no acceptance assertion moved — shadow logic is eliminated forward rather than in a later refactor.
+- **The prune dropped no coverage.** `InterruptGuard.enter_waiting` is deleted along with its dedicated case in `test_interrupt_guard.py` and the now-redundant wrapper in `test_interruptible_call.py` (the census held: zero production callers, exactly two test-side users). The deleted test asserted "a signal in WAITING raises immediately", which `test_default_phase_signal_raises_keyboard_interrupt` already pins — the guard's default phase *is* WAITING — so pruning a superseded test removed no invariant.
+
+`agent_name` is keyword-only on both new parameters, so the three existing retry call sites in `test_planning_service_retries.py` had to be migrated explicitly instead of silently absorbing a concrete default that constructor-injection purity forbids.
+
+Full suite after the change: 2639 passed, 5 skipped — the previous 2636, minus the one pruned guard case, plus exactly the four new waiting tests.
 
 ## Verification
 1. **Terminal animation:**

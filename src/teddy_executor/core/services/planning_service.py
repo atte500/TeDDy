@@ -10,6 +10,21 @@ from teddy_executor.core.utils.interruptible_call import run_interruptible
 from teddy_executor.core.utils.paths import session_root_from_turn_dir
 
 
+def waiting_label(agent_name: str) -> str:
+    """Return the single user-facing wording for a wait.
+
+    The banner and the transient indicator say the same thing from one source,
+    so the two can never drift apart.
+
+    Args:
+        agent_name: The persona that is answering.
+
+    Returns:
+        The label naming the responding persona.
+    """
+    return f"Waiting for {agent_name} to respond..."
+
+
 class PlanningService(IPlanningUseCase):
     """
     Orchestrates context gathering and LLM interaction to generate plans.
@@ -43,7 +58,7 @@ class PlanningService(IPlanningUseCase):
         if self._user_interactor:
             session_folder = turn_path.parent.name
             natural_name = re.sub(r"^\d{8}_\d{6}-", "", session_folder)
-            msg = f"\n[cyan][{turn_path.name}] {natural_name} | Waiting for {agent_name} to respond...[/cyan]"
+            msg = f"\n[cyan][{turn_path.name}] {natural_name} | {waiting_label(agent_name)}[/cyan]"
             self._user_interactor.display_message(msg)
 
         self._run_preflight_check()
@@ -113,7 +128,9 @@ class PlanningService(IPlanningUseCase):
         )
 
         response, token_count, plan_content, turn_cost = run_interruptible(
-            lambda: self._run_planning_phase(messages, model, meta, llm_overrides)
+            lambda: self._run_planning_phase(
+                messages, model, meta, llm_overrides, agent_name=agent_name
+            )
         )
 
         # Persist the explicit recorded-cost signal (Option B): a real price was
@@ -151,6 +168,8 @@ class PlanningService(IPlanningUseCase):
         model: str,
         meta: Dict[str, Any],
         llm_overrides: Optional[Dict[str, Any]] = None,
+        *,
+        agent_name: str,
     ) -> tuple[Any, int, str, float]:
         """Perform every blocking planning call on the interruptible worker.
 
@@ -179,6 +198,7 @@ class PlanningService(IPlanningUseCase):
             messages,
             model=model,
             llm_overrides=llm_overrides,
+            agent_name=agent_name,
         )
         return response, token_count, plan_content, turn_cost
 
@@ -187,6 +207,8 @@ class PlanningService(IPlanningUseCase):
         messages: list[Dict[str, str]],
         model: str,
         llm_overrides: Optional[Dict[str, Any]] = None,
+        *,
+        agent_name: str,
     ) -> tuple[Any, str, float]:
         """Implements retry loop for empty LLM content."""
         max_retries_val = self._config_service.get_setting("llm.max_retries")
@@ -194,28 +216,41 @@ class PlanningService(IPlanningUseCase):
         response = None
         plan_content = ""
         turn_cost = 0.0
+        interactor = self._user_interactor
 
-        for attempt in range(max_retries):
-            # The overlay key is added only when the persona configures one, so a
-            # project without an ``agents`` block issues the same call shape as
-            # before this feature existed.
-            completion_kwargs: Dict[str, Any] = {"messages": messages, "model": model}
-            if llm_overrides:
-                completion_kwargs["llm_overrides"] = llm_overrides
-            response = self._llm_client.get_completion(**completion_kwargs)
-            plan_content = self._extract_plan_content(response)
-            attempt_cost = self._llm_client.get_completion_cost(
-                response, model_override=model
-            )
-            turn_cost += attempt_cost
-
-            if plan_content and plan_content.strip():
-                break
-
-            if attempt < max_retries - 1 and self._user_interactor:
-                self._user_interactor.display_message(
-                    f"[yellow]Empty response received (Attempt {attempt + 1}/{max_retries}). Retrying...[/yellow]"
+        # One wait spans every attempt, so the indicator neither flickers
+        # between the retry notice and the next completion nor survives a
+        # failure: the ``finally`` erases it before the error propagates.
+        if interactor:
+            interactor.begin_waiting(waiting_label(agent_name))
+        try:
+            for attempt in range(max_retries):
+                # The overlay key is added only when the persona configures one, so a
+                # project without an ``agents`` block issues the same call shape as
+                # before this feature existed.
+                completion_kwargs: Dict[str, Any] = {
+                    "messages": messages,
+                    "model": model,
+                }
+                if llm_overrides:
+                    completion_kwargs["llm_overrides"] = llm_overrides
+                response = self._llm_client.get_completion(**completion_kwargs)
+                plan_content = self._extract_plan_content(response)
+                attempt_cost = self._llm_client.get_completion_cost(
+                    response, model_override=model
                 )
+                turn_cost += attempt_cost
+
+                if plan_content and plan_content.strip():
+                    break
+
+                if attempt < max_retries - 1 and interactor:
+                    interactor.display_message(
+                        f"[yellow]Empty response received (Attempt {attempt + 1}/{max_retries}). Retrying...[/yellow]"
+                    )
+        finally:
+            if interactor:
+                interactor.end_waiting()
 
         return response, plan_content, turn_cost
 

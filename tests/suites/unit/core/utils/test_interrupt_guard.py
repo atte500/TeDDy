@@ -84,15 +84,6 @@ class TestPhaseSignalHandling:
         finally:
             signal.signal(signal.SIGINT, previous)
 
-    def test_waiting_phase_signal_raises_keyboard_interrupt(self, guard) -> None:
-        handler, previous = self._installed_handler(guard)
-        try:
-            with guard.enter_waiting():
-                with pytest.raises(KeyboardInterrupt):
-                    handler(signal.SIGINT, None)
-        finally:
-            signal.signal(signal.SIGINT, previous)
-
     def test_executing_first_signal_sets_flag_without_raising(self, guard) -> None:
         handler, previous = self._installed_handler(guard)
         try:

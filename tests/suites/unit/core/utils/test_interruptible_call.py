@@ -105,8 +105,9 @@ def test_a_quit_wakes_the_waiter_before_the_worker_finishes() -> None:
     threading.Thread(target=_fire, daemon=True).start()
     started = time.perf_counter()
     try:
-        with guard.enter_waiting():
-            run_interruptible(lambda: time.sleep(worker_seconds))
+        # The guard's default phase is WAITING, so the delivered signal raises
+        # immediately without an explicit phase being entered.
+        run_interruptible(lambda: time.sleep(worker_seconds))
     except KeyboardInterrupt:
         observed = time.perf_counter() - started
     else:

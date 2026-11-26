@@ -1,12 +1,12 @@
 """Two-phase Ctrl+C interrupt guard.
 
-The guard installs the process SIGINT handler and exposes WAITING /
-EXECUTING phase context managers plus an `interrupted` threading.Event
-that the execution loop consults after each action to skip the remaining
-work gracefully (the report is still generated so the audit trail is
-preserved). Phase semantics (Task-Brief-approved): in WAITING (prompts,
-planning LLM call) a signal raises KeyboardInterrupt immediately — nothing
-is in flight. In EXECUTING the first signal sets the flag so the in-flight
+The guard installs the process SIGINT handler and exposes the EXECUTING
+phase context manager plus an `interrupted` threading.Event that the
+execution loop consults after each action to skip the remaining work
+gracefully (the report is still generated so the audit trail is preserved).
+Phase semantics: in the default WAITING phase (prompts, planning LLM call) a
+signal raises KeyboardInterrupt immediately — nothing is in flight. In
+EXECUTING the first signal sets the flag so the in-flight
 action can drain gracefully; a second signal within the grace window
 escalates to immediate termination; after the window the signal is
 treated as a new first signal (the window restarts).
@@ -95,16 +95,6 @@ class InterruptGuard:
         # the window restarts (the drain flag stays set).
         self._first_signal_at = now
         self.interrupted.set()
-
-    @contextmanager
-    def enter_waiting(self) -> Iterator["InterruptGuard"]:
-        """Marks the WAITING phase: signals raise KeyboardInterrupt."""
-        self._executing = False
-        self._first_signal_at = None
-        try:
-            yield self
-        finally:
-            self._first_signal_at = None
 
     @contextmanager
     def enter_executing(self) -> Iterator["InterruptGuard"]:
