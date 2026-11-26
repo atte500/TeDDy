@@ -5,12 +5,18 @@ planning service brackets around a model call. Two properties keep the
 extension additive: the operations carry no-op default bodies, so an adapter
 written against the older contract stays instantiable, and those bodies are
 silent, so an implementation that ignores them renders nothing.
+
+The silence cases drive the real default bodies through a hand-rolled
+conforming adapter, because an unbound receiver would assert about a shape the
+port never has.
 """
 
 import inspect
+from typing import Optional
 
 import pytest
 
+from teddy_executor.core.domain.models import ActionData, ChangeSet, Plan
 from teddy_executor.core.ports.outbound.user_interactor import IUserInteractor
 
 
@@ -34,6 +40,61 @@ def test_end_waiting_takes_no_argument() -> None:
     assert parameters == ["self"]
 
 
+class _SilentInteractor(IUserInteractor):
+    """A conforming adapter that inherits the port's default waiting bodies.
+
+    Every abstract operation answers trivially, so the two display-only
+    notifications under test are the inherited defaults rather than overrides.
+    """
+
+    def prompt(self, text: str, default: str = "") -> str:
+        return default
+
+    def ask_question(
+        self,
+        prompt: str,
+        resources: list[str] | None = None,
+        agent_name: Optional[str] = None,
+    ) -> str:
+        return ""
+
+    def display_message(self, message: str) -> None:
+        return None
+
+    def confirm_plan_review(self, plan: Plan) -> bool:
+        return True
+
+    def confirm_action(
+        self,
+        action: ActionData,
+        action_prompt: str,
+        change_set: Optional[ChangeSet] = None,
+    ) -> tuple[bool, str]:
+        return True, ""
+
+    def notify_skipped_action(self, action: ActionData, reason: str) -> None:
+        return None
+
+    def confirm_manual_handoff(
+        self,
+        action_type: str,
+        target_agent: str | None,
+        resources: list[str],
+        message: str,
+    ) -> tuple[bool, str]:
+        return True, ""
+
+    def notify_warning(self, message: str) -> None:
+        return None
+
+
+def _assert_no_output(capsys: pytest.CaptureFixture[str]) -> None:
+    """Assert the wait rendered no bytes at all."""
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
+
+
 def test_waiting_operations_are_not_abstract() -> None:
     """A shipped adapter must stay instantiable without overriding them.
 
@@ -45,30 +106,31 @@ def test_waiting_operations_are_not_abstract() -> None:
     assert "end_waiting" not in IUserInteractor.__abstractmethods__
 
 
-def test_default_bodies_render_nothing(capsys) -> None:
-    # Act: the base bodies touch no instance state, so they are exercised
-    # directly; an adapter overrides them to draw.
-    assert IUserInteractor.begin_waiting(None, "Waiting for pathfinder...") is None
-    assert IUserInteractor.end_waiting(None) is None
+def test_default_bodies_render_nothing(capsys: pytest.CaptureFixture[str]) -> None:
+    interactor = _SilentInteractor()
+
+    # Act: an adapter that ignores the notifications inherits these bodies.
+    interactor.begin_waiting("Waiting for pathfinder...")
+    interactor.end_waiting()
 
     # Assert: silence — no animation control characters, no stray line.
-    captured = capsys.readouterr()
-    assert captured.out == ""
-    assert captured.err == ""
+    _assert_no_output(capsys)
 
 
-def test_default_bodies_tolerate_unbalanced_and_nested_calls(capsys) -> None:
+def test_default_bodies_tolerate_unbalanced_and_nested_calls(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    interactor = _SilentInteractor()
+
     # Act: a defensive ``finally`` may end a region a failure already ended, and
     # a nested begin must not stack a second region.
-    IUserInteractor.end_waiting(None)
-    IUserInteractor.begin_waiting(None, "Waiting for pathfinder...")
-    IUserInteractor.begin_waiting(None, "Waiting again...")
-    IUserInteractor.end_waiting(None)
-    IUserInteractor.end_waiting(None)
+    interactor.end_waiting()
+    interactor.begin_waiting("Waiting for pathfinder...")
+    interactor.begin_waiting("Waiting again...")
+    interactor.end_waiting()
+    interactor.end_waiting()
 
-    captured = capsys.readouterr()
-    assert captured.out == ""
-    assert captured.err == ""
+    _assert_no_output(capsys)
 
 
 @pytest.mark.parametrize("operation", ["begin_waiting", "end_waiting"])

@@ -18,8 +18,7 @@ from __future__ import annotations
 
 import atexit
 import logging
-from functools import partial
-from typing import Callable, Protocol
+from typing import Callable, Protocol, TypeVar
 
 from rich.console import Console
 from rich.live import Live
@@ -48,25 +47,44 @@ class ILiveRegion(Protocol):
 
 
 class IExitHooks(Protocol):
-    """An exit-hook registry; the ``atexit`` module satisfies it structurally."""
+    """The two-operation slice of an exit-hook registry the indicator drives."""
 
     def register(self, hook: Callable[[], None]) -> None: ...
 
     def unregister(self, hook: Callable[[], None]) -> None: ...
 
 
+class AtexitExitHooks:
+    """Adapts the ``atexit`` module to ``IExitHooks``.
+
+    ``atexit.register`` returns the callable and accepts forwarded arguments, so
+    the module implements both operations without being structurally assignable
+    to this protocol. Narrowing it here is what lets the production bind site
+    type-check instead of being silenced with a cast.
+    """
+
+    def register(self, hook: Callable[[], None]) -> None:
+        atexit.register(hook)
+
+    def unregister(self, hook: Callable[[], None]) -> None:
+        atexit.unregister(hook)
+
+
 LiveFactory = Callable[[Console, Callable[[], Text]], ILiveRegion]
+
+LiveRegionT = TypeVar("LiveRegionT", bound=ILiveRegion)
 
 
 def create_live(
     console: Console,
     get_renderable: Callable[[], Text],
-    live_class: Callable[..., ILiveRegion],
-) -> ILiveRegion:
-    """Build the production live region for one wait.
+    live_class: Callable[..., LiveRegionT],
+) -> LiveRegionT:
+    """Build the live region for one wait, typed as the class handed in.
 
     ``live_class`` is supplied by the caller, so the composition site binds
-    ``Live`` and a test can bind a recording double instead.
+    ``Live`` and a test can bind a recording double — and receive that double
+    back, so its own lifecycle stays observable through the concrete type.
     """
     return live_class(
         console=console,
@@ -78,16 +96,24 @@ def create_live(
     )
 
 
+def _production_live_factory(
+    console: Console, get_renderable: Callable[[], Text]
+) -> ILiveRegion:
+    """Build one production region from rich's ``Live``."""
+    return create_live(console, get_renderable, Live)
+
+
 def create_indicator(console: Console) -> WaitingIndicator:
     """Build the production indicator for ``console``.
 
-    This is the one place rich's live region and the interpreter-exit registry
-    are bound, so the indicator stays constructible from recording doubles.
+    This is the one place the production region and the interpreter-exit
+    registry are bound, so the indicator stays constructible from recording
+    doubles.
     """
     return WaitingIndicator(
         console=console,
-        live_factory=partial(create_live, live_class=Live),
-        exit_hooks=atexit,
+        live_factory=_production_live_factory,
+        exit_hooks=AtexitExitHooks(),
     )
 
 

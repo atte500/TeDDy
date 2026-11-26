@@ -104,6 +104,15 @@ def _indicator(
     return indicator, factory, hooks
 
 
+def _begun_wait(
+    console: Console | None = None,
+) -> tuple[WaitingIndicator, RecordingLiveFactory, RecordingExitHooks]:
+    """Arrange an indicator whose transient line is already open."""
+    indicator, factory, hooks = _indicator(console or _terminal_console())
+    indicator.begin(LABEL)
+    return indicator, factory, hooks
+
+
 def test_redirected_stderr_renders_nothing() -> None:
     indicator, factory, hooks = _indicator(_redirected_console())
 
@@ -118,10 +127,9 @@ def test_redirected_stderr_renders_nothing() -> None:
 
 def test_the_region_opens_on_the_injected_console() -> None:
     console = _terminal_console()
-    indicator, factory, _ = _indicator(console)
 
     # Act
-    indicator.begin(LABEL)
+    _, factory, _ = _begun_wait(console)
 
     # Assert: one region, drawn on the console the adapter already owns.
     assert len(factory.created) == 1
@@ -131,45 +139,25 @@ def test_the_region_opens_on_the_injected_console() -> None:
     assert live.stop_count == 0
 
 
-def test_the_transient_line_carries_one_glyph_and_the_label() -> None:
-    indicator, factory, _ = _indicator(_terminal_console())
-
-    # Act
-    indicator.begin(LABEL)
-
-    # Assert: the core owns the wording, the indicator owns how it is drawn.
-    glyph, _, label = factory.created[0].render().partition(" ")
-    assert glyph == SPINNER_FRAMES[0]
-    assert label == LABEL
-
-
-def test_successive_refreshes_advance_the_glyph() -> None:
-    indicator, factory, _ = _indicator(_terminal_console())
+def test_the_transient_line_carries_the_label_and_advances_one_glyph_per_refresh() -> (
+    None
+):
+    _, factory, _ = _begun_wait()
+    live = factory.created[0]
 
     # Act: the region re-invokes the renderable on every refresh.
-    indicator.begin(LABEL)
-    live = factory.created[0]
     first = live.render()
     second = live.render()
 
+    # Assert: the core owns the wording, the indicator owns how it is drawn.
+    glyph, _, label = first.partition(" ")
+    assert glyph == SPINNER_FRAMES[0]
+    assert label == LABEL
+
     # Assert: from a frame counter, never the clock, so the wait looks alive
     # without a timestamp entering the assertion.
-    assert first.startswith(SPINNER_FRAMES[0])
     assert second.startswith(SPINNER_FRAMES[1])
     assert first != second
-
-
-def test_end_erases_the_region_and_forgets_the_exit_hook() -> None:
-    indicator, factory, hooks = _indicator(_terminal_console())
-
-    indicator.begin(LABEL)
-
-    # Act
-    indicator.end()
-
-    # Assert: the transient line is gone and no exit hook outlives the wait.
-    assert factory.created[0].stop_count == 1
-    assert hooks.registered == []
 
 
 def test_an_unbalanced_end_is_a_silent_noop() -> None:
@@ -185,9 +173,7 @@ def test_an_unbalanced_end_is_a_silent_noop() -> None:
 
 
 def test_a_nested_begin_replaces_the_label_without_stacking_a_region() -> None:
-    indicator, factory, hooks = _indicator(_terminal_console())
-
-    indicator.begin(LABEL)
+    indicator, factory, hooks = _begun_wait()
 
     # Act
     indicator.begin(NEXT_LABEL)
@@ -200,23 +186,22 @@ def test_a_nested_begin_replaces_the_label_without_stacking_a_region() -> None:
     assert len(hooks.registered) == 1
 
 
-def test_the_region_registers_one_exit_hook_for_the_wait() -> None:
-    indicator, _, hooks = _indicator(_terminal_console())
+def test_end_erases_the_region_and_forgets_the_one_exit_hook_of_the_wait() -> None:
+    indicator, factory, hooks = _begun_wait()
+    during = len(hooks.registered)
 
     # Act
-    indicator.begin(LABEL)
-    during = len(hooks.registered)
     indicator.end()
 
-    # Assert: exactly one hook while the region is open, none after it closes.
+    # Assert: exactly one hook guarded the open region, the transient line is
+    # gone, and no hook outlives the wait.
     assert during == 1
+    assert factory.created[0].stop_count == 1
     assert hooks.registered == []
 
 
 def test_the_exit_hook_stops_a_region_abandoned_by_a_daemon_worker() -> None:
-    indicator, factory, hooks = _indicator(_terminal_console())
-
-    indicator.begin(LABEL)
+    indicator, factory, hooks = _begun_wait()
     live = factory.created[0]
 
     # Act: the process exits while the region is still open on the worker, so

@@ -12,7 +12,7 @@ Owns the single transient stderr line drawn while a model generates a plan. It o
 ## Dependencies
 - **`rich.console.Console`**: The injected console whose `is_terminal` gates every render.
 - **`rich.live.Live`** (bound by `create_indicator`): The transient region hosting the animation.
-- **`atexit`** (bound by `create_indicator`): The exit-hook registry that erases a region abandoned by a killed daemon worker.
+- **`atexit`** (adapted by `AtexitExitHooks`, bound by `create_indicator`): The exit-hook registry that erases a region abandoned by a killed daemon worker. It is reached through an adapter because `atexit.register` returns the callable it receives and accepts forwarded arguments, so the module is not structurally assignable to `IExitHooks`.
 
 ## Class Invariants
 - `terminal_gate`: Without an attached terminal no region is ever created, because `Live.stop()` renders and a stray line would corrupt redirected logs and CI transcripts.
@@ -28,7 +28,7 @@ None — this is an outbound (driven) adapter.
 ## Outbound Ports
 - **`IWaitingIndicator`**: The waiting surface implemented by this adapter and consumed by `ConsoleInteractorAdapter`.
 - **`ILiveRegion`**: The narrow slice of a rich `Live` region the indicator drives (`start` / `stop`).
-- **`IExitHooks`**: The exit-hook registry shape (`register` / `unregister`) that `atexit` satisfies structurally.
+- **`IExitHooks`**: The exit-hook registry shape (`register` / `unregister`). `AtexitExitHooks` adapts the `atexit` module to it; the module itself is not structurally assignable, because its `register` returns the callable and accepts forwarded arguments.
 
 ## Data Contracts
 - **`LiveFactory`**: `Callable[[Console, Callable[[], Text]], ILiveRegion]` — builds the region for one wait.
@@ -48,10 +48,10 @@ None — this is an outbound (driven) adapter.
 - **Postconditions:** Erases the open region after clearing the region reference and removing the exit hook, so a failing stop strands nothing and a repeated call does nothing.
 - **Exceptions:** None — teardown runs inside a `finally` and must not corrupt the error that ended the wait.
 
-### `create_live(console, get_renderable, live_class) -> ILiveRegion`
-- **Preconditions:** `live_class` is a rich `Live`-compatible region class supplied by the caller.
-- **Postconditions:** Returns a transient region with `redirect_stdout=False` and `redirect_stderr=False`, because rich enables redirection unconditionally in `start()` and a worker thread would otherwise swap the process-global streams.
+### `create_live(console, get_renderable, live_class) -> LiveRegionT`
+- **Preconditions:** `live_class` is a region class supplied by the caller — rich's `Live` in production, a recording double in tests.
+- **Postconditions:** Returns an instance of exactly the class it was handed, so a caller that passes a concrete class keeps that type and can observe the region's own lifecycle. The region is transient with `redirect_stdout=False` and `redirect_stderr=False`, because rich enables redirection unconditionally in `start()` and a worker thread would otherwise swap the process-global streams.
 
 ### `create_indicator(console) -> WaitingIndicator`
 - **Preconditions:** `console` is the stderr console the adapter renders through.
-- **Postconditions:** Returns the production indicator. This is the one site binding `Live` and `atexit`, so no concrete default enters the indicator's constructor.
+- **Postconditions:** Returns the production indicator, binding `_production_live_factory` (rich's `Live`) and `AtexitExitHooks` (`atexit`), so no concrete default enters the indicator's constructor.

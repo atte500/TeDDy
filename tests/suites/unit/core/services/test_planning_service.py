@@ -18,7 +18,7 @@ from teddy_executor.core.ports.outbound import (
 from teddy_executor.core.ports.outbound.prompt_manager import IPromptManager
 from teddy_executor.core.services.planning_service import PlanningService
 from teddy_executor.core.utils.interrupt_guard import raise_interrupt
-from tests.harness.setup.mocking import POSIXPathMock
+from tests.harness.setup.mocking import POSIXPathMock, completion_response
 
 
 @pytest.fixture
@@ -610,11 +610,7 @@ def test_quit_during_planning_interrupts_the_planning_wait(env):
     def _blocking_completion(*_args: Any, **_kwargs: Any) -> Any:
         started.set()
         release.wait(timeout=3.0)
-        choice = POSIXPathMock()
-        choice.message.content = "# Plan\nContent"
-        response = POSIXPathMock()
-        response.choices = [choice]
-        return response
+        return completion_response("# Plan\nContent")
 
     mock_prompt.resolve_message.return_value = "test"
     mock_prompt.resolve_agent_metadata.return_value = ("pathfinder", {}, "meta.yaml")

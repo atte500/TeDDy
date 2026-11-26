@@ -176,3 +176,17 @@ def apply_tree_generator_defaults(mock: Any) -> None:
     mock.generate_tree.return_value = ""
     mock.max_depth = DEFAULT_APP_CONFIG.context.max_depth
     mock.max_children = DEFAULT_APP_CONFIG.context.max_children
+
+
+def completion_response(content: str) -> POSIXPathMock:
+    """Build a completion whose single choice carries ``content``.
+
+    Every planning suite arranges the same LiteLLM shape — one choice holding a
+    message body, wrapped in a response exposing ``choices`` — so the shape
+    lives here and a caller passes only the text its scenario needs.
+    """
+    choice = POSIXPathMock()
+    choice.message.content = content
+    response = POSIXPathMock()
+    response.choices = [choice]
+    return response
