@@ -189,8 +189,8 @@ def _is_context_data(data: Any) -> bool:
 def _rationale_content(data: Any) -> str | None:
     """Returns the rationale Markdown a section node renders, or ``None``.
 
-    The whole-block fallback is itself a section node, so every node that
-    carries rationale content uses the same dict shape.
+    Every section node carries the same dict shape, including the ``Untitled``
+    entry that holds preamble text or a heading-less rationale.
     """
     if isinstance(data, dict) and data.get("type") == "RATIONALE_SECTION":
         return str(data["content"])

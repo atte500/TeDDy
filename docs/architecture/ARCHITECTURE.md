@@ -153,6 +153,7 @@ This section serves as both the strategic **Boundary Map** and the detailed **Co
 | **ContainerStub** (Setup) | A punq-compatible container double that resolves mapped types, falls back to a bare `Mock()`, and records each `resolve` call's constructor kwargs so an injected seed stays observable. | [ContainerStub](./tests/setup/container_stub.md) |
 | **TuiDriver** (Driver) | Mounts the real `ReviewerApp` for a test, exposes an observation surface over the action tree, and yields a pilot whose tree holds focus. | [TuiDriver](./tests/drivers/tui_driver.md) |
 | **ReviewerContextScenarios** (Setup) | A data-only module of canonical context-panel shapes — every group, no History, no panel — plus the `### Summary` plan the navigation scenarios drive. | [ReviewerContextScenarios](./tests/setup/reviewer_context_scenarios.md) |
+| **RationaleScenarios** (Setup) | A data-only module of canonical rationale scenarios: fragment builders plus preamble, protocol, non-protocol, fenced-heading, non-splitting, empty-section, duplicate-title, and trailing-whitespace variants, so every splitter branch is drivable from one helper. | [RationaleScenarios](./tests/setup/rationale_scenarios.md) |
 
 ---
 
