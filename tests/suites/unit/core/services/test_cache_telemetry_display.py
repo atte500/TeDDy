@@ -108,6 +108,13 @@ def _session_cost_line(display_calls):
             "$0.0000",
             False,
         ),
+        (
+            {"cumulative_cost": 0.05, "model": "gpt-4o"},
+            0,
+            True,
+            "$0.0500",
+            False,
+        ),
     ],
     ids=[
         "cached-hit",
@@ -118,6 +125,7 @@ def _session_cost_line(display_calls):
         "no-cumulative-keys",
         "unknown-pricing",
         "free-model-zero-cost",
+        "priced-model-with-unresolved-window",
     ],
 )
 def test_session_cost_suffix_follows_the_cache_ratio(env, case):

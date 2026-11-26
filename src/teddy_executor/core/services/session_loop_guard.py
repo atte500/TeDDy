@@ -3,6 +3,7 @@ from typing import Any, Optional
 from teddy_executor.core.ports.outbound import IConfigService
 from teddy_executor.core.ports.outbound.session_loop_guard import ISessionLoopGuard
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
+from teddy_executor.core.utils.money import format_cost_usd
 
 
 class ProductionSessionLoopGuard(ISessionLoopGuard):
@@ -101,7 +102,8 @@ class ProductionSessionLoopGuard(ISessionLoopGuard):
 
             rel_path = _os.path.relpath(config_path)
             return False, (
-                f"Cost limit reached: ${cost_delta:.2f}/${max_cost:.2f} in this run.\n"
+                f"Cost limit reached: {format_cost_usd(cost_delta)}/"
+                f"{format_cost_usd(max_cost)} in this run.\n"
                 f"To change this limit, set 'guardrails.max_session_cost' in {rel_path}."
             )
 

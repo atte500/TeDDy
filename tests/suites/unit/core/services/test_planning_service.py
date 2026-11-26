@@ -199,6 +199,9 @@ def test_generate_plan_displays_sentinel_for_unknown_model_telemetry(env):
     )
     mock_llm.get_token_count.return_value = 1000
     mock_llm.get_context_window.return_value = 0  # Unknown
+    # Two unknown sentinels, two premises: the window drives the Context row,
+    # and an unpriceable model is what drives the cost row to $???.
+    mock_llm.supports_pricing.return_value = False
 
     from teddy_executor.core.services.planning_service import PlanningService
 

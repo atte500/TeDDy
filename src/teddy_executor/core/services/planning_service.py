@@ -7,7 +7,7 @@ from teddy_executor.core.domain.models.config_schema import (
 )
 from teddy_executor.core.ports.inbound.planning_use_case import IPlanningUseCase
 from teddy_executor.core.utils.interruptible_call import run_interruptible
-from teddy_executor.core.utils.money import resolve_session_cost
+from teddy_executor.core.utils.money import format_cost_usd, resolve_session_cost
 from teddy_executor.core.utils.paths import session_root_from_turn_dir
 
 
@@ -306,7 +306,6 @@ class PlanningService(IPlanningUseCase):
         context_window = self._safe_float(
             self._llm_client.get_context_window(model=model)
         )
-        cumulative_cost = self._safe_float(meta.get("cumulative_cost"))
 
         self._user_interactor.display_message(
             f"[blue]• Model:[/blue] [magenta]{model}[/magenta]"
@@ -317,20 +316,16 @@ class PlanningService(IPlanningUseCase):
             f"[blue]• Context:[/blue] [magenta]{token_count / 1000:.1f}k / {window_str} tokens[/magenta]"
         )
 
-        pricing_supported = self._llm_client.supports_pricing(model=model)
-        # Option B: gate on an explicit recorded-cost signal, never on
-        # `cumulative_cost > 0`, because a free model legitimately records 0.0
-        # and cannot be distinguished from "no cost" by cost > 0.
-        cost_recorded = meta.get("cost_recorded") is True
-        show_cost = context_window > 0 and (pricing_supported or cost_recorded)
-        cost_str = f"${cumulative_cost:.4f}" if show_cost else "$???"
+        session_cost = resolve_session_cost(
+            meta, self._llm_client.supports_pricing(model=model)
+        )
 
         cumulative_prompt = int(self._safe_float(meta.get("cumulative_prompt_tokens")))
         cumulative_cached = int(self._safe_float(meta.get("cumulative_cached_tokens")))
         cached_suffix = ""
         if (
-            show_cost
-            and cumulative_cost > 0
+            session_cost is not None
+            and session_cost > 0
             and cumulative_prompt > 0
             and cumulative_cached > 0
         ):
@@ -338,7 +333,8 @@ class PlanningService(IPlanningUseCase):
             cached_suffix = f" ({pct}% cached)"
 
         self._user_interactor.display_message(
-            f"[blue]• Session Cost:[/blue] [magenta]{cost_str}{cached_suffix}"
+            f"[blue]• Session Cost:[/blue]"
+            f" [magenta]{format_cost_usd(session_cost)}{cached_suffix}"
             "[/magenta]\n"
         )
 

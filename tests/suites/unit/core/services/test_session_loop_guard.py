@@ -89,7 +89,7 @@ def test_production_guard_stops_on_max_cost_non_interactive():
     assert os.path.normpath(".teddy/config.yaml") in reason, (
         f"Reason should include config file path, got: {reason!r}"
     )
-    assert "$1.50/$1.50" in reason
+    assert "$1.5000/$1.5000" in reason
     # delta = 1.49 (< limit 1.50) -> CONTINUE
     assert guard.should_continue(
         turn_count=1, cumulative_cost=2.49, require_approval=False
