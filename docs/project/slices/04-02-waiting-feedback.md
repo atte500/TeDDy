@@ -79,7 +79,7 @@ Then the indicator is already stopped and the error text prints without animatio
 - [x] **Interface** — Add `begin_waiting(message: str)` and `end_waiting()` to `IUserInteractor` with contract docs pinning that they are display-only, must never raise, must tolerate an unbalanced `end_waiting`, are no-ops without an attached terminal, never alter a line they did not print, and never touch stdin or a signal handler.
 - [x] **Harness** — Register recording no-op defaults for both methods in `TestEnvironment._apply_interactor_defaults` so harness-driven planning flows stay deterministic and the call sequence is assertable.
 - [x] **Wiring** — Call `begin_waiting` before the retry loop and `end_waiting` in a `finally` inside `PlanningService._perform_generation_with_retry`, then extend the planning-service unit coverage to assert the begin/end order around a stubbed completion. Delete `InterruptGuard.enter_waiting` and its dedicated test in the same change, because the guard is a CLI-boundary process-global that never reaches `PlanningService`.
-- [ ] **Adapter** — Implement `WaitingIndicator` in `adapters/outbound/console_waiting_indicator.py` and delegate both `ConsoleInteractorAdapter` methods to it, with unit tests covering the terminal gate, unbalanced end, nested begin, exception unwinding, interrupt teardown, and the interpreter-exit hook that stops a region abandoned on the daemon worker.
+- [x] **Adapter** — Implement `WaitingIndicator` in `adapters/outbound/console_waiting_indicator.py` and delegate both `ConsoleInteractorAdapter` methods to it, with unit tests covering the terminal gate, unbalanced end, nested begin, exception unwinding, interrupt teardown, and the interpreter-exit hook that stops a region abandoned on the daemon worker.
 - [ ] **Cleanup** — Update the `ConsoleInteractor` and `PlanningService` component docs, add the slice to the Milestone 4 delivered list, and remove this slice's Key Unknown once the prototype answers it.
 
 ## Implementation Notes
@@ -116,6 +116,27 @@ Three decisions carry the behaviour:
 `agent_name` is keyword-only on both new parameters, so the three existing retry call sites in `test_planning_service_retries.py` had to be migrated explicitly instead of silently absorbing a concrete default that constructor-injection purity forbids.
 
 Full suite after the change: 2639 passed, 5 skipped — the previous 2636, minus the one pruned guard case, plus exactly the four new waiting tests.
+
+### Adapter — delivered
+
+`adapters/outbound/console_waiting_indicator.py` owns the one transient line. `WaitingIndicator(console, live_factory, exit_hooks)` gates on the *injected* console's `is_terminal`, opens the region its factory builds, renders `{glyph} {message}` on a callable the region re-invokes, and erases it on `end`. The glyph advances from an internal frame counter, so successive refreshes animate without a clock entering any assertion. `create_live` takes an explicit `live_class`, and `create_indicator(console)` is the one place `rich.live.Live` and `atexit` are bound.
+
+Three rich realities became code rather than commentary:
+- **Redirection is off explicitly.** `Live.start` calls `_enable_redirect_io()` before its screen branch, so the production factory passes `redirect_stdout=False, redirect_stderr=False`; the defaults would swap the process-global streams from the daemon worker.
+- **A non-terminal console never starts a region**, because `Live.stop()` renders. That gate is what keeps redirected logs and CI transcripts newline-delimited.
+- **One exit hook per wait.** `rich.live` registers none, so a region abandoned by a killed daemon worker would leave the cursor hidden. The hook is registered with `begin` and forgotten before `stop`.
+
+`ConsoleInteractorAdapter` gained an optional `waiting_indicator` mirroring its existing optional `console`, defaulting to `create_indicator(self._console)`. Production therefore needs no container change — `registries/infrastructure.py:128` is untouched — and every existing construction site stays valid; both new operations claim no stdin, which the untouched `stdin_ownership` suite confirms.
+
+**Never-raise guards.** Red first: `2 failed, 10 passed`, with `OSError: terminal went away` propagating out of `begin()` and out of `_teardown()` → `live.stop()`. Both guards now log the error text through `logger.warning`, since the architecture forbids silent suppression and the tests assert the message. The release order in `_teardown` is deliberate — clear `_live`, unregister the hook, then stop — so a failing stop strands nothing and a repeated `end()` stays silent. A failed `start` issues no `stop`, because rich tears a partially started region down itself before re-raising.
+
+**Suppression hygiene.** `select = ["F", "E", "W", "C901", "PLR", "TID"]`, so `BLE001` never fires: the `# noqa: BLE001` written alongside the guard was inert and was removed, keeping its reason comment. Ruff reports clean with and without it.
+
+**Real-region integration.** `tests/suites/integration/adapters/outbound/test_console_waiting_indicator_live.py` (2 tests) binds `create_indicator` to rich's own `Live` on an isolated `StringIO` console with `force_terminal=True, width=80`. The label and a spinner glyph are genuinely drawn, the region reopens after teardown, and `sys.stdout`/`sys.stderr` are the identical objects afterwards — the last of which no double can prove.
+
+**Refactor in the same commit.** `_failing_indicator` had manufactured a second, unwired `RecordingExitHooks`, and the guard tests compensated by reading `indicator._exit_hooks`; it now binds the registry once and returns it, so the assertions observe the collaborator they name.
+
+Test census: 16 new cases — 10 indicator unit, 2 never-raise unit, 2 delegation unit, 2 real-region integration. Full suite after the change: 2655 passed, 5 skipped (the 2639 baseline plus 16).
 
 ## Verification
 1. **Terminal animation:**

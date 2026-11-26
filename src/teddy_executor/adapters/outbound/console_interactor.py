@@ -29,6 +29,10 @@ from teddy_executor.adapters.outbound.console_interactor_helpers import (
     print_skipped_action,
     restore_terminal_mode,
 )
+from teddy_executor.adapters.outbound.console_waiting_indicator import (
+    IWaitingIndicator,
+    create_indicator,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +43,7 @@ class ConsoleInteractorAdapter(IUserInteractor):
         system_env: ISystemEnvironment,
         config_service: IConfigService,
         console: Optional[Console] = None,
+        waiting_indicator: Optional[IWaitingIndicator] = None,
     ):
         self._system_env = system_env
         self._config_service = config_service
@@ -49,6 +54,11 @@ class ConsoleInteractorAdapter(IUserInteractor):
             else Console(theme=inline_code_theme(), stderr=True)
         )
         self._ask_loop = ConsoleAskLoop(self._system_env, self._tooling)
+        self._waiting_indicator = (
+            waiting_indicator
+            if waiting_indicator is not None
+            else create_indicator(self._console)
+        )
 
     def _restore_terminal(self):
         """Restores stdin to canonical/echo mode (Unix only)."""
@@ -75,6 +85,14 @@ class ConsoleInteractorAdapter(IUserInteractor):
     def display_message(self, message: str) -> None:
         """Displays a message using Rich console to ensure consistent coloring."""
         self._console.print(message)
+
+    def begin_waiting(self, message: str) -> None:
+        """Draws activity for the duration of a blocking wait."""
+        self._waiting_indicator.begin(message)
+
+    def end_waiting(self) -> None:
+        """Erases the activity drawn by ``begin_waiting``."""
+        self._waiting_indicator.end()
 
     def ask_question(
         self,
