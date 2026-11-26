@@ -106,6 +106,15 @@ repos:
         # CI-only: repository-wide structural check.
         stages: [manual]
 
+    -   id: check-money-rendering
+        name: Check Money Rendering (One Dollar Format)
+        entry: uv run python .githooks/check_money_rendering.py
+        language: system
+        types: [python]
+        files: ^src/
+        # CI-only: repository-wide structural check.
+        stages: [manual]
+
     -   id: no-hardcoded-tmp-paths
         name: No Hardcoded /tmp/ Paths in Test Files
         entry: uv run python .githooks/check_hardcoded_tmp.py

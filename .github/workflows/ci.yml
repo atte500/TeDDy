@@ -175,6 +175,11 @@ jobs:
       run: |
         uv run pre-commit run check-explicit-utf8 --all-files --hook-stage manual
 
+    - name: "Structural Check (one money format)"
+      if: success() || failure()
+      run: |
+        uv run pre-commit run check-money-rendering --all-files --hook-stage manual
+
     - name: "Structural Check (no hardcoded /tmp)"
       if: success() || failure()
       run: |
