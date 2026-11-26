@@ -1,5 +1,5 @@
 # Slice: Rationale Sections as Authored
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** [Plan Format](/docs/project/specs/plan-format.md)
@@ -127,6 +127,9 @@ Then a leading Untitled node holds that paragraph
 - **The suite count is the neutral-behaviour proof.** The unfiltered run ended at 2662 passed / 5 skipped, identical to before the prune, so no test could differentiate the two bindings — the expected outcome for an expression whose value was immediately overwritten by an identical one.
 - **The As-Built pass needed a judgement, not an edit.** The slice's Impact section names the reviewer component page, and that page documents invariants rather than internal statement counts; none described how often the action gate casts its node data, so the page keeps its text. Documenting a deleted redundant line would record an implementation detail no caller can observe.
 - **Evidence:** the pre-edit probe printed the two assignment lines and no direct test reference; the post-edit probe printed `1` binding with the `results` map following it; `ruff check` and `ruff format --check` were clean on the logic module; the coverage probe printed the delegation at `textual_plan_reviewer_app.py:160`, the assertions at `test_reviewer_app_modifications.py:49,52`, and four logic-module importers; the unfiltered suite ended at 2662 passed / 5 skipped.
+- **The Rule Ratchet was considered and declined, deliberately.** The duplicate binding was one merge artifact inside a file this slice rewrote, not a recurring anti-pattern or a boundary leak, and no rule family can flag a re-bound identical expression without also flagging legitimate reassignment, so a rule invented around a single occurrence would add noise instead of protection. Recording the judgement keeps a later reader from treating its absence as an oversight.
+- **The milestone effect is bounded to one checkbox.** This completion ticks `04-10-rationale-sections` only: milestone 4 keeps its `IN PROGRESS` status and its `PROJECT.md` roadmap row, because 04-06, 04-07, 04-08, 04-09, 04-11, and 04-12 remain open. The reviewer's component page likewise stays `Refactoring` for the same reason, so no status edit outside the tick is correct here.
+- **Evidence:** the completion probe printed the slice at `Completed` with eight checked deliverables, the milestone tick with its status header unchanged, and `NONE` for the pruned trio, the whitelist filter, and a live `Raw` label; the unfiltered suite ended at 2662 passed / 5 skipped.
 
 ## Verification
 1. **Non-protocol section:**
