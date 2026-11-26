@@ -1,5 +1,5 @@
 # Slice: External Editor for Long and Multiline Parameters
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** None
@@ -68,12 +68,24 @@ Then the inline modal opens and no editor is launched
 4. `[MIGRATE]` The reviewer component page — record the trigger threshold and the three-way branch for `e` and for parameter selection.
 
 ## Deliverables
-- [ ] **Harness** — Expose the launched editor content from the TUI driver so a test can assert what the editor received and feed a replacement value back.
+- [x] **Harness** — Expose the launched editor content from the TUI driver so a test can assert what the editor received and feed a replacement value back.
 - [ ] **Core** — Implement `needs_external_editor` beside `MAX_INLINE_PARAM_LENGTH` with unit tests covering the exact boundary, a multiline value, a joined list, and a scalar.
 - [ ] **Wiring** — Branch `handle_list_view_selected` on the predicate, route the editor result through `_apply_param_edit`, strip a single editor-appended trailing newline, and prove both branches end to end through the driver.
 - [ ] **Cleanup** — Update the reviewer component page with the threshold and the branch table.
 
 ## Implementation Notes
+
+### Harness — editor handover observability
+`TuiDriver` gained a keyword-only `mock_editor_output`. When it is set, the driver exports `TEDDY_TEST_MOCK_EDITOR_OUTPUT`, answers the harness `ISystemEnvironment.create_temp_file` double with a real file under a `tempfile.mkdtemp()` directory, and appends the requested suffix to `editor_launch_suffixes`. A real path matters: the READ/harvest helpers probe the returned path with `os.path.exists` outside their own try block, so a bare mock path would raise instead of returning.
+
+`TuiDriver.get_param_value(pilot, key)` reads the `ParameterDetail` pane's `DetailItem.data`, which is the value the parameter branch would hand to the editor and the value it writes back through `_apply_param_edit`.
+
+**Recorded deviation:** `launch_editor`'s mock branch returns before its own `try/finally`, so it never writes `initial_content` into the temp file and never deletes that file. The handover is therefore proven in three parts rather than by reading the temp file back: the recorded suffix shows the editor path ran instead of the inline modal, `get_param_value` pins the string the branch carries, and the injected replacement landing in `plan.metadata["user_request"]` shows the caller harvested what the hook wrote.
+
+Covered by `tests/suites/unit/test_tui_driver_editor_handover.py`: one `m`-then-`s` journey recording exactly one `.md` handover and harvesting the replacement, one parameter-pane read recording zero handovers.
+
+### Refactor — spec-bound driver defaults
+The two bare `MagicMock()` defaults the driver passed as `console_tooling` and `action_dispatcher` were replaced with `Mock(spec=ConsoleToolingHelper)` and `Mock(spec=ActionDispatcher)`. Bare `MagicMock` is banned by TID251 and, worse, answers any attribute, so a drift between the reviewer and those collaborators stayed invisible; the spec-bound doubles fail loudly on an undeclared attribute. Behavior-neutral: the reviewer reaches only `find_editor` and `get_diff_viewer_command`, both declared on `ConsoleToolingHelper`.
 
 ## Verification
 1. **Multiline value:**

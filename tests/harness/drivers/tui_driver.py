@@ -1,7 +1,15 @@
-from typing import Optional, Sequence
+import os
+import tempfile
+from pathlib import Path
+from typing import Any, Optional, Sequence
+from unittest.mock import Mock
+
 from textual.widgets import Tree
+
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
+from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
 from teddy_executor.core.domain.models.plan import Plan
+from teddy_executor.core.services.action_dispatcher import ActionDispatcher
 
 
 class TuiDriver:
@@ -9,16 +17,51 @@ class TuiDriver:
     Driver for the ReviewerApp (TUI) to support simulated interactions in tests.
     """
 
-    def __init__(self, plan: Plan, system_env, file_system, console_tooling=None):
-        from unittest.mock import MagicMock
+    def __init__(
+        self,
+        plan: Plan,
+        system_env,
+        file_system,
+        console_tooling=None,
+        *,
+        mock_editor_output: Optional[str] = None,
+    ):
+        self.editor_launch_suffixes: list[str] = []
+        if mock_editor_output is not None:
+            self._install_mock_editor(system_env, mock_editor_output)
 
         self.app = ReviewerApp(
             plan=plan,
             system_env=system_env,
             file_system=file_system,
-            console_tooling=console_tooling or MagicMock(),
-            action_dispatcher=MagicMock(),
+            console_tooling=console_tooling or Mock(spec=ConsoleToolingHelper),
+            action_dispatcher=Mock(spec=ActionDispatcher),
         )
+
+    def _install_mock_editor(self, system_env: Any, output: str) -> None:
+        """Routes every external-editor handover through the mock-editor hook.
+
+        A handover asks `create_temp_file` for a path, so answering with a real
+        file keeps the harvest path live, while the recorded suffix names the
+        handover the editor branch requested. The replacement the hook writes is
+        what the caller reads back, and a handover that never happens records
+        nothing.
+        """
+        os.environ["TEDDY_TEST_MOCK_EDITOR_OUTPUT"] = output
+        handover_dir = Path(tempfile.mkdtemp(prefix="teddy-tui-driver-"))
+        create_temp_file = system_env.create_temp_file
+        assert hasattr(create_temp_file, "side_effect"), (
+            "mock_editor_output requires the harness ISystemEnvironment double, "
+            "not a real adapter"
+        )
+
+        def _record_handover(suffix: str = "", **_port_options: Any) -> str:
+            self.editor_launch_suffixes.append(suffix)
+            path = handover_dir / f"handover-{len(self.editor_launch_suffixes)}{suffix}"
+            path.touch()
+            return str(path)
+
+        create_temp_file.side_effect = _record_handover
 
     async def run_interaction(self, keys: Sequence[str]) -> Optional[Plan]:
         """
@@ -80,3 +123,16 @@ class TuiDriver:
             if val:
                 return str(val)
         return ""
+
+    def get_param_value(self, pilot, key: str) -> str:
+        """Returns the value the detail pane currently shows for a parameter."""
+        from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+            ParameterDetail,
+        )
+
+        pane = pilot.app.query_one(ParameterDetail)
+        for item in pane.children:
+            data = getattr(item, "data", None)
+            if isinstance(data, dict) and data.get("key") == key:
+                return str(data["val"])
+        raise AssertionError(f"No {key!r} parameter in the detail pane")
