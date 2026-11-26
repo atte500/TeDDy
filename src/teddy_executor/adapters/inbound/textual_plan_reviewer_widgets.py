@@ -198,18 +198,26 @@ class DetailItem(ListItem):
         yield Static(content, expand=True)
 
 
-TUI_CSS = """
+# The one gutter shared by both panes and every row inside them.
+PANEL_INSET = (1, 2)
+
+# A stylesheet cannot be formatted with str.format or string.Template: it
+# carries literal {} blocks, percentage widths, and Textual $variables.
+_INSET_SENTINEL = "__PANEL_INSET__"
+
+_TUI_CSS_TEMPLATE = """
 #main-container {
     layout: horizontal;
     height: 1fr;
 }
 #left-pane {
     width: 65%;
+    padding: __PANEL_INSET__;
 }
 #right-pane {
     width: 35%;
     border-left: vkey $foreground 15%;
-    padding: 0;
+    padding: __PANEL_INSET__;
     background: $surface;
 }
 #right-pane:focus-within {
@@ -227,12 +235,10 @@ VerticalScroll {
     background: transparent;
 }
 #rationale-content {
-    padding: 1 2;
     background: transparent;
 }
 ListItem {
     height: auto;
-    padding: 0 1;
 }
 ListItem.--highlight {
     background: $accent 30%;
@@ -244,3 +250,16 @@ Static {
     height: auto;
 }
 """
+
+
+def build_tui_css(inset: tuple[int, int]) -> str:
+    """Render the reviewer stylesheet with ``inset`` applied to both panes.
+
+    The inset is declared on the pane containers only, because CSS padding
+    stacks: a child that declared its own would put that row back on a
+    different gutter, which is the drift this inset exists to remove.
+    """
+    return _TUI_CSS_TEMPLATE.replace(_INSET_SENTINEL, f"{inset[0]} {inset[1]}")
+
+
+TUI_CSS = build_tui_css(PANEL_INSET)
