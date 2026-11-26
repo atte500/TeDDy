@@ -1,5 +1,5 @@
 # Slice: Guardrail Budget Verification and Regression Pins
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** None
@@ -120,6 +120,11 @@ Red observed exactly `assert 44 == 5`, with the guard's own notice printed at th
 **Escalated, not folded:** the duplicated `ISystemEnvironment` double (`_env()` in `test_session_loop_guard.py`, `_environment()` in `test_session_loop_baseline_reset.py`) has no tested harness home. `mocking.py` holds path-mock plumbing and `mocks.py` holds container fixtures; neither exposes a standalone environment factory, so extracting one would create a new harness seam, and this repository requires the Test Harness to carry its own unit tests while a Cleanup deliverable writes none. Importing a private helper across suites would be worse than the duplication, so the fold is recorded on Milestone 06 Requirement 4 (Extract Shared Test Fakes) and stays out of this slice.
 
 **As built:** the guard service page is `Implemented` rather than `Refactoring`, states the two baselines' different origins (turn `0` per run, cost session-cumulative), and attributes the four-decimal money renderer to slice 04-05 as its owner instead of claiming it has shipped. The port page names the CLI session loop as the consumer and `ProductionSessionLoopGuard` as the implementation, and states the per-run counter in its preconditions. The `ConfigSchema` page gains a `GuardrailsConfig` data contract naming the canonical `150`/`5.0` budget that the harness pins. `ContainerStub` gains a component page of its own, because the boundary seed it records is what made the defect observable.
+
+**Verification audit.**
+The Production Double Audit found no skeleton response, stub, or mock value anywhere in the guardrail band. The `150` and `5.0` literals inside `_resolve_max_turns`/`_resolve_max_cost` are the documented resolution fallback that keeps the guard correct when config is absent, and the `placeholder`/`skeleton` hits in `src/` are the local-endpoint API-key placeholder, the `$???` display placeholder, and the agent prompt text — none of them behaviour doubles.
+
+The Upstream & Downstream Audit confirmed exactly one turn-baseline seeding site (`initial_turn = 0`), `get_latest_turn` still consumed by the meta-persistence path and by three internal `SessionService` operations, and no surviving reference to `_resolve_initial_turn` or `_load_bundled_config` in `src/` or `tests/`. Because `start` and `resume` both enter `_orchestrate_session_loop`, that single seeding site is the whole surface — no sibling execution mode derives a turn baseline from history.
 
 **Gate:** the full suite passes at this point (2627 passed, 5 skipped).
 
