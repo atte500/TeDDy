@@ -233,7 +233,10 @@ async def test_reviewer_app_shows_context_item_detail(env):
         )
 
         tree = app.query_one(ActionTree)
-        tree.jump_to_section(CONTEXT_ROOT)
+        context_root = next(
+            child for child in tree.root.children if child.data == CONTEXT_ROOT
+        )
+        tree.jump_to_node(context_root)
         tree.focus()
 
         # 2. Move down to the first file item

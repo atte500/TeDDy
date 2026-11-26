@@ -132,22 +132,6 @@ class ActionTree(Tree):
         else:
             self.move_cursor(node)
 
-    def jump_to_section(self, section_id: str) -> None:
-        """
-        Jump focus to a major section node.
-
-        Args:
-            section_id: The identifier for the section (e.g., RATIONALE_ROOT).
-        """
-        for child in self.root.children:
-            if child.data == section_id:
-                # Ensure the section is expanded and visible before moving cursor
-                child.expand()
-                self.move_cursor(child)
-                # Ensure parent is also expanded (root is usually invisible but its children should be shown)
-                self.root.expand()
-                return
-
 
 class RationaleDetail(VerticalScroll):
     """A focusable scroll view for rationale."""

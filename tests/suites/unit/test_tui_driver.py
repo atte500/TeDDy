@@ -18,26 +18,17 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
     SYSTEM_LABEL,
     TURN_LABEL,
 )
-from teddy_executor.core.domain.models.plan import ActionData, Plan
-
 from tests.harness.drivers.tui_driver import TuiDriver
 from tests.harness.setup.reviewer_context_scenarios import (
     ReviewerContextShape,
+    reviewer_plan,
     reviewer_project_context,
 )
 
 
-def _plan() -> Plan:
-    return Plan(
-        title="Navigation",
-        rationale="### Summary\nDrive the section tree.",
-        actions=[ActionData(type="READ", params={"resource": "README.md"})],
-    )
-
-
 def _driver(mock_env, mock_fs, shape: ReviewerContextShape) -> TuiDriver:
     return TuiDriver(
-        plan=_plan(),
+        plan=reviewer_plan(),
         system_env=mock_env,
         file_system=mock_fs,
         project_context=reviewer_project_context(shape),

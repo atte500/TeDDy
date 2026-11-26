@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
+from teddy_executor.core.domain.models.plan import ActionData, Plan
 from teddy_executor.core.domain.models.project_context import (
     ContextItem,
     ProjectContext,
@@ -25,8 +26,28 @@ HISTORY_PLAN_PATH = f"{SESSION_ROOT}/01/plan.md"
 HISTORY_REPORT_PATH = f"{SESSION_ROOT}/01/report.md"
 
 
+READ_RESOURCE = "README.md"
+
+
 def _item(path: str, scope: str, token_count: int) -> ContextItem:
     return ContextItem(path=path, token_count=token_count, git_status="M", scope=scope)
+
+
+def reviewer_plan(action_count: int = 1) -> Plan:
+    """Build the plan the reviewer navigation scenarios drive.
+
+    ``action_count`` lets a scroll-based scenario overflow the tree viewport,
+    which a single action never does. The rationale carries a recognized
+    heading, so the reviewer builds a Rationale root beside the Action Plan.
+    """
+    return Plan(
+        title="Section navigation",
+        rationale="### Summary\nDrive the section tree.",
+        actions=[
+            ActionData(type="READ", params={"resource": READ_RESOURCE})
+            for _ in range(action_count)
+        ],
+    )
 
 
 def reviewer_project_context(

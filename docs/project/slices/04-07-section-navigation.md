@@ -71,7 +71,7 @@ And the cursor does not move to the Action Plan root
 - [x] **Harness** — Extend the TUI driver so a test can build a tree with a synthetic context panel, including the no-history and no-context shapes.
 - [x] **Core** — Implement `section_sequence` and `containing_section` as pure helpers with unit tests over a fully populated tree, a history-less tree, and a context-less tree.
 - [x] **Wiring** — Rewire `action_jump_next` and `action_jump_prev` onto the derived sequence, scrolling to the tree's end or start at the boundaries, and prove the order end to end through the driver.
-- [ ] **Refactor** — Delete `jump_to_section`, now that both actions reach the tree through `jump_to_node`, and port its two unit tests onto the new method.
+- [x] **Refactor** — Delete `jump_to_section`, now that both actions reach the tree through `jump_to_node`, and port its two unit tests onto the new method.
 - [ ] **Cleanup** — Update the reviewer component page's binding table with the boundary rule and the new subsection targets.
 
 ## Implementation Notes
@@ -109,6 +109,18 @@ And the cursor does not move to the Action Plan root
 **Payload-identity fallback:** `_section_index` matches by identity first and by payload second, because `containing_section` can return an empty-scope `(None)` placeholder leaf that `section_sequence` dropped in favour of its header. Payloads are unique within a sequence, so the fallback cannot be ambiguous.
 
 **Acceptance observability:** the new module drives the app through `TuiDriver`, whose doubles are spec-bound, instead of the older acceptance file whose bare `MagicMock` would trip the banned-API rule when staged. The boundary assertions read `scroll_y` against `max_scroll_y` and `0` on a 40-action plan, with the overflow itself asserted as a precondition so a non-scrolling viewport fails loudly rather than passing vacuously; the top-boundary case scrolls away first, because the Context root is the first row and a naive `scroll_y == 0` would hold trivially.
+
+### Refactor — deleting the superseded jump
+
+**Files:** `src/teddy_executor/adapters/inbound/textual_plan_reviewer_widgets.py`, `tests/suites/unit/adapters/inbound/test_section_navigation.py`, `tests/suites/unit/adapters/inbound/test_reviewer_app_context_previews.py`, `tests/harness/setup/reviewer_context_scenarios.py`, `tests/suites/unit/test_tui_driver.py`, `tests/suites/acceptance/test_tui_section_boundaries.py`.
+
+**What changed:** `ActionTree.jump_to_section` is gone, together with the direct-children-only search that made a context subsection unreachable in the first place. Its two unit tests moved onto `jump_to_node`: the first still proves a jump moves the cursor between visible sections (the immediate branch), and the second covers the collapsed-subsection case (the deferred branch). The previews case now resolves the Context root node instead of passing a section key, because `jump_to_node` takes a node. The deleted method has no surviving reference in `src/` or `tests/`, and the suite count is unchanged because one case replaced another rather than being added or dropped.
+
+**Why the port is not a rename:** `jump_to_section` scanned the invisible root's children for a section id, so "no such section" was a genuine branch that deserved a test. A node parameter cannot be mistaken for a missing key, and `jump_to_node(None)` fails on `node.line` rather than no-opping, so that premise dissolved instead of moving. What replaced it is the branch the node parameter actually introduced — a collapsed group expanded before the cursor lands — which until now had no direct unit coverage and was proven only indirectly by the boundary acceptance module and the probes.
+
+**Single-sourced plan builder:** the `### Summary` plan every navigation scenario drives now lives as `reviewer_plan(action_count=1)` beside the canonical panel shapes in `reviewer_context_scenarios.py`, replacing three verbatim copies across the unit, acceptance, and driver test modules. The `action_count` parameter is what lets a boundary scenario overflow the tree viewport. The per-file `_driver` helpers stay: they are fixture wiring over `mock_env`/`mock_fs`, not duplicated content.
+
+**Deliberately deferred:** collapsing `ActionTree.CONTEXT_ROOT`/`RATIONALE_ROOT`/`ACTION_PLAN_ROOT` into the constants `_logic.py` already owns would require staging `test_tui_section_navigation.py`, which still builds bare `MagicMock`, so the collapse is recorded as a milestone item rather than smuggled into this commit.
 
 ## Verification
 1. **Subsection walk:**

@@ -15,12 +15,11 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
     SYSTEM_LABEL,
     TURN_LABEL,
 )
-from teddy_executor.core.domain.models.plan import ActionData, Plan
-
 from tests.harness.drivers.tui_driver import TuiDriver
 from tests.harness.setup.reviewer_context_scenarios import (
     SESSION_ITEM_PATH,
     ReviewerContextShape,
+    reviewer_plan,
     reviewer_project_context,
 )
 
@@ -38,22 +37,11 @@ SECTION_WALK = [
 ]
 
 
-def _plan(action_count: int) -> Plan:
-    return Plan(
-        title="Section navigation",
-        rationale="### Summary\nWalk the sections.",
-        actions=[
-            ActionData(type="READ", params={"resource": "README.md"})
-            for _ in range(action_count)
-        ],
-    )
-
-
 def _driver(
     mock_env, mock_fs, shape: ReviewerContextShape, action_count: int = 1
 ) -> TuiDriver:
     return TuiDriver(
-        plan=_plan(action_count),
+        plan=reviewer_plan(action_count),
         system_env=mock_env,
         file_system=mock_fs,
         project_context=reviewer_project_context(shape),
