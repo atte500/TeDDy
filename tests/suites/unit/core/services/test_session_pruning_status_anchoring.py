@@ -12,7 +12,6 @@ def mock_config():
     service = create_autospec(IConfigService, instance=True)
     service.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.prune_failure_history": True,
         "auto_pruning.prune_validation_failures": True,
     }.get(key, default)
     return service

@@ -70,7 +70,6 @@ def config_service():
     service.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
         "auto_pruning.turn_context_threshold": TURN_CONTEXT_THRESHOLD,
-        "auto_pruning.prune_failure_history": True,
         "auto_pruning.prune_validation_failures": True,
     }.get(key, default)
     return service

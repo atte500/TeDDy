@@ -27,7 +27,6 @@ def test_validation_failure_pruned_based_on_non_vf_report_anchor(container):
     mock_config = create_autospec(IConfigService, instance=True)
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.prune_failure_history": False,  # Isolate Heuristic 4
         "auto_pruning.prune_validation_failures": True,  # Enable VF pruning
         "auto_pruning.preserve_message_turns": False,  # No message sparing
     }.get(key, default)
@@ -77,7 +76,6 @@ def test_validation_failure_pruned_by_disk_non_vf_report(container):
     mock_config = create_autospec(IConfigService, instance=True)
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.prune_failure_history": False,
         "auto_pruning.prune_validation_failures": True,
         "auto_pruning.preserve_message_turns": False,
     }.get(key, default)
@@ -123,7 +121,6 @@ def test_vf_chain_without_anchor_all_preserved(container):
     mock_config = create_autospec(IConfigService, instance=True)
     mock_config.get_setting.side_effect = lambda key, default=None: {
         "auto_pruning.enabled": True,
-        "auto_pruning.prune_failure_history": False,
         "auto_pruning.prune_validation_failures": True,
         "auto_pruning.preserve_message_turns": False,
     }.get(key, default)

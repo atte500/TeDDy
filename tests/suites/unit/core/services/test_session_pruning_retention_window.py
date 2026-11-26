@@ -68,7 +68,6 @@ def _prune(items: list[ContextItem], *, limit: int, batch: Any = 5) -> ProjectCo
     """
     settings: dict[str, Any] = {
         "auto_pruning.enabled": True,
-        "auto_pruning.prune_failure_history": True,
         "auto_pruning.prune_validation_failures": True,
         "auto_pruning.turn_context_threshold": 0,
         "auto_pruning.max_turns_retention": limit,

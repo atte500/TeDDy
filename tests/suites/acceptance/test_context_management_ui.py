@@ -258,3 +258,128 @@ def test_auto_pruning_heuristics_acceptance(env, monkeypatch):
         items_map[f"{session_dir}/03/plan.md"].auto_prune_reason
         == "Plan failed validation"
     )
+
+
+def _setup_over_budget_session(env, session_dir, current_plan):
+    """Write a two-turn session whose newest turn context also holds a large copy."""
+    env.workspace.joinpath(f"{session_dir}/01").mkdir(parents=True)
+    env.workspace.joinpath(f"{session_dir}/02").mkdir(parents=True)
+
+    env.workspace.joinpath(f"{session_dir}/01/plan.md").write_text(
+        "# Turn 1\n\n- **Status:** ON-TRACK 🟢", encoding="utf-8"
+    )
+    env.workspace.joinpath(f"{session_dir}/01/report.md").write_text(
+        "# Report 1\n\n- **Overall Status:** SUCCESS", encoding="utf-8"
+    )
+    env.workspace.joinpath(f"{session_dir}/02/plan.md").write_text(
+        current_plan, encoding="utf-8"
+    )
+    env.workspace.joinpath(f"{session_dir}/02/report.md").write_text(
+        "# Report 2\n\n- **Overall Status:** SUCCESS", encoding="utf-8"
+    )
+
+    env.workspace.joinpath("src").mkdir(exist_ok=True)
+    env.workspace.joinpath("src/huge_module.py").write_text(
+        "value = 1\n" * 600, encoding="utf-8"
+    )
+    # The resumed plan reads README.md, so pre-flight validation needs the
+    # target present before the CLI runs.
+    env.workspace.joinpath("README.md").write_text("Hello", encoding="utf-8")
+
+    env.workspace.joinpath(f"{session_dir}/02/turn.context").write_text(
+        "\n".join(
+            [
+                f"{session_dir}/01/plan.md",
+                f"{session_dir}/01/report.md",
+                f"{session_dir}/02/plan.md",
+                f"{session_dir}/02/report.md",
+                "src/huge_module.py",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    env.workspace.joinpath(f"{session_dir}/02/meta.yaml").write_text(
+        "turn_id: '02'\nagent_name: developer", encoding="utf-8"
+    )
+
+
+def test_global_budget_keeps_a_turn_record_over_a_larger_copy(env, monkeypatch):
+    """An over-budget assembly drops the restorable copy, keeping every record.
+
+    The harness pins the token counter to zero, which makes an over-budget
+    assembly unreachable, so this case supplies a counter proportional to
+    content length: the large project file then outweighs the records it
+    travels with. The threshold sits above the records' combined weight, so
+    evicting the copy alone brings the assembly under budget and no record is
+    dragged out by the whole-turn fallback.
+    """
+    env.setup().with_real_filesystem()
+    session_dir = ".teddy/sessions/20260511_120000-budget"
+    current_plan = (
+        MarkdownPlanBuilder("Turn 2")
+        .with_rationale("Keep the record.")
+        .add_read("README.md")
+        .build()
+    ).replace("Status: Unresolved", "Status: 🟢")
+    _setup_over_budget_session(env, session_dir, current_plan)
+
+    from teddy_executor.core.ports.outbound import IConfigService, ILlmClient
+
+    env.get_service(ILlmClient).get_text_token_count.side_effect = (
+        lambda text, model=None: len(text)
+    )
+    mock_config = env.get_service(IConfigService)
+    mock_config.get_setting.side_effect = lambda k, d=None: {
+        "auto_pruning.enabled": True,
+        "auto_pruning.prune_validation_failures": True,
+        "auto_pruning.turn_context_threshold": 3000,
+    }.get(k, d)
+
+    from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
+    from teddy_executor.core.services.session_planner import SessionPlanner
+
+    reviewer = env.mock_port(IPlanReviewer)
+    reviewer.review.side_effect = lambda plan, project_context=None: plan
+
+    planner, call_count = env.mock_port(SessionPlanner), 0
+
+    def mock_planning(turn_dir, message=None):
+        nonlocal call_count
+        call_count += 1
+        if call_count > 1:
+            return "CANCELLED", None
+        env.workspace.joinpath(f"{turn_dir}/plan.md").write_text(
+            current_plan, encoding="utf-8"
+        )
+        return "20260511_120000-budget", None
+
+    planner.trigger_new_plan.side_effect = mock_planning
+
+    from tests.harness.drivers.cli_adapter import CliTestAdapter
+
+    cli = CliTestAdapter(monkeypatch, env.workspace)
+    result = cli.run_resume(path=f"{session_dir}/02/plan.md", input="\n")
+
+    diagnostics = (
+        "reviewer.review was not called.\n"
+        f"--- stdout ---\n{result.stdout}\n"
+        f"--- stderr ---\n{result.stderr}\n"
+        f"--- exception ---\n{result.exception!r}"
+    )
+    assert reviewer.review.call_count == 1, diagnostics
+    context = reviewer.review.call_args.kwargs.get("project_context")
+    items_map = {item.path: item for item in context.items}
+
+    # The project file is a restorable copy, so it leaves first.
+    copy = items_map["src/huge_module.py"]
+    assert copy.selected is False
+    assert copy.auto_prune_reason == "Pruned to fit context budget"
+
+    # Every turn record survives, because a copy already covered the overage.
+    for record in (
+        f"{session_dir}/01/plan.md",
+        f"{session_dir}/01/report.md",
+        f"{session_dir}/02/plan.md",
+        f"{session_dir}/02/report.md",
+    ):
+        assert items_map[record].selected is True, record
