@@ -20,7 +20,7 @@ None — this port declares no injected dependencies.
 None — this is an outbound (driven) port.
 
 ## Outbound Ports
-- **`ISessionLoopGuard`**: The driven contract consumed by `SessionOrchestrator` and implemented by the `SessionLoopGuard` service.
+- **`ISessionLoopGuard`**: The driven contract consumed by the session loop in the CLI adapter and implemented by the `ProductionSessionLoopGuard` service.
 
 ## Data Contracts
 - **`should_continue` return:** `(True, None)` to continue, or `(False, reason)` to halt with a human-readable limit message.
@@ -28,7 +28,7 @@ None — this is an outbound (driven) port.
 ## Operations
 
 ### `should_continue(turn_count, cumulative_cost, require_approval) -> tuple[bool, Optional[str]]`
-- **Preconditions:** `turn_count` and `cumulative_cost` are measured as deltas from the process-start baseline.
+- **Preconditions:** `turn_count` is the caller's own per-run counter and `cumulative_cost` is the session-cumulative cost; both are measured as deltas from the baselines the implementation received at construction, so a resumed run's budget counts this run.
 - **Postconditions:** Returns `(True, None)` when the loop may continue, or `(False, reason)` when a guardrail limit is hit.
 
 ### `reset_baseline(turn_count, cumulative_cost) -> None`

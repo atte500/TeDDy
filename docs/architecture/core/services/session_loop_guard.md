@@ -1,5 +1,5 @@
 # Component Design: ProductionSessionLoopGuard
-- **Status:** Refactoring
+- **Status:** Implemented
 - **Classification:** Core Service
 - **Source:** [`src/teddy_executor/core/services/session_loop_guard.py`](/src/teddy_executor/core/services/session_loop_guard.py)
 
@@ -13,10 +13,10 @@ Implements the `ISessionLoopGuard` outbound port. It stops runaway yolo and pipe
 ## Dependencies
 - [`IConfigService`](../ports/outbound/config_service.md): Reads `guardrails.enabled`, `guardrails.max_turns`, `guardrails.max_session_cost`, and `guardrails.message_reset`, and supplies the config path the halt reason names.
 - [`ISystemEnvironment`](../ports/outbound/environment_inspector.md): Reads the `TEDDY_MAX_TURNS` and `TEDDY_MAX_SESSION_COST` overrides.
-- **Constructor baselines** (`initial_turn`, `initial_cost`): Injected as plain values by the composition root, which seeds them from the session's persisted totals so a resumed run's delta starts at zero.
+- **Constructor baselines** (`initial_turn`, `initial_cost`): Injected as plain values by the composition root. The two seeds measure the same run from different origins, because their raw inputs do: the turn baseline is `0` and the session loop restarts its counter at `1` on every run, so a resumed session gets this run's full budget rather than one inflated by the turns already spent; the cost baseline is `get_cumulative_cost`, because the report's `cumulative_cost` is session-cumulative, so that delta already starts at zero.
 
 ## Class Invariants
-- `injected_baseline`: The turn-count and cost baselines are injected at construction; every later call is measured as a delta from them.
+- `injected_baseline`: The turn-count and cost baselines are injected at construction; every later call is measured as a delta from them. The turn baseline is `0` on every run while the cost baseline is the session's cumulative cost at the start of the run, so a resumed run's budget counts this run in both units despite their different origins.
 - `approval_always_continues`: A run that requires approval always returns `(True, None)`, because a human already gates every turn.
 - `enabled_gate`: A false `guardrails.enabled` returns `(True, None)`, because the operator opted out of unattended bounds entirely.
 - `precedence`: One resolution order serves both limits — explicit constructor override, then environment variable, then `guardrails.<key>`, then the default.
@@ -32,15 +32,15 @@ None — this is a concrete implementation of an outbound port.
 
 ## Data Contracts
 - **`should_continue` return:** `(True, None)` to continue, or `(False, reason)` to halt with a human-readable limit message. A reached limit is never signalled by an exception, because a guardrail that raised would be indistinguishable from a defect.
-- **Configuration keys:** `guardrails.enabled` (bool, default `True`), `guardrails.max_turns` (int, default `150`), `guardrails.max_session_cost` (float, default `5.0`), `guardrails.message_reset` (bool, default `True`). The `max_turns` default appears in four places that must agree — this page, the config-schema default, the bundled `config.yaml`, and the resolution fallback — because a divergent copy silently restores an undocumented budget.
+- **Configuration keys:** `guardrails.enabled` (bool, default `True`), `guardrails.max_turns` (int, default `150`), `guardrails.max_session_cost` (float, default `5.0`), `guardrails.message_reset` (bool, default `True`). The `max_turns` default appears in four places that must agree — this page, the config-schema default, the bundled `config.yaml`, and the resolution fallback — because a divergent copy silently restores an undocumented budget. The bundled file and the resolution fallback are pinned against the `GuardrailsConfig` default by `test_bundled_guardrails_agree_with_the_schema_defaults` and `test_default_limits_are_the_pinned_budget`, so a divergence fails by name instead of shipping quietly.
 - **Halt reason, turn limit:** the run's turn delta against the limit, followed by the `guardrails.max_turns` key and the config path to edit.
-- **Halt reason, cost limit:** the run's cost delta and the limit, both rendered by `format_cost_usd` (`core/utils/money.py`, delivered by slice 04-05) at exactly four decimal places instead of a local `:.2f` format string, followed by `guardrails.max_session_cost` and the config path to edit. This notice is one of the two monetary format sites in `src` today — `PlanningService`'s terminal Session Cost line (`planning_service.py:287`) is the other, and it already renders four decimals, so this notice is the single site whose format changes. The shared formatter replaces both rather than joining them: one renderer is what stops this line, the terminal telemetry line, and the reviewer's Context row from stating three different figures for the same session.
+- **Halt reason, cost limit:** the run's cost delta and the limit, both rendered by `format_cost_usd` (`core/utils/money.py`, owned by slice 04-05) at exactly four decimal places, followed by `guardrails.max_session_cost` and the config path to edit. Until that slice lands this notice still formats with a local `:.2f` string, and it is one of the two monetary format sites in `src` — `PlanningService`'s terminal Session Cost line (`planning_service.py:287`) is the other, and it already renders four decimals. The shared formatter replaces both rather than joining them: one renderer is what stops this line, the terminal telemetry line, and the reviewer's Context row from stating three different figures for the same session.
 - **Path rendering:** the config path is rendered relative to the working directory, so the message stays short and copy-pasteable.
 
 ## Operations
 
 ### `should_continue(turn_count, cumulative_cost, require_approval) -> tuple[bool, Optional[str]]`
-- **Preconditions:** `turn_count` and `cumulative_cost` are measured as deltas from the process-start baseline.
+- **Preconditions:** `turn_count` is the caller's own per-run counter, which the session loop restarts at `1` on every run, and `cumulative_cost` is the report's session-cumulative cost; both are measured as deltas from the injected baselines.
 - **Postconditions:** Returns `(True, None)` when approval is required, when the guardrail is disabled, or when both deltas are under their limits. Returns `(False, reason)` naming the exceeded limit and the config file to edit.
 
 ### `reset_baseline(turn_count, cumulative_cost) -> None`

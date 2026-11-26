@@ -6,15 +6,13 @@ environment variable over config value over default). It reads the renamed
 baselines after a message turn when ``guardrails.message_reset`` is enabled.
 """
 
-from importlib import resources
 from unittest.mock import create_autospec
-
-import yaml
 
 from teddy_executor.core.domain.models.config_schema import GuardrailsConfig
 from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
 from teddy_executor.core.services.session_loop_guard import ProductionSessionLoopGuard
+from tests.harness.setup.bundled_config import load_bundled_config
 
 
 def _guard(config_values=None, env_values=None, **overrides):
@@ -37,14 +35,6 @@ def _guard(config_values=None, env_values=None, **overrides):
         initial_cost=0.0,
         **overrides,
     )
-
-
-def _load_bundled_config() -> dict:
-    """Load the bundled config.yaml as a parsed mapping via the package resource."""
-    resource = resources.files("teddy_executor.resources.config").joinpath(
-        "config.yaml"
-    )
-    return yaml.safe_load(resource.read_text(encoding="utf-8"))
 
 
 def test_cli_flag_wins_over_environment_and_config():
@@ -122,7 +112,7 @@ def test_bundled_guardrails_agree_with_the_schema_defaults():
     schema makes a divergent copy fail by name instead of silently restoring an
     undocumented budget.
     """
-    bundled = _load_bundled_config()["guardrails"]
+    bundled = load_bundled_config()["guardrails"]
     schema = GuardrailsConfig()
 
     assert bundled["max_turns"] == schema.max_turns
@@ -180,7 +170,7 @@ def test_bundled_config_declares_only_the_renamed_guardrails_namespace():
     ``test_bundled_guardrails_agree_with_the_schema_defaults``, so this test
     guards the namespace rename alone.
     """
-    config = _load_bundled_config()
+    config = load_bundled_config()
 
     guardrails = config.get("guardrails")
     assert isinstance(guardrails, dict), (

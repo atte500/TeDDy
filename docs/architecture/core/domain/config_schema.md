@@ -31,6 +31,7 @@ None — the module is pure and declares no injected dependencies.
 ## Data Contracts
 - **`AppConfig`** (frozen dataclass): The typed root, composed of the per-group config dataclasses (`ExecuteConfig`, `EditConfig`, `WorkspaceConfig`, `ReadConfig`, `PlanConfig`, `ContextConfig`, `ResearchConfig`, `ChecksConfig`, `AutoPruningConfig`, `GuardrailsConfig`) plus the top-level `editor` and `yolo_default` scalars.
 - **`AutoPruningConfig`**: Carries the retention ceiling `max_turns_retention` (int, default `10`) and `retention_batch` (int, default `5`, inclusive minimum `1`), the number of oldest turns dropped together once that ceiling is exceeded, alongside the existing auto-pruning flags and limits.
+- **`GuardrailsConfig`**: Carries the unattended-run bounds — `enabled` (bool, default `True`), `max_turns` (int, default `150`), `max_session_cost` (float, default `5.0`), and `message_reset` (bool, default `True`). These two numeric defaults are the canonical statement of the shipped budget: the bundled `config.yaml` and the guard's resolution fallback are pinned against them by `test_bundled_guardrails_agree_with_the_schema_defaults` and `test_default_limits_are_the_pinned_budget`, so a divergent copy fails by name.
 - **`ConfigurationError`**: Raised for a bad declared value or a malformed `agents` block.
 
 ## Operations

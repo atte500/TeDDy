@@ -28,25 +28,6 @@ def test_production_guard_always_continues():
     ) == (True, None)
 
 
-def test_production_guard_stores_initial_state():
-    # Arrange
-    mock_config = create_autospec(IConfigService)
-    initial_turn = 5
-    initial_cost = 1.25
-
-    # Act
-    guard = ProductionSessionLoopGuard(
-        config_service=mock_config,
-        system_environment=_env(),
-        initial_turn=initial_turn,
-        initial_cost=initial_cost,
-    )
-
-    # Assert
-    assert guard._initial_turn == initial_turn
-    assert guard._initial_cost == initial_cost
-
-
 def test_production_guard_stops_on_max_turns_non_interactive():
     # Arrange
     mock_config = create_autospec(IConfigService)
