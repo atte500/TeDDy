@@ -1,5 +1,5 @@
 # Slice: Guardrail Budget Verification and Regression Pins
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** None
@@ -8,7 +8,7 @@
 - **Scope Slug:** `guardrail-budget-pins`
 
 ## Goal
-Guarantee that an unattended run is bounded by 150 turns and $5.00 counted from zero on every resume, by pinning the behaviours that already deliver it and recording them as built, so a later refactor cannot silently restore a cumulative budget or make the limits bite an interactive run.
+Guarantee that an unattended run is bounded by 150 turns and $5.00 counted from zero on every resume, by correcting the resumed turn baseline and pinning the result, so neither a future refactor nor a stale literal can silently restore a cumulative budget or make the limits bite an interactive run.
 
 ## Context
 - The behaviour is delivered, and this slice adds no production code. `--max-turns` and `--max-cost` exist on both `start` and `resume` (`__main__.py:225`, `:268-269`, `:572-573`), so no flag has to be introduced.
@@ -20,6 +20,13 @@ Guarantee that an unattended run is bounded by 150 turns and $5.00 counted from 
 - **Product decision (2026-11-26):** the default stays `150`. The `99` this slice previously carried is withdrawn, and no spelling changes.
 - **Out of scope:** the money format. [04-05](./04-05-context-metadata.md) owns `format_cost_usd` and the four-decimal standard, which is what replaces the halt notice's local `:.2f`; duplicating it here would give the notice two owners.
 - **Why a pin instead of nothing:** the resume seed is one constructor argument away from reverting to a cumulative budget, and that regression is silent — the run simply stops early. A behavioural guarantee that nothing asserts is a guarantee that lasts until the next refactor of the same call site.
+- **Discovery result:** the yolo-only gate is already pinned by `test_production_guard_ignores_limits_in_interactive_mode`; the resume seed is not pinned behaviourally, and the behaviour it would have asserted is wrong.
+- **The defect:** `_orchestrate_session_loop` seeds the guard with `initial_turn = _resolve_initial_turn(...)`, which returns `max(0, latest_turn - 1)` parsed from the session's latest turn directory, while the loop itself passes a per-run counter that restarts at `1`. A session whose latest turn is `40` therefore seeds `39`, the first `should_continue(1, ...)` computes `turn_delta = -38`, and the run halts at 189 turns instead of 150. The turn budget silently grows with the turns already spent — the cumulative-budget regression this slice exists to prevent, inverted.
+- **The cost side is correct and stays untouched:** `SessionService.get_cumulative_cost` reads the session's `cumulative_cost`, and the loop passes the report's own `cumulative_cost`, so `cost_delta` genuinely starts at zero on resume.
+- **Why the existing coverage missed it:** `test_session_loop_baseline_reset.py` injects a pre-built guard through `ContainerStub`, whose `resolve` discards constructor kwargs, so the seeded baseline is unobservable at the boundary; `test_production_guard_stores_initial_state` asserts `_initial_turn`/`_initial_cost` and would pass even if `should_continue` ignored both.
+- **Fresh sessions are unaffected:** `create_session` seeds turn `01` before the loop starts, so the resolved baseline is already `0` and the delta already starts at `1`; dropping the resume seed changes nothing for `teddy start`.
+- **The four 150 spellings:** the `GuardrailsConfig.max_turns` default, the bundled `config.yaml` value, the `_resolve_max_turns` fallback, and this page's Data Contracts. Each is pinned today to an independent literal, and nothing links them.
+- **Corrected deliverable target:** `test_bundled_config_tree_limits.py` asserts only the context tree caps. The guardrail spellings belong with `test_session_loop_guard_configuration.py`, which already loads the bundled file through `tests/harness/setup/bundled_config.py`.
 
 ## Scenarios
 
@@ -36,8 +43,8 @@ Then the guard halts with the turn-limit notice naming guardrails.max_turns
 ```gherkin
 Given a session whose earlier turns already consumed 40 turns and 2.00 USD
 When I resume with -y and no overrides
-Then the first turn of this run counts as turn 1 and cost 0.0000
-And the guard halts at 150 turns in this run rather than at 110
+Then the first turn of this run counts as turn 1 and the run's cost delta starts at zero
+And the guard halts at 150 turns in this run rather than at 189
 ```
 
 > As an operator, I want an explicit flag to beat every configured value.
@@ -64,19 +71,22 @@ Then the guard continues without a limit notice
 - **Guardrails disabled**: If `guardrails.enabled` is false, then both limits are ignored entirely, because the operator opted out of unattended bounds.
 - **Spelling drift**: If any of the four 150 spellings changes alone, then the bundled-config assertion fails naming the disagreement, because a divergent copy silently restores an undocumented budget.
 - **Cost formatting**: If the halt reason renders a cost, then it goes through `format_cost_usd` at four decimals, because [04-05](./04-05-context-metadata.md) owns that renderer and this slice must not fork it.
+- **Baseline scale asymmetry**: If a run is resumed, then the turn budget counts per run (a per-run counter against a zero turn baseline) and the cost budget counts per run (a session-cumulative cost against a session-cumulative baseline), because both must measure this run while their raw inputs start at different origins.
 
 ## Key Unknowns
-- [ ] [Harness] Whether the resume-seeded baseline and the yolo-only gate each already have a named unit test. Design Sensitivity: if both are pinned → this slice lands as one cross-spelling consistency assertion plus the as-built documentation, and no production code is touched; if either is unpinned → the slice adds exactly that pin, still with no production change, because the behaviour it asserts already exists.
+- [x] [Harness] Whether the resume-seeded baseline and the yolo-only gate each already have a named unit test. **Resolved:** the yolo-only gate is pinned by `test_production_guard_ignores_limits_in_interactive_mode`; the resume seed is unpinned *and* the behaviour it would have asserted is wrong. The slice therefore prepends a production fix and places the pin after it, because a pin written first would freeze the defect. The baselines are observable once `ContainerStub` records the kwargs of each `resolve` call, which is additive for every existing caller.
 
 ## Impact
-1. `[MIGRATE]` `tests/suites/unit/core/services/test_session_loop_guard.py` — add the resume-seeded baseline case (delta starts at zero for a session carrying turns and cost) and the approval-path case, unless a named test already asserts them.
-2. `[MIGRATE]` `tests/suites/unit/test_bundled_config_tree_limits.py` — assert the bundled `guardrails.max_turns` equals the schema default and the guard fallback, so the four spellings cannot drift apart.
-3. `[MIGRATE]` The guard service and port pages — record the delivered behaviour as built, name the resume seed and the yolo-only gate, and confirm the four spellings agree at 150.
-4. `[PRUNE]` Nothing in `src`: no production defect exists, and inventing a change would churn delivered code for the sake of a diff.
+1. `[EXTEND]` `tests/harness/setup/container_stub.py` — record the constructor kwargs of each `resolve` call, so a test can observe the baselines the boundary seeds. Additive: the current double discards kwargs, and no caller relies on that.
+2. `[MIGRATE]` `src/teddy_executor/adapters/inbound/session_cli_handlers.py` — seed the turn baseline at `0` (the per-run scale the loop counts in) and delete the now-dead `_resolve_initial_turn` helper, keeping `initial_cost` seeded from `get_cumulative_cost`.
+3. `[MIGRATE]` `tests/suites/unit/adapters/inbound/test_session_loop_baseline_reset.py` — add the resumed-run turn-budget pin: a session whose latest turn is `40` must still halt at `guardrails.max_turns` turns in this run.
+4. `[MIGRATE]` `tests/suites/unit/core/services/test_session_loop_guard_configuration.py` — replace the local `_load_bundled_config` with the shared harness loader, and assert the bundled `guardrails.max_turns` and `guardrails.max_session_cost` equal the `GuardrailsConfig` defaults and the guard's resolution fallbacks.
+5. `[PRUNE]` `tests/suites/unit/core/services/test_session_loop_guard.py::test_production_guard_stores_initial_state` — the private-attribute assertion is superseded by behavioural delta pins and would survive a regression in `should_continue`.
 
 ## Deliverables
-- [ ] **Harness** — Add the missing pins for the resume-seeded baseline and the yolo-only gate, plus the cross-spelling assertion over the bundled config.
-- [ ] **Cleanup** — Record the delivered behaviour as built on the guard service and port pages, and note the withdrawal of the 99 default so no page re-introduces it.
+- [▶] **Harness** — Record the resolve kwargs in `ContainerStub` (with its own unit test) so the boundary seed is observable, and pin the four guardrail spellings to the schema defaults and the guard's resolution fallbacks.
+- [ ] **Core** — Re-base the turn budget per run: seed `initial_turn=0`, delete the dead `_resolve_initial_turn` helper, and pin the resumed-run budget with a boundary test.
+- [ ] **Cleanup** — Retire the private-attribute guard test, consolidate the duplicated bundled-config loader, and record the delivered behaviour as built on the guard service and port pages.
 
 ## Implementation Notes
 
