@@ -1,5 +1,5 @@
 # Slice: Model, Provider, and Session Cost in the Context Panel
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -16,8 +16,9 @@ Let a reviewer see which model is answering and what the session has cost before
 - `IGetContextUseCase.get_context` and `ContextService.get_context`: Already take additive keywords (`agent_name`, `system_prompt_tokens`, `total_window`), each annotated `# noqa: PLR0913 - inbound-port seam; additive keywords`, so extending the seam further is the established pattern.
 - `PlanningService` (`src/teddy_executor/core/services/planning_service.py`): Renders the terminal Session Cost line as `f"${cumulative_cost:.4f}"`, with a `$???` fallback selected by the explicit `cost_recorded` signal rather than by `cost > 0`.
 - `ProductionSessionLoopGuard.should_continue`: Renders the cost-limit notice with `f"${cost_delta:.2f}/${max_cost:.2f}"`, a second, independently written money format.
-- `ISessionManager.get_cumulative_cost(session_name) -> float`: Already exposes the session ledger the panel needs.
-- Effective model resolution: The composition root resolves flag → `agents.<persona>.model` → `llm.model` and already hands the result to the startup banner, so the value exists before the first turn.
+- Reviewer producers: The panel receives the `ProjectContext` that `PlanningService.generate_plan` returns alongside its plan, with `SessionOrchestrator._gather_fallback_context` covering a resumed PENDING_PLAN turn. Both already resolve the effective model and hold the turn's metadata a few lines above their `get_context` call. The third caller, `session_cli_handlers.handle_context_command`, is the `context` export path and never reaches the reviewer.
+- Recorded-cost signal: `PlanningService` writes `meta["cost_recorded"] = True` when the adapter priced the turn, and `SessionService._persist_next_meta` carries both `cumulative_cost` and `cost_recorded` into every later turn, so a turn's own `meta.yaml` already answers "what has this session cost, and was that figure recorded?" without a ledger lookup.
+- Effective model resolution: The composition root resolves flag → `agents.<persona>.model` → `llm.model` and already hands the result to the startup banner, so the value exists before the first turn. `ContextService.get_context` receives that same value as its existing `model` keyword for token counting, so the model row derives from it rather than from a second keyword that must be kept in agreement.
 - Legal provider form: A LiteLLM model string is `provider/model`, where the provider segment is optional, so provider is a pure function of the resolved model name and needs no adapter call.
 - `docs/project/specs/interactive-session-workflow.md`, Console & TUI Polish: Fixes the requirement — the Context root displays the current model name and the cumulative session cost at exactly four decimal places, with the same precision across every display.
 
@@ -50,7 +51,7 @@ Then it reads $???
 
 ## Edge Cases
 - **Stateless run**: If `project_context.session_root` is `None`, then the cost row reads `$???` while model and provider still render, because no cumulative ledger exists outside a session.
-- **Unresolved model**: If the effective model resolves to nothing, then both model and provider read `Unknown`, because the panel must never render an empty cell.
+- **Unresolved model**: If the effective model resolves to nothing, then the Model row reads `Unknown` and Provider reads `unknown`, because the panel must never render an empty cell and the splitter never invents a provider.
 - **Trailing zeros**: If the cost is exactly `0.10`, then it renders `$0.1000`, because fixed four-decimal rendering is what makes two figures comparable at a glance.
 - **Recorded zero**: If a free provider records `0.0`, then it renders `$0.0000`, because recorded zero and unrecorded cost are different facts.
 - **Provider-less model**: If the model string carries no `/`, then provider reads `unknown`, because LiteLLM provider prefixes are optional.
@@ -58,24 +59,24 @@ Then it reads $???
 - **Below display precision**: If the cost is `0.00004`, then it renders `$0.0000`, because four decimals is the standard and the ledger keeps the remainder for the turns that follow.
 
 ## Key Unknowns
-- [ ] [Domain] Provider derivation: should Provider show LiteLLM's own resolved provider, or the prefix segment of the model string computed locally? Design Sensitivity: if the prefix rule holds → the DTO gains only `model_name` and the reviewer splits it with a pure helper; if the resolved provider is required → `ProjectContext` gains a `provider` field and the composition root supplies it through the LLM adapter, making the panel depend on a call the reviewer cannot make today.
+- [x] [Domain] Provider derivation: settled on the prefix rule. `LiteLLMAdapter._provider_resolution_errors` rejects a model without a provider prefix and tells the user to prefix `llm.model`, and litellm resolves the provider from that same string, so the provider is local knowledge rather than adapter state. `ProjectContext` therefore gains `model_name` only and the reviewer splits it with the pure `split_model_identity` helper; a prefix-less model resolves to provider `unknown`.
 
 ## Impact
-1. `[EXTEND]` `ProjectContext` — add `model_name: str = "Unknown"` and `session_cost: Optional[float] = None`, where `None` means unrecorded and `0.0` means recorded zero.
-2. `[EXTEND]` `IGetContextUseCase.get_context` and `ContextService.get_context` — add the matching additive keywords with the existing seam annotation.
-3. `[NEW]` `format_cost_usd` in `src/teddy_executor/core/utils/money.py` — the single money formatter: exactly four decimal places, `$???` for `None`.
+1. `[EXTEND]` `ProjectContext` — add `model_name: str = "Unknown"` and `session_cost: Optional[float] = None`, where `None` means unrecorded and `0.0` means recorded zero. Both are appended and defaulted, so every existing construction stays valid.
+2. `[EXTEND]` `IGetContextUseCase.get_context` and `ContextService.get_context` — add the additive `session_cost: Optional[float] = None` keyword under the existing seam annotation, and populate `model_name` from the existing `model` keyword (blank resolves to `Unknown`) instead of adding a second model keyword that must stay in step with it.
+3. `[NEW]` `format_cost_usd` and `resolve_session_cost` in `src/teddy_executor/core/utils/money.py` — the one money formatter (exactly four decimals, `$???` for `None`) and the one recorded-cost decision (`cumulative_cost` when the turn recorded a cost or the provider prices the model, else `None`), so the panel and the terminal cannot answer differently.
 4. `[NEW]` `split_model_identity` in `src/teddy_executor/core/utils/model_identity.py` — a pure `(name, provider)` splitter used by the panel.
-5. `[MIGRATE]` `session_cli_handlers.py` — pass the resolved model and `ISessionManager.get_cumulative_cost(session_name)` into `get_context`.
+5. `[MIGRATE]` `PlanningService.generate_plan` and `SessionOrchestrator._gather_fallback_context` — pass `session_cost=resolve_session_cost(meta, llm_client.supports_pricing(model=model))` into `get_context`.
 6. `[MIGRATE]` `textual_plan_reviewer_helpers.populate_context_detail` — render the Model, Provider, and Session Cost rows in the aggregate branch.
 7. `[MIGRATE]` `PlanningService` Session Cost line and `ProductionSessionLoopGuard` cost notice — both go through `format_cost_usd`, removing the two other money formats.
 8. `[MIGRATE]` The `ProjectContext`, `ContextService`, `PlanningService`, and reviewer component pages, plus the Ubiquitous Language entry for the shared formatter.
 
 ## Deliverables
-- [ ] **Interface** — Extend `ProjectContext` with `model_name` and `session_cost`, and thread both as additive keywords through `IGetContextUseCase.get_context` and `ContextService.get_context` without disturbing existing callers.
-- [ ] **Core** — Implement `format_cost_usd` and `split_model_identity` as pure functions with unit tests covering the four-decimal boundary, recorded zero, unrecorded cost, a provider-less model, and a nested provider segment.
-- [ ] **Harness** — Extend `ContextScenarios` with a builder variant carrying a model name and a session cost so the panel branches are drivable without a real session.
-- [ ] **Wiring** — Resolve the effective model and the cumulative cost in the start and resume handlers and pass them into `get_context`, then render the three rows in `populate_context_detail` to complete the tracer bullet.
-- [ ] **Migration** — Route the terminal Session Cost line and the guardrail cost notice through `format_cost_usd`, and update their existing assertions to the shared format.
+- [ ] **Interface** — Extend `ProjectContext` with `model_name` and `session_cost`, thread `session_cost` as an additive keyword through `IGetContextUseCase.get_context` and `ContextService.get_context`, and derive `model_name` from the existing `model` keyword; contract-test the defaults, the blank-model fallback, and the unrecorded-cost default without disturbing existing callers.
+- [ ] **Core** — Implement `format_cost_usd`, `resolve_session_cost`, and `split_model_identity` as pure functions with unit tests covering the four-decimal boundary, recorded zero, unrecorded cost, a provider-less model, and a nested provider segment.
+- [ ] **Harness** — Extend `ContextScenarios` with `model` and `session_cost` fields, a canonical costed bundle, and a forwarding `get_context_kwargs`, migrating the pinned contract test to the widened dict.
+- [ ] **Wiring** — Resolve the session cost in `PlanningService.generate_plan` and `SessionOrchestrator._gather_fallback_context`, pass it into `get_context`, then render the Model, Provider, and Session Cost rows in `populate_context_detail` to complete the tracer bullet.
+- [ ] **Migration** — Route the terminal Session Cost line and the guardrail cost notice through `format_cost_usd`, and update any assertion pinned to the superseded format.
 - [ ] **Cleanup** — Update the four affected component pages and record `format_cost_usd` in the Ubiquitous Language as the one cost renderer.
 
 ## Implementation Notes
@@ -83,10 +84,10 @@ Then it reads $???
 ## Verification
 1. **Panel contents:**
    Run `uv run teddy start -m "plan a small refactor"` and highlight the Context root.
-   Verify the right panel shows Model, Provider, and Session Cost rows beneath the token breakdown.
+   Verify the right panel shows Model, Provider, and Session Cost rows beneath the token breakdown, with Provider echoing the `llm.model` prefix.
 2. **Rounding agreement:**
-   Complete a turn and compare the terminal Session Cost line with the panel row.
+   Complete a turn and compare the terminal `• Session Cost:` line with the panel row.
    Verify both display the identical `$X.YYYY` figure with four decimals.
 3. **Unrecorded cost:**
-   Run `uv run teddy execute --plan-content <plan>` outside a session.
-   Verify the panel shows `$???` rather than `$0.00`.
+   Point `llm.model` at an id litellm does not price (for example `openrouter/unknown-model`) and confirm the panel and the terminal both read `$???` rather than `$0.0000`.
+   `uv run pytest tests/suites/unit/core/utils/test_money.py` exercises the same rule deterministically.
