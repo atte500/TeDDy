@@ -72,7 +72,7 @@ And the cursor does not move to the Action Plan root
 - [x] **Core** — Implement `section_sequence` and `containing_section` as pure helpers with unit tests over a fully populated tree, a history-less tree, and a context-less tree.
 - [x] **Wiring** — Rewire `action_jump_next` and `action_jump_prev` onto the derived sequence, scrolling to the tree's end or start at the boundaries, and prove the order end to end through the driver.
 - [x] **Refactor** — Delete `jump_to_section`, now that both actions reach the tree through `jump_to_node`, and port its two unit tests onto the new method.
-- [ ] **Cleanup** — Update the reviewer component page's binding table with the boundary rule and the new subsection targets.
+- [x] **Cleanup** — Update the reviewer component page's binding table with the boundary rule and the new subsection targets.
 
 ## Implementation Notes
 
@@ -121,6 +121,20 @@ And the cursor does not move to the Action Plan root
 **Single-sourced plan builder:** the `### Summary` plan every navigation scenario drives now lives as `reviewer_plan(action_count=1)` beside the canonical panel shapes in `reviewer_context_scenarios.py`, replacing three verbatim copies across the unit, acceptance, and driver test modules. The `action_count` parameter is what lets a boundary scenario overflow the tree viewport. The per-file `_driver` helpers stay: they are fixture wiring over `mock_env`/`mock_fs`, not duplicated content.
 
 **Deliberately deferred:** collapsing `ActionTree.CONTEXT_ROOT`/`RATIONALE_ROOT`/`ACTION_PLAN_ROOT` into the constants `_logic.py` already owns would require staging `test_tui_section_navigation.py`, which still builds bare `MagicMock`, so the collapse is recorded as a milestone item rather than smuggled into this commit.
+
+### Cleanup — reviewer page and harness registration
+
+**Files:** `docs/architecture/adapters/inbound/textual_plan_reviewer.md`, `docs/architecture/ARCHITECTURE.md`, `docs/project/milestones/06-cross-cutting-consolidation.md`, `docs/architecture/tests/drivers/tui_driver.md` (new), `docs/architecture/tests/setup/reviewer_context_scenarios.md` (new).
+
+**Reviewer page:** the Keyboard bindings section now names all eight jump keys — `alt`, `ctrl`, and `shift` in both directions — and states that the walk is read from the tree, so the Context root's System, Session, Turn, and History groups are stops rather than a single opaque panel. It records the collapsed-destination expansion, the governing-section return on Prev so one press never skips the cursor's own group, and the right pane's pane-local scroll meaning. A `tree_derived_section_walk` invariant pins the two properties that would otherwise erode silently: the sequence holds exactly the sections the panel built, and both ends terminate by scrolling instead of wrapping.
+
+**Harness registration:** `TuiDriver` and `ReviewerContextScenarios` had design-worthy structure but no Component Map row and no page, so both were authored from the component-design template (`Status: Implemented`, `Classification: Test Driver` / `Test Setup`) and linked from the Test Harness table. The driver page records why the Harness commit cleared TID251 — an omitted `console_tooling` or `action_dispatcher` arrives through `spec_mock`, so it cannot answer an attribute the real seam lacks — and why every cursor, focus, or scroll assertion must run inside `interaction()`, because the app is unmounted on exit. The scenarios page records `paths_decide_the_shape` and states plainly that `reviewer_plan` enforces no precondition on `action_count`, since no guard exists and the plan is only ever built from literal test constants.
+
+**Deferred literal recorded, not smuggled:** the slice claimed the `ActionTree` root-constant collapse was "recorded as a milestone item" while milestone 06 did not carry it. Its Requirement 1 now names the three duplicated section ids together with the hard prerequisite — `test_tui_section_navigation.py` still builds bare `MagicMock`, so it must migrate onto spec-bound doubles before the collapse can be staged.
+
+**Status left as `Refactoring`:** the reviewer page keeps that status deliberately. This slice scoped only its bindings and invariant sections, and milestone 04 carries five further reviewer slices that keep editing the same surface, so flipping it to `Implemented` would overstate what is finished.
+
+**Stale references:** the sweep over `src/`, `tests/`, `docs/`, `spikes/`, and `scripts/` — wider than the earlier `NO_REFS` probe, which by construction skipped `docs/` and `spikes/` — finds `jump_to_section` only in this document's own history.
 
 ## Verification
 1. **Subsection walk:**
