@@ -100,6 +100,15 @@ class InterruptGuard:
         signal.signal(signal.SIGINT, self._previous_handler)
         self._previous_handler = _UNCLAIMED_DISPOSITION
 
+    def clear_source(self) -> None:
+        """Forget which key triggered a previous run's interrupt.
+
+        Called at bracket entry: one memoized container keeps a single guard
+        alive across in-process commands, so a leftover source would name the
+        previous run's key in this run's notice.
+        """
+        self.source = None
+
     def record_source(self, source: str) -> None:
         """Record which key triggered the interrupt (e.g. ``"q"``).
 

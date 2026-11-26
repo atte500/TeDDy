@@ -77,7 +77,7 @@ Then the previous SIGINT disposition is restored and the next Ctrl+C in the shel
 
 ## Deliverables
 - [x] **Interface** - Give `InterruptGuard` install ownership: `install()` still returns the previous disposition but also records the claim, a second install fails its contract assertion naming the held disposition, and `restore()` reinstates the disposition and releases the claim.
-- [ ] **Interface** - Define `interrupt_scope(guard, listener)` as a context manager over the injected guard and listener, stopping the listener and releasing the claim in `finally` on every exit path including a raised exit.
+- [x] **Interface** - Define `interrupt_scope(guard, listener)` as a context manager over the injected guard and listener, stopping the listener and releasing the claim in `finally` on every exit path including a raised exit.
 - [ ] **Harness** - Extend the SIGINT delivery double so a simulated press routes through the currently installed handler, letting an acceptance test drive the real guard without raising in the test process.
 - [ ] **Wiring** - Move the session loop onto the seam unchanged and prove the existing session interrupt and quit-listener tests stay green before the stateless path adopts anything.
 - [ ] **Adapter** - Bracket the stateless `execute` command body with the seam, surface the interrupt notice at that boundary, and add the acceptance test for an interrupted run.
@@ -101,6 +101,16 @@ Then the previous SIGINT disposition is restored and the next Ctrl+C in the shel
 - Four unit tests in `TestInstallOwnership` pin the contract: restoration reinstates the exact captured disposition, a nested install fails naming `restore()`, a released claim admits the next bracket, and a `restore()` with no claim is refused instead of installing a foreign handler.
 - The session loop's `finally` migrated from raw `signal.signal(...)` to `guard.restore()` inside this same deliverable, and the then-dead `import signal` was pruned. The contract alone left eleven multi-command acceptance flows red: one memoized container keeps a single guard instance alive, so raw restoration latched the claim and the next in-process command's `install()` tripped the assertion. The leak was confirmed by a direct probe and reproduced under `-n0`, ruling out xdist worker reuse.
 - Deliberate scope boundary: the transient press source is not reset here. `restore()` releases the claim but leaves `guard.source` set, so a later in-process bracket would name the previous key in its notice. Production is unaffected because every CLI invocation is a fresh process, and the seam deliverable clears press state at bracket entry with its own test.
+
+**Deliverable 2 — the shared bracket seam (delivered).**
+
+- `interrupt_scope(guard, listener)` is a `@contextmanager` over the already-resolved guard and listener, so it holds no container and constructs no concrete `InterruptGuard`. It clears transient press state, installs the guard, starts the listener, and in `finally` stops the listener then calls `guard.restore()`.
+- `InterruptGuard.clear_source()` was added rather than letting the adapter write `guard.source` directly: press state stays the guard's, while the seam decides when that state is transient. A leftover source would name the previous run's key in this run's notice, which is reachable because one memoized container keeps a single guard alive across in-process commands.
+- Release order is stop-then-restore, because no keystroke may be read while the previous handler comes back; the ordering test observes `stop()` while the guard's handler is still installed.
+- `listener.start()` sits inside the guard's claim window rather than before it, so a raising start cannot orphan the claim. The port documents `stop()` as idempotent and a no-op off-TTY, so a spurious stop is the cheap failure and a latched claim is the expensive one.
+- The seam never swallows a `KeyboardInterrupt` or a `typer.Exit`: the boundary that entered the bracket owns the notice and the exit code.
+- Eight unit tests in `tests/suites/unit/adapters/inbound/test_interrupt_scope.py` pin it: install-and-start for the body, release on the normal, raising, `typer.Exit` and `KeyboardInterrupt` paths, stop-before-restore ordering, a second bracket on one memoized guard, and entry clearing a stale press source.
+- No production caller uses the seam yet: the session loop keeps its inline install/restore until the Wiring deliverable migrates it, so this commit adds the capability without switching any boundary onto it.
 
 ## Verification
 1. **Interrupted stateless run:**
