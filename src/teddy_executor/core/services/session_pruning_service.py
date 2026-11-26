@@ -8,6 +8,9 @@ from teddy_executor.core.ports.outbound.config_service import IConfigService
 from teddy_executor.core.ports.outbound.file_system_manager import IFileSystemManager
 from teddy_executor.core.utils.paths import normalize_resource_path
 
+_BUDGET_PRUNE_REASON = "Pruned to fit context budget"
+_RECORD_FILENAMES = frozenset({"plan.md", "report.md"})
+
 logger = logging.getLogger(__name__)
 
 
@@ -359,39 +362,88 @@ class SessionPruningService:
             return 0
 
     def _apply_global_budget(self, items):
-        """Prunes turn and history context items to fit within a global token budget."""
+        """Deselects turn-scope files until their total fits the token budget.
+
+        Victims are ranked by what losing each file costs, not by size alone. A
+        copy of a project file leaves first, largest-first inside that class,
+        because a single ``READ`` restores it. Once no copy remains, the oldest
+        retained turn leaves with its whole record set, because a turn's plan and
+        its report are one record: nothing re-renders either, and a plan without
+        its report is unrecoverable reasoning.
+        """
         threshold = self._get_turn_context_threshold()
+        if threshold <= 0:
+            return items
 
-        if threshold > 0:
-            # Sum selected items to reflect Turn-scope (system_prompt_tokens excluded per spec)
-            total_tokens = sum(
-                item.token_count
-                for item in items
-                if item.selected
-                and item.scope == "Turn"
-                and isinstance(item.token_count, (int, float))
+        total_tokens = sum(
+            item.token_count for _, item in self._iter_budget_candidates(items)
+        )
+        if total_tokens <= threshold:
+            return items
+
+        copies, turns = self._rank_budget_candidates(items)
+
+        for idx, item in copies:
+            if total_tokens <= threshold:
+                break
+            items[idx] = replace(
+                item, selected=False, auto_prune_reason=_BUDGET_PRUNE_REASON
             )
+            total_tokens -= item.token_count
 
-            if total_tokens > threshold:
-                # Gather eligible pruning candidates: standard Turn files (which includes history files in turn.context)
-                prune_candidates = [
-                    (i, item)
-                    for i, item in enumerate(items)
-                    if item.scope == "Turn"
-                    and item.selected
-                    and isinstance(item.token_count, (int, float))
-                ]
+        for turn_id in sorted(turns):
+            if total_tokens <= threshold:
+                break
+            for idx, item in turns[turn_id]:
+                items[idx] = replace(
+                    items[idx], selected=False, auto_prune_reason=_BUDGET_PRUNE_REASON
+                )
+                total_tokens -= item.token_count
 
-                # Sort by token count descending to prune largest files first
-                prune_candidates.sort(key=lambda x: x[1].token_count, reverse=True)
-
-                for idx, item in prune_candidates:
-                    if total_tokens <= threshold:
-                        break
-                    items[idx] = replace(
-                        item,
-                        selected=False,
-                        auto_prune_reason="Pruned to fit context budget",
-                    )
-                    total_tokens -= item.token_count
         return items
+
+    def _iter_budget_candidates(self, items):
+        """Yields the ``(index, item)`` pairs the budget may deselect.
+
+        Only a selected ``Turn``-scope item carrying a numeric token count is a
+        candidate: session-scope files and the system prompt sit outside the
+        budget by spec.
+        """
+        for idx, item in enumerate(items):
+            if item.scope != "Turn" or not item.selected:
+                continue
+            if not isinstance(item.token_count, (int, float)):
+                continue
+            yield idx, item
+
+    def _rank_budget_candidates(self, items):
+        """Splits the budget candidates into copies and turns.
+
+        ``copies`` returns largest-first, and a tie keeps its manifest order
+        because ``sorted`` is stable. ``turns`` groups each record set under its
+        turn id so the caller can drop the whole set at once, oldest first.
+        """
+        copies: list[tuple[int, Any]] = []
+        turns: Dict[int, list[tuple[int, Any]]] = {}
+        for idx, item in self._iter_budget_candidates(items):
+            turn_id = self._record_turn_id(item.path)
+            if turn_id is None:
+                copies.append((idx, item))
+            else:
+                turns.setdefault(turn_id, []).append((idx, item))
+        copies.sort(key=lambda candidate: candidate[1].token_count, reverse=True)
+        return copies, turns
+
+    def _record_turn_id(self, path: str) -> Optional[int]:
+        """Returns the turn id when ``path`` is a turn record, else ``None``.
+
+        A record is a ``plan.md`` or ``report.md`` under a numeric turn
+        directory: nothing re-renders it, so losing it loses reasoning. Every
+        other path is a restorable copy, including a project file that happens
+        to be named ``plan.md`` somewhere else in the tree.
+        """
+        posix_path = normalize_resource_path(path)
+        if posix_path.rsplit("/", 1)[-1] not in _RECORD_FILENAMES:
+            return None
+        turn_id = self._extract_turn_id(posix_path)
+        return int(turn_id) if turn_id is not None else None

@@ -17,6 +17,7 @@ Applies configurable auto-pruning heuristics to session context items. It desele
 - `read_cache_scope`: `_read_cache` is cleared at the start of every `prune` call.
 - `config_gate`: When `auto_pruning.enabled` is false, `prune` returns the context unchanged.
 - `turn_scope_budget`: The global budget sums only selected items whose scope is `Turn`.
+- `record_pair_integrity`: A plan and its report are dropped together whenever both are present, so no turn renders a plan without its report.
 - `spared_turns_exempt`: User-request turns and successful message turns are exempt from every heuristic.
 - `failure_transparency`: An unexpected error logs to stderr and returns the original context unchanged.
 
@@ -40,7 +41,7 @@ None — the service is consumed directly by `SessionOrchestrator`.
 ### Heuristics
 - **Validation-failure pruning:** A validation-failed turn is pruned only when a later non-validation-failure report exists, either on disk or as the current status. Consecutive validation failures stay visible to preserve the audit trail.
 - **Retention ceiling:** `auto_pruning.max_turns_retention` bounds how many distinct turns the turn-scoped context may hold. Nothing is deselected while the selected history is at or below the ceiling; past it, only the newest `max(1, max_turns_retention - retention_batch + 1)` turns survive, so one extra turn drops a whole batch of the oldest turns in one pass, and a larger overage drops that overage plus a full batch, minus one. The retained count never falls below one turn. A batch of `1` keeps the newest `max_turns_retention` turns, reproducing the per-turn cadence. A missing batch reads as `1`; a non-positive or unparseable value logs a warning and falls back to `1`.
-- **Global budget:** When the selected Turn-scope token total exceeds `auto_pruning.turn_context_threshold`, the largest Turn-scope files are deselected first.
+- **Global budget:** When the selected Turn-scope token total exceeds `auto_pruning.turn_context_threshold`, victims are ranked by what losing each file costs. A restorable copy of a project file leaves first, largest-first inside that class, and only once no copy remains does the oldest retained turn leave with its whole record set, because a plan and its report are one record. A record is a `plan.md` or `report.md` under a numeric turn directory, so a project file named `plan.md` elsewhere stays a copy; a turn holding only one of its two records drops just that one.
 
 ### Sparing rules
 - **User-request turns:** A report containing the `## User Request` heading is spared from every heuristic.
