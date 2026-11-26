@@ -1,12 +1,12 @@
 """Acceptance tests for AST parser resilience (Slice 02-11)."""
 
 import textwrap
-from unittest.mock import Mock
 
 from teddy_executor.core.domain.models.shell_output import ShellOutput
 from teddy_executor.core.ports.outbound.shell_executor import IShellExecutor
 from tests.harness.drivers.cli_adapter import CliTestAdapter
 from tests.harness.observers.report_parser import ReportParser
+from tests.harness.setup.fake_shell_executor import FakeShellExecutor
 from tests.harness.setup.test_environment import TestEnvironment
 
 
@@ -19,12 +19,11 @@ def test_parser_resilience_handles_both_artifacts(tmp_path, monkeypatch):
     """
     # Arrange
     env = TestEnvironment(monkeypatch, tmp_path).setup()
-    # Override the shell mock to return success for the dummy EXECUTE command
-    mock_shell = Mock(spec=IShellExecutor)
-    mock_shell.execute.return_value = ShellOutput(
-        return_code=0, stdout="success", stderr=""
+    # Override the shell double to return success for the dummy EXECUTE command
+    shell = FakeShellExecutor(
+        output=ShellOutput(return_code=0, stdout="success", stderr="")
     )
-    env.container.register(IShellExecutor, lambda: mock_shell)
+    env.container.register(IShellExecutor, lambda: shell)
 
     adapter = CliTestAdapter(monkeypatch, tmp_path)
 

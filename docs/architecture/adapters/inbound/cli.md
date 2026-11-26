@@ -20,7 +20,7 @@ The primary inbound (driving) adapter. It parses user commands with `Typer`, res
 - [`IMarkdownReportFormatter`](../../core/ports/outbound/markdown_report_formatter.md): Renders the execution report.
 - [`ISystemEnvironment`](../../core/ports/outbound/system_environment.md): Reports TTY status for the setup gates and the `start` opening-prompt presence gate.
 - `IPromptManager`: Serves the `get-prompt` command. It has no standalone port document.
-- `InterruptGuard` and `IQuitKeyListener`: Manage session-loop interrupt handling.
+- `InterruptGuard` and `IQuitKeyListener`: Resolved by both interruptible boundaries and handed to the shared `interrupt_scope` seam.
 
 ## Class Invariants
 - `single_source_agent_resolution`: The effective agent is resolved only through `_resolve_agent(agent, pipeline)`; the flag is declared deferred so "passed" and "omitted" are distinguishable.
@@ -30,7 +30,7 @@ The primary inbound (driving) adapter. It parses user commands with `Typer`, res
 - `shared_startup_preamble`: `start` and `resume` run one shared preamble helper so their startup sequence cannot drift.
 - `start_only_workspace_maintenance`: The shared preamble runs the workspace health checks and the workspace fast-forward only when `start` enables maintenance and never for `resume`.
 - `start_only_workspace_banner`: The workspace banner lines and the separator blank print only on `start`; `resume` leaves them off so its first line is `Checking configurations...` with no orphan leading blank.
-- `boundary_owns_interrupt_lifecycle`: The session loop boundary installs and restores the SIGINT handler and pairs the quit-key listener lifecycle with it.
+- `boundary_owns_interrupt_lifecycle`: Every boundary that can run an action enters the one shared `interrupt_scope` seam, which installs the SIGINT disposition, starts the quit-key listener, and releases both in `finally` on every exit path including a raised exit. The session loop and the stateless `execute` run are the two owners; neither installs a handler of its own, because two snapshots taken independently would restore each other's handler. A stateless run reports the drain as a notice on stderr while the report carries `INTERRUPTED`; the session loop additionally exits its turn loop.
 - `setup_gates_are_tty_gated`: The API-key and editor prompts run only when a terminal is attached.
 - `opening_prompt_requires_presence`: The `start` opening prompt runs only when `ISystemEnvironment.isatty()` reports a terminal; without one it exits with the no-input message instead of entering the ask loop.
 - `shared_context_normalization`: `start` and `context` normalize the repeatable, comma-separated `-c/--context` option through one helper in `cli_helpers.py`.

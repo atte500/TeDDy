@@ -73,7 +73,7 @@ Then the previous SIGINT disposition is restored and the next Ctrl+C in the shel
 6. `[NEW]` An acceptance test proving an interrupted `execute` run prints an `INTERRUPTED` report, restores the disposition, and prints no traceback.
 7. `[MIGRATE]` `docs/architecture/adapters/inbound/cli.md` - flip `boundary_owns_interrupt_lifecycle` from session-only to both boundaries.
 8. `[MIGRATE]` The reviewer component page - record that the shared bracket runs during review, so a session and an `execute` run present the same key semantics.
-9. `[PRUNE]` `execute_valid_plan` in `src/teddy_executor/adapters/inbound/cli_helpers.py` - no callers; deleting it retires the stray debug print in the same stroke.
+9. `[PRUNE, DEFERRED]` `execute_valid_plan` in `src/teddy_executor/adapters/inbound/cli_helpers.py` - no callers, but milestone 05 requirement 5 assigns its deletion to [05-05](/docs/project/slices/05-05-dead-code-instrumentation.md), whose Harness deliverable needs the symbol present as a real red state; this slice leaves it untouched and records why.
 
 ## Deliverables
 - [x] **Interface** - Give `InterruptGuard` install ownership: `install()` still returns the previous disposition but also records the claim, a second install fails its contract assertion naming the held disposition, and `restore()` reinstates the disposition and releases the claim.
@@ -81,7 +81,7 @@ Then the previous SIGINT disposition is restored and the next Ctrl+C in the shel
 - [x] **Harness** - Extend the SIGINT delivery double so a simulated press routes through the currently installed handler, letting an acceptance test drive the real guard without raising in the test process.
 - [x] **Wiring** - Move the session loop onto the seam unchanged and prove the existing session interrupt and quit-listener tests stay green before the stateless path adopts anything.
 - [x] **Adapter** - Bracket the stateless `execute` command body with the seam, surface the interrupt notice at that boundary, and add the acceptance test for an interrupted run.
-- [ ] **Cleanup** - Flip `boundary_owns_interrupt_lifecycle` in the CLI component page, record the `execute` key semantics in the reviewer page, and prune the dead `execute_valid_plan` helper.
+- [x] **Cleanup** - Flip `boundary_owns_interrupt_lifecycle` in the CLI component page, record the `execute` key semantics in the reviewer page, retire the twin inline shell mock onto `FakeShellExecutor`, and defer the dead `execute_valid_plan` helper to slice 05-05, which owns its deletion.
 
 ## Implementation Notes
 
@@ -142,6 +142,15 @@ Then the previous SIGINT disposition is restored and the next Ctrl+C in the shel
 - `FakeShellExecutor` subclasses `IShellExecutor` so signature drift fails static checking, and takes an injected `on_execute` callback so the press fires inside `execute()` while the orchestrator holds `enter_executing()` - a WAITING-phase press would produce no report to assert on. It retired the inline `Mock(spec=IShellExecutor)` in `test_execute_fail_fast.py`; the twin in `test_ast_parser_resilience_wiring.py` moves during Cleanup. `PLR0913` is bypassed inline with a reason because the six-parameter signature IS the port contract, and narrowing it would defeat the double.
 - Green and gates: 6 targeted tests green, full suite 2648 passed / 5 skipped (2643 baseline plus the four harness tests and the interrupted-run acceptance test). No test showed a spurious notice or an all-SKIPPED run. The seam does not reset the drain flag, so one memoized guard could in principle leak a drain into a later in-process run; production is unaffected (one process per invocation), so it is recorded as debt to be assessed during Cleanup rather than patched speculatively here.
 - `format_interrupt_notice` appends the session resume hint, which reads slightly off for a stateless run. The test asserts only the naming prefix, and changing the shared notice text is out of this slice's scope.
+
+**Deliverable 6 - Cleanup and As-Built (delivered).**
+
+- `boundary_owns_interrupt_lifecycle` in the CLI adapter page now states that every boundary that can run an action enters the one shared seam, names the session loop and the stateless `execute` run as the two owners, and records why neither may take its own snapshot. The sibling dependency line that still read "Manage session-loop interrupt handling" was corrected in the same edit, because leaving it would have contradicted the invariant beside it.
+- The reviewer page gained `bracket_live_during_review` next to `stdin_ownership`: the reviewer mounts inside `ExecutionOrchestrator.execute`, which both boundaries now run inside the seam, so the disposition and listener are live while the TUI is up, and the `stdin_owned()` claim is what keeps the raw reader off Textual's keys. The Keyboard bindings section notes that `q` means the same thing in a session and a stateless run.
+- The twin inline `Mock(spec=IShellExecutor)` in `test_ast_parser_resilience_wiring.py` moved onto `FakeShellExecutor`; both slice-scoped shell doubles are now retired, and the arrangement change preserved coverage rather than adding any.
+- `execute_valid_plan` was deliberately NOT deleted here. Milestone 05 requirement 5 names its deletion with `Owner: 05-05`, and slice 05-05's Harness deliverable is a module-surface assertion that needs a real dead public function to fail on. Deleting it from this slice would gut another milestone's artifact to satisfy one Impact line, so our item is marked `[PRUNE, DEFERRED]` with the reason and the function stays unreachable.
+- The non-slice-scoped shell double in `test_pipeline_message_break.py` is a six-mock unit fixture, not an acceptance arrangement, so it was recorded under milestone 06's shared-fake consolidation (06-03) instead of being rewritten from a slice that never exercised it.
+- Raw `signal.signal(...)` restorations in the interrupt suites were classified rather than migrated: they are fixture-level ambient-state restoration wrapped around a fresh guard per test, and a latched install claim would only bite on a second install of the same instance, which the green suite shows never happens. Migrating them to `guard.restore()` would test the guard through itself.
 
 ## Verification
 1. **Interrupted stateless run:**
