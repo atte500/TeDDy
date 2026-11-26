@@ -9,6 +9,7 @@ canonical path.
 
 from teddy_executor.core.utils.markdown import is_own_session_path
 from tests.harness.setup.context_scenarios import (
+    COSTED_SESSION,
     MIXED_SCOPES,
     OWN_HISTORY_REQUEST,
     SESSION_DOCUMENT,
@@ -66,13 +67,28 @@ def test_a_path_in_both_scopes_carries_one_content_entry():
     assert scenario.file_contents == {TURN_DOCUMENT: content_for(TURN_DOCUMENT)}
 
 
-def test_get_context_kwargs_forwards_the_scope_mapping_and_the_root():
+def test_get_context_kwargs_forwards_every_seam_keyword():
+    """One forwarding helper covers the whole seam, so a service test never
+    hand-assembles the keyword dict."""
     scenario = MIXED_SCOPES
 
     assert scenario.get_context_kwargs() == {
         "context_files": scenario.context_files,
         "session_root": SESSION_ROOT,
+        "model": None,
+        "session_cost": None,
     }
+
+
+def test_the_costed_bundle_adds_an_identity_and_a_recorded_cost_to_the_mixed_scopes():
+    """The costed bundle is the partition payload plus the reviewer's two rows."""
+    scenario = COSTED_SESSION
+
+    assert scenario.context_files == MIXED_SCOPES.context_files
+    assert scenario.model == "openrouter/~deepseek/deepseek-flash-latest"
+    assert scenario.session_cost == 0.42
+    assert scenario.get_context_kwargs()["model"] == scenario.model
+    assert scenario.get_context_kwargs()["session_cost"] == 0.42
 
 
 def test_each_canonical_path_drives_exactly_one_partition_branch():

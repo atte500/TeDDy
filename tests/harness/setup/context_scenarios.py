@@ -24,17 +24,25 @@ def content_for(path: str) -> str:
 
 
 class ContextScenario(NamedTuple):
-    """A scope mapping, the contents its paths resolve to, and the session root."""
+    """A scope mapping, its contents, the session root, and the reviewer's two rows."""
 
     context_files: dict[str, list[str]]
     file_contents: dict[str, str]
     session_root: str | None
+    model: str | None = None
+    session_cost: float | None = None
 
     def get_context_kwargs(self) -> dict[str, object]:
-        """Forward the mapping with ``session_root`` to ``get_context``."""
+        """Forward every seam keyword, so a service test never assembles the dict.
+
+        Both reviewer rows default to ``None``, which reads as "no model
+        resolved, no cost recorded" for every scenario that omits them.
+        """
         return {
             "context_files": self.context_files,
             "session_root": self.session_root,
+            "model": self.model,
+            "session_cost": self.session_cost,
         }
 
 
@@ -42,6 +50,8 @@ def context_scenario(
     session: Sequence[str] | None = None,
     turn: Sequence[str] | None = None,
     session_root: str | None = SESSION_ROOT,
+    model: str | None = None,
+    session_cost: float | None = None,
 ) -> ContextScenario:
     """Build a scenario while always emitting both scope keys.
 
@@ -58,12 +68,21 @@ def context_scenario(
         context_files=context_files,
         file_contents=file_contents,
         session_root=session_root,
+        model=model,
+        session_cost=session_cost,
     )
 
 
 MIXED_SCOPES = context_scenario(
     session=[SESSION_DOCUMENT, OWN_HISTORY_REQUEST],
     turn=[TURN_DOCUMENT],
+)
+
+COSTED_SESSION = context_scenario(
+    session=MIXED_SCOPES.context_files["Session"],
+    turn=MIXED_SCOPES.context_files["Turn"],
+    model="openrouter/~deepseek/deepseek-flash-latest",
+    session_cost=0.42,
 )
 
 EXPORT_SCOPES = context_scenario(
