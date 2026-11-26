@@ -1,5 +1,5 @@
 # Slice: Waiting Feedback for Agent Response
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** None
@@ -156,6 +156,22 @@ Documentation only: no `src/` or `tests/` behaviour changed, and the full suite 
 **Stale references swept.** Milestone 4's 04-02 row is now `[x] … Delivered.` Milestone 5's debt disposition lost its settled `InterruptGuard.enter_waiting` clause. Slice `05-05`'s scope exclusion now reads as settled rather than pending, and its precedent bullet no longer calls the `begin_waiting` seam unbuilt. `tests/suites/unit/core/utils/test_interrupt_guard.py`'s docstring stopped advertising a WAITING phase manager that the prune removed, now states the default-is-WAITING semantics correctly, and lost its ticket reference.
 
 The `enter_waiting` census closed the prune question empirically: zero hits under `src/` or `tests/`, so every surviving mention is a document — and the two forward-looking ones were the only stale ones. Slice 04-02's own notes keep describing the contraction they performed.
+
+### Verification — delivered
+
+Four audit probes and one unfiltered suite run, and every claim they tested held.
+
+**Production doubles.** No placeholder marker (`TODO`, `FIXME`, `NotImplemented`) survives in `console_waiting_indicator.py`, and its exported surface — `SPINNER_FRAMES`, `SPINNER_REFRESH_PER_SECOND`, `IWaitingIndicator`, `ILiveRegion`, `IExitHooks`, `LiveFactory`, `create_live`, `create_indicator`, `WaitingIndicator` — matches the component page written about it. Nothing in the module returns a skeleton value.
+
+**Sibling surfaces.** `get_completion(` has exactly one call site in `src/`, inside `PlanningService`, so no other production surface bypasses the waiting bracket. The two waiting operations reach exactly two production sites: the bracket at `planning_service.py:225` / `:253` and the delegation in `ConsoleInteractorAdapter`.
+
+**Test-suite hygiene.** Zero `mock.patch`, bare `MagicMock`, or `unittest.mock` hits across the six waiting suites — every double is injected through a constructor.
+
+**Census reconciled.** Per-file collection is 12 indicator unit, 4 planning unit, 2 delegation, 8 contract, 2 harness, 2 integration — 30 total, matching the 16 Adapter cases plus the 14 from the Interface, Harness, and Wiring deliverables. The Adapter note's "10 indicator unit, 2 never-raise unit" named two buckets inside one file, not two files: the two never-raise cases live in `test_console_waiting_indicator.py` beside the ten region cases, which is why one file collects 12.
+
+**Gate.** The unfiltered suite reported 2655 passed / 5 skipped, unchanged from the pre-Cleanup baseline.
+
+**Scope.** Milestone 4 still lists ten open siblings (`04-03`…`04-12`), so this slice completes alone: the milestone status and the roadmap row stay `IN PROGRESS`.
 
 ## Verification
 1. **Terminal animation:**
