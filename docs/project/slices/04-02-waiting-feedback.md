@@ -1,5 +1,5 @@
 # Slice: Waiting Feedback for Agent Response
-- **Status:** Completed
+- **Status:** In Progress
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** None
@@ -74,6 +74,7 @@ Then the indicator is already stopped and the error text prints without animatio
 5. `[MIGRATE]` `TestEnvironment._apply_interactor_defaults` — Register deterministic defaults for both methods.
 6. `[MIGRATE]` `docs/architecture/adapters/outbound/console_interactor.md` and `docs/architecture/core/services/planning_service.md` — Document the two operations and the bracketing boundary.
 7. `[PRUNE]` `InterruptGuard.enter_waiting` (`src/teddy_executor/core/utils/interrupt_guard.py`) — deleted with its dedicated unit test, because the guard is a CLI-boundary process-global that `PlanningService` never receives.
+8. `[REFACTOR]` `console_waiting_indicator.py`, `test_console_waiting_indicator.py`, `test_planning_service_waiting.py`, `test_user_interactor_contract.py`, and `console_waiting_indicator.md` — clear the 16 mypy errors and four duplicate blocks the `manual`-stage gates attribute to this slice, and correct the component page's `atexit`-satisfies-`IExitHooks` claim with the adapter that makes it true.
 
 ## Deliverables
 - [x] **Interface** — Add `begin_waiting(message: str)` and `end_waiting()` to `IUserInteractor` with contract docs pinning that they are display-only, must never raise, must tolerate an unbalanced `end_waiting`, are no-ops without an attached terminal, never alter a line they did not print, and never touch stdin or a signal handler.
@@ -81,6 +82,7 @@ Then the indicator is already stopped and the error text prints without animatio
 - [x] **Wiring** — Call `begin_waiting` before the retry loop and `end_waiting` in a `finally` inside `PlanningService._perform_generation_with_retry`, then extend the planning-service unit coverage to assert the begin/end order around a stubbed completion. Delete `InterruptGuard.enter_waiting` and its dedicated test in the same change, because the guard is a CLI-boundary process-global that never reaches `PlanningService`.
 - [x] **Adapter** — Implement `WaitingIndicator` in `adapters/outbound/console_waiting_indicator.py` and delegate both `ConsoleInteractorAdapter` methods to it, with unit tests covering the terminal gate, unbalanced end, nested begin, exception unwinding, interrupt teardown, and the interpreter-exit hook that stops a region abandoned on the daemon worker.
 - [x] **Cleanup** — Update the `ConsoleInteractor` and `PlanningService` component docs, add the slice to the Milestone 4 delivered list, and remove this slice's Key Unknown once the prototype answers it.
+- [▶] **Refactor** — Clear the advisory findings this slice's own files carry: adapt `atexit` to `IExitHooks` so `create_indicator` type-checks, return the injected region class from `create_live` instead of the protocol, drive the port's base bodies without a fake receiver, and collapse the four duplicate test blocks into shared arrange helpers. The repository-wide advisory steps stay red on inherited debt; only this slice's contribution is removed, verified by a filtered `ruff` / `mypy` / `jscpd` run naming none of its files.
 
 ## Implementation Notes
 
@@ -172,6 +174,19 @@ Four audit probes and one unfiltered suite run, and every claim they tested held
 **Gate.** The unfiltered suite reported 2655 passed / 5 skipped, unchanged from the pre-Cleanup baseline.
 
 **Scope.** Milestone 4 still lists ten open siblings (`04-03`…`04-12`), so this slice completes alone: the milestone status and the roadmap row stay `IN PROGRESS`.
+
+### Refactor — reopened by the audit
+
+The Verification audit checked production doubles, callers, and banned doubles, and all three were clean — but it never ran the `manual`-stage type checker, so a green suite was mistaken for a clean module. `mypy --all-files` reports **16 errors in three of this slice's own files**, and jscpd attributes **four duplicate blocks** to two of its test modules. CI was right and the slice was wrong to call itself complete: the seven red `Quality Checks` steps are inherited (tip run `45845540723` and base run `45844594985` at `08b0fda2` fail the identical seven, 24 passing in both, empty symmetric difference), but *within* those inherited checks this slice added findings of its own. Step-level inheritance and file-level innocence are different claims, and only the second one closes the audit.
+
+Measured findings:
+
+- `console_waiting_indicator.py:90` — one `arg-type`. `IExitHooks` requires `register(hook) -> None`, while the `atexit` module's is `register(Callable, /, *args, **kwargs) -> Callable`, so the module is not structurally assignable. The component page's claim that "`atexit` satisfies it structurally" is false and is corrected with the fix.
+- `test_console_waiting_indicator.py:247–252` — six `attr-defined`. `create_live` returns `ILiveRegion`, so the test cannot read the injected region's `console`, `kwargs`, and `render`. A protocol-typed handle is the wrong handle when the assertion is about the concrete region.
+- `test_user_interactor_contract.py:51,52,63–67` — nine errors. The base bodies are driven unbound with `None` as `self`, so mypy rejects both the receiver type and the `is None` assertion on a `-> None` operation.
+- jscpd — `test_console_waiting_indicator.py` 162–168 ↔ 187–193, and three pairs inside `test_planning_service_waiting.py` (41–48 cross-file, 58–67 ↔ 116–125, 60–68 ↔ 77–83). Both files repeat one arrange-and-assert shape four times where a single helper expresses it once.
+
+The repository's own advisory job stays red on the inherited set — ruff 44 findings, mypy 99 in 26 files once this slice's 16 are cleared, pip-audit's litellm cap, the file-length list, six `core` `yaml`/`typer` imports, jscpd's repository-wide clones, and `scripts/demo/record_demo.sh:56` — so this deliverable removes only the slice's contribution and leaves the rest with the owners Milestone 5 already names. That milestone's two stale measurements (detect-secrets "measured clean", "mypy 10") are corrected in the same pass, because a milestone cannot reconcile a surface it under-counts.
 
 ## Verification
 1. **Terminal animation:**
