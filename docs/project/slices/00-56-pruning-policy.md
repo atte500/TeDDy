@@ -1,5 +1,5 @@
 # Slice: Pruning Policy by Cost of Loss
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** None (ad-hoc)
 - **Depends On:** None
 - **Specs:** [context-payload-format](../specs/context-payload-format.md)
@@ -190,6 +190,16 @@ The second grep fixed the deletion's shape, and that mattered more than it looks
 One tooling detail cost a turn of ambiguity and is worth recording. `git grep` exits `1` when nothing matches, so "the helpers are gone" arrives as a failed command, and chaining the survivor check onto it with `&&` would have hidden that check entirely — which is exactly what happened. Absence is now verified through an explicit `|| echo` fallback, and the survivor check runs as its own statement. The lesson generalises: a negative grep needs a no-match fallback before it can be read as evidence.
 
 Turn 42's repository-wide sweep also surfaced the slice's last documentation obligation. Three documents named the removed code, and only one was forward-looking: `docs/project/milestones/05-quality-gate-debt-reconciliation.md`'s anticipated item 32 instructed a future Developer to remove or wire `_check_file_contains`, and cited `session_pruning_service.py:289`, a line this slice shrank away. It now reads as a resolved entry naming the removal and its slice instead of an instruction, because an instruction pointing at deleted code sends the next reader grepping for a method that no longer exists. The other two mentions are historical records — the PDF case file's audit and slice `00-54`'s handoff note — and both already point at Milestone 5 for the resolution, so rewriting either would falsify a record without removing any misdirection.
+
+### Verification — quality audit outcome
+
+The slice-level audit found nothing to fix in-slice and three pre-existing defects to escalate.
+
+- **No orphaned helper.** Every method still defined in `SessionPruningService` reports at least one in-file use, so the heuristic-chain deletion took no helper's only consumer. That is the check turn 41's survivor grep never asked, and it is the one a compile-and-green-suite pass cannot answer.
+- **Provenance is confined.** No retired identifier survives anywhere in `src` — not the config key, not the `Pruned failure history` reason, not any of the five deleted chain members — and the skeleton sweep found only unrelated pre-existing hits.
+- **Blast radius bounded.** `SessionOrchestrator` calls the public `prune` entry point and `container.py` is the only constructing site; nothing in `src` reaches a private member.
+- **No test pruned as redundant.** `test_execute_prunes_global_budget_heuristic` guards that the orchestrator runs pruning at all with a supplied context, and `test_primary_path_prunes_oversized_turn_scope_context` guards the primary session path where pruning once silently stopped. Both invariants differ from the six ordering cases, and both use copy-shaped paths that remain the first victims under the new order.
+- **Escalated, not fixed.** The `is_dataclass` guard in `prune()` exists only to tolerate mock contexts, the method's broad `except Exception` reduces every failure to a stderr line, and `test_session_pruning_windows.py` reads the service's private collaborators instead of injecting them. All three predate this slice, and the first two sit in `prune()`'s error path, where a change would breach the rule that a Cleanup leaves behaviour identical. They are recorded in Milestone 5.
 
 ## Verification
 1. **The schema no longer declares the key:**
