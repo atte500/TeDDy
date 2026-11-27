@@ -29,7 +29,7 @@ async def do_preview_logic(app: ReviewerApp, node: Any, action: ActionData) -> N
         await preview_edit(app, action, node)
     elif action.type in ("EXECUTE", "RESEARCH"):
         await preview_text_action(app, action, node)
-    elif action.type == "READ":
+    elif action.type in ("READ", "MOVE", "DELETE"):
         await preview_readonly(app, action)
 
 
@@ -185,15 +185,20 @@ def _resolve_read_resource(app: ReviewerApp, resource: str) -> Optional[dict]:
 
 
 async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
-    """Handle non-blocking preview for READ (read-only).
+    """Handle non-blocking preview for every read-only verb.
 
-    Opens the resource in an external editor without harvesting content.
-    Resources can be local file paths or URLs (http/https).
+    Opens the touched path in an external editor without harvesting content.
+    A READ names its target as ``resource``, a DELETE as ``path``, and a MOVE as
+    ``source``; local paths and URLs (http/https) are both supported.
     - CLI editors: subprocess.run() inside app.suspend()
     - GUI editors: Popen (background) — no ConfirmScreen (read-only, no save needed)
     - URLs: content is fetched and written to a temp file for viewing
     """
-    resource = action.params.get("resource") or action.params.get("path", "")
+    resource = (
+        action.params.get("resource")
+        or action.params.get("path")
+        or action.params.get("source", "")
+    )
     if not resource:
         return
 

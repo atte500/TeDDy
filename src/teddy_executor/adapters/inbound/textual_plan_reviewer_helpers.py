@@ -359,13 +359,28 @@ def get_action_summary(action: "ActionData") -> str:
     summary = action.description or ""
     if not summary:
         params = action.params
-        summary = str(
-            params.get("path") or params.get("resource") or params.get("command", "")
-        )
+        if action.type == "MOVE":
+            source = params.get("source", "")
+            destination = params.get("destination", "")
+            summary = f"{source} -> {destination}"
+        else:
+            summary = str(
+                params.get("path")
+                or params.get("resource")
+                or params.get("command", "")
+            )
 
     if len(summary) > MAX_LABEL_LENGTH:
         summary = summary[: MAX_LABEL_LENGTH - 3] + "..."
     return summary
+
+
+# Parameters a reviewer edits as text while the run consumes them as booleans.
+# The parser owns the one truthiness rule, so an edited "false" cannot survive
+# as the truthy string it looks like.
+BOOLEAN_PARAM_KEYS = frozenset(
+    {"overwrite", "match_all", "allow_failure", "background", "recursive"}
+)
 
 
 def _apply_param_edit(action: Any, key: str, new_val: str) -> None:
@@ -373,6 +388,10 @@ def _apply_param_edit(action: Any, key: str, new_val: str) -> None:
     list_keys = {"queries", "reference_files"}
     if key in list_keys:
         action.params[key] = [v.strip() for v in str(new_val).split(",") if v.strip()]
+    elif key in BOOLEAN_PARAM_KEYS:
+        from teddy_executor.core.services.parser_infrastructure import coerce_param
+
+        action.params[key] = coerce_param(new_val, bool)
     else:
         action.params[key] = str(new_val)
 

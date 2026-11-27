@@ -86,12 +86,14 @@ def resolve_action_parameters(action: ActionData) -> dict[str, Any]:
         DEFAULT_SIMILARITY_THRESHOLD,
     )
 
-    # Base defaults for all actions
+    # Fallbacks keyed by name. A type's own key list below decides which of
+    # them it renders, so a destructive verb's flag never reaches another pane.
     defaults: dict[str, Any] = {
         "overwrite": False,
         "match_all": False,
         "allow_failure": False,
         "background": False,
+        "recursive": False,
         "timeout": 60.0,
         "similarity_threshold": DEFAULT_SIMILARITY_THRESHOLD,
     }
@@ -110,6 +112,8 @@ def resolve_action_parameters(action: ActionData) -> dict[str, Any]:
         ],
         "READ": ["resource", "lines", "description"],
         "RESEARCH": ["queries", "description"],
+        "MOVE": ["source", "destination", "description"],
+        "DELETE": ["path", "recursive", "description"],
     }
 
     keys = param_map.get(action.type, [])
