@@ -29,6 +29,8 @@ from teddy_executor.core.services.parser_reporting import (
 from teddy_executor.core.services.parser_metadata import parse_plan_metadata
 from teddy_executor.core.services.action_parser_strategies import (
     parse_create_action,
+    parse_delete_action,
+    parse_move_action,
     parse_read_action,
 )
 from teddy_executor.core.services.action_parser_complex import (
@@ -58,6 +60,8 @@ class MarkdownPlanParser(IPlanParser):
             "RESEARCH": lambda s, node=None: parse_research_action(
                 s, self._valid_actions, node=node
             ),
+            "MOVE": parse_move_action,
+            "DELETE": parse_delete_action,
         }
 
     def _normalize_plan_content(self, plan_content: str) -> str:

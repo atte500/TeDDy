@@ -86,3 +86,49 @@ def parse_read_action(
     stream: _PeekableStream, node: Optional[Any] = None
 ) -> ActionData:
     return parse_resource_action(stream, "READ", node=node)
+
+
+def parse_move_action(
+    stream: _PeekableStream, node: Optional[Any] = None
+) -> ActionData:
+    from mistletoe.block_token import List as MdList
+
+    metadata_list = stream.next()
+    if not isinstance(metadata_list, MdList):
+        raise InvalidPlanError(
+            "MOVE action is missing metadata list.", offending_node=metadata_list
+        )
+
+    description, params = parse_action_metadata(
+        metadata_list,
+        link_key_map={"Source": "source", "Destination": "destination"},
+    )
+
+    return ActionData(type="MOVE", description=description, params=params, node=node)
+
+
+def parse_delete_action(
+    stream: _PeekableStream, node: Optional[Any] = None
+) -> ActionData:
+    from mistletoe.block_token import List as MdList
+
+    metadata_list = stream.next()
+    if not isinstance(metadata_list, MdList):
+        raise InvalidPlanError(
+            "DELETE action is missing metadata list.", offending_node=metadata_list
+        )
+
+    description, params = parse_action_metadata(
+        metadata_list,
+        link_key_map={"Path": "path"},
+        text_key_map={"Recursive": "recursive"},
+    )
+
+    if "recursive" in params:
+        from teddy_executor.core.services.parser_infrastructure import (
+            coerce_action_params,
+        )
+
+        params = coerce_action_params(params, {"recursive": bool})
+
+    return ActionData(type="DELETE", description=description, params=params, node=node)

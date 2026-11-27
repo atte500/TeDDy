@@ -2,6 +2,7 @@ import pytest
 
 from teddy_executor.core.domain.models import Plan
 from teddy_executor.core.ports.inbound.plan_parser import IPlanParser
+from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 
 
 @pytest.fixture
@@ -295,3 +296,83 @@ def test_parser_succeeds_on_builder_generated_create_action(parser: IPlanParser)
     assert action.params["path"] == "new_file.txt"
     assert action.params["content"] == "Hello, TeDDy!\n"
     assert action.description == "Create a new file."
+
+
+def test_parse_move_action(parser: IPlanParser):
+    """
+    Given a MOVE action emitted by the harness builder,
+    When the plan is parsed,
+    Then both paths arrive under the internal `source`/`destination` keys.
+    """
+    # Arrange
+    plan_content = (
+        MarkdownPlanBuilder("Move a file")
+        .add_move(
+            "src/app/old_name.py",
+            "src/app/new_name.py",
+            description="Rename the module.",
+        )
+        .build()
+    )
+
+    # Act
+    plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(plan.actions) == 1
+    action = plan.actions[0]
+    assert action.type == "MOVE"
+    assert action.description == "Rename the module."
+    assert action.params["source"] == "src/app/old_name.py"
+    assert action.params["destination"] == "src/app/new_name.py"
+
+
+def test_parse_delete_action_leaves_recursive_absent_when_omitted(parser: IPlanParser):
+    """
+    Given a DELETE action that omits Recursive,
+    When the plan is parsed,
+    Then no `recursive` key is produced, so the port's own default applies.
+    """
+    # Arrange
+    plan_content = (
+        MarkdownPlanBuilder("Delete a file")
+        .add_delete("docs/notes/obsolete.md")
+        .build()
+    )
+
+    # Act
+    plan = parser.parse(plan_content)
+
+    # Assert
+    assert len(plan.actions) == 1
+    action = plan.actions[0]
+    assert action.type == "DELETE"
+    assert action.params["path"] == "docs/notes/obsolete.md"
+    assert "recursive" not in action.params
+
+
+@pytest.mark.parametrize(
+    "given,expected",
+    [(True, True), ("false", False), (False, False)],
+)
+def test_parse_delete_action_coerces_recursive(
+    parser: IPlanParser, given, expected: bool
+):
+    """
+    Given a DELETE action carrying a Recursive value,
+    When the plan is parsed,
+    Then it arrives as a real boolean, so the planner's string `false` cannot
+    delete recursively by accident.
+    """
+    # Arrange
+    plan_content = (
+        MarkdownPlanBuilder("Delete a directory")
+        .add_delete("src/app/legacy", recursive=given)
+        .build()
+    )
+
+    # Act
+    plan = parser.parse(plan_content)
+
+    # Assert
+    assert plan.actions[0].params["recursive"] is expected

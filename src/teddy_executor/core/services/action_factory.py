@@ -24,6 +24,8 @@ class ActionFactory(IActionFactory):
         "EXECUTE": "execute",
         "MESSAGE": "message",
         "RESEARCH": "research",
+        "MOVE": "move",
+        "DELETE": "delete",
     }
 
     def __init__(
@@ -46,6 +48,8 @@ class ActionFactory(IActionFactory):
             "read_file": self._file_system_manager,
             "message": self._user_interactor,
             "research": self._web_searcher,
+            "move": self._file_system_manager,
+            "delete": self._file_system_manager,
         }
 
     def _normalize_action_type(self, action_type: str) -> str:
@@ -246,6 +250,8 @@ class ActionFactory(IActionFactory):
             "message": "ask_question",
             "research": "search",
             "execute": "execute",
+            "move": "move_path",
+            "delete": "remove_path",
         }
 
         if action_type_key not in method_map:

@@ -133,3 +133,39 @@ def test_read_action_with_lines_extracts_range(
     mock_fs.read_file.assert_not_called()
     # Result should be only lines 2-4
     assert result == "line2\nline3\nline4", f"Expected lines 2-4, got: {result}"
+
+
+def test_move_action_resolves_file_system_manager(mock_fs, factory: ActionFactory):
+    """
+    Given a MOVE action type,
+    When create_action is called,
+    Then the handler invokes the filesystem port's move primitive.
+    """
+    # Arrange
+    handler = factory.create_action(
+        "MOVE", {"source": "app/old.py", "destination": "app/new.py"}
+    )
+
+    # Act
+    handler.execute(old_path="app/old.py", new_path="app/new.py")
+
+    # Assert
+    mock_fs.move_path.assert_called_once_with(
+        old_path="app/old.py", new_path="app/new.py"
+    )
+
+
+def test_delete_action_resolves_file_system_manager(mock_fs, factory: ActionFactory):
+    """
+    Given a DELETE action type,
+    When create_action is called,
+    Then the handler invokes the filesystem port's removal primitive.
+    """
+    # Arrange
+    handler = factory.create_action("DELETE", {"path": "app/legacy"})
+
+    # Act
+    handler.execute(path="app/legacy", recursive=False)
+
+    # Assert
+    mock_fs.remove_path.assert_called_once_with(path="app/legacy", recursive=False)

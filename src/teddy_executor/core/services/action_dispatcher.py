@@ -57,6 +57,7 @@ class ActionDispatcher:
             "create_file": {"file_path": "path"},
             "edit": {"file_path": "path"},
             "read": {"source": "path", "resource": "path"},
+            "move": {"source": "old_path", "destination": "new_path"},
         }
         type_key = action_data.type.lower()
         if type_key == "create":
