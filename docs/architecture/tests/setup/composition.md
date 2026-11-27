@@ -35,7 +35,7 @@ None — this is a test harness component.
 ## Operations
 
 ### Fixtures
-`guard_os_killpg` blocks dangerous `os.killpg` calls. `tee_log_path` yields a temporary log path. `installed_tee` installs and tears down a `Tee`. `container` builds and patches a fresh container. `env` yields a mocked `TestEnvironment`. `real_env` yields a real-adapter `TestEnvironment`. `openrouter_mock` configures the `httpserver` with the OpenRouter model payload. `temp_cache_dir` yields a temporary update-cache directory.
+`guard_os_killpg` is intended to block dangerous `os.killpg` calls, but as declared here it is never collected; see the `killpg_poka_yoke_inactive` invariant. `tee_log_path` yields a temporary log path. `installed_tee` installs and tears down a `Tee`. `container` builds and patches a fresh container. `env` yields a mocked `TestEnvironment`. `real_env` yields a real-adapter `TestEnvironment`. `openrouter_mock` configures the `httpserver` with the OpenRouter model payload. `temp_cache_dir` yields a temporary update-cache directory.
 
 ### `reset_shared_litellm_double() -> None`
 - **Postconditions:** The double's call history and every child `side_effect` are cleared, then `completion`, `token_counter`, `completion_cost`, and `validate_environment` are restored to the harness's own return values. `tests/conftest.py` registers it as an autouse fixture bracketing every test.
