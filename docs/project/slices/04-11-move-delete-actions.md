@@ -83,7 +83,7 @@ Then validation fails with an error naming the Recursive flag
 - [x] **Adapter** — Implement both actions against the port, then add the manifest-rewrite helpers beside `_append_to_session_context` and trigger them from `transition_to_next_turn`, which already receives the `ExecutionReport`, so only successful `MOVE`/`DELETE` logs rewrite anything and `ISessionManager` keeps its signature.
 - [x] **Wiring** — Render both types across all four reviewer modules so a reviewer can inspect and edit the parameters before approving.
 - [x] **Cleanup** — Prune whatever `move_path` and `remove_path` supersede, and sync the affected component pages plus the Ubiquitous Language action list.
-- [ ] **Core (report headline)** — Route DELETE into the file-action arm and give MOVE a headline naming its source and destination, so neither verb renders an empty link, and correct the report formatter's page with it.
+- [x] **Core (report headline)** — Route DELETE into the file-action arm and give MOVE a headline naming its source and destination, so neither verb renders an empty link, and correct the report formatter's page with it.
 
 ## Implementation Notes
 
@@ -164,6 +164,15 @@ Then validation fails with an error naming the Recursive flag
 - The Cleanup commit was deliberately taken before this work, so the template diff stays attributable to the defect instead of disappearing inside an eleven-page documentation sync.
 - The report formatter's page is stale in the same way: it states that the file actions are CREATE, EDIT, and READ, which is exactly the arm the template no longer matches.
 
+### Report-headline deliverable
+- Red produced six failures and one pass in `test_report_move_delete_headline.py`: the MOVE headline case reported `[](/)` where the pair belonged, the body case showed `- **Source:**`/`- **Destination:**` still emitted, all three DELETE cases failed on the link form, and `PROMPT` rendered its own `[](/)`. The single pass was the `Recursive` visibility guard, which was already correct because DELETE rendered its params before the change — so the pass was evidence, not a coincidence.
+- Four template changes, each a one-gate edit: DELETE joined the file-action arm (a removal really is a file action, so it reads `### \`DELETE\`: scratch.md` with a `- **File Path:**` bullet, and a reader never learns a second headline shape for a path-bearing verb); MOVE gained its own arm, because it carries `source`/`destination` and no `path`, so no path-resolving arm can serve it; the fallback's `{% else %}` became `{% elif full_path %}`, leaving `target` empty for a path-less verb so the pre-existing `{% if target %}` renders the bare header; and MOVE's pair was appended to `param_ns.ignored` so it stops restating the headline.
+- Suppressing the pair went through the per-type ignored list rather than a new body template, because that list already carries the same job for EXECUTE/RESEARCH's `description` and RESEARCH's `queries`. DELETE keeps its `recursive` bullet untouched, since `path` was already in the base ignored list and `recursive` never was.
+- The separator mirrors `format_node_label`'s MOVE arm, so the reviewer and the report share one vocabulary instead of growing a second arrow. The test asserts the full headline string rather than the glyph alone, so the glyph itself stays free to change.
+- The fallback is deliberately retained: the validator accepts `prompt`, `invoke`, and `return` with no rules, so verbs with no path of their own still need a header. The guard is what removes the empty link, which is why the `PROMPT` case exists — without it the slice could claim the empty link fixed while a report still printed one.
+- Gates: `7 passed` in the new module, `126 passed` across the neighbouring formatter suites, and `2858 passed, 5 skipped` unfiltered — exactly the 2851 Cleanup baseline plus the seven new cases.
+- The stale-reference sweep for this deliverable returned one hit: the formatter's page still named the three-verb arm. It now states the four-verb arm, the MOVE pair headline, and the guarded fallback, so the page and the template cannot disagree about which verbs render which headline.
+
 ## Verification
 1. **Rename with manifest sync:**
    Create a scratch file, add it to `turn.context`, and run a plan with a MOVE to a new name.
@@ -172,3 +181,6 @@ Then validation fails with an error naming the Recursive flag
    Remove a non-empty directory with `Recursive: true` and verify the directory and its manifest entries are gone.
 3. **Guardrail on destruction:**
    Issue the same delete with `Recursive: false` and verify validation fails before anything is removed.
+4. **Report headline:**
+   Execute a plan carrying a MOVE and a DELETE, then read the turn's `report.md`.
+   Verify the MOVE headline reads `### \`MOVE\`: <source> -> <destination>`, the DELETE headline uses the basename with a `- **File Path:**` bullet, and no empty `[]()` link appears anywhere.

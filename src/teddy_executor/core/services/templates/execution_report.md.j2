@@ -165,7 +165,7 @@
   {% if subject %}
     {% set target = subject %}
   {% endif %}
-{% elif action_type in ['CREATE', 'EDIT', 'READ'] %}
+{% elif action_type in ['CREATE', 'EDIT', 'READ', 'DELETE'] %}
   {# URL resources keep the full URL as the subject. Nested paths shorten to the
      basename and carry the full path in a body bullet; a root-level path needs no
      bullet because it would repeat the headline. #}
@@ -177,8 +177,20 @@
   {% elif full_path %}
     {% set target = full_path %}
   {% endif %}
-{% else %}
-  {# Fallback link-form header for unrecognized action types; MESSAGE is partitioned out upstream, and CREATE/EDIT/READ/EXECUTE/RESEARCH render their plain forms above. #}
+{% elif action_type == 'MOVE' %}
+  {# A rename is identified by its pair, which is also the reviewer's label
+     shape. A partial pair still names whichever side it carries. #}
+  {% set move_source = params.get('source') or params.get('Source') or '' %}
+  {% set move_destination = params.get('destination') or params.get('Destination') or '' %}
+  {% if move_source and move_destination %}
+    {% set target = move_source ~ ' -> ' ~ move_destination %}
+  {% elif move_source or move_destination %}
+    {% set target = move_source or move_destination %}
+  {% endif %}
+{% elif full_path %}
+  {# Fallback link-form header for verbs that carry a path but no plain form
+     above; MESSAGE is partitioned out upstream. A verb with no path of its own
+     (prompt, invoke, return) renders its bare header instead of an empty link. #}
   {% if full_path.startswith('http:') or full_path.startswith('https:') %}
     {% set target = '[' ~ full_path ~ '](' ~ full_path ~ ')' %}
   {% else %}
@@ -247,6 +259,10 @@
   {% endif %}
   {% if action_type == 'RESEARCH' %}
     {% set param_ns.ignored = param_ns.ignored + ['queries'] %}
+  {% endif %}
+  {% if action_type == 'MOVE' %}
+    {# The pair is the headline, so repeating it as bullets would restate it. #}
+    {% set param_ns.ignored = param_ns.ignored + ['source', 'destination'] %}
   {% endif %}
 
   {% for key, value in params.items() %}
