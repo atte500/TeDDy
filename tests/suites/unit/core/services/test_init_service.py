@@ -285,7 +285,7 @@ def test_init_prompts_overwrite_replaces_same_stem_xml_with_md(service, mock_fs)
     mock_fs.write_file.assert_any_call(
         ".teddy/prompts/pathfinder.md", "content::/mock/config/prompts/pathfinder.md"
     )
-    mock_fs.remove_file.assert_any_call(".teddy/prompts/pathfinder.xml")
+    mock_fs.remove_path.assert_any_call(".teddy/prompts/pathfinder.xml")
 
 
 def test_init_prompts_overwrite_prunes_stale_xml_when_md_already_matches(
@@ -312,7 +312,7 @@ def test_init_prompts_overwrite_prunes_stale_xml_when_md_already_matches(
     result = service._init_prompts(overwrite=True)
 
     mock_fs.write_file.assert_not_called()
-    mock_fs.remove_file.assert_any_call(".teddy/prompts/pathfinder.xml")
+    mock_fs.remove_path.assert_any_call(".teddy/prompts/pathfinder.xml")
     assert result == "unchanged"
 
 

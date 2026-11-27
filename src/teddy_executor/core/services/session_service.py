@@ -694,7 +694,7 @@ class SessionService(ISessionManager):
         for f in self._file_system_manager.list_directory(session_root):
             stem = Path(f).stem.casefold()
             if stem in known_prompt_stems and stem != new_agent_stem:
-                self._file_system_manager.remove_file(f"{session_root}/{f}")
+                self._file_system_manager.remove_path(f"{session_root}/{f}")
 
     def _resolve_next_turn_path(self, cur_dir: Path) -> tuple[str, Path]:
         """Determines the next turn ID and session directory (same session)."""

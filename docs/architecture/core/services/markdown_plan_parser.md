@@ -13,12 +13,12 @@ Implements the `IPlanParser` inbound port. It transforms a Markdown plan string 
 ## Dependencies
 - [`parser_infrastructure`](./parser_infrastructure.md): Supplies `_PeekableStream`, `_FencePreProcessor`, the heading normalizer, the AST helpers, and the structural report formatter.
 - [`parser_metadata`](./parser_metadata.md): Supplies `parse_plan_metadata` for the top-level metadata list.
-- [`action_parser_strategies`](./action_parser_strategies.md): Supplies the CREATE and READ strategies reached through the dispatch map.
+- [`action_parser_strategies`](./action_parser_strategies.md): Supplies the CREATE, READ, MOVE, and DELETE strategies reached through the dispatch map.
 - [`action_parser_complex`](/src/teddy_executor/core/services/action_parser_complex.py): Supplies the EDIT, EXECUTE, RESEARCH, and MESSAGE strategies.
 - `mistletoe` (external): Supplies the AST `Document`; imported lazily inside `parse` to keep CLI startup fast.
 
 ## Class Invariants
-- `partial_dispatch_map`: `_dispatch_map` routes CREATE, READ, EDIT, EXECUTE, and RESEARCH; MESSAGE is deliberately absent and is special-cased to a mutual-exclusivity error.
+- `partial_dispatch_map`: `_dispatch_map` routes CREATE, READ, EDIT, EXECUTE, RESEARCH, MOVE, and DELETE; MESSAGE is deliberately absent and is special-cased to a mutual-exclusivity error.
 - `strict_top_level_schema`: The document must present an H1 title, a metadata list, an H2 `Rationale`, then an H2 `Action Plan` or `Message`; any deviation raises `InvalidPlanError`.
 - `mutual_exclusivity`: A document cannot carry both `## Action Plan` and `## Message`.
 - `crlf_normalization`: `parse` converts CRLF to LF before the AST is built, so fence content and message sections never carry carriage returns.

@@ -98,15 +98,6 @@ class IFileSystemManager(Protocol):
         """
         ...
 
-    def remove_file(self, path: str) -> None:
-        """
-        Deletes a file from the file system.
-
-        Raises:
-            FileNotFoundError: If no file exists at the specified path.
-        """
-        ...
-
     def edit_file(
         self,
         path: str,
@@ -153,13 +144,6 @@ class IFileSystemManager(Protocol):
         """
         Returns the modification time of a file or directory as a timestamp.
         """
-        ...
-
-    def move_directory(self, old_path: str, new_path: str) -> None:
-        """
-        Moves or renames a directory.
-        """
-        _ = old_path
         ...
 
     def move_path(self, old_path: str, new_path: str) -> None:

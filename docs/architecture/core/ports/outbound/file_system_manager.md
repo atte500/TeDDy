@@ -97,11 +97,12 @@ None — this is an outbound (driven) port.
 - **Exceptions:**
   - `FileNotFoundError`: No file exists at `path`.
 
-### `remove_file(path) -> None`
+### `remove_path(path, recursive=False) -> None`
 - **Preconditions:** `path` exists.
-- **Postconditions:** Deletes the file.
+- **Postconditions:** Removes a file, or a directory that is empty or, when `recursive` is `True`, a directory together with its whole subtree. The removal walks the raw file system, so ignore rules never shield a path from an explicit removal.
 - **Exceptions:**
-  - `FileNotFoundError`: No file exists at `path`.
+  - `FileNotFoundError`: Nothing exists at `path`.
+  - `OSError`: `path` is a non-empty directory and `recursive` is `False`.
 
 ### `edit_file(path, edits, similarity_threshold=0.95, match_all=False) -> list[float]`
 - **Preconditions:** `path` exists; `similarity_threshold` is between 0.0 and 1.0.
@@ -127,9 +128,12 @@ None — this is an outbound (driven) port.
 - **Preconditions:** `path` exists.
 - **Postconditions:** Returns the modification timestamp.
 
-### `move_directory(old_path, new_path) -> None`
-- **Preconditions:** `old_path` exists.
-- **Postconditions:** Moves or renames the directory to `new_path`.
+### `move_path(old_path, new_path) -> None`
+- **Preconditions:** `old_path` exists and nothing exists at `new_path`.
+- **Postconditions:** Moves or renames a file or a directory as one operation, creating any missing parent directories of `new_path` first.
+- **Exceptions:**
+  - `FileNotFoundError`: Nothing exists at `old_path`.
+  - `FileExistsError`: Anything already exists at `new_path`, because a half-applied rename is worse than a rejected plan.
 
 ### `open_file_for_append(path) -> TextIO`
 - **Preconditions:** None.

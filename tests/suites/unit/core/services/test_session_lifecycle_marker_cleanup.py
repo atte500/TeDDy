@@ -115,7 +115,7 @@ def test_finalization_writes_the_report_before_clearing_the_marker(container) ->
     file_system.write_file.side_effect = lambda path, _content: events.append(
         ("write", path)
     )
-    file_system.remove_file.side_effect = lambda path: events.append(("remove", path))
+    file_system.remove_path.side_effect = lambda path: events.append(("remove", path))
 
     manager.finalize_turn(PLAN_PATH, _finalized_report())
 
@@ -129,5 +129,5 @@ def test_finalization_of_an_unmarked_turn_removes_nothing(container) -> None:
 
     manager.finalize_turn(PLAN_PATH, _finalized_report())
 
-    file_system.remove_file.assert_not_called()
+    file_system.remove_path.assert_not_called()
     file_system.find_call_by_path("write_file", REPORT_PATH)

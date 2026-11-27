@@ -158,22 +158,6 @@ class LocalFileSystemAdapter(IFileSystemManager):
         target = self._resolve_path(path)
         return target.stat().st_mtime
 
-    def move_directory(self, old_path: str, new_path: str) -> None:
-        """
-        Moves or renames a directory.
-        """
-        import shutil
-
-        source = self._resolve_path(old_path)
-        destination = self._resolve_path(new_path)
-
-        if not source.exists():
-            raise FileNotFoundError(f"Source directory not found: {old_path}")
-        if destination.exists():
-            raise FileExistsError(f"Destination directory already exists: {new_path}")
-
-        shutil.move(str(source), str(destination))
-
     def move_path(self, old_path: str, new_path: str) -> None:
         """
         Moves or renames a file or directory, creating missing destination parents.
@@ -336,18 +320,6 @@ class LocalFileSystemAdapter(IFileSystemManager):
             raise
         except IOError as e:
             raise IOError(f"Failed to read bytes from file at {path}: {e}") from e
-
-    def remove_file(self, path: str) -> None:
-        """
-        Deletes a file from the file system.
-        """
-        file_path = self._resolve_path(path)
-        try:
-            file_path.unlink()
-        except FileNotFoundError:
-            raise
-        except OSError as e:
-            raise OSError(f"Failed to remove file at {path}: {e}") from e
 
     def remove_path(self, path: str, recursive: bool = False) -> None:
         """

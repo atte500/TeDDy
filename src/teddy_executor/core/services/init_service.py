@@ -187,7 +187,7 @@ class InitService(IInitUseCase):
         stem = self._stem_key(filename)
         for name in self._file_system.list_directory(dest_dir):
             if name != filename and self._stem_key(name) == stem:
-                self._file_system.remove_file(f"{dest_dir}/{name}")
+                self._file_system.remove_path(f"{dest_dir}/{name}")
 
     def _content_matches(self, target_path: str, content: str) -> bool:
         """True when ``target_path`` already holds exactly ``content``.

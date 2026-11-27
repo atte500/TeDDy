@@ -1080,11 +1080,11 @@ def test_set_session_agent_removes_stale_prompt_files(env):
 
     # 2. Stale prompt files removed (pathfinder.xml and assistant.xml),
     #    but turn.context is NOT removed
-    mock_fs.remove_file.assert_any_call(f"{session_root}/pathfinder.xml")
-    mock_fs.remove_file.assert_any_call(f"{session_root}/assistant.xml")
+    mock_fs.remove_path.assert_any_call(f"{session_root}/pathfinder.xml")
+    mock_fs.remove_path.assert_any_call(f"{session_root}/assistant.xml")
 
     # 3. turn.context should NOT have been removed
-    remove_calls = [call.args[0] for call in mock_fs.remove_file.call_args_list]
+    remove_calls = [call.args[0] for call in mock_fs.remove_path.call_args_list]
     assert f"{session_root}/turn.context" not in remove_calls, (
         "Non-prompt files should not be removed"
     )

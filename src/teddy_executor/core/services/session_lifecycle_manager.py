@@ -805,7 +805,7 @@ class SessionLifecycleManager:
         # its turn without ever having been marked.
         marker_path = (turn_dir / EXECUTION_STARTED_MARKER).as_posix()
         if self._file_system_manager.path_exists(marker_path):
-            self._file_system_manager.remove_file(marker_path)
+            self._file_system_manager.remove_path(marker_path)
 
         # Extract manual pruning paths from plan metadata
         pruned_paths = []

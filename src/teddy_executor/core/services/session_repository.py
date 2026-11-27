@@ -218,7 +218,7 @@ class SessionRepository(ISessionRepository):
         if self._file_system_manager.path_exists(new_path):
             raise ValueError(f"Session '{new_name}' already exists.")
 
-        self._file_system_manager.move_directory(old_path, new_path)
+        self._file_system_manager.move_path(old_path, new_path)
         return new_path
 
     def resolve_context_paths(self, plan_path: str) -> Dict[str, list[str]]:

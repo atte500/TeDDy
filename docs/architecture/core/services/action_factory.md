@@ -13,7 +13,7 @@ Translates an action type string from a plan into an executable `IAction` handle
 ## Dependencies
 - [`ActionPorts`](../domain/action_ports.md): The DTO that groups the outbound ports.
 - [`IShellExecutor`](../ports/outbound/shell_executor.md): Supplies the EXECUTE handler.
-- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Supplies the CREATE, EDIT, and local READ handlers.
+- [`IFileSystemManager`](../ports/outbound/file_system_manager.md): Supplies the CREATE, EDIT, local READ, MOVE, and DELETE handlers.
 - [`IUserInteractor`](../ports/outbound/user_interactor.md): Supplies the MESSAGE handler.
 - [`WebContentService`](./web_content_service.md): Supplies the remote READ handler, owning the cached fetch, the verbatim store, and the announced cap. Injected as a constructor keyword beside `ports`, not through `ActionPorts`, because it is a core service rather than an outbound port.
 - [`IWebSearcher`](../ports/outbound/web_searcher.md): Supplies the RESEARCH handler.

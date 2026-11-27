@@ -17,7 +17,7 @@ Resolves one validated `ActionData` object to an executable handler through the 
 ## Class Invariants
 - `factory_driven`: The dispatcher never instantiates action handlers; every handler arrives through `IActionFactory`.
 - `never_raises`: `dispatch_and_execute` catches every execution exception and records it as a `FAILURE` `ActionLog`.
-- `parameter_normalization`: Markdown-friendly keys are remapped before execution (`file_path` to `path` for CREATE and EDIT; `source` and `resource` to `path` for READ), and any key prefixed with `metadata_` is dropped.
+- `parameter_normalization`: Markdown-friendly keys are remapped before execution (`file_path` to `path` for CREATE and EDIT; `source` and `resource` to `path` for READ; `source` and `destination` to `old_path` and `new_path` for MOVE, because the plan's own vocabulary would otherwise reach the port as unknown keywords), and any key prefixed with `metadata_` is dropped.
 - `message_logging_suppressed`: A `MESSAGE` action skips the informational progress logging.
 - `scope_passthrough`: The optional `session_root` reaches `create_action` unchanged and is never derived here, so a remote READ handler inherits the scope its caller resolved, and a `None` scope keeps the uncached read.
 

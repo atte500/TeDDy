@@ -7,7 +7,7 @@
 Implements the `IFileSystemManager` outbound port for the local disk. It resolves every path against a controlled project root, applies exclusive-create and newline-deterministic write semantics, and delegates fuzzy edits to the `IEditSimulator`.
 
 ## Consumers
-- [`ActionFactory`](../../core/services/action_factory.md): Binds the create, edit, and local read methods to their actions.
+- [`ActionFactory`](../../core/services/action_factory.md): Binds the create, edit, local read, move, and remove methods to their actions.
 - [`ExecutionOrchestrator`](../../core/services/execution_orchestrator.md): Reads plan files and writes temporary plans.
 - [`PlanValidator`](../../core/services/plan_validator.md): Inspects paths during pre-flight validation.
 - [Composition Root](/src/teddy_executor/container.py): Constructs the adapter with the edit simulator, the root directory, and the read cap.
@@ -79,5 +79,19 @@ None — this is an outbound (driven) adapter.
 ### `create_directory_exclusive(path) -> bool`
 - **Postconditions:** Creates the directory atomically and returns `True`; returns `False` when the directory already exists. Any other error propagates.
 
+### `move_path(old_path, new_path) -> None`
+- **Preconditions:** `old_path` resolves inside the project root and exists.
+- **Postconditions:** Creates any missing parent directories of the destination, then performs one `shutil.move`, so a file move and a directory move share a single code path.
+- **Exceptions:**
+  - `FileNotFoundError`: Nothing exists at `old_path`.
+  - `FileExistsError`: Anything already exists at `new_path`.
+
+### `remove_path(path, recursive=False) -> None`
+- **Preconditions:** `path` resolves inside the project root and exists.
+- **Postconditions:** Unlinks a file, removes an empty directory, or removes a whole subtree when `recursive` is `True`. The walk deliberately bypasses the ignore specification, because ignore rules describe what context assembly skips rather than what an explicit removal must spare.
+- **Exceptions:**
+  - `FileNotFoundError`: Nothing exists at `path`.
+  - `OSError`: `path` is a non-empty directory and `recursive` is `False`.
+
 ### Other operations
-`path_exists`, `is_dir`, `list_directory`, `list_directory_recursive`, `create_directory`, `get_mtime`, `move_directory`, `remove_file`, `get_context_paths`, and `resolve_paths_from_files` complete the port surface.
+`path_exists`, `is_dir`, `list_directory`, `list_directory_recursive`, `create_directory`, `get_mtime`, `get_context_paths`, and `resolve_paths_from_files` complete the port surface.

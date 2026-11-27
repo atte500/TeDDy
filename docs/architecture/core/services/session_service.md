@@ -53,7 +53,7 @@ None — the service implements an outbound port and is consumed through `ISessi
 
 ### `transition_to_next_turn(plan_path, execution_report=None, turn_cost=0.0, is_validation_failure=False, pruned_paths=None) -> str`
 - **Preconditions:** `plan_path` points to the current turn's plan.
-- **Postconditions:** Creates the next turn directory within the same session, prunes and re-seeds context, persists cumulative cost and accumulates the cumulative usage counters, carries `model_override`/`model`/`actual_model`/`provider` forward, and returns the next directory path.
+- **Postconditions:** Creates the next turn directory within the same session, prunes and re-seeds context, persists cumulative cost and accumulates the cumulative usage counters, carries `model_override`/`model`/`actual_model`/`provider` forward, and returns the next directory path. Before the fork, every successful `MOVE` or `DELETE` log rewrites the live `turn.context` and `session.context` entries — a moved path becomes its new name and its whole subtree follows, a removed path and everything beneath its prefix disappears — so no manifest ever points at a path the turn renamed or deleted. Only the live manifests are rewritten, and only when a rewrite changes something, because archived session directories are history and an unlisted path must leave the session manifest byte-identical.
 
 ### `rename_session(old_name, new_name) -> str`
 - **Preconditions:** `old_name` exists.

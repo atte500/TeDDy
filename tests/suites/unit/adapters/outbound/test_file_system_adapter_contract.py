@@ -100,36 +100,6 @@ def test_create_directory_exclusive_reraises_non_file_exists_errors(tmp_path):
         adapter.create_directory_exclusive("bad\x00path")
 
 
-def test_remove_file_deletes_existing_file(tmp_path):
-    """
-    Verifies that remove_file deletes a file from the filesystem.
-    """
-    # Arrange
-    simulator = POSIXPathMock(spec=IEditSimulator)
-    adapter = LocalFileSystemAdapter(edit_simulator=simulator, root_dir=str(tmp_path))
-    file_path = tmp_path / "to_delete.txt"
-    file_path.write_text("content")
-
-    # Act
-    adapter.remove_file("to_delete.txt")
-
-    # Assert
-    assert not file_path.exists()
-
-
-def test_remove_file_raises_on_nonexistent_file(tmp_path):
-    """
-    Verifies that remove_file raises FileNotFoundError for missing files.
-    """
-    # Arrange
-    simulator = POSIXPathMock(spec=IEditSimulator)
-    adapter = LocalFileSystemAdapter(edit_simulator=simulator, root_dir=str(tmp_path))
-
-    # Act / Assert
-    with pytest.raises(FileNotFoundError):
-        adapter.remove_file("nonexistent.txt")
-
-
 def test_read_file_bytes_returns_the_exact_payload(tmp_path):
     # Arrange
     simulator = POSIXPathMock(spec=IEditSimulator)

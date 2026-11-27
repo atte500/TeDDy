@@ -17,7 +17,7 @@ def test_rename_session_moves_directory(env):
 
     # Assert
     assert new_path == ".teddy/sessions/new-name"
-    mock_fs.move_directory.assert_called_once_with(
+    mock_fs.move_path.assert_called_once_with(
         ".teddy/sessions/old-name", ".teddy/sessions/new-name"
     )
 

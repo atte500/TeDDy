@@ -7,7 +7,7 @@
 A stateless module of strategy functions that parse individual action blocks for the `MarkdownPlanParser`. Each function consumes one action's nodes from a shared peekable stream and returns a populated `ActionData` object.
 
 ## Consumers
-- [`MarkdownPlanParser`](./markdown_plan_parser.md): Dispatches the CREATE and READ action blocks to these strategies.
+- [`MarkdownPlanParser`](./markdown_plan_parser.md): Dispatches the CREATE, READ, MOVE, and DELETE action blocks to these strategies.
 
 ## Dependencies
 - [`parser_infrastructure`](./parser_infrastructure.md): Supplies the `_PeekableStream` wrapper and the `coerce_action_params` helper.
@@ -46,5 +46,17 @@ None — the module declares no injected dependencies.
 ### `parse_read_action(stream, node=None) -> ActionData`
 - **Preconditions:** The stream yields a Markdown list.
 - **Postconditions:** Returns a READ action by delegating to `parse_resource_action`.
+- **Exceptions:**
+  - `InvalidPlanError`: Metadata list is missing.
+
+### `parse_move_action(stream, node=None) -> ActionData`
+- **Preconditions:** The stream yields a Markdown list carrying `Source` and `Destination`.
+- **Postconditions:** Returns a MOVE action whose `source` and `destination` are resolved from the metadata list's link keys. MOVE carries no content block, so the strategy reads one list and stops.
+- **Exceptions:**
+  - `InvalidPlanError`: Metadata list is missing.
+
+### `parse_delete_action(stream, node=None) -> ActionData`
+- **Preconditions:** The stream yields a Markdown list carrying `Path`.
+- **Postconditions:** Returns a DELETE action carrying `path` and, only when the plan stated it, a boolean `recursive`. The coercion runs only when the key is present, so an omitted `Recursive` stays absent and the port's own `False` default applies, while a planner-written `false` arrives as `False` instead of surviving as a truthy string.
 - **Exceptions:**
   - `InvalidPlanError`: Metadata list is missing.
