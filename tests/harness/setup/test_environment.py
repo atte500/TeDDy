@@ -174,6 +174,22 @@ class TestEnvironment(RealAdapterMixin):
         self._apply_mock_defaults(port_type, mock)
         return mock
 
+    def with_agent_catalog(self, catalog: Optional[Any] = None) -> "TestEnvironment":
+        """
+        Binds an in-memory agent roster under ``IAgentCatalog``.
+
+        Reviewer tests drive the populated, empty, and failing rosters through
+        this double instead of reading ``.teddy/prompts/``, which the
+        composition root does not register at all yet. Omitting ``catalog``
+        binds a fresh double holding the bundled persona roster.
+        """
+        from teddy_executor.core.ports.outbound import IAgentCatalog
+        from tests.harness.setup.fake_agent_catalog import FakeAgentCatalog
+
+        roster = catalog if catalog is not None else FakeAgentCatalog()
+        self._container.register(IAgentCatalog, instance=roster)
+        return self
+
     def _apply_mock_defaults(self, port_type: Any, mock: Any) -> None:
         """Applies happy-path defaults to specific port types."""
         from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
