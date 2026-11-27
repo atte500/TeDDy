@@ -51,6 +51,7 @@ from tests.harness.setup.composition import (
     installed_tee,
     is_tee_active,
     temp_cache_dir,
+    reset_shared_litellm_double,
 )
 from tests.harness.setup.timeouts import ci_per_test_timeout
 
@@ -355,6 +356,20 @@ def _bound_background_update_thread():
 
     for thread in _live_update_threads():
         thread.join(timeout=2)
+
+
+@pytest.fixture(autouse=True)
+def reset_shared_litellm_double_per_test():
+    """Poka-Yoke: no test inherits the shared litellm double's call state.
+
+    The double is installed once as ``sys.modules["litellm"]``, so call history
+    and any scripted ``side_effect`` would otherwise survive into the next test
+    and make absolute call-count assertions depend on worker scheduling rather
+    than on the behaviour under test.
+    """
+    reset_shared_litellm_double()
+    yield
+    reset_shared_litellm_double()
 
 
 @pytest.fixture

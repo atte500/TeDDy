@@ -15,12 +15,34 @@ _default_choice.message.content = "# Mock Plan\nRationale: Test\n## Action Plan\
 _default_completion_mock.choices = [_default_choice]
 _default_completion_mock.model = "mock-model"
 
-mock_litellm.completion.return_value = _default_completion_mock
-mock_litellm.token_counter.return_value = 100
 
-mock_litellm.completion_cost.return_value = 0.01
-mock_litellm.validate_environment.return_value = {"missing_keys": []}
+def _install_default_return_values() -> None:
+    """Reasserts the responses the harness guarantees for an unconfigured call."""
+    mock_litellm.completion.return_value = _default_completion_mock
+    mock_litellm.token_counter.return_value = 100
+    mock_litellm.completion_cost.return_value = 0.01
+    mock_litellm.validate_environment.return_value = {"missing_keys": []}
+
+
+_install_default_return_values()
 sys.modules["litellm"] = mock_litellm
+
+
+def reset_shared_litellm_double() -> None:
+    """Restores the process-global litellm double to its canonical state.
+
+    The double lives in ``sys.modules`` for the whole pytest session, so every
+    call an earlier test routed through the real adapter, every ``side_effect``
+    it scripted, and every return value it swapped would otherwise still be
+    there for the next test. An absolute ``litellm.completion.call_count``
+    assertion, or a test that expects the safe-by-default plan response, then
+    reports worker scheduling instead of the behaviour under test. Call history
+    and side effects are cleared recursively before the harness's own return
+    values are reasserted, so no test can inherit another test's arrangement.
+    """
+    mock_litellm.reset_mock(return_value=False, side_effect=True)
+    _install_default_return_values()
+
 
 # Re-export mocks for standard fixtures
 from tests.harness.setup.mocks import (

@@ -17,7 +17,8 @@ The composition root of the test suite. It installs a global `litellm` mock, re-
 ## Class Invariants
 - `litellm_mocked_before_import`: `sys.modules["litellm"]` is replaced with a configured `Mock` at module load, so the heavy import never runs during the suite.
 - `safe_default_completion`: The global `litellm.completion` double returns a minimal valid plan, so an unconfigured LLM call never crashes a test.
-- `killpg_poka_yoke`: The autouse `guard_os_killpg` fixture blocks `os.killpg` on a non-integer or protected process-group id.
+- `canonical_double_per_test`: `reset_shared_litellm_double()` clears the double's call history and every child `side_effect` recursively, then reasserts the harness's own return values, so no test inherits another test's calls, scripted failures, or swapped responses.
+- `killpg_poka_yoke_inactive`: The `autouse=True` `guard_os_killpg` fixture is declared here but never collected, because pytest registers fixtures only from conftest files and plugin modules, so the `os.killpg` protection its docstring promises is not in force. Relocating it into `tests/conftest.py` is tracked as Requirement 13 of [Runtime Reliability & Boundary Purity](/docs/project/milestones/07-runtime-reliability.md).
 - `fresh_container_per_test`: The `container` fixture builds a new container and patches the global singleton.
 
 ## Inbound Ports
@@ -35,6 +36,9 @@ None — this is a test harness component.
 
 ### Fixtures
 `guard_os_killpg` blocks dangerous `os.killpg` calls. `tee_log_path` yields a temporary log path. `installed_tee` installs and tears down a `Tee`. `container` builds and patches a fresh container. `env` yields a mocked `TestEnvironment`. `real_env` yields a real-adapter `TestEnvironment`. `openrouter_mock` configures the `httpserver` with the OpenRouter model payload. `temp_cache_dir` yields a temporary update-cache directory.
+
+### `reset_shared_litellm_double() -> None`
+- **Postconditions:** The double's call history and every child `side_effect` are cleared, then `completion`, `token_counter`, `completion_cost`, and `validate_environment` are restored to the harness's own return values. `tests/conftest.py` registers it as an autouse fixture bracketing every test.
 
 ### `is_tee_active() -> bool`
 - **Postconditions:** Returns `True` when `sys.stderr` is a `_TeeWriter` proxy, meaning the `Tee` context is installed.
