@@ -7,7 +7,7 @@
 Defines the outbound port for all user interaction: prompting for free text, confirming plans and actions, reporting skipped actions, and surfacing warnings. It isolates the core from the console, so adapters can render diffs, previews, and richer flows.
 
 ## Consumers
-- `ActionExecutor`: Confirms each action before execution.
+- `ActionExecutor`: Confirms each action before execution and reports every skip through `notify_skipped_action`.
 - [`PromptManager`](../../services/prompt_manager.md): Asks the user a question through the port.
 - [`ActionPorts`](../../domain/action_ports.md): Carries the port into the action layer.
 - [CLI Adapter](../../../adapters/inbound/cli.md): Provides the concrete console interaction.
@@ -52,8 +52,8 @@ None — this is an outbound (driven) port.
 - **Postconditions:** Returns `(approved, reason)`; `reason` is empty when approved.
 
 ### `notify_skipped_action(action, reason) -> None`
-- **Preconditions:** None.
-- **Postconditions:** Reports that an action was skipped and why.
+- **Preconditions:** None; `reason` names the cause in the user's own terms.
+- **Postconditions:** Reports that an action was skipped and why. `ActionExecutor._handle_skipped_action` is the single emission site, so a deselected, halted, interrupt-drained, aborted, or prompt-denied action is named exactly once, and a dispatched or failed action never is. A `MESSAGE` action is exempt, matching `ActionDispatcher`'s own silence for a communicating turn. The console adapter renders one `[SKIPPED] {type}: {reason}` line on stderr, so the notice never rewrites a line another caller printed.
 
 ### `confirm_manual_handoff(action_type, target_agent, resources, message) -> tuple[bool, str]`
 - **Preconditions:** `action_type` is `INVOKE` or `RETURN`.

@@ -17,6 +17,7 @@ None — the parser uses only the Python standard library (`re`, `dataclasses`).
 - `parse_on_construction`: `__init__` runs `_parse` immediately, so `run_summary`, `action_logs`, and `resource_contents` are populated before any access.
 - `section_split`: Sections are isolated by splitting on the `## ` heading prefix.
 - `lenient_status_match`: The action status is read case-insensitively across template variants.
+- `ordered_labels_preserves_report_order`: `ordered_labels()` reads `action_logs` in document order and never re-sorts, so the labels it returns are the report's own order and a test asserts placement without substring offsets. It resolves each subject through the precedence `File Path`, then `Resource`, then `Description`, because `_apply_subject_to_params` folds the heading subject into a key that depends on the action type and CREATE and EDIT entries carry both path keys, so an any-key lookup would report an EDIT label from a key the template never intended as primary. An entry carrying no subject yields an empty label rather than raising.
 
 ## Inbound Ports
 None — this is a test harness component.
@@ -43,6 +44,10 @@ None — this is a test harness component.
 
 ### `extract_resource_contents() -> Dict[str, str]`
 - **Postconditions:** Returns the parsed resource-contents mapping.
+
+### `ordered_labels() -> List[str]`
+- **Preconditions:** None.
+- **Postconditions:** Returns one subject label per `action_logs` entry, in the order the report rendered them. The subject is resolved through the precedence `File Path`, then `Resource`, then `Description`; an entry carrying no subject yields an empty label. The accessor never re-sorts, so its output order is the report's own order.
 
 ### `action_was_successful(index) -> bool`
 - **Postconditions:** Returns `True` when the action at `index` carries status `SUCCESS`; returns `False` for an out-of-range index.

@@ -27,6 +27,8 @@ Implements the `IRunPlanUseCase` inbound port. It runs a parsed `Plan` atomicall
 - `halt_on_failure`: A `FAILURE` action without `allow_failure` halts the remaining actions.
 - `communication_turn_bypass`: A communication turn bypasses the reviewer and step-by-step confirmation.
 - `interrupt_drain`: When the interrupt guard is set, every remaining action is skipped with the interrupt reason and the loop exits normally.
+
+- `execution_order_is_recorded`: Every action the loop resolves records an `execution_sequence` at the single append site, and the assembled log list is returned ordered by that stamp, so the console and the report describe the order actions actually ran rather than the order they sit in the plan. `_stamp_action` assigns `plan.next_execution_sequence()` only when the field is `None`, because a hand-executed action was already numbered by the reviewer and re-stamping it would collapse the interleaving between it and the batch that followed. `_order_logs_by_sequence` is a stable sort, so equally numbered entries keep their append order. `_emit_preexecuted_console_prelude` announces reused actions before the loop dispatches, so the console's first lines belong to work that happened before the batch. `_handle_aborted_execution` builds its logs outside the loop and never calls the ordering helper, so an aborted report keeps document order by construction.
 - `session_marker`: A session turn writes an empty `execution.started` marker into its turn directory after validation and review succeed and immediately before the first dispatch; a stateless run and an aborted review write none. The marker outlives dispatch only until the turn is finalized, which clears it once the report exists.
 - `temp_plan_cleanup`: A generated temporary plan file is removed in a `finally` block.
 - `session_scope_passthrough`: At dispatch time the session root is derived once from the plan's own path (`session_root_from_plan_path` in `core.utils.paths`) and forwarded with `agent_name` and `is_session` into `ActionExecutor.confirm_and_dispatch`, so a READ on a URL is built with the session's cache scope. A plan without an on-disk path has no session scope, and its actions run uncached rather than failing.
@@ -39,6 +41,7 @@ None declared directly — the service consumes the concrete services and ports 
 
 ## Data Contracts
 - **`OrchestratorPorts`** (`teddy_executor.core.domain.models.orchestrator_ports`): The injected DTO bundling the parser, validator, action executor, file system, report assembler, user interactor, optional reviewer, and optional interrupt guard.
+- **`ActionData.execution_sequence`** (`teddy_executor.core.domain.models.plan`): The stamp both surfaces are ordered by, `None` until its action is resolved; see [Plan](../domain/plan.md) for the rule that assigns it.
 - **`Plan`** and **`ExecutionReport`** (`teddy_executor.core.domain.models`): The executed object and its result.
 - **`ReportAssemblyData`** (`teddy_executor.core.domain.models.report_assembly_data`): The input DTO for report assembly.
 - **`InvalidPlanError`** (`teddy_executor.core.ports.inbound.plan_parser`): Raised when pre-flight plan validation fails.
@@ -47,7 +50,7 @@ None declared directly — the service consumes the concrete services and ports 
 
 ### `execute(plan=None, plan_content=None, plan_path=None, require_approval=True, message=None, project_context=None, pipeline=False) -> ExecutionReport`
 - **Preconditions:** Exactly one of `plan`, `plan_content`, or `plan_path` supplies the plan.
-- **Postconditions:** Returns the assembled `ExecutionReport`. The method resolves the plan, validates it, performs the batch plan review, then — for a session plan — writes an empty `execution.started` marker into the turn directory immediately before the first dispatch, dispatches the actions, and assembles the report. Every dispatch carries the session root derived from the plan's path, so an action that reads a remote resource reaches it through the session cache. A user abort returns an `ABORTED` report and writes no marker, and a plan that fails pre-flight validation raises before any marker write.
+- **Postconditions:** Returns the assembled `ExecutionReport`. The method resolves the plan, validates it, performs the batch plan review, then — for a session plan — writes an empty `execution.started` marker into the turn directory immediately before the first dispatch, dispatches the actions, and assembles the report. Every dispatch carries the session root derived from the plan's path, so an action that reads a remote resource reaches it through the session cache. A user abort returns an `ABORTED` report and writes no marker, and a plan that fails pre-flight validation raises before any marker write. The report's action logs are ordered by each action's `execution_sequence`, so a plan whose middle action was run by hand and then submitted reports that action first.
 - **Exceptions:**
   - `InvalidPlanError`: Plan pre-flight validation fails.
   - `ValueError`: No plan source (`plan`, `plan_content`, or `plan_path`) provided.
