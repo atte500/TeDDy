@@ -1,4 +1,6 @@
+import contextlib
 import logging
+import threading
 
 from teddy_executor.core.domain.models import (
     ActionData,
@@ -8,6 +10,7 @@ from teddy_executor.core.domain.models import (
     RunStatus,
 )
 from teddy_executor.core.services.execution_orchestrator import ExecutionOrchestrator
+from teddy_executor.core.utils.interrupt_guard import INTERRUPT_REASON
 
 
 def test_execute_with_failing_action(
@@ -385,3 +388,87 @@ def test_unstamped_manual_action_keeps_plan_position(env, mock_action_dispatcher
         "legacy",
         "batch",
     ]
+
+
+class _SetInterruptGuard:
+    """In-memory fake guard whose drain flag is already set.
+
+    The loop reads the flag at the top of every iteration, so a pre-set flag
+    reproduces a signal that arrived while an earlier action was in flight,
+    without installing any real signal handler.
+    """
+
+    def __init__(self) -> None:
+        self.interrupted = threading.Event()
+        self.interrupted.set()
+
+    @contextlib.contextmanager
+    def enter_executing(self):
+        """Yields the executing scope the orchestrator enters around the loop."""
+        yield
+
+
+def test_deselected_and_halted_actions_are_announced(
+    env, mock_action_dispatcher, mock_user_interactor
+):
+    """Each skip the orchestrator causes is named to the user with its reason."""
+    orchestrator = env.get_service(ExecutionOrchestrator)
+
+    deselected = ActionData(type="CREATE", params={"path": "a.txt"}, selected=False)
+    failing = ActionData(type="EXECUTE", params={"command": "fail"})
+    halted = ActionData(type="CREATE", params={"path": "b.txt"})
+    plan = Plan(title="Skips", rationale="Test", actions=[deselected, failing, halted])
+    mock_action_dispatcher.dispatch_and_execute.return_value = ActionLog(
+        status=ActionStatus.FAILURE,
+        action_type="EXECUTE",
+        params={"command": "fail"},
+    )
+
+    orchestrator.execute(plan=plan, require_approval=False)
+
+    announced = [
+        (call.args[0].type, call.args[1])
+        for call in mock_user_interactor.notify_skipped_action.call_args_list
+    ]
+    assert [action_type for action_type, _reason in announced] == [
+        "CREATE",
+        "CREATE",
+    ]
+    assert "deselected" in announced[0][1]
+    assert "previous action failed" in announced[1][1]
+
+
+def test_interrupt_drain_announces_every_remaining_action(env, mock_user_interactor):
+    """Actions the two-phase interrupt drain skips are named with the reason."""
+    orchestrator = env.get_service(ExecutionOrchestrator)
+    orchestrator._interrupt_guard = _SetInterruptGuard()
+
+    plan = Plan(
+        title="Interrupted",
+        rationale="Test",
+        actions=[ActionData(type="CREATE", params={"path": "a.txt"})],
+    )
+
+    orchestrator.execute(plan=plan, require_approval=False)
+
+    announced = [
+        call.args[1]
+        for call in mock_user_interactor.notify_skipped_action.call_args_list
+    ]
+    assert announced == [INTERRUPT_REASON]
+
+
+def test_skipped_message_action_stays_silent(env, mock_user_interactor):
+    """A skipped MESSAGE turn is not announced, matching the dispatcher."""
+    orchestrator = env.get_service(ExecutionOrchestrator)
+
+    plan = Plan(
+        title="Message",
+        rationale="Test",
+        actions=[ActionData(type="MESSAGE", params={"content": "hi"}, selected=False)],
+    )
+
+    report = orchestrator.execute(plan=plan, require_approval=False)
+
+    assert report.action_logs[0].status == ActionStatus.SKIPPED
+    mock_user_interactor.notify_skipped_action.assert_not_called()

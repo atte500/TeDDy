@@ -67,7 +67,16 @@ class ActionExecutor:
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
     def _handle_skipped_action(self, action, reason: str) -> ActionLog:
-        """Creates an ActionLog for a skipped action."""
+        """Creates a skipped ActionLog and names the skip to the user.
+
+        Every skip funnels through here (deselected, halted, interrupt drain,
+        aborted, or denied at the prompt), so this single emission keeps the
+        console and the report telling the same story. A MESSAGE action stays
+        silent, matching the dispatcher, because a communicating turn was never
+        meant to run as part of a batch.
+        """
+        if action.type.upper() != "MESSAGE":
+            self._user_interactor.notify_skipped_action(action, reason)
         return self._create_intercepted_log(action, ActionStatus.SKIPPED, reason)
 
     def _enrich_failed_log(self, action, action_log: ActionLog) -> ActionLog:
