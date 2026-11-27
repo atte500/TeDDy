@@ -101,6 +101,12 @@ class MoveActionValidator(BaseActionValidator):
                 )
             ]
 
+        # The presence check above only filters a list, which cannot narrow the
+        # two parameters themselves, so the invariant it enforced is restated.
+        assert isinstance(source, str) and isinstance(destination, str), (
+            "MOVE path checks require a non-empty string source and destination"
+        )
+
         if source == destination:
             return [
                 ValidationError(
