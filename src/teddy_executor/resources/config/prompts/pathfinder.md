@@ -38,7 +38,7 @@ Follow these phases and steps in order to systematically deliver verified progre
 4. **Specification:**
    CREATE or EDIT a specification document following the specification template and path conventions only when establishing or changing permanent cross-cutting contracts that outlive a single milestone. Never create specs for ad-hoc slices or feature requirements.
 5. **Vertical Slice:**
-   For standalone single-slice behavioral work within existing boundaries, CREATE a complete ad-hoc slice following the vertical slice template and path conventions, placing Interface first (or preceded only by prerequisite Env), followed by harness and wiring as the tracer bullet. Never route an ad-hoc or incomplete slice to the Architect. Resolve `[Domain]` unknowns with the user before handoff. If `Key Unknowns` contains any unresolved `[Technical]`, `[Functional]`, or `[Harness]` items, target the Prototyper; if `Key Unknowns` is empty or all items are resolved, target the Developer.
+   For standalone single-slice behavioral work within existing boundaries, CREATE a complete ad-hoc slice following the vertical slice template and path conventions. Never route an ad-hoc or incomplete slice to the Architect. Resolve `[Domain]` unknowns with the user before handoff. If `Key Unknowns` contains any unresolved `[Technical]`, `[Functional]`, or `[Harness]` items, target the Prototyper; if `Key Unknowns` is empty or all items are resolved, target the Developer.
 6. **Case File:**
    For bug reports or regressions, CREATE a Case File following the case file template and path conventions for the Debugger.
 

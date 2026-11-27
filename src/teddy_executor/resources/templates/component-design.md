@@ -9,14 +9,14 @@ Layers: core/{domain,services,utils,ports/inbound,ports/outbound}, adapters/{inb
 - **Source:** [`src/path/to/file.ext`](/src/path/to/file.ext)
 
 ## Purpose
-1-2 sentences summarizing the core responsibility and boundary role of this component.
+1-2 sentences summarizing the core responsibility, strategic intent, and boundary role of this component, avoiding leaky implementation details.
 
 ## Consumers
 Upstream callers, controllers, or services that depend on or invoke this component:
 - [`CallerComponent`](./path/to/caller.md): Invokes this component to execute [workflow/operation].
 
 ## Dependencies
-Downstream components, outbound ports, or external libraries required by this component:
+Specify every dependency as a constructor-injected outbound Port or composition-root dependency so tests can substitute in-memory fakes and drive every branch without global patching:
 - [`DependencyComponent`](./path/to/dependency.md): Injected via constructor to fulfill [outbound operation].
 
 ## Class Invariants
@@ -32,7 +32,7 @@ Dependency contracts this component requires injected:
 - **`PortName`**: Signature and operations consumed.
 
 ## Data Contracts
-Data transfer objects, schemas, payloads, or custom domain exceptions (inheriting from the project root base exception) managed or exchanged by this component. Model discrete states and constrained values as enumerations, unions, or value objects rather than boolean flags or raw primitives:
+Specify boundary contracts in full: data transfer objects (fields, types, constraints) and custom domain or boundary exceptions (inheriting from the project root base exception rather than bare `Exception` or generic built-in types). Model discrete states and constrained values as enumerations, unions, or value objects rather than boolean flags or raw primitives:
 - **`DtoOrPayloadName`**: Structure, fields, types, and constraints.
 - **`DomainErrorName`**: Specific error type, payload attributes, and base class hierarchy (inheriting from the project root base exception).
 
