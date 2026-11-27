@@ -44,6 +44,9 @@ class ActionData:
     node: Any = None
     similarity_score: float | None = None
     similarity_scores: list[float] | None = None
+    # Recorded when the action is resolved (dispatched or skipped), never at
+    # parse, so the console log and the report can both order by it.
+    execution_sequence: int | None = None
 
     @property
     def is_terminal(self) -> bool:
@@ -83,3 +86,17 @@ class Plan:
     def is_communication_turn(self) -> bool:
         """Returns True if the plan consists only of a MESSAGE action."""
         return len(self.actions) == 1 and self.actions[0].type == ActionType.MESSAGE
+
+    def next_execution_sequence(self) -> int:
+        """Returns the sequence number the next resolved action must record.
+
+        The number follows the highest recorded stamp rather than the count of
+        recorded stamps, so a plan whose actions were partly executed by hand
+        continues after them instead of reusing their numbers.
+        """
+        recorded = [
+            action.execution_sequence
+            for action in self.actions
+            if action.execution_sequence is not None
+        ]
+        return max(recorded) + 1 if recorded else 1
