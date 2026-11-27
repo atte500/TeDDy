@@ -74,7 +74,7 @@ Then validation fails with an error naming the Recursive flag
 7. `[MIGRATE]` Plan-format and plan-format-validation specs, plus the `ActionFactory`, `PlanValidator`, and `SessionService` component pages.
 8. `[MIGRATE]` `action_factory.py` — its three hand-maintained maps (`_MARKDOWN_ACTION_MAP`, `_action_map`, `method_map`), without which an unregistered verb raises `ValueError: Unknown action type`. Also `registries/validators.py`, which registers each validator instance explicitly and assembles the `PlanValidator` composite list by hand.
 9. `[MIGRATE]` The rest of the reviewer's per-type dispatch: `textual_plan_reviewer_execution.py` (parameter order), `textual_plan_reviewer_previews.py` (preview selection), and `textual_plan_reviewer_editor.py` (editable-field routing).
-10. `[VERIFY]` No bundled template or prompt switches on an action type, so report rendering needs no branch. `ActionChangeSetBuilder.create_change_set` returns `None` outside `CREATE`/`EDIT`, so both new actions simply carry no diff preview — accepted, because neither rewrites bytes.
+10. `[EXTEND]` The report template — the fallback link-form headline in `execution_report.md.j2` exists for verbs the file-action arm does not name, so both new verbs fall through it: DELETE renders a working link only because it carries `path`, while MOVE carries `source`/`destination`, resolves its path to the empty string, and emits an empty link as its headline. `ActionChangeSetBuilder.create_change_set` still returns `None` outside `CREATE`/`EDIT`, so neither verb carries a diff preview — accepted, because neither rewrites bytes.
 
 ## Deliverables
 - [x] **Interface** — Add `MOVE` and `DELETE` to `ActionType`, add `move_path` and `remove_path` to `IFileSystemManager` with contract tests, and implement both against a real temporary workspace. The specs already describe both types, so this deliverable changes no documentation.
@@ -83,6 +83,7 @@ Then validation fails with an error naming the Recursive flag
 - [x] **Adapter** — Implement both actions against the port, then add the manifest-rewrite helpers beside `_append_to_session_context` and trigger them from `transition_to_next_turn`, which already receives the `ExecutionReport`, so only successful `MOVE`/`DELETE` logs rewrite anything and `ISessionManager` keeps its signature.
 - [x] **Wiring** — Render both types across all four reviewer modules so a reviewer can inspect and edit the parameters before approving.
 - [x] **Cleanup** — Prune whatever `move_path` and `remove_path` supersede, and sync the affected component pages plus the Ubiquitous Language action list.
+- [ ] **Core (report headline)** — Route DELETE into the file-action arm and give MOVE a headline naming its source and destination, so neither verb renders an empty link, and correct the report formatter's page with it.
 
 ## Implementation Notes
 
@@ -154,6 +155,14 @@ Then validation fails with an error naming the Recursive flag
 - `mock_fs` is protocol-specked, so an assertion left on a pruned declaration raises `AttributeError` instead of failing an assertion. That is why all five test modules were retargeted in the same commit as the prune rather than in a follow-up.
 - The As-Built sweep reached eight pages beyond the two primitive pages, and the port page in particular had never documented the new primitives at all: the sync added both operations rather than renaming one. The rest were verb enumerations that the Core deliverable falsified — `action_factory.md` (the filesystem port supplies five handlers, not three), `action_parser_strategies.md` and `markdown_plan_parser.md` (four verbs through those strategies, and `partial_dispatch_map` routes seven), `action_dispatcher.md` (whose `parameter_normalization` invariant now carries the MOVE key remapping), `plan_validator.md` (the two injected strategies and their rejections), `session_service.md` (`transition_to_next_turn` records the manifest rewrite), `textual_plan_reviewer.md` (the read-only preview arm and the `BOOLEAN_PARAM_KEYS` write-back), and ARCHITECTURE.md's Ubiquitous Language `Action` entry, which now lists seven verbs.
 - `rename_session`'s page postcondition needed no edit: it states the directory rename and the target-exists `ValueError`, both still true after the primitive swap.
+
+### Report-headline finding (post-Cleanup audit)
+- Measured rather than inferred: three logs rendered through the real `MarkdownReportFormatter` produced `### \`MOVE\`: [](/)`, `### \`DELETE\`: [scratch.md](/docs/notes/scratch.md)`, and `### \`DELETE\`: [notes](/docs/notes)`.
+- One gate explains both outcomes. The file-action arm matches `['CREATE', 'EDIT', 'READ']`, so INSERT and DELETE fall through to the link-form fallback below it. That fallback resolves a path and wraps it in a link, which is why DELETE survives an arm it never belonged to: it carries `path`, so the link has something to wrap. MOVE carries `source`/`destination` and no `path`, so the resolved path is the empty string, its basename is the empty string, and the fallback emits `[](/)`.
+- The fallback is not dead code and keeps its place: the validator accepts `prompt`, `invoke`, and `return` with no rules, so verbs with no path of their own still need a header.
+- No existing test pinned either verb's rendered headline; the grep for a MOVE or DELETE report assertion returned nothing, which is why the suite reported green through the whole defect.
+- The Cleanup commit was deliberately taken before this work, so the template diff stays attributable to the defect instead of disappearing inside an eleven-page documentation sync.
+- The report formatter's page is stale in the same way: it states that the file actions are CREATE, EDIT, and READ, which is exactly the arm the template no longer matches.
 
 ## Verification
 1. **Rename with manifest sync:**
