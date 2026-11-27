@@ -42,10 +42,12 @@ if TYPE_CHECKING:
     from teddy_executor.core.domain.models.plan import Plan
     from teddy_executor.core.domain.models.project_context import ProjectContext
     from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
+    from teddy_executor.core.ports.outbound.agent_catalog import IAgentCatalog
     from teddy_executor.core.ports.outbound.config_service import IConfigService
     from teddy_executor.core.ports.outbound.file_system_manager import (
         IFileSystemManager,
     )
+    from teddy_executor.core.ports.outbound.session_manager import ISessionManager
     from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
     from teddy_executor.core.services.action_dispatcher import ActionDispatcher
     from teddy_executor.core.services.web_content_service import WebContentService
@@ -108,6 +110,8 @@ class ReviewerApp(App):
         project_context: Optional[ProjectContext] = None,
         web_content_service: Optional[WebContentService] = None,
         config_service: Optional[IConfigService] = None,
+        agent_catalog: Optional[IAgentCatalog] = None,
+        session_manager: Optional[ISessionManager] = None,
     ):
         super().__init__()
         self.plan = plan
@@ -118,6 +122,8 @@ class ReviewerApp(App):
         self._file_system = file_system
         self._web_content_service = web_content_service
         self.config_service = config_service
+        self._agent_catalog = agent_catalog
+        self._session_manager = session_manager
         self._edit_simulator = EditSimulator()
         self._user_message_cache: Optional[str] = None
         self._log_preview_files: list[str] = []

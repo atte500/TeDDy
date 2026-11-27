@@ -175,14 +175,21 @@ def _update_detail_view(app: ReviewerApp, data: Any):
         _update_action_detail(app, switcher, pane, data)
 
 
+def is_system_node(data: Any) -> bool:
+    """Whether a payload is the System row or the persona leaf beneath it."""
+    return data == SYSTEM_LABEL or (
+        isinstance(data, dict) and data.get("type") == "SYSTEM_PROMPT"
+    )
+
+
 def _is_context_data(data: Any) -> bool:
     """Check if data belongs to the context section."""
     from teddy_executor.core.domain.models.project_context import ContextItem
 
     return (
-        data in (CONTEXT_ROOT, SYSTEM_LABEL, SESSION_LABEL, TURN_LABEL, HISTORY_LABEL)
+        data in (CONTEXT_ROOT, SESSION_LABEL, TURN_LABEL, HISTORY_LABEL)
+        or is_system_node(data)
         or isinstance(data, ContextItem)
-        or (isinstance(data, dict) and data.get("type") == "SYSTEM_PROMPT")
     )
 
 
@@ -356,8 +363,9 @@ def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
             "cancel",
         )
 
-    if node.data in (SESSION_LABEL, TURN_LABEL):
-        # A scope header opens its own manifest; no other action applies.
+    if node.data in (SESSION_LABEL, TURN_LABEL) or is_system_node(node.data):
+        # A scope header opens its own manifest and the System row opens the
+        # persona picker; neither accepts another action.
         return action_name == "edit_details"
 
     if not isinstance(node.data, ActionData):

@@ -258,11 +258,19 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
 
 
 async def open_context_node(app: ReviewerApp, node: Any) -> None:
-    """Open the file a context node names, in place and without harvesting.
+    """Open the file a context node names, or the picker a System row opens.
 
     A target that cannot be resolved is reported rather than opened as an empty
     buffer, because a blank editor would misrepresent a file that is not there.
     """
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
+        is_system_node,
+    )
+
+    if is_system_node(node.data):
+        _open_agent_selector(app)
+        return
+
     target = _context_target_path(app, node.data)
     if target is None:
         return
@@ -309,6 +317,53 @@ def _existing_path(
         app.notify(f"{subject} not found: {target.as_posix()}")
         return None
     return target.as_posix()
+
+
+def _open_agent_selector(app: ReviewerApp) -> None:
+    """Open the persona picker, reporting instead of opening when it cannot act.
+
+    A switch needs a roster to choose from and a session to persist into, so an
+    absent handle, an unscoped session, an unreadable roster, and an empty
+    roster are each reported rather than rendered as a picker that cannot
+    deliver a persona.
+    """
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+        AgentSelectScreen,
+    )
+    from teddy_executor.core.domain.models.exceptions import AgentCatalogError
+
+    catalog = getattr(app, "_agent_catalog", None)
+    session_manager = getattr(app, "_session_manager", None)
+    if catalog is None or session_manager is None:
+        app.notify("Agent switching is unavailable in this reviewer.")
+        return
+
+    context = app.project_context
+    if context is None or not context.session_root:
+        app.notify("No session in scope.")
+        return
+
+    try:
+        roster = catalog.list_agents()
+    except AgentCatalogError as exc:
+        app.notify(f"Could not list agent personas: {exc}")
+        return
+
+    if not roster:
+        app.notify("No agent personas are installed.")
+        return
+
+    app.push_screen(
+        AgentSelectScreen(roster, current=context.agent_name),
+        callback=lambda selection: _apply_agent_selection(app, selection),
+    )
+
+
+def _apply_agent_selection(app: ReviewerApp, selection: Optional[str]) -> None:
+    """Report the picked persona; persisting it onto the session comes next."""
+    if selection is None:
+        return
+    app.notify(f"Selected agent: {selection}")
 
 
 async def view_details_handler(app: "ReviewerApp") -> None:

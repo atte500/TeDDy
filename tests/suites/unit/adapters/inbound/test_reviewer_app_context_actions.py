@@ -1,9 +1,9 @@
 """Reviewer ``e`` behaviour on context nodes.
 
 The context panel is the surface a reviewer consults before approving a plan, so
-``e`` opens the manifest or file a node names instead of doing nothing. Nodes
-whose action belongs to a later deliverable (the System persona row) stay
-disabled, and the toggle binding must survive untouched.
+``e`` opens the manifest or file a node names instead of doing nothing. The
+System row opens the persona picker instead, and the toggle binding must survive
+untouched.
 """
 
 import pytest
@@ -126,7 +126,7 @@ async def test_file_row_opens_the_named_file(env, tmp_path, monkeypatch):
 
 @pytest.mark.anyio
 async def test_edit_details_is_enabled_only_on_openable_context_nodes(env, tmp_path):
-    """Session, Turn, and file rows accept ``e``; the persona row does not yet."""
+    """Session, Turn, file, and System rows all accept ``e``."""
     driver = _driver(
         env,
         _panel(
@@ -145,7 +145,7 @@ async def test_edit_details_is_enabled_only_on_openable_context_nodes(env, tmp_p
             assert pilot.app.check_action("edit_details", ()) is True
 
         await _park_cursor(driver, pilot, lambda data: data == SYSTEM_LABEL)
-        assert pilot.app.check_action("edit_details", ()) is False
+        assert pilot.app.check_action("edit_details", ()) is True
 
 
 @pytest.mark.anyio

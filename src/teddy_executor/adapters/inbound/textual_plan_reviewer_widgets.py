@@ -8,6 +8,8 @@ from textual.containers import VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import Input, Label, ListItem, ListView, Tree, Static
 
+from teddy_executor.core.utils.string import canonical_agent_name
+
 if TYPE_CHECKING:
     from textual.app import ComposeResult
 
@@ -68,6 +70,58 @@ class ParameterEditModal(ModalScreen[str]):
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         self.dismiss(event.value)
+
+    def on_key(self, event) -> None:
+        if event.key == "escape":
+            self.dismiss(None)
+
+
+AGENT_CURRENT_MARKER = "(current)"
+
+
+class AgentSelectScreen(ModalScreen[str]):
+    """Modal screen for picking the session's agent persona.
+
+    Dismisses the picked persona name, or ``None`` when abandoned, so an
+    abandoned selection stays inert.
+    """
+
+    def __init__(self, agents: tuple[str, ...], current: str) -> None:
+        super().__init__()
+        self.agents = tuple(agents)
+        self.current = canonical_agent_name(current)
+
+    def compose(self) -> ComposeResult:
+        yield Label("Select agent persona:")
+        yield ListView(
+            *[
+                ListItem(
+                    Label(
+                        f"{name} {AGENT_CURRENT_MARKER}"
+                        if name == self.current
+                        else name
+                    )
+                )
+                for name in self.agents
+            ],
+            id="agent-options",
+        )
+
+    def on_mount(self) -> None:
+        view = self.query_one(ListView)
+        view.index = self._current_index()
+        view.focus()
+
+    def _current_index(self) -> int:
+        """Index of the persona already in force, defaulting to the first row."""
+        if self.current in self.agents:
+            return self.agents.index(self.current)
+        return 0
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        index = event.list_view.index
+        if index is not None and 0 <= index < len(self.agents):
+            self.dismiss(self.agents[index])
 
     def on_key(self, event) -> None:
         if event.key == "escape":

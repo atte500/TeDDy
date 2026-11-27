@@ -34,6 +34,8 @@ class TuiDriver:
         mock_editor_output: Optional[str] = None,
         action_dispatcher: Any = None,
         project_context: Optional["ProjectContext"] = None,
+        agent_catalog: Any = None,
+        session_manager: Any = None,
     ):
         self.editor_launch_suffixes: list[str] = []
         if mock_editor_output is not None:
@@ -46,6 +48,8 @@ class TuiDriver:
             console_tooling=console_tooling or spec_mock(ConsoleToolingHelper),
             action_dispatcher=action_dispatcher or spec_mock(ActionDispatcher),
             project_context=project_context,
+            agent_catalog=agent_catalog,
+            session_manager=session_manager,
         )
 
     def _install_mock_editor(self, system_env: Any, output: str) -> None:

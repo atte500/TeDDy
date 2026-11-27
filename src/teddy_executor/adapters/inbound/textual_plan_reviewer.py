@@ -11,10 +11,12 @@ if TYPE_CHECKING:
     from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
     from teddy_executor.core.domain.models.plan import ActionData, Plan
     from teddy_executor.core.domain.models.project_context import ProjectContext
+    from teddy_executor.core.ports.outbound.agent_catalog import IAgentCatalog
     from teddy_executor.core.ports.outbound.config_service import IConfigService
     from teddy_executor.core.ports.outbound.file_system_manager import (
         IFileSystemManager,
     )
+    from teddy_executor.core.ports.outbound.session_manager import ISessionManager
     from teddy_executor.core.ports.outbound.system_environment import ISystemEnvironment
     from teddy_executor.core.services.action_dispatcher import ActionDispatcher
     from teddy_executor.core.services.web_content_service import WebContentService
@@ -33,6 +35,8 @@ class TextualPlanReviewer(IPlanReviewer):
         action_dispatcher: ActionDispatcher,
         web_content_service: Optional[WebContentService] = None,
         config_service: Optional[IConfigService] = None,
+        agent_catalog: Optional[IAgentCatalog] = None,
+        session_manager: Optional[ISessionManager] = None,
     ):
         self._system_env = system_env
         self._file_system = file_system
@@ -40,6 +44,8 @@ class TextualPlanReviewer(IPlanReviewer):
         self._action_dispatcher = action_dispatcher
         self._web_content_service = web_content_service
         self._config_service = config_service
+        self._agent_catalog = agent_catalog
+        self._session_manager = session_manager
 
     def review(
         self, plan: Plan, project_context: Optional[ProjectContext] = None
@@ -78,6 +84,8 @@ class TextualPlanReviewer(IPlanReviewer):
             project_context=project_context,
             web_content_service=self._web_content_service,
             config_service=self._config_service,
+            agent_catalog=self._agent_catalog,
+            session_manager=self._session_manager,
         )
         # The session-level quit-key reader polls stdin for the whole turn
         # loop; Textual owns the keyboard for the app's lifetime, so claim
