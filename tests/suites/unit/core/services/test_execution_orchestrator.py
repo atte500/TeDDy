@@ -1,3 +1,5 @@
+import logging
+
 from teddy_executor.core.domain.models import (
     ActionData,
     ActionLog,
@@ -260,3 +262,126 @@ def test_execute_with_single_message_bypasses_reviewer(
     # Assert
     # Verify reviewer.review (TUI) was NOT called
     mock_plan_reviewer.review.assert_not_called()
+
+
+def test_manual_then_batch_orders_report_by_execution_sequence(
+    env, mock_action_dispatcher
+):
+    """A hand-executed action reports first, before the actions that ran after it."""
+    # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+    manual_log = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type="EXECUTE",
+        params={"command": "manual"},
+    )
+    manual_action = ActionData(
+        type="EXECUTE",
+        params={"command": "manual"},
+        description="manual step",
+        executed=True,
+        action_log=manual_log,
+        execution_sequence=1,
+    )
+    batch_action = ActionData(
+        type="EXECUTE", params={"command": "batch"}, description="batch step"
+    )
+    plan = Plan(
+        title="Ordering Plan", rationale="Test", actions=[batch_action, manual_action]
+    )
+    mock_action_dispatcher.dispatch_and_execute.return_value = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type="EXECUTE",
+        params={"command": "batch"},
+    )
+
+    # Act
+    report = orchestrator.execute(plan=plan, require_approval=False)
+
+    # Assert
+    assert [log.params["command"] for log in report.action_logs] == [
+        "manual",
+        "batch",
+    ]
+
+
+def test_preexecuted_console_lines_follow_execution_sequence(env, caplog):
+    """Console lines name hand-executed actions in the order they actually ran."""
+    # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+    orchestrator_logger = "teddy_executor.core.services.execution_orchestrator"
+    ran_second = ActionData(
+        type="EXECUTE",
+        params={"command": "b"},
+        description="ran second",
+        executed=True,
+        action_log=ActionLog(
+            status=ActionStatus.SUCCESS, action_type="EXECUTE", params={"command": "b"}
+        ),
+        execution_sequence=2,
+    )
+    ran_first = ActionData(
+        type="EXECUTE",
+        params={"command": "a"},
+        description="ran first",
+        executed=True,
+        action_log=ActionLog(
+            status=ActionStatus.SUCCESS, action_type="EXECUTE", params={"command": "a"}
+        ),
+        execution_sequence=1,
+    )
+    plan = Plan(title="Manual Order", rationale="Test", actions=[ran_second, ran_first])
+
+    # Act
+    with caplog.at_level(logging.INFO):
+        orchestrator.execute(plan=plan, require_approval=False)
+
+    # Assert
+    lines = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == orchestrator_logger
+    ]
+    assert lines == [
+        "EXECUTE - ran first",
+        "SUCCESS",
+        "EXECUTE - ran second",
+        "SUCCESS",
+    ]
+
+
+def test_unstamped_manual_action_keeps_plan_position(env, mock_action_dispatcher):
+    """An action carrying no stamp stays where it sits instead of sorting forward."""
+    # Arrange
+    orchestrator = env.get_service(ExecutionOrchestrator)
+    legacy_action = ActionData(
+        type="EXECUTE",
+        params={"command": "legacy"},
+        description="legacy step",
+        executed=True,
+        action_log=ActionLog(
+            status=ActionStatus.SUCCESS,
+            action_type="EXECUTE",
+            params={"command": "legacy"},
+        ),
+    )
+    batch_action = ActionData(
+        type="EXECUTE", params={"command": "batch"}, description="batch step"
+    )
+    plan = Plan(
+        title="Legacy Plan", rationale="Test", actions=[legacy_action, batch_action]
+    )
+    mock_action_dispatcher.dispatch_and_execute.return_value = ActionLog(
+        status=ActionStatus.SUCCESS,
+        action_type="EXECUTE",
+        params={"command": "batch"},
+    )
+
+    # Act
+    report = orchestrator.execute(plan=plan, require_approval=False)
+
+    # Assert
+    assert [log.params["command"] for log in report.action_logs] == [
+        "legacy",
+        "batch",
+    ]

@@ -157,9 +157,7 @@ def test_manually_executed_message_action_stays_silent(caplog):
     orchestrator = _build_orchestrator()
 
     with caplog.at_level(logging.INFO):
-        orchestrator._handle_action_in_loop(
-            action, plan, require_approval=False, halt_execution=False
-        )
+        orchestrator.execute(plan=plan, require_approval=False)
 
     messages = [record.message for record in caplog.records]
     assert "MESSAGE" not in messages

@@ -69,8 +69,9 @@ class ExecutionOrchestrator(IRunPlanUseCase):
         # stale hashes from previous turns from causing false pre-check failures.
         self._action_executor.reset_file_hashes()
 
-        action_logs = []
+        action_logs: list[tuple[ActionLog, int]] = []
         halt_execution = False
+        self._emit_preexecuted_console_prelude(plan)
         with ExitStack() as stack:
             if self._interrupt_guard is not None:
                 # EXECUTING phase (two-phase Ctrl+C): a signal during dispatch
@@ -88,18 +89,65 @@ class ExecutionOrchestrator(IRunPlanUseCase):
                     # exits normally so the report keeps the full audit
                     # trail (finalize_turn still runs at the boundary).
                     action_logs.append(
-                        self._action_executor.handle_skipped_action(
-                            action, INTERRUPT_REASON
+                        (
+                            self._action_executor.handle_skipped_action(
+                                action, INTERRUPT_REASON
+                            ),
+                            self._stamp_action(plan, action),
                         )
                     )
                     continue
                 action_log, should_halt = self._handle_action_in_loop(
                     action, plan, require_approval, halt_execution, pipeline
                 )
-                action_logs.append(action_log)
+                action_logs.append((action_log, self._stamp_action(plan, action)))
                 if should_halt:
                     halt_execution = True
-        return action_logs
+        return self._order_logs_by_sequence(action_logs)
+
+    def _stamp_action(self, plan: Plan, action: ActionData) -> int:
+        """Records where the action entered this run's execution order.
+
+        An action that already carries a sequence keeps it: a hand-executed
+        action was numbered when the reviewer ran it, so re-stamping would
+        collapse the interleaving between it and the batch that followed.
+        """
+        sequence = action.execution_sequence
+        if sequence is None:
+            sequence = plan.next_execution_sequence()
+            action.execution_sequence = sequence
+        return sequence
+
+    def _emit_preexecuted_console_prelude(self, plan: Plan) -> None:
+        """Announces reused actions before the batch's lines stream.
+
+        A hand-executed action ran before anything the loop dispatches, so its
+        lines belong ahead of the batch's, in the order the stamps record. An
+        action carrying no sequence is numbered here first, so its
+        announcement and its position in the report cannot disagree.
+        """
+        reused = [
+            action
+            for action in plan.actions
+            if action.executed and action.action_log is not None
+        ]
+        for action in reused:
+            self._stamp_action(plan, action)
+        reused.sort(key=lambda action: action.execution_sequence or 0)
+        for action in reused:
+            assert action.action_log is not None, "A reused action must carry a log."
+            self._emit_preexecuted_console_log(action, action.action_log)
+
+    def _order_logs_by_sequence(
+        self, action_logs: list[tuple[ActionLog, int]]
+    ) -> list[ActionLog]:
+        """Returns the logs in the order their actions actually ran.
+
+        Stamping happens at the single append site, so every entry carries a
+        sequence; a stable sort leaves equally numbered entries in the order
+        they were appended.
+        """
+        return [log for log, _sequence in sorted(action_logs, key=lambda e: e[1])]
 
     def _emit_preexecuted_console_log(
         self, action: ActionData, action_log: ActionLog
@@ -138,7 +186,6 @@ class ExecutionOrchestrator(IRunPlanUseCase):
             )
 
         if action.executed and action.action_log:
-            self._emit_preexecuted_console_log(action, action.action_log)
             should_halt = (
                 action.action_log.status == ActionStatus.FAILURE
                 and not action.params.get("allow_failure")

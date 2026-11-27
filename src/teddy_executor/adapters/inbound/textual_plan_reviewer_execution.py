@@ -146,7 +146,11 @@ def resolve_action_parameters(action: ActionData) -> dict[str, Any]:
 
 async def orchestrate_execution(app: ReviewerApp, node: Any, update_fn: Any) -> None:
     """Orchestrates the execution of a single action node."""
-    from teddy_executor.core.domain.models.plan import ActionData, ExecutionStatus
+    from teddy_executor.core.domain.models.plan import (
+        ActionData,
+        ExecutionStatus,
+        Plan,
+    )
 
     action: Any = node.data
     if (
@@ -155,6 +159,12 @@ async def orchestrate_execution(app: ReviewerApp, node: Any, update_fn: Any) -> 
         or action.state == ExecutionStatus.RUNNING
     ):
         return
+
+    # Recorded at resolution, so a hand-executed action carries the number of
+    # the moment it ran rather than the position it holds in the plan.
+    plan = getattr(app, "plan", None)
+    if isinstance(plan, Plan) and action.execution_sequence is None:
+        action.execution_sequence = plan.next_execution_sequence()
 
     action.state = ExecutionStatus.RUNNING
     app._refresh_node(node)
