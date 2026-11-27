@@ -18,6 +18,7 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
     AGENT_CURRENT_MARKER,
     AgentSelectScreen,
+    DetailItem,
 )
 from teddy_executor.core.domain.models.exceptions import AgentCatalogError
 from teddy_executor.core.domain.models.plan import ActionData, Plan
@@ -26,6 +27,7 @@ from teddy_executor.core.domain.models.project_context import (
     ProjectContext,
 )
 from teddy_executor.core.ports.outbound import (
+    IConfigService,
     IFileSystemManager,
     ISessionManager,
     ISystemEnvironment,
@@ -60,16 +62,18 @@ def _panel(session_root: str | None) -> ProjectContext:
         content_tokens=sum(item.token_count for item in items),
         total_window=200000,
         session_root=session_root,
+        model_name="openai/gpt-4o",
     )
 
 
-def _driver(
+def _driver(  # noqa: PLR0913 - sentinel defaults keep "absent" distinct from None
     env,
     tmp_path,
     *,
     catalog: Any = _ABSENT,
     session_manager: Any = _ABSENT,
     session_in_scope: bool = True,
+    config_service: Any = None,
 ) -> TuiDriver:
     """Builds a reviewer driver whose persona-switch handles stay injectable."""
     return TuiDriver(
@@ -87,6 +91,7 @@ def _driver(
             if session_manager is _ABSENT
             else session_manager
         ),
+        config_service=config_service,
     )
 
 
@@ -95,6 +100,23 @@ def _record_notifications(app) -> list[str]:
     messages: list[str] = []
     app.notify = lambda message, **_: messages.append(message)
     return messages
+
+
+def _config(agents: dict[str, Any], llm_model: str) -> Any:
+    """A config double answering the two getters the model overlay reads."""
+    settings = {"agents": agents, "llm.model": llm_model}
+    config = spec_mock(IConfigService)
+
+    def get_setting(key: str, default: Any = None) -> Any:
+        return settings.get(key, default)
+
+    config.get_setting.side_effect = get_setting
+    return config
+
+
+def _detail_map(app) -> dict[str, Any]:
+    """Read the mounted context pane as a keyed map of its rows."""
+    return {item.data["key"]: item.data["val"] for item in app.query(DetailItem)}
 
 
 async def _park_cursor(driver: TuiDriver, pilot, matches) -> None:
@@ -140,9 +162,10 @@ async def test_system_row_opens_the_picker_marking_the_current_persona(env, tmp_
 
 
 @pytest.mark.anyio
-async def test_picking_a_persona_reports_the_selection(env, tmp_path):
-    """The picked persona crosses the dismissal boundary and closes the picker."""
-    driver = _driver(env, tmp_path)
+async def test_picking_a_persona_persists_it_onto_the_session(env, tmp_path):
+    """The picked persona reaches the session and closes the picker."""
+    session_manager = spec_mock(ISessionManager)
+    driver = _driver(env, tmp_path, session_manager=session_manager)
     notifications = _record_notifications(driver.app)
 
     async with driver.interaction() as pilot:
@@ -154,7 +177,9 @@ async def test_picking_a_persona_reports_the_selection(env, tmp_path):
 
         assert not isinstance(pilot.app.screen, AgentSelectScreen)
 
-    assert notifications == ["Selected agent: Developer"]
+    session_manager.set_session_agent.assert_called_once_with("session", "Developer")
+    assert driver.app.project_context.agent_name == "Developer"
+    assert notifications == ["Switched agent to Developer"]
 
 
 @pytest.mark.anyio
@@ -241,3 +266,88 @@ async def test_edit_details_is_enabled_on_the_system_rows(env, tmp_path):
 
         await _park_cursor(driver, pilot, _is_persona_leaf)
         assert pilot.app.check_action("edit_details", ()) is True
+
+
+@pytest.mark.anyio
+async def test_switch_re_resolves_the_model_row_from_the_persona_overlay(env, tmp_path):
+    """The Model row names the model the newly selected persona would use."""
+    driver = _driver(
+        env,
+        tmp_path,
+        config_service=_config(
+            {
+                "pathfinder": {"model": "openai/gpt-4o"},
+                "developer": {"model": "anthropic/claude-sonnet-4-5"},
+            },
+            "openai/gpt-4o",
+        ),
+    )
+
+    async with driver.interaction() as pilot:
+        await _press_e(driver, pilot, lambda data: data == SYSTEM_LABEL)
+        await pilot.press("down")
+        await pilot.press("enter")
+        await pilot.pause()
+        await pilot.pause()
+        details = _detail_map(pilot.app)
+
+    assert driver.app.project_context.model_name == "anthropic/claude-sonnet-4-5"
+    assert details["Model"] == "claude-sonnet-4-5"
+    assert details["Provider"] == "anthropic"
+
+
+@pytest.mark.anyio
+async def test_switch_falls_back_to_the_global_model_when_the_persona_omits_one(
+    env, tmp_path
+):
+    """An overlay without a model leaves the global default answering."""
+    driver = _driver(
+        env, tmp_path, config_service=_config({}, "google/gemini-2.0-flash")
+    )
+
+    async with driver.interaction() as pilot:
+        await _press_e(driver, pilot, lambda data: data == SYSTEM_LABEL)
+        await pilot.press("down")
+        await pilot.press("enter")
+        await pilot.pause()
+        await pilot.pause()
+        details = _detail_map(pilot.app)
+
+    assert driver.app.project_context.model_name == "google/gemini-2.0-flash"
+    assert details["Model"] == "gemini-2.0-flash"
+    assert details["Provider"] == "google"
+
+
+@pytest.mark.anyio
+async def test_switch_without_a_config_service_reports_an_unknown_model(env, tmp_path):
+    """With no config in reach the row states Unknown, never the stale model."""
+    driver = _driver(env, tmp_path)
+
+    async with driver.interaction() as pilot:
+        await _press_e(driver, pilot, lambda data: data == SYSTEM_LABEL)
+        await pilot.press("down")
+        await pilot.press("enter")
+        await pilot.pause()
+        await pilot.pause()
+        details = _detail_map(pilot.app)
+
+    assert driver.app.project_context.model_name == "Unknown"
+    assert details["Model"] == "Unknown"
+    assert details["Provider"] == "unknown"
+
+
+@pytest.mark.anyio
+async def test_switch_updates_the_system_node_persona_leaf(env, tmp_path):
+    """The System node's persona leaf names the newly selected persona."""
+    driver = _driver(env, tmp_path)
+
+    async with driver.interaction() as pilot:
+        await _press_e(driver, pilot, lambda data: data == SYSTEM_LABEL)
+        await pilot.press("down")
+        await pilot.press("enter")
+        await pilot.pause()
+        await pilot.pause()
+        label = str(driver.find_node(pilot, _is_persona_leaf).label)
+
+    assert "Developer" in label
+    assert "Pathfinder" not in label

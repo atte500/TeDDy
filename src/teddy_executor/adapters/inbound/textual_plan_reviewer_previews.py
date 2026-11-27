@@ -360,10 +360,65 @@ def _open_agent_selector(app: ReviewerApp) -> None:
 
 
 def _apply_agent_selection(app: ReviewerApp, selection: Optional[str]) -> None:
-    """Report the picked persona; persisting it onto the session comes next."""
+    """Persist the picked persona and repaint every surface that names it.
+
+    The switch behaves like ``resume -a``: ``set_session_agent`` records the
+    persona on the session and recomposes its agent+MRP prompt, so the next turn
+    is planned with the new persona while the current turn keeps the plan it
+    already composed.
+    """
+    from textual.widgets import Tree
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
+        _update_detail_view,
+        refresh_system_node,
+    )
+    from teddy_executor.core.utils.string import canonical_agent_name
+
     if selection is None:
         return
-    app.notify(f"Selected agent: {selection}")
+
+    context = app.project_context
+    if context is None:
+        return
+
+    agent = canonical_agent_name(selection)
+    session_manager = getattr(app, "_session_manager", None)
+    if session_manager is not None and context.session_root:
+        session_name = pathlib.Path(context.session_root).name
+        session_manager.set_session_agent(session_name, agent)
+
+    context.agent_name = agent
+    context.model_name = _resolve_persona_model(app, agent)
+
+    refresh_system_node(app)
+    tree = app.query_one(Tree)
+    if tree.cursor_node is not None:
+        _update_detail_view(app, tree.cursor_node.data)
+    app.notify(f"Switched agent to {agent}")
+
+
+def _resolve_persona_model(app: ReviewerApp, agent: str) -> str:
+    """Resolve the model the picked persona answers with.
+
+    Mirrors the CLI banner's precedence — the ``--model`` flag, then the
+    persona's ``agents.<persona>`` overlay, then the global ``llm.model`` — and
+    reports ``Unknown`` when nothing resolves. The reviewer holds no reader for a
+    recorded flag override, so a ``--model`` run keeps the flag at the provider
+    while this row names the persona's model.
+    """
+    from teddy_executor.core.domain.models.config_schema import (
+        resolve_agent_llm_overrides,
+        resolve_effective_model,
+    )
+
+    model: Any = ""
+    config = app.config_service
+    if config is not None:
+        overlay = resolve_agent_llm_overrides(config.get_setting("agents", {}), agent)
+        model = resolve_effective_model(
+            None, overlay.get("model"), config.get_setting("llm.model", "")
+        )
+    return (str(model).strip() if model else "") or "Unknown"
 
 
 async def view_details_handler(app: "ReviewerApp") -> None:

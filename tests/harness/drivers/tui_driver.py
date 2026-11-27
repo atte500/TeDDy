@@ -36,6 +36,7 @@ class TuiDriver:
         project_context: Optional["ProjectContext"] = None,
         agent_catalog: Any = None,
         session_manager: Any = None,
+        config_service: Any = None,
     ):
         self.editor_launch_suffixes: list[str] = []
         if mock_editor_output is not None:
@@ -50,6 +51,7 @@ class TuiDriver:
             project_context=project_context,
             agent_catalog=agent_catalog,
             session_manager=session_manager,
+            config_service=config_service,
         )
 
     def _install_mock_editor(self, system_env: Any, output: str) -> None:

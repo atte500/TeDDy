@@ -16,6 +16,16 @@ MAX_LABEL_LENGTH = 60
 # single-line representation and opens in the external editor instead.
 MAX_INLINE_PARAM_LENGTH = 100
 
+# The persona leaf beneath the System row: its payload type and the one
+# formatter both mount time and a persona switch render through, so a switch
+# cannot leave the label shaped differently from how the tree was built.
+SYSTEM_PROMPT_LEAF_TYPE = "SYSTEM_PROMPT"
+
+
+def format_system_prompt_label(agent_name: str, tokens: int) -> str:
+    """Render the persona leaf's label: the agent name and its token budget."""
+    return f"  [bold]{agent_name}[/] [#888888]{tokens / 1000.0:.1f}k[/]"
+
 
 def needs_external_editor(value: str) -> bool:
     """Whether a rendered parameter value must open in the external editor.
@@ -65,7 +75,7 @@ def populate_context_detail(app: "ReviewerApp", pane: Any, data: Any) -> None:
         pane.append(DetailItem("Scope", data.scope))
         if data.auto_prune_reason:
             pane.append(DetailItem("Auto-Prune", data.auto_prune_reason))
-    elif isinstance(data, dict) and data.get("type") == "SYSTEM_PROMPT":
+    elif isinstance(data, dict) and data.get("type") == SYSTEM_PROMPT_LEAF_TYPE:
         pane.append(DetailItem("Agent", data.get("agent", "Unknown")))
         pane.append(DetailItem("Tokens", f"{data.get('tokens', 0) / 1000.0:.1f}k"))
     elif app.project_context:
@@ -179,11 +189,13 @@ def build_context_section(app: "ReviewerApp", tree: Any) -> Any:
     session_root = app.project_context.session_root
     con_root = tree.root.add("[bold]Context[/]", data=CONTEXT_ROOT, expand=False)
     con_root.add_leaf("[#888888 italic]System:[/]", data=SYSTEM_LABEL)
-    token_str = f" [#888888]{app.project_context.system_prompt_tokens / 1000.0:.1f}k[/]"
     con_root.add_leaf(
-        f"  [bold]{app.project_context.agent_name}[/]{token_str}",
+        format_system_prompt_label(
+            app.project_context.agent_name,
+            app.project_context.system_prompt_tokens,
+        ),
         data={
-            "type": "SYSTEM_PROMPT",
+            "type": SYSTEM_PROMPT_LEAF_TYPE,
             "agent": app.project_context.agent_name,
             "tokens": app.project_context.system_prompt_tokens,
         },

@@ -8,7 +8,9 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_execution import (
     resolve_action_parameters,
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_helpers import (
+    SYSTEM_PROMPT_LEAF_TYPE,
     format_node_label,
+    format_system_prompt_label,
 )
 
 logger = logging.getLogger(__name__)
@@ -175,11 +177,14 @@ def _update_detail_view(app: ReviewerApp, data: Any):
         _update_action_detail(app, switcher, pane, data)
 
 
+def is_persona_leaf(data: Any) -> bool:
+    """Whether a payload is the persona leaf beneath the System row."""
+    return isinstance(data, dict) and data.get("type") == SYSTEM_PROMPT_LEAF_TYPE
+
+
 def is_system_node(data: Any) -> bool:
     """Whether a payload is the System row or the persona leaf beneath it."""
-    return data == SYSTEM_LABEL or (
-        isinstance(data, dict) and data.get("type") == "SYSTEM_PROMPT"
-    )
+    return data == SYSTEM_LABEL or is_persona_leaf(data)
 
 
 def _is_context_data(data: Any) -> bool:
@@ -311,6 +316,42 @@ def refresh_node_logic(app: ReviewerApp, node: Any) -> None:
     elif isinstance(node.data, ContextItem):
         session_root = app.project_context.session_root if app.project_context else None
         node.label = format_context_item_label(node.data, session_root)
+    elif is_persona_leaf(node.data):
+        node.label = format_system_prompt_label(
+            node.data.get("agent", "Unknown"), node.data.get("tokens", 0)
+        )
+
+
+def _find_persona_leaf(tree: Any) -> Any:
+    """Return the persona leaf node, or ``None`` when the tree holds none."""
+    stack = [tree.root]
+    while stack:
+        node = stack.pop()
+        if is_persona_leaf(node.data):
+            return node
+        stack.extend(reversed(node.children))
+    return None
+
+
+def refresh_system_node(app: ReviewerApp) -> None:
+    """Repaint the persona leaf from the current project context.
+
+    A persona switch mutates ``project_context`` in place, so the leaf's own
+    payload is synced first: the detail pane renders from that same dict, so a
+    stale agent there would contradict the label directly above it.
+    """
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
+        ActionTree,
+    )
+
+    if app.project_context is None:
+        return
+    node = _find_persona_leaf(app.query_one(ActionTree))
+    if node is None:
+        return
+    node.data["agent"] = app.project_context.agent_name
+    node.data["tokens"] = app.project_context.system_prompt_tokens
+    refresh_node_logic(app, node)
 
 
 def on_mount_logic(app: Any) -> None:
