@@ -62,7 +62,7 @@ Then validation fails with an error naming the Recursive flag
 - **Rename onto itself**: If `Source` and `Destination` are equal, then validation rejects the action, because it is a no-op that would rewrite manifests for nothing.
 
 ## Key Unknowns
-- [ ] [Technical] File-system port capability: does `IFileSystemManager` already expose a move or delete primitive, or only create/read/edit? Design Sensitivity: if a move primitive exists → the actions delegate and the slice adds only the manifest sync; if not → the slice extends the port, the local adapter, and the in-memory fake first, which makes the port extension the Interface deliverable and pushes both actions to the Adapter tier.
+- [x] [Technical] File-system port capability — resolved. `IFileSystemManager` exposes `remove_file(path)` (files only) and `move_directory(old_path, new_path)` (directories only), so a file move and a directory removal are both absent. The port extension is therefore the Interface deliverable, and both actions land at the Adapter tier: the port gains `move_path` and `remove_path` (the latter taking `recursive`), and `LocalFileSystemAdapter` implements both.
 
 ## Impact
 1. `[EXTEND]` `ActionType` — add `MOVE` and `DELETE` with their contract strings in the plan-format spec.
@@ -72,16 +72,25 @@ Then validation fails with an error naming the Recursive flag
 5. `[MIGRATE]` `session_lifecycle_manager.py` and `session_service.py` — manifest rewrite hooks for rename and removal over both manifests.
 6. `[MIGRATE]` `textual_plan_reviewer_helpers.py` — parameter rendering and preview for both types.
 7. `[MIGRATE]` Plan-format and plan-format-validation specs, plus the `ActionFactory`, `PlanValidator`, and `SessionService` component pages.
+8. `[MIGRATE]` `action_factory.py` — its three hand-maintained maps (`_MARKDOWN_ACTION_MAP`, `_action_map`, `method_map`), without which an unregistered verb raises `ValueError: Unknown action type`. Also `registries/validators.py`, which registers each validator instance explicitly and assembles the `PlanValidator` composite list by hand.
+9. `[MIGRATE]` The rest of the reviewer's per-type dispatch: `textual_plan_reviewer_execution.py` (parameter order), `textual_plan_reviewer_previews.py` (preview selection), and `textual_plan_reviewer_editor.py` (editable-field routing).
+10. `[VERIFY]` No bundled template or prompt switches on an action type, so report rendering needs no branch. `ActionChangeSetBuilder.create_change_set` returns `None` outside `CREATE`/`EDIT`, so both new actions simply carry no diff preview — accepted, because neither rewrites bytes.
 
 ## Deliverables
-- [ ] **Interface** — Extend `ActionType`, `IFileSystemManager`, and the plan-format specs with the two types and the move/remove primitives, and update the in-memory fake so every later tier has its double.
-- [ ] **Harness** — Extend `MarkdownPlanBuilder` with MOVE and DELETE builders and the validation-error scenarios, so no test hardcodes the new Markdown.
-- [ ] **Core** — Parse and validate both types, including `Recursive` coercion, and prove every rejection branch through the validator.
-- [ ] **Adapter** — Implement both actions against the port, then rewrite the live `turn.context` and `session.context` for renames and removals.
-- [ ] **Wiring** — Render both types in the reviewer so a reviewer can inspect and edit the parameters before approving.
-- [ ] **Cleanup** — Update the two specs, the affected component pages, and the Ubiquitous Language, which currently lists only the six existing action types.
+- [ ] **Interface** — Add `MOVE` and `DELETE` to `ActionType`, add `move_path` and `remove_path` to `IFileSystemManager` with contract tests, and implement both against a real temporary workspace. The specs already describe both types, so this deliverable changes no documentation.
+- [ ] **Harness** — Extend `MarkdownPlanBuilder` with `add_move` and `add_delete`, both accepting an explicit `Recursive` value including the string form a plan would carry, so no test hardcodes the new Markdown.
+- [ ] **Core** — Parse both types (coercing `Recursive` so the string `false` becomes `False`), register them in the parser dispatch map and the three factory maps, and prove every rejection branch through `MoveActionValidator` and `DeleteActionValidator` plus their registry entries.
+- [ ] **Adapter** — Implement both actions against the port, then add the manifest-rewrite helpers beside `_append_to_session_context` and trigger them from `transition_to_next_turn`, which already receives the `ExecutionReport`, so only successful `MOVE`/`DELETE` logs rewrite anything and `ISessionManager` keeps its signature.
+- [ ] **Wiring** — Render both types across all four reviewer modules so a reviewer can inspect and edit the parameters before approving.
+- [ ] **Cleanup** — Prune whatever `move_path` and `remove_path` supersede, and sync the affected component pages plus the Ubiquitous Language action list.
 
 ## Implementation Notes
+
+### Orientation audit
+- The registration surface is wider than the original `Impact` section assumed: beyond the enum, the parser dispatch map, and the three factory maps, `registries/validators.py` needs an entry in two places and the reviewer spans four modules rather than one. Report rendering and the change-set path needed no branch.
+- Manifest entries are root-relative project paths written via `to_root_relative`, so a `MOVE`'s `Source`/`Destination` and a `DELETE`'s `Path` compare directly against them after `normalize_resource_path`.
+- The manifest sync is triggered from `transition_to_next_turn` rather than from the actions: it already receives the `ExecutionReport` and therefore knows which actions actually succeeded, which keeps the session layer in charge and leaves `ISessionManager` unchanged.
+- No shared in-memory `IFileSystemManager` fake exists — the harness registers a bound mock and several test modules carry private `InMemoryFileSystem` classes. The new port primitives are proven against a real temporary directory, and validation tests use the existing bound mock.
 
 ## Verification
 1. **Rename with manifest sync:**
