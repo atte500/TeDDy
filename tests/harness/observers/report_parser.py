@@ -193,6 +193,23 @@ class ReportParser:
             if block_match:
                 details[block] = block_match.group(2).strip()
 
+    def ordered_labels(self) -> List[str]:
+        """Returns one subject label per action log entry, in document order.
+
+        The report folds an entry's subject into ``params`` under a key that
+        depends on the action type, so the precedence is resolved here once
+        rather than re-derived by every caller asserting on ordering. An entry
+        that carries no subject yields an empty label.
+        """
+        subject_keys = ("File Path", "Resource", "Description")
+        return [
+            next(
+                (entry.params[key] for key in subject_keys if entry.params.get(key)),
+                "",
+            )
+            for entry in self.action_logs
+        ]
+
     def action_was_successful(self, index: int) -> bool:
         """Returns True if the action at the given index was successful."""
         if 0 <= index < len(self.action_logs):

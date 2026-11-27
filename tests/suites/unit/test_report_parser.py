@@ -131,3 +131,25 @@ def test_parse_user_reply_section(container):
     parser = ReportParser(report_content)
 
     assert parser.user_reply == "Yes, please proceed."
+
+
+def test_ordered_labels_follows_document_order(container):
+    """Labels follow document order, resolving each entry's subject by type."""
+    report_content = dedent("""\
+        # Execution Report: Ordering
+        - **Overall Status:** SUCCESS
+
+        ## Action Log
+
+        ### `EXECUTE`: Run tests
+        - **Status:** SUCCESS
+
+        ### `EDIT`: [app.py](/src/app.py)
+        - **Status:** SUCCESS
+
+        ### `CREATE`: notes.txt
+        - **Status:** SUCCESS
+    """)
+    parser = ReportParser(report_content)
+
+    assert parser.ordered_labels() == ["Run tests", "src/app.py", "notes.txt"]

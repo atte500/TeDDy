@@ -72,13 +72,15 @@ Then the actions after it are named as skipped with the halt reason
 
 ## Deliverables
 - [x] **Interface** — Add the execution-sequence field to `ActionData` with its "recorded on dispatch, never on parse" contract, so both the manual and the batch path can stamp it.
-- [ ] **Harness** — Extend `ReportParser` so a test asserts the action-log order as structured data rather than by string position.
+- [x] **Harness** — Extend `ReportParser` so a test asserts the action-log order as structured data rather than by string position.
 - [ ] **Core** — Stamp on dispatch in the orchestrator, order the assembled logs by stamp, and prove a manual-then-batch sequence end to end.
 - [ ] **Wiring** — Emit `notify_skipped_action` for each deselected, halted, and interrupted action and prove the notices appear for all three reasons.
 - [ ] **Cleanup** — Record the ordering rule and the skip-notice contract in the orchestrator, interactor, and reviewer component pages; remove the dead-port note if any page still describes the method as unused.
 
 ## Implementation Notes
 - **Interface (execution-sequence contract):** `ActionData.execution_sequence: int | None = None` is appended last on the field list, so every positional construction keeps its meaning and no existing caller changes. `Plan.next_execution_sequence()` is the one rule both stamping paths call: the highest recorded stamp plus one, and `1` when nothing is stamped. Gaps and duplicate stamps are ignored because the number follows the highest stamp rather than the count of recorded stamps, which is what lets a partly hand-executed plan continue after its own work instead of reusing numbers. No parser, validator, or factory assigns the field, so "recorded on dispatch, never on parse" holds structurally until the Core deliverable adds the two stamping sites. Contract tests sit in `tests/suites/unit/core/domain/models/test_plan_helpers.py` beside the existing `Plan` helper test: the `None` default plus four parameterized rule cases (`1`, `2`, `4`, `3`).
+- **Harness (ordered-label accessor):** `ReportParser.ordered_labels()` returns one subject label per entry by reading `action_logs` in document order and never re-sorting, so the accessor's order is the report's order and the Core test can assert placement without substring offsets. The precedence `File Path` → `Resource` → `Description` mirrors `_apply_subject_to_params`, which folds the heading subject into a key that depends on action type, so an any-key lookup would be ambiguous for the path-bearing types; an entry with no subject yields an empty label rather than raising. Tests live in `tests/suites/unit/test_report_parser.py` beside the existing parser contracts, and the new case drives all three subject shapes in one assertion.
+
 
 ## Verification
 1. **Manual then batch:**
