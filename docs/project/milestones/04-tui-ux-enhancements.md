@@ -45,7 +45,7 @@ Make the interactive reviewer truthful about the session it is showing: which mo
 - [x] [04-04-guardrail-defaults](../slices/04-04-guardrail-defaults.md): Tackles Req 11. Pins the yolo-only gate and the per-run resume baseline, corrects the turn seed that inflated a resumed run's budget, asserts the four 150 spellings agree, and records the behaviour as built. Delivered.
 - [x] [04-05-context-metadata](../slices/04-05-context-metadata.md): Tackles Req 1. `ProjectContext` gains the model name and session cost, and one `format_cost_usd` replaces the two other money formats.
 - [ ] [04-06-context-actions](../slices/04-06-context-actions.md): Tackles Req 2. `e` on a context node resolves to a manifest, a file, or the agent roster, and a persona switch re-composes the agent+MRP prompt through the same seam `resume -a` uses.
-- [ ] [04-11-move-delete-actions](../slices/04-11-move-delete-actions.md): Tackles Req 8. Two protocol members across every registration site, with live manifest synchronization.
+- [x] [04-11-move-delete-actions](../slices/04-11-move-delete-actions.md): Tackles Req 8. Two protocol members across every registration site, with live manifest synchronization. Delivered.
 - [x] [04-12-manual-execution-ordering](../slices/04-12-manual-execution-ordering.md): Tackles Req 7. An execution stamp plus the skip notices the dead port method was meant to emit.
 - [x] [04-07-section-navigation](../slices/04-07-section-navigation.md): Tackles Req 3. A derived section sequence replaces the three-root modulo, and boundaries scroll instead of wrapping. Delivered.
 - [x] [04-08-panel-insets](../slices/04-08-panel-insets.md): Tackles Req 4. One `PANEL_INSET` rendered into the stylesheet and asserted per selector. Delivered.

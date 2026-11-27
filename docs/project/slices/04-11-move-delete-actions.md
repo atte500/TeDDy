@@ -1,5 +1,5 @@
 # Slice: MOVE and DELETE Actions with Manifest Sync
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** [Plan Format](/docs/project/specs/plan-format.md), [Plan Format Validation](/docs/project/specs/plan-format-validation.md)
@@ -172,6 +172,15 @@ Then validation fails with an error naming the Recursive flag
 - The fallback is deliberately retained: the validator accepts `prompt`, `invoke`, and `return` with no rules, so verbs with no path of their own still need a header. The guard is what removes the empty link, which is why the `PROMPT` case exists — without it the slice could claim the empty link fixed while a report still printed one.
 - Gates: `7 passed` in the new module, `126 passed` across the neighbouring formatter suites, and `2858 passed, 5 skipped` unfiltered — exactly the 2851 Cleanup baseline plus the seven new cases.
 - The stale-reference sweep for this deliverable returned one hit: the formatter's page still named the three-verb arm. It now states the four-verb arm, the MOVE pair headline, and the guarded fallback, so the page and the template cannot disagree about which verbs render which headline.
+
+### Verification audit
+- Production-double sweep: no `remove_file` or `move_directory` survives anywhere in `src/` or `tests/`, so the pruned primitives left no shim behind, and no module this slice wrote carries a `TODO` or `FIXME`. Every rendered output derives from production logic; the one branch that resembles a stub is the report's guarded link-form fallback, which is required behaviour for the path-bearing verbs the plain arms do not name.
+- Downstream audit: `move_path` has exactly two callers — `session_repository.rename_session` and the `ActionFactory` method map — and `remove_path` has four: `init_service`, `session_lifecycle_manager`, `session_service`, and that same map. Nothing orphaned remains and no caller still reaches a narrower primitive.
+- Upstream audit: every per-verb dispatch site this slice touched names both verbs — the enum, `_MARKDOWN_ACTION_MAP`, the parser's `_dispatch_map` and its two strategies, the two validators with their registry entries, the reviewer's parameter map, its MOVE label arm, and its read-only preview arm. The sites that omit them are ones they cannot reach: `textual_plan_reviewer_execution.py`'s content-field map binds `CREATE`/`EXECUTE`/`RESEARCH` to a single editable body, a shape neither new verb has.
+- Manifest-writer enumeration: `_prepare_session_context`, `_append_to_session_context`, `_prune_context_paths`, and the sync are the only writers of the two live manifests, and the first three never run on a per-action path, which confirms `transition_to_next_turn` is the sole trigger the sync needs.
+- Test-hygiene inventory: 47 cases across six modules, each pinning a distinct execution path — 14 rejection branches, 2 translation cases, 5 headlines, 3 label and write-back cases, 2 preview routings, and 22 port contracts. No module restates another's invariant, and the pre-existing `format_node_label` cases pin different facts (execution-state suffix, enum stringification) than the pair-order case.
+- Rule ratchet, deliberately not taken in-slice: the silent-fall-through anti-pattern that made this slice's registration surface so wide is already scheduled as [05-06](/docs/project/slices/05-06-action-registration-matrix.md), a parameterized matrix over every `ActionType` guarding exactly this delivery, which [06-08](/docs/project/slices/06-08-action-registration-collapse.md) later deletes once the surface collapses. A second guard here would be superseded by both, so the sweep above was run as a recorded one-off measurement.
+- Out-of-scope debt routed: `tests/suites/unit/core/services/test_validator_create.py` carries a duplicated docstring and a duplicated `mock_fs.path_exists.return_value = True` assignment inside one test body. Its history (`e27aebd9`, `0b750e33`) predates this slice's first commit, so it is recorded under [05-03](/docs/project/slices/05-03-redundant-test-pruning.md) rather than edited inside a completion commit that owns no part of that file.
 
 ## Verification
 1. **Rename with manifest sync:**
