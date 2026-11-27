@@ -80,7 +80,7 @@ And the Model row shows the model resolved for Developer rather than for Pathfin
 9. `[MIGRATE]` The reviewer and CLI component pages — document the node-kind branches, the injected catalog, and the switch's re-composition semantics.
 
 ## Deliverables
-- [ ] **Interface** — Define `IAgentCatalog` as a runtime-checkable protocol whose `list_agents()` returns canonical, de-duplicated names in a stable order, and add `AgentCatalogError` beneath `TeddyError`.
+- [x] **Interface** — Define `IAgentCatalog` as a runtime-checkable protocol whose `list_agents()` returns canonical, de-duplicated names in a stable order, and add `AgentCatalogError` beneath `TeddyError`.
 - [ ] **Harness** — Add an in-memory `FakeAgentCatalog` and register it in `TestEnvironment`, so reviewer tests drive both the populated and the empty roster without touching `.teddy/prompts/`.
 - [ ] **Wiring** — Enable `edit_details` on context nodes and dispatch it to a handler that opens `session.context`, `turn.context`, or the selected file in place, completing the tracer bullet for the two spec-fixed behaviours.
 - [ ] **Wiring** — Add `AgentSelectScreen` and route the System node to it, marking the current persona and notifying instead of opening the modal when the roster is empty, no session is in scope, or the handles are absent.
@@ -97,6 +97,7 @@ And the Model row shows the model resolved for Developer rather than for Pathfin
 - **Session identity:** `project_context.session_root` is `.teddy/sessions/<name>`, absolute when derived from a turn directory, so `Path(session_root).name` is the session name `set_session_agent` receives.
 - **Persistence is the whole switch:** `set_session_agent` writes `meta["agent_name"]`, recomposes the agent+MRP prompt through `fetch_system_prompt`, and prunes the previous persona's session-root file, so the reviewer adds no composition logic of its own.
 - **Read-only opens:** `launch_editor(..., persistent_path=<real file>, skip_confirm=True)` opens a file in place without harvesting, which is the seam both the manifest rows and the file rows use.
+- **Delivered port:** `IAgentCatalog` promises one member, `list_agents() -> tuple[str, ...]`; canonicalisation, de-duplication, and stable ordering are stated as postconditions in the docstring and pinned by the adapter's own test rather than re-implemented in the protocol, which can only promise the member and its return type. `AgentCatalogError` carries no payload, because a roster failure needs no extra context to be actionable. The contract test asserts conformance in both directions, so a future double that renames the member is rejected at the boundary instead of failing inside the reviewer.
 
 ## Verification
 1. **Session manifest:**

@@ -58,3 +58,7 @@ class WebContentCacheError(TeddyError):
     def __init__(self, message: str, session_root: str):
         super().__init__(message)
         self.session_root = session_root
+
+
+class AgentCatalogError(TeddyError):
+    """Raised when the workspace's agent personas cannot be listed."""
