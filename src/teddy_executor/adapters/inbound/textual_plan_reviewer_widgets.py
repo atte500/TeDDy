@@ -131,10 +131,6 @@ class AgentSelectScreen(ModalScreen[str]):
 class ActionTree(Tree):
     """A tree that allows both space and enter to toggle selection."""
 
-    CONTEXT_ROOT = "CONTEXT_ROOT"
-    RATIONALE_ROOT = "RATIONALE_ROOT"
-    ACTION_PLAN_ROOT = "ACTION_PLAN_ROOT"
-
     BINDINGS = [
         Binding("enter", "select_cursor", "Toggle", show=False),
         Binding("space", "select_cursor", "Toggle", show=False),

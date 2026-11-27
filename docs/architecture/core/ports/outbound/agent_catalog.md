@@ -1,5 +1,5 @@
 # Component Design: IAgentCatalog
-- **Status:** Planned
+- **Status:** Implemented
 - **Classification:** Core Outbound Port
 - **Source:** [`src/teddy_executor/core/ports/outbound/agent_catalog.py`](/src/teddy_executor/core/ports/outbound/agent_catalog.py)
 
@@ -10,7 +10,7 @@ Declares the outbound contract for discovering which agent personas a workspace 
 - [`TextualPlanReviewer`](/docs/architecture/adapters/inbound/textual_plan_reviewer.md): Invokes this port to populate the agent-switch modal reached by pressing `e` on the System context node, and to mark which roster entry is the active persona.
 
 ## Dependencies
-None. A port declares a contract and therefore depends on nothing; implementations supply the discovery mechanism. The local implementation reads `.teddy/prompts/` and delegates the directory scan to the existing `list_prompt_names()` helper in `src/teddy_executor/prompts.py`, so prompt-name discovery keeps exactly one implementation.
+None. A port declares a contract and therefore depends on nothing; implementations supply the discovery mechanism. The local implementation receives that scanner injected, and the composition root binds `list_prompt_names()` from `src/teddy_executor/prompts.py`, so prompt-name discovery keeps exactly one implementation while the adapter stays ignorant of where the roster lives.
 
 ## Class Invariants
 - `stable_order`: repeated calls return the same ordering within one process, because a roster whose entries reorder between openings is unusable from the keyboard.
@@ -23,13 +23,13 @@ None. This is an outbound contract consumed by adapters and services, not an int
 None. The port itself declares no downstream dependencies.
 
 ## Data Contracts
-- **`list_agents()` result**: a `tuple[str, ...]` of canonical persona names in ascending order, with duplicates removed. An empty tuple means the workspace declares no personas; it never means discovery failed.
+- **`list_agents()` result**: a `tuple[str, ...]` of canonical persona names in a stable order, with duplicates removed. An empty tuple means the workspace declares no personas; it never means discovery failed.
 - **`AgentCatalogError`**: raised when the prompts directory exists but cannot be read (a permissions or I/O failure). Inherits from `TeddyError`, so the reviewer reports it as a user-facing failure instead of crashing the TUI. A missing directory is not an error and yields an empty tuple.
 
 ## Operations
 
 ### `list_agents() -> tuple[str, ...]`
 - **Preconditions:** None. The operation is safe to call before any session exists and from a read-only workspace.
-- **Postconditions:** Returns every declared persona name exactly once, canonically cased, in ascending order. Returns an empty tuple when no prompts directory exists or it holds no prompt file.
+- **Postconditions:** Returns every declared persona name exactly once, canonically cased, in the implementation's stable order. Returns an empty tuple when no prompts directory exists or it holds no prompt file.
 - **Exceptions:**
   - `AgentCatalogError`: the prompts directory exists but its entries cannot be listed. Translated by the local adapter from the underlying filesystem failure so no raw `OSError` crosses the boundary.

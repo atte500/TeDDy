@@ -1,5 +1,5 @@
 # Component Design: TextualPlanReviewer
-- **Status:** Refactoring
+- **Status:** Implemented
 - **Classification:** Inbound Adapter
 - **Source:** [`src/teddy_executor/adapters/inbound/textual_plan_reviewer.py`](/src/teddy_executor/adapters/inbound/textual_plan_reviewer.py)
 
@@ -13,7 +13,9 @@ Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It p
 - [`ISystemEnvironment`](../../core/ports/outbound/system_environment.md): Launches the external editor for context-aware editing.
 - **`is_cli_editor` / `normalize_editor_basename`** (`teddy_executor.core.utils.editor_names`): Classify editor commands by stripping Windows launcher suffixes and lowercasing the basename. The module-level `_is_cli_editor` in `textual_plan_reviewer_editor.py` stays a thin delegator because `textual_plan_reviewer_previews` imports it.
 - [`WebContentService`](../../core/services/web_content_service.md): Serves a READ action's URL preview from the session cache, fetching once on a miss.
-- [`IAgentCatalog`](../../core/ports/outbound/agent_catalog.md): Supplies the persona roster the System node's agent switch offers (slice 04-06). Injected at the composition root like `console_tooling`, so a reviewer test drives both the populated and the empty roster without touching `.teddy/prompts/`.
+- [`IAgentCatalog`](../../core/ports/outbound/agent_catalog.md): Supplies the persona roster the System node's agent switch offers. Injected as an optional handle at the composition root, so a reviewer test drives a populated, empty, or unreadable roster without touching `.teddy/prompts/`.
+- [`ISessionManager`](../../core/ports/outbound/session_manager.md): Receives the persona switch through `set_session_agent`, which writes the session's `agent_name` and recomposes the session-root prompt, so the reviewer composes no prompt logic of its own.
+- [`IConfigService`](../../core/ports/outbound/config_service.md): Re-read after a switch so the Model row is re-resolved through the `agents.<persona>.model` → `llm.model` overlay instead of naming the previous persona's model.
 - [`Model Identity`](../../core/utils/model_identity.md): Supplies `split_model_identity`, which derives the displayed Provider from the DTO's `model_name` at render time, so the panel stores no second copy of a value it can compute.
 - [`Money`](../../core/utils/money.md): Supplies `format_cost_usd`, which renders the Session Cost row, so the panel shares one money standard with the terminal telemetry line and the guardrail notice.
 
@@ -28,6 +30,7 @@ Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It p
 - `manual_execution_stamped`: `x` hands one action to `orchestrate_execution`, which records that action's `execution_sequence` from `Plan.next_execution_sequence()` immediately before dispatch and only when the field is still `None`, so the number marks when the action ran rather than where it sits in the plan. Two hand-executed actions therefore record their real run order, and the batch that follows continues past them instead of reusing their numbers. The stamping is guarded by an `isinstance(plan, Plan)` check because the app double used by the MESSAGE echo path carries no plan.
 - `cache_served_url_preview`: A READ preview on an `http`/`https` resource resolves through `WebContentService.fetch_one` with `project_context.session_root`, so previewing a URL a READ already fetched costs no network round trip, and a preview miss is stored for the following turn. A missing project context reads as no session, so the preview falls back to an uncached fetch.
 - `context_node_e_dispatch`: `e` resolves by node kind and is never silently dead on a context node. A `ContextItem` opens its own path; the Session and Turn roots open their `.context` manifest through `launch_editor` with `skip_confirm`, so the manifest is read-only in place and no temp file is harvested; the System node opens the injected roster. The Turn manifest is `turn.context` beside `plan.plan_path` and the Session manifest is `session.context` under `project_context.session_root`, so neither directory is guessed. A `--plan-content` run has no `plan.plan_path`, so its Turn node notifies that the turn context is unavailable, and a missing manifest notifies with its path rather than opening an empty buffer. Enter and Space still toggle selection, because `e` must not absorb the toggle binding.
+- `persona_switch_writes_the_session`: Choosing a persona on the System row persists through `ISessionManager.set_session_agent`, the field `resume -a` writes, so no second metadata key exists and the next turn's plan is composed from the new agent plus the shared protocol. The current turn keeps its already-composed plan, which is why the effect shows from the next turn's header rather than immediately. The Model row is re-resolved through the `--model` → `agents.<persona>.model` → `llm.model` overlay in the same step, because a panel naming the previous persona's model while another answers would be a lie. A stored `<session>/<persona>.md` still governs that persona, because `fetch_system_prompt` returns an existing session prompt verbatim and never re-composes it; the switch therefore changes the name the next turn is planned with, not any prompt file.
 - `cost_rows_share_one_format`: The Context root's Model, Provider, and Session Cost rows read from the DTO rather than from ambient configuration, and the cost row routes through `format_cost_usd`, so the panel cannot disagree with the terminal telemetry line or the guardrail notice about the same session. Unrecorded cost renders `$???` while recorded zero renders `$0.0000`, because those are different facts about a run, and every recorded amount renders at exactly four decimal places.
 - `single_panel_inset`: One gutter governs the left pane, both right-pane variants, and every row. `PANEL_INSET` is declared once, on the two pane containers only (`#left-pane` and `#right-pane`), and `build_tui_css` renders it into the stylesheet through a sentinel substitution, because this stylesheet defeats `str.format`, `%`, and `string.Template` (literal `{}` blocks, `65%` widths, and Textual `$variables`). No child declares its own padding — `#rationale-content`, `ListItem`, and `Tree` carry none — because CSS padding stacks and a second declaration would put that row back on a different gutter. `#right-pane` keeps its `border-left`, which the padding sits inside.
 - `tree_derived_section_walk`: The jump sequence is read from the tree rather than from a fixed list, so it holds exactly the sections the panel built — a plan without context has no Context stop and a session without history no History stop — and both ends terminate by scrolling instead of wrapping, because a wrap would teleport the reviewer from the end of the plan back to the top of the panel.
@@ -38,10 +41,14 @@ Implements the `IPlanReviewer` inbound port with a dual-pane `Textual` TUI. It p
 ## Outbound Ports
 - **`ISystemEnvironment`**: Consumed to open the editor for parameter edits.
 - **`WebContentService`**: Consumed to produce a READ preview's URL body without a redundant fetch.
+- **`IAgentCatalog`**: Consumed to populate the System node's persona roster and to mark the active entry.
+- **`ISessionManager`**: Consumed by `set_session_agent` to persist a persona switch into the session's `meta.yaml`.
+- **`IConfigService`**: Consumed to re-resolve the effective model after a persona switch.
 
 ## Data Contracts
 - **`Plan`** and **`ActionData`** (`teddy_executor.core.domain.models.plan`): The reviewed objects, updated in memory.
-- **`ProjectContext`** (`teddy_executor.core.domain.models.project_context`): Optional context metadata shown in the context pane.
+- **`ProjectContext`** (`teddy_executor.core.domain.models.project_context`): Optional context metadata shown in the context pane. A persona switch writes back `agent_name` and the re-resolved `model_name` on it, so the panel states which model answers.
+- **Tree node payloads**: the section and label sentinels (`CONTEXT_ROOT`, `SYSTEM_LABEL`, `SESSION_LABEL`, `TURN_LABEL`, `HISTORY_LABEL`, `RATIONALE_ROOT`, `ACTION_PLAN_ROOT`), the persona leaf's dict shape, and its rendered label are declared once in `textual_plan_reviewer_logic.py` and `textual_plan_reviewer_helpers.py`; `ActionTree` carries no copy, so a payload cannot drift between the widget that mounts a row, the gate that enables `e` on it, and the refresh that repaints it.
 
 ## Operations
 
@@ -74,3 +81,11 @@ A flag key listed in `BOOLEAN_PARAM_KEYS` (`overwrite`, `match_all`, `allow_fail
 
 ### Action log format
 The reviewer renders an action log as a structured Markdown document: an `### {ACTION_TYPE}: {SUMMARY}` header, a `- **Status:** {STATUS}` line, and quadruple-backtick fences around `stdout`, `stderr`, and `diff`.
+
+### Agent switching
+Pressing `e` on the System row or on its persona leaf opens `AgentSelectScreen` over the injected `IAgentCatalog`, with the active persona marked `(current)` and pre-highlighted; the picker dismisses through the list's own `enter` binding, so no second binding contradicts it, and `escape` dismisses nothing.
+
+- **Preconditions:** `project_context.session_root` is set, and both the agent catalog and the session manager are injected.
+- **Postconditions:** `meta["agent_name"]` names the selected persona, the session-root prompt is recomposed for it, the System row and the detail pane are repainted, the Model row states the overlay's model for that persona, and the next turn is planned with that persona plus the shared protocol.
+- **Refusals:** each reports once and opens no modal — missing handles ("Agent switching is unavailable in this reviewer."), no session in scope, an unreadable roster, and an empty roster. The empty roster is a refusal rather than an empty menu because prompt resolution reads only `.teddy/prompts/` and never falls back to the bundled resources, so an entry the planner cannot load would be a false promise.
+- **Exceptions:** an `AgentCatalogError` raised while listing is reported as a notification instead of escaping into the TUI, and a dismissed picker writes nothing, because an abandoned selection must be inert.

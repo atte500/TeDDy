@@ -12,7 +12,6 @@ import pytest
 from textual.widgets import Label, ListItem, ListView
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
-    CONTEXT_ROOT,
     SYSTEM_LABEL,
 )
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import (
@@ -95,13 +94,6 @@ def _driver(  # noqa: PLR0913 - sentinel defaults keep "absent" distinct from No
     )
 
 
-def _record_notifications(app) -> list[str]:
-    """Captures the app's user-facing notifications in order."""
-    messages: list[str] = []
-    app.notify = lambda message, **_: messages.append(message)
-    return messages
-
-
 def _config(agents: dict[str, Any], llm_model: str) -> Any:
     """A config double answering the two getters the model overlay reads."""
     settings = {"agents": agents, "llm.model": llm_model}
@@ -119,23 +111,13 @@ def _detail_map(app) -> dict[str, Any]:
     return {item.data["key"]: item.data["val"] for item in app.query(DetailItem)}
 
 
-async def _park_cursor(driver: TuiDriver, pilot, matches) -> None:
-    """Expand the Context root and park the cursor on the node that matches."""
-    driver.find_node(pilot, lambda data: data == CONTEXT_ROOT).expand()
-    await pilot.pause()
-    node = driver.find_node(pilot, matches)
-    driver.tree(pilot).move_cursor(node)
-    await pilot.pause()
-    assert driver.tree(pilot).cursor_node is node, "cursor did not land on the row"
-
-
 async def _press_e(driver: TuiDriver, pilot, matches) -> None:
     """Park the cursor on a System row and press ``e``.
 
     The picker is pushed synchronously, so no worker wait follows: a modal's own
     workers are blocked on its dismissal.
     """
-    await _park_cursor(driver, pilot, matches)
+    await driver.park_cursor(pilot, matches)
     await pilot.press("e")
     await pilot.pause()
 
@@ -166,7 +148,7 @@ async def test_picking_a_persona_persists_it_onto_the_session(env, tmp_path):
     """The picked persona reaches the session and closes the picker."""
     session_manager = spec_mock(ISessionManager)
     driver = _driver(env, tmp_path, session_manager=session_manager)
-    notifications = _record_notifications(driver.app)
+    notifications = driver.record_notifications()
 
     async with driver.interaction() as pilot:
         await _press_e(driver, pilot, lambda data: data == SYSTEM_LABEL)
@@ -186,7 +168,7 @@ async def test_picking_a_persona_persists_it_onto_the_session(env, tmp_path):
 async def test_dismissed_picker_changes_nothing(env, tmp_path):
     """An abandoned selection is inert: no persona is reported."""
     driver = _driver(env, tmp_path)
-    notifications = _record_notifications(driver.app)
+    notifications = driver.record_notifications()
 
     async with driver.interaction() as pilot:
         await _press_e(driver, pilot, lambda data: data == SYSTEM_LABEL)
@@ -202,7 +184,7 @@ async def test_dismissed_picker_changes_nothing(env, tmp_path):
 async def test_empty_roster_notifies_and_opens_no_picker(env, tmp_path):
     """A workspace with no prompt file offers no name the planner could load."""
     driver = _driver(env, tmp_path, catalog=FakeAgentCatalog(agents=()))
-    notifications = _record_notifications(driver.app)
+    notifications = driver.record_notifications()
 
     async with driver.interaction() as pilot:
         await _press_e(driver, pilot, lambda data: data == SYSTEM_LABEL)
@@ -219,7 +201,7 @@ async def test_unreadable_roster_notifies_instead_of_escaping(env, tmp_path):
         tmp_path,
         catalog=FakeAgentCatalog(error=AgentCatalogError("roster unreadable")),
     )
-    notifications = _record_notifications(driver.app)
+    notifications = driver.record_notifications()
 
     async with driver.interaction() as pilot:
         await _press_e(driver, pilot, lambda data: data == SYSTEM_LABEL)
@@ -232,7 +214,7 @@ async def test_unreadable_roster_notifies_instead_of_escaping(env, tmp_path):
 async def test_no_session_in_scope_notifies_and_opens_no_picker(env, tmp_path):
     """A switch persists into a session, so the picker never invents one."""
     driver = _driver(env, tmp_path, session_in_scope=False)
-    notifications = _record_notifications(driver.app)
+    notifications = driver.record_notifications()
 
     async with driver.interaction() as pilot:
         await _press_e(driver, pilot, lambda data: data == SYSTEM_LABEL)
@@ -246,7 +228,7 @@ async def test_no_session_in_scope_notifies_and_opens_no_picker(env, tmp_path):
 async def test_absent_handles_notify_instead_of_raising(env, tmp_path, absent):
     """An optional handle that is absent reports rather than crashing the reviewer."""
     driver = _driver(env, tmp_path, **{absent: None})
-    notifications = _record_notifications(driver.app)
+    notifications = driver.record_notifications()
 
     async with driver.interaction() as pilot:
         await _press_e(driver, pilot, lambda data: data == SYSTEM_LABEL)
@@ -261,10 +243,10 @@ async def test_edit_details_is_enabled_on_the_system_rows(env, tmp_path):
     driver = _driver(env, tmp_path)
 
     async with driver.interaction() as pilot:
-        await _park_cursor(driver, pilot, lambda data: data == SYSTEM_LABEL)
+        await driver.park_cursor(pilot, lambda data: data == SYSTEM_LABEL)
         assert pilot.app.check_action("edit_details", ()) is True
 
-        await _park_cursor(driver, pilot, _is_persona_leaf)
+        await driver.park_cursor(pilot, _is_persona_leaf)
         assert pilot.app.check_action("edit_details", ()) is True
 
 

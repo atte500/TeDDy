@@ -9,7 +9,6 @@ untouched.
 import pytest
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
-    CONTEXT_ROOT,
     SESSION_LABEL,
     SYSTEM_LABEL,
     TURN_LABEL,
@@ -61,31 +60,8 @@ def _driver(env, panel: ProjectContext, plan: Plan | None = None) -> TuiDriver:
     )
 
 
-def _record_notifications(app) -> list[str]:
-    """Captures the app's user-facing notifications in order."""
-    messages: list[str] = []
-    app.notify = lambda message, **_: messages.append(message)
-    return messages
-
-
-async def _park_cursor(driver: TuiDriver, pilot, matches) -> None:
-    """Expand the Context root and park the cursor on the node that matches.
-
-    The reviewer builds the Context root collapsed, so its children carry no
-    render line until it expands. Parking the cursor without expanding lands on
-    no node at all, which the gate reports as a disabled binding rather than as
-    a navigation mistake — hence the assertion.
-    """
-    driver.find_node(pilot, lambda data: data == CONTEXT_ROOT).expand()
-    await pilot.pause()
-    node = driver.find_node(pilot, matches)
-    driver.tree(pilot).move_cursor(node)
-    await pilot.pause()
-    assert driver.tree(pilot).cursor_node is node, "cursor did not land on the row"
-
-
 async def _press_e_on(driver: TuiDriver, pilot, matches) -> None:
-    await _park_cursor(driver, pilot, matches)
+    await driver.park_cursor(pilot, matches)
     await pilot.press("e")
     await pilot.app.workers.wait_for_complete()
     await pilot.pause()
@@ -136,15 +112,15 @@ async def test_edit_details_is_enabled_only_on_openable_context_nodes(env, tmp_p
     )
 
     async with driver.interaction() as pilot:
-        await _park_cursor(driver, pilot, lambda data: isinstance(data, ContextItem))
+        await driver.park_cursor(pilot, lambda data: isinstance(data, ContextItem))
         assert pilot.app.check_action("edit_details", ()) is True
         assert pilot.app.check_action("toggle_selection", ()) is True
 
         for payload in (SESSION_LABEL, TURN_LABEL):
-            await _park_cursor(driver, pilot, lambda data, p=payload: data == p)
+            await driver.park_cursor(pilot, lambda data, p=payload: data == p)
             assert pilot.app.check_action("edit_details", ()) is True
 
-        await _park_cursor(driver, pilot, lambda data: data == SYSTEM_LABEL)
+        await driver.park_cursor(pilot, lambda data: data == SYSTEM_LABEL)
         assert pilot.app.check_action("edit_details", ()) is True
 
 
@@ -157,7 +133,7 @@ async def test_missing_session_manifest_notifies_instead_of_opening(
     session_root = tmp_path / "session"
     session_root.mkdir()
     driver = _driver(env, _panel(session_root.as_posix(), [_item("src/app.py")]))
-    notifications = _record_notifications(driver.app)
+    notifications = driver.record_notifications()
 
     async with driver.interaction() as pilot:
         await _press_e_on(driver, pilot, lambda data: data == SESSION_LABEL)
@@ -179,7 +155,7 @@ async def test_turn_label_notifies_when_the_turn_directory_is_unknown(
         _panel((tmp_path / "session").as_posix(), [_item("src/app.py", "Turn")]),
         plan=_plan(plan_path=None),
     )
-    notifications = _record_notifications(driver.app)
+    notifications = driver.record_notifications()
 
     async with driver.interaction() as pilot:
         await _press_e_on(driver, pilot, lambda data: data == TURN_LABEL)
@@ -196,7 +172,7 @@ async def test_pruned_context_file_notifies_with_its_path(env, tmp_path, monkeyp
         env,
         _panel((tmp_path / "session").as_posix(), [_item(pruned.as_posix())]),
     )
-    notifications = _record_notifications(driver.app)
+    notifications = driver.record_notifications()
 
     async with driver.interaction() as pilot:
         await _press_e_on(driver, pilot, lambda data: isinstance(data, ContextItem))

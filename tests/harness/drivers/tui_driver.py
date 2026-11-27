@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
 from teddy_executor.adapters.inbound.textual_plan_reviewer import ReviewerApp
+from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import CONTEXT_ROOT
 from teddy_executor.adapters.inbound.textual_plan_reviewer_widgets import ActionTree
 from teddy_executor.adapters.outbound.console_tooling import ConsoleToolingHelper
 from teddy_executor.core.services.action_dispatcher import ActionDispatcher
@@ -97,6 +98,30 @@ class TuiDriver:
                 return node
             stack.extend(reversed(node.children))
         raise AssertionError("no node in the tree matched the search")
+
+    def record_notifications(self) -> list[str]:
+        """Capture the app's user-facing notifications in order."""
+        messages: list[str] = []
+        # Replace the bound method so a test observes what the user would be told.
+        app: Any = self.app
+        app.notify = lambda message, **_: messages.append(message)
+        return messages
+
+    async def park_cursor(self, pilot: "Pilot", matches: Callable[[Any], bool]) -> None:
+        """Expand the Context root and park the cursor on the matching node.
+
+        The reviewer builds the Context root collapsed, so its children carry no
+        render line until it expands. Parking the cursor without expanding lands
+        on no node at all, which the action gate then reports as a disabled
+        binding rather than as a navigation mistake, so the assertion converts a
+        silent mis-navigation into a loud failure.
+        """
+        self.find_node(pilot, lambda data: data == CONTEXT_ROOT).expand()
+        await pilot.pause()
+        node = self.find_node(pilot, matches)
+        self.tree(pilot).move_cursor(node)
+        await pilot.pause()
+        assert self.tree(pilot).cursor_node is node, "cursor did not land on the row"
 
     @asynccontextmanager
     async def interaction(self) -> AsyncIterator["Pilot"]:
