@@ -78,7 +78,7 @@ Then validation fails with an error naming the Recursive flag
 
 ## Deliverables
 - [x] **Interface** — Add `MOVE` and `DELETE` to `ActionType`, add `move_path` and `remove_path` to `IFileSystemManager` with contract tests, and implement both against a real temporary workspace. The specs already describe both types, so this deliverable changes no documentation.
-- [ ] **Harness** — Extend `MarkdownPlanBuilder` with `add_move` and `add_delete`, both accepting an explicit `Recursive` value including the string form a plan would carry, so no test hardcodes the new Markdown.
+- [x] **Harness** — Extend `MarkdownPlanBuilder` with `add_move` and `add_delete`, both accepting an explicit `Recursive` value including the string form a plan would carry, so no test hardcodes the new Markdown.
 - [ ] **Core** — Parse both types (coercing `Recursive` so the string `false` becomes `False`), register them in the parser dispatch map and the three factory maps, and prove every rejection branch through `MoveActionValidator` and `DeleteActionValidator` plus their registry entries.
 - [ ] **Adapter** — Implement both actions against the port, then add the manifest-rewrite helpers beside `_append_to_session_context` and trigger them from `transition_to_next_turn`, which already receives the `ExecutionReport`, so only successful `MOVE`/`DELETE` logs rewrite anything and `ISessionManager` keeps its signature.
 - [ ] **Wiring** — Render both types across all four reviewer modules so a reviewer can inspect and edit the parameters before approving.
@@ -98,6 +98,13 @@ Then validation fails with an error naming the Recursive flag
 - `remove_path` unlinks a file, calls `rmtree` when `recursive`, and falls back to `rmdir` so a non-empty directory without the flag fails with the platform's own `OSError`. It deliberately never calls `_get_ignore_spec`: ignore rules describe what context assembly skips, never what an explicit removal must spare, and filtering through them would leave `.gitignore`d files behind while reporting success. `test_remove_path_recursively_removes_ignored_files` pins that.
 - `ActionType` carries `MOVE` and `DELETE` between `RESEARCH` and `MESSAGE`. The position is load-bearing: `ActionData.is_terminal` and `Plan.is_communication_turn` compare against `MESSAGE`, so a member appended after it would silently break the communication-turn check.
 - Twelve contract tests live in `tests/suites/unit/adapters/outbound/test_file_system_adapter_contract.py` and drive the real adapter against `tmp_path`. The full suite reported 2807 passed and 5 skipped, confirming the enum and port extensions are purely additive.
+
+### Harness deliverable
+- `MarkdownPlanBuilder.add_move` routes both paths through the existing `_path_link` helper, so the spec's root-relative link form is emitted without a second path-formatting policy in the builder.
+- `add_delete` takes `recursive: bool | str | None = None`. `None` omits the key entirely rather than rendering `Recursive: false`, because the spec's parsing rule 2 states an absent flag means `false`; rendering it unconditionally would erase the branch the parser is specified to handle. A given value renders lowercased and backticked, matching `add_execute`'s protocol-flag precedent, so a planner-supplied string `"false"` reaches `_coerce_bool` as `false` instead of surviving as a truthy string — the exact edge case the slice lists.
+- The new cases assert rendered Markdown rather than a parse round-trip. That is deliberate: `MarkdownPlanParser._dispatch_map` gains its `MOVE`/`DELETE` entries in the Core deliverable, so a round-trip assertion here would fail for a reason unrelated to the builder. Proving the emitted Markdown parses is Core's obligation.
+- `test_builder_supports_specialized_methods` claims to cover all actions and now enumerates the two new verbs, so the inventory case cannot silently under-count as verbs are added.
+- Red produced six failures, all `AttributeError` naming `add_move` or `add_delete`, with the nine pre-existing cases still green. The full suite reported 2813 passed and 5 skipped — exactly six more than the pre-deliverable 2807 — confirming the builder change is purely additive to a driver imported across the acceptance suite.
 
 ## Verification
 1. **Rename with manifest sync:**

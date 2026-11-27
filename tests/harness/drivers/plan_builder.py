@@ -138,6 +138,38 @@ class MarkdownPlanBuilder:
         content_blocks = {"": ("text", "\n".join(queries))}
         return self.add_action("RESEARCH", {"Description": description}, content_blocks)
 
+    def add_move(
+        self,
+        source: str,
+        destination: str,
+        description: str = "Moving path",
+    ):
+        """Adds a MOVE action. Both paths render as root-relative links."""
+        params = {
+            "Source": self._path_link(source),
+            "Destination": self._path_link(destination),
+            "Description": description,
+        }
+        return self.add_action("MOVE", params)
+
+    def add_delete(
+        self,
+        path: str,
+        recursive: Optional[Union[bool, str]] = None,
+        description: str = "Deleting path",
+    ):
+        """
+        Adds a DELETE action. ``recursive`` is omitted when None so the parser
+        default stays visible. A given value renders as the protocol flag,
+        lowercased, so a raw string ``"false"`` reaches the parser as ``false``
+        instead of surviving as a truthy string.
+        """
+        params: Dict[str, Any] = {"Path": self._path_link(path)}
+        if recursive is not None:
+            params["Recursive"] = f"`{str(recursive).lower()}`"
+        params["Description"] = description
+        return self.add_action("DELETE", params)
+
     def with_message(self, content: str) -> "MarkdownPlanBuilder":
         """Sets the plan to use a ## Message section instead of an Action Plan."""
         self._message_content = content

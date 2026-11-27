@@ -1,3 +1,4 @@
+import pytest
 from textwrap import dedent
 from tests.harness.drivers.plan_builder import MarkdownPlanBuilder
 
@@ -20,6 +21,8 @@ def test_builder_supports_specialized_methods():
         timeout=60,
     )
     builder.add_research(["how to test python"], description="Searching for tests")
+    builder.add_move("src/app/old_name.py", "src/app/new_name.py")
+    builder.add_delete("src/app/legacy", recursive=True)
 
     plan = builder.build()
 
@@ -29,6 +32,8 @@ def test_builder_supports_specialized_methods():
     assert "### `EDIT`" in plan
     assert "### `EXECUTE`" in plan
     assert "### `RESEARCH`" in plan
+    assert "### `MOVE`" in plan
+    assert "### `DELETE`" in plan
 
 
 def test_builder_path_normalization():
@@ -65,6 +70,44 @@ def test_builder_execute_options():
     plan = builder.build()
     assert "- **Allow Failure:** `true`" in plan
     assert "- **Background:** `true`" in plan
+
+
+def test_builder_move_renders_both_paths_as_links():
+    """Verifies a MOVE emits its source and destination as root-relative links."""
+    builder = MarkdownPlanBuilder("Move Test")
+
+    assert builder.add_move("docs/notes/old-spec.md", "docs/specs/spec.md") is builder
+
+    plan = builder.build()
+    assert "### `MOVE`" in plan
+    assert "- **Source:** [docs/notes/old-spec.md](/docs/notes/old-spec.md)" in plan
+    assert "- **Destination:** [docs/specs/spec.md](/docs/specs/spec.md)" in plan
+    assert "#### FIND:" not in plan
+
+
+def test_builder_delete_omits_recursive_when_not_given():
+    """Verifies an absent Recursive stays absent, leaving the parser default intact."""
+    builder = MarkdownPlanBuilder("Delete Test")
+
+    assert builder.add_delete("docs/notes/obsolete.md") is builder
+
+    plan = builder.build()
+    assert "### `DELETE`" in plan
+    assert "- **Path:** [docs/notes/obsolete.md](/docs/notes/obsolete.md)" in plan
+    assert "Recursive" not in plan
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [(True, "true"), ("true", "true"), (False, "false"), ("false", "false")],
+)
+def test_builder_delete_renders_recursive_flag(value, expected):
+    """Verifies Recursive renders as a protocol flag, accepting the raw string form."""
+    builder = MarkdownPlanBuilder("Delete Test")
+    builder.add_delete("src/app/legacy", recursive=value)
+
+    plan = builder.build()
+    assert f"- **Recursive:** `{expected}`" in plan
 
 
 def test_plan_builder_basic():
