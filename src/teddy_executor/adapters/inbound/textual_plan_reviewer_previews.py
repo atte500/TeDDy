@@ -17,6 +17,7 @@ from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
     preview_edit_diff_viewer,
     spawn_editor,
 )
+from teddy_executor.core.domain.models.project_context import ContextItem
 
 logger = logging.getLogger(__name__)
 
@@ -254,6 +255,60 @@ async def preview_readonly(app: ReviewerApp, action: ActionData) -> None:
             app._log_preview_files.append(temp_path)
     # For GUI editors, deferred cleanup via app._log_preview_files handles it.
     # No additional cleanup needed here.
+
+
+async def open_context_node(app: ReviewerApp, node: Any) -> None:
+    """Open the file a context node names, in place and without harvesting.
+
+    A target that cannot be resolved is reported rather than opened as an empty
+    buffer, because a blank editor would misrepresent a file that is not there.
+    """
+    target = _context_target_path(app, node.data)
+    if target is None:
+        return
+
+    await launch_editor(app, "", persistent_path=target, skip_confirm=True)
+
+
+def _context_target_path(app: ReviewerApp, data: Any) -> Optional[str]:
+    """Resolve a context node payload to the file it names, notifying on failure."""
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_logic import (
+        SESSION_LABEL,
+        TURN_LABEL,
+    )
+
+    if isinstance(data, ContextItem):
+        return _existing_path(app, pathlib.Path(data.path), "Context file")
+
+    if data == SESSION_LABEL:
+        session_root = app.project_context.session_root if app.project_context else None
+        if not session_root:
+            app.notify("No session in scope.")
+            return None
+        return _existing_path(
+            app, pathlib.Path(session_root) / "session.context", "Session manifest"
+        )
+
+    if data == TURN_LABEL:
+        plan_path = app.plan.plan_path
+        if not plan_path:
+            app.notify("Turn context is unavailable for this plan.")
+            return None
+        return _existing_path(
+            app, pathlib.Path(plan_path).parent / "turn.context", "Turn manifest"
+        )
+
+    return None
+
+
+def _existing_path(
+    app: ReviewerApp, target: pathlib.Path, subject: str
+) -> Optional[str]:
+    """Return the target as a POSIX path when it exists, notifying when it does not."""
+    if not target.exists():
+        app.notify(f"{subject} not found: {target.as_posix()}")
+        return None
+    return target.as_posix()
 
 
 async def view_details_handler(app: "ReviewerApp") -> None:

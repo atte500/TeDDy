@@ -280,6 +280,13 @@ async def edit_action_logic(app: ReviewerApp, node: Any, action: ActionData) -> 
     from teddy_executor.adapters.inbound.textual_plan_reviewer_editor import (
         handle_edit_action,
     )
+    from teddy_executor.adapters.inbound.textual_plan_reviewer_previews import (
+        open_context_node,
+    )
+
+    if _is_context_data(node.data):
+        await open_context_node(app, node)
+        return
 
     await handle_edit_action(app, node, action, _update_detail_view)
 
@@ -338,15 +345,20 @@ def check_action_logic(app: ReviewerApp, action_name: str) -> bool:
         return False
 
     if isinstance(node.data, ContextItem):
-        # Context items only support toggling (space) and universal navigation
+        # Context items toggle with (space) and open their file with (e).
         return action_name in (
             "toggle_selection",
+            "edit_details",
             "focus_right",
             "focus_left",
             "jump_next",
             "jump_prev",
             "cancel",
         )
+
+    if node.data in (SESSION_LABEL, TURN_LABEL):
+        # A scope header opens its own manifest; no other action applies.
+        return action_name == "edit_details"
 
     if not isinstance(node.data, ActionData):
         return False
