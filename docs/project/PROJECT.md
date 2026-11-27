@@ -75,7 +75,7 @@ A compact index of upcoming and completed milestones. Detailed requirements, gui
 | Milestone | Status | Depends On | Goal | Specs |
 | --- | --- | --- | --- | --- |
 | Foundational Refactors _(archived)_ | `COMPLETED` | — | Extract prompt blueprints to templates, centralize MRP, and add editor discovery. | — |
-| [TUI & UX Enhancements](milestones/04-tui-ux-enhancements.md) | `IN PROGRESS` | — | Enhance interactive TUI visibility and navigation, add MOVE/DELETE actions, and show waiting feedback. | [interactive-session-workflow](specs/interactive-session-workflow.md) |
+| [TUI & UX Enhancements](milestones/04-tui-ux-enhancements.md) | `COMPLETED` | — | Enhance interactive TUI visibility and navigation, add MOVE/DELETE actions, and show waiting feedback. | [interactive-session-workflow](specs/interactive-session-workflow.md) |
 | [Quality Gate & Debt Reconciliation](milestones/05-quality-gate-debt-reconciliation.md) | `PLANNED` | — | Drive the blocking gates green, enforce the bypass policy with a hook, split CI static analysis, and prune redundant test cases while the advisory metrics stay advisory. | — |
 | [Cross-Cutting Consolidation](milestones/06-cross-cutting-consolidation.md) | `PLANNED` | — | Single-source duplicated literals, helpers, doubles, and the action-type registry, unify the exception hierarchy, and migrate tooling to `justfile` + `scripts/`. | — |
 | [Runtime Reliability & Boundary Purity](milestones/07-runtime-reliability.md) | `PLANNED` | — | Make session metadata writes durable, the suite deterministic, the heuristics bounded, the resume state single-sourced, and `core` free of adapter libraries. | — |

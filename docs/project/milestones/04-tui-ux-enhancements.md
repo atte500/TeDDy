@@ -1,6 +1,6 @@
 # Milestone: TUI & UX Enhancements
 
-- **Status:** In Progress
+- **Status:** Completed
 - **Depends On:** None
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md), [Plan Format](/docs/project/specs/plan-format.md), [Plan Format Validation](/docs/project/specs/plan-format-validation.md)
 
@@ -19,7 +19,7 @@ Make the interactive reviewer truthful about the session it is showing: which mo
 9. **Interrupt Mechanism:** The two-phase `q` / Ctrl+C bracket covers the stateless `execute` run as well as the session loop, through one shared lifecycle that keeps a single owner of the process-global SIGINT disposition.
 10. **Waiting Indicator:** Animated braille spinner during model generation via `IUserInteractor.begin_waiting` / `end_waiting`.
 11. **Guardrail Turn Budget (verified delivered — preserve):** measured as delivered, so the residual work was regression pins rather than production code: `--max-turns` and `--max-cost` exist on both `start` and `resume`, `should_continue` returns `(True, None)` under plan approval and when `guardrails.enabled` is false, and `_orchestrate_session_loop` seeds `initial_turn` at `0` on every run while seeding `initial_cost` from the session's persisted cost, so a resumed run's turn budget counts this run instead of being inflated by the turns already spent. The default stays 150 (product decision, 2026-11-26) and agrees across all four spellings — the schema, the bundled `config.yaml`, the guard's fallback, and its component page — with the bundled value and the resolution fallback pinned against the schema default by name.
-12. **Remote URL Rows in the Context Panel:** `e` on a `ContextItem` naming a remote URL notifies "Context file not found" today, because the context-node dispatch resolves every row as a local path; decide whether such a row previews through `WebContentService` the way a READ on a URL does, then slice it.
+12. **Remote URL Rows in the Context Panel:** `e` on a `ContextItem` naming a remote URL notifies "Context file not found" today, because the context-node dispatch resolves every row as a local path; decide whether such a row previews through `WebContentService` the way a READ on a URL does, then slice it. Unsliced and unscheduled: this is the one requirement the milestone's twelve delivered slices do not cover, so it routes to the Architect for the product decision rather than to a Developer slice.
 
 ## Constraints
 - **The reviewer is a shared seam:** five slices edit `textual_plan_reviewer_helpers.py`, and three edit the reviewer app or widget module, so slices running in parallel MUST use separate workspaces and rebase before merge instead of editing one tree.
