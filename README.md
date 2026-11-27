@@ -396,6 +396,17 @@ No. TeDDy is designed to run inside existing repositories. It only creates a `.t
 </details>
 
 <details>
+<summary><strong>Does TeDDy support MCP (Model Context Protocol)?</strong></summary>
+
+<br />
+
+Not as a built-in client, however agents can execute plain shell commands, so anything with a CLI is callable directly and an MCP server is already reachable as a subprocess speaking JSON-RPC over stdio. Tooling runs through the `justfile`, whose recipes and usage are documented in `PROJECT.md`, so an agent finds and calls whatever is exposed there without any system prompt changes.
+
+Since its [2026-07-28 revision](https://modelcontextprotocol.io/specification/2026-07-28), the protocol is stateless by design, meaning there is no handshake to complete and no session to keep alive: every request is self-contained, carrying its own protocol version and capabilities.
+
+</details>
+
+<details>
 <summary><strong>How do teams collaborate with TeDDy?</strong></summary>
 
 <br />
