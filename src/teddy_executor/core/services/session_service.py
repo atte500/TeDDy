@@ -1,8 +1,9 @@
 import re
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Sequence
 from teddy_executor.core.domain.models.execution_report import (
     ActionLog,
+    ActionStatus,
     ExecutionReport,
 )
 from teddy_executor.core.domain.models.session import SessionOptions
@@ -298,6 +299,9 @@ class SessionService(ISessionManager):
             self._prune_context_paths(paths, pruned_paths, next_session_dir)
 
         self._apply_execution_effects(paths, execution_report)
+        self._sync_manifests_after_path_changes(
+            paths, next_session_dir, execution_report
+        )
 
         # Check if this turn should be preserved in session.context instead of turn.context
         preserve_messages = bool(
@@ -379,6 +383,100 @@ class SessionService(ISessionManager):
             session_context_path, "\n".join(sorted(list(existing)))
         )
 
+    def _sync_manifests_after_path_changes(
+        self,
+        paths: set[str],
+        next_session_dir: Path,
+        report: Optional[ExecutionReport],
+    ) -> None:
+        """Rewrites the live manifests so no entry points at a stale path.
+
+        Only the next turn's ``turn.context`` (the ``paths`` set) and the
+        session-scoped ``session.context`` are rewritten; archived turns keep
+        their own manifests, because rewriting them would falsify payloads that
+        were already sent.
+        """
+        rewrites = self._manifest_rewrites(report)
+        if not rewrites:
+            return
+
+        self._apply_manifest_rewrites(paths, rewrites)
+
+        session_context_path = (next_session_dir / "session.context").as_posix()
+        if not self._file_system_manager.path_exists(session_context_path):
+            return
+        session_paths = self._repository.read_context_file(session_context_path)
+        if self._apply_manifest_rewrites(session_paths, rewrites):
+            self._file_system_manager.write_file(
+                session_context_path, "\n".join(sorted(list(session_paths)))
+            )
+
+    def _manifest_rewrites(
+        self, report: Optional[ExecutionReport]
+    ) -> list[tuple[str, Optional[str]]]:
+        """Collects the ``(old_prefix, new_prefix)`` rewrites a report implies.
+
+        ``new_prefix`` is ``None`` when the paths disappear rather than
+        relocate. Only successful MOVE and DELETE logs contribute: a failed
+        action changed nothing, so the manifests stay truthful as they are.
+        """
+        if not report:
+            return []
+
+        rewrites: list[tuple[str, Optional[str]]] = []
+        for log in report.action_logs:
+            if log.status != ActionStatus.SUCCESS:
+                continue
+            if log.action_type == ActionType.MOVE.value:
+                source = self._log_path(log, "source")
+                destination = self._log_path(log, "destination")
+                if source and destination:
+                    rewrites.append((source, destination))
+            elif log.action_type == ActionType.DELETE.value:
+                path = self._log_path(log, "path")
+                if path:
+                    rewrites.append((path, None))
+        return rewrites
+
+    def _log_path(self, log: ActionLog, key: str) -> Optional[str]:
+        """Extracts a normalized path parameter from an action log."""
+        value = log.params.get(key)
+        if not isinstance(value, str) or not value:
+            return None
+        return self._extract_resource_path(value)
+
+    def _match_prefix(self, entry: str, prefix: str) -> Optional[str]:
+        """Returns what lies beneath ``prefix``, or ``None`` when it does not match.
+
+        Matching respects the ``/`` separator, so a directory prefix never
+        claims a sibling whose name merely starts with the same letters.
+        """
+        if entry == prefix:
+            return ""
+        if entry.startswith(f"{prefix}/"):
+            return entry[len(prefix) :]
+        return None
+
+    def _apply_manifest_rewrites(
+        self, entries: set[str], rewrites: Sequence[tuple[str, Optional[str]]]
+    ) -> bool:
+        """Applies every rewrite to a manifest entry set in place.
+
+        Returns True when at least one entry changed, so a manifest that never
+        listed a moved or deleted path is left untouched.
+        """
+        modified = False
+        for old_prefix, new_prefix in rewrites:
+            for entry in list(entries):
+                remainder = self._match_prefix(entry, old_prefix)
+                if remainder is None:
+                    continue
+                entries.discard(entry)
+                if new_prefix is not None:
+                    entries.add(f"{new_prefix}{remainder}")
+                modified = True
+        return modified
+
     def preserve_turn_in_session_context(self, turn_dir: Path) -> None:
         """Re-evaluates a turn's preservation and admits it to session.context.
 
@@ -404,8 +502,6 @@ class SessionService(ISessionManager):
 
     def _apply_single_log_effect(self, paths: set[str], log: ActionLog) -> None:
         """Processes a single action log and adds its target path to the context set if applicable."""
-        from teddy_executor.core.domain.models import ActionStatus
-
         # Skip only actions that were never executed (SKIPPED/PENDING).
         if log.status in (ActionStatus.SKIPPED, ActionStatus.PENDING):
             return
