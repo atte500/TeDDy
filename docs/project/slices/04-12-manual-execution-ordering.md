@@ -18,6 +18,11 @@ Make the console log and `report.md` describe what actually happened — every e
 - Both surfaces come from one list: the console log and the `report.md` action-log table both render from the assembled logs, which is why one ordering rule can serve both.
 - Relationship to pruning: A pruned or halted turn must still name what was skipped, because an incomplete report that silently omits actions reads as success.
 
+- Console derivation (resolved Key Unknown): `ActionDispatcher.dispatch_and_execute` logs `{ACTION} - {description}` and then the uppercase status at dispatch, so freshly dispatched actions stream live, while a hand-executed action runs through `_execute_silently` with stdout/stderr redirected and is re-emitted on submission by `ExecutionOrchestrator._emit_preexecuted_console_log` in `plan.actions` iteration order. Both surfaces are assembled from one loop list and therefore share one defect.
+- Skip rendering already works: `ActionExecutor._create_intercepted_log` stores the reason as a scalar `details`, and `render_action_summary` renders it as `- **Details:**`, which `ReportParser` recovers as `Skip Reason`, so the missing console notice is the whole gap on that side.
+- One rule, two callers: the next sequence number is `max(recorded stamps) + 1`, so the reviewer's manual path and the orchestrator loop must both call `Plan.next_execution_sequence()` rather than each re-deriving it.
+- Emission seam: `ActionExecutor._handle_skipped_action` is the single funnel every skip already passes through (deselect, halt, interrupt drain, abort), and `cli_formatter.echo_skipped_action` prints one `[SKIPPED] {type}: {reason}` line on stderr that the plain `n` denial does not duplicate.
+- Test surface: `mock_user_interactor` is a `register_mock` double whose `call_args_list` already records notice order, while `ReportParser.action_logs` is document-ordered and carries each entry's subject in `params` but exposes no single ordered-label accessor, which is what the Harness deliverable adds.
 ## Scenarios
 
 > As a user reviewing a report, I want executed actions in the order they ran, not the order they were written.
@@ -56,13 +61,13 @@ Then the actions after it are named as skipped with the halt reason
 - **Reason collision**: If two different reasons apply (deselected and halted), then the one the user caused takes precedence, because the deselect is the more specific fact.
 
 ## Key Unknowns
-- [ ] [Technical] Console log derivation: does the console output stream live as each action finishes, or is it rendered from the assembled logs? Design Sensitivity: if it streams live → the console order is already truthful and the slice only stamps and sorts the report, while the re-emit covers skips; if it renders from the assembled logs → one shared ordering key fixes both surfaces and the stamping deliverable owns the whole slice.
+- [x] [Technical] Console log derivation: does the console output stream live as each action finishes, or is it rendered from the assembled logs? **Resolved:** freshly dispatched actions stream live (`ActionDispatcher` logs the action line then its status), while hand-executed actions run silently through `_execute_silently` and are re-emitted by `ExecutionOrchestrator._emit_preexecuted_console_log` in `plan.actions` iteration order. The report is assembled from that same loop list, so one execution-sequence stamp fixes both surfaces and no prototype is needed.
 
 ## Impact
-1. `[EXTEND]` `ActionData` — carry an execution-sequence stamp recorded when the action starts, not when it was planned.
-2. `[MIGRATE]` `ExecutionOrchestrator` — stamp on dispatch and order the assembled logs by sequence instead of iteration order.
-3. `[MIGRATE]` The manual-execution path in the reviewer — stamp manually executed actions so they interleave correctly with the later batch.
-4. `[WIRING]` The skip notices — call `notify_skipped_action` for every deselected, halted, and interrupted action, reusing the existing formatter rather than adding one.
+1. `[EXTEND]` `ActionData` — carry `execution_sequence: int | None = None`, assigned when the loop or the reviewer resolves an action (dispatched or skipped), never at parse, plus the one shared next-number rule `Plan.next_execution_sequence()` both stamping paths call.
+2. `[MIGRATE]` `ExecutionOrchestrator` — stamp every action it resolves, order the assembled logs by stamp instead of iteration order, and emit pre-executed console lines in stamp order before the loop so the console and the report agree.
+3. `[MIGRATE]` The manual-execution path in the reviewer — stamp from the same rule so a hand-executed action interleaves correctly with the later batch.
+4. `[WIRING]` The skip notices — emit `IUserInteractor.notify_skipped_action` from the single `ActionExecutor` skip seam every deselect, halt, interrupt, and abort already passes through (silent for `MESSAGE`), reusing the existing formatter rather than adding one.
 5. `[MIGRATE]` `IUserInteractor`, `ExecutionOrchestrator`, and reviewer component pages — record the ordering rule and the skip-notice contract.
 
 ## Deliverables
