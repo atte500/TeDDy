@@ -1,5 +1,5 @@
 # Slice: Context-Aware `e` Actions in the Reviewer
-- **Status:** In Progress
+- **Status:** Completed
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** [04-05-context-metadata](./04-05-context-metadata.md)
 - **Specs:** [Interactive Session Workflow](/docs/project/specs/interactive-session-workflow.md)
@@ -161,6 +161,7 @@ And the Model row shows the model resolved for Developer rather than for Pathfin
 - **Verification:** `ruff check` on the migrated file reports `All checks passed!`, the module stays green, and `make test` reports `2834 passed, 5 skipped` — the baseline, because a double swap alters no execution path and adds no case.
 - **Note placement corrected here:** every deliverable note appended across this session had landed after `## Verification`, because each Documentation turn wrote to end-of-file. They now sit under `## Implementation Notes` where the workflow places them, leaving `## Verification` as the document's last section. The relocation moved one contiguous block and changed no wording.
 - **Two assertion mistakes, both mine, both cheap to avoid:** the first attempt filtered module-level functions with `isinstance(node, ast.FunctionDef)` and silently skipped the `async def` helper; the second asserted the Verification list ended with `restore the directory.` when item 5 has a second line about the notification. The durable lesson is the same in both cases — assert on structure (a name set, a heading position, the absence of a bullet) rather than on a remembered literal.
+- **Debt placed, not dropped:** the three items this slice surfaced now have owners outside it. `IPromptManager.get_available_agents()` proved live (read by `session_service.py:195` to validate `-a`), so the roster duplication became milestone 06's requirement 15 instead of an in-slice prune. The `NoActiveWorker` hazard became milestone 07's requirement 13, owned by `07-08`, which rewrites `launch_editor`. The remote-URL row gap became milestone 04's requirement 12 and stays unsliced, because whether a URL row previews through `WebContentService` is a product decision the spec never made.
 
 ## Verification
 1. **Session manifest:**
