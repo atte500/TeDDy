@@ -86,6 +86,18 @@ def _register_services(container: punq.Container) -> None:
     container.register(IEditSimulator, EditSimulator, scope=punq.Scope.transient)
     container.register(IPlanParser, MarkdownPlanParser, scope=punq.Scope.transient)
 
+    from teddy_executor.adapters.outbound.local_agent_catalog import (
+        LocalAgentCatalog,
+    )
+    from teddy_executor.core.ports.outbound import IAgentCatalog
+    from teddy_executor.prompts import list_prompt_names
+
+    container.register(
+        IAgentCatalog,
+        factory=lambda: LocalAgentCatalog(list_prompt_names),
+        scope=punq.Scope.transient,
+    )
+
     register_reviewer(container)
 
     from teddy_executor.core.domain.models.config_schema import ReadConfig

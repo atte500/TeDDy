@@ -10,8 +10,10 @@ def register_reviewer(container: punq.Container) -> None:
     """
     from teddy_executor.core.ports.inbound.plan_reviewer import IPlanReviewer
     from teddy_executor.core.ports.outbound import (
+        IAgentCatalog,
         IConfigService,
         IFileSystemManager,
+        ISessionManager,
         ISystemEnvironment,
     )
     from teddy_executor.adapters.outbound.console_tooling import (
@@ -32,6 +34,8 @@ def register_reviewer(container: punq.Container) -> None:
             action_dispatcher=container.resolve(ActionDispatcher),
             web_content_service=container.resolve(WebContentService),
             config_service=container.resolve(IConfigService),
+            agent_catalog=container.resolve(IAgentCatalog),
+            session_manager=container.resolve(ISessionManager),
         )
 
     container.register(IPlanReviewer, factory=tui_factory)
