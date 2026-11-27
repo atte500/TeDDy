@@ -162,6 +162,36 @@ class IFileSystemManager(Protocol):
         _ = old_path
         ...
 
+    def move_path(self, old_path: str, new_path: str) -> None:
+        """
+        Moves or renames a file or a directory as one operation.
+
+        Missing parent directories of the destination are created first, so a
+        move into a directory that does not exist yet still succeeds.
+
+        Raises:
+            FileNotFoundError: If no file or directory exists at ``old_path``.
+            FileExistsError: If anything already exists at ``new_path``, because
+                a half-applied rename is worse than a rejected plan.
+        """
+        ...
+
+    def remove_path(self, path: str, recursive: bool = False) -> None:
+        """
+        Removes a file, or a directory.
+
+        A file is always removed. A directory is removed only when it is empty,
+        unless ``recursive`` is True, in which case its whole subtree goes with
+        it. The removal walks the raw file system: ignore rules never shield a
+        path from an explicit removal.
+
+        Raises:
+            FileNotFoundError: If nothing exists at ``path``.
+            OSError: If ``path`` is a non-empty directory and ``recursive`` is
+                False.
+        """
+        ...
+
     def open_file_for_append(self, path: str) -> TextIO:
         """
         Opens a file for appending, creating parent directories if needed.

@@ -13,6 +13,8 @@ class ActionType(str, Enum):
     EDIT = "EDIT"
     EXECUTE = "EXECUTE"
     RESEARCH = "RESEARCH"
+    MOVE = "MOVE"
+    DELETE = "DELETE"
     MESSAGE = "MESSAGE"
 
 

@@ -149,3 +149,146 @@ def test_read_file_bytes_raises_for_a_missing_file(tmp_path):
     # Act / Assert
     with pytest.raises(FileNotFoundError):
         adapter.read_file_bytes("missing.pdf")
+
+
+@pytest.fixture
+def adapter(tmp_path) -> LocalFileSystemAdapter:
+    return LocalFileSystemAdapter(
+        edit_simulator=POSIXPathMock(spec=IEditSimulator), root_dir=str(tmp_path)
+    )
+
+
+def test_file_system_manager_defines_move_path_and_remove_path():
+    # Arrange / Act
+    move_path = getattr(IFileSystemManager, "move_path", None)
+    remove_path = getattr(IFileSystemManager, "remove_path", None)
+
+    # Assert
+    assert callable(move_path), (
+        "IFileSystemManager must define move_path(old_path: str, new_path: str) -> None"
+    )
+    assert callable(remove_path), (
+        "IFileSystemManager must define "
+        "remove_path(path: str, recursive: bool = False) -> None"
+    )
+
+
+def test_move_path_moves_a_file(adapter, tmp_path):
+    # Arrange
+    (tmp_path / "old_name.py").write_text("payload", encoding="utf-8")
+
+    # Act
+    adapter.move_path("old_name.py", "new_name.py")
+
+    # Assert
+    assert not (tmp_path / "old_name.py").exists()
+    assert (tmp_path / "new_name.py").read_text(encoding="utf-8") == "payload"
+
+
+def test_move_path_moves_a_directory_subtree(adapter, tmp_path):
+    # Arrange
+    (tmp_path / "legacy" / "nested").mkdir(parents=True)
+    (tmp_path / "legacy" / "nested" / "module.py").write_text("body", encoding="utf-8")
+
+    # Act
+    adapter.move_path("legacy", "current")
+
+    # Assert
+    assert not (tmp_path / "legacy").exists()
+    moved = tmp_path / "current" / "nested" / "module.py"
+    assert moved.read_text(encoding="utf-8") == "body"
+
+
+def test_move_path_creates_missing_destination_parents(adapter, tmp_path):
+    # Arrange
+    (tmp_path / "note.md").write_text("text", encoding="utf-8")
+
+    # Act
+    adapter.move_path("note.md", "docs/notes/note.md")
+
+    # Assert
+    assert (tmp_path / "docs" / "notes" / "note.md").is_file()
+
+
+def test_move_path_raises_when_source_missing(adapter):
+    # Act / Assert
+    with pytest.raises(FileNotFoundError):
+        adapter.move_path("absent.py", "elsewhere.py")
+
+
+def test_move_path_raises_when_destination_exists(adapter, tmp_path):
+    # Arrange
+    (tmp_path / "source.py").write_text("source", encoding="utf-8")
+    (tmp_path / "occupied.py").write_text("occupied", encoding="utf-8")
+
+    # Act / Assert
+    with pytest.raises(FileExistsError):
+        adapter.move_path("source.py", "occupied.py")
+
+    assert (tmp_path / "source.py").read_text(encoding="utf-8") == "source"
+    assert (tmp_path / "occupied.py").read_text(encoding="utf-8") == "occupied"
+
+
+def test_remove_path_removes_a_file(adapter, tmp_path):
+    # Arrange
+    (tmp_path / "scratch.md").write_text("draft", encoding="utf-8")
+
+    # Act
+    adapter.remove_path("scratch.md")
+
+    # Assert
+    assert not (tmp_path / "scratch.md").exists()
+
+
+def test_remove_path_raises_when_path_missing(adapter):
+    # Act / Assert
+    with pytest.raises(FileNotFoundError):
+        adapter.remove_path("absent.md")
+
+
+def test_remove_path_removes_an_empty_directory_without_recursive(adapter, tmp_path):
+    # Arrange
+    (tmp_path / "empty").mkdir()
+
+    # Act
+    adapter.remove_path("empty")
+
+    # Assert
+    assert not (tmp_path / "empty").exists()
+
+
+def test_remove_path_refuses_a_non_empty_directory_without_recursive(adapter, tmp_path):
+    # Arrange
+    (tmp_path / "legacy").mkdir()
+    (tmp_path / "legacy" / "module.py").write_text("body", encoding="utf-8")
+
+    # Act / Assert
+    with pytest.raises(OSError):
+        adapter.remove_path("legacy")
+
+    assert (tmp_path / "legacy" / "module.py").exists()
+
+
+def test_remove_path_removes_a_non_empty_directory_recursively(adapter, tmp_path):
+    # Arrange
+    (tmp_path / "legacy" / "nested").mkdir(parents=True)
+    (tmp_path / "legacy" / "nested" / "module.py").write_text("body", encoding="utf-8")
+
+    # Act
+    adapter.remove_path("legacy", recursive=True)
+
+    # Assert
+    assert not (tmp_path / "legacy").exists()
+
+
+def test_remove_path_recursively_removes_ignored_files(adapter, tmp_path):
+    # Arrange: the ignore spec must not shield a file from an explicit removal.
+    (tmp_path / ".gitignore").write_text("*.log\n", encoding="utf-8")
+    (tmp_path / "legacy").mkdir()
+    (tmp_path / "legacy" / "debug.log").write_text("noise", encoding="utf-8")
+
+    # Act
+    adapter.remove_path("legacy", recursive=True)
+
+    # Assert
+    assert not (tmp_path / "legacy").exists()

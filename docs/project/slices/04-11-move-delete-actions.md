@@ -1,5 +1,5 @@
 # Slice: MOVE and DELETE Actions with Manifest Sync
-- **Status:** Planned
+- **Status:** In Progress
 - **Milestone:** [Milestone 4: TUI & UX Enhancements](/docs/project/milestones/04-tui-ux-enhancements.md)
 - **Depends On:** None
 - **Specs:** [Plan Format](/docs/project/specs/plan-format.md), [Plan Format Validation](/docs/project/specs/plan-format-validation.md)
@@ -77,7 +77,7 @@ Then validation fails with an error naming the Recursive flag
 10. `[VERIFY]` No bundled template or prompt switches on an action type, so report rendering needs no branch. `ActionChangeSetBuilder.create_change_set` returns `None` outside `CREATE`/`EDIT`, so both new actions simply carry no diff preview — accepted, because neither rewrites bytes.
 
 ## Deliverables
-- [ ] **Interface** — Add `MOVE` and `DELETE` to `ActionType`, add `move_path` and `remove_path` to `IFileSystemManager` with contract tests, and implement both against a real temporary workspace. The specs already describe both types, so this deliverable changes no documentation.
+- [x] **Interface** — Add `MOVE` and `DELETE` to `ActionType`, add `move_path` and `remove_path` to `IFileSystemManager` with contract tests, and implement both against a real temporary workspace. The specs already describe both types, so this deliverable changes no documentation.
 - [ ] **Harness** — Extend `MarkdownPlanBuilder` with `add_move` and `add_delete`, both accepting an explicit `Recursive` value including the string form a plan would carry, so no test hardcodes the new Markdown.
 - [ ] **Core** — Parse both types (coercing `Recursive` so the string `false` becomes `False`), register them in the parser dispatch map and the three factory maps, and prove every rejection branch through `MoveActionValidator` and `DeleteActionValidator` plus their registry entries.
 - [ ] **Adapter** — Implement both actions against the port, then add the manifest-rewrite helpers beside `_append_to_session_context` and trigger them from `transition_to_next_turn`, which already receives the `ExecutionReport`, so only successful `MOVE`/`DELETE` logs rewrite anything and `ISessionManager` keeps its signature.
@@ -91,6 +91,13 @@ Then validation fails with an error naming the Recursive flag
 - Manifest entries are root-relative project paths written via `to_root_relative`, so a `MOVE`'s `Source`/`Destination` and a `DELETE`'s `Path` compare directly against them after `normalize_resource_path`.
 - The manifest sync is triggered from `transition_to_next_turn` rather than from the actions: it already receives the `ExecutionReport` and therefore knows which actions actually succeeded, which keeps the session layer in charge and leaves `ISessionManager` unchanged.
 - No shared in-memory `IFileSystemManager` fake exists — the harness registers a bound mock and several test modules carry private `InMemoryFileSystem` classes. The new port primitives are proven against a real temporary directory, and validation tests use the existing bound mock.
+
+### Interface deliverable
+- `IFileSystemManager` gains two declarations beside their narrower neighbours: `move_path(old_path, new_path)` covers a file OR a directory, `remove_path(path, recursive=False)` likewise. Both docstrings state the raised exceptions, so the contract is readable at the port rather than only in the adapter.
+- `move_path` reuses `_resolve_path`, so it inherits the project-root-relative convention instead of introducing a second path policy. It creates missing destination parents, refuses an occupied destination with `FileExistsError` before touching anything, and raises `FileNotFoundError` for a missing source.
+- `remove_path` unlinks a file, calls `rmtree` when `recursive`, and falls back to `rmdir` so a non-empty directory without the flag fails with the platform's own `OSError`. It deliberately never calls `_get_ignore_spec`: ignore rules describe what context assembly skips, never what an explicit removal must spare, and filtering through them would leave `.gitignore`d files behind while reporting success. `test_remove_path_recursively_removes_ignored_files` pins that.
+- `ActionType` carries `MOVE` and `DELETE` between `RESEARCH` and `MESSAGE`. The position is load-bearing: `ActionData.is_terminal` and `Plan.is_communication_turn` compare against `MESSAGE`, so a member appended after it would silently break the communication-turn check.
+- Twelve contract tests live in `tests/suites/unit/adapters/outbound/test_file_system_adapter_contract.py` and drive the real adapter against `tmp_path`. The full suite reported 2807 passed and 5 skipped, confirming the enum and port extensions are purely additive.
 
 ## Verification
 1. **Rename with manifest sync:**

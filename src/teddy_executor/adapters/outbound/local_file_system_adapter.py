@@ -174,6 +174,23 @@ class LocalFileSystemAdapter(IFileSystemManager):
 
         shutil.move(str(source), str(destination))
 
+    def move_path(self, old_path: str, new_path: str) -> None:
+        """
+        Moves or renames a file or directory, creating missing destination parents.
+        """
+        import shutil
+
+        source = self._resolve_path(old_path)
+        destination = self._resolve_path(new_path)
+
+        if not source.exists():
+            raise FileNotFoundError(f"Source path not found: {old_path}")
+        if destination.exists():
+            raise FileExistsError(f"Destination path already exists: {new_path}")
+
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(source), str(destination))
+
     def open_file_for_append(self, path: str) -> TextIO:
         """
         Opens a file for appending, creating parent directories if needed.
@@ -331,6 +348,31 @@ class LocalFileSystemAdapter(IFileSystemManager):
             raise
         except OSError as e:
             raise OSError(f"Failed to remove file at {path}: {e}") from e
+
+    def remove_path(self, path: str, recursive: bool = False) -> None:
+        """
+        Removes a file, or a directory that is empty or explicitly recursive.
+
+        Deletion walks the raw file system rather than
+        ``list_directory_recursive``: ignore rules describe what context
+        assembly skips, never what an explicit removal must spare, so filtering
+        through them would leave ignored files behind and report success.
+        """
+        import shutil
+
+        target = self._resolve_path(path)
+        if not target.exists():
+            raise FileNotFoundError(f"Path not found: {path}")
+
+        if not target.is_dir():
+            target.unlink()
+            return
+
+        if recursive:
+            shutil.rmtree(target)
+            return
+
+        target.rmdir()
 
     def edit_file(
         self,
